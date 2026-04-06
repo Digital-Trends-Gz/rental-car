@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTrans } from '@/composables/useTrans';
+import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+
+const { t } = useTrans();
 
 const props = defineProps<{
     roles: Array<{ id: number; name: string; display_name: string | null; description: string | null }>;
@@ -19,70 +22,72 @@ const form = useForm({
 });
 
 const submit = () => {
-    console.log('Submitting with role_ids:', form.role_ids);
     form.post('/superadmin/users', { preserveScroll: true });
 };
 </script>
 
 <template>
-    <Head title="Add Super Admin User" />
+    <Head :title="t('dashboard.super_admin.users.create.head_title')" />
     <SuperAdminLayout>
-        <main class="flex-1 p-8 space-y-6">
+        <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center gap-4">
                 <Link href="/superadmin/users">
-                    <Button variant="outline">← Back</Button>
+                    <Button variant="outline">{{ t('dashboard.super_admin.common.back') }}</Button>
                 </Link>
-                <h1 class="text-2xl font-semibold">Add Super Admin User</h1>
+                <h1 class="text-2xl font-semibold">{{ t('dashboard.super_admin.users.create.title') }}</h1>
             </div>
 
-            <form @submit.prevent="submit" class="space-y-6">
+            <form class="space-y-6" @submit.prevent="submit">
                 <Card class="max-w-2xl">
                     <CardHeader>
-                        <CardTitle>New user</CardTitle>
-                        <CardDescription>This user will be able to log in at the Super Admin login and manage pages. Assign roles and permissions after creation.</CardDescription>
+                        <CardTitle>{{ t('dashboard.super_admin.users.create.card_title') }}</CardTitle>
+                        <CardDescription>{{ t('dashboard.super_admin.users.create.card_description') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
-                            <Label for="name">Name *</Label>
+                            <Label for="name">{{ t('dashboard.super_admin.users.create.name') }} *</Label>
                             <Input
                                 id="name"
                                 v-model="form.name"
                                 type="text"
-                                placeholder="Jane Doe"
+                                :placeholder="t('dashboard.super_admin.users.create.name_placeholder')"
                                 required
                             />
                             <div v-if="form.errors.name" class="text-sm text-red-600">{{ form.errors.name }}</div>
                         </div>
+
                         <div class="space-y-2">
-                            <Label for="email">Email *</Label>
+                            <Label for="email">{{ t('dashboard.super_admin.users.create.email') }} *</Label>
                             <Input
                                 id="email"
                                 v-model="form.email"
                                 type="email"
-                                placeholder="jane@example.com"
+                                :placeholder="t('dashboard.super_admin.users.create.email_placeholder')"
                                 required
                             />
                             <div v-if="form.errors.email" class="text-sm text-red-600">{{ form.errors.email }}</div>
                         </div>
+
                         <div class="space-y-2">
-                            <Label for="password">Password *</Label>
+                            <Label for="password">{{ t('dashboard.super_admin.users.create.password') }} *</Label>
                             <Input
                                 id="password"
                                 v-model="form.password"
                                 type="password"
-                                placeholder="••••••••"
+                                :placeholder="t('dashboard.super_admin.users.create.password_placeholder')"
                                 required
                                 autocomplete="new-password"
                             />
                             <div v-if="form.errors.password" class="text-sm text-red-600">{{ form.errors.password }}</div>
                         </div>
+
                         <div class="space-y-2">
-                            <Label for="password_confirmation">Confirm password *</Label>
+                            <Label for="password_confirmation">{{ t('dashboard.super_admin.users.create.password_confirmation') }} *</Label>
                             <Input
                                 id="password_confirmation"
                                 v-model="form.password_confirmation"
                                 type="password"
-                                placeholder="••••••••"
+                                :placeholder="t('dashboard.super_admin.users.create.password_placeholder')"
                                 required
                                 autocomplete="new-password"
                             />
@@ -92,8 +97,8 @@ const submit = () => {
 
                 <Card class="max-w-2xl">
                     <CardHeader>
-                        <CardTitle>Roles</CardTitle>
-                        <CardDescription>Assign one or more roles. The user will have all permissions attached to these roles.</CardDescription>
+                        <CardTitle>{{ t('dashboard.super_admin.users.create.roles_title') }}</CardTitle>
+                        <CardDescription>{{ t('dashboard.super_admin.users.create.roles_description') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-3">
                         <div
@@ -102,34 +107,35 @@ const submit = () => {
                             class="flex items-center space-x-2"
                         >
                             <input
-                                type="checkbox"
                                 :id="`role-${role.id}`"
-                                :value="role.id"
                                 v-model="form.role_ids"
+                                :value="role.id"
+                                type="checkbox"
                                 class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                             />
-                            <label :for="`role-${role.id}`" class="font-normal cursor-pointer text-sm">
+                            <label :for="`role-${role.id}`" class="cursor-pointer text-sm font-normal">
                                 {{ role.display_name || role.name }}
                                 <span v-if="role.description" class="text-gray-500"> — {{ role.description }}</span>
                             </label>
                         </div>
+
                         <p v-if="props.roles.length === 0" class="text-sm text-gray-500">
-                            No roles defined. Create roles under User Management → Roles first.
+                            {{ t('dashboard.super_admin.users.create.no_roles') }}
                         </p>
-                        
-                        <!-- Debug display -->
-                        <div class="mt-4 p-3 bg-gray-100 rounded text-xs font-mono">
-                            <strong>Selected Role IDs:</strong> {{ form.role_ids.join(', ') || 'None' }}
+
+                        <div class="mt-4 rounded bg-gray-100 p-3 font-mono text-xs">
+                            <strong>{{ t('dashboard.super_admin.users.create.selected_role_ids') }}:</strong>
+                            {{ form.role_ids.join(', ') || t('dashboard.super_admin.users.create.none') }}
                         </div>
                     </CardContent>
                 </Card>
 
                 <div class="flex gap-2">
                     <Button type="submit" :disabled="form.processing">
-                        {{ form.processing ? 'Creating...' : 'Create User' }}
+                        {{ form.processing ? t('dashboard.super_admin.common.creating') : t('dashboard.super_admin.users.create.create') }}
                     </Button>
                     <Link href="/superadmin/users">
-                        <Button type="button" variant="outline">Cancel</Button>
+                        <Button type="button" variant="outline">{{ t('dashboard.super_admin.common.cancel') }}</Button>
                     </Link>
                 </div>
             </form>

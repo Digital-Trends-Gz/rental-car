@@ -148,24 +148,24 @@ function submit() {
                     <div class="grid gap-4 md:grid-cols-2">
                         <!-- Name -->
                         <div>
-                            <Label for="name">Branch Name</Label>
+                            <Label for="name">{{ t('dashboard.admin.branches.form.branch_name') }}</Label>
                             <Input
                                 id="name"
                                 v-model="form.name"
-                                placeholder="Main Showroom"
+                                :placeholder="t('dashboard.admin.branches.form.branch_name_placeholder')"
                                 required
                             />
                             <InputError :message="form.errors.name" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="country">Country</Label>
+                            <Label for="country">{{ t('dashboard.admin.branches.form.country') }}</Label>
                             <select
                                 id="country"
                                 v-model="form.country"
                                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                             >
-                                <option value="">Select country</option>
+                                <option value="">{{ t('dashboard.admin.branches.form.select_country') }}</option>
                                 <option v-for="country in countries" :key="country.value" :value="country.value">
                                     {{ country.label }}
                                 </option>
@@ -174,7 +174,7 @@ function submit() {
                         </div>
 
                         <div>
-                            <Label for="city">City</Label>
+                            <Label for="city">{{ t('dashboard.admin.branches.form.city') }}</Label>
                             <select
                                 id="city"
                                 v-model="form.city"
@@ -184,10 +184,10 @@ function submit() {
                                 <option value="">
                                     {{
                                         !form.country
-                                            ? 'Select country first'
+                                            ? t('dashboard.admin.branches.form.select_country_first')
                                             : hasCityOptions
-                                              ? 'Select city'
-                                              : 'No cities available for this country'
+                                              ? t('dashboard.admin.branches.form.select_city')
+                                              : t('dashboard.admin.branches.form.no_cities_available')
                                     }}
                                 </option>
                                 <option v-for="city in availableCities" :key="city.value" :value="city.value">
@@ -196,76 +196,76 @@ function submit() {
                             </select>
                             <InputError :message="form.errors.city" class="mt-1" />
                             <p v-if="form.country && !hasCityOptions" class="mt-1 text-xs text-muted-foreground">
-                                No city options were found for the selected country in the current dataset.
+                                {{ t('dashboard.admin.branches.form.no_city_options_found') }}
                             </p>
                         </div>
 
                         <div>
-                            <Label for="street_name">Street Name</Label>
+                            <Label for="street_name">{{ t('dashboard.admin.branches.form.street_name') }}</Label>
                             <Input
                                 id="street_name"
                                 v-model="form.street_name"
-                                placeholder="Sultan Qaboos Street"
+                                :placeholder="t('dashboard.admin.branches.form.street_name_placeholder')"
                             />
                             <InputError :message="form.errors.street_name" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="street_number">Street Number</Label>
-                            <Input id="street_number" v-model="form.street_number" placeholder="12" />
+                            <Label for="street_number">{{ t('dashboard.admin.branches.form.street_number') }}</Label>
+                            <Input id="street_number" v-model="form.street_number" :placeholder="t('dashboard.admin.branches.form.street_number_placeholder')" />
                             <InputError :message="form.errors.street_number" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="building_number">Building Number</Label>
-                            <Input id="building_number" v-model="form.building_number" placeholder="A-14" />
+                            <Label for="building_number">{{ t('dashboard.admin.branches.form.building_number') }}</Label>
+                            <Input id="building_number" v-model="form.building_number" :placeholder="t('dashboard.admin.branches.form.building_number_placeholder')" />
                             <InputError :message="form.errors.building_number" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="office_number">Office Number</Label>
-                            <Input id="office_number" v-model="form.office_number" placeholder="Office 204" />
+                            <Label for="office_number">{{ t('dashboard.admin.branches.form.office_number') }}</Label>
+                            <Input id="office_number" v-model="form.office_number" :placeholder="t('dashboard.admin.branches.form.office_number_placeholder')" />
                             <InputError :message="form.errors.office_number" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="post_code">Post Code</Label>
-                            <Input id="post_code" v-model="form.post_code" placeholder="112" />
+                            <Label for="post_code">{{ t('dashboard.admin.branches.form.post_code') }}</Label>
+                            <Input id="post_code" v-model="form.post_code" :placeholder="t('dashboard.admin.branches.form.post_code_placeholder')" />
                             <InputError :message="form.errors.post_code" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="google_map_url">Google Map Location URL</Label>
-                            <Input id="google_map_url" v-model="form.google_map_url" placeholder="https://maps.google.com/..." />
+                            <Label for="google_map_url">{{ t('dashboard.admin.branches.form.google_map_url') }}</Label>
+                            <Input id="google_map_url" v-model="form.google_map_url" :placeholder="t('dashboard.admin.branches.form.google_map_url_placeholder')" />
                             <InputError :message="form.errors.google_map_url" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="phone_1">Phone 1</Label>
-                            <Input id="phone_1" v-model="form.phone_1" placeholder="+968 9000 0000" />
+                            <Label for="phone_1">{{ t('dashboard.admin.branches.form.phone_1') }}</Label>
+                            <Input id="phone_1" v-model="form.phone_1" :placeholder="t('dashboard.admin.branches.form.phone_placeholder')" />
                             <InputError :message="form.errors.phone_1" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="phone_2">Phone 2</Label>
-                            <Input id="phone_2" v-model="form.phone_2" placeholder="+968 9000 0001" />
+                            <Label for="phone_2">{{ t('dashboard.admin.branches.form.phone_2') }}</Label>
+                            <Input id="phone_2" v-model="form.phone_2" :placeholder="t('dashboard.admin.branches.form.phone_placeholder')" />
                             <InputError :message="form.errors.phone_2" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="whatsapp">WhatsApp</Label>
-                            <Input id="whatsapp" v-model="form.whatsapp" placeholder="+968 9000 0000" />
+                            <Label for="whatsapp">{{ t('dashboard.admin.branches.form.whatsapp') }}</Label>
+                            <Input id="whatsapp" v-model="form.whatsapp" :placeholder="t('dashboard.admin.branches.form.phone_placeholder')" />
                             <InputError :message="form.errors.whatsapp" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="email">Email</Label>
-                            <Input id="email" v-model="form.email" type="email" placeholder="branch@example.com" />
+                            <Label for="email">{{ t('dashboard.admin.branches.form.email') }}</Label>
+                            <Input id="email" v-model="form.email" type="email" :placeholder="t('dashboard.admin.branches.form.email_placeholder')" />
                             <InputError :message="form.errors.email" class="mt-1" />
                         </div>
 
                         <div class="md:col-span-2">
-                            <Label class="mb-2 block">Car Rental Showroom Image</Label>
+                            <Label class="mb-2 block">{{ t('dashboard.admin.branches.form.showroom_image') }}</Label>
                             <FileUpload
                                 ref="showroomUploadRef"
                                 v-model="showroomTempFolders"

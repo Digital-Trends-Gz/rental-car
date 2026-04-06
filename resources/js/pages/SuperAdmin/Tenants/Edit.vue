@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
-import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTrans } from '@/composables/useTrans';
+import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
     Select,
     SelectContent,
@@ -12,8 +14,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { computed, ref, watch } from 'vue';
+
+const { t } = useTrans();
 
 const props = defineProps<{
     tenant: {
@@ -89,30 +92,30 @@ const submit = () => {
 </script>
 
 <template>
-    <Head :title="`Edit: ${props.tenant.name}`" />
+    <Head :title="`${t('dashboard.super_admin.tenants.edit.head_title')}: ${props.tenant.name}`" />
     <SuperAdminLayout>
-        <main class="flex-1 p-8 space-y-6">
+        <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center gap-4">
                 <Link :href="`/superadmin/tenants/${props.tenant.id}`">
-                    <Button variant="outline">← Back</Button>
+                    <Button variant="outline">{{ t('dashboard.super_admin.common.back') }}</Button>
                 </Link>
-                <h1 class="text-2xl font-semibold">Edit Tenant</h1>
+                <h1 class="text-2xl font-semibold">{{ t('dashboard.super_admin.tenants.edit.title') }}</h1>
             </div>
 
             <Card class="max-w-2xl">
                 <CardHeader>
-                    <CardTitle>Tenant Information</CardTitle>
-                    <CardDescription>Update company and contact details</CardDescription>
+                    <CardTitle>{{ t('dashboard.super_admin.tenants.edit.card_title') }}</CardTitle>
+                    <CardDescription>{{ t('dashboard.super_admin.tenants.edit.card_description') }}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form @submit.prevent="submit" class="space-y-4">
+                    <form class="space-y-4" @submit.prevent="submit">
                         <div class="space-y-2">
-                            <Label for="name">Company Name *</Label>
+                            <Label for="name">{{ t('dashboard.super_admin.tenants.form.company_name') }} *</Label>
                             <Input
                                 id="name"
                                 v-model="form.name"
                                 type="text"
-                                placeholder="ABC Rent a Car"
+                                :placeholder="t('dashboard.super_admin.tenants.form.company_name_placeholder')"
                                 required
                             />
                             <div v-if="form.errors.name" class="text-sm text-red-600">
@@ -121,30 +124,30 @@ const submit = () => {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="slug">Subdomain (Slug) *</Label>
+                            <Label for="slug">{{ t('dashboard.super_admin.tenants.form.subdomain') }} *</Label>
                             <div class="flex items-center gap-1">
                                 <Input
                                     id="slug"
                                     v-model="form.slug"
                                     type="text"
-                                    placeholder="company-slug"
+                                    :placeholder="t('dashboard.super_admin.tenants.form.subdomain_placeholder')"
                                     required
                                 />
-                                <span class="text-sm text-muted-foreground whitespace-nowrap">.{{ $page.props.app_url_base || 'localhost' }}</span>
+                                <span class="whitespace-nowrap text-sm text-muted-foreground">.{{ $page.props.app_url_base || 'localhost' }}</span>
                             </div>
-                            <p class="text-xs text-muted-foreground">Tenant unique URL: company.domain.com</p>
+                            <p class="text-xs text-muted-foreground">{{ t('dashboard.super_admin.tenants.form.tenant_url_help') }}</p>
                             <div v-if="form.errors.slug" class="text-sm text-red-600">
                                 {{ form.errors.slug }}
                             </div>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="email">Contact Email *</Label>
+                            <Label for="email">{{ t('dashboard.super_admin.tenants.form.contact_email') }} *</Label>
                             <Input
                                 id="email"
                                 v-model="form.email"
                                 type="email"
-                                placeholder="contact@company.com"
+                                :placeholder="t('dashboard.super_admin.tenants.form.contact_email_placeholder')"
                                 required
                             />
                             <div v-if="form.errors.email" class="text-sm text-red-600">
@@ -153,26 +156,26 @@ const submit = () => {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="domain">Custom Domain (optional)</Label>
+                            <Label for="domain">{{ t('dashboard.super_admin.tenants.form.custom_domain') }}</Label>
                             <Input
                                 id="domain"
                                 v-model="form.domain"
                                 type="text"
-                                placeholder="companycars.com"
+                                :placeholder="t('dashboard.super_admin.tenants.form.custom_domain_placeholder')"
                             />
-                            <p class="text-xs text-muted-foreground">Optional. Enter a domain only (no http:// or https://).</p>
+                            <p class="text-xs text-muted-foreground">{{ t('dashboard.super_admin.tenants.form.custom_domain_help') }}</p>
                             <div v-if="form.errors.domain" class="text-sm text-red-600">
                                 {{ form.errors.domain }}
                             </div>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="phone">Phone Number</Label>
+                            <Label for="phone">{{ t('dashboard.super_admin.tenants.form.phone_number') }}</Label>
                             <Input
                                 id="phone"
                                 v-model="form.phone"
                                 type="tel"
-                                placeholder="+1 (555) 123-4567"
+                                :placeholder="t('dashboard.super_admin.tenants.form.phone_placeholder')"
                             />
                             <div v-if="form.errors.phone" class="text-sm text-red-600">
                                 {{ form.errors.phone }}
@@ -180,7 +183,7 @@ const submit = () => {
                         </div>
 
                         <div class="space-y-3">
-                            <Label>Tenant Logo</Label>
+                            <Label>{{ t('dashboard.super_admin.tenants.form.tenant_logo') }}</Label>
                             <FileUpload
                                 ref="fileUploadRef"
                                 v-model="logoTempFolders"
@@ -193,19 +196,19 @@ const submit = () => {
                                 @file-removed="handleLogoFileRemoved"
                             />
                             <p class="text-xs text-muted-foreground">
-                                Optional. Upload a tenant-specific logo or replace the existing one.
+                                {{ t('dashboard.super_admin.tenants.form.tenant_logo_help_edit') }}
                             </p>
                             <div class="rounded-lg border bg-muted/30 p-4">
-                                <div class="mb-2 text-xs uppercase text-muted-foreground">Preview</div>
+                                <div class="mb-2 text-xs uppercase text-muted-foreground">{{ t('dashboard.super_admin.tenants.form.preview') }}</div>
                                 <img :src="previewLogoUrl" alt="Tenant logo preview" class="h-14 object-contain" />
                             </div>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="plan_id">Subscription Plan *</Label>
+                            <Label for="plan_id">{{ t('dashboard.super_admin.tenants.form.subscription_plan') }} *</Label>
                             <Select v-model="form.plan_id" required>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select a plan" />
+                                    <SelectValue :placeholder="t('dashboard.super_admin.tenants.form.select_plan')" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem
@@ -218,7 +221,7 @@ const submit = () => {
                                 </SelectContent>
                             </Select>
                             <p v-if="props.plans.length === 0" class="text-xs text-amber-600">
-                                No plans found. Create plans first in Product Management.
+                                {{ t('dashboard.super_admin.tenants.form.no_plans') }}
                             </p>
                             <div v-if="form.errors.plan_id" class="text-sm text-red-600">
                                 {{ form.errors.plan_id }}
@@ -226,37 +229,34 @@ const submit = () => {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="is_active">Status</Label>
-                            <Select 
-                                :model-value="form.is_active ? '1' : '0'"
-                                @update:model-value="(val: any) => form.is_active = val === '1'"
-                            >
+                            <Label for="is_active">{{ t('dashboard.super_admin.tenants.form.status') }}</Label>
+                            <Select :model-value="form.is_active ? '1' : '0'" @update:model-value="(val: any) => form.is_active = val === '1'">
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select status" />
+                                    <SelectValue :placeholder="t('dashboard.super_admin.tenants.form.select_status')" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="1">Active</SelectItem>
-                                    <SelectItem value="0">Inactive</SelectItem>
+                                    <SelectItem value="1">{{ t('dashboard.super_admin.tenants.form.active') }}</SelectItem>
+                                    <SelectItem value="0">{{ t('dashboard.super_admin.tenants.form.inactive') }}</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <p class="text-sm text-muted-foreground">Inactive tenants cannot be used by their users.</p>
+                            <p class="text-sm text-muted-foreground">{{ t('dashboard.super_admin.tenants.form.inactive_help') }}</p>
                             <div v-if="form.errors.is_active" class="text-sm text-red-600">
                                 {{ form.errors.is_active }}
                             </div>
                         </div>
 
-                        <div v-if="admin_user" class="border-t pt-6 mt-6 space-y-4">
-                            <h3 class="text-lg font-medium">Change admin login password</h3>
+                        <div v-if="admin_user" class="mt-6 space-y-4 border-t pt-6">
+                            <h3 class="text-lg font-medium">{{ t('dashboard.super_admin.tenants.form.change_admin_password') }}</h3>
                             <p class="text-sm text-muted-foreground">
-                                Optional. Leave blank to keep current password. Admin: {{ admin_user.email }}
+                                {{ t('dashboard.super_admin.tenants.form.change_admin_password_help', { email: admin_user.email }) }}
                             </p>
                             <div class="space-y-2">
-                                <Label for="admin_password">New password</Label>
+                                <Label for="admin_password">{{ t('dashboard.super_admin.tenants.form.new_password') }}</Label>
                                 <Input
                                     id="admin_password"
                                     v-model="form.admin_password"
                                     type="password"
-                                    placeholder="••••••••"
+                                    :placeholder="t('dashboard.super_admin.tenants.form.password_placeholder')"
                                     autocomplete="new-password"
                                 />
                                 <div v-if="form.errors.admin_password" class="text-sm text-red-600">
@@ -264,12 +264,12 @@ const submit = () => {
                                 </div>
                             </div>
                             <div class="space-y-2">
-                                <Label for="admin_password_confirmation">Confirm new password</Label>
+                                <Label for="admin_password_confirmation">{{ t('dashboard.super_admin.tenants.form.confirm_new_password') }}</Label>
                                 <Input
                                     id="admin_password_confirmation"
                                     v-model="form.admin_password_confirmation"
                                     type="password"
-                                    placeholder="••••••••"
+                                    :placeholder="t('dashboard.super_admin.tenants.form.password_placeholder')"
                                     autocomplete="new-password"
                                 />
                             </div>
@@ -277,10 +277,10 @@ const submit = () => {
 
                         <div class="flex gap-2 pt-4">
                             <Button type="submit" :disabled="form.processing">
-                                {{ form.processing ? 'Saving...' : 'Save Changes' }}
+                                {{ form.processing ? t('dashboard.super_admin.common.saving') : t('dashboard.super_admin.tenants.edit.save') }}
                             </Button>
                             <Link :href="`/superadmin/tenants/${props.tenant.id}`">
-                                <Button type="button" variant="outline">Cancel</Button>
+                                <Button type="button" variant="outline">{{ t('dashboard.super_admin.common.cancel') }}</Button>
                             </Link>
                         </div>
                     </form>

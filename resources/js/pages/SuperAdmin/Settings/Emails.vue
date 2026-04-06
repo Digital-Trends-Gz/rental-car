@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
+import { useTrans } from '@/composables/useTrans';
 import { Head, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +30,8 @@ const props = defineProps<{
         update: string;
     };
 }>();
+const { locale } = useTrans();
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const form = useForm({
     templates: JSON.parse(JSON.stringify(props.templates)),
@@ -65,27 +68,27 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Email Templates" />
+    <Head :title="localize('Email Templates', 'قوالب البريد')" />
 
     <SuperAdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">Email Templates</h1>
+                    <h1 class="text-2xl font-semibold">{{ localize('Email Templates', 'قوالب البريد') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        Edit the email messages used for account verification and tenant admin activation.
+                        {{ localize('Edit the email messages used for account verification and tenant admin activation.', 'حرر رسائل البريد المستخدمة لتأكيد الحساب وتفعيل مدير المستأجر.') }}
                     </p>
                 </div>
                 <Button :disabled="form.processing" @click="submit">
-                    {{ form.processing ? 'Saving...' : 'Save Changes' }}
+                    {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Changes', 'حفظ التغييرات') }}
                 </Button>
             </div>
 
             <div class="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)_420px]">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Templates</CardTitle>
-                        <CardDescription>Select a template to edit.</CardDescription>
+                        <CardTitle>{{ localize('Templates', 'القوالب') }}</CardTitle>
+                        <CardDescription>{{ localize('Select a template to edit.', 'اختر قالبًا لتحريره.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-3">
                         <button
@@ -109,37 +112,37 @@ const submit = () => {
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
-                            <Label>Subject</Label>
+                            <Label>{{ localize('Subject', 'الموضوع') }}</Label>
                             <Input v-model="currentTemplate.subject" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label>Greeting</Label>
+                            <Label>{{ localize('Greeting', 'التحية') }}</Label>
                             <Input v-model="currentTemplate.greeting" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label>Intro</Label>
+                            <Label>{{ localize('Intro', 'المقدمة') }}</Label>
                             <Textarea v-model="currentTemplate.intro" rows="3" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label>Body</Label>
+                            <Label>{{ localize('Body', 'المحتوى') }}</Label>
                             <Textarea v-model="currentTemplate.body" rows="5" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label>Action Button Text</Label>
+                            <Label>{{ localize('Action Button Text', 'نص زر الإجراء') }}</Label>
                             <Input v-model="currentTemplate.action_text" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label>Outro</Label>
+                            <Label>{{ localize('Outro', 'الخاتمة') }}</Label>
                             <Textarea v-model="currentTemplate.outro" rows="4" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label>Salutation</Label>
+                            <Label>{{ localize('Salutation', 'عبارة التوقيع') }}</Label>
                             <Input v-model="currentTemplate.salutation" />
                         </div>
                     </CardContent>
@@ -148,12 +151,12 @@ const submit = () => {
                 <div class="space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Preview</CardTitle>
-                            <CardDescription>Live preview using sample values.</CardDescription>
+                            <CardTitle>{{ localize('Preview', 'المعاينة') }}</CardTitle>
+                            <CardDescription>{{ localize('Live preview using sample values.', 'معاينة مباشرة باستخدام قيم تجريبية.') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="rounded-lg border bg-background p-4 shadow-sm">
-                                <div class="text-sm font-semibold text-muted-foreground">Subject</div>
+                                <div class="text-sm font-semibold text-muted-foreground">{{ localize('Subject', 'الموضوع') }}</div>
                                 <div class="mt-1 text-base font-medium">{{ renderPreview(currentTemplate.subject) }}</div>
                             </div>
 
@@ -174,8 +177,8 @@ const submit = () => {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Available Placeholders</CardTitle>
-                            <CardDescription>Use these tokens inside any template field.</CardDescription>
+                            <CardTitle>{{ localize('Available Placeholders', 'المتغيرات المتاحة') }}</CardTitle>
+                            <CardDescription>{{ localize('Use these tokens inside any template field.', 'استخدم هذه الرموز داخل أي حقل في القالب.') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-2 text-sm">
                             <div

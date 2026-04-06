@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import { useTrans } from '@/composables/useTrans';
 import { Button } from '@/components/ui/button';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
@@ -35,6 +36,8 @@ const props = defineProps<{
 
 const page = usePage<any>();
 const currentUserId = Number(page.props?.auth?.user?.id ?? 0);
+const { locale } = useTrans();
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const form = useForm({
     message: '',
@@ -47,12 +50,12 @@ const assignmentForm = useForm({
 const isAssignedToCurrentUser = computed(() => Number(props.ticket.assigned_to?.id ?? 0) === currentUserId);
 const assignmentStatusText = computed(() => {
     if (!props.ticket.assigned_to) {
-        return 'This ticket is currently unassigned and available for any super admin employee.';
+        return localize('This ticket is currently unassigned and available for any super admin employee.', 'هذه التذكرة غير مسندة حاليًا ومتاحة لأي موظف سوبر أدمن.');
     }
 
     return isAssignedToCurrentUser.value
-        ? 'This ticket is assigned to you.'
-        : `This ticket is assigned to ${props.ticket.assigned_to.name}.`;
+        ? localize('This ticket is assigned to you.', 'هذه التذكرة مسندة إليك.')
+        : `${localize('This ticket is assigned to', 'هذه التذكرة مسندة إلى')} ${props.ticket.assigned_to.name}.`;
 });
 
 function submitReply() {
@@ -86,7 +89,7 @@ function isMine(message: { user_id: number | null; is_superadmin: boolean }): bo
 </script>
 
 <template>
-    <Head :title="`Tenant Support ${ticket.ticket_number}`" />
+    <Head :title="`${localize('Tenant Support', 'دعم المستأجرين')} ${ticket.ticket_number}`" />
     <SuperAdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-start justify-between gap-4">
@@ -94,37 +97,37 @@ function isMine(message: { user_id: number | null; is_superadmin: boolean }): bo
                     <h1 class="text-2xl font-semibold">{{ ticket.subject }}</h1>
                     <p class="text-sm text-muted-foreground">{{ ticket.ticket_number }} • {{ formatDate(ticket.created_at) }}</p>
                     <p class="mt-1 text-sm">
-                        <span class="font-medium">Tenant:</span> {{ ticket.tenant?.name || '-' }} ({{ ticket.tenant?.slug || '-' }})
+                        <span class="font-medium">{{ localize('Tenant:', 'المستأجر:') }}</span> {{ ticket.tenant?.name || '-' }} ({{ ticket.tenant?.slug || '-' }})
                     </p>
                     <p class="text-sm">
-                        <span class="font-medium">Requester:</span> {{ ticket.requester?.name || '-' }} ({{ ticket.requester?.email || '-' }})
+                        <span class="font-medium">{{ localize('Requester:', 'مقدم الطلب:') }}</span> {{ ticket.requester?.name || '-' }} ({{ ticket.requester?.email || '-' }})
                     </p>
                     <p class="text-sm">
-                        <span class="font-medium">Assigned To:</span> {{ ticket.assigned_to?.name || 'Unassigned' }}
+                        <span class="font-medium">{{ localize('Assigned To:', 'مسندة إلى:') }}</span> {{ ticket.assigned_to?.name || localize('Unassigned', 'غير مسندة') }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <Link :href="urls.index">
-                        <Button variant="outline">Back</Button>
+                        <Button variant="outline">{{ localize('Back', 'رجوع') }}</Button>
                     </Link>
-                    <Button v-if="ticket.status !== 'closed'" variant="destructive" @click="closeTicket">Close</Button>
+                    <Button v-if="ticket.status !== 'closed'" variant="destructive" @click="closeTicket">{{ localize('Close', 'إغلاق') }}</Button>
                 </div>
             </div>
 
             <section class="rounded-lg border bg-card p-5">
                 <div class="mb-4">
-                    <h2 class="text-base font-semibold">Assignment</h2>
+                    <h2 class="text-base font-semibold">{{ localize('Assignment', 'الإسناد') }}</h2>
                     <p class="text-sm text-muted-foreground">{{ assignmentStatusText }}</p>
                 </div>
                 <form class="flex flex-wrap items-end gap-3" @submit.prevent="saveAssignment">
                     <div class="min-w-[280px] flex-1 space-y-2">
-                        <label for="assigned-to-user" class="text-sm font-medium">Assigned employee</label>
+                        <label for="assigned-to-user" class="text-sm font-medium">{{ localize('Assigned employee', 'الموظف المسند') }}</label>
                         <select
                             id="assigned-to-user"
                             v-model="assignmentForm.assigned_to_user_id"
                             class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                         >
-                            <option value="">Unassigned</option>
+                            <option value="">{{ localize('Unassigned', 'غير مسندة') }}</option>
                             <option v-for="agent in agents" :key="agent.id" :value="String(agent.id)">
                                 {{ agent.name }} ({{ agent.email }})
                             </option>
@@ -132,7 +135,7 @@ function isMine(message: { user_id: number | null; is_superadmin: boolean }): bo
                         <InputError :message="assignmentForm.errors.assigned_to_user_id" />
                     </div>
                     <Button type="submit" :disabled="assignmentForm.processing">
-                        {{ assignmentForm.processing ? 'Saving...' : 'Save Assignment' }}
+                        {{ assignmentForm.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Assignment', 'حفظ الإسناد') }}
                     </Button>
                 </form>
             </section>
@@ -156,13 +159,13 @@ function isMine(message: { user_id: number | null; is_superadmin: boolean }): bo
                 </div>
 
                 <div v-if="ticket.messages.length === 0" class="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-                    No messages yet.
+                    {{ localize('No messages yet.', 'لا توجد رسائل بعد.') }}
                 </div>
             </section>
 
             <section v-if="ticket.status !== 'closed'" class="rounded-lg border bg-card p-5">
                 <form class="space-y-3" @submit.prevent="submitReply">
-                    <label for="reply-message" class="text-sm font-medium">Reply</label>
+                    <label for="reply-message" class="text-sm font-medium">{{ localize('Reply', 'الرد') }}</label>
                     <textarea
                         id="reply-message"
                         v-model="form.message"
@@ -171,7 +174,7 @@ function isMine(message: { user_id: number | null; is_superadmin: boolean }): bo
                     />
                     <InputError :message="form.errors.message" />
                     <Button type="submit" :disabled="form.processing">
-                        {{ form.processing ? 'Sending...' : 'Send Reply' }}
+                        {{ form.processing ? localize('Sending...', 'جارٍ الإرسال...') : localize('Send Reply', 'إرسال الرد') }}
                     </Button>
                 </form>
             </section>

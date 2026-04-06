@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useTrans } from '@/composables/useTrans';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
@@ -103,6 +104,9 @@ const props = defineProps<{
     aiProviderSettings: AiProviderSettings;
     socialLoginSettings: SocialLoginSettings;
 }>();
+
+const { locale } = useTrans();
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const form = useForm<{
     settings: LandingSettings;
@@ -232,15 +236,15 @@ async function testAiConnection() {
         if (!response.ok || !payload?.ok) {
             const firstValidationError = extractFirstValidationError(payload?.errors);
             aiConnectionTestState.value = 'error';
-            aiConnectionTestMessage.value = firstValidationError ?? payload?.message ?? 'AI connection test failed.';
+            aiConnectionTestMessage.value = firstValidationError ?? payload?.message ?? localize('AI connection test failed.', 'فشل اختبار اتصال الذكاء الاصطناعي.');
             return;
         }
 
         aiConnectionTestState.value = 'success';
-        aiConnectionTestMessage.value = payload?.message ?? 'AI connection is valid.';
+        aiConnectionTestMessage.value = payload?.message ?? localize('AI connection is valid.', 'اتصال الذكاء الاصطناعي صالح.');
     } catch {
         aiConnectionTestState.value = 'error';
-        aiConnectionTestMessage.value = 'Could not test AI connection. Please try again.';
+        aiConnectionTestMessage.value = localize('Could not test AI connection. Please try again.', 'تعذر اختبار اتصال الذكاء الاصطناعي. حاول مرة أخرى.');
     } finally {
         testingAiConnection.value = false;
     }
@@ -248,34 +252,33 @@ async function testAiConnection() {
 </script>
 
 <template>
-    <Head title="Landing Settings" />
+    <Head :title="localize('Landing Settings', 'إعدادات صفحة الهبوط')" />
     <SuperAdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">Landing Page Settings</h1>
+                    <h1 class="text-2xl font-semibold">{{ localize('Landing Page Settings', 'إعدادات صفحة الهبوط') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        Edit SaaS landing sections shown on the main domain.
+                        {{ localize('Edit SaaS landing sections shown on the main domain.', 'عدّل أقسام صفحة هبوط المنصة المعروضة على الدومين الرئيسي.') }}
                     </p>
                 </div>
                 <Button :disabled="form.processing" @click="submit">
-                    {{ form.processing ? 'Saving...' : 'Save Changes' }}
+                    {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Changes', 'حفظ التغييرات') }}
                 </Button>
             </div>
 
             <form class="space-y-6" @submit.prevent="submit">
                 <Card>
                     <CardHeader>
-                        <CardTitle>AI Automation</CardTitle>
+                        <CardTitle>{{ localize('AI Automation', 'الأتمتة بالذكاء الاصطناعي') }}</CardTitle>
                         <CardDescription>
-                            Super Admin controls whether AI extraction is active for contract files.
-                            When disabled, the system only stores uploaded files.
+                            {{ localize('Super Admin controls whether AI extraction is active for contract files. When disabled, the system only stores uploaded files.', 'يتحكم السوبر أدمن في تفعيل استخراج البيانات بالذكاء الاصطناعي لملفات العقود. عند التعطيل، سيحفظ النظام الملفات المرفوعة فقط.') }}
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <label class="flex items-center gap-3">
                             <input v-model="form.ai.enabled" type="checkbox" class="h-4 w-4" />
-                            <span class="text-sm font-medium">Enable AI globally</span>
+                            <span class="text-sm font-medium">{{ localize('Enable AI globally', 'تفعيل الذكاء الاصطناعي على مستوى النظام') }}</span>
                         </label>
 
                         <label class="flex items-center gap-3">
@@ -285,26 +288,25 @@ async function testAiConnection() {
                                 class="h-4 w-4"
                                 :disabled="!form.ai.enabled"
                             />
-                            <span class="text-sm font-medium">Enable contract extraction AI</span>
+                            <span class="text-sm font-medium">{{ localize('Enable contract extraction AI', 'تفعيل استخراج العقود بالذكاء الاصطناعي') }}</span>
                         </label>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>AI Provider Settings</CardTitle>
+                        <CardTitle>{{ localize('AI Provider Settings', 'إعدادات مزود الذكاء الاصطناعي') }}</CardTitle>
                         <CardDescription>
-                            Configure provider credentials and extraction behavior.
-                            Empty secret fields keep existing saved values.
+                            {{ localize('Configure provider credentials and extraction behavior. Empty secret fields keep existing saved values.', 'اضبط بيانات اعتماد المزود وسلوك الاستخراج. ترك الحقول السرية فارغة سيبقي القيم الحالية.') }}
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-6">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <p class="text-xs text-muted-foreground">
-                                Test provider credentials before saving.
+                                {{ localize('Test provider credentials before saving.', 'اختبر بيانات اعتماد المزود قبل الحفظ.') }}
                             </p>
                             <Button type="button" variant="outline" :disabled="testingAiConnection" @click="testAiConnection">
-                                {{ testingAiConnection ? 'Testing...' : 'Test AI Connection' }}
+                                {{ testingAiConnection ? localize('Testing...', 'جارٍ الاختبار...') : localize('Test AI Connection', 'اختبار اتصال الذكاء الاصطناعي') }}
                             </Button>
                         </div>
 
@@ -319,14 +321,14 @@ async function testAiConnection() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="ai_provider">Provider</Label>
+                            <Label for="ai_provider">{{ localize('Provider', 'المزود') }}</Label>
                             <select
                                 id="ai_provider"
                                 v-model="form.ai_provider.provider"
                                 class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30"
                             >
                                 <option value="openai">OpenAI</option>
-                                <option value="google_document_ai">Google Document AI</option>
+                                <option value="google_document_ai">{{ localize('Google Document AI', 'Google Document AI') }}</option>
                             </select>
                             <p v-if="form.errors['ai_provider.provider']" class="text-sm text-red-600">
                                 {{ form.errors['ai_provider.provider'] }}
@@ -337,10 +339,10 @@ async function testAiConnection() {
                             <h3 class="text-sm font-semibold">OpenAI</h3>
 
                             <div class="space-y-2">
-                                <Label for="openai_api_key">API Key</Label>
+                                <Label for="openai_api_key">{{ localize('API Key', 'مفتاح API') }}</Label>
                                 <Input id="openai_api_key" v-model="form.ai_provider.openai.api_key" type="password" placeholder="sk-..." />
                                 <p v-if="props.aiProviderSettings.meta?.has_openai_api_key" class="text-xs text-muted-foreground">
-                                    A key is already saved. Leave blank to keep it.
+                                    {{ localize('A key is already saved. Leave blank to keep it.', 'يوجد مفتاح محفوظ بالفعل. اترك الحقل فارغًا للاحتفاظ به.') }}
                                 </p>
                                 <p v-if="form.errors['ai_provider.openai.api_key']" class="text-sm text-red-600">
                                     {{ form.errors['ai_provider.openai.api_key'] }}
@@ -349,25 +351,25 @@ async function testAiConnection() {
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label for="openai_organization">Organization (optional)</Label>
+                                    <Label for="openai_organization">{{ localize('Organization (optional)', 'المؤسسة (اختياري)') }}</Label>
                                     <Input id="openai_organization" v-model="form.ai_provider.openai.organization" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="openai_project">Project (optional)</Label>
+                                    <Label for="openai_project">{{ localize('Project (optional)', 'المشروع (اختياري)') }}</Label>
                                     <Input id="openai_project" v-model="form.ai_provider.openai.project" />
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label for="openai_model">Model</Label>
+                                    <Label for="openai_model">{{ localize('Model', 'النموذج') }}</Label>
                                     <Input id="openai_model" v-model="form.ai_provider.openai.model" placeholder="gpt-4.1-mini" />
                                     <p v-if="form.errors['ai_provider.openai.model']" class="text-sm text-red-600">
                                         {{ form.errors['ai_provider.openai.model'] }}
                                     </p>
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="openai_base_uri">Base URL (optional)</Label>
+                                    <Label for="openai_base_uri">{{ localize('Base URL (optional)', 'الرابط الأساسي (اختياري)') }}</Label>
                                     <Input id="openai_base_uri" v-model="form.ai_provider.openai.base_uri" placeholder="https://api.openai.com/v1" />
                                     <p v-if="form.errors['ai_provider.openai.base_uri']" class="text-sm text-red-600">
                                         {{ form.errors['ai_provider.openai.base_uri'] }}
@@ -377,51 +379,51 @@ async function testAiConnection() {
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label for="openai_temperature">Temperature (0-2)</Label>
+                                    <Label for="openai_temperature">{{ localize('Temperature (0-2)', 'الحرارة (0-2)') }}</Label>
                                     <Input id="openai_temperature" v-model="form.ai_provider.openai.temperature" type="number" min="0" max="2" step="0.1" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="openai_tokens">Max Output Tokens</Label>
+                                    <Label for="openai_tokens">{{ localize('Max Output Tokens', 'الحد الأقصى للرموز الناتجة') }}</Label>
                                     <Input id="openai_tokens" v-model="form.ai_provider.openai.max_output_tokens" type="number" min="1" max="16384" />
                                 </div>
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="openai_system_prompt">System Prompt (optional)</Label>
+                                <Label for="openai_system_prompt">{{ localize('System Prompt (optional)', 'رسالة النظام (اختياري)') }}</Label>
                                 <Textarea
                                     id="openai_system_prompt"
                                     v-model="form.ai_provider.openai.system_prompt"
                                     rows="4"
-                                    placeholder="Extract key fields from Arabic and English rental contract files as JSON."
+                                    :placeholder="localize('Extract key fields from Arabic and English rental contract files as JSON.', 'استخرج الحقول الأساسية من ملفات عقود التأجير العربية والإنجليزية بصيغة JSON.')"
                                 />
                             </div>
                         </div>
 
                         <div class="space-y-4 rounded-md border p-4">
-                            <h3 class="text-sm font-semibold">Google Document AI</h3>
+                            <h3 class="text-sm font-semibold">{{ localize('Google Document AI', 'Google Document AI') }}</h3>
 
                             <label class="flex items-center gap-3">
                                 <input v-model="form.ai_provider.google_document_ai.enabled" type="checkbox" class="h-4 w-4" />
-                                <span class="text-sm font-medium">Enable Google Document AI OCR</span>
+                                <span class="text-sm font-medium">{{ localize('Enable Google Document AI OCR', 'تفعيل OCR من Google Document AI') }}</span>
                             </label>
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                                 <div class="space-y-2">
-                                    <Label for="gdoc_project_id">Project ID</Label>
+                                    <Label for="gdoc_project_id">{{ localize('Project ID', 'معرف المشروع') }}</Label>
                                     <Input id="gdoc_project_id" v-model="form.ai_provider.google_document_ai.project_id" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="gdoc_location">Location</Label>
+                                    <Label for="gdoc_location">{{ localize('Location', 'المنطقة') }}</Label>
                                     <Input id="gdoc_location" v-model="form.ai_provider.google_document_ai.location" placeholder="us" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="gdoc_processor_id">Processor ID</Label>
+                                    <Label for="gdoc_processor_id">{{ localize('Processor ID', 'معرف المعالج') }}</Label>
                                     <Input id="gdoc_processor_id" v-model="form.ai_provider.google_document_ai.processor_id" />
                                 </div>
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="gdoc_credentials_json">Service Account JSON</Label>
+                                <Label for="gdoc_credentials_json">{{ localize('Service Account JSON', 'JSON حساب الخدمة') }}</Label>
                                 <Textarea
                                     id="gdoc_credentials_json"
                                     v-model="form.ai_provider.google_document_ai.service_account_json"
@@ -429,7 +431,7 @@ async function testAiConnection() {
                                     placeholder='{"type":"service_account","project_id":"..."}'
                                 />
                                 <p v-if="props.aiProviderSettings.meta?.has_google_credentials" class="text-xs text-muted-foreground">
-                                    Credentials are already saved. Leave blank to keep them.
+                                    {{ localize('Credentials are already saved. Leave blank to keep them.', 'بيانات الاعتماد محفوظة بالفعل. اترك الحقل فارغًا للاحتفاظ بها.') }}
                                 </p>
                             </div>
                         </div>
@@ -438,12 +440,12 @@ async function testAiConnection() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Hero Section</CardTitle>
-                        <CardDescription>Title, description, hero features, and image URL.</CardDescription>
+                        <CardTitle>{{ localize('Hero Section', 'قسم البطل') }}</CardTitle>
+                        <CardDescription>{{ localize('Title, description, hero features, and image URL.', 'العنوان والوصف ومزايا القسم والرابط الخاص بالصورة.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
-                            <Label for="hero_title">Title</Label>
+                            <Label for="hero_title">{{ localize('Title', 'العنوان') }}</Label>
                             <Input id="hero_title" v-model="form.settings.hero.title" />
                             <p v-if="form.errors['settings.hero.title']" class="text-sm text-red-600">
                                 {{ form.errors['settings.hero.title'] }}
@@ -451,7 +453,7 @@ async function testAiConnection() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="hero_description">Description</Label>
+                            <Label for="hero_description">{{ localize('Description', 'الوصف') }}</Label>
                             <Textarea id="hero_description" v-model="form.settings.hero.description" rows="3" />
                             <p v-if="form.errors['settings.hero.description']" class="text-sm text-red-600">
                                 {{ form.errors['settings.hero.description'] }}
@@ -459,7 +461,7 @@ async function testAiConnection() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="hero_image_url">Image URL</Label>
+                            <Label for="hero_image_url">{{ localize('Image URL', 'رابط الصورة') }}</Label>
                             <Input id="hero_image_url" v-model="form.settings.hero.image_url" placeholder="https://..." />
                             <p v-if="form.errors['settings.hero.image_url']" class="text-sm text-red-600">
                                 {{ form.errors['settings.hero.image_url'] }}
@@ -468,12 +470,12 @@ async function testAiConnection() {
 
                         <div class="space-y-2">
                             <div class="flex items-center justify-between">
-                                <Label>Hero Features</Label>
-                                <Button type="button" variant="outline" size="sm" @click="addHeroFeature">Add Feature</Button>
+                                <Label>{{ localize('Hero Features', 'مزايا القسم الرئيسي') }}</Label>
+                                <Button type="button" variant="outline" size="sm" @click="addHeroFeature">{{ localize('Add Feature', 'إضافة ميزة') }}</Button>
                             </div>
                             <div v-for="(_item, index) in form.settings.hero.features" :key="`hero-feature-${index}`" class="flex items-center gap-2">
-                                <Input v-model="form.settings.hero.features[index]" placeholder="Feature text" />
-                                <Button type="button" variant="destructive" size="sm" @click="removeHeroFeature(index)">Remove</Button>
+                                <Input v-model="form.settings.hero.features[index]" :placeholder="localize('Feature text', 'نص الميزة')" />
+                                <Button type="button" variant="destructive" size="sm" @click="removeHeroFeature(index)">{{ localize('Remove', 'حذف') }}</Button>
                             </div>
                         </div>
                     </CardContent>
@@ -481,24 +483,24 @@ async function testAiConnection() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Features Section</CardTitle>
-                        <CardDescription>Section title/description and feature cards.</CardDescription>
+                        <CardTitle>{{ localize('Features Section', 'قسم المزايا') }}</CardTitle>
+                        <CardDescription>{{ localize('Section title/description and feature cards.', 'عنوان ووصف القسم وبطاقات المزايا.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
-                            <Label for="features_title">Title</Label>
+                            <Label for="features_title">{{ localize('Title', 'العنوان') }}</Label>
                             <Input id="features_title" v-model="form.settings.features_section.title" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="features_description">Description</Label>
+                            <Label for="features_description">{{ localize('Description', 'الوصف') }}</Label>
                             <Textarea id="features_description" v-model="form.settings.features_section.description" rows="3" />
                         </div>
 
                         <div class="space-y-3">
                             <div class="flex items-center justify-between">
-                                <Label>Feature Cards</Label>
-                                <Button type="button" variant="outline" size="sm" @click="addFeatureCard">Add Card</Button>
+                                <Label>{{ localize('Feature Cards', 'بطاقات المزايا') }}</Label>
+                                <Button type="button" variant="outline" size="sm" @click="addFeatureCard">{{ localize('Add Card', 'إضافة بطاقة') }}</Button>
                             </div>
 
                             <div
@@ -506,10 +508,10 @@ async function testAiConnection() {
                                 :key="`feature-card-${index}`"
                                 class="space-y-2 rounded-md border p-3"
                             >
-                                <Input v-model="card.title" placeholder="Card title" />
-                                <Input v-model="card.image_url" placeholder="Image URL" />
-                                <Textarea v-model="card.content" rows="2" placeholder="Card content" />
-                                <Button type="button" variant="destructive" size="sm" @click="removeFeatureCard(index)">Remove Card</Button>
+                                <Input v-model="card.title" :placeholder="localize('Card title', 'عنوان البطاقة')" />
+                                <Input v-model="card.image_url" :placeholder="localize('Image URL', 'رابط الصورة')" />
+                                <Textarea v-model="card.content" rows="2" :placeholder="localize('Card content', 'محتوى البطاقة')" />
+                                <Button type="button" variant="destructive" size="sm" @click="removeFeatureCard(index)">{{ localize('Remove Card', 'حذف البطاقة') }}</Button>
                             </div>
                         </div>
                     </CardContent>
@@ -517,24 +519,24 @@ async function testAiConnection() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Start in Minutes Section</CardTitle>
-                        <CardDescription>Section title/description and quick start features.</CardDescription>
+                        <CardTitle>{{ localize('Start in Minutes Section', 'قسم ابدأ خلال دقائق') }}</CardTitle>
+                        <CardDescription>{{ localize('Section title/description and quick start features.', 'عنوان ووصف القسم وخطوات البدء السريع.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
-                            <Label for="start_title">Title</Label>
+                            <Label for="start_title">{{ localize('Title', 'العنوان') }}</Label>
                             <Input id="start_title" v-model="form.settings.getting_started.title" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="start_description">Description</Label>
+                            <Label for="start_description">{{ localize('Description', 'الوصف') }}</Label>
                             <Textarea id="start_description" v-model="form.settings.getting_started.description" rows="3" />
                         </div>
 
                         <div class="space-y-3">
                             <div class="flex items-center justify-between">
-                                <Label>Items</Label>
-                                <Button type="button" variant="outline" size="sm" @click="addStepItem">Add Item</Button>
+                                <Label>{{ localize('Items', 'العناصر') }}</Label>
+                                <Button type="button" variant="outline" size="sm" @click="addStepItem">{{ localize('Add Item', 'إضافة عنصر') }}</Button>
                             </div>
 
                             <div
@@ -542,9 +544,9 @@ async function testAiConnection() {
                                 :key="`step-item-${index}`"
                                 class="space-y-2 rounded-md border p-3"
                             >
-                                <Input v-model="item.title" placeholder="Item title" />
-                                <Textarea v-model="item.description" rows="2" placeholder="Item description" />
-                                <Button type="button" variant="destructive" size="sm" @click="removeStepItem(index)">Remove Item</Button>
+                                <Input v-model="item.title" :placeholder="localize('Item title', 'عنوان العنصر')" />
+                                <Textarea v-model="item.description" rows="2" :placeholder="localize('Item description', 'وصف العنصر')" />
+                                <Button type="button" variant="destructive" size="sm" @click="removeStepItem(index)">{{ localize('Remove Item', 'حذف العنصر') }}</Button>
                             </div>
                         </div>
                     </CardContent>
@@ -552,19 +554,19 @@ async function testAiConnection() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Plans Section</CardTitle>
+                        <CardTitle>{{ localize('Plans Section', 'قسم الخطط') }}</CardTitle>
                         <CardDescription>
-                            Only heading and description are editable here. Plans are loaded from the plans table.
+                            {{ localize('Only heading and description are editable here. Plans are loaded from the plans table.', 'يمكن تعديل العنوان والوصف فقط هنا. أما الخطط فيتم تحميلها من جدول الخطط.') }}
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
-                            <Label for="plans_title">Title</Label>
+                            <Label for="plans_title">{{ localize('Title', 'العنوان') }}</Label>
                             <Input id="plans_title" v-model="form.settings.plans_section.title" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="plans_description">Description</Label>
+                            <Label for="plans_description">{{ localize('Description', 'الوصف') }}</Label>
                             <Textarea id="plans_description" v-model="form.settings.plans_section.description" rows="3" />
                         </div>
                     </CardContent>
@@ -572,24 +574,24 @@ async function testAiConnection() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>FAQ Section</CardTitle>
-                        <CardDescription>Manage questions and answers.</CardDescription>
+                        <CardTitle>{{ localize('FAQ Section', 'قسم الأسئلة الشائعة') }}</CardTitle>
+                        <CardDescription>{{ localize('Manage questions and answers.', 'إدارة الأسئلة والأجوبة.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
-                            <Label for="faq_title">Title</Label>
+                            <Label for="faq_title">{{ localize('Title', 'العنوان') }}</Label>
                             <Input id="faq_title" v-model="form.settings.faq_section.title" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="faq_description">Description</Label>
+                            <Label for="faq_description">{{ localize('Description', 'الوصف') }}</Label>
                             <Textarea id="faq_description" v-model="form.settings.faq_section.description" rows="3" />
                         </div>
 
                         <div class="space-y-3">
                             <div class="flex items-center justify-between">
-                                <Label>FAQ Items</Label>
-                                <Button type="button" variant="outline" size="sm" @click="addFaqItem">Add FAQ</Button>
+                                <Label>{{ localize('FAQ Items', 'عناصر الأسئلة الشائعة') }}</Label>
+                                <Button type="button" variant="outline" size="sm" @click="addFaqItem">{{ localize('Add FAQ', 'إضافة سؤال') }}</Button>
                             </div>
 
                             <div
@@ -597,9 +599,9 @@ async function testAiConnection() {
                                 :key="`faq-item-${index}`"
                                 class="space-y-2 rounded-md border p-3"
                             >
-                                <Input v-model="item.question" placeholder="Question" />
-                                <Textarea v-model="item.answer" rows="3" placeholder="Answer" />
-                                <Button type="button" variant="destructive" size="sm" @click="removeFaqItem(index)">Remove FAQ</Button>
+                                <Input v-model="item.question" :placeholder="localize('Question', 'السؤال')" />
+                                <Textarea v-model="item.answer" rows="3" :placeholder="localize('Answer', 'الإجابة')" />
+                                <Button type="button" variant="destructive" size="sm" @click="removeFaqItem(index)">{{ localize('Remove FAQ', 'حذف السؤال') }}</Button>
                             </div>
                         </div>
                     </CardContent>
@@ -607,17 +609,17 @@ async function testAiConnection() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Footer Section</CardTitle>
-                        <CardDescription>Footer title and description text.</CardDescription>
+                        <CardTitle>{{ localize('Footer Section', 'قسم التذييل') }}</CardTitle>
+                        <CardDescription>{{ localize('Footer title and description text.', 'عنوان ووصف التذييل.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
-                            <Label for="footer_title">Title</Label>
+                            <Label for="footer_title">{{ localize('Title', 'العنوان') }}</Label>
                             <Input id="footer_title" v-model="form.settings.footer.title" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="footer_description">Description</Label>
+                            <Label for="footer_description">{{ localize('Description', 'الوصف') }}</Label>
                             <Textarea id="footer_description" v-model="form.settings.footer.description" rows="3" />
                         </div>
                     </CardContent>
@@ -625,7 +627,7 @@ async function testAiConnection() {
 
                 <div class="flex justify-end">
                     <Button type="submit" :disabled="form.processing">
-                        {{ form.processing ? 'Saving...' : 'Save Changes' }}
+                        {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Changes', 'حفظ التغييرات') }}
                     </Button>
                 </div>
             </form>

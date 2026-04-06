@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useTrans } from '@/composables/useTrans';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
@@ -40,9 +41,12 @@ const props = defineProps<{
     providers: Provider[];
 }>();
 
+const { locale } = useTrans();
 const page = usePage<any>();
 const search = ref('');
 const selectedProviderId = ref<number | null>(props.providers[0]?.id ?? null);
+
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const flashSuccess = computed(() => page.props.flash?.success ?? null);
 const flashError = computed(() => page.props.flash?.error ?? null);
@@ -95,27 +99,27 @@ const uiState = reactive({
     showAdvancedJson: false,
 });
 
-const providerConfigSchemas: Record<string, ProviderConfigField[]> = {
+const providerConfigSchemas = computed<Record<string, ProviderConfigField[]>>(() => ({
     stripe: [
-        { key: 'publishable_key', label: 'Publishable Key', placeholder: 'pk_test_...', type: 'text' },
-        { key: 'secret_key', label: 'Secret Key', placeholder: 'sk_test_...', type: 'password' },
-        { key: 'webhook_secret', label: 'Webhook Secret', placeholder: 'whsec_...', type: 'password' },
-        { key: 'webhook_path', label: 'Webhook Path', placeholder: 'stripe/webhook', type: 'text' },
+        { key: 'publishable_key', label: localize('Publishable Key', 'المفتاح العام'), placeholder: 'pk_test_...', type: 'text' },
+        { key: 'secret_key', label: localize('Secret Key', 'المفتاح السري'), placeholder: 'sk_test_...', type: 'password' },
+        { key: 'webhook_secret', label: localize('Webhook Secret', 'سر Webhook'), placeholder: 'whsec_...', type: 'password' },
+        { key: 'webhook_path', label: localize('Webhook Path', 'مسار Webhook'), placeholder: 'stripe/webhook', type: 'text' },
     ],
     myfatoorah: [
-        { key: 'country', label: 'Country', placeholder: 'OM', type: 'text' },
-        { key: 'api_token', label: 'API Token', placeholder: 'MyFatoorah token', type: 'password' },
-        { key: 'webhook_secret', label: 'Webhook Secret (optional)', placeholder: '', type: 'password' },
-        { key: 'payment_method_id', label: 'Default Payment Method ID (optional)', placeholder: '2', type: 'text', help: 'Use only as a fallback when payment methods cannot be loaded dynamically.', advanced: true },
-        { key: 'api_base_url', label: 'API Base URL (override)', placeholder: 'https://api.myfatoorah.com', type: 'text', advanced: true },
-        { key: 'callback_url', label: 'Callback URL (override)', placeholder: 'https://your-domain.com/...', type: 'text', advanced: true },
-        { key: 'error_url', label: 'Error URL (override)', placeholder: 'https://your-domain.com/...', type: 'text', advanced: true },
+        { key: 'country', label: localize('Country', 'الدولة'), placeholder: 'OM', type: 'text' },
+        { key: 'api_token', label: localize('API Token', 'رمز API'), placeholder: localize('MyFatoorah token', 'رمز MyFatoorah'), type: 'password' },
+        { key: 'webhook_secret', label: localize('Webhook Secret (optional)', 'سر Webhook (اختياري)'), placeholder: '', type: 'password' },
+        { key: 'payment_method_id', label: localize('Default Payment Method ID (optional)', 'معرف وسيلة الدفع الافتراضية (اختياري)'), placeholder: '2', type: 'text', help: localize('Use only as a fallback when payment methods cannot be loaded dynamically.', 'استخدمه فقط كخيار احتياطي عندما لا يمكن تحميل وسائل الدفع ديناميكيًا.'), advanced: true },
+        { key: 'api_base_url', label: localize('API Base URL (override)', 'رابط API الأساسي (تجاوز)'), placeholder: 'https://api.myfatoorah.com', type: 'text', advanced: true },
+        { key: 'callback_url', label: localize('Callback URL (override)', 'رابط Callback (تجاوز)'), placeholder: 'https://your-domain.com/...', type: 'text', advanced: true },
+        { key: 'error_url', label: localize('Error URL (override)', 'رابط الخطأ (تجاوز)'), placeholder: 'https://your-domain.com/...', type: 'text', advanced: true },
     ],
-};
+}));
 
 const selectedProviderConfigFields = computed<ProviderConfigField[]>(() => {
     if (!selectedProvider.value) return [];
-    return providerConfigSchemas[selectedProvider.value.code] ?? [];
+    return providerConfigSchemas.value[selectedProvider.value.code] ?? [];
 });
 
 const basicProviderConfigFields = computed(() => selectedProviderConfigFields.value.filter((field) => !field.advanced));
@@ -191,7 +195,7 @@ function parseCsv(value: string): string[] {
 }
 
 function hydrateProviderConfigInputs(providerCode: string, config: Record<string, any>) {
-    const fields = providerConfigSchemas[providerCode] ?? [];
+    const fields = providerConfigSchemas.value[providerCode] ?? [];
     const nextState: Record<string, string> = {};
 
     for (const field of fields) {
@@ -206,7 +210,7 @@ function mergeProviderSpecificInputsIntoConfig(parsedConfig: Record<string, any>
     const provider = selectedProvider.value;
     if (!provider) return parsedConfig;
 
-    const fields = providerConfigSchemas[provider.code] ?? [];
+    const fields = providerConfigSchemas.value[provider.code] ?? [];
     const merged = { ...parsedConfig };
 
     for (const field of fields) {
@@ -239,12 +243,12 @@ function submit() {
     try {
         parsedConfig = uiState.configJson.trim() ? JSON.parse(uiState.configJson) : {};
     } catch {
-        form.setError('config', 'Config JSON is invalid.');
+        form.setError('config', localize('Config JSON is invalid.', 'تنسيق JSON للإعدادات غير صالح.'));
         return;
     }
 
     if (parsedConfig === null || Array.isArray(parsedConfig) || typeof parsedConfig !== 'object') {
-        form.setError('config', 'Config JSON must be an object.');
+        form.setError('config', localize('Config JSON must be an object.', 'يجب أن تكون إعدادات JSON كائنًا.'));
         return;
     }
 
@@ -273,19 +277,19 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Payment Providers" />
+    <Head :title="localize('Payment Providers', 'مزودو الدفع')" />
 
     <SuperAdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">Payment Providers</h1>
+                    <h1 class="text-2xl font-semibold">{{ localize('Payment Providers', 'مزودو الدفع') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        Configure approved gateways for platform subscriptions and tenant payments.
+                        {{ localize('Configure approved gateways for platform subscriptions and tenant payments.', 'قم بإعداد بوابات الدفع المعتمدة لاشتراكات المنصة ومدفوعات المستأجرين.') }}
                     </p>
                 </div>
                 <Button :disabled="form.processing || !selectedProvider" @click="submit">
-                    {{ form.processing ? 'Saving...' : 'Save Changes' }}
+                    {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Changes', 'حفظ التغييرات') }}
                 </Button>
             </div>
 
@@ -299,13 +303,13 @@ function submit() {
             <div class="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Providers</CardTitle>
-                        <CardDescription>Select a provider to edit its settings.</CardDescription>
+                        <CardTitle>{{ localize('Providers', 'المزودون') }}</CardTitle>
+                        <CardDescription>{{ localize('Select a provider to edit its settings.', 'اختر مزودًا لتعديل إعداداته.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-3">
                         <div class="space-y-2">
-                            <Label for="provider-search">Search</Label>
-                            <Input id="provider-search" v-model="search" placeholder="Stripe, MyFatoorah..." />
+                            <Label for="provider-search">{{ localize('Search', 'بحث') }}</Label>
+                            <Input id="provider-search" v-model="search" :placeholder="localize('Stripe, MyFatoorah...', 'Stripe, MyFatoorah...')" />
                         </div>
 
                         <div class="max-h-[520px] space-y-2 overflow-auto pr-1">
@@ -322,18 +326,18 @@ function submit() {
                                         <div class="font-medium">{{ provider.name }}</div>
                                         <div class="text-xs text-muted-foreground font-mono">{{ provider.code }}</div>
                                     </div>
-                                    <div class="text-right text-xs">
-                                        <div :class="provider.is_enabled ? 'text-emerald-600' : 'text-gray-500'">
-                                            {{ provider.is_enabled ? 'Enabled' : 'Disabled' }}
+                                        <div class="text-right text-xs">
+                                            <div :class="provider.is_enabled ? 'text-emerald-600' : 'text-gray-500'">
+                                                {{ provider.is_enabled ? localize('Enabled', 'مفعل') : localize('Disabled', 'معطل') }}
+                                            </div>
+                                            <div v-if="provider.is_default" class="text-amber-600">{{ localize('Default', 'افتراضي') }}</div>
                                         </div>
-                                        <div v-if="provider.is_default" class="text-amber-600">Default</div>
                                     </div>
-                                </div>
-                            </button>
+                                </button>
 
-                            <div v-if="filteredProviders.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                                No providers match your search.
-                            </div>
+                                <div v-if="filteredProviders.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                                {{ localize('No providers match your search.', 'لا يوجد مزودون يطابقون البحث.') }}
+                                </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -342,41 +346,41 @@ function submit() {
                     <form class="space-y-6" @submit.prevent="submit">
                         <Card>
                             <CardHeader>
-                                <CardTitle>General</CardTitle>
+                                <CardTitle>{{ localize('General', 'عام') }}</CardTitle>
                                 <CardDescription>
-                                    Basic identity and mode settings for {{ selectedProvider.name }}.
+                                    {{ localize(`Basic identity and mode settings for ${selectedProvider.name}.`, `إعدادات التعريف الأساسية ووضع التشغيل لـ ${selectedProvider.name}.`) }}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent class="space-y-4">
                                 <div class="grid gap-4 md:grid-cols-3">
                                     <div class="space-y-2">
-                                        <Label for="provider_name">Name</Label>
+                                        <Label for="provider_name">{{ localize('Name', 'الاسم') }}</Label>
                                         <Input id="provider_name" v-model="form.name" />
                                         <p v-if="form.errors.name" class="text-sm text-red-600">{{ form.errors.name }}</p>
                                     </div>
 
                                     <div class="space-y-2">
-                                        <Label for="provider_driver">Driver</Label>
+                                        <Label for="provider_driver">{{ localize('Driver', 'المشغل') }}</Label>
                                         <Input id="provider_driver" v-model="form.driver" placeholder="myfatoorah" />
                                         <p v-if="form.errors.driver" class="text-sm text-red-600">{{ form.errors.driver }}</p>
                                     </div>
 
                                     <div class="space-y-2">
-                                        <Label for="provider_mode">Mode</Label>
+                                        <Label for="provider_mode">{{ localize('Mode', 'الوضع') }}</Label>
                                         <select
                                             id="provider_mode"
                                             v-model="form.mode"
                                             class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                         >
-                                            <option value="test">Test</option>
-                                            <option value="live">Live</option>
+                                            <option value="test">{{ localize('Test', 'تجريبي') }}</option>
+                                            <option value="live">{{ localize('Live', 'فعلي') }}</option>
                                         </select>
                                         <p v-if="form.errors.mode" class="text-sm text-red-600">{{ form.errors.mode }}</p>
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label for="provider_description">Description</Label>
+                                    <Label for="provider_description">{{ localize('Description', 'الوصف') }}</Label>
                                     <textarea
                                         id="provider_description"
                                         v-model="form.description"
@@ -390,35 +394,35 @@ function submit() {
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Availability & Usage</CardTitle>
+                                <CardTitle>{{ localize('Availability & Usage', 'التوفر والاستخدام') }}</CardTitle>
                                 <CardDescription>
-                                    Control whether this provider is active and where it can be used.
+                                    {{ localize('Control whether this provider is active and where it can be used.', 'تحكم فيما إذا كان هذا المزود مفعلًا وأين يمكن استخدامه.') }}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent class="space-y-4">
                                 <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                                     <label class="flex items-center gap-2 rounded-md border p-3 text-sm">
                                         <input v-model="form.is_enabled" type="checkbox" />
-                                        <span>Enabled</span>
+                                        <span>{{ localize('Enabled', 'مفعل') }}</span>
                                     </label>
 
                                     <label class="flex items-center gap-2 rounded-md border p-3 text-sm">
                                         <input v-model="form.is_default" type="checkbox" />
-                                        <span>Default</span>
+                                        <span>{{ localize('Default', 'افتراضي') }}</span>
                                     </label>
 
                                     <label class="flex items-center gap-2 rounded-md border p-3 text-sm">
                                         <input v-model="form.supports_platform_subscriptions" type="checkbox" />
-                                        <span>Platform subscriptions</span>
+                                        <span>{{ localize('Platform subscriptions', 'اشتراكات المنصة') }}</span>
                                     </label>
 
                                     <label class="flex items-center gap-2 rounded-md border p-3 text-sm">
                                         <input v-model="form.supports_tenant_payments" type="checkbox" />
-                                        <span>Tenant payments</span>
+                                        <span>{{ localize('Tenant payments', 'مدفوعات المستأجرين') }}</span>
                                     </label>
 
                                     <div class="space-y-2 rounded-md border p-3">
-                                        <Label for="sort_order">Sort Order</Label>
+                                        <Label for="sort_order">{{ localize('Sort Order', 'ترتيب العرض') }}</Label>
                                         <Input id="sort_order" v-model.number="form.sort_order" type="number" min="0" />
                                     </div>
                                 </div>
@@ -427,15 +431,15 @@ function submit() {
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Regions & Currencies</CardTitle>
+                                <CardTitle>{{ localize('Regions & Currencies', 'الدول والعملات') }}</CardTitle>
                                 <CardDescription>
-                                    Use CSV values to control provider availability by country/currency.
+                                    {{ localize('Use CSV values to control provider availability by country/currency.', 'استخدم قيم CSV للتحكم في توفر المزود حسب الدولة أو العملة.') }}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent class="space-y-4">
                                 <div class="grid gap-4 md:grid-cols-2">
                                     <div class="space-y-2">
-                                        <Label for="supported_countries">Supported Countries (CSV)</Label>
+                                        <Label for="supported_countries">{{ localize('Supported Countries (CSV)', 'الدول المدعومة (CSV)') }}</Label>
                                         <Input id="supported_countries" v-model="uiState.countriesCsv" placeholder="OM, AE, SA, KW" />
                                         <p v-if="form.errors.supported_countries" class="text-sm text-red-600">
                                             {{ form.errors.supported_countries }}
@@ -443,7 +447,7 @@ function submit() {
                                     </div>
 
                                     <div class="space-y-2">
-                                        <Label for="supported_currencies">Supported Currencies (CSV)</Label>
+                                        <Label for="supported_currencies">{{ localize('Supported Currencies (CSV)', 'العملات المدعومة (CSV)') }}</Label>
                                         <Input id="supported_currencies" v-model="uiState.currenciesCsv" placeholder="OMR, AED, USD" />
                                         <p v-if="form.errors.supported_currencies" class="text-sm text-red-600">
                                             {{ form.errors.supported_currencies }}
@@ -455,9 +459,9 @@ function submit() {
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Credentials & Webhooks</CardTitle>
+                                <CardTitle>{{ localize('Credentials & Webhooks', 'بيانات الاعتماد و Webhooks') }}</CardTitle>
                                 <CardDescription>
-                                    Fill provider-specific keys here. These values are saved into Provider Config JSON automatically.
+                                    {{ localize('Fill provider-specific keys here. These values are saved into Provider Config JSON automatically.', 'أدخل مفاتيح المزود هنا. سيتم حفظ هذه القيم تلقائيًا داخل JSON إعدادات المزود.') }}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent class="space-y-4">
@@ -475,23 +479,23 @@ function submit() {
                                     </div>
                                 </div>
                                 <div v-else class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                                    No predefined credential fields for this provider yet. Use the JSON section below.
+                                    {{ localize('No predefined credential fields for this provider yet. Use the JSON section below.', 'لا توجد حقول اعتماد معرفة مسبقًا لهذا المزود حتى الآن. استخدم قسم JSON أدناه.') }}
                                 </div>
 
                                 <div v-if="isMyFatoorahSelected" class="rounded-md border bg-muted/20 p-4 text-sm space-y-2">
-                                    <div class="font-medium">Auto Defaults (MyFatoorah)</div>
+                                    <div class="font-medium">{{ localize('Auto Defaults (MyFatoorah)', 'القيم الافتراضية التلقائية (MyFatoorah)') }}</div>
                                     <div class="grid gap-2 md:grid-cols-2 text-xs text-muted-foreground">
                                         <div>
-                                            <div class="font-medium text-foreground">API Base URL (auto)</div>
+                                            <div class="font-medium text-foreground">{{ localize('API Base URL (auto)', 'رابط API الأساسي (تلقائي)') }}</div>
                                             <div class="font-mono break-all">{{ myFatoorahDefaultApiBaseUrl }}</div>
                                         </div>
                                         <div>
-                                            <div class="font-medium text-foreground">Mode</div>
-                                            <div>{{ form.mode === 'live' ? 'Live' : 'Test' }}</div>
+                                            <div class="font-medium text-foreground">{{ localize('Mode', 'الوضع') }}</div>
+                                            <div>{{ form.mode === 'live' ? localize('Live', 'فعلي') : localize('Test', 'تجريبي') }}</div>
                                         </div>
                                         <div class="md:col-span-2">
-                                            <div class="font-medium text-foreground">Callback / Error URLs</div>
-                                            <div>Generated automatically by the system routes during checkout (no manual input required).</div>
+                                            <div class="font-medium text-foreground">{{ localize('Callback / Error URLs', 'روابط Callback / Error') }}</div>
+                                            <div>{{ localize('Generated automatically by the system routes during checkout (no manual input required).', 'يتم توليدها تلقائيًا من مسارات النظام أثناء الدفع ولا تحتاج إدخالًا يدويًا.') }}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -499,13 +503,13 @@ function submit() {
                                 <div v-if="advancedProviderConfigFields.length > 0" class="rounded-md border p-3 space-y-3">
                                     <div class="flex items-center justify-between gap-3">
                                         <div>
-                                            <div class="text-sm font-medium">Advanced Provider Fields</div>
+                                            <div class="text-sm font-medium">{{ localize('Advanced Provider Fields', 'حقول المزود المتقدمة') }}</div>
                                             <p class="text-xs text-muted-foreground">
-                                                Optional overrides (keep hidden unless you need custom behavior).
+                                                {{ localize('Optional overrides (keep hidden unless you need custom behavior).', 'خيارات متقدمة اختيارية. اتركها مخفية ما لم تكن تحتاج سلوكًا مخصصًا.') }}
                                             </p>
                                         </div>
                                         <Button type="button" variant="outline" size="sm" @click="showAdvancedProviderFields = !showAdvancedProviderFields">
-                                            {{ showAdvancedProviderFields ? 'Hide Advanced' : 'Show Advanced' }}
+                                            {{ showAdvancedProviderFields ? localize('Hide Advanced', 'إخفاء المتقدم') : localize('Show Advanced', 'إظهار المتقدم') }}
                                         </Button>
                                     </div>
 
@@ -527,17 +531,17 @@ function submit() {
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Provider Config</CardTitle>
+                                <CardTitle>{{ localize('Provider Config', 'إعدادات المزود') }}</CardTitle>
                                 <CardDescription>
-                                    Provider-specific JSON settings (API token, region, callback settings, profile IDs).
+                                    {{ localize('Provider-specific JSON settings (API token, region, callback settings, profile IDs).', 'إعدادات JSON الخاصة بالمزود مثل رمز API والمنطقة وروابط callback ومعرفات الحسابات.') }}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent class="space-y-4">
                                 <div class="flex items-center justify-between rounded-md border p-3">
                                     <div>
-                                        <div class="text-sm font-medium">Advanced JSON Editor</div>
+                                        <div class="text-sm font-medium">{{ localize('Advanced JSON Editor', 'محرر JSON المتقدم') }}</div>
                                         <p class="text-xs text-muted-foreground">
-                                            Keep this hidden unless you need custom keys not available in the fields above.
+                                            {{ localize('Keep this hidden unless you need custom keys not available in the fields above.', 'أبقِ هذا القسم مخفيًا ما لم تكن تحتاج مفاتيح مخصصة غير متوفرة في الحقول أعلاه.') }}
                                         </p>
                                     </div>
                                     <Button
@@ -546,12 +550,12 @@ function submit() {
                                         size="sm"
                                         @click="uiState.showAdvancedJson = !uiState.showAdvancedJson"
                                     >
-                                        {{ uiState.showAdvancedJson ? 'Hide JSON' : 'Show JSON' }}
+                                        {{ uiState.showAdvancedJson ? localize('Hide JSON', 'إخفاء JSON') : localize('Show JSON', 'إظهار JSON') }}
                                     </Button>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label for="provider_config_json">Provider Config (JSON)</Label>
+                                    <Label for="provider_config_json">{{ localize('Provider Config (JSON)', 'إعدادات المزود (JSON)') }}</Label>
                                     <textarea
                                         id="provider_config_json"
                                         v-model="uiState.configJson"
@@ -561,10 +565,10 @@ function submit() {
                                         :class="!uiState.showAdvancedJson ? 'cursor-not-allowed opacity-70' : ''"
                                     />
                                     <p class="text-xs text-muted-foreground">
-                                        Values are currently stored as JSON and are not encrypted yet.
+                                        {{ localize('Values are currently stored as JSON and are not encrypted yet.', 'يتم حفظ القيم حاليًا بصيغة JSON ولم تُشفّر بعد.') }}
                                     </p>
                                     <p v-if="!uiState.showAdvancedJson" class="text-xs text-muted-foreground">
-                                        This editor is read-only by default. Use the button above to enable editing.
+                                        {{ localize('This editor is read-only by default. Use the button above to enable editing.', 'هذا المحرر للقراءة فقط افتراضيًا. استخدم الزر أعلاه لتفعيل التعديل.') }}
                                     </p>
                                     <p v-if="form.errors.config" class="text-sm text-red-600">{{ form.errors.config }}</p>
                                 </div>
@@ -573,7 +577,7 @@ function submit() {
 
                         <div class="flex justify-end">
                             <Button type="submit" :disabled="form.processing">
-                                {{ form.processing ? 'Saving...' : 'Save Changes' }}
+                                {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Changes', 'حفظ التغييرات') }}
                             </Button>
                         </div>
                     </form>
@@ -581,8 +585,8 @@ function submit() {
 
                 <Card v-else>
                     <CardHeader>
-                        <CardTitle>No Provider Selected</CardTitle>
-                        <CardDescription>Select a provider from the left list to edit it.</CardDescription>
+                        <CardTitle>{{ localize('No Provider Selected', 'لم يتم اختيار مزود') }}</CardTitle>
+                        <CardDescription>{{ localize('Select a provider from the left list to edit it.', 'اختر مزودًا من القائمة اليسرى لتعديل بياناته.') }}</CardDescription>
                     </CardHeader>
                 </Card>
             </div>

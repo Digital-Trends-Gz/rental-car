@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { useTrans } from '@/composables/useTrans';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { computed, ref } from 'vue';
+import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
+import { Head, useForm } from '@inertiajs/vue3';
 import { ExternalLink, RefreshCw } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
 interface FeatureCard {
     title: string;
@@ -61,6 +62,9 @@ const props = defineProps<{
     settings: LandingSettings;
     previewUrl: string;
 }>();
+
+const { locale } = useTrans();
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const previewNonce = ref(Date.now());
 
@@ -122,27 +126,27 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
 </script>
 
 <template>
-    <Head title="Design Settings" />
+    <Head :title="localize('Design Settings', 'إعدادات التصميم')" />
     <SuperAdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                    <h1 class="text-2xl font-semibold">Design Settings</h1>
+                    <h1 class="text-2xl font-semibold">{{ localize('Design Settings', 'إعدادات التصميم') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        Edit the public landing page and preview the design from inside super admin.
+                        {{ localize('Edit the public landing page and preview the design from inside super admin.', 'عدّل صفحة الهبوط العامة واعرض المعاينة من داخل لوحة السوبر أدمن.') }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <Button type="button" variant="outline" @click="refreshPreview">
                         <RefreshCw class="mr-2 h-4 w-4" />
-                        Refresh Preview
+                        {{ localize('Refresh Preview', 'تحديث المعاينة') }}
                     </Button>
                     <Button type="button" variant="outline" @click="openPreview">
                         <ExternalLink class="mr-2 h-4 w-4" />
-                        Open Full Preview
+                        {{ localize('Open Full Preview', 'فتح المعاينة الكاملة') }}
                     </Button>
                     <Button :disabled="form.processing" @click="submit">
-                        {{ form.processing ? 'Saving...' : 'Save Design' }}
+                        {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Design', 'حفظ التصميم') }}
                     </Button>
                 </div>
             </div>
@@ -151,12 +155,12 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
                 <form class="space-y-6" @submit.prevent="submit">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Hero</CardTitle>
-                            <CardDescription>Main title, description, image, and quick highlights.</CardDescription>
+                            <CardTitle>{{ localize('Hero', 'القسم الرئيسي') }}</CardTitle>
+                            <CardDescription>{{ localize('Main title, description, image, and quick highlights.', 'العنوان الرئيسي والوصف والصورة وأبرز النقاط السريعة.') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="space-y-2">
-                                <Label for="hero_title">Title</Label>
+                                <Label for="hero_title">{{ localize('Title', 'العنوان') }}</Label>
                                 <Input id="hero_title" v-model="form.settings.hero.title" />
                                 <p v-if="form.errors['settings.hero.title']" class="text-sm text-red-600">
                                     {{ form.errors['settings.hero.title'] }}
@@ -164,7 +168,7 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="hero_description">Description</Label>
+                                <Label for="hero_description">{{ localize('Description', 'الوصف') }}</Label>
                                 <Textarea id="hero_description" v-model="form.settings.hero.description" rows="4" />
                                 <p v-if="form.errors['settings.hero.description']" class="text-sm text-red-600">
                                     {{ form.errors['settings.hero.description'] }}
@@ -172,22 +176,22 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="hero_image_url">Hero Image URL</Label>
+                                <Label for="hero_image_url">{{ localize('Hero Image URL', 'رابط صورة القسم الرئيسي') }}</Label>
                                 <Input id="hero_image_url" v-model="form.settings.hero.image_url" placeholder="https://..." />
                             </div>
 
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between">
-                                    <Label>Hero Features</Label>
-                                    <Button type="button" variant="outline" size="sm" @click="addHeroFeature">Add Feature</Button>
+                                    <Label>{{ localize('Hero Features', 'مزايا القسم الرئيسي') }}</Label>
+                                    <Button type="button" variant="outline" size="sm" @click="addHeroFeature">{{ localize('Add Feature', 'إضافة ميزة') }}</Button>
                                 </div>
                                 <div
                                     v-for="(_item, index) in form.settings.hero.features"
                                     :key="`hero-feature-${index}`"
                                     class="flex items-center gap-2"
                                 >
-                                    <Input v-model="form.settings.hero.features[index]" placeholder="Feature text" />
-                                    <Button type="button" variant="destructive" size="sm" @click="removeHeroFeature(index)">Remove</Button>
+                                    <Input v-model="form.settings.hero.features[index]" :placeholder="localize('Feature text', 'نص الميزة')" />
+                                    <Button type="button" variant="destructive" size="sm" @click="removeHeroFeature(index)">{{ localize('Remove', 'حذف') }}</Button>
                                 </div>
                             </div>
                         </CardContent>
@@ -195,24 +199,24 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Features Section</CardTitle>
-                            <CardDescription>Section intro and the feature cards shown on the landing page.</CardDescription>
+                            <CardTitle>{{ localize('Features Section', 'قسم المزايا') }}</CardTitle>
+                            <CardDescription>{{ localize('Section intro and the feature cards shown on the landing page.', 'مقدمة القسم وبطاقات المزايا المعروضة في صفحة الهبوط.') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="space-y-2">
-                                <Label for="features_title">Title</Label>
+                                <Label for="features_title">{{ localize('Title', 'العنوان') }}</Label>
                                 <Input id="features_title" v-model="form.settings.features_section.title" />
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="features_description">Description</Label>
+                                <Label for="features_description">{{ localize('Description', 'الوصف') }}</Label>
                                 <Textarea id="features_description" v-model="form.settings.features_section.description" rows="3" />
                             </div>
 
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between">
-                                    <Label>Feature Cards</Label>
-                                    <Button type="button" variant="outline" size="sm" @click="addFeatureCard">Add Card</Button>
+                                    <Label>{{ localize('Feature Cards', 'بطاقات المزايا') }}</Label>
+                                    <Button type="button" variant="outline" size="sm" @click="addFeatureCard">{{ localize('Add Card', 'إضافة بطاقة') }}</Button>
                                 </div>
                                 <div
                                     v-for="(card, index) in form.settings.features_section.cards"
@@ -220,19 +224,19 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
                                     class="space-y-3 rounded-lg border p-4"
                                 >
                                     <div class="space-y-2">
-                                        <Label>Card Title</Label>
+                                        <Label>{{ localize('Card Title', 'عنوان البطاقة') }}</Label>
                                         <Input v-model="card.title" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label>Image URL</Label>
+                                        <Label>{{ localize('Image URL', 'رابط الصورة') }}</Label>
                                         <Input v-model="card.image_url" placeholder="https://..." />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label>Content</Label>
+                                        <Label>{{ localize('Content', 'المحتوى') }}</Label>
                                         <Textarea v-model="card.content" rows="3" />
                                     </div>
                                     <div class="flex justify-end">
-                                        <Button type="button" variant="destructive" size="sm" @click="removeFeatureCard(index)">Remove Card</Button>
+                                        <Button type="button" variant="destructive" size="sm" @click="removeFeatureCard(index)">{{ localize('Remove Card', 'حذف البطاقة') }}</Button>
                                     </div>
                                 </div>
                             </div>
@@ -241,22 +245,22 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Getting Started</CardTitle>
-                            <CardDescription>Control the section that explains the setup steps.</CardDescription>
+                            <CardTitle>{{ localize('Getting Started', 'البدء') }}</CardTitle>
+                            <CardDescription>{{ localize('Control the section that explains the setup steps.', 'تحكم في القسم الذي يشرح خطوات الإعداد.') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="space-y-2">
-                                <Label>Section Title</Label>
+                                <Label>{{ localize('Section Title', 'عنوان القسم') }}</Label>
                                 <Input v-model="form.settings.getting_started.title" />
                             </div>
                             <div class="space-y-2">
-                                <Label>Section Description</Label>
+                                <Label>{{ localize('Section Description', 'وصف القسم') }}</Label>
                                 <Textarea v-model="form.settings.getting_started.description" rows="3" />
                             </div>
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between">
-                                    <Label>Steps</Label>
-                                    <Button type="button" variant="outline" size="sm" @click="addStepItem">Add Step</Button>
+                                    <Label>{{ localize('Steps', 'الخطوات') }}</Label>
+                                    <Button type="button" variant="outline" size="sm" @click="addStepItem">{{ localize('Add Step', 'إضافة خطوة') }}</Button>
                                 </div>
                                 <div
                                     v-for="(item, index) in form.settings.getting_started.items"
@@ -264,15 +268,15 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
                                     class="space-y-3 rounded-lg border p-4"
                                 >
                                     <div class="space-y-2">
-                                        <Label>Step Title</Label>
+                                        <Label>{{ localize('Step Title', 'عنوان الخطوة') }}</Label>
                                         <Input v-model="item.title" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label>Step Description</Label>
+                                        <Label>{{ localize('Step Description', 'وصف الخطوة') }}</Label>
                                         <Textarea v-model="item.description" rows="2" />
                                     </div>
                                     <div class="flex justify-end">
-                                        <Button type="button" variant="destructive" size="sm" @click="removeStepItem(index)">Remove Step</Button>
+                                        <Button type="button" variant="destructive" size="sm" @click="removeStepItem(index)">{{ localize('Remove Step', 'حذف الخطوة') }}</Button>
                                     </div>
                                 </div>
                             </div>
@@ -281,34 +285,34 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Plans & FAQ</CardTitle>
-                            <CardDescription>Pricing section heading plus FAQ content.</CardDescription>
+                            <CardTitle>{{ localize('Plans & FAQ', 'الخطط والأسئلة الشائعة') }}</CardTitle>
+                            <CardDescription>{{ localize('Pricing section heading plus FAQ content.', 'عنوان قسم التسعير مع محتوى الأسئلة الشائعة.') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="grid gap-4 md:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label>Plans Title</Label>
+                                    <Label>{{ localize('Plans Title', 'عنوان الخطط') }}</Label>
                                     <Input v-model="form.settings.plans_section.title" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label>Plans Description</Label>
+                                    <Label>{{ localize('Plans Description', 'وصف الخطط') }}</Label>
                                     <Textarea v-model="form.settings.plans_section.description" rows="2" />
                                 </div>
                             </div>
 
                             <div class="space-y-2">
-                                <Label>FAQ Title</Label>
+                                <Label>{{ localize('FAQ Title', 'عنوان الأسئلة الشائعة') }}</Label>
                                 <Input v-model="form.settings.faq_section.title" />
                             </div>
                             <div class="space-y-2">
-                                <Label>FAQ Description</Label>
+                                <Label>{{ localize('FAQ Description', 'وصف الأسئلة الشائعة') }}</Label>
                                 <Textarea v-model="form.settings.faq_section.description" rows="2" />
                             </div>
 
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between">
-                                    <Label>FAQ Items</Label>
-                                    <Button type="button" variant="outline" size="sm" @click="addFaqItem">Add FAQ</Button>
+                                    <Label>{{ localize('FAQ Items', 'عناصر الأسئلة الشائعة') }}</Label>
+                                    <Button type="button" variant="outline" size="sm" @click="addFaqItem">{{ localize('Add FAQ', 'إضافة سؤال') }}</Button>
                                 </div>
                                 <div
                                     v-for="(faq, index) in form.settings.faq_section.items"
@@ -316,15 +320,15 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
                                     class="space-y-3 rounded-lg border p-4"
                                 >
                                     <div class="space-y-2">
-                                        <Label>Question</Label>
+                                        <Label>{{ localize('Question', 'السؤال') }}</Label>
                                         <Input v-model="faq.question" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label>Answer</Label>
+                                        <Label>{{ localize('Answer', 'الإجابة') }}</Label>
                                         <Textarea v-model="faq.answer" rows="3" />
                                     </div>
                                     <div class="flex justify-end">
-                                        <Button type="button" variant="destructive" size="sm" @click="removeFaqItem(index)">Remove FAQ</Button>
+                                        <Button type="button" variant="destructive" size="sm" @click="removeFaqItem(index)">{{ localize('Remove FAQ', 'حذف السؤال') }}</Button>
                                     </div>
                                 </div>
                             </div>
@@ -333,16 +337,16 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Footer</CardTitle>
-                            <CardDescription>Final call to action shown at the bottom of the landing page.</CardDescription>
+                            <CardTitle>{{ localize('Footer', 'التذييل') }}</CardTitle>
+                            <CardDescription>{{ localize('Final call to action shown at the bottom of the landing page.', 'الدعوة النهائية لاتخاذ الإجراء في أسفل صفحة الهبوط.') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="space-y-2">
-                                <Label>Footer Title</Label>
+                                <Label>{{ localize('Footer Title', 'عنوان التذييل') }}</Label>
                                 <Input v-model="form.settings.footer.title" />
                             </div>
                             <div class="space-y-2">
-                                <Label>Footer Description</Label>
+                                <Label>{{ localize('Footer Description', 'وصف التذييل') }}</Label>
                                 <Textarea v-model="form.settings.footer.description" rows="3" />
                             </div>
                         </CardContent>
@@ -352,9 +356,9 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
                 <div class="space-y-4">
                     <Card class="sticky top-6 overflow-hidden">
                         <CardHeader class="border-b">
-                            <CardTitle>Live Preview</CardTitle>
+                            <CardTitle>{{ localize('Live Preview', 'معاينة مباشرة') }}</CardTitle>
                             <CardDescription>
-                                The preview renders the public landing page on the main domain. Save changes to refresh it.
+                                {{ localize('The preview renders the public landing page on the main domain. Save changes to refresh it.', 'تعرض المعاينة صفحة الهبوط العامة على الدومين الرئيسي. احفظ التغييرات لتحديثها.') }}
                             </CardDescription>
                         </CardHeader>
                         <CardContent class="p-0">
@@ -362,7 +366,7 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
                                 :key="previewSrc"
                                 :src="previewSrc"
                                 class="h-[calc(100vh-16rem)] min-h-[720px] w-full bg-white"
-                                title="Landing page preview"
+                                :title="localize('Landing page preview', 'معاينة صفحة الهبوط')"
                             />
                         </CardContent>
                     </Card>

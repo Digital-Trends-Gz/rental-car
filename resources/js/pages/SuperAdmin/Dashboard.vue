@@ -54,6 +54,7 @@ const props = defineProps<{
 }>();
 const { t, locale } = useTrans();
 const numberLocale = computed(() => (locale.value === 'ar' ? 'ar' : 'en-US'));
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat(numberLocale.value, {
@@ -85,7 +86,9 @@ const formatSubscriptionMethod = (paymentMethod: string | null, type: string) =>
         return paymentMethod;
     }
 
-    return type === 'one_time' ? 'Credit Card (One-Time)' : 'Credit Card';
+    return type === 'one_time'
+        ? localize('Credit Card (One-Time)', 'بطاقة ائتمان (دفعة واحدة)')
+        : localize('Credit Card', 'بطاقة ائتمان');
 };
 
 const formatSubscriptionAmount = (amount: number | null, currency: string | null) => {
@@ -216,7 +219,7 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                                         {{ tenant.is_active ? t('dashboard.super_admin.status.active') : t('dashboard.super_admin.status.inactive') }}
                                     </span>
                                     <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                                        {{ tenant.subscription_plan?.name || 'Unassigned' }}
+                                        {{ tenant.subscription_plan?.name || localize('Unassigned', 'غير معيّن') }}
                                     </span>
                                 </div>
                                 <div class="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
@@ -236,7 +239,7 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
             <Card>
                 <CardHeader>
                     <CardTitle>{{ t('dashboard.sidebar.super_admin.subscription') }}</CardTitle>
-                    <CardDescription>Latest tenant subscription payments</CardDescription>
+                    <CardDescription>{{ localize('Latest tenant subscription payments', 'أحدث مدفوعات اشتراكات المستأجرين') }}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div v-if="props.recentSubscriptions && props.recentSubscriptions.length > 0" class="overflow-x-auto">
@@ -259,7 +262,7 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                                         {{ t('dashboard.common.date') }}
                                     </th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                        Trial End Date
+                                        {{ localize('Trial End Date', 'تاريخ انتهاء الفترة التجريبية') }}
                                     </th>
                                 </tr>
                             </thead>
@@ -287,15 +290,15 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                             </tbody>
                         </table>
                     </div>
-                    <div v-else class="py-8 text-center text-muted-foreground">No subscriptions found yet.</div>
+                    <div v-else class="py-8 text-center text-muted-foreground">{{ localize('No subscriptions found yet.', 'لا توجد اشتراكات حتى الآن.') }}</div>
                 </CardContent>
             </Card>
 
             <div class="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
                 <Card>
                     <CardHeader>
-                        <CardTitle>SaaS Traffic Sources</CardTitle>
-                        <CardDescription>Where visitors reached the main SaaS landing page from in the last 30 days.</CardDescription>
+                        <CardTitle>{{ localize('SaaS Traffic Sources', 'مصادر زيارات منصة SaaS') }}</CardTitle>
+                        <CardDescription>{{ localize('Where visitors reached the main SaaS landing page from in the last 30 days.', 'من أين وصل الزوار إلى الصفحة الرئيسية للمنصة خلال آخر 30 يومًا.') }}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div v-if="props.trafficSources && props.trafficSources.length > 0" class="space-y-3">
@@ -306,20 +309,20 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                             >
                                 <span class="truncate text-sm font-medium">{{ source.source }}</span>
                                 <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                                    {{ source.visits }} visits
+                                    {{ source.visits }} {{ localize('visits', 'زيارة') }}
                                 </span>
                             </div>
                         </div>
                         <div v-else class="py-8 text-center text-muted-foreground">
-                            No landing page visits tracked yet.
+                            {{ localize('No landing page visits tracked yet.', 'لا توجد زيارات مسجلة للصفحة الرئيسية حتى الآن.') }}
                         </div>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Recent SaaS Visits</CardTitle>
-                        <CardDescription>Latest visits to the public SaaS home page with their tracked source.</CardDescription>
+                        <CardTitle>{{ localize('Recent SaaS Visits', 'أحدث زيارات منصة SaaS') }}</CardTitle>
+                        <CardDescription>{{ localize('Latest visits to the public SaaS home page with their tracked source.', 'أحدث زيارات الصفحة العامة للمنصة مع مصدر الزيارة المسجل.') }}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div v-if="props.recentSaasVisits && props.recentSaasVisits.length > 0" class="overflow-x-auto">
@@ -327,19 +330,19 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                                 <thead>
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                            Source
+                                            {{ localize('Source', 'المصدر') }}
                                         </th>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                            Medium
+                                            {{ localize('Medium', 'الوسيط') }}
                                         </th>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                            Campaign
+                                            {{ localize('Campaign', 'الحملة') }}
                                         </th>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                            Path
+                                            {{ localize('Path', 'المسار') }}
                                         </th>
                                         <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                            Date
+                                            {{ localize('Date', 'التاريخ') }}
                                         </th>
                                     </tr>
                                 </thead>
@@ -365,7 +368,7 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                             </table>
                         </div>
                         <div v-else class="py-8 text-center text-muted-foreground">
-                            No landing page visits tracked yet.
+                            {{ localize('No landing page visits tracked yet.', 'لا توجد زيارات مسجلة للصفحة الرئيسية حتى الآن.') }}
                         </div>
                     </CardContent>
                 </Card>

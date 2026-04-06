@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useTrans } from '@/composables/useTrans';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
@@ -33,6 +34,9 @@ const props = defineProps<{
     };
 }>();
 
+const { locale } = useTrans();
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? 'all');
 const tenantId = ref(props.filters.tenant_id ? String(props.filters.tenant_id) : 'all');
@@ -57,41 +61,41 @@ function formatDate(value: string): string {
 </script>
 
 <template>
-    <Head title="Tenant Support" />
+    <Head :title="localize('Tenant Support', 'دعم المستأجرين')" />
     <SuperAdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div>
-                <h1 class="text-2xl font-semibold">Tenant Support Inbox</h1>
-                <p class="text-sm text-muted-foreground">Tickets opened by tenant admins to contact platform support.</p>
+                <h1 class="text-2xl font-semibold">{{ localize('Tenant Support Inbox', 'صندوق دعم المستأجرين') }}</h1>
+                <p class="text-sm text-muted-foreground">{{ localize('Tickets opened by tenant admins to contact platform support.', 'التذاكر المفتوحة من مديري المستأجرين للتواصل مع دعم المنصة.') }}</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                <Input v-model="search" placeholder="Search by ticket, tenant, or user..." class="max-w-md" @keyup.enter="applyFilters" />
+                <Input v-model="search" :placeholder="localize('Search by ticket, tenant, or user...', 'ابحث برقم التذكرة أو المستأجر أو المستخدم...')" class="max-w-md" @keyup.enter="applyFilters" />
                 <select v-model="status" class="h-10 rounded-md border border-input bg-background px-3 text-sm" @change="applyFilters">
-                    <option value="all">All statuses</option>
+                    <option value="all">{{ localize('All statuses', 'كل الحالات') }}</option>
                     <option v-for="item in statuses" :key="item.value" :value="item.value">{{ item.label }}</option>
                 </select>
                 <select v-model="tenantId" class="h-10 rounded-md border border-input bg-background px-3 text-sm" @change="applyFilters">
-                    <option value="all">All tenants</option>
+                    <option value="all">{{ localize('All tenants', 'كل المستأجرين') }}</option>
                     <option v-for="tenant in tenants" :key="tenant.id" :value="String(tenant.id)">{{ tenant.name }}</option>
                 </select>
                 <select v-model="queue" class="h-10 rounded-md border border-input bg-background px-3 text-sm" @change="applyFilters">
                     <option v-for="item in queues" :key="item.value" :value="item.value">{{ item.label }}</option>
                 </select>
-                <Button @click="applyFilters">Search</Button>
+                <Button @click="applyFilters">{{ localize('Search', 'بحث') }}</Button>
             </div>
 
             <div class="overflow-x-auto rounded-lg border bg-card">
                 <table class="min-w-full">
                     <thead>
                         <tr class="border-b bg-muted/30 text-left text-xs uppercase text-muted-foreground">
-                            <th class="px-4 py-3">Ticket</th>
-                            <th class="px-4 py-3">Tenant</th>
-                            <th class="px-4 py-3">Requester</th>
-                            <th class="px-4 py-3">Subject</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Assigned To</th>
-                            <th class="px-4 py-3">Created</th>
+                            <th class="px-4 py-3">{{ localize('Ticket', 'التذكرة') }}</th>
+                            <th class="px-4 py-3">{{ localize('Tenant', 'المستأجر') }}</th>
+                            <th class="px-4 py-3">{{ localize('Requester', 'مقدم الطلب') }}</th>
+                            <th class="px-4 py-3">{{ localize('Subject', 'الموضوع') }}</th>
+                            <th class="px-4 py-3">{{ localize('Status', 'الحالة') }}</th>
+                            <th class="px-4 py-3">{{ localize('Assigned To', 'مسندة إلى') }}</th>
+                            <th class="px-4 py-3">{{ localize('Created', 'تاريخ الإنشاء') }}</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
@@ -111,16 +115,16 @@ function formatDate(value: string): string {
                                 {{ statuses.find((item) => item.value === ticket.status)?.label || ticket.status }}
                             </td>
                             <td class="px-4 py-3 text-sm">
-                                {{ ticket.assigned_to?.name || 'Unassigned' }}
+                                {{ ticket.assigned_to?.name || localize('Unassigned', 'غير مسندة') }}
                                 <div class="text-xs text-muted-foreground">{{ ticket.assigned_to?.email || '' }}</div>
                             </td>
                             <td class="px-4 py-3 text-sm text-muted-foreground">{{ formatDate(ticket.created_at) }}</td>
                             <td class="px-4 py-3 text-right">
-                                <Link :href="`${urls.index}/${ticket.id}`" class="text-sm font-medium text-primary hover:underline">Open</Link>
+                                <Link :href="`${urls.index}/${ticket.id}`" class="text-sm font-medium text-primary hover:underline">{{ localize('Open', 'فتح') }}</Link>
                             </td>
                         </tr>
                         <tr v-if="tickets.data.length === 0">
-                            <td colspan="8" class="px-4 py-6 text-center text-sm text-muted-foreground">No tenant support tickets found.</td>
+                            <td colspan="8" class="px-4 py-6 text-center text-sm text-muted-foreground">{{ localize('No tenant support tickets found.', 'لا توجد تذاكر دعم مستأجرين.') }}</td>
                         </tr>
                     </tbody>
                 </table>

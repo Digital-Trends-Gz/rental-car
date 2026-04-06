@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useTrans } from '@/composables/useTrans';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,7 +64,9 @@ const props = defineProps<{
     };
 }>();
 
+const { locale } = useTrans();
 const page = usePage<any>();
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const form = useForm({
     site_name: props.settings.site_name ?? '',
@@ -231,19 +234,19 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Website Settings" />
+    <Head :title="localize('Website Settings', 'إعدادات الموقع')" />
 
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">Website Settings</h1>
+                    <h1 class="text-2xl font-semibold">{{ localize('Website Settings', 'إعدادات الموقع') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        Customize your tenant website branding and homepage content (Arabic / English).
+                        {{ localize('Customize your tenant website branding and homepage content (Arabic / English).', 'خصص هوية موقع المستأجر ومحتوى الصفحة الرئيسية باللغتين العربية والإنجليزية.') }}
                     </p>
                 </div>
                 <Button :disabled="form.processing" @click="submit">
-                    {{ form.processing ? 'Saving...' : 'Save Changes' }}
+                    {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Changes', 'حفظ التغييرات') }}
                 </Button>
             </div>
 
@@ -257,7 +260,7 @@ function submit() {
                 {{ flashRestrictedAction }}
             </div>
             <div v-if="formErrorList.length" class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                <div class="font-medium">Please fix the following errors:</div>
+                <div class="font-medium">{{ localize('Please fix the following errors:', 'يرجى تصحيح الأخطاء التالية:') }}</div>
                 <ul class="mt-1 list-disc pl-5">
                     <li v-for="(message, idx) in formErrorList" :key="idx">{{ message }}</li>
                 </ul>
@@ -266,20 +269,20 @@ function submit() {
             <form class="space-y-6" @submit.prevent="submit">
                 <section class="rounded-lg border p-5">
                     <div class="mb-4">
-                        <h2 class="text-lg font-semibold">Branding</h2>
-                        <p class="text-sm text-muted-foreground">Site identity, logo URL, and brand colors.</p>
+                        <h2 class="text-lg font-semibold">{{ localize('Branding', 'الهوية البصرية') }}</h2>
+                        <p class="text-sm text-muted-foreground">{{ localize('Site identity, logo URL, and brand colors.', 'هوية الموقع ورابط الشعار وألوان العلامة التجارية.') }}</p>
                     </div>
 
                     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
                         <div class="grid gap-4 md:grid-cols-2">
                             <div class="space-y-2 md:col-span-2">
-                                <Label for="site_name">Site Name</Label>
-                                <Input id="site_name" v-model="form.site_name" placeholder="Tenant website name" />
+                                <Label for="site_name">{{ localize('Site Name', 'اسم الموقع') }}</Label>
+                                <Input id="site_name" v-model="form.site_name" :placeholder="localize('Tenant website name', 'اسم موقع المستأجر')" />
                                 <p v-if="form.errors.site_name" class="text-sm text-red-600">{{ form.errors.site_name }}</p>
                             </div>
 
                             <div class="space-y-2 md:col-span-2">
-                                <Label>Logo Upload (System)</Label>
+                                <Label>{{ localize('Logo Upload (System)', 'رفع الشعار (النظام)') }}</Label>
                                 <FileUpload
                                     ref="fileUploadRef"
                                     v-model="logoTempFolders"
@@ -292,33 +295,33 @@ function submit() {
                                     @file-removed="handleLogoFileRemoved"
                                 />
                                 <p class="text-xs text-muted-foreground">
-                                    Upload logo to your system. New upload replaces the previous logo.
+                                    {{ localize('Upload logo to your system. New upload replaces the previous logo.', 'ارفع الشعار إلى النظام. أي رفع جديد سيستبدل الشعار السابق.') }}
                                 </p>
                             </div>
 
                             <div class="md:col-span-2 rounded-md border bg-muted/20 p-3 space-y-3">
                                 <div class="flex items-center justify-between gap-3">
                                     <div>
-                                        <div class="text-sm font-medium">Advanced Branding Options</div>
-                                        <p class="text-xs text-muted-foreground">Optional fallback logo URL (used only if no uploaded logo exists).</p>
+                                        <div class="text-sm font-medium">{{ localize('Advanced Branding Options', 'خيارات الهوية المتقدمة') }}</div>
+                                        <p class="text-xs text-muted-foreground">{{ localize('Optional fallback logo URL (used only if no uploaded logo exists).', 'رابط شعار احتياطي اختياري ويُستخدم فقط إذا لم يوجد شعار مرفوع.') }}</p>
                                     </div>
                                     <Button type="button" variant="outline" size="sm" @click="showAdvancedBranding = !showAdvancedBranding">
-                                        {{ showAdvancedBranding ? 'Hide Advanced' : 'Show Advanced' }}
+                                        {{ showAdvancedBranding ? localize('Hide Advanced', 'إخفاء المتقدم') : localize('Show Advanced', 'إظهار المتقدم') }}
                                     </Button>
                                 </div>
 
                                 <div v-if="showAdvancedBranding" class="space-y-2">
-                                    <Label for="logo_url">Fallback Logo URL</Label>
+                                    <Label for="logo_url">{{ localize('Fallback Logo URL', 'رابط الشعار الاحتياطي') }}</Label>
                                     <Input id="logo_url" v-model="form.logo_url" placeholder="https://example.com/logo.png" />
                                     <p class="text-xs text-muted-foreground">
-                                        This URL is used only when no uploaded logo exists in the system.
+                                        {{ localize('This URL is used only when no uploaded logo exists in the system.', 'يُستخدم هذا الرابط فقط عندما لا يوجد شعار مرفوع في النظام.') }}
                                     </p>
                                     <p v-if="form.errors.logo_url" class="text-sm text-red-600">{{ form.errors.logo_url }}</p>
                                 </div>
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="primary_color">Primary Color</Label>
+                                <Label for="primary_color">{{ localize('Primary Color', 'اللون الأساسي') }}</Label>
                                 <div class="flex items-center gap-2">
                                     <input id="primary_color" v-model="form.primary_color" type="color" class="h-10 w-14 rounded border border-input bg-white p-1" />
                                     <Input v-model="form.primary_color" placeholder="#f97316" />
@@ -327,7 +330,7 @@ function submit() {
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="secondary_color">Secondary Color</Label>
+                                <Label for="secondary_color">{{ localize('Secondary Color', 'اللون الثانوي') }}</Label>
                                 <div class="flex items-center gap-2">
                                     <input id="secondary_color" v-model="form.secondary_color" type="color" class="h-10 w-14 rounded border border-input bg-white p-1" />
                                     <Input v-model="form.secondary_color" placeholder="#ea580c" />
@@ -336,7 +339,7 @@ function submit() {
                             </div>
 
                             <div class="space-y-2 md:col-span-2">
-                                <Label for="tax_percentage">Booking Tax Percentage</Label>
+                                <Label for="tax_percentage">{{ localize('Booking Tax Percentage', 'نسبة ضريبة الحجز') }}</Label>
                                 <Input
                                     id="tax_percentage"
                                     v-model.number="form.tax_percentage"
@@ -347,14 +350,14 @@ function submit() {
                                     placeholder="7"
                                 />
                                 <p class="text-xs text-muted-foreground">
-                                    Set `0` to hide tax in booking page.
+                                    {{ localize('Set `0` to hide tax in booking page.', 'ضع `0` لإخفاء الضريبة في صفحة الحجز.') }}
                                 </p>
                                 <p v-if="form.errors.tax_percentage" class="text-sm text-red-600">{{ form.errors.tax_percentage }}</p>
                             </div>
                         </div>
 
                         <div class="rounded-lg border p-4">
-                            <div class="text-sm font-medium mb-3">Preview</div>
+                            <div class="text-sm font-medium mb-3">{{ localize('Preview', 'معاينة') }}</div>
                             <div class="rounded-xl border overflow-hidden bg-white">
                                 <div class="h-20" :style="{ background: primarySecondaryGradient }"></div>
                                 <div class="p-4 space-y-3">
@@ -379,7 +382,7 @@ function submit() {
                                         class="w-full rounded-md px-3 py-2 text-sm font-semibold text-white"
                                         :style="{ background: primarySecondaryGradient }"
                                     >
-                                        CTA Preview
+                                        {{ localize('CTA Preview', 'معاينة زر الدعوة') }}
                                     </button>
                                 </div>
                             </div>
@@ -389,48 +392,48 @@ function submit() {
 
                 <section class="rounded-lg border p-5 space-y-4">
                     <div>
-                        <h2 class="text-lg font-semibold">Hero Section</h2>
-                        <p class="text-sm text-muted-foreground">Main banner texts for the tenant homepage.</p>
+                        <h2 class="text-lg font-semibold">{{ localize('Hero Section', 'القسم الرئيسي') }}</h2>
+                        <p class="text-sm text-muted-foreground">{{ localize('Main banner texts for the tenant homepage.', 'النصوص الرئيسية لواجهة الصفحة الرئيسية الخاصة بالمستأجر.') }}</p>
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <div class="space-y-2">
-                            <Label for="hero_title_en">Hero Title (EN)</Label>
+                            <Label for="hero_title_en">{{ localize('Hero Title (EN)', 'عنوان القسم الرئيسي (EN)') }}</Label>
                             <Input id="hero_title_en" v-model="form.hero.title.en" placeholder="Rent the perfect car today" />
                             <p v-if="form.errors['hero.title.en']" class="text-sm text-red-600">{{ form.errors['hero.title.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="hero_title_ar">Hero Title (AR)</Label>
+                            <Label for="hero_title_ar">{{ localize('Hero Title (AR)', 'عنوان القسم الرئيسي (AR)') }}</Label>
                             <Input id="hero_title_ar" v-model="form.hero.title.ar" placeholder="استأجر السيارة المناسبة اليوم" dir="rtl" />
                             <p v-if="form.errors['hero.title.ar']" class="text-sm text-red-600">{{ form.errors['hero.title.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="hero_desc_en">Hero Description (EN)</Label>
+                            <Label for="hero_desc_en">{{ localize('Hero Description (EN)', 'وصف القسم الرئيسي (EN)') }}</Label>
                             <textarea id="hero_desc_en" v-model="form.hero.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['hero.description.en']" class="text-sm text-red-600">{{ form.errors['hero.description.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="hero_desc_ar">Hero Description (AR)</Label>
+                            <Label for="hero_desc_ar">{{ localize('Hero Description (AR)', 'وصف القسم الرئيسي (AR)') }}</Label>
                             <textarea id="hero_desc_ar" v-model="form.hero.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['hero.description.ar']" class="text-sm text-red-600">{{ form.errors['hero.description.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="hero_button_text_en">Button Text (EN)</Label>
+                            <Label for="hero_button_text_en">{{ localize('Button Text (EN)', 'نص الزر (EN)') }}</Label>
                             <Input id="hero_button_text_en" v-model="form.hero.button_text.en" placeholder="Browse Fleet" />
                             <p v-if="form.errors['hero.button_text.en']" class="text-sm text-red-600">{{ form.errors['hero.button_text.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="hero_button_text_ar">Button Text (AR)</Label>
+                            <Label for="hero_button_text_ar">{{ localize('Button Text (AR)', 'نص الزر (AR)') }}</Label>
                             <Input id="hero_button_text_ar" v-model="form.hero.button_text.ar" placeholder="تصفح السيارات" dir="rtl" />
                             <p v-if="form.errors['hero.button_text.ar']" class="text-sm text-red-600">{{ form.errors['hero.button_text.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2 md:col-span-2">
-                            <Label for="hero_button_link">Button Link</Label>
+                            <Label for="hero_button_link">{{ localize('Button Link', 'رابط الزر') }}</Label>
                             <Input id="hero_button_link" v-model="form.hero.button_link" placeholder="/fleet" />
-                            <p class="text-xs text-muted-foreground">Example: `/fleet` or `https://...`</p>
+                            <p class="text-xs text-muted-foreground">{{ localize('Example: `/fleet` or `https://...`', 'مثال: `/fleet` أو `https://...`') }}</p>
                             <p v-if="form.errors['hero.button_link']" class="text-sm text-red-600">{{ form.errors['hero.button_link'] }}</p>
                         </div>
                     </div>
@@ -438,128 +441,128 @@ function submit() {
 
                 <section class="rounded-lg border p-5 space-y-4">
                     <div>
-                        <h2 class="text-lg font-semibold">About Page</h2>
-                        <p class="text-sm text-muted-foreground">Editable content for public About page.</p>
+                        <h2 class="text-lg font-semibold">{{ localize('About Page', 'صفحة من نحن') }}</h2>
+                        <p class="text-sm text-muted-foreground">{{ localize('Editable content for public About page.', 'محتوى قابل للتعديل لصفحة من نحن العامة.') }}</p>
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <div class="space-y-2">
-                            <Label for="about_title_en">Page Title (EN)</Label>
+                            <Label for="about_title_en">{{ localize('Page Title (EN)', 'عنوان الصفحة (EN)') }}</Label>
                             <Input id="about_title_en" v-model="form.about.title.en" />
                             <p v-if="form.errors['about.title.en']" class="text-sm text-red-600">{{ form.errors['about.title.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_title_ar">Page Title (AR)</Label>
+                            <Label for="about_title_ar">{{ localize('Page Title (AR)', 'عنوان الصفحة (AR)') }}</Label>
                             <Input id="about_title_ar" v-model="form.about.title.ar" dir="rtl" />
                             <p v-if="form.errors['about.title.ar']" class="text-sm text-red-600">{{ form.errors['about.title.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="about_subtitle_en">Subtitle (EN)</Label>
+                            <Label for="about_subtitle_en">{{ localize('Subtitle (EN)', 'العنوان الفرعي (EN)') }}</Label>
                             <textarea id="about_subtitle_en" v-model="form.about.subtitle.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['about.subtitle.en']" class="text-sm text-red-600">{{ form.errors['about.subtitle.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_subtitle_ar">Subtitle (AR)</Label>
+                            <Label for="about_subtitle_ar">{{ localize('Subtitle (AR)', 'العنوان الفرعي (AR)') }}</Label>
                             <textarea id="about_subtitle_ar" v-model="form.about.subtitle.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['about.subtitle.ar']" class="text-sm text-red-600">{{ form.errors['about.subtitle.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="about_story_title_en">Story Title (EN)</Label>
+                            <Label for="about_story_title_en">{{ localize('Story Title (EN)', 'عنوان القصة (EN)') }}</Label>
                             <Input id="about_story_title_en" v-model="form.about.story_title.en" />
                             <p v-if="form.errors['about.story_title.en']" class="text-sm text-red-600">{{ form.errors['about.story_title.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_story_title_ar">Story Title (AR)</Label>
+                            <Label for="about_story_title_ar">{{ localize('Story Title (AR)', 'عنوان القصة (AR)') }}</Label>
                             <Input id="about_story_title_ar" v-model="form.about.story_title.ar" dir="rtl" />
                             <p v-if="form.errors['about.story_title.ar']" class="text-sm text-red-600">{{ form.errors['about.story_title.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="about_story_p1_en">Story Paragraph 1 (EN)</Label>
+                            <Label for="about_story_p1_en">{{ localize('Story Paragraph 1 (EN)', 'الفقرة الأولى من القصة (EN)') }}</Label>
                             <textarea id="about_story_p1_en" v-model="form.about.story_p1.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['about.story_p1.en']" class="text-sm text-red-600">{{ form.errors['about.story_p1.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_story_p1_ar">Story Paragraph 1 (AR)</Label>
+                            <Label for="about_story_p1_ar">{{ localize('Story Paragraph 1 (AR)', 'الفقرة الأولى من القصة (AR)') }}</Label>
                             <textarea id="about_story_p1_ar" v-model="form.about.story_p1.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['about.story_p1.ar']" class="text-sm text-red-600">{{ form.errors['about.story_p1.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="about_story_p2_en">Story Paragraph 2 (EN)</Label>
+                            <Label for="about_story_p2_en">{{ localize('Story Paragraph 2 (EN)', 'الفقرة الثانية من القصة (EN)') }}</Label>
                             <textarea id="about_story_p2_en" v-model="form.about.story_p2.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['about.story_p2.en']" class="text-sm text-red-600">{{ form.errors['about.story_p2.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_story_p2_ar">Story Paragraph 2 (AR)</Label>
+                            <Label for="about_story_p2_ar">{{ localize('Story Paragraph 2 (AR)', 'الفقرة الثانية من القصة (AR)') }}</Label>
                             <textarea id="about_story_p2_ar" v-model="form.about.story_p2.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['about.story_p2.ar']" class="text-sm text-red-600">{{ form.errors['about.story_p2.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="about_mission_title_en">Mission Title (EN)</Label>
+                            <Label for="about_mission_title_en">{{ localize('Mission Title (EN)', 'عنوان الرسالة (EN)') }}</Label>
                             <Input id="about_mission_title_en" v-model="form.about.mission_title.en" />
                             <p v-if="form.errors['about.mission_title.en']" class="text-sm text-red-600">{{ form.errors['about.mission_title.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_mission_title_ar">Mission Title (AR)</Label>
+                            <Label for="about_mission_title_ar">{{ localize('Mission Title (AR)', 'عنوان الرسالة (AR)') }}</Label>
                             <Input id="about_mission_title_ar" v-model="form.about.mission_title.ar" dir="rtl" />
                             <p v-if="form.errors['about.mission_title.ar']" class="text-sm text-red-600">{{ form.errors['about.mission_title.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="about_mission_subtitle_en">Mission Subtitle (EN)</Label>
+                            <Label for="about_mission_subtitle_en">{{ localize('Mission Subtitle (EN)', 'وصف الرسالة (EN)') }}</Label>
                             <textarea id="about_mission_subtitle_en" v-model="form.about.mission_subtitle.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['about.mission_subtitle.en']" class="text-sm text-red-600">{{ form.errors['about.mission_subtitle.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_mission_subtitle_ar">Mission Subtitle (AR)</Label>
+                            <Label for="about_mission_subtitle_ar">{{ localize('Mission Subtitle (AR)', 'وصف الرسالة (AR)') }}</Label>
                             <textarea id="about_mission_subtitle_ar" v-model="form.about.mission_subtitle.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['about.mission_subtitle.ar']" class="text-sm text-red-600">{{ form.errors['about.mission_subtitle.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="about_cta_title_en">CTA Title (EN)</Label>
+                            <Label for="about_cta_title_en">{{ localize('CTA Title (EN)', 'عنوان الدعوة للإجراء (EN)') }}</Label>
                             <Input id="about_cta_title_en" v-model="form.about.cta_title.en" />
                             <p v-if="form.errors['about.cta_title.en']" class="text-sm text-red-600">{{ form.errors['about.cta_title.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_cta_title_ar">CTA Title (AR)</Label>
+                            <Label for="about_cta_title_ar">{{ localize('CTA Title (AR)', 'عنوان الدعوة للإجراء (AR)') }}</Label>
                             <Input id="about_cta_title_ar" v-model="form.about.cta_title.ar" dir="rtl" />
                             <p v-if="form.errors['about.cta_title.ar']" class="text-sm text-red-600">{{ form.errors['about.cta_title.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="about_cta_subtitle_en">CTA Subtitle (EN)</Label>
+                            <Label for="about_cta_subtitle_en">{{ localize('CTA Subtitle (EN)', 'وصف الدعوة للإجراء (EN)') }}</Label>
                             <textarea id="about_cta_subtitle_en" v-model="form.about.cta_subtitle.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['about.cta_subtitle.en']" class="text-sm text-red-600">{{ form.errors['about.cta_subtitle.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_cta_subtitle_ar">CTA Subtitle (AR)</Label>
+                            <Label for="about_cta_subtitle_ar">{{ localize('CTA Subtitle (AR)', 'وصف الدعوة للإجراء (AR)') }}</Label>
                             <textarea id="about_cta_subtitle_ar" v-model="form.about.cta_subtitle.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['about.cta_subtitle.ar']" class="text-sm text-red-600">{{ form.errors['about.cta_subtitle.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="about_cta_browse_text_en">CTA Browse Button (EN)</Label>
+                            <Label for="about_cta_browse_text_en">{{ localize('CTA Browse Button (EN)', 'زر التصفح في الدعوة (EN)') }}</Label>
                             <Input id="about_cta_browse_text_en" v-model="form.about.cta_browse_text.en" />
                             <p v-if="form.errors['about.cta_browse_text.en']" class="text-sm text-red-600">{{ form.errors['about.cta_browse_text.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_cta_browse_text_ar">CTA Browse Button (AR)</Label>
+                            <Label for="about_cta_browse_text_ar">{{ localize('CTA Browse Button (AR)', 'زر التصفح في الدعوة (AR)') }}</Label>
                             <Input id="about_cta_browse_text_ar" v-model="form.about.cta_browse_text.ar" dir="rtl" />
                             <p v-if="form.errors['about.cta_browse_text.ar']" class="text-sm text-red-600">{{ form.errors['about.cta_browse_text.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="about_cta_contact_text_en">CTA Contact Button (EN)</Label>
+                            <Label for="about_cta_contact_text_en">{{ localize('CTA Contact Button (EN)', 'زر التواصل في الدعوة (EN)') }}</Label>
                             <Input id="about_cta_contact_text_en" v-model="form.about.cta_contact_text.en" />
                             <p v-if="form.errors['about.cta_contact_text.en']" class="text-sm text-red-600">{{ form.errors['about.cta_contact_text.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="about_cta_contact_text_ar">CTA Contact Button (AR)</Label>
+                            <Label for="about_cta_contact_text_ar">{{ localize('CTA Contact Button (AR)', 'زر التواصل في الدعوة (AR)') }}</Label>
                             <Input id="about_cta_contact_text_ar" v-model="form.about.cta_contact_text.ar" dir="rtl" />
                             <p v-if="form.errors['about.cta_contact_text.ar']" class="text-sm text-red-600">{{ form.errors['about.cta_contact_text.ar'] }}</p>
                         </div>
@@ -568,75 +571,75 @@ function submit() {
 
                 <section class="rounded-lg border p-5 space-y-4">
                     <div>
-                        <h2 class="text-lg font-semibold">Contact Page</h2>
-                        <p class="text-sm text-muted-foreground">Editable titles and business hours for public Contact page.</p>
+                        <h2 class="text-lg font-semibold">{{ localize('Contact Page', 'صفحة اتصل بنا') }}</h2>
+                        <p class="text-sm text-muted-foreground">{{ localize('Editable titles and business hours for public Contact page.', 'العناوين وساعات العمل القابلة للتعديل في صفحة اتصل بنا العامة.') }}</p>
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <div class="space-y-2">
-                            <Label for="contact_page_title_en">Page Title (EN)</Label>
+                            <Label for="contact_page_title_en">{{ localize('Page Title (EN)', 'عنوان الصفحة (EN)') }}</Label>
                             <Input id="contact_page_title_en" v-model="form.contact_page.title.en" />
                             <p v-if="form.errors['contact_page.title.en']" class="text-sm text-red-600">{{ form.errors['contact_page.title.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="contact_page_title_ar">Page Title (AR)</Label>
+                            <Label for="contact_page_title_ar">{{ localize('Page Title (AR)', 'عنوان الصفحة (AR)') }}</Label>
                             <Input id="contact_page_title_ar" v-model="form.contact_page.title.ar" dir="rtl" />
                             <p v-if="form.errors['contact_page.title.ar']" class="text-sm text-red-600">{{ form.errors['contact_page.title.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="contact_page_subtitle_en">Subtitle (EN)</Label>
+                            <Label for="contact_page_subtitle_en">{{ localize('Subtitle (EN)', 'العنوان الفرعي (EN)') }}</Label>
                             <textarea id="contact_page_subtitle_en" v-model="form.contact_page.subtitle.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['contact_page.subtitle.en']" class="text-sm text-red-600">{{ form.errors['contact_page.subtitle.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="contact_page_subtitle_ar">Subtitle (AR)</Label>
+                            <Label for="contact_page_subtitle_ar">{{ localize('Subtitle (AR)', 'العنوان الفرعي (AR)') }}</Label>
                             <textarea id="contact_page_subtitle_ar" v-model="form.contact_page.subtitle.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['contact_page.subtitle.ar']" class="text-sm text-red-600">{{ form.errors['contact_page.subtitle.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="contact_page_form_title_en">Form Title (EN)</Label>
+                            <Label for="contact_page_form_title_en">{{ localize('Form Title (EN)', 'عنوان النموذج (EN)') }}</Label>
                             <Input id="contact_page_form_title_en" v-model="form.contact_page.form_title.en" />
                             <p v-if="form.errors['contact_page.form_title.en']" class="text-sm text-red-600">{{ form.errors['contact_page.form_title.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="contact_page_form_title_ar">Form Title (AR)</Label>
+                            <Label for="contact_page_form_title_ar">{{ localize('Form Title (AR)', 'عنوان النموذج (AR)') }}</Label>
                             <Input id="contact_page_form_title_ar" v-model="form.contact_page.form_title.ar" dir="rtl" />
                             <p v-if="form.errors['contact_page.form_title.ar']" class="text-sm text-red-600">{{ form.errors['contact_page.form_title.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="contact_page_info_title_en">Sidebar Title (EN)</Label>
+                            <Label for="contact_page_info_title_en">{{ localize('Sidebar Title (EN)', 'عنوان الشريط الجانبي (EN)') }}</Label>
                             <Input id="contact_page_info_title_en" v-model="form.contact_page.info_title.en" />
                             <p v-if="form.errors['contact_page.info_title.en']" class="text-sm text-red-600">{{ form.errors['contact_page.info_title.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="contact_page_info_title_ar">Sidebar Title (AR)</Label>
+                            <Label for="contact_page_info_title_ar">{{ localize('Sidebar Title (AR)', 'عنوان الشريط الجانبي (AR)') }}</Label>
                             <Input id="contact_page_info_title_ar" v-model="form.contact_page.info_title.ar" dir="rtl" />
                             <p v-if="form.errors['contact_page.info_title.ar']" class="text-sm text-red-600">{{ form.errors['contact_page.info_title.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="contact_page_hours_en">Business Hours (EN)</Label>
+                            <Label for="contact_page_hours_en">{{ localize('Business Hours (EN)', 'ساعات العمل (EN)') }}</Label>
                             <textarea id="contact_page_hours_en" v-model="form.contact_page.hours.en" rows="4" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                            <p class="text-xs text-muted-foreground">Use new line for each row.</p>
+                            <p class="text-xs text-muted-foreground">{{ localize('Use new line for each row.', 'استخدم سطرًا جديدًا لكل صف.') }}</p>
                             <p v-if="form.errors['contact_page.hours.en']" class="text-sm text-red-600">{{ form.errors['contact_page.hours.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="contact_page_hours_ar">Business Hours (AR)</Label>
+                            <Label for="contact_page_hours_ar">{{ localize('Business Hours (AR)', 'ساعات العمل (AR)') }}</Label>
                             <textarea id="contact_page_hours_ar" v-model="form.contact_page.hours.ar" rows="4" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                            <p class="text-xs text-muted-foreground">Use new line for each row.</p>
+                            <p class="text-xs text-muted-foreground">{{ localize('Use new line for each row.', 'استخدم سطرًا جديدًا لكل صف.') }}</p>
                             <p v-if="form.errors['contact_page.hours.ar']" class="text-sm text-red-600">{{ form.errors['contact_page.hours.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="contact_page_quick_links_title_en">Quick Links Title (EN)</Label>
+                            <Label for="contact_page_quick_links_title_en">{{ localize('Quick Links Title (EN)', 'عنوان الروابط السريعة (EN)') }}</Label>
                             <Input id="contact_page_quick_links_title_en" v-model="form.contact_page.quick_links_title.en" />
                             <p v-if="form.errors['contact_page.quick_links_title.en']" class="text-sm text-red-600">{{ form.errors['contact_page.quick_links_title.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="contact_page_quick_links_title_ar">Quick Links Title (AR)</Label>
+                            <Label for="contact_page_quick_links_title_ar">{{ localize('Quick Links Title (AR)', 'عنوان الروابط السريعة (AR)') }}</Label>
                             <Input id="contact_page_quick_links_title_ar" v-model="form.contact_page.quick_links_title.ar" dir="rtl" />
                             <p v-if="form.errors['contact_page.quick_links_title.ar']" class="text-sm text-red-600">{{ form.errors['contact_page.quick_links_title.ar'] }}</p>
                         </div>
@@ -645,40 +648,40 @@ function submit() {
 
                 <section class="rounded-lg border p-5 space-y-4">
                     <div>
-                        <h2 class="text-lg font-semibold">Contact & Footer (MVP)</h2>
-                        <p class="text-sm text-muted-foreground">Basic public contact info and footer description.</p>
+                        <h2 class="text-lg font-semibold">{{ localize('Contact & Footer (MVP)', 'التواصل والتذييل') }}</h2>
+                        <p class="text-sm text-muted-foreground">{{ localize('Basic public contact info and footer description.', 'معلومات التواصل العامة ووصف التذييل.') }}</p>
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <div class="space-y-2">
-                            <Label for="contact_phone">Phone</Label>
+                            <Label for="contact_phone">{{ localize('Phone', 'الهاتف') }}</Label>
                             <Input id="contact_phone" v-model="form.contact.phone" placeholder="+965 ..." />
                             <p v-if="form.errors['contact.phone']" class="text-sm text-red-600">{{ form.errors['contact.phone'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="contact_email">Email</Label>
+                            <Label for="contact_email">{{ localize('Email', 'البريد الإلكتروني') }}</Label>
                             <Input id="contact_email" v-model="form.contact.email" type="email" placeholder="hello@example.com" />
                             <p v-if="form.errors['contact.email']" class="text-sm text-red-600">{{ form.errors['contact.email'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="contact_address_en">Address (EN)</Label>
+                            <Label for="contact_address_en">{{ localize('Address (EN)', 'العنوان (EN)') }}</Label>
                             <Input id="contact_address_en" v-model="form.contact.address.en" />
                             <p v-if="form.errors['contact.address.en']" class="text-sm text-red-600">{{ form.errors['contact.address.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="contact_address_ar">Address (AR)</Label>
+                            <Label for="contact_address_ar">{{ localize('Address (AR)', 'العنوان (AR)') }}</Label>
                             <Input id="contact_address_ar" v-model="form.contact.address.ar" dir="rtl" />
                             <p v-if="form.errors['contact.address.ar']" class="text-sm text-red-600">{{ form.errors['contact.address.ar'] }}</p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="footer_desc_en">Footer Description (EN)</Label>
+                            <Label for="footer_desc_en">{{ localize('Footer Description (EN)', 'وصف التذييل (EN)') }}</Label>
                             <textarea id="footer_desc_en" v-model="form.footer.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['footer.description.en']" class="text-sm text-red-600">{{ form.errors['footer.description.en'] }}</p>
                         </div>
                         <div class="space-y-2">
-                            <Label for="footer_desc_ar">Footer Description (AR)</Label>
+                            <Label for="footer_desc_ar">{{ localize('Footer Description (AR)', 'وصف التذييل (AR)') }}</Label>
                             <textarea id="footer_desc_ar" v-model="form.footer.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                             <p v-if="form.errors['footer.description.ar']" class="text-sm text-red-600">{{ form.errors['footer.description.ar'] }}</p>
                         </div>
@@ -687,7 +690,7 @@ function submit() {
 
                 <div class="flex justify-end">
                     <Button type="submit" :disabled="form.processing">
-                        {{ form.processing ? 'Saving...' : 'Save Changes' }}
+                        {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Changes', 'حفظ التغييرات') }}
                     </Button>
                 </div>
             </form>

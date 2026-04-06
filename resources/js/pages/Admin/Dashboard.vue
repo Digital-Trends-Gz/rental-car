@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { useTrans } from '@/composables/useTrans';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Car,
@@ -14,9 +15,7 @@ import {
     Layers,
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
-import { usePage } from '@inertiajs/vue3';
 
-// ────────────────────── Props ──────────────────────────────────────────────
 const props = defineProps<{
     stats: {
         total_cars: number;
@@ -69,35 +68,32 @@ const props = defineProps<{
     canAccessAllBranches: boolean;
 }>();
 
-// ────────────────────── Helpers ────────────────────────────────────────────
+const { locale } = useTrans();
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+
 const page = usePage<any>();
 const currency = computed(() => page.props.currency_symbol ?? '$');
+const numberLocale = computed(() => (locale.value === 'ar' ? 'ar' : 'en-US'));
 
 const fmt = (n: number) =>
-    new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    new Intl.NumberFormat(numberLocale.value, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 const fmtCurrency = (n: number) => `${currency.value}${fmt(n)}`;
 
 const fmtDate = (d: string | null) =>
-    d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    d
+        ? new Date(d).toLocaleDateString(numberLocale.value, { month: 'short', day: 'numeric', year: 'numeric' })
+        : localize('N/A', 'غير متوفر');
 
-// ────────────────────── Branch filter ──────────────────────────────────────
 const selectedBranch = ref<number | null>(props.filters.branch_id ?? null);
 const applyBranchFilter = () => {
     router.get(window.location.pathname, { branch_id: selectedBranch.value ?? undefined }, { preserveState: true });
 };
 
-// ────────────────────── Monthly Revenue chart ──────────────────────────────
-const maxRevenue = computed(() =>
-    Math.max(...props.monthlyRevenue.map((m) => m.revenue), 1),
-);
-const barHeight = (revenue: number) =>
-    Math.max(4, Math.round((revenue / maxRevenue.value) * 160));
+const maxRevenue = computed(() => Math.max(...props.monthlyRevenue.map((m) => m.revenue), 1));
+const barHeight = (revenue: number) => Math.max(4, Math.round((revenue / maxRevenue.value) * 160));
 
-// ────────────────────── Reservation status chart ───────────────────────────
-const totalResCount = computed(() =>
-    props.reservationsByStatus.reduce((sum, s) => sum + s.count, 0),
-);
+const totalResCount = computed(() => props.reservationsByStatus.reduce((sum, s) => sum + s.count, 0));
 const statusBarWidths = computed(() =>
     props.reservationsByStatus.map((s) => ({
         ...s,
@@ -105,52 +101,51 @@ const statusBarWidths = computed(() =>
     })),
 );
 
-// ────────────────────── KPI cards config ───────────────────────────────────
 const kpiCards = computed(() => [
     {
-        title: 'Total Cars',
+        title: localize('Total Cars', 'إجمالي السيارات'),
         value: props.stats.total_cars,
-        sub: `${props.stats.available_cars} available`,
+        sub: localize(`${props.stats.available_cars} available`, `${props.stats.available_cars} متاحة`),
         icon: Car,
         accent: '#3B82F6',
         bg: 'rgba(59,130,246,0.1)',
     },
     {
-        title: 'Total Revenue',
+        title: localize('Total Revenue', 'إجمالي الإيرادات'),
         value: fmtCurrency(props.stats.total_revenue),
-        sub: 'All completed payments',
+        sub: localize('All completed payments', 'جميع المدفوعات المكتملة'),
         icon: DollarSign,
         accent: '#10B981',
         bg: 'rgba(16,185,129,0.1)',
     },
     {
-        title: 'Active Reservations',
+        title: localize('Active Reservations', 'الحجوزات النشطة'),
         value: props.stats.active_reservations,
-        sub: `${props.stats.pending_reservations} pending`,
+        sub: localize(`${props.stats.pending_reservations} pending`, `${props.stats.pending_reservations} قيد الانتظار`),
         icon: Calendar,
         accent: '#F59E0B',
         bg: 'rgba(245,158,11,0.1)',
     },
     {
-        title: 'Total Reservations',
+        title: localize('Total Reservations', 'إجمالي الحجوزات'),
         value: props.stats.total_reservations,
-        sub: 'All time bookings',
+        sub: localize('All time bookings', 'كل الحجوزات'),
         icon: CheckCircle2,
         accent: '#8B5CF6',
         bg: 'rgba(139,92,246,0.1)',
     },
     {
-        title: 'Total Clients',
+        title: localize('Total Clients', 'إجمالي العملاء'),
         value: props.stats.total_clients,
-        sub: 'Registered clients',
+        sub: localize('Registered clients', 'العملاء المسجلون'),
         icon: Users,
         accent: '#EC4899',
         bg: 'rgba(236,72,153,0.1)',
     },
     {
-        title: 'Available Cars',
+        title: localize('Available Cars', 'السيارات المتاحة'),
         value: props.stats.available_cars,
-        sub: `of ${props.stats.total_cars} total`,
+        sub: localize(`of ${props.stats.total_cars} total`, `من أصل ${props.stats.total_cars}`),
         icon: TrendingUp,
         accent: '#06B6D4',
         bg: 'rgba(6,182,212,0.1)',
@@ -159,54 +154,43 @@ const kpiCards = computed(() => [
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head :title="localize('Dashboard', 'لوحة التحكم')" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-6 lg:p-8">
-
-            <!-- ── Header ─────────────────────────────────────────── -->
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-3">
                     <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow">
                         <LayoutDashboard class="h-5 w-5" />
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
-                        <p class="text-sm text-muted-foreground">Your rental business at a glance</p>
+                        <h1 class="text-2xl font-bold tracking-tight">{{ localize('Dashboard', 'لوحة التحكم') }}</h1>
+                        <p class="text-sm text-muted-foreground">{{ localize('Your rental business at a glance', 'نظرة سريعة على أعمال التأجير الخاصة بك') }}</p>
                     </div>
                 </div>
 
-                <!-- Branch filter -->
                 <div v-if="canAccessAllBranches && branches.length > 1" class="flex items-center gap-2">
                     <select
                         v-model="selectedBranch"
                         class="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                         @change="applyBranchFilter"
                     >
-                        <option :value="null">All Branches</option>
+                        <option :value="null">{{ localize('All Branches', 'كل الفروع') }}</option>
                         <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
                     </select>
                 </div>
             </div>
 
-            <!-- ── KPI Cards ───────────────────────────────────────── -->
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
                 <Card
                     v-for="card in kpiCards"
                     :key="card.title"
                     class="relative overflow-hidden border-0 shadow-sm transition-shadow hover:shadow-md"
                 >
-                    <!-- accent stripe -->
-                    <div
-                        class="absolute inset-x-0 top-0 h-1 rounded-t-xl"
-                        :style="{ background: card.accent }"
-                    />
+                    <div class="absolute inset-x-0 top-0 h-1 rounded-t-xl" :style="{ background: card.accent }" />
                     <CardHeader class="pb-2 pt-4">
                         <div class="flex items-center justify-between">
                             <CardTitle class="text-xs font-medium text-muted-foreground">{{ card.title }}</CardTitle>
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg"
-                                :style="{ background: card.bg }"
-                            >
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg" :style="{ background: card.bg }">
                                 <component :is="card.icon" class="h-4 w-4" :style="{ color: card.accent }" />
                             </div>
                         </div>
@@ -218,17 +202,14 @@ const kpiCards = computed(() => [
                 </Card>
             </div>
 
-            <!-- ── Charts Row ──────────────────────────────────────── -->
             <div class="grid gap-4 lg:grid-cols-2">
-
-                <!-- Monthly Revenue Bar Chart -->
                 <Card class="border-0 shadow-sm">
                     <CardHeader>
                         <div class="flex items-center gap-2">
                             <TrendingUp class="h-4 w-4 text-primary" />
-                            <CardTitle class="text-base">Monthly Revenue</CardTitle>
+                            <CardTitle class="text-base">{{ localize('Monthly Revenue', 'الإيراد الشهري') }}</CardTitle>
                         </div>
-                        <p class="text-xs text-muted-foreground">Last 6 months</p>
+                        <p class="text-xs text-muted-foreground">{{ localize('Last 6 months', 'آخر 6 أشهر') }}</p>
                     </CardHeader>
                     <CardContent>
                         <div class="flex h-44 items-end gap-2 px-2">
@@ -237,7 +218,6 @@ const kpiCards = computed(() => [
                                 :key="item.month"
                                 class="group flex flex-1 flex-col items-center gap-1"
                             >
-                                <!-- Tooltip -->
                                 <div class="relative">
                                     <div
                                         class="absolute -top-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-2 py-1 text-xs text-background group-hover:block"
@@ -245,35 +225,30 @@ const kpiCards = computed(() => [
                                         {{ fmtCurrency(item.revenue) }}
                                     </div>
                                 </div>
-                                <!-- Bar -->
                                 <div
                                     class="w-full rounded-t-md bg-primary/80 transition-all duration-300 hover:bg-primary"
                                     :style="{ height: barHeight(item.revenue) + 'px' }"
                                 />
-                                <!-- Label -->
                                 <span class="text-center text-[10px] text-muted-foreground">
                                     {{ item.month.split(' ')[0] }}
                                 </span>
                             </div>
                         </div>
-                        <!-- Y-axis hint -->
                         <p class="mt-2 text-right text-xs text-muted-foreground">
-                            Max {{ fmtCurrency(maxRevenue) }}
+                            {{ localize('Max', 'الحد الأقصى') }} {{ fmtCurrency(maxRevenue) }}
                         </p>
                     </CardContent>
                 </Card>
 
-                <!-- Reservation Status Breakdown -->
                 <Card class="border-0 shadow-sm">
                     <CardHeader>
                         <div class="flex items-center gap-2">
                             <Layers class="h-4 w-4 text-primary" />
-                            <CardTitle class="text-base">Reservations by Status</CardTitle>
+                            <CardTitle class="text-base">{{ localize('Reservations by Status', 'الحجوزات حسب الحالة') }}</CardTitle>
                         </div>
-                        <p class="text-xs text-muted-foreground">{{ stats.total_reservations }} total</p>
+                        <p class="text-xs text-muted-foreground">{{ localize(`${props.stats.total_reservations} total`, `الإجمالي ${props.stats.total_reservations}`) }}</p>
                     </CardHeader>
                     <CardContent class="space-y-4">
-                        <!-- Stacked bar -->
                         <div class="flex h-5 w-full overflow-hidden rounded-full">
                             <div
                                 v-for="seg in statusBarWidths.filter((s) => s.pct > 0)"
@@ -282,13 +257,9 @@ const kpiCards = computed(() => [
                                 class="transition-all duration-500"
                                 :title="`${seg.label}: ${seg.count}`"
                             />
-                            <div
-                                v-if="totalResCount === 0"
-                                class="w-full rounded-full bg-muted"
-                            />
+                            <div v-if="totalResCount === 0" class="w-full rounded-full bg-muted" />
                         </div>
 
-                        <!-- Legend -->
                         <div class="grid grid-cols-2 gap-2">
                             <div
                                 v-for="seg in statusBarWidths"
@@ -306,12 +277,11 @@ const kpiCards = computed(() => [
                 </Card>
             </div>
 
-            <!-- ── Fleet Status ────────────────────────────────────── -->
             <Card class="border-0 shadow-sm">
                 <CardHeader>
                     <div class="flex items-center gap-2">
                         <Car class="h-4 w-4 text-primary" />
-                        <CardTitle class="text-base">Fleet Status</CardTitle>
+                        <CardTitle class="text-base">{{ localize('Fleet Status', 'حالة الأسطول') }}</CardTitle>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -320,12 +290,9 @@ const kpiCards = computed(() => [
                             v-for="fs in fleetStatus"
                             :key="fs.status"
                             class="flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
-                            :style="{ borderColor: fs.color, color: fs.color, background: fs.color + '15' }"
+                            :style="{ borderColor: fs.color, color: fs.color, background: `${fs.color}15` }"
                         >
-                            <span
-                                class="h-2 w-2 rounded-full"
-                                :style="{ background: fs.color }"
-                            />
+                            <span class="h-2 w-2 rounded-full" :style="{ background: fs.color }" />
                             {{ fs.label }}
                             <span class="ml-1 font-bold">{{ fs.count }}</span>
                         </div>
@@ -333,35 +300,31 @@ const kpiCards = computed(() => [
                 </CardContent>
             </Card>
 
-            <!-- ── Tables Row ──────────────────────────────────────── -->
             <div class="grid gap-4 lg:grid-cols-2">
-
-                <!-- Recent Reservations -->
                 <Card class="border-0 shadow-sm">
                     <CardHeader>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <Clock class="h-4 w-4 text-primary" />
-                                <CardTitle class="text-base">Recent Reservations</CardTitle>
+                                <CardTitle class="text-base">{{ localize('Recent Reservations', 'أحدث الحجوزات') }}</CardTitle>
                             </div>
-                            <Link
-                                :href="`/admin/reservations`"
-                                class="text-xs text-primary hover:underline"
-                            >View all →</Link>
+                            <Link :href="`/admin/reservations`" class="text-xs text-primary hover:underline">
+                                {{ localize('View all', 'عرض الكل') }} →
+                            </Link>
                         </div>
                     </CardHeader>
                     <CardContent class="p-0">
                         <div v-if="recentReservations.length === 0" class="py-8 text-center text-sm text-muted-foreground">
-                            No reservations yet.
+                            {{ localize('No reservations yet.', 'لا توجد حجوزات حتى الآن.') }}
                         </div>
                         <table v-else class="w-full text-sm">
                             <thead>
                                 <tr class="border-b">
-                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">Client</th>
-                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">Car</th>
-                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">Dates</th>
-                                    <th class="px-4 py-2 text-right text-xs text-muted-foreground">Amount</th>
-                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">Status</th>
+                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Client', 'العميل') }}</th>
+                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Car', 'السيارة') }}</th>
+                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Dates', 'التواريخ') }}</th>
+                                    <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Amount', 'المبلغ') }}</th>
+                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Status', 'الحالة') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -370,7 +333,7 @@ const kpiCards = computed(() => [
                                     :key="res.id"
                                     class="border-b last:border-0 transition-colors hover:bg-muted/40"
                                 >
-                                    <td class="px-4 py-3 font-medium">{{ res.client_name ?? '—' }}</td>
+                                    <td class="px-4 py-3 font-medium">{{ res.client_name ?? localize('N/A', 'غير متوفر') }}</td>
                                     <td class="max-w-[120px] truncate px-4 py-3 text-muted-foreground">{{ res.car_name }}</td>
                                     <td class="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
                                         {{ fmtDate(res.start_date) }}<br>{{ fmtDate(res.end_date) }}
@@ -381,7 +344,7 @@ const kpiCards = computed(() => [
                                     <td class="px-4 py-3">
                                         <span
                                             class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize"
-                                            :style="{ background: res.status_color + '20', color: res.status_color }"
+                                            :style="{ background: `${res.status_color}20`, color: res.status_color }"
                                         >
                                             {{ res.status.replace('_', ' ') }}
                                         </span>
@@ -392,32 +355,30 @@ const kpiCards = computed(() => [
                     </CardContent>
                 </Card>
 
-                <!-- Top Cars -->
                 <Card class="border-0 shadow-sm">
                     <CardHeader>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <Car class="h-4 w-4 text-primary" />
-                                <CardTitle class="text-base">Top Performing Cars</CardTitle>
+                                <CardTitle class="text-base">{{ localize('Top Performing Cars', 'أفضل السيارات أداءً') }}</CardTitle>
                             </div>
-                            <Link
-                                :href="`/admin/cars`"
-                                class="text-xs text-primary hover:underline"
-                            >View all →</Link>
+                            <Link :href="`/admin/cars`" class="text-xs text-primary hover:underline">
+                                {{ localize('View all', 'عرض الكل') }} →
+                            </Link>
                         </div>
                     </CardHeader>
                     <CardContent class="p-0">
                         <div v-if="topCars.length === 0" class="py-8 text-center text-sm text-muted-foreground">
-                            No car data yet.
+                            {{ localize('No car data yet.', 'لا توجد بيانات سيارات حتى الآن.') }}
                         </div>
                         <table v-else class="w-full text-sm">
                             <thead>
                                 <tr class="border-b">
                                     <th class="px-4 py-2 text-left text-xs text-muted-foreground">#</th>
-                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">Car</th>
-                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">Status</th>
-                                    <th class="px-4 py-2 text-right text-xs text-muted-foreground">Price/Day</th>
-                                    <th class="px-4 py-2 text-right text-xs text-muted-foreground">Bookings</th>
+                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Car', 'السيارة') }}</th>
+                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Status', 'الحالة') }}</th>
+                                    <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Price/Day', 'السعر/اليوم') }}</th>
+                                    <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Bookings', 'الحجوزات') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -441,7 +402,7 @@ const kpiCards = computed(() => [
                                     <td class="px-4 py-3">
                                         <span
                                             class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize"
-                                            :style="{ background: car.status_color + '20', color: car.status_color }"
+                                            :style="{ background: `${car.status_color}20`, color: car.status_color }"
                                         >
                                             {{ car.status_label }}
                                         </span>
@@ -454,7 +415,6 @@ const kpiCards = computed(() => [
                     </CardContent>
                 </Card>
             </div>
-
         </main>
     </AdminLayout>
 </template>
