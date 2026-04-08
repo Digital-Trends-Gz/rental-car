@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\RolesController;
 use App\Http\Controllers\Admin\MaintenanceTypesController;
 use App\Http\Controllers\Admin\MaintenanceRecordsController;
 use App\Http\Controllers\Admin\CarViolationsController;
+use App\Http\Controllers\Admin\ViolationTypesController;
 use App\Http\Controllers\Admin\StripeConnectController;
 use App\Http\Controllers\Admin\PaymentProvidersController;
 use App\Http\Controllers\Admin\WebsiteSettingsController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Admin\ContractsController;
 use App\Http\Controllers\Admin\CouponsController;
 use App\Http\Controllers\Admin\CarDiscountsController;
 use App\Http\Controllers\Admin\CarDamageReportsController;
+use App\Http\Controllers\Admin\CarDocumentsController;
 use App\Http\Controllers\Admin\DashboardController;
 
 Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscription'])
@@ -34,11 +36,28 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
 
         // Cars
         Route::resource('cars', CarsController::class)
-            ->except(['show'])
             ->middleware('permission:tenant-manage-cars');
         Route::get('cars/{car}/calendar', [CarsController::class, 'calendar'])
             ->middleware('permission:tenant-manage-cars')
             ->name('cars.calendar');
+        Route::get('cars/{car}/documents', [CarDocumentsController::class, 'index'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('cars.documents.index');
+        Route::get('cars/{car}/documents/create', [CarDocumentsController::class, 'create'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('cars.documents.create');
+        Route::post('cars/{car}/documents', [CarDocumentsController::class, 'store'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('cars.documents.store');
+        Route::get('cars/{car}/documents/{document}/edit', [CarDocumentsController::class, 'edit'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('cars.documents.edit');
+        Route::put('cars/{car}/documents/{document}', [CarDocumentsController::class, 'update'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('cars.documents.update');
+        Route::delete('cars/{car}/documents/{document}', [CarDocumentsController::class, 'destroy'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('cars.documents.destroy');
 
         // Maintenance Types
         Route::resource('maintenance-types', MaintenanceTypesController::class)
@@ -52,6 +71,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->middleware('permission:tenant-manage-cars');
 
         // Car Violations
+        Route::resource('violation-types', ViolationTypesController::class)
+            ->except(['show'])
+            ->middleware('permission:tenant-manage-cars');
         Route::resource('car-violations', CarViolationsController::class)
             ->except(['show'])
             ->parameters(['car-violations' => 'carViolation'])

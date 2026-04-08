@@ -63,6 +63,7 @@ const form = useForm({
 });
 
 const showAvailabilityDialog = ref(false);
+const selectedImageIndex = ref(0);
 const couponApplying = ref(false);
 const couponMessage = ref('');
 const autoDiscount = ref(0);
@@ -409,6 +410,18 @@ const images = computed(() => {
     ];
 });
 
+const currentImage = computed(() => images.value[selectedImageIndex.value] ?? images.value[0]);
+
+watch(
+    images,
+    (value) => {
+        if (selectedImageIndex.value >= value.length) {
+            selectedImageIndex.value = 0;
+        }
+    },
+    { immediate: true },
+);
+
 const commonLocations = computed(() => [
     t('booking.locations.downtown_office'),
     t('booking.locations.airport_terminal_1'),
@@ -494,10 +507,26 @@ const commonLocations = computed(() => [
                                 class="relative h-72 bg-gradient-to-br from-gray-100 to-gray-200 sm:h-96"
                             >
                                 <img
-                                    :src="images[0]?.url"
-                                    alt="car image"
+                                    :src="currentImage?.url"
+                                    :alt="currentImage?.alt || 'car image'"
                                     class="h-full w-full object-cover transition-all duration-500"
                                 />
+                            </div>
+                            <div v-if="images.length > 1" class="grid grid-cols-4 gap-3 border-t border-gray-100 p-4 sm:grid-cols-5">
+                                <button
+                                    v-for="(image, index) in images"
+                                    :key="`${image.url}-${index}`"
+                                    type="button"
+                                    class="overflow-hidden rounded-lg border-2 bg-white transition"
+                                    :class="selectedImageIndex === index ? 'border-orange-500 ring-2 ring-orange-200' : 'border-transparent hover:border-gray-200'"
+                                    @click="selectedImageIndex = index"
+                                >
+                                    <img
+                                        :src="image.url"
+                                        :alt="image.alt"
+                                        class="h-16 w-full object-cover"
+                                    />
+                                </button>
                             </div>
 
                             <!--  Car Info -->

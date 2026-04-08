@@ -16,6 +16,7 @@ class CarMaintenance extends Model
         'car_id',
         'branch_id',
         'maintenance_type_id',
+        'maintenance_workshop_id',
         'status',
         'scheduled_date',
         'started_at',
@@ -51,9 +52,13 @@ class CarMaintenance extends Model
         return $this->belongsTo(MaintenanceType::class);
     }
 
+    public function workshop(): BelongsTo
+    {
+        return $this->belongsTo(MaintenanceWorkshop::class, 'maintenance_workshop_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 }
-

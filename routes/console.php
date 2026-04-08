@@ -4,6 +4,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use App\Support\TenantAdminAccessSync;
+use App\Services\Cars\CarDocumentReminderService;
 use App\Services\Maintenance\MaintenanceScheduleService;
 use App\Services\Rentals\RentalStatusSyncService;
 
@@ -44,5 +45,14 @@ Artisan::command('tenants:sync-owner-access', function () {
     $this->line('Admins synced: '.$result['synced']);
 })->purpose('Backfill tenant-owner role and tenant-* permissions for existing tenant admins');
 
+Artisan::command('cars:notify-expiring-documents', function () {
+    $result = app(CarDocumentReminderService::class)->run();
+
+    $this->info('Car document reminder check completed.');
+    $this->line('Documents checked: '.$result['checked']);
+    $this->line('Notifications sent: '.$result['notified']);
+})->purpose('Notify tenant admins when car license or insurance expires in 10 days');
+
 Schedule::command('maintenance:process-schedule')->everyFiveMinutes();
 Schedule::command('rentals:sync-statuses')->everyFiveMinutes();
+Schedule::command('cars:notify-expiring-documents')->dailyAt('14:22');

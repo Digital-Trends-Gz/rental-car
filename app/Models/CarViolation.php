@@ -16,6 +16,7 @@ class CarViolation extends Model
         'car_id',
         'branch_id',
         'reservation_id',
+        'violation_type_id',
         'issued_to_user_id',
         'created_by',
         'violation_number',
@@ -55,6 +56,11 @@ class CarViolation extends Model
         return $this->belongsTo(Reservation::class);
     }
 
+    public function violationType(): BelongsTo
+    {
+        return $this->belongsTo(ViolationType::class);
+    }
+
     public function issuedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_to_user_id');
@@ -65,4 +71,3 @@ class CarViolation extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 }
-

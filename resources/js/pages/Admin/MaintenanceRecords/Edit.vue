@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
     record: {
         id: number;
         car_id: number;
         maintenance_type_id: number | null;
+        maintenance_workshop_id: number | null;
         status: string;
         scheduled_date: string | null;
         started_at: string | null;
@@ -22,7 +23,18 @@ const props = defineProps<{
         notes: string | null;
     } | null;
     cars: Array<{ id: number; label: string }>;
-    maintenanceTypes: Array<{ id: number; name: string }>;
+    maintenanceTypes: Array<{
+        id: number;
+        name: string;
+        workshops: Array<{
+            id: number;
+            name: string;
+            phone: string | null;
+            city: string | null;
+            country: string | null;
+            label: string;
+        }>;
+    }>;
     statuses: Array<{ value: string; label: string; color: string }>;
     indexUrl: string;
     submitUrl: string;
@@ -34,15 +46,92 @@ const isEdit = computed(() => !!props.record);
 const form = useForm({
     car_id: props.record?.car_id ? String(props.record.car_id) : '',
     maintenance_type_id: props.record?.maintenance_type_id ? String(props.record.maintenance_type_id) : '',
+    maintenance_workshop_id: props.record?.maintenance_workshop_id ? String(props.record.maintenance_workshop_id) : '',
     status: props.record?.status ?? 'scheduled',
     scheduled_date: props.record?.scheduled_date ?? '',
     started_at: props.record?.started_at ?? '',
     completed_at: props.record?.completed_at ?? '',
     cost: props.record?.cost ?? '',
     odometer: props.record?.odometer ?? '',
-    workshop_name: props.record?.workshop_name ?? '',
     notes: props.record?.notes ?? '',
 });
+
+const workshopSearch = ref(props.record?.workshop_name ?? '');
+const workshopMenuOpen = ref(false);
+
+const availableWorkshops = computed(() => {
+    const selectedType = props.maintenanceTypes.find((type) => String(type.id) === form.maintenance_type_id);
+    return selectedType?.workshops ?? [];
+});
+
+const filteredWorkshops = computed(() => {
+    const term = workshopSearch.value.trim().toLowerCase();
+    if (!term) {
+        return availableWorkshops.value;
+    }
+
+    return availableWorkshops.value.filter((workshop) =>
+        [workshop.name, workshop.phone, workshop.city, workshop.country, workshop.label]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(term)),
+    );
+});
+
+const selectedWorkshop = computed(() => {
+    if (!form.maintenance_workshop_id) {
+        return null;
+    }
+
+    return availableWorkshops.value.find((workshop) => String(workshop.id) === form.maintenance_workshop_id) ?? null;
+});
+
+watch(
+    () => form.maintenance_type_id,
+    () => {
+        if (!selectedWorkshop.value) {
+            form.maintenance_workshop_id = '';
+            workshopSearch.value = '';
+            return;
+        }
+
+        workshopSearch.value = selectedWorkshop.value.label;
+    },
+);
+
+watch(
+    () => form.maintenance_workshop_id,
+    () => {
+        if (selectedWorkshop.value) {
+            workshopSearch.value = selectedWorkshop.value.label;
+            return;
+        }
+
+        if (!workshopMenuOpen.value) {
+            workshopSearch.value = '';
+        }
+    },
+);
+
+function selectWorkshop(workshop: { id: number; label: string }) {
+    form.maintenance_workshop_id = String(workshop.id);
+    workshopSearch.value = workshop.label;
+    workshopMenuOpen.value = false;
+}
+
+function clearWorkshop() {
+    form.maintenance_workshop_id = '';
+    workshopSearch.value = '';
+}
+
+function handleWorkshopBlur() {
+    window.setTimeout(() => {
+        workshopMenuOpen.value = false;
+
+        if (!selectedWorkshop.value) {
+            workshopSearch.value = '';
+        }
+    }, 150);
+}
 
 function submit() {
     if (props.method === 'put') {
@@ -147,9 +236,59 @@ function submit() {
                         </div>
 
                         <div class="space-y-2 md:col-span-2">
-                            <Label for="workshop_name">Workshop Name</Label>
-                            <Input id="workshop_name" v-model="form.workshop_name" />
-                            <InputError :message="form.errors.workshop_name" />
+                            <Label for="maintenance_workshop_search">Workshop</Label>
+                            <div class="relative">
+                                <Input
+                                    id="maintenance_workshop_search"
+                                    v-model="workshopSearch"
+                                    :disabled="!form.maintenance_type_id || availableWorkshops.length === 0"
+                                    :placeholder="
+                                        !form.maintenance_type_id
+                                            ? 'Select maintenance type first'
+                                            : availableWorkshops.length === 0
+                                              ? 'No workshops available for this type'
+                                              : 'Search workshop...'
+                                    "
+                                    autocomplete="off"
+                                    @focus="workshopMenuOpen = true"
+                                    @blur="handleWorkshopBlur"
+                                    @input="
+                                        workshopMenuOpen = true;
+                                        form.maintenance_workshop_id = '';
+                                    "
+                                />
+
+                                <button
+                                    v-if="form.maintenance_workshop_id"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+                                    type="button"
+                                    @mousedown.prevent
+                                    @click="clearWorkshop"
+                                >
+                                    Clear
+                                </button>
+
+                                <div
+                                    v-if="workshopMenuOpen && form.maintenance_type_id && availableWorkshops.length > 0"
+                                    class="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-background shadow-lg"
+                                >
+                                    <button
+                                        v-for="workshop in filteredWorkshops"
+                                        :key="workshop.id"
+                                        class="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-muted"
+                                        type="button"
+                                        @mousedown.prevent="selectWorkshop(workshop)"
+                                    >
+                                        <span class="font-medium">{{ workshop.name }}</span>
+                                        <span class="text-xs text-muted-foreground">{{ workshop.label }}</span>
+                                    </button>
+
+                                    <div v-if="filteredWorkshops.length === 0" class="px-3 py-2 text-sm text-muted-foreground">
+                                        No workshops found.
+                                    </div>
+                                </div>
+                            </div>
+                            <InputError :message="form.errors.maintenance_workshop_id" />
                         </div>
 
                         <div class="space-y-2 md:col-span-2">
@@ -177,4 +316,3 @@ function submit() {
         </main>
     </AdminLayout>
 </template>
-

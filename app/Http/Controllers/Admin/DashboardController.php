@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\CarStatus;
+use App\Enums\CarViolationStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
+use App\Models\CarDocument;
+use App\Models\CarViolation;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\User;
@@ -51,6 +54,11 @@ class DashboardController extends Controller
         $activeReservations  = (clone $reservationsQuery)->where('status', ReservationStatus::ACTIVE)->count();
         $pendingReservations = (clone $reservationsQuery)->where('status', ReservationStatus::PENDING)->count();
         $totalReservations   = (clone $reservationsQuery)->count();
+
+        $pendingViolationsQuery = CarViolation::query()
+            ->where('status', CarViolationStatus::PENDING);
+        $this->branchAccess->applyToQuery($pendingViolationsQuery, $user, $branchId, 'branch_id');
+        $pendingViolations = (clone $pendingViolationsQuery)->count();
 
         $paymentsQuery = Payment::query()->where('status', PaymentStatus::COMPLETED);
         $this->applyPaymentBranchScope($paymentsQuery, $user, $branchId);
@@ -140,12 +148,85 @@ class DashboardController extends Controller
                 'completed_count'=> $car->completed_count,
             ]);
 
+        $today = Carbon::today();
+        $expiringDocumentsQuery = CarDocument::query()
+            ->with(['car:id,branch_id,year,make,model,license_plate'])
+            ->where('is_active', true)
+            ->whereDate('expiry_date', '>=', $today)
+            ->whereDate('expiry_date', '<=', $today->copy()->addDays(10));
+
+        $this->applyCarDocumentBranchScope($expiringDocumentsQuery, $user, $branchId);
+
+        $expiringCarDocuments = $expiringDocumentsQuery
+            ->orderBy('expiry_date')
+            ->orderBy('id')
+            ->limit(6)
+            ->get()
+            ->map(function (CarDocument $document) use ($today) {
+                $car = $document->car;
+                $daysRemaining = $document->expiry_date
+                    ? max(0, $today->diffInDays(Carbon::parse($document->expiry_date), false))
+                    : null;
+
+                return [
+                    'id' => $document->id,
+                    'type' => $document->type,
+                    'car_name' => trim(sprintf(
+                        '%s %s %s',
+                        (string) ($car?->year ?? ''),
+                        (string) ($car?->make ?? ''),
+                        (string) ($car?->model ?? '')
+                    )),
+                    'license_plate' => (string) ($car?->license_plate ?? ''),
+                    'expiry_date' => optional($document->expiry_date)?->toDateString(),
+                    'days_remaining' => $daysRemaining,
+                    'edit_url' => route('admin.cars.documents.edit', [
+                        'car' => $document->car_id,
+                        'document' => $document->id,
+                    ]),
+                ];
+            })
+            ->values();
+
+        $recentPendingViolations = (clone $pendingViolationsQuery)
+            ->with([
+                'car:id,branch_id,year,make,model,license_plate',
+                'branch:id,name',
+            ])
+            ->latest('violation_date')
+            ->latest('id')
+            ->limit(5)
+            ->get()
+            ->map(function (CarViolation $violation) {
+                $car = $violation->car;
+
+                return [
+                    'id' => $violation->id,
+                    'violation_number' => (string) ($violation->violation_number ?: ('#'.$violation->id)),
+                    'type' => (string) $violation->type,
+                    'car_name' => trim(sprintf(
+                        '%s %s %s',
+                        (string) ($car?->year ?? ''),
+                        (string) ($car?->make ?? ''),
+                        (string) ($car?->model ?? '')
+                    )),
+                    'license_plate' => (string) ($car?->license_plate ?? ''),
+                    'branch_name' => (string) ($violation->branch?->name ?? ''),
+                    'violation_date' => optional($violation->violation_date)?->toDateString(),
+                    'due_date' => optional($violation->due_date)?->toDateString(),
+                    'amount' => (float) $violation->amount,
+                    'edit_url' => route('admin.car-violations.edit', $violation),
+                ];
+            })
+            ->values();
+
         return Inertia::render('Admin/Dashboard', [
             'stats' => [
                 'total_cars'           => $totalCars,
                 'available_cars'       => $availableCars,
                 'active_reservations'  => $activeReservations,
                 'pending_reservations' => $pendingReservations,
+                'pending_violations'   => $pendingViolations,
                 'total_reservations'   => $totalReservations,
                 'total_revenue'        => (float) $totalRevenue,
                 'total_clients'        => $totalClients,
@@ -155,6 +236,8 @@ class DashboardController extends Controller
             'monthlyRevenue'       => $monthlyRevenue,
             'recentReservations'   => $recentReservations,
             'topCars'              => $topCars,
+            'expiringCarDocuments' => $expiringCarDocuments,
+            'recentPendingViolations' => $recentPendingViolations,
             'branches'             => $branchOptions,
             'filters'              => ['branch_id' => $branchId],
             'canAccessAllBranches' => $canAccessAllBranches,
@@ -215,5 +298,23 @@ class DashboardController extends Controller
         }
 
         $query->whereHas('reservation.car', fn ($q) => $q->where('branch_id', $userBranchId));
+    }
+
+    private function applyCarDocumentBranchScope($query, $user, ?int $branchId): void
+    {
+        if ($this->branchAccess->canAccessAllBranches($user)) {
+            if ($branchId) {
+                $query->whereHas('car', fn ($q) => $q->where('branch_id', $branchId));
+            }
+            return;
+        }
+
+        $userBranchId = (int) ($user?->branch_id ?? 0);
+        if ($userBranchId <= 0) {
+            $query->whereRaw('1 = 0');
+            return;
+        }
+
+        $query->whereHas('car', fn ($q) => $q->where('branch_id', $userBranchId));
     }
 }

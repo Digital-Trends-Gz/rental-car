@@ -6,14 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
     violation: {
         id: number;
         car_id: number;
         reservation_id: number | null;
+        violation_type_id: number | null;
         issued_to_user_id: number | null;
+        branch_owner_user_id?: number | null;
         violation_number: string | null;
         violation_date: string | null;
         type: string;
@@ -27,9 +29,16 @@ const props = defineProps<{
         description: string | null;
         notes: string | null;
     } | null;
-    cars: Array<{ id: number; label: string }>;
-    clients: Array<{ id: number; label: string }>;
-    reservations: Array<{ id: number; label: string; car_id: number | null }>;
+    cars: Array<{ id: number; label: string; branch_id: number | null }>;
+    branchOwners: Array<{ id: number; label: string; branch_id: number | null }>;
+    violationTypes: Array<{ id: number; label: string }>;
+    reservations: Array<{
+        id: number;
+        label: string;
+        car_id: number | null;
+        user_id: number | null;
+        user_label: string | null;
+    }>;
     statuses: Array<{ value: string; label: string; color: string }>;
     indexUrl: string;
     submitUrl: string;
@@ -37,7 +46,8 @@ const props = defineProps<{
 }>();
 
 const isEdit = computed(() => !!props.violation);
-const { t } = useTrans();
+const { t, locale } = useTrans();
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 const pageTitle = computed(() =>
     isEdit.value
         ? t('dashboard.admin.car_violations.edit.head_title_edit')
@@ -49,12 +59,17 @@ const form = useForm({
     reservation_id: props.violation?.reservation_id
         ? String(props.violation.reservation_id)
         : '',
+    violation_type_id: props.violation?.violation_type_id
+        ? String(props.violation.violation_type_id)
+        : '',
     issued_to_user_id: props.violation?.issued_to_user_id
         ? String(props.violation.issued_to_user_id)
         : '',
+    branch_owner_user_id: props.violation?.branch_owner_user_id
+        ? String(props.violation.branch_owner_user_id)
+        : '',
     violation_number: props.violation?.violation_number ?? '',
     violation_date: props.violation?.violation_date ?? '',
-    type: props.violation?.type ?? '',
     amount: props.violation?.amount ?? '',
     status: props.violation?.status ?? 'pending',
     due_date: props.violation?.due_date ?? '',
@@ -66,6 +81,12 @@ const form = useForm({
     notes: props.violation?.notes ?? '',
 });
 
+const reservationSearch = ref('');
+const reservationMenuOpen = ref(false);
+const branchOwnerSearch = ref('');
+const branchOwnerMenuOpen = ref(false);
+const dueDateTouched = ref(!!props.violation?.due_date);
+
 const filteredReservations = computed(() => {
     if (!form.car_id) {
         return props.reservations;
@@ -75,6 +96,209 @@ const filteredReservations = computed(() => {
         (item) => String(item.car_id ?? '') === form.car_id,
     );
 });
+
+const selectedCar = computed(() =>
+    props.cars.find((item) => String(item.id) === form.car_id) ?? null,
+);
+
+const selectedReservation = computed(() =>
+    filteredReservations.value.find(
+        (item) => String(item.id) === form.reservation_id,
+    ) ?? null,
+);
+
+const filteredBranchOwners = computed(() => {
+    if (!selectedCar.value) {
+        return props.branchOwners;
+    }
+
+    return props.branchOwners.filter((item) => {
+        return (
+            item.branch_id === null ||
+            String(item.branch_id ?? '') === String(selectedCar.value?.branch_id ?? '')
+        );
+    });
+});
+
+const selectedIssuedToLabel = computed(() => {
+    if (selectedReservation.value?.user_label) {
+        return selectedReservation.value.user_label;
+    }
+
+    const branchOwner = filteredBranchOwners.value.find(
+        (item) => String(item.id) === form.branch_owner_user_id,
+    );
+
+    return branchOwner?.label ?? localize('Not specified', 'غير محدد');
+});
+
+const filteredReservationsBySearch = computed(() => {
+    const term = reservationSearch.value.trim().toLowerCase();
+
+    if (!term) {
+        return filteredReservations.value;
+    }
+
+    return filteredReservations.value.filter((item) =>
+        [item.label, item.user_label]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(term)),
+    );
+});
+
+const filteredBranchOwnersBySearch = computed(() => {
+    const term = branchOwnerSearch.value.trim().toLowerCase();
+
+    if (!term) {
+        return filteredBranchOwners.value;
+    }
+
+    return filteredBranchOwners.value.filter((item) =>
+        item.label.toLowerCase().includes(term),
+    );
+});
+
+watch(
+    () => form.car_id,
+    () => {
+        if (
+            form.reservation_id &&
+            !filteredReservations.value.some(
+                (item) => String(item.id) === form.reservation_id,
+            )
+        ) {
+            form.reservation_id = '';
+        }
+
+        if (
+            form.branch_owner_user_id &&
+            !filteredBranchOwners.value.some(
+                (item) => String(item.id) === form.branch_owner_user_id,
+            )
+        ) {
+            form.branch_owner_user_id = '';
+        }
+    },
+);
+
+watch(
+    () => form.reservation_id,
+    () => {
+        if (selectedReservation.value?.user_id) {
+            form.issued_to_user_id = String(selectedReservation.value.user_id);
+            form.branch_owner_user_id = '';
+            reservationSearch.value = selectedReservation.value.label;
+            return;
+        }
+
+        if (form.branch_owner_user_id) {
+            form.issued_to_user_id = form.branch_owner_user_id;
+            return;
+        }
+
+        form.issued_to_user_id = '';
+        if (!reservationMenuOpen.value) {
+            reservationSearch.value = '';
+        }
+    },
+    { immediate: true },
+);
+
+watch(
+    () => form.branch_owner_user_id,
+    () => {
+        if (!form.reservation_id) {
+            form.issued_to_user_id = form.branch_owner_user_id || '';
+        }
+
+        const branchOwner = filteredBranchOwners.value.find(
+            (item) => String(item.id) === form.branch_owner_user_id,
+        );
+
+        if (branchOwner) {
+            branchOwnerSearch.value = branchOwner.label;
+            return;
+        }
+
+        if (!branchOwnerMenuOpen.value) {
+            branchOwnerSearch.value = '';
+        }
+    },
+    { immediate: true },
+);
+
+watch(
+    () => form.violation_date,
+    (newValue, oldValue) => {
+        if (!newValue) {
+            if (!dueDateTouched.value) {
+                form.due_date = '';
+            }
+            return;
+        }
+
+        const previousAutoValue = oldValue || '';
+        if (!dueDateTouched.value || form.due_date === previousAutoValue || form.due_date === '') {
+            form.due_date = newValue;
+        }
+    },
+    { immediate: true },
+);
+
+watch(
+    () => form.due_date,
+    (newValue) => {
+        if (newValue && newValue !== form.violation_date) {
+            dueDateTouched.value = true;
+        }
+
+        if (newValue === '' || newValue === form.violation_date) {
+            dueDateTouched.value = false;
+        }
+    },
+);
+
+function selectReservation(reservation: (typeof props.reservations)[number]) {
+    form.reservation_id = String(reservation.id);
+    reservationSearch.value = reservation.label;
+    reservationMenuOpen.value = false;
+}
+
+function clearReservation() {
+    form.reservation_id = '';
+    reservationSearch.value = '';
+}
+
+function handleReservationBlur() {
+    window.setTimeout(() => {
+        reservationMenuOpen.value = false;
+
+        if (!selectedReservation.value) {
+            reservationSearch.value = '';
+        }
+    }, 150);
+}
+
+function selectBranchOwner(branchOwner: (typeof props.branchOwners)[number]) {
+    form.branch_owner_user_id = String(branchOwner.id);
+    branchOwnerSearch.value = branchOwner.label;
+    branchOwnerMenuOpen.value = false;
+}
+
+function clearBranchOwner() {
+    form.branch_owner_user_id = '';
+    branchOwnerSearch.value = '';
+}
+
+function handleBranchOwnerBlur() {
+    window.setTimeout(() => {
+        branchOwnerMenuOpen.value = false;
+
+        if (!form.branch_owner_user_id) {
+            branchOwnerSearch.value = '';
+        }
+    }, 150);
+}
 
 function submit() {
     if (props.method === 'put') {
@@ -136,58 +360,136 @@ function submit() {
                                     'dashboard.admin.car_violations.edit.fields.reservation_optional',
                                 )
                             }}</Label>
-                            <select
-                                id="reservation_id"
-                                v-model="form.reservation_id"
-                                class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            >
-                                <option value="">
-                                    {{
-                                        t(
-                                            'dashboard.admin.car_violations.edit.no_reservation',
-                                        )
-                                    }}
-                                </option>
-                                <option
-                                    v-for="reservation in filteredReservations"
-                                    :key="reservation.id"
-                                    :value="String(reservation.id)"
+                            <div class="relative">
+                                <Input
+                                    id="reservation_id"
+                                    v-model="reservationSearch"
+                                    :disabled="!form.car_id"
+                                    :placeholder="
+                                        !form.car_id
+                                            ? localize('Select car first', 'اختر السيارة أولاً')
+                                            : localize('Search reservation...', 'ابحث عن الحجز...')
+                                    "
+                                    autocomplete="off"
+                                    @focus="reservationMenuOpen = true"
+                                    @blur="handleReservationBlur"
+                                    @input="
+                                        reservationMenuOpen = true;
+                                        form.reservation_id = '';
+                                    "
+                                />
+
+                                <button
+                                    v-if="form.reservation_id"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+                                    type="button"
+                                    @mousedown.prevent
+                                    @click="clearReservation"
                                 >
-                                    {{ reservation.label }}
-                                </option>
-                            </select>
+                                    {{ localize('Clear', 'مسح') }}
+                                </button>
+
+                                <div
+                                    v-if="reservationMenuOpen && form.car_id"
+                                    class="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-background shadow-lg"
+                                >
+                                    <button
+                                        class="flex w-full items-start px-3 py-2 text-left text-sm hover:bg-muted"
+                                        type="button"
+                                        @mousedown.prevent="clearReservation(); reservationMenuOpen = false"
+                                    >
+                                        {{ localize('No reservation (Branch owner)', 'بدون حجز (مسؤول الفرع)') }}
+                                    </button>
+
+                                    <button
+                                        v-for="reservation in filteredReservationsBySearch"
+                                        :key="reservation.id"
+                                        class="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-muted"
+                                        type="button"
+                                        @mousedown.prevent="selectReservation(reservation)"
+                                    >
+                                        <span class="font-medium">{{ reservation.label }}</span>
+                                        <span v-if="reservation.user_label" class="text-xs text-muted-foreground">{{ reservation.user_label }}</span>
+                                    </button>
+
+                                    <div
+                                        v-if="filteredReservationsBySearch.length === 0"
+                                        class="px-3 py-2 text-sm text-muted-foreground"
+                                    >
+                                        {{ localize('No reservations found.', 'لا توجد حجوزات مطابقة.') }}
+                                    </div>
+                                </div>
+                            </div>
                             <InputError :message="form.errors.reservation_id" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="issued_to_user_id">{{
-                                t(
-                                    'dashboard.admin.car_violations.edit.fields.issued_to_client',
-                                )
+                            <Label v-if="form.reservation_id">{{
+                                localize('Reservation User', 'مستخدم الحجز')
                             }}</Label>
-                            <select
-                                id="issued_to_user_id"
-                                v-model="form.issued_to_user_id"
-                                class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            <Label v-else for="branch_owner_user_id">{{
+                                localize('Branch Owner', 'مسؤول الفرع')
+                            }}</Label>
+
+                            <div
+                                v-if="form.reservation_id"
+                                class="h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm"
                             >
-                                <option value="">
-                                    {{
-                                        t(
-                                            'dashboard.admin.car_violations.edit.not_specified',
-                                        )
-                                    }}
-                                </option>
-                                <option
-                                    v-for="client in clients"
-                                    :key="client.id"
-                                    :value="String(client.id)"
+                                {{ selectedIssuedToLabel }}
+                            </div>
+
+                            <div v-else class="relative">
+                                <Input
+                                    id="branch_owner_user_id"
+                                    v-model="branchOwnerSearch"
+                                    :disabled="!form.car_id"
+                                    :placeholder="
+                                        !form.car_id
+                                            ? localize('Select car first', 'اختر السيارة أولاً')
+                                            : localize('Search branch owner...', 'ابحث عن مسؤول الفرع...')
+                                    "
+                                    autocomplete="off"
+                                    @focus="branchOwnerMenuOpen = true"
+                                    @blur="handleBranchOwnerBlur"
+                                    @input="
+                                        branchOwnerMenuOpen = true;
+                                        form.branch_owner_user_id = '';
+                                    "
+                                />
+
+                                <button
+                                    v-if="form.branch_owner_user_id"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+                                    type="button"
+                                    @mousedown.prevent
+                                    @click="clearBranchOwner"
                                 >
-                                    {{ client.label }}
-                                </option>
-                            </select>
-                            <InputError
-                                :message="form.errors.issued_to_user_id"
-                            />
+                                    {{ localize('Clear', 'مسح') }}
+                                </button>
+
+                                <div
+                                    v-if="branchOwnerMenuOpen && form.car_id"
+                                    class="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-background shadow-lg"
+                                >
+                                    <button
+                                        v-for="branchOwner in filteredBranchOwnersBySearch"
+                                        :key="branchOwner.id"
+                                        class="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-muted"
+                                        type="button"
+                                        @mousedown.prevent="selectBranchOwner(branchOwner)"
+                                    >
+                                        <span class="font-medium">{{ branchOwner.label }}</span>
+                                    </button>
+
+                                    <div
+                                        v-if="filteredBranchOwnersBySearch.length === 0"
+                                        class="px-3 py-2 text-sm text-muted-foreground"
+                                    >
+                                        {{ localize('No branch owners found.', 'لا يوجد مسؤولو فروع مطابقون.') }}
+                                    </div>
+                                </div>
+                            </div>
+                            <InputError :message="form.errors.branch_owner_user_id" />
                         </div>
 
                         <div class="space-y-2">
@@ -226,20 +528,31 @@ function submit() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="type">{{
+                            <Label for="violation_type_id">{{
                                 t('dashboard.admin.car_violations.edit.fields.type')
                             }}</Label>
-                            <Input
-                                id="type"
-                                v-model="form.type"
-                                :placeholder="
-                                    t(
-                                        'dashboard.admin.car_violations.edit.placeholders.type',
-                                    )
-                                "
+                            <select
+                                id="violation_type_id"
+                                v-model="form.violation_type_id"
+                                class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 required
-                            />
-                            <InputError :message="form.errors.type" />
+                            >
+                                <option value="" disabled>
+                                    {{
+                                        t(
+                                            'dashboard.admin.car_violations.edit.placeholders.type',
+                                        )
+                                    }}
+                                </option>
+                                <option
+                                    v-for="violationType in violationTypes"
+                                    :key="violationType.id"
+                                    :value="String(violationType.id)"
+                                >
+                                    {{ violationType.label }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.violation_type_id" />
                         </div>
 
                         <div class="space-y-2">
@@ -283,6 +596,34 @@ function submit() {
                         </div>
 
                         <div class="space-y-2">
+                            <Label for="authority">{{
+                                t(
+                                    'dashboard.admin.car_violations.edit.fields.authority',
+                                )
+                            }}</Label>
+                            <Input
+                                id="authority"
+                                v-model="form.authority"
+                                :placeholder="
+                                    t(
+                                        'dashboard.admin.car_violations.edit.placeholders.authority',
+                                    )
+                                "
+                            />
+                            <InputError :message="form.errors.authority" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="location">{{
+                                t(
+                                    'dashboard.admin.car_violations.edit.fields.location',
+                                )
+                            }}</Label>
+                            <Input id="location" v-model="form.location" />
+                            <InputError :message="form.errors.location" />
+                        </div>
+
+                        <div class="space-y-2">
                             <Label for="due_date">{{
                                 t(
                                     'dashboard.admin.car_violations.edit.fields.due_date',
@@ -290,6 +631,27 @@ function submit() {
                             }}</Label>
                             <Input id="due_date" v-model="form.due_date" type="date" />
                             <InputError :message="form.errors.due_date" />
+                        </div>
+
+                        <div class="space-y-2 md:col-span-2">
+                            <Label for="description">{{
+                                t(
+                                    'dashboard.admin.car_violations.edit.fields.description',
+                                )
+                            }}</Label>
+                            <textarea
+                                id="description"
+                                v-model="form.description"
+                                rows="3"
+                                class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30"
+                            />
+                            <InputError :message="form.errors.description" />
+                        </div>
+
+                        <div class="md:col-span-2 border-t pt-2">
+                            <h3 class="text-sm font-semibold text-foreground">
+                                {{ localize('Payment Details', 'تفاصيل الدفع') }}
+                            </h3>
                         </div>
 
                         <div class="space-y-2">
@@ -319,49 +681,6 @@ function submit() {
                             <InputError
                                 :message="form.errors.payment_reference"
                             />
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label for="authority">{{
-                                t(
-                                    'dashboard.admin.car_violations.edit.fields.authority',
-                                )
-                            }}</Label>
-                            <Input
-                                id="authority"
-                                v-model="form.authority"
-                                :placeholder="
-                                    t(
-                                        'dashboard.admin.car_violations.edit.placeholders.authority',
-                                    )
-                                "
-                            />
-                            <InputError :message="form.errors.authority" />
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label for="location">{{
-                                t(
-                                    'dashboard.admin.car_violations.edit.fields.location',
-                                )
-                            }}</Label>
-                            <Input id="location" v-model="form.location" />
-                            <InputError :message="form.errors.location" />
-                        </div>
-
-                        <div class="space-y-2 md:col-span-2">
-                            <Label for="description">{{
-                                t(
-                                    'dashboard.admin.car_violations.edit.fields.description',
-                                )
-                            }}</Label>
-                            <textarea
-                                id="description"
-                                v-model="form.description"
-                                rows="3"
-                                class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30"
-                            />
-                            <InputError :message="form.errors.description" />
                         </div>
 
                         <div class="space-y-2 md:col-span-2">

@@ -4,13 +4,19 @@ namespace App\Http\Controllers\Admin;
 
 use App\Core\TenantContext;
 use App\Enums\CarViolationStatus;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Models\CarViolation;
+use App\Models\Reservation;
+use App\Models\User;
+use App\Models\ViolationType;
 use App\Support\BranchAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -59,6 +65,7 @@ class CarViolationsController extends Controller
             'car:id,make,model,year,license_plate',
             'branch:id,name',
             'issuedTo:id,name',
+            'violationType:id,name',
         ]);
 
         $this->branchAccess->applyToQuery($query, $user, $branchId, 'branch_id');
@@ -106,7 +113,7 @@ class CarViolationsController extends Controller
                 'car' => $violation->car
                     ? trim("{$violation->car->year} {$violation->car->make} {$violation->car->model} ({$violation->car->license_plate})")
                     : '-',
-                'type' => $violation->type,
+                'type' => $violation->violationType?->name ?? $violation->type,
                 'amount' => (float) $violation->amount,
                 'status' => $statusValue,
                 'status_label' => $statusLabel,
@@ -163,6 +170,9 @@ class CarViolationsController extends Controller
         }
 
         $car = $this->resolveAccessibleCar($request, (int) $validated['car_id']);
+        $reservation = $this->resolveAccessibleReservation($request, $car, $validated['reservation_id'] ?? null);
+        $issuedToUserId = $this->resolveIssuedToUserId($request, $car, $reservation, $validated['branch_owner_user_id'] ?? null);
+        $violationType = $this->resolveViolationType($request, (int) $validated['violation_type_id']);
 
         $status = $validated['status'];
         $paidAt = $validated['paid_at'] ?? null;
@@ -173,15 +183,16 @@ class CarViolationsController extends Controller
         CarViolation::create([
             'car_id' => $car->id,
             'branch_id' => $car->branch_id,
-            'reservation_id' => $validated['reservation_id'] ?? null,
-            'issued_to_user_id' => $validated['issued_to_user_id'] ?? null,
+            'reservation_id' => $reservation?->id,
+            'violation_type_id' => $violationType->id,
+            'issued_to_user_id' => $issuedToUserId,
             'created_by' => $request->user()?->id,
             'violation_number' => $validated['violation_number'] ?? null,
             'violation_date' => $validated['violation_date'],
-            'type' => $validated['type'],
+            'type' => $violationType->name,
             'amount' => $validated['amount'],
             'status' => $status,
-            'due_date' => $validated['due_date'] ?? null,
+            'due_date' => $validated['due_date'] ?? $validated['violation_date'],
             'paid_at' => $paidAt,
             'payment_reference' => $validated['payment_reference'] ?? null,
             'authority' => $validated['authority'] ?? null,
@@ -199,15 +210,24 @@ class CarViolationsController extends Controller
     {
         abort_unless($this->branchAccess->canAccessBranchId($request->user(), $carViolation->branch_id ? (int) $carViolation->branch_id : null), 403);
 
+        $selectedViolationTypeId = $carViolation->violation_type_id;
+        if (!$selectedViolationTypeId && filled($carViolation->type)) {
+            $selectedViolationTypeId = ViolationType::query()
+                ->where('name', $carViolation->type)
+                ->value('id');
+        }
+
         return Inertia::render('Admin/CarViolations/Edit', [
             'violation' => [
                 'id' => $carViolation->id,
                 'car_id' => $carViolation->car_id,
                 'reservation_id' => $carViolation->reservation_id,
+                'violation_type_id' => $selectedViolationTypeId ? (int) $selectedViolationTypeId : null,
                 'issued_to_user_id' => $carViolation->issued_to_user_id,
+                'branch_owner_user_id' => $carViolation->reservation_id ? null : $carViolation->issued_to_user_id,
                 'violation_number' => $carViolation->violation_number,
                 'violation_date' => optional($carViolation->violation_date)?->toDateString(),
-                'type' => $carViolation->type,
+                'type' => $carViolation->violationType?->name ?? $carViolation->type,
                 'amount' => (float) $carViolation->amount,
                 'status' => $carViolation->status instanceof CarViolationStatus ? $carViolation->status->value : (string) $carViolation->status,
                 'due_date' => optional($carViolation->due_date)?->toDateString(),
@@ -218,7 +238,7 @@ class CarViolationsController extends Controller
                 'description' => $carViolation->description,
                 'notes' => $carViolation->notes,
             ],
-            ...$this->formOptions($request),
+            ...$this->formOptions($request, $carViolation),
             'indexUrl' => route('admin.car-violations.index'),
             'submitUrl' => route('admin.car-violations.update', $carViolation),
             'method' => 'put',
@@ -236,6 +256,9 @@ class CarViolationsController extends Controller
         }
 
         $car = $this->resolveAccessibleCar($request, (int) $validated['car_id']);
+        $reservation = $this->resolveAccessibleReservation($request, $car, $validated['reservation_id'] ?? null, $carViolation);
+        $issuedToUserId = $this->resolveIssuedToUserId($request, $car, $reservation, $validated['branch_owner_user_id'] ?? null);
+        $violationType = $this->resolveViolationType($request, (int) $validated['violation_type_id']);
 
         $status = $validated['status'];
         $paidAt = $validated['paid_at'] ?? null;
@@ -249,14 +272,15 @@ class CarViolationsController extends Controller
         $carViolation->update([
             'car_id' => $car->id,
             'branch_id' => $car->branch_id,
-            'reservation_id' => $validated['reservation_id'] ?? null,
-            'issued_to_user_id' => $validated['issued_to_user_id'] ?? null,
+            'reservation_id' => $reservation?->id,
+            'violation_type_id' => $violationType->id,
+            'issued_to_user_id' => $issuedToUserId,
             'violation_number' => $validated['violation_number'] ?? null,
             'violation_date' => $validated['violation_date'],
-            'type' => $validated['type'],
+            'type' => $violationType->name,
             'amount' => $validated['amount'],
             'status' => $status,
-            'due_date' => $validated['due_date'] ?? null,
+            'due_date' => $validated['due_date'] ?? $validated['violation_date'],
             'paid_at' => $paidAt,
             'payment_reference' => $validated['payment_reference'] ?? null,
             'authority' => $validated['authority'] ?? null,
@@ -294,10 +318,15 @@ class CarViolationsController extends Controller
                 'integer',
                 Rule::exists('reservations', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
             ],
-            'issued_to_user_id' => [
+            'violation_type_id' => [
+                'required',
+                'integer',
+                Rule::exists('violation_types', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
+            ],
+            'branch_owner_user_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
+                Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)->where('role', UserRole::ADMIN->value)),
             ],
             'violation_number' => [
                 'nullable',
@@ -308,7 +337,6 @@ class CarViolationsController extends Controller
                     ->ignore($carViolation?->id),
             ],
             'violation_date' => ['required', 'date'],
-            'type' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0'],
             'status' => ['required', 'string', Rule::enum(CarViolationStatus::class)],
             'due_date' => ['nullable', 'date'],
@@ -335,12 +363,12 @@ class CarViolationsController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formOptions(Request $request): array
+    private function formOptions(Request $request, ?CarViolation $carViolation = null): array
     {
         $tenantId = (int) (TenantContext::id() ?? $request->user()?->tenant_id ?? 0);
         $user = $request->user();
 
-        $carsQuery = Car::query()->select(['id', 'year', 'make', 'model', 'license_plate']);
+        $carsQuery = Car::query()->select(['id', 'year', 'make', 'model', 'license_plate', 'branch_id']);
         $this->branchAccess->applyToQuery($carsQuery, $user, null);
         $cars = $carsQuery
             ->orderBy('make')
@@ -349,33 +377,79 @@ class CarViolationsController extends Controller
             ->map(fn (Car $car) => [
                 'id' => $car->id,
                 'label' => trim("{$car->year} {$car->make} {$car->model} ({$car->license_plate})"),
+                'branch_id' => $car->branch_id,
             ])
             ->values();
 
-        $clients = \App\Models\User::query()
-            ->select(['id', 'name', 'email'])
+        $branchOwners = User::query()
+            ->select(['id', 'name', 'email', 'branch_id'])
             ->where('tenant_id', $tenantId)
-            ->where('role', 'client')
+            ->where('role', UserRole::ADMIN->value)
+            ->where('is_active', true)
             ->orderBy('name')
             ->get()
-            ->map(fn (\App\Models\User $client) => [
-                'id' => $client->id,
-                'label' => trim($client->name.' ('.$client->email.')'),
+            ->map(fn (User $branchOwner) => [
+                'id' => $branchOwner->id,
+                'label' => trim($branchOwner->name.' ('.$branchOwner->email.')'),
+                'branch_id' => $branchOwner->branch_id,
             ])
             ->values();
 
-        $reservations = \App\Models\Reservation::query()
-            ->select(['id', 'reservation_number', 'car_id'])
+        $recentCutoff = Carbon::now()->subMonths(6)->startOfDay();
+        $reservations = Reservation::query()
+            ->select(['id', 'reservation_number', 'car_id', 'user_id', 'start_date', 'end_date'])
             ->where('tenant_id', $tenantId)
-            ->latest()
-            ->limit(200)
+            ->whereDate('end_date', '>=', $recentCutoff->toDateString())
+            ->with(['user:id,name,email'])
+            ->latest('end_date')
+            ->limit(300)
             ->get()
-            ->map(fn (\App\Models\Reservation $reservation) => [
+            ->map(fn (Reservation $reservation) => [
                 'id' => $reservation->id,
-                'label' => $reservation->reservation_number ?: ('Reservation #'.$reservation->id),
+                'label' => $this->reservationOptionLabel($reservation),
                 'car_id' => $reservation->car_id,
+                'user_id' => $reservation->user_id,
+                'user_label' => $reservation->user ? trim($reservation->user->name.' ('.$reservation->user->email.')') : null,
             ])
             ->values();
+
+        if ($carViolation?->reservation_id && !$reservations->contains(fn ($reservation) => (int) $reservation['id'] === (int) $carViolation->reservation_id)) {
+            $currentReservation = Reservation::query()
+                ->select(['id', 'reservation_number', 'car_id', 'user_id', 'start_date'])
+                ->with(['user:id,name,email'])
+                ->where('tenant_id', $tenantId)
+                ->find($carViolation->reservation_id);
+
+            if ($currentReservation) {
+                $reservations->push([
+                    'id' => $currentReservation->id,
+                    'label' => $this->reservationOptionLabel($currentReservation),
+                    'car_id' => $currentReservation->car_id,
+                    'user_id' => $currentReservation->user_id,
+                    'user_label' => $currentReservation->user ? trim($currentReservation->user->name.' ('.$currentReservation->user->email.')') : null,
+                ]);
+            }
+        }
+
+        if (
+            $carViolation?->issued_to_user_id
+            && !$carViolation->reservation_id
+            && !$branchOwners->contains(fn ($branchOwner) => (int) $branchOwner['id'] === (int) $carViolation->issued_to_user_id)
+        ) {
+            $currentBranchOwner = User::query()
+                ->select(['id', 'name', 'email', 'branch_id'])
+                ->where('tenant_id', $tenantId)
+                ->whereKey($carViolation->issued_to_user_id)
+                ->first();
+
+            if ($currentBranchOwner) {
+                $branchOwners->push([
+                    'id' => $currentBranchOwner->id,
+                    'label' => trim($currentBranchOwner->name.' ('.$currentBranchOwner->email.')'),
+                    'branch_id' => $currentBranchOwner->branch_id,
+                ]);
+            }
+        }
 
         $statuses = collect(CarViolationStatus::cases())->map(fn ($statusCase) => [
             'value' => $statusCase->value,
@@ -383,12 +457,138 @@ class CarViolationsController extends Controller
             'color' => $statusCase->color(),
         ])->values();
 
+        $violationTypes = ViolationType::query()
+            ->select(['id', 'name'])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (ViolationType $violationType) => [
+                'id' => $violationType->id,
+                'label' => $violationType->name,
+            ])
+            ->values();
+
+        if (
+            $carViolation?->violation_type_id
+            && !$violationTypes->contains(fn ($type) => (int) $type['id'] === (int) $carViolation->violation_type_id)
+        ) {
+            $currentViolationType = ViolationType::query()
+                ->select(['id', 'name'])
+                ->find($carViolation->violation_type_id);
+
+            if ($currentViolationType) {
+                $violationTypes->push([
+                    'id' => $currentViolationType->id,
+                    'label' => $currentViolationType->name,
+                ]);
+            }
+        }
+
         return [
             'cars' => $cars,
-            'clients' => $clients,
+            'branchOwners' => $branchOwners->values(),
             'reservations' => $reservations,
+            'violationTypes' => $violationTypes->values(),
             'statuses' => $statuses,
         ];
     }
-}
 
+    private function resolveAccessibleReservation(Request $request, Car $car, mixed $reservationId, ?CarViolation $carViolation = null): ?Reservation
+    {
+        if ($reservationId === null || $reservationId === '') {
+            return null;
+        }
+
+        $reservation = Reservation::query()
+            ->where('tenant_id', (int) (TenantContext::id() ?? $request->user()?->tenant_id ?? 0))
+            ->where('car_id', $car->id)
+            ->whereKey((int) $reservationId)
+            ->first();
+
+        if (!$reservation) {
+            throw ValidationException::withMessages([
+                'reservation_id' => 'Selected reservation is invalid for this car.',
+            ]);
+        }
+
+        $recentCutoff = Carbon::now()->subMonths(6)->startOfDay();
+        $isCurrentViolationReservation = $carViolation && (int) $carViolation->reservation_id === (int) $reservation->id;
+
+        if (!$isCurrentViolationReservation && optional($reservation->end_date)->lt($recentCutoff)) {
+            throw ValidationException::withMessages([
+                'reservation_id' => 'Selected reservation must be within the last 6 months.',
+            ]);
+        }
+
+        return $reservation;
+    }
+
+    private function resolveIssuedToUserId(Request $request, Car $car, ?Reservation $reservation, mixed $branchOwnerUserId): ?int
+    {
+        if ($reservation) {
+            if (empty($reservation->user_id)) {
+                throw ValidationException::withMessages([
+                    'reservation_id' => 'Selected reservation has no linked user.',
+                ]);
+            }
+
+            return (int) $reservation->user_id;
+        }
+
+        $branchOwnerId = is_numeric($branchOwnerUserId) ? (int) $branchOwnerUserId : null;
+        if (!$branchOwnerId) {
+            throw ValidationException::withMessages([
+                'branch_owner_user_id' => 'Please select a branch owner when no reservation is linked.',
+            ]);
+        }
+
+        $query = User::query()
+            ->where('tenant_id', (int) (TenantContext::id() ?? $request->user()?->tenant_id ?? 0))
+            ->where('role', UserRole::ADMIN->value)
+            ->where('is_active', true)
+            ->whereKey($branchOwnerId);
+
+        if ($car->branch_id) {
+            $query->where(function ($builder) use ($car) {
+                $builder->where('branch_id', $car->branch_id)
+                    ->orWhereNull('branch_id');
+            });
+        }
+
+        $branchOwner = $query->first();
+        if (!$branchOwner) {
+            throw ValidationException::withMessages([
+                'branch_owner_user_id' => 'Selected branch owner is invalid for this car branch.',
+            ]);
+        }
+
+        return (int) $branchOwner->id;
+    }
+
+    private function reservationOptionLabel(Reservation $reservation): string
+    {
+        $number = $reservation->reservation_number ?: ('Reservation #'.$reservation->id);
+        $date = optional($reservation->start_date)?->format('Y-m-d');
+        $clientName = trim((string) optional($reservation->user)->name);
+
+        return collect([$number, $date, $clientName])
+            ->filter(fn ($value) => filled($value))
+            ->implode(' - ');
+    }
+
+    private function resolveViolationType(Request $request, int $violationTypeId): ViolationType
+    {
+        $violationType = ViolationType::query()
+            ->where('tenant_id', (int) (TenantContext::id() ?? $request->user()?->tenant_id ?? 0))
+            ->find($violationTypeId);
+
+        if (!$violationType) {
+            throw ValidationException::withMessages([
+                'violation_type_id' => 'Selected violation type is invalid.',
+            ]);
+        }
+
+        return $violationType;
+    }
+}

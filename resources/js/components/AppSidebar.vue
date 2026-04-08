@@ -122,6 +122,12 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-cars',
         },
         {
+            title: 'Violation Types',
+            href: adminHref('/violation-types'),
+            icon: AlertTriangle,
+            permission: 'tenant-manage-cars',
+        },
+        {
             title: 'Car Violations',
             href: adminHref('/car-violations'),
             icon: AlertTriangle,

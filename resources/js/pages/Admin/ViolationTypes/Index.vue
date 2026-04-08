@@ -6,14 +6,13 @@ import { Input } from '@/components/ui/input';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
-    maintenanceTypes: {
+    violationTypes: {
         data: Array<{
             id: number;
             name: string;
             description: string | null;
             is_active: boolean;
             sort_order: number;
-            workshops_count: number;
             edit_url: string;
             destroy_url: string;
         }>;
@@ -27,8 +26,7 @@ const props = defineProps<{
 }>();
 
 const search = ref(props.filters?.search || '');
-
-const hasRows = computed(() => props.maintenanceTypes.data.length > 0);
+const hasRows = computed(() => props.violationTypes.data.length > 0);
 
 function doSearch() {
     router.get(
@@ -49,7 +47,7 @@ watch(search, (newValue, oldValue) => {
 });
 
 function destroyType(url: string, name: string) {
-    const confirmed = window.confirm(`Delete maintenance type "${name}"?`);
+    const confirmed = window.confirm(`Delete violation type "${name}"?`);
     if (!confirmed) return;
 
     router.delete(url, {
@@ -59,11 +57,11 @@ function destroyType(url: string, name: string) {
 </script>
 
 <template>
-    <Head title="Maintenance Types" />
+    <Head title="Violation Types" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
-                <h1 class="text-2xl font-semibold">Maintenance Types</h1>
+                <h1 class="text-2xl font-semibold">Violation Types</h1>
                 <Link :href="createUrl">
                     <Button>+ New Type</Button>
                 </Link>
@@ -86,13 +84,12 @@ function destroyType(url: string, name: string) {
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Description</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Workshops</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Sort</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
-                        <tr v-for="row in maintenanceTypes.data" :key="row.id">
+                        <tr v-for="row in violationTypes.data" :key="row.id">
                             <td class="px-4 py-3 font-medium">{{ row.name }}</td>
                             <td class="px-4 py-3 text-sm text-gray-600">{{ row.description || '-' }}</td>
                             <td class="px-4 py-3">
@@ -103,7 +100,6 @@ function destroyType(url: string, name: string) {
                                     {{ row.is_active ? 'Active' : 'Inactive' }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-sm text-gray-700">{{ row.workshops_count }}</td>
                             <td class="px-4 py-3 text-sm text-gray-700">{{ row.sort_order }}</td>
                             <td class="space-x-2 px-4 py-3 text-right">
                                 <Link :href="row.edit_url">
@@ -113,15 +109,15 @@ function destroyType(url: string, name: string) {
                             </td>
                         </tr>
                         <tr v-if="!hasRows">
-                            <td colspan="6" class="px-4 py-6 text-center text-gray-500">No maintenance types found.</td>
+                            <td colspan="5" class="px-4 py-6 text-center text-gray-500">No violation types found.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <nav v-if="maintenanceTypes.links?.length" class="flex gap-2">
+            <nav v-if="violationTypes.links?.length" class="flex gap-2">
                 <Link
-                    v-for="(link, i) in maintenanceTypes.links"
+                    v-for="(link, i) in violationTypes.links"
                     :key="i"
                     :href="link.url || ''"
                     :class="[

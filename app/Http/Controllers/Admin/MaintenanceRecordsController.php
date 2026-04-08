@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Models\CarMaintenance;
 use App\Models\MaintenanceType;
+use App\Models\MaintenanceWorkshop;
 use App\Support\BranchAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -154,18 +155,24 @@ class MaintenanceRecordsController extends Controller
         }
 
         $car = $this->resolveAccessibleCar($request, (int) $validated['car_id']);
+        $workshop = $this->resolveAccessibleWorkshop(
+            $request,
+            $validated['maintenance_workshop_id'] ?? null,
+            $validated['maintenance_type_id'] ?? null,
+        );
 
         $maintenance = CarMaintenance::create([
             'car_id' => $car->id,
             'branch_id' => $car->branch_id,
             'maintenance_type_id' => $validated['maintenance_type_id'] ?? null,
+            'maintenance_workshop_id' => $workshop?->id,
             'status' => $validated['status'],
             'scheduled_date' => $validated['scheduled_date'] ?? null,
             'started_at' => $validated['started_at'] ?? null,
             'completed_at' => $validated['completed_at'] ?? null,
             'cost' => $validated['cost'] ?? null,
             'odometer' => $validated['odometer'] ?? null,
-            'workshop_name' => $validated['workshop_name'] ?? null,
+            'workshop_name' => $workshop?->name,
             'notes' => $validated['notes'] ?? null,
             'created_by' => $request->user()?->id,
         ]);
@@ -185,6 +192,7 @@ class MaintenanceRecordsController extends Controller
                 'id' => $maintenance->id,
                 'car_id' => $maintenance->car_id,
                 'maintenance_type_id' => $maintenance->maintenance_type_id,
+                'maintenance_workshop_id' => $this->resolveSelectedWorkshopId($maintenance),
                 'status' => $maintenance->status instanceof MaintenanceRecordStatus ? $maintenance->status->value : (string) $maintenance->status,
                 'scheduled_date' => optional($maintenance->scheduled_date)?->toDateString(),
                 'started_at' => optional($maintenance->started_at)?->format('Y-m-d\TH:i'),
@@ -213,18 +221,24 @@ class MaintenanceRecordsController extends Controller
 
         $previousCarId = (int) $maintenance->car_id;
         $car = $this->resolveAccessibleCar($request, (int) $validated['car_id']);
+        $workshop = $this->resolveAccessibleWorkshop(
+            $request,
+            $validated['maintenance_workshop_id'] ?? null,
+            $validated['maintenance_type_id'] ?? null,
+        );
 
         $maintenance->update([
             'car_id' => $car->id,
             'branch_id' => $car->branch_id,
             'maintenance_type_id' => $validated['maintenance_type_id'] ?? null,
+            'maintenance_workshop_id' => $workshop?->id,
             'status' => $validated['status'],
             'scheduled_date' => $validated['scheduled_date'] ?? null,
             'started_at' => $validated['started_at'] ?? null,
             'completed_at' => $validated['completed_at'] ?? null,
             'cost' => $validated['cost'] ?? null,
             'odometer' => $validated['odometer'] ?? null,
-            'workshop_name' => $validated['workshop_name'] ?? null,
+            'workshop_name' => $workshop?->name,
             'notes' => $validated['notes'] ?? null,
         ]);
         $this->syncCarStatusForCarId((int) $maintenance->car_id);
@@ -263,13 +277,23 @@ class MaintenanceRecordsController extends Controller
                 'integer',
                 Rule::exists('maintenance_types', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
             ],
+            'maintenance_workshop_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('maintenance_workshops', 'id')->where(function ($q) use ($tenantId, $request) {
+                    $q->where('tenant_id', $tenantId);
+
+                    if ($request->filled('maintenance_type_id')) {
+                        $q->where('maintenance_type_id', (int) $request->input('maintenance_type_id'));
+                    }
+                }),
+            ],
             'status' => ['required', 'string', Rule::enum(MaintenanceRecordStatus::class)],
             'scheduled_date' => ['nullable', 'date'],
             'started_at' => ['nullable', 'date'],
             'completed_at' => ['nullable', 'date', 'after_or_equal:started_at'],
             'cost' => ['nullable', 'numeric', 'min:0'],
             'odometer' => ['nullable', 'integer', 'min:0'],
-            'workshop_name' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
     }
@@ -330,6 +354,9 @@ class MaintenanceRecordsController extends Controller
             ->values();
 
         $maintenanceTypes = MaintenanceType::query()
+            ->with(['workshops' => fn ($query) => $query
+                ->select(['id', 'maintenance_type_id', 'name', 'phone', 'city', 'country'])
+                ->orderBy('name')])
             ->select(['id', 'name', 'is_active', 'sort_order'])
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -338,6 +365,14 @@ class MaintenanceRecordsController extends Controller
             ->map(fn (MaintenanceType $type) => [
                 'id' => $type->id,
                 'name' => $type->name,
+                'workshops' => $type->workshops->map(fn (MaintenanceWorkshop $workshop) => [
+                    'id' => $workshop->id,
+                    'name' => $workshop->name,
+                    'phone' => $workshop->phone,
+                    'city' => $workshop->city,
+                    'country' => $workshop->country,
+                    'label' => trim($workshop->name.($workshop->city ? " - {$workshop->city}" : '').($workshop->phone ? " ({$workshop->phone})" : '')),
+                ])->values(),
             ])
             ->values();
 
@@ -352,5 +387,35 @@ class MaintenanceRecordsController extends Controller
             'maintenanceTypes' => $maintenanceTypes,
             'statuses' => $statuses,
         ];
+    }
+
+    private function resolveAccessibleWorkshop(Request $request, mixed $workshopId, mixed $maintenanceTypeId): ?MaintenanceWorkshop
+    {
+        if (!$workshopId) {
+            return null;
+        }
+
+        $tenantId = (int) (TenantContext::id() ?? $request->user()?->tenant_id ?? 0);
+
+        return MaintenanceWorkshop::query()
+            ->where('tenant_id', $tenantId)
+            ->where('maintenance_type_id', (int) $maintenanceTypeId)
+            ->findOrFail((int) $workshopId);
+    }
+
+    private function resolveSelectedWorkshopId(CarMaintenance $maintenance): ?int
+    {
+        if ($maintenance->maintenance_workshop_id) {
+            return (int) $maintenance->maintenance_workshop_id;
+        }
+
+        if (!$maintenance->maintenance_type_id || !$maintenance->workshop_name) {
+            return null;
+        }
+
+        return MaintenanceWorkshop::query()
+            ->where('maintenance_type_id', $maintenance->maintenance_type_id)
+            ->where('name', $maintenance->workshop_name)
+            ->value('id');
     }
 }

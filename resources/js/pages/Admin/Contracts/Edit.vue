@@ -78,6 +78,8 @@ const allowedFileTypes = [
 const availableReservations = ref(Array.isArray(props.reservationOptions) ? [...props.reservationOptions] : []);
 const showReservationModal = ref(false);
 const reservationSubmitting = ref(false);
+const reservationSearch = ref('');
+const reservationMenuOpen = ref(false);
 const manualSnapshot = ref<null | {
   car_data: { car_id: any; car_details: string; plate_number: string; branch_id: any };
   rental_data: { start_date: string; end_date: string; total_amount: any };
@@ -287,6 +289,25 @@ const selectedReservation = computed(() => {
   const selectedId = Number(form.reservation_id);
   return availableReservations.value.find((reservation) => Number(reservation.id) === selectedId) || null;
 });
+const filteredReservationsBySearch = computed(() => {
+  const term = reservationSearch.value.trim().toLowerCase();
+
+  if (!term) {
+    return availableReservations.value;
+  }
+
+  return availableReservations.value.filter((reservation) =>
+    [
+      reservation.label,
+      reservation.reservation_number,
+      reservation.user_name,
+      reservation.car_details,
+      reservation.plate_number,
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(term)),
+  );
+});
 const selectedCarId = computed(() => Number(selectedReservation.value?.car_id || form.car_data.car_id || 0));
 const selectedCarDamages = computed(() => {
   if (!selectedCarId.value) {
@@ -358,11 +379,16 @@ watch(
     const oldReservation = availableReservations.value.find((reservation) => Number(reservation.id) === Number(oldValue));
 
     if (newReservation) {
+      reservationSearch.value = newReservation.label;
       if (!oldReservation) {
         snapshotManualState();
       }
       applyReservationData(newReservation);
       return;
+    }
+
+    if (!reservationMenuOpen.value) {
+      reservationSearch.value = '';
     }
 
     if (oldReservation && !newReservation) {
@@ -371,6 +397,32 @@ watch(
   },
   { immediate: true },
 );
+
+function selectReservation(reservation: Record<string, any>) {
+  if (reservation.has_contract && Number(reservation.id) !== Number(form.reservation_id)) {
+    return;
+  }
+
+  form.reservation_id = String(reservation.id);
+  reservationSearch.value = reservation.label;
+  reservationMenuOpen.value = false;
+}
+
+function clearReservation() {
+  form.reservation_id = '';
+  reservationSearch.value = '';
+  reservationMenuOpen.value = false;
+}
+
+function handleReservationBlur() {
+  window.setTimeout(() => {
+    reservationMenuOpen.value = false;
+
+    if (!selectedReservation.value) {
+      reservationSearch.value = '';
+    }
+  }, 150);
+}
 
 function driverTempFolders(driver: any): string[] {
   return driver.documents.flatMap((doc: any) => Array.isArray(doc.temp_folders) ? doc.temp_folders : []);
@@ -858,12 +910,70 @@ function submit() {
             <div class="xl:col-span-2">
               <Label for="reservation_id">{{ localize('Linked Reservation', 'الحجز المرتبط') }}</Label>
               <div class="mt-1 flex gap-2">
-                <select id="reservation_id" v-model="form.reservation_id" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                  <option value="">{{ localize('No linked reservation', 'لا يوجد حجز مرتبط') }}</option>
-                  <option v-for="reservation in availableReservations" :key="reservation.id" :value="reservation.id" :disabled="reservation.has_contract && reservation.id !== form.reservation_id">
-                    {{ reservation.label }}{{ reservation.has_contract ? localize(' (has contract)', ' (لديه عقد)') : '' }}
-                  </option>
-                </select>
+                <div class="relative flex-1">
+                  <Input
+                    id="reservation_id"
+                    v-model="reservationSearch"
+                    :placeholder="localize('Search reservation...', 'ابحث عن الحجز...')"
+                    autocomplete="off"
+                    @focus="reservationMenuOpen = true"
+                    @blur="handleReservationBlur"
+                    @input="
+                      reservationMenuOpen = true;
+                      form.reservation_id = '';
+                    "
+                  />
+
+                  <button
+                    v-if="form.reservation_id"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+                    type="button"
+                    @mousedown.prevent
+                    @click="clearReservation"
+                  >
+                    {{ localize('Clear', 'مسح') }}
+                  </button>
+
+                  <div
+                    v-if="reservationMenuOpen"
+                    class="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-background shadow-lg"
+                  >
+                    <button
+                      class="flex w-full items-start px-3 py-2 text-left text-sm hover:bg-muted"
+                      type="button"
+                      @mousedown.prevent="clearReservation"
+                    >
+                      {{ localize('No linked reservation', 'لا يوجد حجز مرتبط') }}
+                    </button>
+
+                    <button
+                      v-for="reservation in filteredReservationsBySearch"
+                      :key="reservation.id"
+                      class="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                      :disabled="reservation.has_contract && Number(reservation.id) !== Number(form.reservation_id)"
+                      type="button"
+                      @mousedown.prevent="selectReservation(reservation)"
+                    >
+                      <span class="font-medium">
+                        {{ reservation.label }}
+                        <span v-if="reservation.has_contract && Number(reservation.id) !== Number(form.reservation_id)">
+                          {{ localize(' (has contract)', ' (لديه عقد)') }}
+                        </span>
+                      </span>
+                      <span v-if="reservation.car_details || reservation.plate_number" class="text-xs text-muted-foreground">
+                        {{ reservation.car_details || localize('No car details', 'لا توجد تفاصيل سيارة') }}
+                        <span v-if="reservation.plate_number"> • {{ reservation.plate_number }}</span>
+                      </span>
+                    </button>
+
+                    <div
+                      v-if="filteredReservationsBySearch.length === 0"
+                      class="px-3 py-2 text-sm text-muted-foreground"
+                    >
+                      {{ localize('No reservations found.', 'لا توجد حجوزات مطابقة.') }}
+                    </div>
+                  </div>
+                </div>
                 <Button type="button" variant="outline" @click="showReservationModal = true">{{ localize('New Reservation', 'حجز جديد') }}</Button>
               </div>
               <InputError :message="form.errors.reservation_id" class="mt-1" />

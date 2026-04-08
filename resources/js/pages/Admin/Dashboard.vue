@@ -22,6 +22,7 @@ const props = defineProps<{
         available_cars: number;
         active_reservations: number;
         pending_reservations: number;
+        pending_violations: number;
         total_reservations: number;
         total_revenue: number;
         total_clients: number;
@@ -63,6 +64,27 @@ const props = defineProps<{
         status_color: string;
         completed_count: number;
     }>;
+    expiringCarDocuments: Array<{
+        id: number;
+        type: string;
+        car_name: string;
+        license_plate: string;
+        expiry_date: string | null;
+        days_remaining: number | null;
+        edit_url: string;
+    }>;
+    recentPendingViolations: Array<{
+        id: number;
+        violation_number: string;
+        type: string;
+        car_name: string;
+        license_plate: string;
+        branch_name: string;
+        violation_date: string | null;
+        due_date: string | null;
+        amount: number;
+        edit_url: string;
+    }>;
     branches: Array<{ id: number; name: string }>;
     filters: { branch_id: number | null };
     canAccessAllBranches: boolean;
@@ -84,6 +106,18 @@ const fmtDate = (d: string | null) =>
     d
         ? new Date(d).toLocaleDateString(numberLocale.value, { month: 'short', day: 'numeric', year: 'numeric' })
         : localize('N/A', 'غير متوفر');
+
+const documentTypeLabel = (type: string) =>
+    type === 'license'
+        ? localize('Car License', 'رخصة السيارة')
+        : localize('Car Insurance', 'تأمين السيارة');
+
+const daysRemainingLabel = (days: number | null) => {
+    if (days === null) return localize('Unknown', 'غير معروف');
+    if (days === 0) return localize('Expires today', 'تنتهي اليوم');
+
+    return localize(`In ${days} days`, `خلال ${days} أيام`);
+};
 
 const selectedBranch = ref<number | null>(props.filters.branch_id ?? null);
 const applyBranchFilter = () => {
@@ -135,6 +169,14 @@ const kpiCards = computed(() => [
         bg: 'rgba(139,92,246,0.1)',
     },
     {
+        title: localize('Pending Violations', 'المخالفات المعلقة'),
+        value: props.stats.pending_violations,
+        sub: localize('Need review or payment', 'تحتاج مراجعة أو سداد'),
+        icon: Clock,
+        accent: '#EF4444',
+        bg: 'rgba(239,68,68,0.1)',
+    },
+    {
         title: localize('Total Clients', 'إجمالي العملاء'),
         value: props.stats.total_clients,
         sub: localize('Registered clients', 'العملاء المسجلون'),
@@ -180,7 +222,7 @@ const kpiCards = computed(() => [
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-7">
                 <Card
                     v-for="card in kpiCards"
                     :key="card.title"
@@ -201,6 +243,125 @@ const kpiCards = computed(() => [
                     </CardContent>
                 </Card>
             </div>
+
+            <Card class="border-0 shadow-sm">
+                <CardHeader>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <Clock class="h-4 w-4 text-primary" />
+                            <CardTitle class="text-base">{{ localize('Expiring Car Documents', 'وثائق السيارات القريبة من الانتهاء') }}</CardTitle>
+                        </div>
+                        <Link href="/admin/cars" class="text-xs text-primary hover:underline">
+                            {{ localize('Review cars', 'مراجعة السيارات') }} →
+                        </Link>
+                    </div>
+                    <p class="text-xs text-muted-foreground">{{ localize('Documents that expire within the next 10 days.', 'الوثائق التي تنتهي خلال العشرة أيام القادمة.') }}</p>
+                </CardHeader>
+                <CardContent class="p-0">
+                    <div v-if="expiringCarDocuments.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                        {{ localize('No car documents are expiring soon.', 'لا توجد وثائق سيارات ستنتهي قريبًا.') }}
+                    </div>
+                    <table v-else class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Type', 'النوع') }}</th>
+                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Car', 'السيارة') }}</th>
+                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Expiry Date', 'تاريخ الانتهاء') }}</th>
+                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Remaining', 'المتبقي') }}</th>
+                                <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Action', 'الإجراء') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="document in expiringCarDocuments"
+                                :key="document.id"
+                                class="border-b last:border-0 transition-colors hover:bg-muted/40"
+                            >
+                                <td class="px-4 py-3 font-medium">{{ documentTypeLabel(document.type) }}</td>
+                                <td class="px-4 py-3">
+                                    <div class="font-medium">{{ document.car_name || localize('Unknown car', 'سيارة غير معروفة') }}</div>
+                                    <div v-if="document.license_plate" class="text-xs text-muted-foreground">{{ document.license_plate }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(document.expiry_date) }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                                        {{ daysRemainingLabel(document.days_remaining) }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <Link :href="document.edit_url" class="text-xs text-primary hover:underline">
+                                        {{ localize('Open', 'فتح') }}
+                                    </Link>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </CardContent>
+            </Card>
+
+            <Card class="border-0 shadow-sm">
+                <CardHeader>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <Clock class="h-4 w-4 text-primary" />
+                            <CardTitle class="text-base">{{ localize('Pending Violations', 'المخالفات المعلقة') }}</CardTitle>
+                        </div>
+                        <Link href="/admin/car-violations" class="text-xs text-primary hover:underline">
+                            {{ localize('View all', 'عرض الكل') }} →
+                        </Link>
+                    </div>
+                    <p class="text-xs text-muted-foreground">{{ localize('Open violations that still need action.', 'المخالفات المفتوحة التي ما زالت تحتاج إجراء.') }}</p>
+                </CardHeader>
+                <CardContent class="p-0">
+                    <div v-if="recentPendingViolations.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                        {{ localize('No pending violations.', 'لا توجد مخالفات معلقة.') }}
+                    </div>
+                    <table v-else class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Number', 'الرقم') }}</th>
+                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Car', 'السيارة') }}</th>
+                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Date', 'التاريخ') }}</th>
+                                <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Amount', 'المبلغ') }}</th>
+                                <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Action', 'الإجراء') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="violation in recentPendingViolations"
+                                :key="violation.id"
+                                class="border-b last:border-0 transition-colors hover:bg-muted/40"
+                            >
+                                <td class="px-4 py-3">
+                                    <div class="font-medium">{{ violation.violation_number }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ violation.type }}</div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="font-medium">{{ violation.car_name || localize('Unknown car', 'سيارة غير معروفة') }}</div>
+                                    <div class="text-xs text-muted-foreground">
+                                        <span v-if="violation.license_plate">{{ violation.license_plate }}</span>
+                                        <span v-if="violation.branch_name">
+                                            <span v-if="violation.license_plate"> • </span>{{ violation.branch_name }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-xs text-muted-foreground">
+                                    {{ fmtDate(violation.violation_date) }}
+                                    <div v-if="violation.due_date">{{ localize('Due', 'الاستحقاق') }}: {{ fmtDate(violation.due_date) }}</div>
+                                </td>
+                                <td class="whitespace-nowrap px-4 py-3 text-right font-semibold">
+                                    {{ fmtCurrency(violation.amount) }}
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <Link :href="violation.edit_url" class="text-xs text-primary hover:underline">
+                                        {{ localize('Open', 'فتح') }}
+                                    </Link>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </CardContent>
+            </Card>
 
             <div class="grid gap-4 lg:grid-cols-2">
                 <Card class="border-0 shadow-sm">
@@ -308,7 +469,7 @@ const kpiCards = computed(() => [
                                 <Clock class="h-4 w-4 text-primary" />
                                 <CardTitle class="text-base">{{ localize('Recent Reservations', 'أحدث الحجوزات') }}</CardTitle>
                             </div>
-                            <Link :href="`/admin/reservations`" class="text-xs text-primary hover:underline">
+                            <Link href="/admin/reservations" class="text-xs text-primary hover:underline">
                                 {{ localize('View all', 'عرض الكل') }} →
                             </Link>
                         </div>
@@ -362,7 +523,7 @@ const kpiCards = computed(() => [
                                 <Car class="h-4 w-4 text-primary" />
                                 <CardTitle class="text-base">{{ localize('Top Performing Cars', 'أفضل السيارات أداءً') }}</CardTitle>
                             </div>
-                            <Link :href="`/admin/cars`" class="text-xs text-primary hover:underline">
+                            <Link href="/admin/cars" class="text-xs text-primary hover:underline">
                                 {{ localize('View all', 'عرض الكل') }} →
                             </Link>
                         </div>

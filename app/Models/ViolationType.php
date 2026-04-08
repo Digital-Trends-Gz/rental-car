@@ -6,7 +6,7 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class MaintenanceType extends Model
+class ViolationType extends Model
 {
     use BelongsToTenant;
 
@@ -23,8 +23,8 @@ class MaintenanceType extends Model
         'sort_order' => 'integer',
     ];
 
-    public function workshops(): HasMany
+    public function violations(): HasMany
     {
-        return $this->hasMany(MaintenanceWorkshop::class)->orderBy('name');
+        return $this->hasMany(CarViolation::class)->latest('violation_date');
     }
 }

@@ -20,6 +20,14 @@ class Car extends Model
     use HasFiles;
     use BelongsToTenant;
 
+    public const ADDITIONAL_PHOTO_TYPES = [
+        'right',
+        'left',
+        'front',
+        'rear',
+        'inside',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -68,6 +76,8 @@ class Car extends Model
      */
     protected $appends = [
         'image_url',
+        'images',
+        'additional_photos',
     ];
 
     /**
@@ -125,6 +135,66 @@ class Car extends Model
     }
 
     /**
+     * Get all car image URLs for gallery usage.
+     *
+     * @return array<int, array{id:int|null,url:string,alt:string}>
+     */
+    public function getImagesAttribute(): array
+    {
+        $files = $this->relationLoaded('files')
+            ? $this->files->where('collection', 'image')->values()
+            : $this->files()->where('collection', 'image')->get();
+
+        if ($files->isEmpty()) {
+            return [[
+                'id' => null,
+                'url' => asset('images/car-default.jpg'),
+                'alt' => $this->full_name,
+            ]];
+        }
+
+        return $files
+            ->map(fn ($file) => [
+                'id' => $file->id,
+                'url' => Storage::url($file->path),
+                'alt' => $this->full_name,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Get typed additional photo URLs.
+     *
+     * @return array<string, array{id:int|null,url:string,alt:string}>
+     */
+    public function getAdditionalPhotosAttribute(): array
+    {
+        return collect(self::ADDITIONAL_PHOTO_TYPES)
+            ->mapWithKeys(function (string $type) {
+                $collection = self::additionalPhotoCollection($type);
+
+                $file = $this->relationLoaded('files')
+                    ? $this->files->firstWhere('collection', $collection)
+                    : $this->files()->where('collection', $collection)->first();
+
+                return [
+                    $type => [
+                        'id' => $file?->id,
+                        'url' => $file?->path ? Storage::url($file->path) : null,
+                        'alt' => "{$this->full_name} {$type} photo",
+                    ],
+                ];
+            })
+            ->all();
+    }
+
+    public static function additionalPhotoCollection(string $type): string
+    {
+        return 'additional_photo_'.$type;
+    }
+
+    /**
      * Get the reservations for the car.
      */
     public function reservations(): HasMany
@@ -155,6 +225,11 @@ class Car extends Model
     public function coupons(): HasMany
     {
         return $this->hasMany(Coupon::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(CarDocument::class)->latest('expiry_date')->latest('id');
     }
 
     public function carDiscounts(): HasMany

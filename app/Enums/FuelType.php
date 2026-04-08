@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum FuelType: string
 {
+    case GAS = 'gas';
     case GASOLINE = 'gasoline';
     case DIESEL = 'diesel';
     case HYBRID = 'hybrid';
@@ -21,6 +22,7 @@ enum FuelType: string
     public static function toArray(): array
     {
         return [
+            self::GAS->value,
             self::GASOLINE->value,
             self::DIESEL->value,
             self::HYBRID->value,
