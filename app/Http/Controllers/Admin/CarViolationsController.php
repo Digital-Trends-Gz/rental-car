@@ -12,6 +12,7 @@ use App\Models\Reservation;
 use App\Models\User;
 use App\Models\ViolationType;
 use App\Support\BranchAccess;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -239,6 +240,8 @@ class CarViolationsController extends Controller
                 'notes' => $carViolation->notes,
             ],
             ...$this->formOptions($request, $carViolation),
+            'noticePdfUrl' => route('admin.car-violations.notice.pdf', $carViolation),
+            'noticePrintUrl' => route('admin.car-violations.notice.print', $carViolation),
             'indexUrl' => route('admin.car-violations.index'),
             'submitUrl' => route('admin.car-violations.update', $carViolation),
             'method' => 'put',
@@ -292,6 +295,20 @@ class CarViolationsController extends Controller
         return redirect()
             ->route('admin.car-violations.index')
             ->with('success', 'Car violation updated successfully.');
+    }
+
+    public function noticePdf(Request $request, CarViolation $carViolation)
+    {
+        abort_unless($this->branchAccess->canAccessBranchId($request->user(), $carViolation->branch_id ? (int) $carViolation->branch_id : null), 403);
+
+        return $this->renderNoticePdf($carViolation, true);
+    }
+
+    public function noticePrint(Request $request, CarViolation $carViolation)
+    {
+        abort_unless($this->branchAccess->canAccessBranchId($request->user(), $carViolation->branch_id ? (int) $carViolation->branch_id : null), 403);
+
+        return $this->renderNoticePdf($carViolation, false);
     }
 
     public function destroy(Request $request, CarViolation $carViolation): RedirectResponse
@@ -400,7 +417,11 @@ class CarViolationsController extends Controller
             ->select(['id', 'reservation_number', 'car_id', 'user_id', 'start_date', 'end_date'])
             ->where('tenant_id', $tenantId)
             ->whereDate('end_date', '>=', $recentCutoff->toDateString())
-            ->with(['user:id,name,email'])
+            ->with([
+                'user:id,name,email',
+                'car:id,year,make,model,license_plate',
+                'contract:id,reservation_id,contract_number,contract_date,renter_name,renter_phone,plate_number,start_date,end_date',
+            ])
             ->latest('end_date')
             ->limit(300)
             ->get()
@@ -408,15 +429,31 @@ class CarViolationsController extends Controller
                 'id' => $reservation->id,
                 'label' => $this->reservationOptionLabel($reservation),
                 'car_id' => $reservation->car_id,
+                'car_label' => $reservation->car
+                    ? trim("{$reservation->car->year} {$reservation->car->make} {$reservation->car->model} ({$reservation->car->license_plate})")
+                    : null,
                 'user_id' => $reservation->user_id,
                 'user_label' => $reservation->user ? trim($reservation->user->name.' ('.$reservation->user->email.')') : null,
+                'contract_id' => $reservation->contract?->id,
+                'contract_number' => $reservation->contract?->contract_number,
+                'contract_date' => optional($reservation->contract?->contract_date)?->toDateString(),
+                'renter_name' => $reservation->contract?->renter_name ?? $reservation->user?->name,
+                'renter_phone' => $reservation->contract?->renter_phone,
+                'rental_period' => collect([
+                    optional($reservation->contract?->start_date)?->toDateString(),
+                    optional($reservation->contract?->end_date)?->toDateString(),
+                ])->filter()->implode(' - '),
             ])
             ->values();
 
         if ($carViolation?->reservation_id && !$reservations->contains(fn ($reservation) => (int) $reservation['id'] === (int) $carViolation->reservation_id)) {
             $currentReservation = Reservation::query()
                 ->select(['id', 'reservation_number', 'car_id', 'user_id', 'start_date'])
-                ->with(['user:id,name,email'])
+                ->with([
+                    'user:id,name,email',
+                    'car:id,year,make,model,license_plate',
+                    'contract:id,reservation_id,contract_number,contract_date,renter_name,renter_phone,plate_number,start_date,end_date',
+                ])
                 ->where('tenant_id', $tenantId)
                 ->find($carViolation->reservation_id);
 
@@ -425,8 +462,20 @@ class CarViolationsController extends Controller
                     'id' => $currentReservation->id,
                     'label' => $this->reservationOptionLabel($currentReservation),
                     'car_id' => $currentReservation->car_id,
+                    'car_label' => $currentReservation->car
+                        ? trim("{$currentReservation->car->year} {$currentReservation->car->make} {$currentReservation->car->model} ({$currentReservation->car->license_plate})")
+                        : null,
                     'user_id' => $currentReservation->user_id,
                     'user_label' => $currentReservation->user ? trim($currentReservation->user->name.' ('.$currentReservation->user->email.')') : null,
+                    'contract_id' => $currentReservation->contract?->id,
+                    'contract_number' => $currentReservation->contract?->contract_number,
+                    'contract_date' => optional($currentReservation->contract?->contract_date)?->toDateString(),
+                    'renter_name' => $currentReservation->contract?->renter_name ?? $currentReservation->user?->name,
+                    'renter_phone' => $currentReservation->contract?->renter_phone,
+                    'rental_period' => collect([
+                        optional($currentReservation->contract?->start_date)?->toDateString(),
+                        optional($currentReservation->contract?->end_date)?->toDateString(),
+                    ])->filter()->implode(' - '),
                 ]);
             }
         }
@@ -590,5 +639,63 @@ class CarViolationsController extends Controller
         }
 
         return $violationType;
+    }
+
+    private function renderNoticePdf(CarViolation $carViolation, bool $download)
+    {
+        $carViolation->loadMissing([
+            'car:id,year,make,model,license_plate,branch_id',
+            'car.branch:id,name,phone_1,phone_2,whatsapp',
+            'branch:id,name,phone_1,phone_2,whatsapp',
+            'reservation:id,reservation_number,car_id,user_id,start_date,end_date,pickup_time,return_time',
+            'reservation.user:id,name,email',
+            'reservation.car:id,year,make,model,license_plate',
+            'reservation.contract:id,reservation_id,contract_number,contract_date,renter_name,renter_phone,renter_id_number,vehicle_odometer,vehicle_fuel_level,plate_number,price_per_day,price_per_week,price_per_month,allowed_km_per_day,allowed_km_per_week,allowed_km_per_month',
+            'violationType:id,name',
+            'issuedTo:id,name,email',
+            'creator:id,name,email',
+        ]);
+
+        $reservation = $carViolation->reservation;
+        $contract = $reservation?->contract;
+        $car = $carViolation->car ?? $reservation?->car;
+        $renter = $reservation?->user;
+        $branch = $carViolation->branch ?? $car?->branch;
+
+        $pdf = Pdf::loadView('admin.car_violations.notice', [
+            'violation' => $carViolation,
+            'reservation' => $reservation,
+            'contract' => $contract,
+            'car' => $car,
+            'renter' => $renter,
+            'branch' => $branch,
+            'companyName' => $this->resolveCompanyName($carViolation),
+            'companyLogo' => $this->resolveCompanyLogo($carViolation),
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'portrait');
+
+        $fileName = ($carViolation->violation_number ?: ('violation-'.$carViolation->id)).'-police-notice.pdf';
+
+        return $download ? $pdf->download($fileName) : $pdf->stream($fileName);
+    }
+
+    private function resolveCompanyName(CarViolation $carViolation): string
+    {
+        $tenant = $carViolation->tenant;
+        $settings = $tenant ? \App\Models\TenantSiteSetting::forTenant($tenant) : [];
+
+        return (string) data_get($settings, 'company.name')
+            ?: (string) $tenant?->name
+            ?: config('app.name');
+    }
+
+    private function resolveCompanyLogo(CarViolation $carViolation): ?string
+    {
+        $tenant = $carViolation->tenant;
+        $settings = $tenant ? \App\Models\TenantSiteSetting::forTenant($tenant) : [];
+
+        return data_get($settings, 'branding.logo_url')
+            ?: data_get($settings, 'branding.logo')
+            ?: null;
     }
 }

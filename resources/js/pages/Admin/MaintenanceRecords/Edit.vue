@@ -22,6 +22,7 @@ const props = defineProps<{
         workshop_name: string | null;
         notes: string | null;
     } | null;
+    initialCarId: number | null;
     cars: Array<{ id: number; label: string }>;
     maintenanceTypes: Array<{
         id: number;
@@ -44,7 +45,7 @@ const props = defineProps<{
 const isEdit = computed(() => !!props.record);
 
 const form = useForm({
-    car_id: props.record?.car_id ? String(props.record.car_id) : '',
+    car_id: props.record?.car_id ? String(props.record.car_id) : props.initialCarId ? String(props.initialCarId) : '',
     maintenance_type_id: props.record?.maintenance_type_id ? String(props.record.maintenance_type_id) : '',
     maintenance_workshop_id: props.record?.maintenance_workshop_id ? String(props.record.maintenance_workshop_id) : '',
     status: props.record?.status ?? 'scheduled',

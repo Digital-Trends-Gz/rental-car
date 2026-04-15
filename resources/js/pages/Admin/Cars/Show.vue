@@ -31,6 +31,7 @@ const props = defineProps<{
         reservations_count: number;
         contracts_count: number;
         maintenances_count: number;
+        damage_repairs_count: number;
         documents_count: number;
         damage_reports_count: number;
         violations_count: number;
@@ -73,6 +74,20 @@ const props = defineProps<{
         completed_at: string | null;
         cost: number | null;
         workshop_name: string | null;
+        edit_url: string;
+    }>;
+    damageRepairs: Array<{
+        id: number;
+        repair_number: string;
+        damage_zone: string;
+        damage_type: string;
+        workshop_name: string | null;
+        status: string;
+        status_label: string;
+        opened_at: string | null;
+        completed_at: string | null;
+        estimated_cost: number | null;
+        actual_cost: number | null;
         edit_url: string;
     }>;
     documents: Array<{
@@ -125,6 +140,12 @@ const props = defineProps<{
         is_active: boolean;
         edit_url: string;
     }>;
+    actions: {
+        create_maintenance_url: string;
+        maintenance_index_url: string;
+        create_damage_repair_url: string;
+        damage_repairs_index_url: string;
+    };
 }>();
 
 const { locale } = useTrans();
@@ -183,10 +204,11 @@ function statusVariant(key: string) {
                 </div>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-4 xl:grid-cols-7">
+            <div class="grid gap-4 md:grid-cols-4 xl:grid-cols-8">
                 <Card><CardHeader class="pb-2"><CardTitle class="text-sm">{{ localize('Reservations', 'الحجوزات') }}</CardTitle></CardHeader><CardContent><div class="text-2xl font-semibold">{{ summary.reservations_count }}</div></CardContent></Card>
                 <Card><CardHeader class="pb-2"><CardTitle class="text-sm">{{ localize('Contracts', 'العقود') }}</CardTitle></CardHeader><CardContent><div class="text-2xl font-semibold">{{ summary.contracts_count }}</div></CardContent></Card>
                 <Card><CardHeader class="pb-2"><CardTitle class="text-sm">{{ localize('Maintenances', 'الصيانة') }}</CardTitle></CardHeader><CardContent><div class="text-2xl font-semibold">{{ summary.maintenances_count }}</div></CardContent></Card>
+                <Card><CardHeader class="pb-2"><CardTitle class="text-sm">{{ localize('Damage Repairs', 'إصلاحات الأضرار') }}</CardTitle></CardHeader><CardContent><div class="text-2xl font-semibold">{{ summary.damage_repairs_count }}</div></CardContent></Card>
                 <Card><CardHeader class="pb-2"><CardTitle class="text-sm">{{ localize('Documents', 'الوثائق') }}</CardTitle></CardHeader><CardContent><div class="text-2xl font-semibold">{{ summary.documents_count }}</div></CardContent></Card>
                 <Card><CardHeader class="pb-2"><CardTitle class="text-sm">{{ localize('Damage Reports', 'تقارير الأضرار') }}</CardTitle></CardHeader><CardContent><div class="text-2xl font-semibold">{{ summary.damage_reports_count }}</div></CardContent></Card>
                 <Card><CardHeader class="pb-2"><CardTitle class="text-sm">{{ localize('Violations', 'المخالفات') }}</CardTitle></CardHeader><CardContent><div class="text-2xl font-semibold">{{ summary.violations_count }}</div></CardContent></Card>
@@ -255,7 +277,54 @@ function statusVariant(key: string) {
                     </Card>
 
                     <Card>
-                        <CardHeader><CardTitle>{{ localize('Maintenance Records', 'سجلات الصيانة') }}</CardTitle></CardHeader>
+                        <CardHeader class="flex flex-row items-center justify-between gap-3">
+                            <CardTitle>{{ localize('Damage Repairs', 'إصلاحات الأضرار') }}</CardTitle>
+                            <div class="flex items-center gap-2">
+                                <Link :href="actions.damage_repairs_index_url">
+                                    <Button size="sm" variant="outline">{{ localize('View All', 'عرض الكل') }}</Button>
+                                </Link>
+                                <Link :href="actions.create_damage_repair_url">
+                                    <Button size="sm">{{ localize('New Repair', 'إصلاح جديد') }}</Button>
+                                </Link>
+                            </div>
+                        </CardHeader>
+                        <CardContent class="space-y-3">
+                            <div v-if="damageRepairs.length === 0" class="text-sm text-muted-foreground">
+                                {{ localize('No damage repairs for this car.', 'لا توجد إصلاحات أضرار لهذه السيارة.') }}
+                            </div>
+                            <div v-for="item in damageRepairs" :key="item.id" class="rounded-lg border p-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div class="font-medium">{{ item.repair_number }}</div>
+                                        <div class="text-sm text-muted-foreground">{{ item.damage_zone }}<span v-if="item.damage_type"> • {{ item.damage_type }}</span></div>
+                                        <div class="text-sm text-muted-foreground">{{ item.workshop_name || localize('No workshop', 'لا توجد ورشة') }}</div>
+                                        <div class="text-sm text-muted-foreground">{{ item.opened_at || '-' }}<span v-if="item.completed_at"> • {{ localize('Completed', 'مكتمل') }}: {{ item.completed_at }}</span></div>
+                                        <div v-if="item.actual_cost !== null || item.estimated_cost !== null" class="text-sm text-muted-foreground">
+                                            {{ localize('Cost', 'التكلفة') }}:
+                                            {{ money(item.actual_cost ?? item.estimated_cost) }}
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col items-end gap-2">
+                                        <Badge variant="outline">{{ item.status_label }}</Badge>
+                                        <Link :href="item.edit_url"><Button size="sm" variant="outline">{{ localize('Open', 'فتح') }}</Button></Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader class="flex flex-row items-center justify-between gap-3">
+                            <CardTitle>{{ localize('Maintenance Records', 'سجلات الصيانة') }}</CardTitle>
+                            <div class="flex items-center gap-2">
+                                <Link :href="actions.maintenance_index_url">
+                                    <Button size="sm" variant="outline">{{ localize('View All', 'عرض الكل') }}</Button>
+                                </Link>
+                                <Link :href="actions.create_maintenance_url">
+                                    <Button size="sm">{{ localize('New Record', 'سجل جديد') }}</Button>
+                                </Link>
+                            </div>
+                        </CardHeader>
                         <CardContent class="space-y-3">
                             <div v-if="maintenances.length === 0" class="text-sm text-muted-foreground">{{ localize('No maintenance records for this car.', 'لا توجد سجلات صيانة لهذه السيارة.') }}</div>
                             <div v-for="item in maintenances" :key="item.id" class="rounded-lg border p-4">

@@ -240,7 +240,7 @@ class ContractsController extends Controller
         abort_unless($this->canAccessContract($contract, request()->user()), 403);
         $contract->loadMissing([
             'reservation.user:id,name,email',
-            'reservation.car:id,make,model,year,license_plate',
+            'reservation.car:id,make,model,year,license_plate,mileage',
             'branch:id,name',
             'files',
             'primaryDriver.documents',
@@ -264,6 +264,19 @@ class ContractsController extends Controller
                 'renter_phone' => $contract->renter_phone,
                 'car_details' => $contract->car_details,
                 'plate_number' => $contract->plate_number,
+                'vehicle_odometer' => $contract->vehicle_odometer,
+                'vehicle_fuel_level' => $contract->vehicle_fuel_level,
+                'price_per_day' => $contract->price_per_day,
+                'price_per_week' => $contract->price_per_week,
+                'price_per_month' => $contract->price_per_month,
+                'allowed_km_per_day' => $contract->allowed_km_per_day,
+                'allowed_km_per_week' => $contract->allowed_km_per_week,
+                'allowed_km_per_month' => $contract->allowed_km_per_month,
+                'return_odometer' => $contract->return_odometer,
+                'return_fuel_level' => $contract->return_fuel_level,
+                'vehicle_condition_before' => $contract->vehicle_condition_before,
+                'vehicle_condition_after' => $contract->vehicle_condition_after,
+                'actual_return_time' => optional($contract->actual_return_time)->format('Y-m-d\TH:i'),
                 'start_date' => optional($contract->start_date)->toDateString(),
                 'end_date' => optional($contract->end_date)->toDateString(),
                 'total_amount' => $contract->total_amount,
@@ -337,7 +350,7 @@ class ContractsController extends Controller
 
         $contract->loadMissing([
             'reservation.user:id,name,email',
-            'reservation.car:id,make,model,year,license_plate',
+            'reservation.car:id,make,model,year,license_plate,mileage',
             'branch:id,name',
             'tenant.siteSetting.files',
             'primaryDriver.documents',
@@ -387,7 +400,7 @@ class ContractsController extends Controller
         ])
             ->format(Format::A4)
             ->portrait()
-            ->margins(12, 12, 12, 12)
+            ->margins(4, 4, 4, 4)
             ->withBrowsershot(function (Browsershot $browsershot): void {
                 $browsershot
                     ->waitUntilNetworkIdle(false)
@@ -429,9 +442,22 @@ class ContractsController extends Controller
                 'renter_name' => $contract->renter_name,
                 'renter_id_number' => $contract->renter_id_number,
                 'renter_phone' => $contract->renter_phone,
-                'car_details' => $contract->car_details,
-                'plate_number' => $contract->plate_number,
-                'start_date' => optional($contract->start_date)->toDateString(),
+                    'car_details' => $contract->car_details,
+                    'plate_number' => $contract->plate_number,
+                    'vehicle_odometer' => $contract->vehicle_odometer,
+                    'vehicle_fuel_level' => $contract->vehicle_fuel_level,
+                    'price_per_day' => $contract->price_per_day,
+                    'price_per_week' => $contract->price_per_week,
+                    'price_per_month' => $contract->price_per_month,
+                    'allowed_km_per_day' => $contract->allowed_km_per_day,
+                    'allowed_km_per_week' => $contract->allowed_km_per_week,
+                    'allowed_km_per_month' => $contract->allowed_km_per_month,
+                    'return_odometer' => $contract->return_odometer,
+                    'return_fuel_level' => $contract->return_fuel_level,
+                    'vehicle_condition_before' => $contract->vehicle_condition_before,
+                    'vehicle_condition_after' => $contract->vehicle_condition_after,
+                    'actual_return_time' => optional($contract->actual_return_time)->format('Y-m-d\TH:i'),
+                    'start_date' => optional($contract->start_date)->toDateString(),
                 'end_date' => optional($contract->end_date)->toDateString(),
                 'total_amount' => $contract->total_amount,
                 'currency' => $contract->currency,
@@ -641,6 +667,19 @@ class ContractsController extends Controller
             'renter_phone' => ['nullable', 'string', 'max:100'],
             'car_details' => ['nullable', 'string', 'max:255'],
             'plate_number' => ['nullable', 'string', 'max:255'],
+            'vehicle_odometer' => ['nullable', 'integer', 'min:0'],
+            'vehicle_fuel_level' => ['nullable', 'string', 'max:50'],
+            'price_per_day' => ['nullable', 'numeric', 'min:0'],
+            'price_per_week' => ['nullable', 'numeric', 'min:0'],
+            'price_per_month' => ['nullable', 'numeric', 'min:0'],
+            'allowed_km_per_day' => ['nullable', 'integer', 'min:0'],
+            'allowed_km_per_week' => ['nullable', 'integer', 'min:0'],
+            'allowed_km_per_month' => ['nullable', 'integer', 'min:0'],
+            'return_odometer' => ['nullable', 'integer', 'min:0'],
+            'return_fuel_level' => ['nullable', 'string', 'max:50'],
+            'vehicle_condition_before' => ['nullable', Rule::in(['clean', 'not_clean'])],
+            'vehicle_condition_after' => ['nullable', Rule::in(['clean', 'not_clean'])],
+            'actual_return_time' => ['nullable', 'date'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'total_amount' => ['nullable', 'numeric', 'min:0'],
@@ -651,6 +690,14 @@ class ContractsController extends Controller
             'car_data.car_id' => ['nullable', 'integer', 'exists:cars,id'],
             'car_data.car_details' => ['nullable', 'string', 'max:255'],
             'car_data.plate_number' => ['nullable', 'string', 'max:255'],
+            'car_data.vehicle_odometer' => ['nullable', 'integer', 'min:0'],
+            'car_data.vehicle_fuel_level' => ['nullable', 'string', 'max:50'],
+            'car_data.price_per_day' => ['nullable', 'numeric', 'min:0'],
+            'car_data.price_per_week' => ['nullable', 'numeric', 'min:0'],
+            'car_data.price_per_month' => ['nullable', 'numeric', 'min:0'],
+            'car_data.allowed_km_per_day' => ['nullable', 'integer', 'min:0'],
+            'car_data.allowed_km_per_week' => ['nullable', 'integer', 'min:0'],
+            'car_data.allowed_km_per_month' => ['nullable', 'integer', 'min:0'],
             'car_data.branch_id' => ['nullable', 'integer', 'exists:branches,id'],
 
             'primary_driver' => ['nullable', 'array'],
@@ -664,8 +711,13 @@ class ContractsController extends Controller
             'primary_driver.place_of_issue' => ['nullable', 'string', 'max:255'],
             'primary_driver.date_of_birth' => ['nullable', 'date'],
             'primary_driver.identity_number' => ['nullable', 'string', 'max:255'],
+            'primary_driver.passport_number' => ['nullable', 'string', 'max:255'],
+            'primary_driver.passport_expiry_date' => ['nullable', 'date'],
+            'primary_driver.visa_number' => ['nullable', 'string', 'max:255'],
+            'primary_driver.visa_expiry_date' => ['nullable', 'date'],
             'primary_driver.residency_number' => ['nullable', 'string', 'max:255'],
             'primary_driver.license_number' => ['nullable', 'string', 'max:255'],
+            'primary_driver.license_issue_date' => ['nullable', 'date'],
             'primary_driver.identity_expiry_date' => ['nullable', 'date'],
             'primary_driver.license_expiry_date' => ['nullable', 'date'],
             'primary_driver.extraction_status' => ['nullable', 'string', 'max:50'],
@@ -703,8 +755,13 @@ class ContractsController extends Controller
             'additional_drivers.*.place_of_issue' => ['nullable', 'string', 'max:255'],
             'additional_drivers.*.date_of_birth' => ['nullable', 'date'],
             'additional_drivers.*.identity_number' => ['nullable', 'string', 'max:255'],
+            'additional_drivers.*.passport_number' => ['nullable', 'string', 'max:255'],
+            'additional_drivers.*.passport_expiry_date' => ['nullable', 'date'],
+            'additional_drivers.*.visa_number' => ['nullable', 'string', 'max:255'],
+            'additional_drivers.*.visa_expiry_date' => ['nullable', 'date'],
             'additional_drivers.*.residency_number' => ['nullable', 'string', 'max:255'],
             'additional_drivers.*.license_number' => ['nullable', 'string', 'max:255'],
+            'additional_drivers.*.license_issue_date' => ['nullable', 'date'],
             'additional_drivers.*.identity_expiry_date' => ['nullable', 'date'],
             'additional_drivers.*.license_expiry_date' => ['nullable', 'date'],
             'additional_drivers.*.extraction_status' => ['nullable', 'string', 'max:50'],
@@ -787,6 +844,34 @@ class ContractsController extends Controller
         $contract->plate_number = $this->nullableString($carData['plate_number'] ?? null)
             ?? $this->nullableString($validated['plate_number'] ?? null)
             ?? $reservation?->car?->license_plate;
+        $contract->vehicle_odometer = $carData['vehicle_odometer']
+            ?? $validated['vehicle_odometer']
+            ?? $reservation?->car?->mileage;
+        $contract->vehicle_fuel_level = $this->nullableString($carData['vehicle_fuel_level'] ?? null)
+            ?? $this->nullableString($validated['vehicle_fuel_level'] ?? null);
+        $contract->price_per_day = $carData['price_per_day']
+            ?? $validated['price_per_day']
+            ?? $reservation?->car?->price_per_day;
+        $contract->price_per_week = $carData['price_per_week']
+            ?? $validated['price_per_week']
+            ?? $reservation?->car?->price_per_week;
+        $contract->price_per_month = $carData['price_per_month']
+            ?? $validated['price_per_month']
+            ?? $reservation?->car?->price_per_month;
+        $contract->allowed_km_per_day = $carData['allowed_km_per_day']
+            ?? $validated['allowed_km_per_day']
+            ?? $reservation?->car?->allowed_km_per_day;
+        $contract->allowed_km_per_week = $carData['allowed_km_per_week']
+            ?? $validated['allowed_km_per_week']
+            ?? $reservation?->car?->allowed_km_per_week;
+        $contract->allowed_km_per_month = $carData['allowed_km_per_month']
+            ?? $validated['allowed_km_per_month']
+            ?? $reservation?->car?->allowed_km_per_month;
+        $contract->return_odometer = $validated['return_odometer'] ?? null;
+        $contract->return_fuel_level = $this->nullableString($validated['return_fuel_level'] ?? null);
+        $contract->vehicle_condition_before = $this->nullableString($validated['vehicle_condition_before'] ?? null);
+        $contract->vehicle_condition_after = $this->nullableString($validated['vehicle_condition_after'] ?? null);
+        $contract->actual_return_time = $validated['actual_return_time'] ?? null;
         $contract->start_date = $validated['start_date'] ?? $reservation?->start_date?->toDateString();
         $contract->end_date = $validated['end_date'] ?? $reservation?->end_date?->toDateString();
         $contract->total_amount = $validated['total_amount'] ?? $reservation?->total_amount;
@@ -834,7 +919,7 @@ class ContractsController extends Controller
         }
 
         $reservation = Reservation::query()
-            ->with(['user:id,name,email', 'car:id,branch_id,make,model,year,license_plate'])
+            ->with(['user:id,name,email', 'car:id,branch_id,make,model,year,license_plate,mileage,price_per_day,price_per_week,price_per_month,allowed_km_per_day,allowed_km_per_week,allowed_km_per_month'])
             ->find($reservationId);
 
         if (!$reservation) {
@@ -850,7 +935,7 @@ class ContractsController extends Controller
     {
         $user = $request->user();
         $query = Reservation::query()
-            ->with(['user:id,name,email', 'car:id,branch_id,make,model,year,license_plate', 'contract:id,reservation_id'])
+            ->with(['user:id,name,email', 'car:id,branch_id,make,model,year,license_plate,mileage,price_per_day,price_per_week,price_per_month,allowed_km_per_day,allowed_km_per_week,allowed_km_per_month', 'contract:id,reservation_id'])
             ->latest('id')
             ->limit(100);
 
@@ -875,6 +960,13 @@ class ContractsController extends Controller
                     'car_id' => $reservation->car?->id,
                     'car_details' => $reservation->car ? "{$reservation->car->year} {$reservation->car->make} {$reservation->car->model}" : null,
                     'plate_number' => $reservation->car?->license_plate,
+                    'vehicle_odometer' => $reservation->car?->mileage,
+                    'price_per_day' => $reservation->car?->price_per_day,
+                    'price_per_week' => $reservation->car?->price_per_week,
+                    'price_per_month' => $reservation->car?->price_per_month,
+                    'allowed_km_per_day' => $reservation->car?->allowed_km_per_day,
+                    'allowed_km_per_week' => $reservation->car?->allowed_km_per_week,
+                    'allowed_km_per_month' => $reservation->car?->allowed_km_per_month,
                     'branch_id' => $reservation->car?->branch_id,
                     'user_id' => $reservation->user?->id,
                     'user_name' => $reservation->user?->name,
@@ -921,13 +1013,18 @@ class ContractsController extends Controller
             $query->where('branch_id', $userBranchId);
         }
 
-        return $query->get(['id', 'branch_id', 'make', 'model', 'year', 'license_plate', 'price_per_day'])
+        return $query->get(['id', 'branch_id', 'make', 'model', 'year', 'license_plate', 'price_per_day', 'price_per_week', 'price_per_month', 'allowed_km_per_day', 'allowed_km_per_week', 'allowed_km_per_month'])
             ->map(fn (Car $car) => [
                 'id' => $car->id,
                 'label' => sprintf('%s %s %s', $car->year, $car->make, $car->model),
                 'license_plate' => $car->license_plate,
                 'branch_name' => $car->branch?->name,
                 'price_per_day' => (float) $car->price_per_day,
+                'price_per_week' => $car->price_per_week !== null ? (float) $car->price_per_week : null,
+                'price_per_month' => $car->price_per_month !== null ? (float) $car->price_per_month : null,
+                'allowed_km_per_day' => $car->allowed_km_per_day,
+                'allowed_km_per_week' => $car->allowed_km_per_week,
+                'allowed_km_per_month' => $car->allowed_km_per_month,
             ])
             ->values()
             ->all();
@@ -945,6 +1042,17 @@ class ContractsController extends Controller
             'renter_phone' => null,
             'car_details' => $reservation->car ? "{$reservation->car->year} {$reservation->car->make} {$reservation->car->model}" : null,
             'plate_number' => $reservation->car?->license_plate,
+            'vehicle_odometer' => $reservation->car?->mileage,
+            'vehicle_fuel_level' => null,
+            'price_per_day' => $reservation->car?->price_per_day,
+            'price_per_week' => $reservation->car?->price_per_week,
+            'price_per_month' => $reservation->car?->price_per_month,
+            'allowed_km_per_day' => $reservation->car?->allowed_km_per_day,
+            'allowed_km_per_week' => $reservation->car?->allowed_km_per_week,
+            'allowed_km_per_month' => $reservation->car?->allowed_km_per_month,
+            'return_odometer' => null,
+            'return_fuel_level' => null,
+            'actual_return_time' => null,
             'start_date' => optional($reservation->start_date)->toDateString(),
             'end_date' => optional($reservation->end_date)->toDateString(),
             'total_amount' => $reservation->total_amount,
@@ -1118,8 +1226,13 @@ class ContractsController extends Controller
             'place_of_issue' => $payload['place_of_issue'] ?? null,
             'date_of_birth' => $payload['date_of_birth'] ?? null,
             'identity_number' => $payload['identity_number'] ?? $validated['renter_id_number'] ?? null,
+            'passport_number' => $payload['passport_number'] ?? null,
+            'passport_expiry_date' => $payload['passport_expiry_date'] ?? null,
+            'visa_number' => $payload['visa_number'] ?? null,
+            'visa_expiry_date' => $payload['visa_expiry_date'] ?? null,
             'residency_number' => $payload['residency_number'] ?? null,
             'license_number' => $payload['license_number'] ?? null,
+            'license_issue_date' => $payload['license_issue_date'] ?? null,
             'identity_expiry_date' => $payload['identity_expiry_date'] ?? null,
             'license_expiry_date' => $payload['license_expiry_date'] ?? null,
             'extraction_status' => $payload['extraction_status'] ?? 'not_requested',
@@ -1211,8 +1324,13 @@ class ContractsController extends Controller
         $driver->place_of_issue = $this->nullableString($payload['place_of_issue'] ?? null);
         $driver->date_of_birth = $payload['date_of_birth'] ?? null;
         $driver->identity_number = $this->nullableString($payload['identity_number'] ?? null);
+        $driver->passport_number = $this->nullableString($payload['passport_number'] ?? null);
+        $driver->passport_expiry_date = $payload['passport_expiry_date'] ?? null;
+        $driver->visa_number = $this->nullableString($payload['visa_number'] ?? null);
+        $driver->visa_expiry_date = $payload['visa_expiry_date'] ?? null;
         $driver->residency_number = $this->nullableString($payload['residency_number'] ?? null);
         $driver->license_number = $this->nullableString($payload['license_number'] ?? null);
+        $driver->license_issue_date = $payload['license_issue_date'] ?? null;
         $driver->identity_expiry_date = $payload['identity_expiry_date'] ?? null;
         $driver->license_expiry_date = $payload['license_expiry_date'] ?? null;
         $driver->extraction_status = $this->nullableString($payload['extraction_status'] ?? null) ?? 'not_requested';
@@ -1386,8 +1504,11 @@ class ContractsController extends Controller
             'place_of_issue',
             'date_of_birth',
             'identity_number',
+            'passport_number',
+            'passport_expiry_date',
             'residency_number',
             'license_number',
+            'license_issue_date',
             'identity_expiry_date',
             'license_expiry_date',
             'document_type',
@@ -1450,8 +1571,13 @@ class ContractsController extends Controller
             'place_of_issue' => '',
             'date_of_birth' => '',
             'identity_number' => '',
+            'passport_number' => '',
+            'passport_expiry_date' => '',
+            'visa_number' => '',
+            'visa_expiry_date' => '',
             'residency_number' => '',
             'license_number' => '',
+            'license_issue_date' => '',
             'identity_expiry_date' => '',
             'license_expiry_date' => '',
             'extraction_status' => 'not_requested',
@@ -1477,6 +1603,14 @@ class ContractsController extends Controller
             'car_id' => null,
             'car_details' => '',
             'plate_number' => '',
+            'vehicle_odometer' => null,
+            'vehicle_fuel_level' => '',
+            'price_per_day' => '',
+            'price_per_week' => '',
+            'price_per_month' => '',
+            'allowed_km_per_day' => '',
+            'allowed_km_per_week' => '',
+            'allowed_km_per_month' => '',
             'branch_id' => null,
         ];
     }
@@ -1746,6 +1880,14 @@ class ContractsController extends Controller
             'car_id' => $reservation->car?->id,
             'car_details' => $reservation->car ? "{$reservation->car->year} {$reservation->car->make} {$reservation->car->model}" : '',
             'plate_number' => $reservation->car?->license_plate,
+            'vehicle_odometer' => $reservation->car?->mileage,
+            'vehicle_fuel_level' => '',
+            'price_per_day' => $reservation->car?->price_per_day,
+            'price_per_week' => $reservation->car?->price_per_week,
+            'price_per_month' => $reservation->car?->price_per_month,
+            'allowed_km_per_day' => $reservation->car?->allowed_km_per_day,
+            'allowed_km_per_week' => $reservation->car?->allowed_km_per_week,
+            'allowed_km_per_month' => $reservation->car?->allowed_km_per_month,
             'branch_id' => $reservation->car?->branch_id,
         ];
     }
@@ -1765,8 +1907,13 @@ class ContractsController extends Controller
             'place_of_issue' => $driver->place_of_issue,
             'date_of_birth' => optional($driver->date_of_birth)->toDateString(),
             'identity_number' => $driver->identity_number,
+            'passport_number' => $driver->passport_number,
+            'passport_expiry_date' => optional($driver->passport_expiry_date)->toDateString(),
+            'visa_number' => $driver->visa_number,
+            'visa_expiry_date' => optional($driver->visa_expiry_date)->toDateString(),
             'residency_number' => $driver->residency_number,
             'license_number' => $driver->license_number,
+            'license_issue_date' => optional($driver->license_issue_date)->toDateString(),
             'identity_expiry_date' => optional($driver->identity_expiry_date)->toDateString(),
             'license_expiry_date' => optional($driver->license_expiry_date)->toDateString(),
             'extraction_status' => $driver->extraction_status,
@@ -1818,6 +1965,14 @@ class ContractsController extends Controller
             'car_id' => $contract->reservation?->car?->id,
             'car_details' => $contract->car_details,
             'plate_number' => $contract->plate_number,
+            'vehicle_odometer' => $contract->vehicle_odometer,
+            'vehicle_fuel_level' => $contract->vehicle_fuel_level,
+            'price_per_day' => $contract->price_per_day,
+            'price_per_week' => $contract->price_per_week,
+            'price_per_month' => $contract->price_per_month,
+            'allowed_km_per_day' => $contract->allowed_km_per_day,
+            'allowed_km_per_week' => $contract->allowed_km_per_week,
+            'allowed_km_per_month' => $contract->allowed_km_per_month,
             'branch_id' => $contract->branch_id,
         ];
     }
@@ -1892,7 +2047,7 @@ class ContractsController extends Controller
     {
         $query = CarDamageCase::query()
             ->where('car_id', $carId)
-            ->where('status', 'open')
+            ->whereIn('status', ['open', 'in_repair'])
             ->orderBy('zone_code')
             ->orderBy('id');
 

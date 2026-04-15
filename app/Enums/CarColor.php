@@ -16,6 +16,19 @@ enum CarColor: string
     case YELLOW = 'yellow';
     case ORANGE = 'orange';
     case BROWN = 'brown';
+    case BEIGE = 'beige';
+    case CHAMPAGNE = 'champagne';
+    case GOLD = 'gold';
+    case BURGUNDY = 'burgundy';
+    case PURPLE = 'purple';
+    case PINK = 'pink';
+    case CYAN = 'cyan';
+    case BRONZE = 'bronze';
+    case TEAL = 'teal';
+    case OLIVE = 'olive';
+    case MAROON = 'maroon';
+    case INDIGO = 'indigo';
+    case MAGENTA = 'magenta';
 
     public static function values(): array
     {
@@ -64,6 +77,58 @@ enum CarColor: string
             self::BROWN->value => [
                 'name' => 'Brown',
                 'hex' => '#F3E8D2',
+            ],
+            self::BEIGE->value => [
+                'name' => 'Beige',
+                'hex' => '#F5F5DC',
+            ],
+            self::CHAMPAGNE->value => [
+                'name' => 'Champagne',
+                'hex' => '#F7E7CE',
+            ],
+            self::GOLD->value => [
+                'name' => 'Gold',
+                'hex' => '#FFD700',
+            ],
+            self::BURGUNDY->value => [
+                'name' => 'Burgundy',
+                'hex' => '#800020',
+            ],
+            self::PURPLE->value => [
+                'name' => 'Purple',
+                'hex' => '#A855F7',
+            ],
+            self::PINK->value => [
+                'name' => 'Pink',
+                'hex' => '#FFC0CB',
+            ],
+            self::CYAN->value => [
+                'name' => 'Cyan',
+                'hex' => '#06B6D4',
+            ],
+            self::BRONZE->value => [
+                'name' => 'Bronze',
+                'hex' => '#CD7F32',
+            ],
+            self::TEAL->value => [
+                'name' => 'Teal',
+                'hex' => '#008080',
+            ],
+            self::OLIVE->value => [
+                'name' => 'Olive',
+                'hex' => '#808000',
+            ],
+            self::MAROON->value => [
+                'name' => 'Maroon',
+                'hex' => '#800000',
+            ],
+            self::INDIGO->value => [
+                'name' => 'Indigo',
+                'hex' => '#4B0082',
+            ],
+            self::MAGENTA->value => [
+                'name' => 'Magenta',
+                'hex' => '#FF00FF',
             ],
         ];
     }

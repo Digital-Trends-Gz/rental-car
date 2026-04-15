@@ -99,6 +99,13 @@ class ContractDriverDocumentExtractor
             if ($expiryDate !== null) {
                 $normalized['license_expiry_date'] = $expiryDate;
             }
+        } elseif ($documentType === 'visa') {
+            if ($documentNumber !== null) {
+                $normalized['visa_number'] = $documentNumber;
+            }
+            if ($expiryDate !== null) {
+                $normalized['visa_expiry_date'] = $expiryDate;
+            }
         } else {
             if (in_array($documentType, ['passport', 'id_card'], true) && $documentNumber !== null) {
                 $normalized['identity_number'] = $documentNumber;

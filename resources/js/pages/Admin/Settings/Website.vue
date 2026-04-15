@@ -54,6 +54,17 @@ const props = defineProps<{
             hours: LocalizedText;
             quick_links_title: LocalizedText;
         };
+        pdf_header: {
+            company_name: LocalizedText;
+            cr_number: string | null;
+            po_box: string | null;
+            pc: string | null;
+            country: LocalizedText;
+            gsm_1: string | null;
+            gsm_2: string | null;
+            gsm_3: string | null;
+            registry_label: LocalizedText;
+        };
         footer: {
             description: LocalizedText;
         };
@@ -169,6 +180,26 @@ const form = useForm({
         quick_links_title: {
             en: props.settings.contact_page?.quick_links_title?.en ?? '',
             ar: props.settings.contact_page?.quick_links_title?.ar ?? '',
+        },
+    },
+    pdf_header: {
+        company_name: {
+            en: props.settings.pdf_header?.company_name?.en ?? '',
+            ar: props.settings.pdf_header?.company_name?.ar ?? '',
+        },
+        cr_number: props.settings.pdf_header?.cr_number ?? '',
+        po_box: props.settings.pdf_header?.po_box ?? '',
+        pc: props.settings.pdf_header?.pc ?? '',
+        country: {
+            en: props.settings.pdf_header?.country?.en ?? '',
+            ar: props.settings.pdf_header?.country?.ar ?? '',
+        },
+        gsm_1: props.settings.pdf_header?.gsm_1 ?? '',
+        gsm_2: props.settings.pdf_header?.gsm_2 ?? '',
+        gsm_3: props.settings.pdf_header?.gsm_3 ?? '',
+        registry_label: {
+            en: props.settings.pdf_header?.registry_label?.en ?? '',
+            ar: props.settings.pdf_header?.registry_label?.ar ?? '',
         },
     },
     footer: {
@@ -565,6 +596,83 @@ function submit() {
                             <Label for="about_cta_contact_text_ar">{{ localize('CTA Contact Button (AR)', 'زر التواصل في الدعوة (AR)') }}</Label>
                             <Input id="about_cta_contact_text_ar" v-model="form.about.cta_contact_text.ar" dir="rtl" />
                             <p v-if="form.errors['about.cta_contact_text.ar']" class="text-sm text-red-600">{{ form.errors['about.cta_contact_text.ar'] }}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="rounded-lg border p-5 space-y-4">
+                    <div>
+                        <h2 class="text-lg font-semibold">{{ localize('Contract PDF Header', 'ترويسة العقد') }}</h2>
+                        <p class="text-sm text-muted-foreground">
+                            {{ localize('Editable company header content printed at the top of the contract PDF.', 'محتوى ترويسة الشركة الذي يظهر في أعلى ملف العقد.') }}
+                        </p>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div class="space-y-2">
+                            <Label for="pdf_header_company_name_en">{{ localize('Company Name (EN)', 'اسم الشركة (EN)') }}</Label>
+                            <Input id="pdf_header_company_name_en" v-model="form.pdf_header.company_name.en" />
+                            <p v-if="form.errors['pdf_header.company_name.en']" class="text-sm text-red-600">{{ form.errors['pdf_header.company_name.en'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="pdf_header_company_name_ar">{{ localize('Company Name (AR)', 'اسم الشركة (AR)') }}</Label>
+                            <Input id="pdf_header_company_name_ar" v-model="form.pdf_header.company_name.ar" dir="rtl" />
+                            <p v-if="form.errors['pdf_header.company_name.ar']" class="text-sm text-red-600">{{ form.errors['pdf_header.company_name.ar'] }}</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="pdf_header_cr_number">{{ localize('C.R Number', 'رقم السجل التجاري') }}</Label>
+                            <Input id="pdf_header_cr_number" v-model="form.pdf_header.cr_number" />
+                            <p v-if="form.errors['pdf_header.cr_number']" class="text-sm text-red-600">{{ form.errors['pdf_header.cr_number'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="pdf_header_po_box">{{ localize('P.O. Box', 'صندوق البريد') }}</Label>
+                            <Input id="pdf_header_po_box" v-model="form.pdf_header.po_box" />
+                            <p v-if="form.errors['pdf_header.po_box']" class="text-sm text-red-600">{{ form.errors['pdf_header.po_box'] }}</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="pdf_header_pc">{{ localize('P.C', 'الرمز البريدي') }}</Label>
+                            <Input id="pdf_header_pc" v-model="form.pdf_header.pc" />
+                            <p v-if="form.errors['pdf_header.pc']" class="text-sm text-red-600">{{ form.errors['pdf_header.pc'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="pdf_header_country_en">{{ localize('Country (EN)', 'الدولة (EN)') }}</Label>
+                            <Input id="pdf_header_country_en" v-model="form.pdf_header.country.en" />
+                            <p v-if="form.errors['pdf_header.country.en']" class="text-sm text-red-600">{{ form.errors['pdf_header.country.en'] }}</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="pdf_header_country_ar">{{ localize('Country (AR)', 'الدولة (AR)') }}</Label>
+                            <Input id="pdf_header_country_ar" v-model="form.pdf_header.country.ar" dir="rtl" />
+                            <p v-if="form.errors['pdf_header.country.ar']" class="text-sm text-red-600">{{ form.errors['pdf_header.country.ar'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="pdf_header_gsm_1">{{ localize('GSM 1', 'نقال 1') }}</Label>
+                            <Input id="pdf_header_gsm_1" v-model="form.pdf_header.gsm_1" />
+                            <p v-if="form.errors['pdf_header.gsm_1']" class="text-sm text-red-600">{{ form.errors['pdf_header.gsm_1'] }}</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="pdf_header_gsm_2">{{ localize('GSM 2', 'نقال 2') }}</Label>
+                            <Input id="pdf_header_gsm_2" v-model="form.pdf_header.gsm_2" />
+                            <p v-if="form.errors['pdf_header.gsm_2']" class="text-sm text-red-600">{{ form.errors['pdf_header.gsm_2'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="pdf_header_gsm_3">{{ localize('GSM 3', 'نقال 3') }}</Label>
+                            <Input id="pdf_header_gsm_3" v-model="form.pdf_header.gsm_3" />
+                            <p v-if="form.errors['pdf_header.gsm_3']" class="text-sm text-red-600">{{ form.errors['pdf_header.gsm_3'] }}</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="pdf_header_registry_label_en">{{ localize('Registry Label (EN)', 'وسم السجل (EN)') }}</Label>
+                            <Input id="pdf_header_registry_label_en" v-model="form.pdf_header.registry_label.en" />
+                            <p v-if="form.errors['pdf_header.registry_label.en']" class="text-sm text-red-600">{{ form.errors['pdf_header.registry_label.en'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="pdf_header_registry_label_ar">{{ localize('Registry Label (AR)', 'وسم السجل (AR)') }}</Label>
+                            <Input id="pdf_header_registry_label_ar" v-model="form.pdf_header.registry_label.ar" dir="rtl" />
+                            <p v-if="form.errors['pdf_header.registry_label.ar']" class="text-sm text-red-600">{{ form.errors['pdf_header.registry_label.ar'] }}</p>
                         </div>
                     </div>
                 </section>

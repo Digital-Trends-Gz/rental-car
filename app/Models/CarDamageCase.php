@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CarDamageCase extends Model
 {
@@ -71,5 +72,10 @@ class CarDamageCase extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function repairs(): HasMany
+    {
+        return $this->hasMany(DamageRepair::class)->latest('opened_at')->latest('id');
     }
 }

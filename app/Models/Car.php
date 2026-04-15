@@ -42,6 +42,11 @@ class Car extends Model
         'license_plate',
         'color',
         'price_per_day',
+        'price_per_week',
+        'price_per_month',
+        'allowed_km_per_day',
+        'allowed_km_per_week',
+        'allowed_km_per_month',
         'mileage',
         'transmission',
         'seats',
@@ -59,6 +64,11 @@ class Car extends Model
         'year' => 'integer',
         'branch_id' => 'integer',
         'price_per_day' => 'decimal:2',
+        'price_per_week' => 'decimal:2',
+        'price_per_month' => 'decimal:2',
+        'allowed_km_per_day' => 'integer',
+        'allowed_km_per_week' => 'integer',
+        'allowed_km_per_month' => 'integer',
         'mileage' => 'integer',
         'seats' => 'integer',
         'status' => CarStatus::class,
@@ -220,6 +230,11 @@ class Car extends Model
     public function damageCases(): HasMany
     {
         return $this->hasMany(CarDamageCase::class)->orderBy('zone_code')->orderBy('id');
+    }
+
+    public function damageRepairs(): HasMany
+    {
+        return $this->hasMany(DamageRepair::class)->latest('opened_at')->latest('id');
     }
 
     public function coupons(): HasMany

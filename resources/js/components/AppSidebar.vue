@@ -140,6 +140,12 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-cars',
         },
         {
+            title: 'Damage Repairs',
+            href: adminHref('/damage-repairs'),
+            icon: Wrench,
+            permission: 'tenant-manage-cars',
+        },
+        {
             title: 'Contracts',
             href: contractsIndex(slug).url,
             icon: FileText,

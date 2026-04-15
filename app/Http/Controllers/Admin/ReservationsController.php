@@ -497,7 +497,7 @@ class ReservationsController extends Controller
 
         $query = CarDamageCase::query()
             ->whereIn('car_id', $normalizedIds)
-            ->where('status', 'open')
+            ->whereIn('status', ['open', 'in_repair'])
             ->orderBy('zone_code')
             ->orderBy('id');
         $this->branchAccess->applyToQuery($query, $user, null, 'branch_id');

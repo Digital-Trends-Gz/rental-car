@@ -126,6 +126,19 @@ class WebsiteSettingsController extends Controller
             'contact_page.quick_links_title.en' => ['nullable', 'string', 'max:255'],
             'contact_page.quick_links_title.ar' => ['nullable', 'string', 'max:255'],
 
+            'pdf_header.company_name.en' => ['nullable', 'string', 'max:255'],
+            'pdf_header.company_name.ar' => ['nullable', 'string', 'max:255'],
+            'pdf_header.cr_number' => ['nullable', 'string', 'max:100'],
+            'pdf_header.po_box' => ['nullable', 'string', 'max:100'],
+            'pdf_header.pc' => ['nullable', 'string', 'max:100'],
+            'pdf_header.country.en' => ['nullable', 'string', 'max:255'],
+            'pdf_header.country.ar' => ['nullable', 'string', 'max:255'],
+            'pdf_header.gsm_1' => ['nullable', 'string', 'max:100'],
+            'pdf_header.gsm_2' => ['nullable', 'string', 'max:100'],
+            'pdf_header.gsm_3' => ['nullable', 'string', 'max:100'],
+            'pdf_header.registry_label.en' => ['nullable', 'string', 'max:100'],
+            'pdf_header.registry_label.ar' => ['nullable', 'string', 'max:100'],
+
             'footer.description.en' => ['nullable', 'string', 'max:2000'],
             'footer.description.ar' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -250,6 +263,26 @@ class WebsiteSettingsController extends Controller
                     'quick_links_title' => [
                         'en' => $this->nullableString(data_get($validated, 'contact_page.quick_links_title.en')),
                         'ar' => $this->nullableString(data_get($validated, 'contact_page.quick_links_title.ar')),
+                    ],
+                ],
+                'pdf_header' => [
+                    'company_name' => [
+                        'en' => $this->nullableString(data_get($validated, 'pdf_header.company_name.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'pdf_header.company_name.ar')),
+                    ],
+                    'cr_number' => $this->nullableString(data_get($validated, 'pdf_header.cr_number')),
+                    'po_box' => $this->nullableString(data_get($validated, 'pdf_header.po_box')),
+                    'pc' => $this->nullableString(data_get($validated, 'pdf_header.pc')),
+                    'country' => [
+                        'en' => $this->nullableString(data_get($validated, 'pdf_header.country.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'pdf_header.country.ar')),
+                    ],
+                    'gsm_1' => $this->nullableString(data_get($validated, 'pdf_header.gsm_1')),
+                    'gsm_2' => $this->nullableString(data_get($validated, 'pdf_header.gsm_2')),
+                    'gsm_3' => $this->nullableString(data_get($validated, 'pdf_header.gsm_3')),
+                    'registry_label' => [
+                        'en' => $this->nullableString(data_get($validated, 'pdf_header.registry_label.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'pdf_header.registry_label.ar')),
                     ],
                 ],
                 'translations' => $translations,

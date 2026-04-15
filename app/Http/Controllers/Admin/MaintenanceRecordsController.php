@@ -137,8 +137,16 @@ class MaintenanceRecordsController extends Controller
 
     public function create(Request $request): Response
     {
+        $initialCarId = null;
+        $requestedCarId = $request->integer('car_id');
+
+        if ($requestedCarId > 0) {
+            $initialCarId = $this->resolveAccessibleCar($request, $requestedCarId)->id;
+        }
+
         return Inertia::render('Admin/MaintenanceRecords/Edit', [
             'record' => null,
+            'initialCarId' => $initialCarId,
             ...$this->formOptions($request),
             'indexUrl' => route('admin.maintenance-records.index'),
             'submitUrl' => route('admin.maintenance-records.store'),
@@ -202,6 +210,7 @@ class MaintenanceRecordsController extends Controller
                 'workshop_name' => $maintenance->workshop_name,
                 'notes' => $maintenance->notes,
             ],
+            'initialCarId' => null,
             ...$this->formOptions($request),
             'indexUrl' => route('admin.maintenance-records.index'),
             'submitUrl' => route('admin.maintenance-records.update', $maintenance),

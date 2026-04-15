@@ -23,6 +23,7 @@ class TenantSiteSetting extends Model
         'about',
         'contact',
         'contact_page',
+        'pdf_header',
         'translations',
         'footer',
     ];
@@ -34,6 +35,7 @@ class TenantSiteSetting extends Model
         'about' => 'array',
         'contact' => 'array',
         'contact_page' => 'array',
+        'pdf_header' => 'array',
         'translations' => 'array',
         'footer' => 'array',
     ];
@@ -145,6 +147,26 @@ class TenantSiteSetting extends Model
                     'ar' => null,
                 ],
                 'quick_links_title' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+            ],
+            'pdf_header' => [
+                'company_name' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'cr_number' => null,
+                'po_box' => null,
+                'pc' => null,
+                'country' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'gsm_1' => null,
+                'gsm_2' => null,
+                'gsm_3' => null,
+                'registry_label' => [
                     'en' => null,
                     'ar' => null,
                 ],
@@ -277,6 +299,26 @@ class TenantSiteSetting extends Model
                 'quick_links_title' => [
                     'en' => self::nullableString(data_get($data, 'contact_page.quick_links_title.en')),
                     'ar' => self::nullableString(data_get($data, 'contact_page.quick_links_title.ar')),
+                ],
+            ],
+            'pdf_header' => [
+                'company_name' => [
+                    'en' => self::nullableString(data_get($data, 'pdf_header.company_name.en')),
+                    'ar' => self::nullableString(data_get($data, 'pdf_header.company_name.ar')),
+                ],
+                'cr_number' => self::nullableString(data_get($data, 'pdf_header.cr_number')),
+                'po_box' => self::nullableString(data_get($data, 'pdf_header.po_box')),
+                'pc' => self::nullableString(data_get($data, 'pdf_header.pc')),
+                'country' => [
+                    'en' => self::nullableString(data_get($data, 'pdf_header.country.en')),
+                    'ar' => self::nullableString(data_get($data, 'pdf_header.country.ar')),
+                ],
+                'gsm_1' => self::nullableString(data_get($data, 'pdf_header.gsm_1')),
+                'gsm_2' => self::nullableString(data_get($data, 'pdf_header.gsm_2')),
+                'gsm_3' => self::nullableString(data_get($data, 'pdf_header.gsm_3')),
+                'registry_label' => [
+                    'en' => self::nullableString(data_get($data, 'pdf_header.registry_label.en')),
+                    'ar' => self::nullableString(data_get($data, 'pdf_header.registry_label.ar')),
                 ],
             ],
             'translations' => self::normalizeTranslations($data['translations'] ?? $defaults['translations']),

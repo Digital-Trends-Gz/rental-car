@@ -10,6 +10,7 @@ use App\Models\Car;
 use App\Models\CarDamageReport;
 use App\Models\CarDiscount;
 use App\Models\CarDocument;
+use App\Models\DamageRepair;
 use App\Models\Contract;
 use App\Models\CarMaintenance;
 use App\Models\CarViolation;
@@ -103,6 +104,11 @@ class CarsController extends Controller
                 'year' => $car->year,
                 'license_plate' => $car->license_plate,
                 'price_per_day' => $car->price_per_day,
+                'price_per_week' => $car->price_per_week,
+                'price_per_month' => $car->price_per_month,
+                'allowed_km_per_day' => $car->allowed_km_per_day,
+                'allowed_km_per_week' => $car->allowed_km_per_week,
+                'allowed_km_per_month' => $car->allowed_km_per_month,
                 'status' => $status instanceof CarStatus ? $status->value : (string) $status,
                 'status_label' => $status instanceof CarStatus ? $status->label() : null,
                 'status_color' => $status instanceof CarStatus ? $status->color() : null,
@@ -229,6 +235,37 @@ class CarsController extends Controller
             })
             ->values();
 
+        $damageZoneLabels = \App\Support\CarDamageCatalog::zoneLabelMap();
+        $damageTypeLabels = collect(\App\Support\CarDamageCatalog::damageTypes())
+            ->mapWithKeys(fn (array $option) => [$option['value'] => $option['label']])
+            ->all();
+
+        $damageRepairs = DamageRepair::query()
+            ->with(['damageCase:id,zone_code,damage_type', 'workshop:id,name'])
+            ->where('car_id', $car->id)
+            ->latest('opened_at')
+            ->latest('id')
+            ->get()
+            ->map(function (DamageRepair $repair) use ($damageZoneLabels, $damageTypeLabels) {
+                $status = $repair->status;
+
+                return [
+                    'id' => $repair->id,
+                    'repair_number' => $repair->repair_number,
+                    'damage_zone' => $damageZoneLabels[$repair->damageCase?->zone_code ?? ''] ?? ($repair->damageCase?->zone_code ?? '-'),
+                    'damage_type' => $damageTypeLabels[$repair->damageCase?->damage_type ?? ''] ?? ($repair->damageCase?->damage_type ?? '-'),
+                    'workshop_name' => $repair->workshop_name ?: ($repair->workshop?->name ?? null),
+                    'status' => $status instanceof \BackedEnum ? (string) $status->value : (string) $status,
+                    'status_label' => method_exists($status, 'label') ? $status->label() : ucfirst(str_replace('_', ' ', (string) $status)),
+                    'opened_at' => optional($repair->opened_at)?->format('Y-m-d H:i'),
+                    'completed_at' => optional($repair->completed_at)?->format('Y-m-d H:i'),
+                    'estimated_cost' => $repair->estimated_cost !== null ? (float) $repair->estimated_cost : null,
+                    'actual_cost' => $repair->actual_cost !== null ? (float) $repair->actual_cost : null,
+                    'edit_url' => route('admin.damage-repairs.edit', $repair),
+                ];
+            })
+            ->values();
+
         $documents = CarDocument::query()
             ->with('files')
             ->where('car_id', $car->id)
@@ -350,6 +387,11 @@ class CarsController extends Controller
                 'status_color' => $car->status instanceof CarStatus ? $car->status->color() : '#6B7280',
                 'branch_name' => $car->branch?->name,
                 'price_per_day' => $car->price_per_day !== null ? (float) $car->price_per_day : null,
+                'price_per_week' => $car->price_per_week !== null ? (float) $car->price_per_week : null,
+                'price_per_month' => $car->price_per_month !== null ? (float) $car->price_per_month : null,
+                'allowed_km_per_day' => $car->allowed_km_per_day,
+                'allowed_km_per_week' => $car->allowed_km_per_week,
+                'allowed_km_per_month' => $car->allowed_km_per_month,
                 'mileage' => $car->mileage,
                 'fuel_type' => $car->fuel_type instanceof \BackedEnum ? (string) $car->fuel_type->value : (string) $car->fuel_type,
                 'transmission' => $car->transmission,
@@ -363,6 +405,7 @@ class CarsController extends Controller
                 'reservations_count' => $reservations->count(),
                 'contracts_count' => $contracts->count(),
                 'maintenances_count' => $maintenances->count(),
+                'damage_repairs_count' => $damageRepairs->count(),
                 'documents_count' => $documents->count(),
                 'damage_reports_count' => $damageReports->count(),
                 'violations_count' => $violations->count(),
@@ -371,10 +414,17 @@ class CarsController extends Controller
             'reservations' => $reservations,
             'contracts' => $contracts,
             'maintenances' => $maintenances,
+            'damageRepairs' => $damageRepairs,
             'documents' => $documents,
             'damageReports' => $damageReports,
             'violations' => $violations,
             'discounts' => $discounts,
+            'actions' => [
+                'create_maintenance_url' => route('admin.maintenance-records.create', ['car_id' => $car->id]),
+                'maintenance_index_url' => route('admin.maintenance-records.index', ['car_id' => $car->id]),
+                'create_damage_repair_url' => route('admin.damage-repairs.create'),
+                'damage_repairs_index_url' => route('admin.damage-repairs.index', ['car_id' => $car->id]),
+            ],
         ]);
     }
 
@@ -399,6 +449,11 @@ class CarsController extends Controller
             ],
             'color' => ['required', 'string', Rule::enum(CarColor::class)],
             'price_per_day' => ['required', 'numeric', 'min:0'],
+            'price_per_week' => ['nullable', 'numeric', 'min:0'],
+            'price_per_month' => ['nullable', 'numeric', 'min:0'],
+            'allowed_km_per_day' => ['nullable', 'integer', 'min:0'],
+            'allowed_km_per_week' => ['nullable', 'integer', 'min:0'],
+            'allowed_km_per_month' => ['nullable', 'integer', 'min:0'],
             'mileage' => ['required', 'integer', 'min:0'],
             'transmission' => ['required', Rule::in(['automatic', 'manual'])],
             'seats' => ['required', 'integer', 'min:1'],
@@ -632,6 +687,11 @@ class CarsController extends Controller
             ],
             'color' => ['required', 'string', Rule::enum(CarColor::class)],
             'price_per_day' => ['required', 'numeric', 'min:0'],
+            'price_per_week' => ['nullable', 'numeric', 'min:0'],
+            'price_per_month' => ['nullable', 'numeric', 'min:0'],
+            'allowed_km_per_day' => ['nullable', 'integer', 'min:0'],
+            'allowed_km_per_week' => ['nullable', 'integer', 'min:0'],
+            'allowed_km_per_month' => ['nullable', 'integer', 'min:0'],
             'mileage' => ['required', 'integer', 'min:0'],
             'transmission' => ['required', Rule::in(['automatic', 'manual'])],
             'seats' => ['required', 'integer', 'min:1'],

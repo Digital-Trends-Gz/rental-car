@@ -36,10 +36,19 @@ const props = defineProps<{
         id: number;
         label: string;
         car_id: number | null;
+        car_label?: string | null;
         user_id: number | null;
         user_label: string | null;
+        contract_id?: number | null;
+        contract_number?: string | null;
+        contract_date?: string | null;
+        renter_name?: string | null;
+        renter_phone?: string | null;
+        rental_period?: string | null;
     }>;
     statuses: Array<{ value: string; label: string; color: string }>;
+    noticePdfUrl?: string;
+    noticePrintUrl?: string;
     indexUrl: string;
     submitUrl: string;
     method: 'post' | 'put';
@@ -107,6 +116,71 @@ const selectedReservation = computed(() =>
     ) ?? null,
 );
 
+const selectedRentalContext = computed(() => {
+    if (!selectedReservation.value) {
+        return null;
+    }
+
+    return {
+        contractNumber: selectedReservation.value.contract_number || '-',
+        contractDate: selectedReservation.value.contract_date || '-',
+        reservationNumber: selectedReservation.value.label,
+        carLabel: selectedReservation.value.car_label || selectedCar.value?.label || '-',
+        renterName:
+            selectedReservation.value.renter_name ||
+            selectedReservation.value.user_label ||
+            localize('Not specified', 'غير محدد'),
+        renterPhone: selectedReservation.value.renter_phone || '-',
+        period: selectedReservation.value.rental_period || '-',
+    };
+});
+
+const noticeText = computed(() => {
+    if (!selectedReservation.value) {
+        return '';
+    }
+
+    const rental = selectedRentalContext.value;
+    const arabic = [
+        'إشعار مخالفة',
+        `رقم العقد: ${rental?.contractNumber || '-'}`,
+        `رقم الحجز: ${rental?.reservationNumber || '-'}`,
+        `السيارة: ${rental?.carLabel || '-'}`,
+        `اسم المستأجر: ${rental?.renterName || '-'}`,
+        `هاتف المستأجر: ${rental?.renterPhone || '-'}`,
+        `فترة الإيجار: ${rental?.period || '-'}`,
+        `تاريخ المخالفة: ${form.violation_date || '-'}`,
+        `رقم المخالفة: ${form.violation_number || '-'}`,
+        `المبلغ: ${form.amount || '-'}`,
+        `الجهة: ${form.authority || '-'}`,
+        `الموقع: ${form.location || '-'}`,
+        `الوصف: ${form.description || '-'}`,
+    ];
+
+    const english = [
+        'Violation Notice',
+        `Contract No: ${rental?.contractNumber || '-'}`,
+        `Reservation No: ${rental?.reservationNumber || '-'}`,
+        `Car: ${rental?.carLabel || '-'}`,
+        `Renter Name: ${rental?.renterName || '-'}`,
+        `Renter Phone: ${rental?.renterPhone || '-'}`,
+        `Rental Period: ${rental?.period || '-'}`,
+        `Violation Date: ${form.violation_date || '-'}`,
+        `Violation Number: ${form.violation_number || '-'}`,
+        `Amount: ${form.amount || '-'}`,
+        `Authority: ${form.authority || '-'}`,
+        `Location: ${form.location || '-'}`,
+        `Description: ${form.description || '-'}`,
+    ];
+
+    return [
+        '=== العربية ===',
+        ...arabic,
+        '',
+        '=== English ===',
+        ...english,
+    ].join('\n');
+});
 const filteredBranchOwners = computed(() => {
     if (!selectedCar.value) {
         return props.branchOwners;
@@ -300,6 +374,14 @@ function handleBranchOwnerBlur() {
     }, 150);
 }
 
+async function copyNotice() {
+    if (!noticeText.value || typeof navigator === 'undefined' || !navigator.clipboard) {
+        return;
+    }
+
+    await navigator.clipboard.writeText(noticeText.value);
+}
+
 function submit() {
     if (props.method === 'put') {
         form.put(props.submitUrl, { preserveScroll: true });
@@ -490,6 +572,95 @@ function submit() {
                                 </div>
                             </div>
                             <InputError :message="form.errors.branch_owner_user_id" />
+                        </div>
+
+                        <div
+                            v-if="selectedRentalContext"
+                            class="md:col-span-2 rounded-lg border bg-muted/20 p-4 space-y-4"
+                        >
+                            <div class="flex items-center justify-between gap-3">
+                                <h3 class="text-sm font-semibold">
+                                    {{ localize('Rental Context', 'بيانات الإيجار') }}
+                                </h3>
+                                <span class="text-xs text-muted-foreground">
+                                    {{ localize('Pulled from reservation and contract', 'مأخوذة من الحجز والعقد') }}
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                                <div class="rounded-md border bg-background p-3">
+                                    <div class="text-xs text-muted-foreground">{{ localize('Contract No.', 'رقم العقد') }}</div>
+                                    <div class="text-sm font-medium">{{ selectedRentalContext.contractNumber }}</div>
+                                </div>
+                                <div class="rounded-md border bg-background p-3">
+                                    <div class="text-xs text-muted-foreground">{{ localize('Reservation No.', 'رقم الحجز') }}</div>
+                                    <div class="text-sm font-medium">{{ selectedRentalContext.reservationNumber }}</div>
+                                </div>
+                                <div class="rounded-md border bg-background p-3">
+                                    <div class="text-xs text-muted-foreground">{{ localize('Car', 'السيارة') }}</div>
+                                    <div class="text-sm font-medium">{{ selectedRentalContext.carLabel }}</div>
+                                </div>
+                                <div class="rounded-md border bg-background p-3">
+                                    <div class="text-xs text-muted-foreground">{{ localize('Renter', 'المستأجر') }}</div>
+                                    <div class="text-sm font-medium">{{ selectedRentalContext.renterName }}</div>
+                                </div>
+                                <div class="rounded-md border bg-background p-3">
+                                    <div class="text-xs text-muted-foreground">{{ localize('Renter Phone', 'هاتف المستأجر') }}</div>
+                                    <div class="text-sm font-medium">{{ selectedRentalContext.renterPhone }}</div>
+                                </div>
+                                <div class="rounded-md border bg-background p-3">
+                                    <div class="text-xs text-muted-foreground">{{ localize('Rental Period', 'مدة الإيجار') }}</div>
+                                    <div class="text-sm font-medium">{{ selectedRentalContext.period }}</div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <Label for="notice-message">{{ localize('Notice to Police', 'إشعار للشرطة') }}</Label>
+                                    <div class="flex items-center gap-2">
+                                        <Button
+                                            v-if="isEdit"
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            as-child
+                                        >
+                                            <a
+                                                :href="noticePrintUrl"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                {{ localize('Print PDF', 'طباعة PDF') }}
+                                            </a>
+                                        </Button>
+                                        <Button
+                                            v-if="isEdit"
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            as-child
+                                        >
+                                            <a
+                                                :href="noticePdfUrl"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                {{ localize('Download PDF', 'تحميل PDF') }}
+                                            </a>
+                                        </Button>
+                                        <Button type="button" variant="outline" size="sm" @click="copyNotice">
+                                            {{ localize('Copy bilingual text', 'نسخ النص ثنائي اللغة') }}
+                                        </Button>
+                                    </div>
+                                </div>
+                                <textarea
+                                    id="notice-message"
+                                    :value="noticeText"
+                                    readonly
+                                    rows="14"
+                                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm leading-6"
+                                />
+                            </div>
                         </div>
 
                         <div class="space-y-2">

@@ -16,6 +16,8 @@ const props = defineProps<{
         renter_phone?: string | null;
         car_details?: string | null;
         plate_number?: string | null;
+        vehicle_odometer?: number | null;
+        vehicle_fuel_level?: string | null;
         start_date?: string | null;
         end_date?: string | null;
         total_amount?: string | number | null;
@@ -92,21 +94,36 @@ const pageTitle = computed(() =>
                             t('dashboard.admin.common.back')
                         }}</Button>
                     </Link>
-                    <Link v-if="actions.pdf_en" :href="actions.pdf_en">
-                        <Button variant="outline">{{
-                            t('dashboard.admin.contracts.show.pdf_en')
-                        }}</Button>
-                    </Link>
-                    <Link v-if="actions.pdf_ar" :href="actions.pdf_ar">
-                        <Button variant="outline">{{
-                            t('dashboard.admin.contracts.show.pdf_ar')
-                        }}</Button>
-                    </Link>
-                    <Link v-else-if="actions.pdf" :href="actions.pdf">
-                        <Button variant="outline">{{
-                            t('dashboard.admin.contracts.show.download_pdf')
-                        }}</Button>
-                    </Link>
+                    <Button
+                        v-if="actions.pdf_en"
+                        as="a"
+                        :href="actions.pdf_en"
+                        variant="outline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        {{ t('dashboard.admin.contracts.show.pdf_en') }}
+                    </Button>
+                    <Button
+                        v-if="actions.pdf_ar"
+                        as="a"
+                        :href="actions.pdf_ar"
+                        variant="outline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        {{ t('dashboard.admin.contracts.show.pdf_ar') }}
+                    </Button>
+                    <Button
+                        v-else-if="actions.pdf"
+                        as="a"
+                        :href="actions.pdf"
+                        variant="outline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        {{ t('dashboard.admin.contracts.show.download_pdf') }}
+                    </Button>
                     <Link :href="actions.edit">
                         <Button variant="outline">{{
                             t('dashboard.admin.common.edit')
@@ -191,6 +208,14 @@ const pageTitle = computed(() =>
                                 >{{ t('dashboard.admin.contracts.show.fields.plate') }}:</strong
                             >
                             {{ contract.plate_number || '-' }}
+                        </div>
+                        <div>
+                            <strong>Vehicle Odometer:</strong>
+                            {{ contract.vehicle_odometer ?? '-' }}
+                        </div>
+                        <div>
+                            <strong>Fuel In Vehicle:</strong>
+                            {{ contract.vehicle_fuel_level || '-' }}
                         </div>
                         <div>
                             <strong

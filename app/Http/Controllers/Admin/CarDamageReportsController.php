@@ -461,7 +461,7 @@ class CarDamageReportsController extends Controller
                 ->where('car_id', $car->id)
                 ->where('zone_code', $item['zone_code'])
                 ->where('damage_type', $item['damage_type'])
-                ->where('status', 'open')
+                ->whereIn('status', ['open', 'in_repair'])
                 ->orderBy('id')
                 ->first();
 
@@ -577,7 +577,7 @@ class CarDamageReportsController extends Controller
 
         $query = CarDamageCase::query()
             ->where('car_id', $carId)
-            ->where('status', 'open')
+            ->whereIn('status', ['open', 'in_repair'])
             ->orderBy('zone_code')
             ->orderBy('id');
 

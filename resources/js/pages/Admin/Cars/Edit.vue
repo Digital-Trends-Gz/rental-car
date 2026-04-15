@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import SearchableSelect from '@/components/SearchableSelect.vue';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { useTrans } from '@/composables/useTrans';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,11 @@ interface Car {
     branch_id: number | string;
     color: string;
     price_per_day: number | string;
+    price_per_week: number | string;
+    price_per_month: number | string;
+    allowed_km_per_day: number | string;
+    allowed_km_per_week: number | string;
+    allowed_km_per_month: number | string;
     mileage: number | string;
     transmission: string;
     seats: number | string;
@@ -117,6 +123,13 @@ const fuelTypes = computed(() =>
 );
 
 const statuses = computed(() => props.enums.statuses);
+const statusOptions = computed(() => statuses.value.map((status) => ({ value: status.value, label: status.label })));
+const branchOptions = computed(() => props.branches.map((branch) => ({ value: String(branch.id), label: branch.name })));
+const transmissionOptions = computed(() => [
+    { value: 'automatic', label: localize('Automatic', 'أوتوماتيك') },
+    { value: 'manual', label: localize('Manual', 'يدوي') },
+]);
+const fuelTypeOptions = computed(() => fuelTypes.value.map((fuel) => ({ value: fuel.value, label: fuel.label })));
 
 const makeOptions = computed<MakeOption[]>(() => {
     const options = [...props.catalog.makes];
@@ -191,11 +204,11 @@ function createAdditionalPhotoRow(type = '', files: ImageFile[] = []): Additiona
 }
 
 const additionalPhotoTypeOptions = computed(() => [
-    { value: 'right', label: localize('Right', 'ط§ظ„ظٹظ…ظٹظ†') },
-    { value: 'left', label: localize('Left', 'ط§ظ„ظٹط³ط§ط±') },
-    { value: 'front', label: localize('Front', 'ط§ظ„ط£ظ…ط§ظ…') },
-    { value: 'rear', label: localize('Rear', 'ط§ظ„ط®ظ„ظپ') },
-    { value: 'inside', label: localize('Inside', 'ط§ظ„ط¯ط§ط®ظ„') },
+    { value: 'right', label: localize('Right', 'اليمين') },
+    { value: 'left', label: localize('Left', 'اليسار') },
+    { value: 'front', label: localize('Front', 'الأمام') },
+    { value: 'rear', label: localize('Rear', 'الخلف') },
+    { value: 'inside', label: localize('Inside', 'الداخل') },
 ]);
 
 const form = useForm({
@@ -206,6 +219,11 @@ const form = useForm({
     branch_id: safeStr(props.car?.branch_id),
     color: safeLower(props.car?.color, 'white'),
     price_per_day: safeNum(props.car?.price_per_day),
+    price_per_week: safeNum(props.car?.price_per_week),
+    price_per_month: safeNum(props.car?.price_per_month),
+    allowed_km_per_day: safeNum(props.car?.allowed_km_per_day),
+    allowed_km_per_week: safeNum(props.car?.allowed_km_per_week),
+    allowed_km_per_month: safeNum(props.car?.allowed_km_per_month),
     mileage: safeNum(props.car?.mileage),
     transmission: safeStr(props.car?.transmission, 'automatic'),
     seats: safeNum(props.car?.seats),
@@ -394,11 +412,11 @@ function submit() {
 }
 
 const submitLabel = computed(() => {
-    if (form.processing) return isEdit.value ? localize('Saving...', 'ط¬ط§ط±ظچ ط§ظ„ط­ظپط¸...') : localize('Creating...', 'ط¬ط§ط±ظچ ط§ظ„ط¥ظ†ط´ط§ط،...');
-    return isEdit.value ? localize('Save Changes', 'ط­ظپط¸ ط§ظ„طھط؛ظٹظٹط±ط§طھ') : localize('Create Car', 'ط¥ظ†ط´ط§ط، ط³ظٹط§ط±ط©');
+    if (form.processing) return isEdit.value ? localize('Saving...', 'جارٍ الحفظ...') : localize('Creating...', 'جارٍ الإنشاء...');
+    return isEdit.value ? localize('Save Changes', 'حفظ التغييرات') : localize('Create Car', 'إنشاء سيارة');
 });
 
-const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'طھط¹ط¯ظٹظ„ ط§ظ„ط³ظٹط§ط±ط©') : localize('Create Car', 'ط¥ظ†ط´ط§ط، ط³ظٹط§ط±ط©')));
+const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعديل السيارة') : localize('Create Car', 'إنشاء سيارة')));
 </script>
 
 <template>
@@ -409,14 +427,14 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'طھط¹�
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">{{ pageTitle }}</h1>
                 <Link v-if="subdomain" :href="index(subdomain).url">
-                    <Button variant="outline">{{ localize('Back', 'ط±ط¬ظˆط¹') }}</Button>
+                    <Button variant="outline">{{ localize('Back', 'رجوع') }}</Button>
                 </Link>
             </div>
 
             <form class="space-y-6" @submit.prevent="submit">
                 <div class="flex flex-col gap-6 md:flex-row md:gap-8">
                     <div class="w-full md:w-1/2">
-                        <Label>{{ localize('Main Cover Image', 'ط§ظ„طµظˆط±ط© ط§ظ„ط±ط¦ظٹط³ظٹط©') }}</Label>
+                        <Label>{{ localize('Main Cover Image', 'الصورة الرئيسية') }}</Label>
                         <div class="mt-2">
                             <FileUpload
                                 ref="fileUploadRef"
@@ -430,34 +448,32 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'طھط¹�
                                 @file-removed="handleFileRemoved"
                             />
                             <p class="mt-2 text-sm text-muted-foreground">
-                                {{ localize('Upload one main image for cards and list pages.', 'ط§ط±ظپط¹ طµظˆط±ط© ط±ط¦ظٹط³ظٹط© ظˆط§ط­ط¯ط© ظ„ط¨ط·ط§ظ‚ط§طھ ط§ظ„ط³ظٹط§ط±ط© ظˆطµظپط­ط§طھ ط§ظ„ظ‚ظˆط§ط¦ظ….') }}
+                                {{ localize('Upload one main image for cards and list pages.', 'ارفع صورة رئيسية واحدة لبطاقات السيارة وصفحات القوائم.') }}
                             </p>
                         </div>
                     </div>
 
                     <div class="w-full space-y-4 py-0 md:w-1/2 md:py-6">
                         <div>
-                            <Label for="status">{{ localize('Status', 'ط§ظ„ط­ط§ظ„ط©') }}</Label>
-                            <select
-                                id="status"
+                            <Label for="status">{{ localize('Status', 'الحالة') }}</Label>
+                            <SearchableSelect
                                 v-model="form.status"
-                                class="mt-1 block w-full rounded-md border border-gray-300 py-2 pr-10 pl-3 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                            >
-                                <option v-for="s in statuses" :key="s.value" :value="s.value">
-                                    {{ s.label }}
-                                </option>
-                            </select>
+                                :options="statusOptions"
+                                :placeholder="localize('Select status', 'اختر الحالة')"
+                                :search-placeholder="localize('Search status...', 'ابحث عن الحالة...')"
+                                :empty-text="localize('No statuses found.', 'لا توجد حالات.')"
+                            />
                             <InputError :message="form.errors.status" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label for="price_per_day">{{ localize('Price Per Day', 'ط§ظ„ط³ط¹ط± ظ„ظƒظ„ ظٹظˆظ…') }}</Label>
-                            <Input id="price_per_day" v-model="form.price_per_day" type="number" step="0.01" min="0" :placeholder="localize('e.g., 50.00', 'ظ…ط«ط§ظ„: 50.00')" />
+                            <Label for="price_per_day">{{ localize('Price Per Day', 'السعر لكل يوم') }}</Label>
+                            <Input id="price_per_day" v-model="form.price_per_day" type="number" step="0.01" min="0" :placeholder="localize('e.g., 50.00', 'مثال: 50.00')" />
                             <InputError :message="form.errors.price_per_day" class="mt-1" />
                         </div>
 
                         <div>
-                            <Label class="mb-2 block">{{ localize('Color', 'ط§ظ„ظ„ظˆظ†') }}</Label>
+                            <Label class="mb-2 block">{{ localize('Color', 'اللون') }}</Label>
                             <div class="grid grid-cols-3 gap-2 sm:grid-cols-5">
                                 <div v-for="color in carColors" :key="color.value" class="flex items-center">
                                     <input
@@ -483,11 +499,48 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'طھط¹�
                 </div>
 
                 <section class="space-y-4 rounded-xl border border-border/70 bg-card p-5">
+                    <div>
+                        <h2 class="text-lg font-semibold">{{ localize('Rental Pricing & Limits', 'أسعار الإيجار وحدود الكيلومترات') }}</h2>
+                        <p class="text-sm text-muted-foreground">
+                            {{ localize('Configure daily, weekly, and monthly pricing and mileage limits for this car.', 'ضبط سعر الإيجار اليومي والأسبوعي والشهري وحدود الكيلومترات لهذه السيارة.') }}
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <div>
+                            <Label for="price_per_week">{{ localize('Price Per Week', 'السعر الأسبوعي') }}</Label>
+                            <Input id="price_per_week" v-model="form.price_per_week" type="number" step="0.01" min="0" :placeholder="localize('e.g., 300.00', 'مثال: 300.00')" />
+                            <InputError :message="form.errors.price_per_week" class="mt-1" />
+                        </div>
+                        <div>
+                            <Label for="price_per_month">{{ localize('Price Per Month', 'السعر الشهري') }}</Label>
+                            <Input id="price_per_month" v-model="form.price_per_month" type="number" step="0.01" min="0" :placeholder="localize('e.g., 900.00', 'مثال: 900.00')" />
+                            <InputError :message="form.errors.price_per_month" class="mt-1" />
+                        </div>
+                        <div>
+                            <Label for="allowed_km_per_day">{{ localize('Allowed KM Per Day', 'الكيلومترات المسموحة يوميًا') }}</Label>
+                            <Input id="allowed_km_per_day" v-model="form.allowed_km_per_day" type="number" min="0" :placeholder="localize('e.g., 200', 'مثال: 200')" />
+                            <InputError :message="form.errors.allowed_km_per_day" class="mt-1" />
+                        </div>
+                        <div>
+                            <Label for="allowed_km_per_week">{{ localize('Allowed KM Per Week', 'الكيلومترات المسموحة أسبوعيًا') }}</Label>
+                            <Input id="allowed_km_per_week" v-model="form.allowed_km_per_week" type="number" min="0" :placeholder="localize('e.g., 1200', 'مثال: 1200')" />
+                            <InputError :message="form.errors.allowed_km_per_week" class="mt-1" />
+                        </div>
+                        <div>
+                            <Label for="allowed_km_per_month">{{ localize('Allowed KM Per Month', 'الكيلومترات المسموحة شهريًا') }}</Label>
+                            <Input id="allowed_km_per_month" v-model="form.allowed_km_per_month" type="number" min="0" :placeholder="localize('e.g., 4000', 'مثال: 4000')" />
+                            <InputError :message="form.errors.allowed_km_per_month" class="mt-1" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="space-y-4 rounded-xl border border-border/70 bg-card p-5">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 class="text-lg font-semibold">{{ localize('Another Photos', 'طµظˆط± ط¥ط¶ط§ظپظٹط©') }}</h2>
+                            <h2 class="text-lg font-semibold">{{ localize('Another Photos', 'صور إضافية') }}</h2>
                             <p class="text-sm text-muted-foreground">
-                                {{ localize('Add one typed photo for each side such as right, left, front, rear, or inside.', 'ط£ط¶ظپ طµظˆط±ط© ظˆط§ط­ط¯ط© ظ…ط­ط¯ط¯ط© ط§ظ„ظ†ظˆط¹ ظ„ظƒظ„ ط¬ظ‡ط© ظ…ط«ظ„ ط§ظ„ظٹظ…ظٹظ† ط£ظˆ ط§ظ„ظٹط³ط§ط± ط£ظˆ ط§ظ„ط£ظ…ط§ظ… ط£ظˆ ط§ظ„ط®ظ„ظپ ط£ظˆ ط§ظ„ط¯ط§ط®ظ„.') }}
+                                {{ localize('Add one typed photo for each side such as right, left, front, rear, or inside.', 'أضف صورة محددة النوع لكل جهة مثل اليمين أو اليسار أو الأمام أو الخلف أو الداخل.') }}
                             </p>
                         </div>
                         <Button
@@ -496,12 +549,12 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'طھط¹�
                             :disabled="form.additional_photos.length >= additionalPhotoTypeOptions.length"
                             @click="addAdditionalPhoto"
                         >
-                            {{ localize('Add Photo Type', 'ط¥ط¶ط§ظپط© ظ†ظˆط¹ طµظˆط±ط©') }}
+                            {{ localize('Add Photo Type', 'إضافة نوع صورة') }}
                         </Button>
                     </div>
 
                     <div v-if="form.additional_photos.length === 0" class="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                        {{ localize('No additional typed photos added yet.', 'ظ„ط§ طھظˆط¬ط¯ طµظˆط± ط¥ط¶ط§ظپظٹط© ظ…ط­ط¯ط¯ط© ط§ظ„ظ†ظˆط¹ ط­طھظ‰ ط§ظ„ط¢ظ†.') }}
+                        {{ localize('No additional typed photos added yet.', 'لا توجد صور إضافية محددة النوع حتى الآن.') }}
                     </div>
 
                     <div
@@ -510,31 +563,24 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'طھط¹�
                         class="grid gap-4 rounded-lg border border-border/60 p-4 md:grid-cols-[220px,1fr,auto]"
                     >
                         <div class="space-y-2">
-                            <Label :for="`additional-photo-type-${index}`">{{ localize('Photo Type', 'ظ†ظˆط¹ ط§ظ„طµظˆط±ط©') }}</Label>
-                            <select
-                                :id="`additional-photo-type-${index}`"
-                                :value="item.type"
-                                class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30"
+                            <Label :for="`additional-photo-type-${index}`">{{ localize('Photo Type', 'نوع الصورة') }}</Label>
+                            <SearchableSelect
+                                :model-value="item.type"
+                                :options="availablePhotoTypes(item.type)"
+                                :placeholder="localize('Select type', 'اختر النوع')"
+                                :search-placeholder="localize('Search type...', 'ابحث عن النوع...')"
+                                :empty-text="localize('No types available.', 'لا توجد أنواع متاحة.')"
                                 :disabled="Boolean(item.original_type && item.existing_files.length)"
-                                @change="onAdditionalPhotoTypeChange(index, String(($event.target as HTMLSelectElement).value))"
-                            >
-                                <option value="" disabled>{{ localize('Select type', 'ط§ط®طھط± ط§ظ„ظ†ظˆط¹') }}</option>
-                                <option
-                                    v-for="option in availablePhotoTypes(item.type)"
-                                    :key="option.value"
-                                    :value="option.value"
-                                >
-                                    {{ option.label }}
-                                </option>
-                            </select>
+                                @update:model-value="onAdditionalPhotoTypeChange(index, $event)"
+                            />
                             <InputError :message="form.errors[`additional_photos.${index}.type`]" class="mt-1" />
                             <p v-if="item.original_type && item.existing_files.length" class="text-xs text-muted-foreground">
-                                {{ localize('Remove the current file first if you want to change its type.', 'ط§ط­ط°ظپ ط§ظ„ظ…ظ„ظپ ط§ظ„ط­ط§ظ„ظٹ ط£ظˆظ„ظ‹ط§ ط¥ط°ط§ ط£ط±ط¯طھ طھط؛ظٹظٹط± ظ†ظˆط¹ظ‡.') }}
+                                {{ localize('Remove the current file first if you want to change its type.', 'احذف الملف الحالي أولًا إذا أردت تغيير نوعه.') }}
                             </p>
                         </div>
 
                         <div class="space-y-2">
-                            <Label>{{ localize('Photo', 'ط§ظ„طµظˆط±ط©') }}</Label>
+                            <Label>{{ localize('Photo', 'الصورة') }}</Label>
                             <FileUpload
                                 v-model="item.temp_folders"
                                 :initial-files="item.existing_files"
@@ -548,8 +594,8 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'طھط¹�
                             <p class="text-xs text-muted-foreground">
                                 {{
                                     isMultiPhotoType(item.type)
-                                        ? localize('You can upload multiple interior photos.', 'ظٹظ…ظƒظ†ظƒ ط±ظپط¹ ط¹ط¯ط© طµظˆط± ظ„ظ„ط¯ط§ط®ظ„.')
-                                        : localize('Choose one clear photo for the selected side.', 'ط§ط®طھط± طµظˆط±ط© ظˆط§ط¶ط­ط© ظˆط§ط­ط¯ط© ظ„ظ„ط¬ظ‡ط© ط§ظ„ظ…ط­ط¯ط¯ط©.')
+                                        ? localize('You can upload multiple interior photos.', 'يمكنك رفع عدة صور للداخل.')
+                                        : localize('Choose one clear photo for the selected side.', 'اختر صورة واضحة واحدة للجهة المحددة.')
                                 }}
                             </p>
                             <InputError :message="form.errors[`additional_photos.${index}.temp_folders`]" class="mt-1" />
@@ -557,7 +603,7 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'طھط¹�
 
                         <div class="flex items-start justify-end">
                             <Button type="button" variant="ghost" class="text-destructive hover:text-destructive" @click="removeAdditionalPhoto(index)">
-                                {{ localize('Remove', 'ط­ط°ظپ') }}
+                                {{ localize('Remove', 'حذف') }}
                             </Button>
                         </div>
                     </div>
@@ -565,99 +611,104 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'طھط¹�
 
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div>
-                        <Label for="make">{{ localize('Make', 'ط§ظ„ط´ط±ظƒط© ط§ظ„ظ…طµظ†ط¹ط©') }}</Label>
-                        <select id="make" v-model="form.make" class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30">
-                            <option value="" disabled>{{ localize('Select make', 'اختر الشركة المصنعة') }}</option>
-                            <option v-for="option in makeOptions" :key="option.value" :value="option.value">
-                                {{ option.label }}
-                            </option>
-                        </select>
+                        <Label for="make">{{ localize('Make', 'الشركة المصنعة') }}</Label>
+                        <SearchableSelect
+                            v-model="form.make"
+                            :options="makeOptions"
+                            :placeholder="localize('Select make', 'اختر الشركة المصنعة')"
+                            :search-placeholder="localize('Search make...', 'ابحث عن الشركة المصنعة...')"
+                            :empty-text="localize('No makes found.', 'لا توجد شركات مصنعة.')"
+                        />
                         <InputError :message="form.errors.make" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="model">{{ localize('Model', 'ط§ظ„ظ…ظˆط¯ظٹظ„') }}</Label>
-                        <select id="model" v-model="form.model" class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30">
-                            <option value="" disabled>{{ localize('Select model', 'اختر الموديل') }}</option>
-                            <option v-for="option in modelOptions" :key="option.value" :value="option.value">
-                                {{ option.label }}
-                            </option>
-                        </select>
+                        <Label for="model">{{ localize('Model', 'الموديل') }}</Label>
+                        <SearchableSelect
+                            v-model="form.model"
+                            :options="modelOptions"
+                            :placeholder="localize('Select model', 'اختر الموديل')"
+                            :search-placeholder="localize('Search model...', 'ابحث عن الموديل...')"
+                            :empty-text="localize('No models found.', 'لا توجد موديلات.')"
+                        />
                         <InputError :message="form.errors.model" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="year">{{ localize('Year', 'ط§ظ„ط³ظ†ط©') }}</Label>
-                        <select id="year" v-model="form.year" class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30">
-                            <option value="" disabled>{{ localize('Select year', 'اختر السنة') }}</option>
-                            <option v-for="option in yearOptions" :key="option.value" :value="option.value">
-                                {{ option.label }}
-                            </option>
-                        </select>
+                        <Label for="year">{{ localize('Year', 'السنة') }}</Label>
+                        <SearchableSelect
+                            v-model="form.year"
+                            :options="yearOptions"
+                            :placeholder="localize('Select year', 'اختر السنة')"
+                            :search-placeholder="localize('Search year...', 'ابحث عن السنة...')"
+                            :empty-text="localize('No years found.', 'لا توجد سنوات.')"
+                        />
                         <InputError :message="form.errors.year" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="license_plate">{{ localize('License Plate', 'ط±ظ‚ظ… ط§ظ„ظ„ظˆط­ط©') }}</Label>
-                        <Input id="license_plate" v-model="form.license_plate" :placeholder="localize('e.g., ABC-1234', 'ظ…ط«ط§ظ„: ABC-1234')" />
+                        <Label for="license_plate">{{ localize('License Plate', 'رقم اللوحة') }}</Label>
+                        <Input id="license_plate" v-model="form.license_plate" :placeholder="localize('e.g., ABC-1234', 'مثال: ABC-1234')" />
                         <InputError :message="form.errors.license_plate" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="branch_id">{{ localize('Branch', 'ط§ظ„ظپط±ط¹') }}</Label>
-                        <select
-                            id="branch_id"
+                        <Label for="branch_id">{{ localize('Branch', 'الفرع') }}</Label>
+                        <SearchableSelect
                             v-model="form.branch_id"
-                            class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30"
+                            :options="branchOptions"
+                            :placeholder="localize('Select branch', 'اختر الفرع')"
+                            :search-placeholder="localize('Search branch...', 'ابحث عن الفرع...')"
+                            :empty-text="localize('No branches found.', 'لا توجد فروع.')"
                             :disabled="!canAccessAllBranches && branches.length <= 1"
-                        >
-                            <option value="" disabled>{{ localize('Select branch', 'ط§ط®طھط± ط§ظ„ظپط±ط¹') }}</option>
-                            <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">
-                                {{ branch.name }}
-                            </option>
-                        </select>
+                        />
                         <InputError :message="form.errors.branch_id" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="mileage">{{ localize('Mileage (km)', 'ط§ظ„ظ…ط³ط§ظپط© ط§ظ„ظ…ظ‚ط·ظˆط¹ط© (ظƒظ…)') }}</Label>
-                        <Input id="mileage" v-model="form.mileage" type="number" min="0" step="1000" :placeholder="localize('e.g., 15000', 'ظ…ط«ط§ظ„: 15000')" />
+                        <Label for="mileage">{{ localize('Mileage (km)', 'المسافة المقطوعة (كم)') }}</Label>
+                        <Input id="mileage" v-model="form.mileage" type="number" min="0" step="1000" :placeholder="localize('e.g., 15000', 'مثال: 15000')" />
                         <InputError :message="form.errors.mileage" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="transmission">{{ localize('Transmission', 'ظ†ط§ظ‚ظ„ ط§ظ„ط­ط±ظƒط©') }}</Label>
-                        <select id="transmission" v-model="form.transmission" class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30">
-                            <option value="automatic">{{ localize('Automatic', 'ط£ظˆطھظˆظ…ط§طھظٹظƒ') }}</option>
-                            <option value="manual">{{ localize('Manual', 'ظٹط¯ظˆظٹ') }}</option>
-                        </select>
+                        <Label for="transmission">{{ localize('Transmission', 'ناقل الحركة') }}</Label>
+                        <SearchableSelect
+                            v-model="form.transmission"
+                            :options="transmissionOptions"
+                            :placeholder="localize('Select transmission', 'اختر ناقل الحركة')"
+                            :search-placeholder="localize('Search transmission...', 'ابحث عن ناقل الحركة...')"
+                            :empty-text="localize('No transmission types found.', 'لا توجد أنواع ناقل حركة.')"
+                        />
                         <InputError :message="form.errors.transmission" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="seats">{{ localize('Seats', 'ط¹ط¯ط¯ ط§ظ„ظ…ظ‚ط§ط¹ط¯') }}</Label>
-                        <Input id="seats" v-model="form.seats" type="number" min="1" max="20" :placeholder="localize('e.g., 5', 'ظ…ط«ط§ظ„: 5')" />
+                        <Label for="seats">{{ localize('Seats', 'عدد المقاعد') }}</Label>
+                        <Input id="seats" v-model="form.seats" type="number" min="1" max="20" :placeholder="localize('e.g., 5', 'مثال: 5')" />
                         <InputError :message="form.errors.seats" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="fuel_type">{{ localize('Fuel Type', 'ظ†ظˆط¹ ط§ظ„ظˆظ‚ظˆط¯') }}</Label>
-                        <select id="fuel_type" v-model="form.fuel_type" class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30">
-                            <option v-for="fuel in fuelTypes" :key="fuel.value" :value="fuel.value">
-                                {{ fuel.label }}
-                            </option>
-                        </select>
+                        <Label for="fuel_type">{{ localize('Fuel Type', 'نوع الوقود') }}</Label>
+                        <SearchableSelect
+                            v-model="form.fuel_type"
+                            :options="fuelTypeOptions"
+                            :placeholder="localize('Select fuel type', 'اختر نوع الوقود')"
+                            :search-placeholder="localize('Search fuel type...', 'ابحث عن نوع الوقود...')"
+                            :empty-text="localize('No fuel types found.', 'لا توجد أنواع وقود.')"
+                        />
                         <InputError :message="form.errors.fuel_type" class="mt-1" />
                     </div>
 
                     <div class="md:col-span-2">
-                        <Label for="description">{{ localize('Description', 'ط§ظ„ظˆطµظپ') }}</Label>
+                        <Label for="description">{{ localize('Description', 'الوصف') }}</Label>
                         <textarea
                             id="description"
                             v-model="form.description"
                             rows="4"
                             class="w-full rounded-md border border-input bg-transparent px-3 py-2 dark:bg-input/30"
-                            :placeholder="localize('Enter a detailed description of the car including features, condition, and any special notes...', 'ط£ط¯ط®ظ„ ظˆطµظپظ‹ط§ طھظپطµظٹظ„ظٹظ‹ط§ ظ„ظ„ط³ظٹط§ط±ط© ظٹط´ظ…ظ„ ط§ظ„ظ…ط²ط§ظٹط§ ظˆط§ظ„ط­ط§ظ„ط© ظˆط£ظٹ ظ…ظ„ط§ط­ط¸ط§طھ ط®ط§طµط©...')"
+                            :placeholder="localize('Enter a detailed description of the car including features, condition, and any special notes...', 'أدخل وصفًا تفصيليًا للسيارة يشمل المزايا والحالة وأي ملاحظات خاصة...')"
                         />
                         <InputError :message="form.errors.description" class="mt-1" />
                     </div>
@@ -668,11 +719,10 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'طھط¹�
                         {{ submitLabel }}
                     </Button>
                     <Link v-if="subdomain" :href="index(subdomain).url">
-                        <Button type="button" variant="outline">{{ localize('Cancel', 'ط¥ظ„ط؛ط§ط،') }}</Button>
+                        <Button type="button" variant="outline">{{ localize('Cancel', 'إلغاء') }}</Button>
                     </Link>
                 </div>
             </form>
         </main>
     </AdminLayout>
 </template>
-

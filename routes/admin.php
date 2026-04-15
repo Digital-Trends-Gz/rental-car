@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\ContractsController;
 use App\Http\Controllers\Admin\CouponsController;
 use App\Http\Controllers\Admin\CarDiscountsController;
 use App\Http\Controllers\Admin\CarDamageReportsController;
+use App\Http\Controllers\Admin\DamageRepairsController;
 use App\Http\Controllers\Admin\CarDocumentsController;
 use App\Http\Controllers\Admin\DashboardController;
 
@@ -78,9 +79,19 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->except(['show'])
             ->parameters(['car-violations' => 'carViolation'])
             ->middleware('permission:tenant-manage-cars');
+        Route::get('car-violations/{carViolation}/notice/pdf', [CarViolationsController::class, 'noticePdf'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('car-violations.notice.pdf');
+        Route::get('car-violations/{carViolation}/notice/print', [CarViolationsController::class, 'noticePrint'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('car-violations.notice.print');
         Route::resource('car-damage-reports', CarDamageReportsController::class)
             ->except(['show'])
             ->parameters(['car-damage-reports' => 'carDamageReport'])
+            ->middleware('permission:tenant-manage-cars');
+        Route::resource('damage-repairs', DamageRepairsController::class)
+            ->except(['show'])
+            ->parameters(['damage-repairs' => 'damageRepair'])
             ->middleware('permission:tenant-manage-cars');
 
         // Reservations
