@@ -352,7 +352,7 @@
             </td>
             <td class="header-right">
                 <div dir="rtl">{{ $headerRegistryLabelAr }} :</div>
-                <div class="serial-no" dir="rtl">رقم المخالفة : <span>{{ $violationNo }}</span></div>
+                <!-- <div class="serial-no" dir="rtl">رقم المخالفة : <span>{{ $violationNo }}</span></div> -->
                 <div dir="rtl">ص.ب : {{ $headerPoBox }}</div>
                 <div dir="rtl">الرمز البريدي : {{ $headerPc }}</div>
                 <div dir="rtl">نقال : {{ $headerGsm1 }}</div>
