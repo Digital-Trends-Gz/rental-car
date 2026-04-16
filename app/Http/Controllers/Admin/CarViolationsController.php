@@ -8,11 +8,11 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Models\CarViolation;
+use App\Models\TenantSiteSetting;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Models\ViolationType;
 use App\Support\BranchAccess;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -20,6 +20,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Browsershot\Browsershot;
+use Spatie\LaravelPdf\Enums\Format;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class CarViolationsController extends Controller
 {
@@ -125,6 +128,9 @@ class CarViolationsController extends Controller
                 'issued_to' => $violation->issuedTo?->name ?? '-',
                 'edit_url' => route('admin.car-violations.edit', $violation),
                 'destroy_url' => route('admin.car-violations.destroy', $violation),
+                'notice_edit_url' => route('admin.car-violations.notice.edit', $violation),
+                'notice_pdf_url' => route('admin.car-violations.notice.pdf', $violation),
+                'notice_print_url' => route('admin.car-violations.notice.print', $violation),
             ];
         });
 
@@ -301,14 +307,140 @@ class CarViolationsController extends Controller
     {
         abort_unless($this->branchAccess->canAccessBranchId($request->user(), $carViolation->branch_id ? (int) $carViolation->branch_id : null), 403);
 
-        return $this->renderNoticePdf($carViolation, true);
+        return $this->renderNoticePdf($request, $carViolation, true);
     }
 
     public function noticePrint(Request $request, CarViolation $carViolation)
     {
         abort_unless($this->branchAccess->canAccessBranchId($request->user(), $carViolation->branch_id ? (int) $carViolation->branch_id : null), 403);
 
-        return $this->renderNoticePdf($carViolation, false);
+        return $this->renderNoticePdf($request, $carViolation, false);
+    }
+
+    public function noticeEdit(Request $request, CarViolation $carViolation): Response
+    {
+        abort_unless($this->branchAccess->canAccessBranchId($request->user(), $carViolation->branch_id ? (int) $carViolation->branch_id : null), 403);
+
+        $tenant = $carViolation->tenant;
+        $settings = $tenant ? \App\Models\TenantSiteSetting::forTenant($tenant) : [];
+        $pdfHeader = data_get($settings, 'pdf_header', []);
+        $policeNotice = data_get($settings, 'police_notice', []);
+        $officeLine = (string) data_get($policeNotice, 'office_line.ar')
+            ?: (string) data_get($policeNotice, 'company_name.ar')
+            ?: (string) data_get($pdfHeader, 'company_name.ar')
+            ?: $this->resolveCompanyName($carViolation);
+        $licenseNumber = (string) data_get($pdfHeader, 'cr_number') ?: '';
+        $address = (string) data_get($policeNotice, 'company_address.ar') ?: '';
+        $phone = (string) data_get($policeNotice, 'company_phone.ar') ?: (string) data_get($policeNotice, 'company_phone.en') ?: '';
+        $department = (string) data_get($pdfHeader, 'registry_label.ar')
+            ?: (string) data_get($policeNotice, 'registry_label.ar')
+            ?: 'شرطة غزة';
+
+        $carViolation->loadMissing([
+            'car:id,year,make,model,license_plate,color,branch_id',
+            'branch:id,name,phone_1,phone_2,whatsapp',
+            'reservation:id,reservation_number,car_id,user_id,start_date,end_date,pickup_time,return_time',
+            'reservation.user:id,name,email',
+            'reservation.car:id,year,make,model,license_plate',
+            'reservation.contract:id,reservation_id,contract_number,contract_date,renter_name,renter_phone,renter_id_number,start_date,end_date,plate_number',
+            'violationType:id,name',
+            'issuedTo:id,name,email',
+        ]);
+
+        $reservation = $carViolation->reservation;
+        $contract = $reservation?->contract;
+        $car = $carViolation->car ?? $reservation?->car;
+        $renter = $reservation?->user;
+        $branch = $carViolation->branch ?? $car?->branch;
+
+        return Inertia::render('Admin/CarViolations/Notice', [
+            'violation' => [
+                'id' => $carViolation->id,
+                'violation_number' => $carViolation->violation_number ?: ('VIOL-'.$carViolation->id),
+                'violation_date' => optional($carViolation->violation_date)?->toDateString(),
+                'authority' => $carViolation->authority,
+                'location' => $carViolation->location,
+                'amount' => (float) $carViolation->amount,
+                'status' => $carViolation->status instanceof CarViolationStatus ? $carViolation->status->value : (string) $carViolation->status,
+                'type' => $carViolation->violationType?->name ?? $carViolation->type,
+                'car' => $car ? trim(($car->year ? $car->year.' ' : '').($car->make ?? '').' '.($car->model ?? '')) : '-',
+                'plate_number' => $contract?->plate_number ?: $car?->license_plate ?: '-',
+                'car_color' => $car?->color ?? '-',
+                'contract_number' => $contract?->contract_number ?: '-',
+                'contract_date' => optional($contract?->contract_date)?->toDateString(),
+                'reservation_number' => $reservation?->reservation_number ?: '-',
+                'renter_name' => $contract?->renter_name ?: ($renter?->name ?? '-'),
+                'renter_phone' => $contract?->renter_phone ?: '-',
+                'renter_id' => $contract?->renter_id_number ?: '-',
+                'rental_period' => collect([
+                    optional($contract?->start_date)?->toDateString(),
+                    optional($contract?->end_date)?->toDateString(),
+                ])->filter()->implode(' - ') ?: '-',
+                'branch_name' => $branch?->name ?? '-',
+            ],
+            'settings' => [
+                'pdf_header' => $pdfHeader,
+                'police_notice' => $policeNotice,
+            ],
+            'defaults' => [
+                'office_line' => $officeLine,
+                'license_number' => $licenseNumber,
+                'address' => $address,
+                'phone' => $phone,
+                'department' => $department,
+                'country_en' => (string) data_get($pdfHeader, 'country.en') ?: 'Sultanate of Oman',
+                'country_ar' => (string) data_get($pdfHeader, 'country.ar') ?: 'سلطنة عمان',
+            ],
+            'actions' => [
+                'save_defaults' => route('admin.car-violations.notice.update', $carViolation),
+                'download_pdf' => route('admin.car-violations.notice.pdf', $carViolation),
+                'print_pdf' => route('admin.car-violations.notice.print', $carViolation),
+                'back_url' => route('admin.car-violations.index'),
+            ],
+        ]);
+    }
+
+    public function noticeUpdate(Request $request, CarViolation $carViolation): RedirectResponse
+    {
+        abort_unless($this->branchAccess->canAccessBranchId($request->user(), $carViolation->branch_id ? (int) $carViolation->branch_id : null), 403);
+
+        if (config('app.demo_mode')) {
+            return back()->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
+        }
+
+        $validated = $request->validate([
+            'police_notice.office_line.ar' => ['nullable', 'string', 'max:255'],
+            'pdf_header.cr_number' => ['nullable', 'string', 'max:100'],
+            'pdf_header.country.en' => ['nullable', 'string', 'max:255'],
+            'pdf_header.country.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.company_address.ar' => ['nullable', 'string', 'max:500'],
+            'police_notice.company_phone.ar' => ['nullable', 'string', 'max:100'],
+            'pdf_header.registry_label.ar' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $tenant = $carViolation->tenant;
+        abort_unless($tenant, 404);
+
+        $siteSetting = TenantSiteSetting::firstOrCreate(['tenant_id' => $tenant->id]);
+        $existing = TenantSiteSetting::forTenant($tenant);
+
+        $pdfHeader = data_get($existing, 'pdf_header', []);
+        $policeNotice = data_get($existing, 'police_notice', []);
+
+        data_set($policeNotice, 'office_line.ar', $this->nullableString(data_get($validated, 'police_notice.office_line.ar')));
+        data_set($pdfHeader, 'cr_number', $this->nullableString(data_get($validated, 'pdf_header.cr_number')));
+        data_set($pdfHeader, 'country.en', $this->nullableString(data_get($validated, 'pdf_header.country.en')));
+        data_set($pdfHeader, 'country.ar', $this->nullableString(data_get($validated, 'pdf_header.country.ar')));
+        data_set($policeNotice, 'company_address.ar', $this->nullableString(data_get($validated, 'police_notice.company_address.ar')));
+        data_set($policeNotice, 'company_phone.ar', $this->nullableString(data_get($validated, 'police_notice.company_phone.ar')));
+        data_set($pdfHeader, 'registry_label.ar', $this->nullableString(data_get($validated, 'pdf_header.registry_label.ar')));
+
+        $siteSetting->update([
+            'pdf_header' => $pdfHeader,
+            'police_notice' => $policeNotice,
+        ]);
+
+        return back()->with('success', 'Police notice defaults updated successfully.');
     }
 
     public function destroy(Request $request, CarViolation $carViolation): RedirectResponse
@@ -641,8 +773,19 @@ class CarViolationsController extends Controller
         return $violationType;
     }
 
-    private function renderNoticePdf(CarViolation $carViolation, bool $download)
+    private function renderNoticePdf(Request $request, CarViolation $carViolation, bool $download)
     {
+        $tenant = $carViolation->tenant;
+        $settings = $tenant ? \App\Models\TenantSiteSetting::forTenant($tenant) : [];
+        $pdfHeader = array_replace_recursive(
+            data_get($settings, 'pdf_header', []),
+            (array) $request->input('pdf_header', [])
+        );
+        $policeNotice = array_replace_recursive(
+            data_get($settings, 'police_notice', []),
+            (array) $request->input('police_notice', [])
+        );
+
         $carViolation->loadMissing([
             'car:id,year,make,model,license_plate,branch_id',
             'car.branch:id,name,phone_1,phone_2,whatsapp',
@@ -662,7 +805,7 @@ class CarViolationsController extends Controller
         $renter = $reservation?->user;
         $branch = $carViolation->branch ?? $car?->branch;
 
-        $pdf = Pdf::loadView('admin.car_violations.notice', [
+        $pdf = Pdf::view('admin.car_violations.notice', [
             'violation' => $carViolation,
             'reservation' => $reservation,
             'contract' => $contract,
@@ -670,13 +813,19 @@ class CarViolationsController extends Controller
             'renter' => $renter,
             'branch' => $branch,
             'companyName' => $this->resolveCompanyName($carViolation),
+            'companyNameArabic' => (string) data_get($policeNotice, 'company_name.ar')
+                ?: (string) data_get($pdfHeader, 'company_name.ar')
+                ?: (string) data_get($pdfHeader, 'company_name.en')
+                ?: $this->resolveCompanyName($carViolation),
             'companyLogo' => $this->resolveCompanyLogo($carViolation),
             'generatedAt' => now(),
-        ])->setPaper('a4', 'portrait');
+            'pdfHeader' => $pdfHeader,
+            'policeNotice' => $policeNotice,
+        ])->format('a4')->orientation('portrait');
 
         $fileName = ($carViolation->violation_number ?: ('violation-'.$carViolation->id)).'-police-notice.pdf';
 
-        return $download ? $pdf->download($fileName) : $pdf->stream($fileName);
+        return $download ? $pdf->download($fileName) : $pdf->inline($fileName);
     }
 
     private function resolveCompanyName(CarViolation $carViolation): string
@@ -694,8 +843,52 @@ class CarViolationsController extends Controller
         $tenant = $carViolation->tenant;
         $settings = $tenant ? \App\Models\TenantSiteSetting::forTenant($tenant) : [];
 
-        return data_get($settings, 'branding.logo_url')
-            ?: data_get($settings, 'branding.logo')
-            ?: null;
+        $logo = data_get($settings, 'logo_url')
+            ?: data_get($settings, 'branding.logo_url')
+            ?: data_get($settings, 'branding.logo');
+
+        if (! filled($logo)) {
+            return null;
+        }
+
+        $logo = trim((string) $logo);
+
+        if (preg_match('#^https?://#i', $logo)) {
+            return $logo;
+        }
+
+        $relative = $logo;
+        if (str_starts_with($relative, '/')) {
+            $relative = ltrim($relative, '/');
+        }
+        if (str_starts_with($relative, 'storage/')) {
+            $relative = substr($relative, strlen('storage/'));
+            $localPath = public_path('storage/'.$relative);
+        } elseif (str_starts_with($relative, 'app/')) {
+            $localPath = storage_path('app/'.substr($relative, strlen('app/')));
+        } else {
+            $localPath = public_path($relative);
+        }
+
+        if (is_file($localPath)) {
+            $mime = @mime_content_type($localPath) ?: 'image/png';
+            $content = file_get_contents($localPath);
+            if ($content !== false) {
+                return 'data:'.$mime.';base64,'.base64_encode($content);
+            }
+        }
+
+        return url('/'.ltrim($logo, '/'));
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 }

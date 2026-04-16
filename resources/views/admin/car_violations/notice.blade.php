@@ -1,140 +1,249 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ $violation->violation_number ?: ('VIOL-'.$violation->id) }} - Police Notice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <style>
+        @page {
+            size: A4;
+            margin: 10mm 9mm 9mm 9mm;
+        }
+
         * { box-sizing: border-box; }
+
         body {
             margin: 0;
-            color: #0f1c42;
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 11px;
-            line-height: 1.25;
+            padding: 0;
             background: #fff;
-            font-weight: 600;
-        }
-        .page { width: 100%; padding: 4px 6px; }
-        .sheet { border: 2px solid #1a326b; background: #fff; padding: 2px; }
-        table { width: 100%; border-collapse: collapse; }
-        td { vertical-align: top; padding: 3px 5px; }
-        .ar {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
+            color: #1f2937;
+            font-family: 'Cairo', 'DejaVu Sans', Arial, sans-serif;
             direction: rtl;
-            unicode-bidi: plaintext;
-            text-align: right;
+            unicode-bidi: embed;
+            line-height: 1.35;
+            font-size: 11px;
         }
 
-        .header-table { margin-bottom: 2px; }
-        .header-table td { padding: 0 4px; vertical-align: top; }
-        .header-left { width: 25%; font-size: 9px; line-height: 1.4; font-weight: 700; }
-        .header-center { width: 50%; text-align: center; }
-        .header-right { width: 25%; text-align: right; }
+        .page { width: 100%; }
 
-        .company-name-en { font-size: 18px; font-weight: 800; color: #1a326b; letter-spacing: 1px; }
-        .company-name-ar { font-size: 20px; font-weight: 800; color: #1a326b; margin-top: -4px; }
-        .company-name-ar.center-name {
-            margin-top: 0;
-            margin-bottom: 2px;
-            display: block;
-            text-align: center;
-            direction: rtl;
-            unicode-bidi: plaintext;
-        }
-
-        .contract-title-row { text-align: center; margin-top: -6px; margin-bottom: 4px; }
-        .contract-title-en { font-size: 14px; font-weight: 800; color: #1a326b; display: inline-block; }
-        .contract-title-ar { font-size: 16px; font-weight: 800; color: #1a326b; display: inline-block; margin-left: 8px; }
-
-        .serial-no { color: #1a326b; font-size: 12px; font-weight: 800; margin-top: 4px; }
-        .serial-no span { color: #d02027; margin-left: 4px; font-size: 14px; }
-
-        .grid-table { border: 2px solid #1a326b; }
-        .grid-table td { border: 1px solid #1a326b; }
-        .cell-title { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 10px; color: #1a326b; margin-bottom: 4px; }
-        .cell-title .ar { font-size: 11px; }
-
-        .field-row { display: flex; justify-content: space-between; margin-bottom: 3px; align-items: flex-end; }
-        .field-label { font-size: 9px; font-weight: 700; color: #1a326b; width: 25%; }
-        .field-label-ar {
-            font-size: 10px;
-            font-weight: 700;
-            color: #1a326b;
-            width: 25%;
-            text-align: right;
-            direction: rtl;
-            unicode-bidi: plaintext;
-        }
-        .field-val-dotted { border-bottom: 1px dotted #1a326b; width: 50%; padding: 0 4px; text-align: center; color: #000; font-size: 10px; min-height: 14px; }
-
-        .ack-box {
-            background: #1a326b;
-            color: #fff;
-            padding: 6px 3px 3px;
-            text-align: center;
-            margin: 4px 4px 3px 4px;
-            overflow: hidden;
-            box-sizing: border-box;
-        }
-        .ack-box-title {
-            font-size: 9px;
-            font-weight: 800;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 4px;
-            line-height: 1.05;
-            gap: 6px;
-        }
-        .ack-divider {
-            border-top: 1px solid rgba(255, 255, 255, 0.55);
-            margin: 3px 6px 4px;
-        }
-        .ack-text-ar {
-            text-align: center;
-            font-size: 8px;
-            padding-top: 0;
-            line-height: 1.12;
-            direction: rtl;
-            unicode-bidi: plaintext;
-            word-break: break-word;
-            overflow-wrap: anywhere;
-        }
-        .ack-text-en {
-            text-align: center;
-            font-size: 6.5px;
-            line-height: 1.12;
-            font-weight: 500;
-            word-break: break-word;
-            overflow-wrap: anywhere;
-        }
-
-        .signatures {
+        .top-meta {
             width: 100%;
-            table-layout: fixed;
             border-collapse: collapse;
-            margin-top: 8px;
+            margin-bottom: 6px;
+            font-size: 10px;
+            color: #1f2937;
         }
-        .signatures td {
+
+        .top-meta td {
             width: 50%;
+            padding: 0;
+            vertical-align: bottom;
+        }
+
+        .top-meta .right { text-align: right; }
+        .top-meta .left { text-align: left; direction: ltr; }
+
+        .meta-line {
+            display: inline-block;
+            min-width: 120px;
+            border-bottom: 1px dashed #9ca3af;
+            height: 13px;
+            vertical-align: bottom;
+        }
+
+        .header {
+            text-align: center;
+            margin: 0 0 4px;
+        }
+
+        .logo {
+            display: block;
+            max-width: 170px;
+            max-height: 42px;
+            margin: 0 auto 1px;
+            object-fit: contain;
+        }
+
+        .company-en {
+            font-size: 16px;
+            font-weight: 800;
+            color: #27468b;
+            margin: 0;
+            line-height: 1.1;
+        }
+
+        .company-ar {
+            font-size: 14px;
+            font-weight: 800;
+            color: #27468b;
+            margin: 1px 0 0;
+            line-height: 1.1;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+            direction: ltr;
+            table-layout: fixed;
+        }
+
+        .header-table td {
+            vertical-align: top;
+            padding: 0 4px;
+        }
+
+        .header-left,
+        .header-right {
+            width: 26%;
+            font-size: 9px;
+            line-height: 1.35;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .header-left {
+            direction: ltr;
+            text-align: left;
+            unicode-bidi: plaintext;
+        }
+
+        .header-center {
+            width: 48%;
+            text-align: center;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .company-name-en {
+            direction: ltr;
+            unicode-bidi: plaintext;
+        }
+
+        .serial-no {
+            margin-top: 3px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #27468b;
+        }
+
+        .serial-no span {
+            color: #d7262d;
+            font-size: 13px;
+        }
+
+        .subject {
+            text-align: center;
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #27468b;
+            margin: 3px 0 5px;
+            direction: rtl;
+            unicode-bidi: plaintext;
+        }
+
+        .department-row {
+            text-align: right;
+            font-size: 11px;
+            margin-bottom: 4px;
+            color: #1f2937;
+        }
+
+        .line {
+            display: inline-block;
+            min-width: 90px;
+            border-bottom: 1px dashed #9ca3af;
+            height: 13px;
+            vertical-align: bottom;
+        }
+
+        .paragraph {
+            margin: 4px 0;
+            font-size: 10.5px;
+            text-align: right;
+        }
+
+        .section-title {
+            margin: 7px 0 4px;
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #1f2937;
+            text-align: right;
+        }
+
+        .grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 3px 0 6px;
+        }
+
+        .grid td {
+            border: 1px solid #cfd8e3;
+            padding: 4px 6px;
+            font-size: 10px;
+            vertical-align: middle;
+        }
+
+        .grid .label {
+            width: 28%;
+            background: #f8fafc;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .company-line {
+            margin: 2px 0 4px;
+            font-size: 10.5px;
+            line-height: 1.45;
+        }
+
+        .company-line .line {
+            min-width: 115px;
+            height: 12px;
+        }
+
+        .attachments {
+            margin: 4px 0 0;
+            padding-right: 18px;
+            font-size: 10px;
+        }
+
+        .attachments li {
+            margin: 2px 0;
+        }
+
+        .signature {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 7px;
+        }
+
+        .signature td {
+            width: 50%;
+            vertical-align: top;
+            padding: 0 6px;
+            font-size: 10px;
+        }
+
+        .sign-line {
+            border-bottom: 1px dashed #9ca3af;
+            min-height: 12px;
+            margin: 2px 0 4px;
+        }
+
+        .footer-note {
+            margin-top: 6px;
+            padding-top: 4px;
+            border-top: 1px solid #e5e7eb;
             text-align: center;
             font-size: 9px;
-            color: #1a326b;
-            padding: 6px;
-            vertical-align: top;
+            color: #6b7280;
         }
-        .sign-line { border-bottom: 1px dotted #1a326b; min-height: 14px; margin-bottom: 2px; }
-
-        .footer-end { text-align: center; font-size: 9px; font-weight: 800; color: #1a326b; padding-top: 6px; }
-
-        .notice-meta { width: 100%; border: 1px solid #1a326b; margin-top: 4px; margin-bottom: 4px; }
-        .notice-meta td { border: 1px solid #1a326b; padding: 4px 6px; font-size: 9px; }
-        .notice-meta .label { color: #6b7280; font-weight: 700; font-size: 8px; }
-        .notice-meta .value { color: #0f1c42; font-weight: 800; font-size: 10px; }
-
-        .message-box { border: 1px solid #1a326b; padding: 5px 6px; margin: 4px 4px 0; }
-        .message-box .en { font-size: 8px; line-height: 1.2; }
-        .message-box .ar { font-size: 8.5px; line-height: 1.2; direction: rtl; unicode-bidi: plaintext; text-align: right; margin-top: 3px; }
     </style>
 </head>
 <body>
@@ -146,6 +255,33 @@
     $branch = $branch ?? null;
 
     $formatDate = static fn ($value) => $value ? \Illuminate\Support\Carbon::parse($value)->format('Y-m-d') : '-';
+
+    $companyNameClean = $companyName ?? config('app.name');
+    $companyNameArabicClean = $companyNameArabic ?? $companyNameClean;
+    $violationNo = $violation->violation_number ?: ('VIOL-'.$violation->id);
+    $generatedDate = $formatDate($generatedAt ?? now());
+
+    $department = trim((string) data_get($pdfHeader, 'registry_label.ar')) !== ''
+        ? trim((string) data_get($pdfHeader, 'registry_label.ar'))
+        : 'شرطة غزة';
+
+    $officeLine = trim((string) data_get($policeNotice, 'office_line.ar'));
+    if ($officeLine === '') {
+        $officeLine = $branch?->name ?? $companyNameArabicClean;
+    }
+
+    $licenseNumber = trim((string) data_get($pdfHeader, 'cr_number'));
+    $address = trim((string) data_get($policeNotice, 'company_address.ar'));
+    $phone = trim((string) data_get($policeNotice, 'company_phone.ar'));
+
+    $headerCr = data_get($pdfHeader, 'cr_number') ?: '-';
+    $headerPoBox = data_get($pdfHeader, 'po_box') ?: '-';
+    $headerPc = data_get($pdfHeader, 'pc') ?: '-';
+    $headerCountry = data_get($pdfHeader, 'country.ar') ?: data_get($pdfHeader, 'country.en') ?: 'سلطنة عمان';
+    $headerGsm1 = data_get($pdfHeader, 'gsm_1') ?: '-';
+    $headerGsm2 = data_get($pdfHeader, 'gsm_2') ?: '-';
+    $headerGsm3 = data_get($pdfHeader, 'gsm_3') ?: '-';
+
     $carLabel = $car ? trim(($car->year ? $car->year.' ' : '').($car->make ?? '').' '.($car->model ?? '')) : '-';
     $plateNumber = $contract?->plate_number ?: $car?->license_plate ?: '-';
     $renterName = $contract?->renter_name ?: ($renter?->name ?? '-');
@@ -156,230 +292,180 @@
         optional($contract?->end_date)?->toDateString(),
     ])->filter()->implode(' - ');
     $rentalPeriod = $rentalPeriod !== '' ? $rentalPeriod : '-';
-    $violationStatus = $violation->status instanceof \App\Enums\CarViolationStatus ? $violation->status->label() : ucfirst((string) $violation->status);
+    $violationStatus = $violation->status instanceof \App\Enums\CarViolationStatus
+        ? $violation->status->label()
+        : ucfirst((string) $violation->status);
+
+    $subjectAr = trim((string) data_get($policeNotice, 'subject.ar')) ?: 'إشعار بخصوص مخالفة مرورية على مركبة مؤجرة';
+    $greetingAr = trim((string) data_get($policeNotice, 'greeting.ar')) ?: 'تحية طيبة وبعد،';
+    $introAr = trim((string) data_get($policeNotice, 'intro.ar')) ?: 'نفيدكم علمًا بأن المركبة الموضحة بياناتها أدناه قد تم تحرير مخالفة مرورية عليها، ونود إفادتكم بأن هذه المركبة كانت في تاريخ وقوع المخالفة مؤجرة للمستأجر المذكور في هذا الكتاب بموجب عقد إيجار رسمي، ولم تكن بحيازة المكتب وقت وقوع المخالفة.';
+    $closingAr1 = trim((string) data_get($policeNotice, 'closing_1.ar')) ?: 'وعليه، نرجو من حضراتكم أخذ ما ورد أعلاه بعين الاعتبار، واعتماد أن المركبة كانت بعهدة المستأجر المذكور وقت وقوع المخالفة، وأن مكتبنا غير مسؤول عن استخدام المركبة خلال مدة الإيجار المثبتة بالعقد المرفق.';
+    $closingAr2 = trim((string) data_get($policeNotice, 'closing_2.ar')) ?: 'كما نؤكد أن المسؤولية القانونية والمالية المترتبة على استخدام المركبة خلال مدة العقد تقع على المستأجر وفقًا لأحكام عقد الإيجار والأنظمة المعمول بها.';
+
+    $attachmentsTitle = trim((string) data_get($policeNotice, 'attachments_title.ar')) ?: 'ثالثًا: المرفقات';
+    $attachments = trim((string) data_get($policeNotice, 'attachments.ar'));
+    $attachmentsLines = $attachments !== ''
+        ? preg_split('/\r?\n/', $attachments)
+        : [
+            'نسخة عن عقد الإيجار.',
+            'نسخة عن هوية / جواز سفر المستأجر.',
+            'نسخة عن رخصة القيادة.',
+            'نسخة عن المخالفة إن وجدت.',
+            'أي مستندات داعمة أخرى.',
+        ];
+
+    $signatureNameLabel = trim((string) data_get($policeNotice, 'signature_name_label.ar')) ?: 'اسم المفوض بالتوقيع:';
+    $signatureTitleLabel = trim((string) data_get($policeNotice, 'signature_title_label.ar')) ?: 'الصفة:';
+    $signatureDateLabel = trim((string) data_get($policeNotice, 'signature_date_label.ar')) ?: 'التاريخ:';
+    $footerNote = trim((string) data_get($policeNotice, 'footer_note.ar')) ?: 'هذا نموذج عام قابل للطباعة والتعديل بحسب بيانات الشركة والمركبة والمستأجر.';
 @endphp
 
 <div class="page">
-    <div class="sheet">
-        <table class="header-table">
-            <tr>
-                <td class="header-left">
-                    <div>C.R : {{ $branch->cr_number ?? '-' }}</div>
-                    <div>P.O Box : {{ $branch->po_box ?? '-' }}</div>
-                    <div>P.C : {{ $branch->postal_code ?? '-' }}</div>
-                    <div>Sultanate of Oman</div>
-                    <div>GSM 1 : {{ $branch->phone_1 ?? '-' }}</div>
-                    <div>GSM 2 : {{ $branch->phone_2 ?? '-' }}</div>
-                    <div>GSM 3 : {{ $branch->whatsapp ?? '-' }}</div>
-                    <div class="serial-no">No. <span>{{ $violation->violation_number ?: ('VIOL-'.$violation->id) }}</span></div>
-                </td>
-                <td class="header-center">
-                    @if(!empty($companyLogo))
-                        <img src="{{ $companyLogo }}" style="max-height: 48px; object-fit: contain; margin-bottom:2px;" alt="Logo" />
-                    @endif
-                    <div class="company-name-en">{{ strtoupper($companyName) }}</div>
-                    <div class="company-name-ar ar center-name">{{ $companyName }}</div>
-                </td>
-                <td class="header-right ar" style="font-size: 9px; line-height: 1.4; font-weight: 700;">
-                    <div>س.ت : {{ $branch->cr_number ?? '-' }}</div>
-                    <div>ص.ب : {{ $branch->po_box ?? '-' }}</div>
-                    <div>الرمز البريدي : {{ $branch->postal_code ?? '-' }}</div>
-                    <div>سلطنة عمان</div>
-                    <div>نقال 1 : {{ $branch->phone_1 ?? '-' }}</div>
-                    <div>نقال 2 : {{ $branch->phone_2 ?? '-' }}</div>
-                    <div>نقال 3 : {{ $branch->whatsapp ?? '-' }}</div>
-                </td>
-            </tr>
-        </table>
+    @php
+        $headerCompanyNameEn = $companyNameClean;
+        $headerCompanyNameAr = $companyNameArabicClean;
+        $headerCrNumber = $headerCr;
+        $headerPoBox = $headerPoBox;
+        $headerPc = $headerPc;
+        $headerGsm1 = $headerGsm1;
+        $headerGsm2 = $headerGsm2;
+        $headerGsm3 = $headerGsm3;
+        $headerRegistryLabelAr = $department;
+    @endphp
 
-        <div class="contract-title-row">
-            <div class="contract-title-en">OFFICIAL NOTICE TO POLICE</div>
-            <div class="contract-title-ar ar">إشعار رسمي إلى الشرطة</div>
-        </div>
+    <table class="header-table" dir="ltr">
+        <tr>
+            <td class="header-left">
+                <div dir="ltr">C.R : {{ $headerCrNumber }}</div>
+                <div dir="ltr">P.O Box : {{ $headerPoBox }}</div>
+                <div dir="ltr">P.C : {{ $headerPc }}</div>
+                <div dir="ltr">GSM : {{ $headerGsm1 }}</div>
+                <div dir="ltr">GSM : {{ $headerGsm2 }}</div>
+                <div dir="ltr">GSM : {{ $headerGsm3 }}</div>
+            </td>
+            <td class="header-center">
+                @if(!empty($companyLogo))
+                    <img src="{{ $companyLogo }}" class="logo" alt="Logo">
+                @endif
+                <div class="company-name-en" dir="ltr">{{ strtoupper($headerCompanyNameEn) }}</div>
+                <div class="company-name-ar">{{ $headerCompanyNameAr }}</div>
+            </td>
+            <td class="header-right">
+                <div dir="rtl">{{ $headerRegistryLabelAr }} :</div>
+                <div class="serial-no" dir="rtl">رقم المخالفة : <span>{{ $violationNo }}</span></div>
+                <div dir="rtl">ص.ب : {{ $headerPoBox }}</div>
+                <div dir="rtl">الرمز البريدي : {{ $headerPc }}</div>
+                <div dir="rtl">نقال : {{ $headerGsm1 }}</div>
+                <div dir="rtl">نقال : {{ $headerGsm2 }}</div>
+                <div dir="rtl">نقال : {{ $headerGsm3 }}</div>
+            </td>
+        </tr>
+    </table>
 
-        <table class="notice-meta">
-            <tr>
-                <td>
-                    <div class="label">Violation No.</div>
-                    <div class="value">{{ $violation->violation_number ?: ('VIOL-'.$violation->id) }}</div>
-                </td>
-                <td>
-                    <div class="label">Violation Date</div>
-                    <div class="value">{{ $formatDate($violation->violation_date) }}</div>
-                </td>
-                <td>
-                    <div class="label">Authority</div>
-                    <div class="value">{{ $violation->authority ?? '-' }}</div>
-                </td>
-                <td>
-                    <div class="label">Location</div>
-                    <div class="value">{{ $violation->location ?? '-' }}</div>
-                </td>
-            </tr>
-        </table>
+    <div class="subject">عقد / إشعار بخصوص مخالفة مرورية على مركبة مؤجرة</div>
 
-        <table class="grid-table">
-            <tr>
-                <td style="width: 50%;">
-                    <div class="cell-title">
-                        <span>Rental / Violation Details</span>
-                        <span class="ar">تفاصيل الإيجار والمخالفة</span>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Contract No.</div>
-                        <div class="field-val-dotted">{{ $contract?->contract_number ?? '-' }}</div>
-                        <div class="field-label-ar ar">رقم العقد:</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Reservation No.</div>
-                        <div class="field-val-dotted">{{ $reservation?->reservation_number ?? '-' }}</div>
-                        <div class="field-label-ar ar">رقم الحجز:</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Vehicle</div>
-                        <div class="field-val-dotted">{{ $carLabel }}</div>
-                        <div class="field-label-ar ar">السيارة:</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Plate No.</div>
-                        <div class="field-val-dotted">{{ $plateNumber }}</div>
-                        <div class="field-label-ar ar">رقم اللوحة:</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Renter Name</div>
-                        <div class="field-val-dotted">{{ $renterName }}</div>
-                        <div class="field-label-ar ar">اسم المستأجر:</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Renter Phone</div>
-                        <div class="field-val-dotted">{{ $renterPhone }}</div>
-                        <div class="field-label-ar ar">هاتف المستأجر:</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Renter ID / Passport</div>
-                        <div class="field-val-dotted">{{ $renterId }}</div>
-                        <div class="field-label-ar ar">الرقم المدني / الجواز:</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Rental Period</div>
-                        <div class="field-val-dotted">{{ $rentalPeriod }}</div>
-                        <div class="field-label-ar ar">فترة الإيجار:</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Amount</div>
-                        <div class="field-val-dotted">{{ number_format((float) $violation->amount, 2) }}</div>
-                        <div class="field-label-ar ar">المبلغ:</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label">Status</div>
-                        <div class="field-val-dotted">{{ $violationStatus }}</div>
-                        <div class="field-label-ar ar">الحالة:</div>
-                    </div>
-                </td>
-                <td style="width: 50%;">
-                    <div class="cell-title">
-                        <span class="ar">تفاصيل الإيجار والمخالفة</span>
-                        <span>Rental / Violation Details</span>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label-ar ar">رقم العقد:</div>
-                        <div class="field-val-dotted">{{ $contract?->contract_number ?? '-' }}</div>
-                        <div class="field-label">Contract No.</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label-ar ar">رقم الحجز:</div>
-                        <div class="field-val-dotted">{{ $reservation?->reservation_number ?? '-' }}</div>
-                        <div class="field-label">Reservation No.</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label-ar ar">السيارة:</div>
-                        <div class="field-val-dotted">{{ $carLabel }}</div>
-                        <div class="field-label">Vehicle</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label-ar ar">رقم اللوحة:</div>
-                        <div class="field-val-dotted">{{ $plateNumber }}</div>
-                        <div class="field-label">Plate No.</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label-ar ar">اسم المستأجر:</div>
-                        <div class="field-val-dotted">{{ $renterName }}</div>
-                        <div class="field-label">Renter Name</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label-ar ar">هاتف المستأجر:</div>
-                        <div class="field-val-dotted">{{ $renterPhone }}</div>
-                        <div class="field-label">Renter Phone</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label-ar ar">الرقم المدني / الجواز:</div>
-                        <div class="field-val-dotted">{{ $renterId }}</div>
-                        <div class="field-label">Renter ID / Passport</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label-ar ar">فترة الإيجار:</div>
-                        <div class="field-val-dotted">{{ $rentalPeriod }}</div>
-                        <div class="field-label">Rental Period</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label-ar ar">المبلغ:</div>
-                        <div class="field-val-dotted">{{ number_format((float) $violation->amount, 2) }}</div>
-                        <div class="field-label">Amount</div>
-                    </div>
-                    <div class="field-row">
-                        <div class="field-label-ar ar">الحالة:</div>
-                        <div class="field-val-dotted">{{ $violationStatus }}</div>
-                        <div class="field-label">Status</div>
-                    </div>
-                </td>
-            </tr>
-        </table>
+    <div class="department-row" dir="rtl">قسم: <span class="line">{{ $department }}</span></div>
 
-        @if(filled($violation->description))
-            <div class="ack-box" style="margin-top: 4px;">
-                <div class="ack-box-title">
-                    <span>Violation Description</span>
-                    <span class="ar">وصف المخالفة</span>
-                </div>
-                <div class="ack-divider"></div>
-                <div class="ack-text-en">{{ $violation->description }}</div>
-                <div class="ack-text-ar">{{ $violation->description }}</div>
-            </div>
-        @endif
+    <p class="paragraph">{{ $greetingAr }}</p>
 
-        <div class="ack-box" style="margin-top: 4px;">
-            <div class="ack-box-title">
-                <span>Official Message</span>
-                <span class="ar">رسالة رسمية</span>
-            </div>
-            <div class="ack-divider"></div>
-            <div class="ack-text-en">
-                To whom it may concern, this notice confirms that the above violation was recorded while the vehicle was under rental for the customer named above during the rental period shown in this notice. The rental contract and reservation details are listed for reference, together with the vehicle and renter information.
-            </div>
-            <div class="ack-text-ar">
-                نفيدكم علماً بأن المخالفة الموضحة أعلاه قد تم رصدها أثناء فترة تأجير المركبة للمستأجر المذكور أعلاه، وذلك خلال مدة الإيجار الموضحة في هذا الإشعار. وقد أُرفقت بيانات العقد والحجز وبيانات المركبة والمستأجر للرجوع إليها عند الحاجة.
-            </div>
-        </div>
+    <p class="paragraph company-line">
+        نحن شركة / مكتب: <span class="line">{{ $officeLine }}</span>
+        &nbsp;&nbsp;رقم الترخيص: <span class="line">{{ $licenseNumber }}</span>
+        &nbsp;&nbsp;العنوان: <span class="line">{{ $address }}</span>
+        &nbsp;&nbsp;رقم الهاتف: <span class="line">{{ $phone }}</span>
+    </p>
 
-        <table class="signatures">
-            <tr>
-                <td>
-                    <div class="small">Issued By</div>
-                    <div style="color:#0f1c42; font-weight:800;">{{ $branch?->name ?? $companyName }}</div>
-                    <div class="sign-line"></div>
-                    <div class="small">Authorized Signature / توقيع المفوض</div>
-                </td>
-                <td class="ar">
-                    <div class="small">صدر بواسطة</div>
-                    <div style="color:#0f1c42; font-weight:800;">{{ $branch?->name ?? $companyName }}</div>
-                    <div class="sign-line"></div>
-                    <div class="small">توقيع المفوض / Authorized Signature</div>
-                </td>
-            </tr>
-        </table>
+    <p class="paragraph">{{ $introAr }}</p>
 
-        <div class="footer-end">Generated at {{ now()->format('Y-m-d H:i') }}</div>
-    </div>
+    <div class="section-title">أولاً: بيانات المركبة</div>
+    <table class="grid">
+        <tr>
+            <td class="label">رقم المركبة</td>
+            <td>{{ $plateNumber }}</td>
+        </tr>
+        <tr>
+            <td class="label">النوع / الموديل</td>
+            <td>{{ $carLabel }}</td>
+        </tr>
+        <tr>
+            <td class="label">اللون</td>
+            <td>{{ $car?->color ?? '-' }}</td>
+        </tr>
+        <tr>
+            <td class="label">تاريخ المخالفة</td>
+            <td>{{ $formatDate($violation->violation_date) }}</td>
+        </tr>
+        <tr>
+            <td class="label">رقم المخالفة</td>
+            <td>{{ $violationNo }}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">ثانيًا: بيانات المستأجر</div>
+    <table class="grid">
+        <tr>
+            <td class="label">الاسم الكامل</td>
+            <td>{{ $renterName }}</td>
+        </tr>
+        <tr>
+            <td class="label">رقم الهوية / جواز السفر</td>
+            <td>{{ $renterId }}</td>
+        </tr>
+        <tr>
+            <td class="label">رقم الهاتف</td>
+            <td>{{ $renterPhone }}</td>
+        </tr>
+        <tr>
+            <td class="label">رقم رخصة القيادة</td>
+            <td>{{ $contract?->driver_license_number ?? '-' }}</td>
+        </tr>
+        <tr>
+            <td class="label">تاريخ بداية الإيجار</td>
+            <td>{{ optional($contract?->start_date)?->toDateString() ?: optional($reservation?->start_date)?->toDateString() ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td class="label">تاريخ نهاية الإيجار</td>
+            <td>{{ optional($contract?->end_date)?->toDateString() ?: optional($reservation?->end_date)?->toDateString() ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td class="label">فترة الإيجار</td>
+            <td>{{ $rentalPeriod }}</td>
+        </tr>
+    </table>
+
+    <p class="paragraph">{{ $closingAr1 }}</p>
+    <p class="paragraph">{{ $closingAr2 }}</p>
+
+    <div class="section-title">{{ $attachmentsTitle }}</div>
+    <ul class="attachments">
+        @foreach($attachmentsLines as $attachmentLine)
+            @php($attachmentLine = trim((string) $attachmentLine))
+            @if($attachmentLine !== '')
+                <li>{{ $attachmentLine }}</li>
+            @endif
+        @endforeach
+    </ul>
+
+    <table class="signature">
+        <tr>
+            <td>
+                <div><strong>{{ $signatureNameLabel }}</strong></div>
+                <div class="sign-line"></div>
+                <div><strong>{{ $signatureTitleLabel }}</strong></div>
+                <div class="sign-line"></div>
+                <div><strong>{{ $signatureDateLabel }}</strong> {{ $generatedDate }}</div>
+            </td>
+            <td>
+                <div><strong>اسم الشركة / المكتب:</strong> {{ $officeLine }}</div>
+                <div class="sign-line"></div>
+                <div><strong>الختم:</strong></div>
+                <div class="sign-line"></div>
+                <div><strong>{{ $department }}</strong></div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="footer-note">{{ $footerNote }}</div>
 </div>
 </body>
 </html>

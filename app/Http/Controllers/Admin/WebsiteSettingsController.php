@@ -328,6 +328,186 @@ class WebsiteSettingsController extends Controller
         return back()->with('success', 'Website settings updated successfully.');
     }
 
+    public function policeNoticeEdit(): Response
+    {
+        $tenant = TenantContext::get();
+        abort_unless($tenant, 404);
+
+        $tenant->loadMissing('siteSetting.files');
+
+        return Inertia::render('Admin/Settings/PoliceNotice', [
+            'tenant' => [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'slug' => $tenant->slug,
+            ],
+            'settings' => TenantSiteSetting::forTenant($tenant),
+            'actions' => [
+                'update' => url()->current(),
+            ],
+        ]);
+    }
+
+    public function policeNoticeUpdate(Request $request): RedirectResponse
+    {
+        $tenant = TenantContext::get();
+        abort_unless($tenant, 404);
+
+        $validated = $request->validate([
+            'pdf_header.company_name.en' => ['nullable', 'string', 'max:255'],
+            'pdf_header.company_name.ar' => ['nullable', 'string', 'max:255'],
+            'pdf_header.cr_number' => ['nullable', 'string', 'max:100'],
+            'pdf_header.po_box' => ['nullable', 'string', 'max:100'],
+            'pdf_header.pc' => ['nullable', 'string', 'max:100'],
+            'pdf_header.country.en' => ['nullable', 'string', 'max:255'],
+            'pdf_header.country.ar' => ['nullable', 'string', 'max:255'],
+            'pdf_header.gsm_1' => ['nullable', 'string', 'max:100'],
+            'pdf_header.gsm_2' => ['nullable', 'string', 'max:100'],
+            'pdf_header.gsm_3' => ['nullable', 'string', 'max:100'],
+            'pdf_header.registry_label.en' => ['nullable', 'string', 'max:100'],
+            'pdf_header.registry_label.ar' => ['nullable', 'string', 'max:100'],
+
+            'police_notice.company_name.en' => ['nullable', 'string', 'max:255'],
+            'police_notice.company_name.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.registry_label.en' => ['nullable', 'string', 'max:100'],
+            'police_notice.registry_label.ar' => ['nullable', 'string', 'max:100'],
+            'police_notice.subject.en' => ['nullable', 'string', 'max:255'],
+            'police_notice.subject.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.greeting.en' => ['nullable', 'string', 'max:255'],
+            'police_notice.greeting.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.intro.en' => ['nullable', 'string', 'max:4000'],
+            'police_notice.intro.ar' => ['nullable', 'string', 'max:4000'],
+            'police_notice.office_line.en' => ['nullable', 'string', 'max:255'],
+            'police_notice.office_line.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.company_address.en' => ['nullable', 'string', 'max:500'],
+            'police_notice.company_address.ar' => ['nullable', 'string', 'max:500'],
+            'police_notice.company_phone.en' => ['nullable', 'string', 'max:100'],
+            'police_notice.company_phone.ar' => ['nullable', 'string', 'max:100'],
+            'police_notice.vehicle_section_title.en' => ['nullable', 'string', 'max:255'],
+            'police_notice.vehicle_section_title.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.renter_section_title.en' => ['nullable', 'string', 'max:255'],
+            'police_notice.renter_section_title.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.closing_1.en' => ['nullable', 'string', 'max:4000'],
+            'police_notice.closing_1.ar' => ['nullable', 'string', 'max:4000'],
+            'police_notice.closing_2.en' => ['nullable', 'string', 'max:4000'],
+            'police_notice.closing_2.ar' => ['nullable', 'string', 'max:4000'],
+            'police_notice.attachments_title.en' => ['nullable', 'string', 'max:255'],
+            'police_notice.attachments_title.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.attachments.en' => ['nullable', 'string', 'max:4000'],
+            'police_notice.attachments.ar' => ['nullable', 'string', 'max:4000'],
+            'police_notice.signature_name_label.en' => ['nullable', 'string', 'max:255'],
+            'police_notice.signature_name_label.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.signature_title_label.en' => ['nullable', 'string', 'max:255'],
+            'police_notice.signature_title_label.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.signature_date_label.en' => ['nullable', 'string', 'max:255'],
+            'police_notice.signature_date_label.ar' => ['nullable', 'string', 'max:255'],
+            'police_notice.footer_note.en' => ['nullable', 'string', 'max:1000'],
+            'police_notice.footer_note.ar' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        TenantSiteSetting::updateOrCreate(
+            ['tenant_id' => $tenant->id],
+            [
+                'pdf_header' => [
+                    'company_name' => [
+                        'en' => $this->nullableString(data_get($validated, 'pdf_header.company_name.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'pdf_header.company_name.ar')),
+                    ],
+                    'cr_number' => $this->nullableString(data_get($validated, 'pdf_header.cr_number')),
+                    'po_box' => $this->nullableString(data_get($validated, 'pdf_header.po_box')),
+                    'pc' => $this->nullableString(data_get($validated, 'pdf_header.pc')),
+                    'country' => [
+                        'en' => $this->nullableString(data_get($validated, 'pdf_header.country.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'pdf_header.country.ar')),
+                    ],
+                    'gsm_1' => $this->nullableString(data_get($validated, 'pdf_header.gsm_1')),
+                    'gsm_2' => $this->nullableString(data_get($validated, 'pdf_header.gsm_2')),
+                    'gsm_3' => $this->nullableString(data_get($validated, 'pdf_header.gsm_3')),
+                    'registry_label' => [
+                        'en' => $this->nullableString(data_get($validated, 'pdf_header.registry_label.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'pdf_header.registry_label.ar')),
+                    ],
+                ],
+                'police_notice' => [
+                    'company_name' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.company_name.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.company_name.ar')),
+                    ],
+                    'registry_label' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.registry_label.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.registry_label.ar')),
+                    ],
+                    'subject' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.subject.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.subject.ar')),
+                    ],
+                    'greeting' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.greeting.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.greeting.ar')),
+                    ],
+                    'intro' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.intro.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.intro.ar')),
+                    ],
+                    'office_line' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.office_line.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.office_line.ar')),
+                    ],
+                    'company_address' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.company_address.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.company_address.ar')),
+                    ],
+                    'company_phone' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.company_phone.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.company_phone.ar')),
+                    ],
+                    'vehicle_section_title' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.vehicle_section_title.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.vehicle_section_title.ar')),
+                    ],
+                    'renter_section_title' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.renter_section_title.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.renter_section_title.ar')),
+                    ],
+                    'closing_1' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.closing_1.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.closing_1.ar')),
+                    ],
+                    'closing_2' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.closing_2.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.closing_2.ar')),
+                    ],
+                    'attachments_title' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.attachments_title.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.attachments_title.ar')),
+                    ],
+                    'attachments' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.attachments.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.attachments.ar')),
+                    ],
+                    'signature_name_label' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.signature_name_label.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.signature_name_label.ar')),
+                    ],
+                    'signature_title_label' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.signature_title_label.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.signature_title_label.ar')),
+                    ],
+                    'signature_date_label' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.signature_date_label.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.signature_date_label.ar')),
+                    ],
+                    'footer_note' => [
+                        'en' => $this->nullableString(data_get($validated, 'police_notice.footer_note.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'police_notice.footer_note.ar')),
+                    ],
+                ],
+            ]
+        );
+
+        return back()->with('success', 'Police notice settings updated successfully.');
+    }
+
     private function nullableString(mixed $value): ?string
     {
         $value = trim((string) ($value ?? ''));

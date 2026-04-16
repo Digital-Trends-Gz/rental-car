@@ -241,6 +241,7 @@ class DashboardController extends Controller
             'branches'             => $branchOptions,
             'filters'              => ['branch_id' => $branchId],
             'canAccessAllBranches' => $canAccessAllBranches,
+            'policeNoticeSettingsUrl' => route('admin.settings.police-notice.edit'),
         ]);
     }
 

@@ -23,6 +23,9 @@ const props = defineProps<{
             issued_to: string;
             edit_url: string;
             destroy_url: string;
+            notice_pdf_url: string;
+            notice_print_url: string;
+            notice_edit_url: string;
         }>;
         links: Array<{ url: string | null; label: string; active: boolean }>;
     };
@@ -281,6 +284,11 @@ function deleteViolation(url: string, numberText: string | null) {
                                 {{ row.violation_date || '-' }}
                             </td>
                             <td class="space-x-2 px-4 py-3 text-right">
+                                <Button as-child size="sm" variant="secondary">
+                                    <Link :href="row.notice_edit_url">
+                                        Violation Police
+                                    </Link>
+                                </Button>
                                 <Link :href="row.edit_url">
                                     <Button size="sm" variant="outline">{{
                                         t('dashboard.admin.common.edit')

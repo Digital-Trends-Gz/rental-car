@@ -24,6 +24,7 @@ class TenantSiteSetting extends Model
         'contact',
         'contact_page',
         'pdf_header',
+        'police_notice',
         'translations',
         'footer',
     ];
@@ -36,6 +37,7 @@ class TenantSiteSetting extends Model
         'contact' => 'array',
         'contact_page' => 'array',
         'pdf_header' => 'array',
+        'police_notice' => 'array',
         'translations' => 'array',
         'footer' => 'array',
     ];
@@ -167,6 +169,154 @@ class TenantSiteSetting extends Model
                 'gsm_2' => null,
                 'gsm_3' => null,
                 'registry_label' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+            ],
+            'police_notice' => [
+                'company_name' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'registry_label' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'subject' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'greeting' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'intro' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'office_line' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'company_address' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'company_phone' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'vehicle_section_title' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'renter_section_title' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'closing_1' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'closing_2' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'attachments_title' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'attachments' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'signature_name_label' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'signature_title_label' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'signature_date_label' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'footer_note' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+            ],
+            'police_notice' => [
+                'company_name' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'registry_label' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'subject' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'greeting' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'intro' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'office_line' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'company_address' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'company_phone' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'vehicle_section_title' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'renter_section_title' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'closing_1' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'closing_2' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'attachments_title' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'attachments' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'signature_name_label' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'signature_title_label' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'signature_date_label' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'footer_note' => [
                     'en' => null,
                     'ar' => null,
                 ],
@@ -319,6 +469,80 @@ class TenantSiteSetting extends Model
                 'registry_label' => [
                     'en' => self::nullableString(data_get($data, 'pdf_header.registry_label.en')),
                     'ar' => self::nullableString(data_get($data, 'pdf_header.registry_label.ar')),
+                ],
+            ],
+            'police_notice' => [
+                'company_name' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.company_name.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.company_name.ar')),
+                ],
+                'registry_label' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.registry_label.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.registry_label.ar')),
+                ],
+                'subject' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.subject.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.subject.ar')),
+                ],
+                'greeting' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.greeting.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.greeting.ar')),
+                ],
+                'intro' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.intro.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.intro.ar')),
+                ],
+                'office_line' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.office_line.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.office_line.ar')),
+                ],
+                'company_address' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.company_address.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.company_address.ar')),
+                ],
+                'company_phone' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.company_phone.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.company_phone.ar')),
+                ],
+                'vehicle_section_title' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.vehicle_section_title.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.vehicle_section_title.ar')),
+                ],
+                'renter_section_title' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.renter_section_title.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.renter_section_title.ar')),
+                ],
+                'closing_1' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.closing_1.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.closing_1.ar')),
+                ],
+                'closing_2' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.closing_2.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.closing_2.ar')),
+                ],
+                'attachments_title' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.attachments_title.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.attachments_title.ar')),
+                ],
+                'attachments' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.attachments.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.attachments.ar')),
+                ],
+                'signature_name_label' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.signature_name_label.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.signature_name_label.ar')),
+                ],
+                'signature_title_label' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.signature_title_label.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.signature_title_label.ar')),
+                ],
+                'signature_date_label' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.signature_date_label.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.signature_date_label.ar')),
+                ],
+                'footer_note' => [
+                    'en' => self::nullableString(data_get($data, 'police_notice.footer_note.en')),
+                    'ar' => self::nullableString(data_get($data, 'police_notice.footer_note.ar')),
                 ],
             ],
             'translations' => self::normalizeTranslations($data['translations'] ?? $defaults['translations']),

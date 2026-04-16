@@ -5,6 +5,7 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Car,
+    FileText,
     Users,
     DollarSign,
     Calendar,
@@ -88,6 +89,7 @@ const props = defineProps<{
     branches: Array<{ id: number; name: string }>;
     filters: { branch_id: number | null };
     canAccessAllBranches: boolean;
+    policeNoticeSettingsUrl: string;
 }>();
 
 const { locale } = useTrans();
@@ -220,6 +222,16 @@ const kpiCards = computed(() => [
                         <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="flex justify-end">
+                <Link
+                    :href="policeNoticeSettingsUrl"
+                    class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
+                >
+                    <FileText class="h-4 w-4" />
+                    {{ localize('Police Notice Profile', 'ملف إشعار الشرطة') }}
+                </Link>
             </div>
 
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-7">

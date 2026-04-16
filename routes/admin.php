@@ -79,6 +79,12 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->except(['show'])
             ->parameters(['car-violations' => 'carViolation'])
             ->middleware('permission:tenant-manage-cars');
+        Route::get('car-violations/{carViolation}/notice', [CarViolationsController::class, 'noticeEdit'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('car-violations.notice.edit');
+        Route::put('car-violations/{carViolation}/notice', [CarViolationsController::class, 'noticeUpdate'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('car-violations.notice.update');
         Route::get('car-violations/{carViolation}/notice/pdf', [CarViolationsController::class, 'noticePdf'])
             ->middleware('permission:tenant-manage-cars')
             ->name('car-violations.notice.pdf');
@@ -221,6 +227,12 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::put('settings/website', [WebsiteSettingsController::class, 'update'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.website.update');
+        Route::get('settings/police-notice', [WebsiteSettingsController::class, 'policeNoticeEdit'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.police-notice.edit');
+        Route::put('settings/police-notice', [WebsiteSettingsController::class, 'policeNoticeUpdate'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.police-notice.update');
         Route::get('settings/translations', [TranslationSettingsController::class, 'edit'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.translations.edit');
@@ -245,7 +257,6 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->name('settings.stripe-connect.login-link');
 
     });
-
 
 
 
