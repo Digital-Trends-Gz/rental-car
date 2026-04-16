@@ -259,6 +259,7 @@
     $companyNameClean = $companyName ?? config('app.name');
     $companyNameArabicClean = $companyNameArabic ?? $companyNameClean;
     $violationNo = $violation->violation_number ?: ('VIOL-'.$violation->id);
+    $serialNumber = 'VIO-'.\Illuminate\Support\Carbon::parse($violation->violation_date ?? now())->format('jnY').'-'.$violation->id;
     $generatedDate = $formatDate($generatedAt ?? now());
 
     $department = trim((string) data_get($pdfHeader, 'registry_label.ar')) !== ''
@@ -352,7 +353,7 @@
             </td>
             <td class="header-right">
                 <div dir="rtl">{{ $headerRegistryLabelAr }} :</div>
-                <!-- <div class="serial-no" dir="rtl">رقم المخالفة : <span>{{ $violationNo }}</span></div> -->
+                <div class="serial-no" dir="rtl">رقم التسلسي : <span>{{ $serialNumber }}</span></div>
                 <div dir="rtl">ص.ب : {{ $headerPoBox }}</div>
                 <div dir="rtl">الرمز البريدي : {{ $headerPc }}</div>
                 <div dir="rtl">نقال : {{ $headerGsm1 }}</div>
