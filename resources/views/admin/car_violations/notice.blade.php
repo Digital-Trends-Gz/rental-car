@@ -352,7 +352,7 @@
                 <div class="company-name-ar">{{ $headerCompanyNameAr }}</div>
             </td>
             <td class="header-right">
-                <!-- <div dir="rtl">{{ $headerRegistryLabelAr }} </div> -->
+                <div dir="rtl">س.ت : {{ $headerCrNumber }}</div>
                 <div dir="rtl">ص.ب : {{ $headerPoBox }}</div>
                 <div dir="rtl">الرمز البريدي : {{ $headerPc }}</div>
                 <div dir="rtl">نقال : {{ $headerGsm1 }}</div>

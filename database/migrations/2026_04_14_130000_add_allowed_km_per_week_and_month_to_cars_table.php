@@ -9,12 +9,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('cars', function (Blueprint $table): void {
+            if (! Schema::hasColumn('cars', 'allowed_km_per_day')) {
+                $table->unsignedInteger('allowed_km_per_day')->nullable();
+            }
+
             if (! Schema::hasColumn('cars', 'allowed_km_per_week')) {
-                $table->unsignedInteger('allowed_km_per_week')->nullable()->after('allowed_km_per_day');
+                $table->unsignedInteger('allowed_km_per_week')->nullable();
             }
 
             if (! Schema::hasColumn('cars', 'allowed_km_per_month')) {
-                $table->unsignedInteger('allowed_km_per_month')->nullable()->after('allowed_km_per_week');
+                $table->unsignedInteger('allowed_km_per_month')->nullable();
             }
         });
     }
