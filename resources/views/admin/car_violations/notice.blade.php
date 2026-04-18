@@ -352,13 +352,14 @@
                 <div class="company-name-ar">{{ $headerCompanyNameAr }}</div>
             </td>
             <td class="header-right">
-                <div dir="rtl">{{ $headerRegistryLabelAr }} :</div>
-                <div class="serial-no" dir="rtl">رقم التسلسي : <span>{{ $serialNumber }}</span></div>
+                <!-- <div dir="rtl">{{ $headerRegistryLabelAr }} </div> -->
                 <div dir="rtl">ص.ب : {{ $headerPoBox }}</div>
                 <div dir="rtl">الرمز البريدي : {{ $headerPc }}</div>
                 <div dir="rtl">نقال : {{ $headerGsm1 }}</div>
                 <div dir="rtl">نقال : {{ $headerGsm2 }}</div>
                 <div dir="rtl">نقال : {{ $headerGsm3 }}</div>
+                <div class="serial-no" dir="rtl">رقم التسلسي : <span>{{ $serialNumber }}</span></div>
+
             </td>
         </tr>
     </table>
