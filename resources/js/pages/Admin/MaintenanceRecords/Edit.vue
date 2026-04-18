@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
     record: {
@@ -43,6 +44,7 @@ const props = defineProps<{
 }>();
 
 const isEdit = computed(() => !!props.record);
+const { t } = useTrans();
 
 const form = useForm({
     car_id: props.record?.car_id ? String(props.record.car_id) : props.initialCarId ? String(props.initialCarId) : '',
@@ -145,15 +147,25 @@ function submit() {
 </script>
 
 <template>
-    <Head :title="isEdit ? 'Edit Maintenance Record' : 'Create Maintenance Record'" />
+    <Head
+        :title="
+            isEdit
+                ? t('dashboard.admin.maintenance_records.edit.head_title_edit')
+                : t('dashboard.admin.maintenance_records.edit.head_title_create')
+        "
+    />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">
-                    {{ isEdit ? 'Edit Maintenance Record' : 'Create Maintenance Record' }}
+                    {{
+                        isEdit
+                            ? t('dashboard.admin.maintenance_records.edit.title_edit')
+                            : t('dashboard.admin.maintenance_records.edit.title_create')
+                    }}
                 </h1>
                 <Link :href="indexUrl">
-                    <Button variant="outline">Back</Button>
+                    <Button variant="outline">{{ t('dashboard.admin.common.back') }}</Button>
                 </Link>
             </div>
 
@@ -161,14 +173,14 @@ function submit() {
                 <form class="space-y-6" @submit.prevent="submit">
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="space-y-2">
-                            <Label for="car_id">Car</Label>
+                            <Label for="car_id">{{ t('dashboard.admin.maintenance_records.edit.fields.car') }}</Label>
                             <select
                                 id="car_id"
                                 v-model="form.car_id"
                                 class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 required
                             >
-                                <option value="" disabled>Select a car</option>
+                                <option value="" disabled>{{ t('dashboard.admin.maintenance_records.edit.placeholders.select_car') }}</option>
                                 <option v-for="car in cars" :key="car.id" :value="String(car.id)">
                                     {{ car.label }}
                                 </option>
@@ -177,13 +189,13 @@ function submit() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="maintenance_type_id">Maintenance Type</Label>
+                            <Label for="maintenance_type_id">{{ t('dashboard.admin.maintenance_records.edit.fields.maintenance_type') }}</Label>
                             <select
                                 id="maintenance_type_id"
                                 v-model="form.maintenance_type_id"
                                 class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                             >
-                                <option value="">Select type</option>
+                                <option value="">{{ t('dashboard.admin.maintenance_records.edit.placeholders.select_type') }}</option>
                                 <option v-for="type in maintenanceTypes" :key="type.id" :value="String(type.id)">
                                     {{ type.name }}
                                 </option>
@@ -192,7 +204,7 @@ function submit() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="status">Status</Label>
+                            <Label for="status">{{ t('dashboard.admin.maintenance_records.edit.fields.status') }}</Label>
                             <select
                                 id="status"
                                 v-model="form.status"
@@ -207,37 +219,37 @@ function submit() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="scheduled_date">Scheduled Date</Label>
+                            <Label for="scheduled_date">{{ t('dashboard.admin.maintenance_records.edit.fields.scheduled_date') }}</Label>
                             <Input id="scheduled_date" v-model="form.scheduled_date" type="date" />
                             <InputError :message="form.errors.scheduled_date" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="started_at">Started At</Label>
+                            <Label for="started_at">{{ t('dashboard.admin.maintenance_records.edit.fields.started_at') }}</Label>
                             <Input id="started_at" v-model="form.started_at" type="datetime-local" />
                             <InputError :message="form.errors.started_at" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="completed_at">Completed At</Label>
+                            <Label for="completed_at">{{ t('dashboard.admin.maintenance_records.edit.fields.completed_at') }}</Label>
                             <Input id="completed_at" v-model="form.completed_at" type="datetime-local" />
                             <InputError :message="form.errors.completed_at" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="cost">Cost</Label>
+                            <Label for="cost">{{ t('dashboard.admin.maintenance_records.edit.fields.cost') }}</Label>
                             <Input id="cost" v-model="form.cost" min="0" step="0.01" type="number" />
                             <InputError :message="form.errors.cost" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="odometer">Odometer</Label>
+                            <Label for="odometer">{{ t('dashboard.admin.maintenance_records.edit.fields.odometer') }}</Label>
                             <Input id="odometer" v-model="form.odometer" min="0" step="1" type="number" />
                             <InputError :message="form.errors.odometer" />
                         </div>
 
                         <div class="space-y-2 md:col-span-2">
-                            <Label for="maintenance_workshop_search">Workshop</Label>
+                            <Label for="maintenance_workshop_search">{{ t('dashboard.admin.maintenance_records.edit.fields.workshop') }}</Label>
                             <div class="relative">
                                 <Input
                                     id="maintenance_workshop_search"
@@ -245,10 +257,10 @@ function submit() {
                                     :disabled="!form.maintenance_type_id || availableWorkshops.length === 0"
                                     :placeholder="
                                         !form.maintenance_type_id
-                                            ? 'Select maintenance type first'
+                                            ? t('dashboard.admin.maintenance_records.edit.placeholders.select_type_first')
                                             : availableWorkshops.length === 0
-                                              ? 'No workshops available for this type'
-                                              : 'Search workshop...'
+                                              ? t('dashboard.admin.maintenance_records.edit.placeholders.no_workshops_for_type')
+                                              : t('dashboard.admin.maintenance_records.edit.placeholders.search_workshop')
                                     "
                                     autocomplete="off"
                                     @focus="workshopMenuOpen = true"
@@ -266,7 +278,7 @@ function submit() {
                                     @mousedown.prevent
                                     @click="clearWorkshop"
                                 >
-                                    Clear
+                                    {{ t('dashboard.admin.common.clear') }}
                                 </button>
 
                                 <div
@@ -285,7 +297,7 @@ function submit() {
                                     </button>
 
                                     <div v-if="filteredWorkshops.length === 0" class="px-3 py-2 text-sm text-muted-foreground">
-                                        No workshops found.
+                                        {{ t('dashboard.admin.maintenance_records.edit.empty_workshops') }}
                                     </div>
                                 </div>
                             </div>
@@ -293,7 +305,7 @@ function submit() {
                         </div>
 
                         <div class="space-y-2 md:col-span-2">
-                            <Label for="notes">Notes</Label>
+                            <Label for="notes">{{ t('dashboard.admin.maintenance_records.edit.fields.notes') }}</Label>
                             <textarea
                                 id="notes"
                                 v-model="form.notes"
@@ -306,10 +318,16 @@ function submit() {
 
                     <div class="flex items-center gap-3">
                         <Button :disabled="form.processing" type="submit">
-                            {{ form.processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Record' }}
+                            {{
+                                form.processing
+                                    ? t('dashboard.admin.common.saving')
+                                    : isEdit
+                                        ? t('dashboard.admin.common.save_changes')
+                                        : t('dashboard.admin.maintenance_records.edit.create_record')
+                            }}
                         </Button>
                         <Link :href="indexUrl">
-                            <Button type="button" variant="outline">Cancel</Button>
+                            <Button type="button" variant="outline">{{ t('dashboard.admin.common.cancel') }}</Button>
                         </Link>
                     </div>
                 </form>

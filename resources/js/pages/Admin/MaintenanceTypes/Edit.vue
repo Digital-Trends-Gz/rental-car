@@ -8,6 +8,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { City } from 'country-state-city';
 import { computed } from 'vue';
+import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
     maintenanceType: {
@@ -39,6 +40,7 @@ const props = defineProps<{
 }>();
 
 const isEdit = computed(() => !!props.maintenanceType);
+const { t } = useTrans();
 
 const form = useForm({
     name: props.maintenanceType?.name ?? '',
@@ -152,28 +154,38 @@ function submit() {
 </script>
 
 <template>
-    <Head :title="isEdit ? 'Edit Maintenance Type' : 'Create Maintenance Type'" />
+    <Head
+        :title="
+            isEdit
+                ? t('dashboard.admin.maintenance_types.edit.head_title_edit')
+                : t('dashboard.admin.maintenance_types.edit.head_title_create')
+        "
+    />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">
-                    {{ isEdit ? 'Edit Maintenance Type' : 'Create Maintenance Type' }}
+                    {{
+                        isEdit
+                            ? t('dashboard.admin.maintenance_types.edit.title_edit')
+                            : t('dashboard.admin.maintenance_types.edit.title_create')
+                    }}
                 </h1>
                 <Link :href="indexUrl">
-                    <Button variant="outline">Back</Button>
+                    <Button variant="outline">{{ t('dashboard.admin.common.back') }}</Button>
                 </Link>
             </div>
 
             <div class="max-w-5xl">
                 <form class="space-y-6" @submit.prevent="submit">
                     <div class="space-y-2">
-                        <Label for="name">Name</Label>
+                        <Label for="name">{{ t('dashboard.admin.maintenance_types.edit.fields.name') }}</Label>
                         <Input id="name" v-model="form.name" required />
                         <InputError :message="form.errors.name" />
                     </div>
 
                     <div class="space-y-2">
-                        <Label for="description">Description</Label>
+                        <Label for="description">{{ t('dashboard.admin.maintenance_types.edit.fields.description') }}</Label>
                         <textarea
                             id="description"
                             v-model="form.description"
@@ -184,30 +196,32 @@ function submit() {
                     </div>
 
                     <div class="space-y-2">
-                        <Label for="sort_order">Sort Order</Label>
+                        <Label for="sort_order">{{ t('dashboard.admin.maintenance_types.edit.fields.sort_order') }}</Label>
                         <Input id="sort_order" v-model="form.sort_order" min="0" step="1" type="number" />
                         <InputError :message="form.errors.sort_order" />
                     </div>
 
                     <label class="flex items-center gap-2">
                         <input v-model="form.is_active" class="h-4 w-4" type="checkbox" />
-                        <span class="text-sm font-medium">Active</span>
+                        <span class="text-sm font-medium">{{ t('dashboard.admin.maintenance_types.edit.fields.active') }}</span>
                     </label>
                     <InputError :message="form.errors.is_active" />
 
                     <div class="space-y-4 rounded-lg border p-4">
                         <div class="flex items-center justify-between gap-4">
                             <div>
-                                <h2 class="text-lg font-semibold">Workshops</h2>
+                                <h2 class="text-lg font-semibold">{{ t('dashboard.admin.maintenance_types.edit.workshops.title') }}</h2>
                                 <p class="text-sm text-muted-foreground">
-                                    Add one or more workshops for this maintenance type.
+                                    {{ t('dashboard.admin.maintenance_types.edit.workshops.subtitle') }}
                                 </p>
                             </div>
-                            <Button type="button" variant="outline" @click="addWorkshop">Add Workshop</Button>
+                            <Button type="button" variant="outline" @click="addWorkshop">
+                                {{ t('dashboard.admin.maintenance_types.edit.workshops.add') }}
+                            </Button>
                         </div>
 
                         <div v-if="form.workshops.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                            No workshops added yet.
+                            {{ t('dashboard.admin.maintenance_types.edit.workshops.empty') }}
                         </div>
 
                         <div
@@ -216,25 +230,29 @@ function submit() {
                             class="space-y-4 rounded-lg border p-4"
                         >
                             <div class="flex items-center justify-between gap-4">
-                                <h3 class="font-medium">Workshop {{ index + 1 }}</h3>
-                                <Button type="button" variant="destructive" @click="removeWorkshop(index)">Remove</Button>
+                                <h3 class="font-medium">
+                                    {{ t('dashboard.admin.maintenance_types.edit.workshops.item_title', { index: index + 1 }) }}
+                                </h3>
+                                <Button type="button" variant="destructive" @click="removeWorkshop(index)">
+                                    {{ t('dashboard.admin.common.delete') }}
+                                </Button>
                             </div>
 
                             <div class="grid gap-4 md:grid-cols-3">
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-name-${index}`">Name</Label>
+                                    <Label :for="`workshop-name-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.name') }}</Label>
                                     <Input :id="`workshop-name-${index}`" v-model="workshop.name" />
                                     <InputError :message="form.errors[`workshops.${index}.name`]" />
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-phone-${index}`">Phone</Label>
+                                    <Label :for="`workshop-phone-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.phone') }}</Label>
                                     <Input :id="`workshop-phone-${index}`" v-model="workshop.phone" />
                                     <InputError :message="form.errors[`workshops.${index}.phone`]" />
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-rate-${index}`">Rate</Label>
+                                    <Label :for="`workshop-rate-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.rate') }}</Label>
                                     <Input :id="`workshop-rate-${index}`" v-model="workshop.rate" max="5" min="0" step="0.1" type="number" />
                                     <InputError :message="form.errors[`workshops.${index}.rate`]" />
                                 </div>
@@ -242,14 +260,14 @@ function submit() {
 
                             <div class="grid gap-4 md:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-country-${index}`">Country</Label>
+                                    <Label :for="`workshop-country-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.country') }}</Label>
                                     <select
                                         :id="`workshop-country-${index}`"
                                         v-model="workshop.country"
                                         class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                                         @change="onWorkshopCountryChanged(index)"
                                     >
-                                        <option value="">Select country</option>
+                                        <option value="">{{ t('dashboard.admin.maintenance_types.edit.workshops.placeholders.select_country') }}</option>
                                         <option v-for="country in countries" :key="country.value" :value="country.value">
                                             {{ country.label }}
                                         </option>
@@ -258,14 +276,20 @@ function submit() {
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-city-${index}`">City</Label>
+                                    <Label :for="`workshop-city-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.city') }}</Label>
                                     <select
                                         :id="`workshop-city-${index}`"
                                         v-model="workshop.city"
                                         class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                                         :disabled="!workshop.country"
                                     >
-                                        <option value="">{{ workshop.country ? 'Select city' : 'Select country first' }}</option>
+                                        <option value="">
+                                            {{
+                                                workshop.country
+                                                    ? t('dashboard.admin.maintenance_types.edit.workshops.placeholders.select_city')
+                                                    : t('dashboard.admin.maintenance_types.edit.workshops.placeholders.select_country_first')
+                                            }}
+                                        </option>
                                         <option
                                             v-for="city in availableCities(workshop.country)"
                                             :key="city.value"
@@ -278,44 +302,44 @@ function submit() {
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-street-name-${index}`">Street Name</Label>
+                                    <Label :for="`workshop-street-name-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.street_name') }}</Label>
                                     <Input :id="`workshop-street-name-${index}`" v-model="workshop.street_name" />
                                     <InputError :message="form.errors[`workshops.${index}.street_name`]" />
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-street-number-${index}`">Street Number</Label>
+                                    <Label :for="`workshop-street-number-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.street_number') }}</Label>
                                     <Input :id="`workshop-street-number-${index}`" v-model="workshop.street_number" />
                                     <InputError :message="form.errors[`workshops.${index}.street_number`]" />
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-building-number-${index}`">Building Number</Label>
+                                    <Label :for="`workshop-building-number-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.building_number') }}</Label>
                                     <Input :id="`workshop-building-number-${index}`" v-model="workshop.building_number" />
                                     <InputError :message="form.errors[`workshops.${index}.building_number`]" />
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-office-number-${index}`">Office Number</Label>
+                                    <Label :for="`workshop-office-number-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.office_number') }}</Label>
                                     <Input :id="`workshop-office-number-${index}`" v-model="workshop.office_number" />
                                     <InputError :message="form.errors[`workshops.${index}.office_number`]" />
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-post-code-${index}`">Post Code</Label>
+                                    <Label :for="`workshop-post-code-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.post_code') }}</Label>
                                     <Input :id="`workshop-post-code-${index}`" v-model="workshop.post_code" />
                                     <InputError :message="form.errors[`workshops.${index}.post_code`]" />
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label :for="`workshop-google-map-${index}`">Google Map URL</Label>
+                                    <Label :for="`workshop-google-map-${index}`">{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.google_map_url') }}</Label>
                                     <Input :id="`workshop-google-map-${index}`" v-model="workshop.google_map_url" />
                                     <InputError :message="form.errors[`workshops.${index}.google_map_url`]" />
                                 </div>
                             </div>
 
                             <div class="space-y-2">
-                                <Label>Front Image (Optional)</Label>
+                                <Label>{{ t('dashboard.admin.maintenance_types.edit.workshops.fields.front_image') }}</Label>
                                 <FileUpload
                                     v-model="workshop.front_image_temp_folders"
                                     :initial-files="workshop.frontImageFiles || []"
@@ -333,10 +357,16 @@ function submit() {
 
                     <div class="flex items-center gap-3">
                         <Button :disabled="form.processing" type="submit">
-                            {{ form.processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Type' }}
+                            {{
+                                form.processing
+                                    ? t('dashboard.admin.common.saving')
+                                    : isEdit
+                                        ? t('dashboard.admin.common.save_changes')
+                                        : t('dashboard.admin.maintenance_types.edit.create_type')
+                            }}
                         </Button>
                         <Link :href="indexUrl">
-                            <Button type="button" variant="outline">Cancel</Button>
+                            <Button type="button" variant="outline">{{ t('dashboard.admin.common.cancel') }}</Button>
                         </Link>
                     </div>
                 </form>

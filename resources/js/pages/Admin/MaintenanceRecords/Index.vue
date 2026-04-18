@@ -4,6 +4,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { computed, ref, watch } from 'vue';
+import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
     records: {
@@ -37,6 +38,7 @@ const props = defineProps<{
     createUrl: string;
 }>();
 
+const { t } = useTrans();
 const search = ref(props.filters?.search ?? '');
 const status = ref(props.filters?.status || 'all');
 const branchId = ref<string>(props.filters?.branch_id ? String(props.filters.branch_id) : '');
@@ -68,7 +70,7 @@ watch(search, (newValue, oldValue) => {
 });
 
 function deleteRecord(url: string, car: string) {
-    const confirmed = window.confirm(`Delete maintenance record for "${car}"?`);
+    const confirmed = window.confirm(t('dashboard.admin.maintenance_records.index.delete_confirm', { car }));
     if (!confirmed) return;
 
     router.delete(url, { preserveScroll: true });
@@ -76,13 +78,13 @@ function deleteRecord(url: string, car: string) {
 </script>
 
 <template>
-    <Head title="Maintenance Records" />
+    <Head :title="t('dashboard.admin.maintenance_records.index.head_title')" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
-                <h1 class="text-2xl font-semibold">Maintenance Records</h1>
+                <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.maintenance_records.index.title') }}</h1>
                 <Link :href="createUrl">
-                    <Button>+ New Record</Button>
+                    <Button>+ {{ t('dashboard.admin.maintenance_records.index.new_record') }}</Button>
                 </Link>
             </div>
 
@@ -90,11 +92,11 @@ function deleteRecord(url: string, car: string) {
                 <Input
                     v-model="search"
                     class="md:col-span-2"
-                    placeholder="Search car, workshop, notes..."
+                    :placeholder="t('dashboard.admin.maintenance_records.index.search_placeholder')"
                     @keyup.enter="doSearch"
                 />
                 <select v-model="status" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="all">All statuses</option>
+                    <option value="all">{{ t('dashboard.admin.maintenance_records.index.all_statuses') }}</option>
                     <option v-for="item in statuses" :key="item.value" :value="item.value">
                         {{ item.label }}
                     </option>
@@ -104,13 +106,13 @@ function deleteRecord(url: string, car: string) {
                     v-model="branchId"
                     class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                    <option value="">All branches</option>
+                    <option value="">{{ t('dashboard.admin.maintenance_records.index.all_branches') }}</option>
                     <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">
                         {{ branch.name }}
                     </option>
                 </select>
                 <select v-model="carId" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="">All cars</option>
+                    <option value="">{{ t('dashboard.admin.maintenance_records.index.all_cars') }}</option>
                     <option v-for="car in cars" :key="car.id" :value="String(car.id)">
                         {{ car.label }}
                     </option>
@@ -118,7 +120,7 @@ function deleteRecord(url: string, car: string) {
             </div>
 
             <div class="flex items-center gap-2">
-                <Button @click="doSearch">Search</Button>
+                <Button @click="doSearch">{{ t('dashboard.admin.maintenance_records.index.search') }}</Button>
                 <Button
                     variant="outline"
                     @click="
@@ -129,7 +131,7 @@ function deleteRecord(url: string, car: string) {
                         doSearch();
                     "
                 >
-                    Clear
+                    {{ t('dashboard.admin.maintenance_records.index.clear') }}
                 </Button>
             </div>
 
@@ -137,12 +139,12 @@ function deleteRecord(url: string, car: string) {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Car</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Type</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Scheduled</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Cost</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Branch</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_records.index.table.car') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_records.index.table.type') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_records.index.table.status') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_records.index.table.scheduled') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_records.index.table.cost') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_records.index.table.branch') }}</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
@@ -160,13 +162,13 @@ function deleteRecord(url: string, car: string) {
                             <td class="px-4 py-3 text-sm text-gray-700">{{ row.branch }}</td>
                             <td class="space-x-2 px-4 py-3 text-right">
                                 <Link :href="row.edit_url">
-                                    <Button size="sm" variant="outline">Edit</Button>
+                                    <Button size="sm" variant="outline">{{ t('dashboard.common.edit') }}</Button>
                                 </Link>
-                                <Button size="sm" variant="destructive" @click="deleteRecord(row.destroy_url, row.car)">Delete</Button>
+                                <Button size="sm" variant="destructive" @click="deleteRecord(row.destroy_url, row.car)">{{ t('dashboard.common.delete') }}</Button>
                             </td>
                         </tr>
                         <tr v-if="!hasRows">
-                            <td colspan="7" class="px-4 py-6 text-center text-gray-500">No maintenance records found.</td>
+                            <td colspan="7" class="px-4 py-6 text-center text-gray-500">{{ t('dashboard.admin.maintenance_records.index.empty') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -189,4 +191,3 @@ function deleteRecord(url: string, car: string) {
         </main>
     </AdminLayout>
 </template>
-

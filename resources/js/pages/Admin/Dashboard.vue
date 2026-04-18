@@ -92,7 +92,8 @@ const props = defineProps<{
     policeNoticeSettingsUrl: string;
 }>();
 
-const { locale } = useTrans();
+const { locale, direction } = useTrans();
+const isRtl = computed(() => direction.value === 'rtl');
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const page = usePage<any>();
@@ -200,9 +201,12 @@ const kpiCards = computed(() => [
 <template>
     <Head :title="localize('Dashboard', 'لوحة التحكم')" />
     <AdminLayout>
-        <main class="flex-1 space-y-6 p-6 lg:p-8">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex items-center gap-3">
+        <main class="flex-1 space-y-6 p-6 lg:p-8" :dir="direction" :class="isRtl ? 'text-right' : 'text-left'">
+            <div
+                class="flex flex-col gap-4 sm:items-center sm:justify-between"
+                :class="isRtl ? 'sm:flex-row-reverse' : 'sm:flex-row'"
+            >
+                <div class="flex items-center gap-3" :class="isRtl ? 'flex-row-reverse' : ''">
                     <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow">
                         <LayoutDashboard class="h-5 w-5" />
                     </div>
@@ -212,7 +216,7 @@ const kpiCards = computed(() => [
                     </div>
                 </div>
 
-                <div v-if="canAccessAllBranches && branches.length > 1" class="flex items-center gap-2">
+                <div v-if="canAccessAllBranches && branches.length > 1" class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
                     <select
                         v-model="selectedBranch"
                         class="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
@@ -224,7 +228,7 @@ const kpiCards = computed(() => [
                 </div>
             </div>
 
-            <div class="flex justify-end">
+            <div class="flex" :class="isRtl ? 'justify-start' : 'justify-end'">
                 <Link
                     :href="policeNoticeSettingsUrl"
                     class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
@@ -242,14 +246,14 @@ const kpiCards = computed(() => [
                 >
                     <div class="absolute inset-x-0 top-0 h-1 rounded-t-xl" :style="{ background: card.accent }" />
                     <CardHeader class="pb-2 pt-4">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
                             <CardTitle class="text-xs font-medium text-muted-foreground">{{ card.title }}</CardTitle>
                             <div class="flex h-8 w-8 items-center justify-center rounded-lg" :style="{ background: card.bg }">
                                 <component :is="card.icon" class="h-4 w-4" :style="{ color: card.accent }" />
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent :class="isRtl ? 'text-right' : ''">
                         <div class="text-2xl font-bold">{{ card.value }}</div>
                         <p class="mt-0.5 text-xs text-muted-foreground">{{ card.sub }}</p>
                     </CardContent>
@@ -258,8 +262,8 @@ const kpiCards = computed(() => [
 
             <Card class="border-0 shadow-sm">
                 <CardHeader>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
+                    <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
+                        <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
                             <Clock class="h-4 w-4 text-primary" />
                             <CardTitle class="text-base">{{ localize('Expiring Car Documents', 'وثائق السيارات القريبة من الانتهاء') }}</CardTitle>
                         </div>
@@ -276,11 +280,11 @@ const kpiCards = computed(() => [
                     <table v-else class="w-full text-sm">
                         <thead>
                             <tr class="border-b">
-                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Type', 'النوع') }}</th>
-                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Car', 'السيارة') }}</th>
-                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Expiry Date', 'تاريخ الانتهاء') }}</th>
-                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Remaining', 'المتبقي') }}</th>
-                                <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Action', 'الإجراء') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Type', 'النوع') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Car', 'السيارة') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Expiry Date', 'تاريخ الانتهاء') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Remaining', 'المتبقي') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Action', 'الإجراء') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -290,7 +294,7 @@ const kpiCards = computed(() => [
                                 class="border-b last:border-0 transition-colors hover:bg-muted/40"
                             >
                                 <td class="px-4 py-3 font-medium">{{ documentTypeLabel(document.type) }}</td>
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
                                     <div class="font-medium">{{ document.car_name || localize('Unknown car', 'سيارة غير معروفة') }}</div>
                                     <div v-if="document.license_plate" class="text-xs text-muted-foreground">{{ document.license_plate }}</div>
                                 </td>
@@ -300,7 +304,7 @@ const kpiCards = computed(() => [
                                         {{ daysRemainingLabel(document.days_remaining) }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 text-right">
+                                <td class="px-4 py-3" :class="isRtl ? 'text-left' : 'text-right'">
                                     <Link :href="document.edit_url" class="text-xs text-primary hover:underline">
                                         {{ localize('Open', 'فتح') }}
                                     </Link>
@@ -313,8 +317,8 @@ const kpiCards = computed(() => [
 
             <Card class="border-0 shadow-sm">
                 <CardHeader>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
+                    <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
+                        <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
                             <Clock class="h-4 w-4 text-primary" />
                             <CardTitle class="text-base">{{ localize('Pending Violations', 'المخالفات المعلقة') }}</CardTitle>
                         </div>
@@ -331,11 +335,11 @@ const kpiCards = computed(() => [
                     <table v-else class="w-full text-sm">
                         <thead>
                             <tr class="border-b">
-                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Number', 'الرقم') }}</th>
-                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Car', 'السيارة') }}</th>
-                                <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Date', 'التاريخ') }}</th>
-                                <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Amount', 'المبلغ') }}</th>
-                                <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Action', 'الإجراء') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Number', 'الرقم') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Car', 'السيارة') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Date', 'التاريخ') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Amount', 'المبلغ') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Action', 'الإجراء') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -344,11 +348,11 @@ const kpiCards = computed(() => [
                                 :key="violation.id"
                                 class="border-b last:border-0 transition-colors hover:bg-muted/40"
                             >
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
                                     <div class="font-medium">{{ violation.violation_number }}</div>
                                     <div class="text-xs text-muted-foreground">{{ violation.type }}</div>
                                 </td>
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
                                     <div class="font-medium">{{ violation.car_name || localize('Unknown car', 'سيارة غير معروفة') }}</div>
                                     <div class="text-xs text-muted-foreground">
                                         <span v-if="violation.license_plate">{{ violation.license_plate }}</span>
@@ -357,14 +361,14 @@ const kpiCards = computed(() => [
                                         </span>
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-xs text-muted-foreground">
+                                <td class="px-4 py-3 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : ''">
                                     {{ fmtDate(violation.violation_date) }}
                                     <div v-if="violation.due_date">{{ localize('Due', 'الاستحقاق') }}: {{ fmtDate(violation.due_date) }}</div>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-right font-semibold">
+                                <td class="whitespace-nowrap px-4 py-3 font-semibold" :class="isRtl ? 'text-left' : 'text-right'">
                                     {{ fmtCurrency(violation.amount) }}
                                 </td>
-                                <td class="px-4 py-3 text-right">
+                                <td class="px-4 py-3" :class="isRtl ? 'text-left' : 'text-right'">
                                     <Link :href="violation.edit_url" class="text-xs text-primary hover:underline">
                                         {{ localize('Open', 'فتح') }}
                                     </Link>
@@ -378,7 +382,7 @@ const kpiCards = computed(() => [
             <div class="grid gap-4 lg:grid-cols-2">
                 <Card class="border-0 shadow-sm">
                     <CardHeader>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
                             <TrendingUp class="h-4 w-4 text-primary" />
                             <CardTitle class="text-base">{{ localize('Monthly Revenue', 'الإيراد الشهري') }}</CardTitle>
                         </div>
@@ -415,7 +419,7 @@ const kpiCards = computed(() => [
 
                 <Card class="border-0 shadow-sm">
                     <CardHeader>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
                             <Layers class="h-4 w-4 text-primary" />
                             <CardTitle class="text-base">{{ localize('Reservations by Status', 'الحجوزات حسب الحالة') }}</CardTitle>
                         </div>
@@ -452,7 +456,7 @@ const kpiCards = computed(() => [
 
             <Card class="border-0 shadow-sm">
                 <CardHeader>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
                         <Car class="h-4 w-4 text-primary" />
                         <CardTitle class="text-base">{{ localize('Fleet Status', 'حالة الأسطول') }}</CardTitle>
                     </div>
@@ -476,8 +480,8 @@ const kpiCards = computed(() => [
             <div class="grid gap-4 lg:grid-cols-2">
                 <Card class="border-0 shadow-sm">
                     <CardHeader>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
+                        <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
+                            <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
                                 <Clock class="h-4 w-4 text-primary" />
                                 <CardTitle class="text-base">{{ localize('Recent Reservations', 'أحدث الحجوزات') }}</CardTitle>
                             </div>
@@ -530,8 +534,8 @@ const kpiCards = computed(() => [
 
                 <Card class="border-0 shadow-sm">
                     <CardHeader>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
+                        <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
+                            <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
                                 <Car class="h-4 w-4 text-primary" />
                                 <CardTitle class="text-base">{{ localize('Top Performing Cars', 'أفضل السيارات أداءً') }}</CardTitle>
                             </div>

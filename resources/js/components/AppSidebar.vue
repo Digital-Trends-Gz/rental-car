@@ -93,7 +93,7 @@ const mainNavItems = computed<NavItem[]>(() => {
 
     return [
         {
-            title: 'Dashboard',
+            title: t('dashboard.sidebar.admin.dashboard') || 'Dashboard',
             href: adminHref('/dashboard'),
             icon: LayoutDashboard,
         },
@@ -110,43 +110,43 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-reservations',
         },
         {
-            title: 'Maintenance Types',
+            title: t('dashboard.sidebar.admin.maintenance_types'),
             href: adminHref('/maintenance-types'),
             icon: Wrench,
             permission: 'tenant-manage-cars',
         },
         {
-            title: 'Maintenance Records',
+            title: t('dashboard.sidebar.admin.maintenance_records'),
             href: adminHref('/maintenance-records'),
             icon: Wrench,
             permission: 'tenant-manage-cars',
         },
         {
-            title: 'Violation Types',
+            title: t('dashboard.sidebar.admin.violation_types'),
             href: adminHref('/violation-types'),
             icon: AlertTriangle,
             permission: 'tenant-manage-cars',
         },
         {
-            title: 'Car Violations',
+            title: t('dashboard.sidebar.admin.car_violations'),
             href: adminHref('/car-violations'),
             icon: AlertTriangle,
             permission: 'tenant-manage-cars',
         },
         {
-            title: 'Damage Reports',
+            title: t('dashboard.sidebar.admin.damage_reports'),
             href: adminHref('/car-damage-reports'),
             icon: ShieldAlert,
             permission: 'tenant-manage-cars',
         },
         {
-            title: 'Damage Repairs',
+            title: t('dashboard.sidebar.admin.damage_repairs'),
             href: adminHref('/damage-repairs'),
             icon: Wrench,
             permission: 'tenant-manage-cars',
         },
         {
-            title: 'Contracts',
+            title: t('dashboard.sidebar.admin.contracts'),
             href: contractsIndex(slug).url,
             icon: FileText,
             permission: 'tenant-manage-reservations',
@@ -164,13 +164,13 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-payments',
         },
         {
-            title: 'Coupons',
+            title: t('dashboard.sidebar.admin.coupons'),
             href: adminHref('/coupons'),
             icon: Tag,
             permission: 'tenant-manage-payments',
         },
         {
-            title: 'Auto Discounts',
+            title: t('dashboard.sidebar.admin.auto_discounts'),
             href: adminHref('/car-discounts'),
             icon: Percent,
             permission: 'tenant-manage-payments',
@@ -188,7 +188,7 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-support',
         },
         {
-            title: 'Platform Support',
+            title: t('dashboard.sidebar.admin.platform_support'),
             href: adminHref('/support/platform'),
             icon: LifeBuoy,
             permission: 'tenant-manage-support',
@@ -212,19 +212,19 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-employees',
         },
         {
-            title: 'Payment Providers',
+            title: t('dashboard.sidebar.admin.payment_providers'),
             href: adminHref('/settings/payment-providers'),
             icon: CreditCard,
             permission: 'tenant-manage-settings',
         },
         {
-            title: 'Website Settings',
+            title: t('dashboard.sidebar.admin.website_settings'),
             href: adminHref('/settings/website'),
             icon: Shield,
             permission: 'tenant-manage-settings',
         },
         {
-            title: 'Translations',
+            title: t('dashboard.sidebar.admin.translations'),
             href: adminHref('/settings/translations'),
             icon: Shield,
             permission: 'tenant-manage-settings',

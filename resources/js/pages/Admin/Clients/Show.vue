@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { Button } from '@/components/ui/button';
 import { ref, computed } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import AdminLayout from '@/layouts/AdminLayout.vue';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { index } from '@/routes/admin/clients';
 import { suspend } from '@/routes/admin/clients';
 import { activate } from '@/routes/admin/clients';
-
+import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
   client: { id: number; name: string; email: string; is_active: boolean; created_at?: string };
@@ -48,9 +48,12 @@ const props = defineProps<{
     }>;
     links: Array<{ url: string | null; label: string; active: boolean }>;
   };
-  currency: { symbol: string; code: string }
-  actions?: { documents?: string }
-}>()
+  currency: { symbol: string; code: string };
+  actions?: { documents?: string };
+}>();
+
+const { locale } = useTrans();
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const showSuspendDialog = ref(false);
 const processingSuspend = ref(false);
@@ -67,8 +70,12 @@ function suspendClient() {
   processingSuspend.value = true;
   router.patch(suspend(props.client.id), {}, {
     preserveScroll: true,
-    onFinish: () => { processingSuspend.value = false; },
-    onSuccess: () => { showSuspendDialog.value = false; },
+    onFinish: () => {
+      processingSuspend.value = false;
+    },
+    onSuccess: () => {
+      showSuspendDialog.value = false;
+    },
   });
 }
 
@@ -76,22 +83,31 @@ function activateClient() {
   processingActivate.value = true;
   router.patch(activate(props.client.id), {}, {
     preserveScroll: true,
-    onFinish: () => { processingActivate.value = false; },
-    onSuccess: () => { showActivateDialog.value = false; },
+    onFinish: () => {
+      processingActivate.value = false;
+    },
+    onSuccess: () => {
+      showActivateDialog.value = false;
+    },
   });
 }
 
 const statusStyle = computed(() => {
   const active = props.client.is_active;
   const hex = active ? '#10B981' : '#EF4444';
-  const toRgb = (h: string) => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
-  const [r,g,b] = toRgb(hex);
-  return { bg: `rgba(${r}, ${g}, ${b}, 0.1)`, dot: hex, text: hex, label: active ? 'Active' : 'Suspended' };
+  const toRgb = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const [r, g, b] = toRgb(hex);
+  return {
+    bg: `rgba(${r}, ${g}, ${b}, 0.1)`,
+    dot: hex,
+    text: hex,
+    label: active ? localize('Active', 'نشط') : localize('Suspended', 'موقوف'),
+  };
 });
 </script>
 
 <template>
-  <Head :title="`Client ${client.name}`" />
+  <Head :title="localize(`Client ${client.name}`, `العميل ${client.name}`)" />
   <AdminLayout>
     <main class="flex-1 space-y-6 p-8">
       <div class="flex items-center justify-between gap-4">
@@ -100,7 +116,7 @@ const statusStyle = computed(() => {
             <h1 class="text-2xl font-semibold">{{ client.name }}</h1>
             <div class="text-sm text-muted-foreground">{{ client.email }}</div>
           </div>
-           <span
+          <span
             class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium"
             :style="{ backgroundColor: statusStyle.bg, color: statusStyle.text }"
           >
@@ -109,55 +125,56 @@ const statusStyle = computed(() => {
           </span>
         </div>
         <div class="flex items-center gap-2">
-         
-          <Button v-if="client.is_active" variant="destructive" @click="showSuspendDialog = true">Suspend User</Button>
-          <Button v-else @click="showActivateDialog = true">Activate User</Button>
+          <Button v-if="client.is_active" variant="destructive" @click="showSuspendDialog = true">
+            {{ localize('Suspend User', 'إيقاف المستخدم') }}
+          </Button>
+          <Button v-else @click="showActivateDialog = true">
+            {{ localize('Activate User', 'تفعيل المستخدم') }}
+          </Button>
           <Link :href="index()">
-            <Button variant="outline">Back</Button>
+            <Button variant="outline">{{ localize('Back', 'رجوع') }}</Button>
           </Link>
         </div>
       </div>
 
-      <!-- Stats -->
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div class="rounded-md border p-4">
-            <div class="text-sm text-muted-foreground">Total Spent</div>
-            <div class="text-xl font-semibold">{{ fmtMoney(stats.total_spent) }}</div>
-          </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div class="rounded-md border p-4">
-          <div class="text-sm text-muted-foreground">Reservations</div>
+          <div class="text-sm text-muted-foreground">{{ localize('Total Spent', 'إجمالي الإنفاق') }}</div>
+          <div class="text-xl font-semibold">{{ fmtMoney(stats.total_spent) }}</div>
+        </div>
+        <div class="rounded-md border p-4">
+          <div class="text-sm text-muted-foreground">{{ localize('Reservations', 'الحجوزات') }}</div>
           <div class="text-xl font-semibold">{{ stats.total_reservations }}</div>
         </div>
-          <div class="rounded-md border p-4">
-            <div class="text-sm text-muted-foreground">Payments</div>
-            <div class="text-xl font-semibold">{{ stats.total_payments }}</div>
-          </div>
+        <div class="rounded-md border p-4">
+          <div class="text-sm text-muted-foreground">{{ localize('Payments', 'المدفوعات') }}</div>
+          <div class="text-xl font-semibold">{{ stats.total_payments }}</div>
         </div>
+      </div>
 
       <div class="rounded-md border p-4">
         <div class="flex items-center justify-between gap-4">
           <div>
-            <div class="text-sm text-muted-foreground">Client Documents</div>
+            <div class="text-sm text-muted-foreground">{{ localize('Client Documents', 'مستندات العميل') }}</div>
             <div class="text-xl font-semibold">{{ stats.total_documents ?? 0 }}</div>
           </div>
           <Link v-if="actions?.documents" :href="actions.documents">
-            <Button variant="outline">Manage Documents</Button>
+            <Button variant="outline">{{ localize('Manage Documents', 'إدارة المستندات') }}</Button>
           </Link>
         </div>
       </div>
 
-      <!-- Reservations -->
       <div class="rounded-md border">
-        <div class="border-b px-4 py-3 font-medium">Past Reservations</div>
+        <div class="border-b px-4 py-3 font-medium">{{ localize('Past Reservations', 'الحجوزات السابقة') }}</div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">#</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Car</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Dates</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Total</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Car', 'السيارة') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Dates', 'التواريخ') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Total', 'الإجمالي') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Status', 'الحالة') }}</th>
                 <th class="px-4 py-3"></th>
               </tr>
             </thead>
@@ -172,19 +189,19 @@ const statusStyle = computed(() => {
                 </td>
                 <td class="px-4 py-3">
                   <div class="font-medium">
-                    {{ new Date(r.start_date).toLocaleDateString() }} → {{ new Date(r.end_date).toLocaleDateString() }}
+                    {{ new Date(r.start_date).toLocaleDateString() }} - {{ new Date(r.end_date).toLocaleDateString() }}
                   </div>
                 </td>
                 <td class="px-4 py-3">{{ fmtMoney(r.total_amount) }}</td>
                 <td class="px-4 py-3">{{ r.status }}</td>
                 <td class="px-4 py-3 text-right">
                   <Link :href="`/admin/reservations/${r.id}`">
-                    <Button variant="outline" size="sm">View</Button>
+                    <Button variant="outline" size="sm">{{ localize('View', 'عرض') }}</Button>
                   </Link>
                 </td>
               </tr>
               <tr v-if="reservations.data.length === 0">
-                <td colspan="6" class="px-4 py-6 text-center text-gray-500">No reservations.</td>
+                <td colspan="6" class="px-4 py-6 text-center text-gray-500">{{ localize('No reservations.', 'لا توجد حجوزات.') }}</td>
               </tr>
             </tbody>
           </table>
@@ -205,19 +222,18 @@ const statusStyle = computed(() => {
         </nav>
       </div>
 
-      <!-- Payments -->
       <div class="rounded-md border">
-        <div class="border-b px-4 py-3 font-medium">Payments</div>
+        <div class="border-b px-4 py-3 font-medium">{{ localize('Payments', 'المدفوعات') }}</div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">#</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Reservation</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Amount</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Method</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Processed</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Reservation', 'الحجز') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Amount', 'المبلغ') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Method', 'الطريقة') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Status', 'الحالة') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Processed', 'المعالجة') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white">
@@ -232,7 +248,7 @@ const statusStyle = computed(() => {
                 <td class="px-4 py-3">{{ p.processed_at ? new Date(p.processed_at).toLocaleString() : '—' }}</td>
               </tr>
               <tr v-if="payments.data.length === 0">
-                <td colspan="6" class="px-4 py-6 text-center text-gray-500">No payments.</td>
+                <td colspan="6" class="px-4 py-6 text-center text-gray-500">{{ localize('No payments.', 'لا توجد مدفوعات.') }}</td>
               </tr>
             </tbody>
           </table>
@@ -254,53 +270,51 @@ const statusStyle = computed(() => {
       </div>
     </main>
 
-    <!-- Suspend Confirmation Dialog -->
     <Dialog v-model:open="showSuspendDialog">
       <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle class="flex items-center gap-2">
             <AlertCircle class="h-5 w-5 text-destructive" />
-            Suspend User
+            {{ localize('Suspend User', 'إيقاف المستخدم') }}
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to suspend this user? They will not be able to log in until re-activated.
+            {{ localize('Are you sure you want to suspend this user? They will not be able to log in until re-activated.', 'هل أنت متأكد من إيقاف هذا المستخدم؟ لن يتمكن من تسجيل الدخول حتى إعادة تفعيله.') }}
           </DialogDescription>
         </DialogHeader>
         <Alert variant="destructive" class="mt-4">
           <AlertCircle class="h-4 w-4" />
           <AlertDescription>
-            This action can be reverted later by an admin, but the user will be blocked immediately.
+            {{ localize('This action can be reverted later by an admin, but the user will be blocked immediately.', 'يمكن التراجع عن هذا الإجراء لاحقًا من قبل المسؤول، لكن سيتم حظر المستخدم فورًا.') }}
           </AlertDescription>
         </Alert>
         <DialogFooter class="mt-4">
           <DialogClose as-child>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">{{ localize('Cancel', 'إلغاء') }}</Button>
           </DialogClose>
           <Button type="button" variant="destructive" :disabled="processingSuspend" @click="suspendClient">
-            {{ processingSuspend ? 'Suspending...' : 'Suspend User' }}
+            {{ processingSuspend ? localize('Suspending...', 'جارٍ الإيقاف...') : localize('Suspend User', 'إيقاف المستخدم') }}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
 
-    <!-- Activate Confirmation Dialog -->
     <Dialog v-model:open="showActivateDialog">
       <DialogContent class="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle class="flex items-center gap-2">
             <AlertCircle class="h-5 w-5 text-destructive" />
-            Activate User
+            {{ localize('Activate User', 'تفعيل المستخدم') }}
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to activate this user? They will be able to log in again.
+            {{ localize('Are you sure you want to activate this user? They will be able to log in again.', 'هل أنت متأكد من تفعيل هذا المستخدم؟ سيتمكن من تسجيل الدخول مرة أخرى.') }}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter class="mt-4">
           <DialogClose as-child>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">{{ localize('Cancel', 'إلغاء') }}</Button>
           </DialogClose>
           <Button type="button" variant="destructive" :disabled="processingActivate" @click="activateClient">
-            {{ processingActivate ? 'Activating...' : 'Activate User' }}
+            {{ processingActivate ? localize('Activating...', 'جارٍ التفعيل...') : localize('Activate User', 'تفعيل المستخدم') }}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -3,6 +3,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { computed } from 'vue';
+import { useTrans } from '@/composables/useTrans';
 
 type ReservationItem = {
   id: number
@@ -44,8 +45,16 @@ const props = defineProps<{
 }>();
 
 const page = usePage<any>();
+const { locale } = useTrans();
 const subdomain = computed(() => page.props.current_tenant?.slug);
-const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+
+const weekdayLabels = computed(() => {
+  if (locale.value === 'ar') {
+    return ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  }
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+});
 
 function parseDate(value: string): Date {
   return new Date(`${value}T00:00:00`);
@@ -125,8 +134,8 @@ const bookedReservations = computed(() =>
 );
 
 const currentViewLabel = computed(() => {
-  if (props.view.value === 'next_30_days') return 'Next 30 Days';
-  if (props.view.value === 'booked_only') return `Booked Days in ${props.month.label}`;
+  if (props.view.value === 'next_30_days') return localize('Next 30 Days', 'الـ 30 يوماً القادمة');
+  if (props.view.value === 'booked_only') return localize(`Booked Days in ${props.month.label}`, `الأيام المحجوزة في ${props.month.label}`);
   return props.month.label;
 });
 
@@ -158,7 +167,7 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
     <main class="flex-1 space-y-6 p-8">
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 class="text-2xl font-semibold">Car Reservation Calendar</h1>
+          <h1 class="text-2xl font-semibold">{{ localize('Car Reservation Calendar', 'تقويم حجوزات السيارة') }}</h1>
           <p class="text-sm text-muted-foreground">
             {{ car.year }} {{ car.make }} {{ car.model }} | {{ car.license_plate }}
             <span v-if="car.branch_name">| {{ car.branch_name }}</span>
@@ -166,7 +175,7 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
         </div>
         <div class="flex items-center gap-2">
           <Link v-if="subdomain" href="/admin/cars">
-            <Button variant="outline">Back to Cars</Button>
+            <Button variant="outline">{{ localize('Back to Cars', 'العودة إلى السيارات') }}</Button>
           </Link>
         </div>
       </div>
@@ -177,27 +186,27 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
             :variant="view.value === 'month' ? 'default' : 'outline'"
             @click="openCalendar({ view: 'month' })"
           >
-            Month
+            {{ localize('Month', 'الشهر') }}
           </Button>
           <Button
             :variant="view.value === 'next_30_days' ? 'default' : 'outline'"
             @click="openCalendar({ view: 'next_30_days' })"
           >
-            Next 30 Days
+            {{ localize('Next 30 Days', 'الـ 30 يوماً القادمة') }}
           </Button>
           <Button
             :variant="view.value === 'booked_only' ? 'default' : 'outline'"
             @click="openCalendar({ view: 'booked_only' })"
           >
-            Booked Only
+            {{ localize('Booked Only', 'المحجوز فقط') }}
           </Button>
         </div>
 
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div class="flex items-center gap-2">
-            <Button variant="outline" @click="openCalendar({ month: month.previous })">Previous</Button>
+            <Button variant="outline" @click="openCalendar({ month: month.previous })">{{ localize('Previous', 'السابق') }}</Button>
             <div class="min-w-40 text-center text-lg font-semibold">{{ currentViewLabel }}</div>
-            <Button variant="outline" @click="openCalendar({ month: month.next })">Next</Button>
+            <Button variant="outline" @click="openCalendar({ month: month.next })">{{ localize('Next', 'التالي') }}</Button>
           </div>
 
           <div class="flex items-center gap-2">
@@ -233,7 +242,7 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
                 v-if="day.reservations.length"
                 class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
               >
-                {{ day.reservations.length }} reserved
+                {{ day.reservations.length }} {{ localize('reserved', 'محجوز') }}
               </span>
             </div>
 
@@ -245,7 +254,7 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
                 :class="statusClass(reservation.status)"
               >
                 <div class="font-semibold">{{ reservation.reservation_number }}</div>
-                <div class="truncate">{{ reservation.client_name || 'Client' }}</div>
+                <div class="truncate">{{ reservation.client_name || localize('Client', 'العميل') }}</div>
                 <div>{{ reservation.status_label }}</div>
               </div>
             </div>
@@ -254,7 +263,7 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
       </div>
 
       <div v-else-if="view.value === 'next_30_days'" class="rounded-lg border bg-white p-4 shadow-sm">
-        <h2 class="mb-4 text-lg font-semibold">Operational Window</h2>
+        <h2 class="mb-4 text-lg font-semibold">{{ localize('Operational Window', 'النافذة التشغيلية') }}</h2>
 
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           <div
@@ -268,7 +277,7 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
                 class="rounded-full px-2 py-0.5 text-xs font-medium"
                 :class="day.reservations.length ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-600'"
               >
-                {{ day.reservations.length ? `${day.reservations.length} booked` : 'Available' }}
+                {{ day.reservations.length ? `${day.reservations.length} ${localize('booked', 'محجوز')}` : localize('Available', 'متاح') }}
               </span>
             </div>
 
@@ -280,23 +289,23 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
                 :class="statusClass(reservation.status)"
               >
                 <div class="font-semibold">{{ reservation.reservation_number }}</div>
-                <div>{{ reservation.client_name || 'Client' }}</div>
+                <div>{{ reservation.client_name || localize('Client', 'العميل') }}</div>
                 <div class="text-xs">{{ reservation.status_label }}</div>
               </div>
             </div>
 
             <div v-else class="text-sm text-muted-foreground">
-              No reservations on this day.
+              {{ localize('No reservations on this day.', 'لا توجد حجوزات في هذا اليوم.') }}
             </div>
           </div>
         </div>
       </div>
 
       <div v-else class="rounded-lg border bg-white p-4 shadow-sm">
-        <h2 class="mb-3 text-lg font-semibold">Booked Reservations in {{ month.label }}</h2>
+        <h2 class="mb-3 text-lg font-semibold">{{ localize('Booked Reservations in', 'الحجوزات المحجوزة في') }} {{ month.label }}</h2>
 
         <div v-if="bookedReservations.length === 0" class="text-sm text-muted-foreground">
-          No reservations for this car in the selected month.
+          {{ localize('No reservations for this car in the selected month.', 'لا توجد حجوزات لهذه السيارة في الشهر المحدد.') }}
         </div>
 
         <div v-else class="space-y-3">
@@ -308,7 +317,7 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
             <div>
               <div class="font-medium">{{ reservation.reservation_number }}</div>
               <div class="text-sm text-muted-foreground">
-                {{ reservation.client_name || 'Client' }} | {{ reservation.start_date }} {{ reservation.pickup_time || '' }} - {{ reservation.end_date }} {{ reservation.return_time || '' }}
+                {{ reservation.client_name || localize('Client', 'العميل') }} | {{ reservation.start_date }} {{ reservation.pickup_time || '' }} - {{ reservation.end_date }} {{ reservation.return_time || '' }}
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -316,7 +325,7 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
                 {{ reservation.status_label }}
               </span>
               <Link v-if="subdomain" :href="`/admin/reservations/${reservation.id}`">
-                <Button variant="outline" size="sm">Open Reservation</Button>
+                <Button variant="outline" size="sm">{{ localize('Open Reservation', 'فتح الحجز') }}</Button>
               </Link>
             </div>
           </div>
@@ -324,10 +333,10 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
       </div>
 
       <div v-if="view.value !== 'booked_only'" class="rounded-lg border bg-white p-4 shadow-sm">
-        <h2 class="mb-3 text-lg font-semibold">Reservations in {{ currentViewLabel }}</h2>
+        <h2 class="mb-3 text-lg font-semibold">{{ localize('Reservations in', 'الحجوزات في') }} {{ currentViewLabel }}</h2>
 
         <div v-if="bookedReservations.length === 0" class="text-sm text-muted-foreground">
-          No reservations for this car in the selected range.
+          {{ localize('No reservations for this car in the selected range.', 'لا توجد حجوزات لهذه السيارة في النطاق المحدد.') }}
         </div>
 
         <div v-else class="space-y-3">
@@ -339,7 +348,7 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
             <div>
               <div class="font-medium">{{ reservation.reservation_number }}</div>
               <div class="text-sm text-muted-foreground">
-                {{ reservation.client_name || 'Client' }} | {{ reservation.start_date }} {{ reservation.pickup_time || '' }} - {{ reservation.end_date }} {{ reservation.return_time || '' }}
+                {{ reservation.client_name || localize('Client', 'العميل') }} | {{ reservation.start_date }} {{ reservation.pickup_time || '' }} - {{ reservation.end_date }} {{ reservation.return_time || '' }}
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -347,7 +356,7 @@ function openCalendar(filters: { month?: string; view?: 'month' | 'next_30_days'
                 {{ reservation.status_label }}
               </span>
               <Link v-if="subdomain" :href="`/admin/reservations/${reservation.id}`">
-                <Button variant="outline" size="sm">Open Reservation</Button>
+                <Button variant="outline" size="sm">{{ localize('Open Reservation', 'فتح الحجز') }}</Button>
               </Link>
             </div>
           </div>

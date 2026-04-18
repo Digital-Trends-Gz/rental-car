@@ -20,6 +20,7 @@ type LocaleRow = {
 const languagePresets: LocaleRow[] = [
     { code: 'en', name: 'English', native: 'English', regional: 'en_US', script: 'Latn', direction: 'ltr' },
     { code: 'ar', name: 'Arabic', native: 'Arabic', regional: 'ar_AE', script: 'Arab', direction: 'rtl' },
+    { code: 'ur', name: 'Urdu', native: 'اردو', regional: 'ur_PK', script: 'Arab', direction: 'rtl' },
     { code: 'fr', name: 'French', native: 'Francais', regional: 'fr_FR', script: 'Latn', direction: 'ltr' },
     { code: 'de', name: 'German', native: 'Deutsch', regional: 'de_DE', script: 'Latn', direction: 'ltr' },
     { code: 'es', name: 'Spanish', native: 'Espanol', regional: 'es_ES', script: 'Latn', direction: 'ltr' },

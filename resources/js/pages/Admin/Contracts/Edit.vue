@@ -37,7 +37,168 @@ const props = defineProps<{
 }>();
 
 const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const arabicTranslations: Record<string, string> = {
+  'Pending': 'قيد الانتظار',
+  'Confirmed': 'مؤكد',
+  'Active': 'نشط',
+  'Cancelled': 'ملغى',
+  'Select fuel level': 'اختر مستوى الوقود',
+  'Empty': 'فارغ',
+  '1/4 Tank': 'ربع الخزان',
+  '1/2 Tank': 'نصف الخزان',
+  '3/4 Tank': 'ثلاثة أرباع الخزان',
+  'Full': 'ممتلئ',
+  'Select condition': 'اختر الحالة',
+  'Clean': 'نظيف',
+  'Not Clean': 'غير نظيف',
+  'No specific driver': 'لا يوجد سائق محدد',
+  'Primary Driver': 'السائق الأساسي',
+  'Driver extraction endpoint is not configured.': 'نقطة نهاية استخراج بيانات السائق غير مهيأة.',
+  'Select a document type first.': 'اختر نوع المستند أولاً.',
+  'Upload at least one document image before extraction.': 'ارفع صورة مستند واحدة على الأقل قبل الاستخراج.',
+  'Driver extraction failed.': 'فشل استخراج بيانات السائق.',
+  'Document extraction completed.': 'اكتمل استخراج المستند.',
+  'Customer photo extraction endpoint is not configured.': 'نقطة نهاية استخراج صورة العميل غير مهيأة.',
+  'Upload a front or single document image before extracting the customer photo.': 'ارفع صورة الواجهة أو المستند المفرد قبل استخراج صورة العميل.',
+  'Customer photo extraction failed.': 'فشل استخراج صورة العميل.',
+  'Reservation creation failed.': 'فشل إنشاء الحجز.',
+  'Reservation store route is not configured.': 'مسار حفظ الحجز غير مهيأ.',
+  'Create Contract': 'إنشاء عقد',
+  'Edit Contract': 'تعديل عقد',
+  'Back': 'رجوع',
+  'Customer Data': 'بيانات العميل',
+  'Primary driver details and document uploads.': 'تفاصيل السائق الأساسي ورفع المستندات.',
+  'Primary driver, additional drivers, car data, rental data, and archive.': 'السائق الأساسي، والسائقون الإضافيون، وبيانات السيارة، وبيانات الإيجار، والأرشيف.',
+  'Review the extracted AI data carefully before saving this contract.': 'راجع بيانات الذكاء الاصطناعي المستخرجة بعناية قبل حفظ هذا العقد.',
+  'Document Type': 'نوع المستند',
+  'Full Name': 'الاسم الكامل',
+  'Arabic Name': 'الاسم بالعربية',
+  'Phone': 'الهاتف',
+  'Nationality': 'الجنسية',
+  'Car': 'السيارة',
+  'Place Of Issue': 'جهة الإصدار',
+  'Place of Issue': 'جهة الإصدار',
+  'Date Of Birth': 'تاريخ الميلاد',
+  'Identity Number': 'رقم الهوية',
+  'Residency Number': 'رقم الإقامة',
+  'License Number': 'رقم الرخصة',
+  'Identity Expiry Date': 'تاريخ انتهاء الهوية',
+  'License Expiry Date': 'تاريخ انتهاء الرخصة',
+  'Passport Number': 'رقم الجواز',
+  'Passport Expiry Date': 'تاريخ انتهاء الجواز',
+  'Driving License Issue Date': 'تاريخ إصدار رخصة القيادة',
+  'Visa Number': 'رقم التأشيرة',
+  'Visa Expiry Date': 'تاريخ انتهاء التأشيرة',
+  'Document Front / Single': 'المستند الأمامي / مفرد',
+  'Document Back': 'المستند الخلفي',
+  'Customer Photo': 'صورة العميل',
+  'Customer photo preview': 'معاينة صورة العميل',
+  'Extracting Photo...': 'جارٍ استخراج الصورة...',
+  'Extract Photo From Document': 'استخراج الصورة من المستند',
+  'Extracting...': 'جارٍ الاستخراج...',
+  'Extract From Document': 'استخراج من المستند',
+  'Confidence': 'نسبة الثقة',
+  'I reviewed the AI extracted data and confirm it is correct.': 'راجعت البيانات المستخرجة بواسطة الذكاء الاصطناعي وأؤكد أنها صحيحة.',
+  'Additional Drivers': 'السائقون الإضافيون',
+  'Additional Archive': 'الأرشيف الإضافي',
+  'Independent drivers inside this contract.': 'السائقون المستقلون داخل هذا العقد.',
+  'Add Driver': 'إضافة سائق',
+  'No additional drivers added.': 'لم تتم إضافة أي سائقين إضافيين.',
+  'Upload ID or license and review manually.': 'ارفع الهوية أو الرخصة ثم راجعها يدويًا.',
+  'Remove': 'إزالة',
+  'Store extra customer documents here. Files already used in the main identity/license section above cannot be added again.': 'خزّن المستندات الإضافية للعميل هنا. لا يمكن إضافة الملفات المستخدمة بالفعل في قسم الهوية/الرخصة أعلاه مرة أخرى.',
+  'Add Archive File': 'إضافة ملف أرشيف',
+  'Files already used in the main customer document section above cannot be added to this archive.': 'لا يمكن إضافة الملفات المستخدمة بالفعل في قسم مستندات العميل الرئيسي أعلاه إلى هذا الأرشيف.',
+  'No additional archive files added.': 'لم تتم إضافة أي ملفات أرشيف إضافية.',
+  'Upload one additional customer document for archive only.': 'ارفع مستندًا إضافيًا واحدًا للعميل للأرشيف فقط.',
+  'Belongs To': 'يتبع لـ',
+  'Title': 'العنوان',
+  'Archive File': 'ملف الأرشيف',
+  'Car Data': 'بيانات السيارة',
+  'Reservation and vehicle details for this contract.': 'تفاصيل الحجز والسيارة لهذا العقد.',
+  'Car details are linked to the selected reservation and cannot be edited here.': 'ترتبط تفاصيل السيارة بالحجز المحدد ولا يمكن تعديلها هنا.',
+  'Car Details': 'تفاصيل السيارة',
+  'Plate Number': 'رقم اللوحة',
+  'Vehicle Odometer': 'عداد السيارة',
+  'Fuel In Vehicle': 'الوقود في السيارة',
+  'Current Car Damages': 'الأضرار الحالية للسيارة',
+  'Zone': 'المنطقة',
+  'View': 'الجهة',
+  'Type': 'النوع',
+  'Severity': 'الشدة',
+  'Qty': 'الكمية',
+  'Rental Data': 'بيانات الإيجار',
+  'Contract lifecycle, rental period, amount, and notes.': 'حالة العقد وفترة الإيجار والمبلغ والملاحظات.',
+  'Linked Reservation': 'الحجز المرتبط',
+  'Search reservation...': 'ابحث عن الحجز...',
+  'Clear': 'مسح',
+  'No linked reservation': 'لا يوجد حجز مرتبط',
+  ' (has contract)': ' (لديه عقد)',
+  'No car details': 'لا توجد تفاصيل للسيارة',
+  'No reservations found.': 'لا توجد حجوزات.',
+  'New Reservation': 'حجز جديد',
+  'Reservation': 'الحجز',
+  'Contract Date': 'تاريخ العقد',
+  'Client': 'العميل',
+  'N/A': 'غير متوفر',
+  'Contract Number': 'رقم العقد',
+  'Status': 'الحالة',
+  'Draft': 'مسودة',
+  'Completed': 'مكتمل',
+  'Rental Start Date': 'تاريخ بدء الإيجار',
+  'Rental End Date': 'تاريخ انتهاء الإيجار',
+  'Total Amount': 'المبلغ الإجمالي',
+  'Currency': 'العملة',
+  'Return Mileage': 'عداد العودة',
+  'Return Fuel': 'الوقود عند العودة',
+  'Return Date / Actual Return Time': 'تاريخ العودة / وقت العودة الفعلي',
+  'Vehicle Condition Before Delivery': 'حالة المركبة قبل التسليم',
+  'Vehicle Condition After Return': 'حالة المركبة بعد العودة',
+  'Notes': 'الملاحظات',
+  'Contract Archive': 'أرشيف العقد',
+  'Keep contract scans and supporting files here as archive attachments.': 'احتفظ بمسح العقد والملفات الداعمة هنا كمرفقات أرشيف.',
+  'Start Rental Contract File': 'ملف عقد بدء الإيجار',
+  'End Rental Contract File': 'ملف عقد نهاية الإيجار',
+  'Saving...': 'جارٍ الحفظ...',
+  'Save Contract': 'حفظ العقد',
+  'Cancel': 'إلغاء',
+  'Create Reservation': 'إنشاء حجز',
+  'Create a reservation here, then link it directly to this contract.': 'أنشئ حجزًا هنا ثم اربطه مباشرةً بهذا العقد.',
+  'Select client': 'اختر العميل',
+  'Select car': 'اختر السيارة',
+  'Start Date': 'تاريخ البدء',
+  'End Date': 'تاريخ الانتهاء',
+  'Pickup Time': 'وقت الاستلام',
+  'Return Time': 'وقت الإرجاع',
+  'Pickup Location': 'موقع الاستلام',
+  'Return Location': 'موقع الإرجاع',
+  'Discount': 'الخصم',
+  'Creating...': 'جارٍ الإنشاء...',
+};
+
+const localize = (en: string, ar: string) => {
+  if (locale.value !== 'ar') {
+    return en;
+  }
+
+  if (en.startsWith('Primary Driver - ')) {
+    return `السائق الأساسي - ${en.slice('Primary Driver - '.length)}`;
+  }
+
+  const additionalDriverMatch = en.match(/^Additional Driver (\d+)(?: - (.*))?$/);
+  if (additionalDriverMatch) {
+    const index = additionalDriverMatch[1];
+    const name = additionalDriverMatch[2];
+    return name ? `السائق الإضافي ${index} - ${name}` : `السائق الإضافي ${index}`;
+  }
+
+  const archiveFileMatch = en.match(/^Archive File (\d+)$/);
+  if (archiveFileMatch) {
+    return `ملف الأرشيف ${archiveFileMatch[1]}`;
+  }
+
+  return arabicTranslations[en] ?? ar;
+};
 
 const documentTypeOptions = computed(() => [
   { value: '', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0627\u062e\u062a\u0631 \u0646\u0648\u0639 \u0627\u0644\u0645\u0633\u062a\u0646\u062f' : 'Select document type' },
@@ -629,7 +790,7 @@ async function extractCustomerPhoto(driver: any) {
     const payload = await response.json();
 
     if (!response.ok) {
-      driver.photo_extract_error = payload.message || 'Customer photo extraction failed.';
+      driver.photo_extract_error = payload.message || localize('Customer photo extraction failed.', 'فشل استخراج صورة العميل.');
       return;
     }
 
@@ -639,7 +800,7 @@ async function extractCustomerPhoto(driver: any) {
     driver.customer_photo_preview_url = String(payload.url || '');
     driver.photo_extract_success = payload.message || 'Customer photo extracted successfully.';
   } catch (error) {
-    driver.photo_extract_error = error instanceof Error ? error.message : 'Customer photo extraction failed.';
+    driver.photo_extract_error = error instanceof Error ? error.message : localize('Customer photo extraction failed.', 'فشل استخراج صورة العميل.');
   } finally {
     driver.photo_extracting = false;
   }
@@ -659,7 +820,7 @@ async function submitReservationFromModal() {
   reservationForm.clearErrors();
 
   if (!props.actions.reservationStore) {
-    reservationForm.setError('user_id', 'Reservation store route is not configured.');
+    reservationForm.setError('user_id', localize('Reservation store route is not configured.', 'مسار حفظ الحجز غير مهيأ.'));
     return;
   }
 
@@ -698,7 +859,7 @@ async function submitReservationFromModal() {
           reservationForm.setError(key as any, Array.isArray(value) ? String(value[0]) : String(value));
         });
       } else {
-        reservationForm.setError('user_id', payload.message || 'Reservation creation failed.');
+        reservationForm.setError('user_id', payload.message || localize('Reservation creation failed.', 'فشل إنشاء الحجز.'));
       }
       return;
     }
@@ -711,7 +872,7 @@ async function submitReservationFromModal() {
     showReservationModal.value = false;
     resetReservationModal();
   } catch (error) {
-    reservationForm.setError('user_id', error instanceof Error ? error.message : 'Reservation creation failed.');
+    reservationForm.setError('user_id', error instanceof Error ? error.message : localize('Reservation creation failed.', 'فشل إنشاء الحجز.'));
   } finally {
     reservationSubmitting.value = false;
   }
@@ -733,9 +894,9 @@ function submit() {
       <div class="flex items-start justify-between gap-4">
         <div>
           <h1 class="text-2xl font-semibold">{{ mode === 'create' ? localize('Create Contract', 'ط·آ¥ط¸â€ ط·آ´ط·آ§ط·طŒ ط·آ¹ط¸â€ڑط·آ¯') : localize('Edit Contract', 'ط·ع¾ط·آ¹ط·آ¯ط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</h1>
-          <p class="text-sm text-muted-foreground">Primary driver, additional drivers, car data, rental data, and archive.</p>
+          <p class="text-sm text-muted-foreground">{{ localize('Primary driver, additional drivers, car data, rental data, and archive.', 'السائق الأساسي، والسائقون الإضافيون، وبيانات السيارة، وبيانات الإيجار، والأرشيف.') }}</p>
         </div>
-        <Link :href="actions.index"><Button variant="outline">Back</Button></Link>
+        <Link :href="actions.index"><Button variant="outline">{{ localize('Back', 'رجوع') }}</Button></Link>
       </div>
 
       <form class="space-y-6" @submit.prevent="submit">

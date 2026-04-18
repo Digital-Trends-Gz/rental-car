@@ -127,7 +127,7 @@ const destroyEmployee = () => {
                       class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                       @change="doSearch"
                     >
-                      <option value="all">All branches</option>
+                      <option value="all">{{ t('dashboard.admin.employees.all_branches') }}</option>
                       <option v-for="branch in props.branches" :key="branch.id" :value="String(branch.id)">
                         {{ branch.name }}
                       </option>

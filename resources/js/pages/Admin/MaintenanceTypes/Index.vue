@@ -4,6 +4,9 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { computed, ref, watch } from 'vue';
+import { useTrans } from '@/composables/useTrans';
+
+const { t } = useTrans();
 
 const props = defineProps<{
     maintenanceTypes: {
@@ -49,7 +52,7 @@ watch(search, (newValue, oldValue) => {
 });
 
 function destroyType(url: string, name: string) {
-    const confirmed = window.confirm(`Delete maintenance type "${name}"?`);
+    const confirmed = window.confirm(`${t('dashboard.common.delete')} "${name}"?`);
     if (!confirmed) return;
 
     router.delete(url, {
@@ -59,13 +62,13 @@ function destroyType(url: string, name: string) {
 </script>
 
 <template>
-    <Head title="Maintenance Types" />
+    <Head :title="t('dashboard.admin.maintenance_types.index.head_title')" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
-                <h1 class="text-2xl font-semibold">Maintenance Types</h1>
+                <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.maintenance_types.index.title') }}</h1>
                 <Link :href="createUrl">
-                    <Button>+ New Type</Button>
+                    <Button>+ {{ t('dashboard.admin.maintenance_types.index.new_type') }}</Button>
                 </Link>
             </div>
 
@@ -73,21 +76,21 @@ function destroyType(url: string, name: string) {
                 <Input
                     v-model="search"
                     class="max-w-md"
-                    placeholder="Search by name or description..."
+                    :placeholder="t('dashboard.admin.maintenance_types.index.search_placeholder')"
                     @keyup.enter="doSearch"
                 />
-                <Button @click="doSearch">Search</Button>
+                <Button @click="doSearch">{{ t('dashboard.admin.maintenance_types.index.search') }}</Button>
             </div>
 
             <div class="overflow-x-auto rounded-md border">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Description</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Workshops</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Sort</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_types.table.name') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_types.table.description') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_types.table.status') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_types.table.workshops') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ t('dashboard.admin.maintenance_types.table.sort') }}</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
@@ -100,20 +103,20 @@ function destroyType(url: string, name: string) {
                                     class="rounded px-2 py-1 text-xs font-medium"
                                     :class="row.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'"
                                 >
-                                    {{ row.is_active ? 'Active' : 'Inactive' }}
+                                    {{ row.is_active ? t('dashboard.admin.maintenance_types.status.active') : t('dashboard.admin.maintenance_types.status.inactive') }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-700">{{ row.workshops_count }}</td>
                             <td class="px-4 py-3 text-sm text-gray-700">{{ row.sort_order }}</td>
                             <td class="space-x-2 px-4 py-3 text-right">
                                 <Link :href="row.edit_url">
-                                    <Button size="sm" variant="outline">Edit</Button>
+                                    <Button size="sm" variant="outline">{{ t('dashboard.common.edit') }}</Button>
                                 </Link>
-                                <Button size="sm" variant="destructive" @click="destroyType(row.destroy_url, row.name)">Delete</Button>
+                                <Button size="sm" variant="destructive" @click="destroyType(row.destroy_url, row.name)">{{ t('dashboard.common.delete') }}</Button>
                             </td>
                         </tr>
                         <tr v-if="!hasRows">
-                            <td colspan="6" class="px-4 py-6 text-center text-gray-500">No maintenance types found.</td>
+                            <td colspan="6" class="px-4 py-6 text-center text-gray-500">{{ t('dashboard.admin.maintenance_types.index.empty') }}</td>
                         </tr>
                     </tbody>
                 </table>

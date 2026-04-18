@@ -111,7 +111,7 @@ watch(search, (v, ov) => {
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.reservations.index.title') }}</h1>
                 <Link v-if="subdomain" href="/admin/reservations/create">
-                    <Button>Create Reservation</Button>
+                    <Button>{{ t('dashboard.admin.reservations.index.create_reservation') }}</Button>
                 </Link>
             </div>
 
@@ -130,7 +130,7 @@ watch(search, (v, ov) => {
                         class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                         @change="doSearch"
                     >
-                        <option value="all">All branches</option>
+                        <option value="all">{{ t('dashboard.admin.reservations.index.all_branches') }}</option>
                         <option v-for="branch in props.branches" :key="branch.id" :value="String(branch.id)">
                             {{ branch.name }}
                         </option>

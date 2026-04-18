@@ -83,7 +83,41 @@ interface PageProps {
 
 const page = usePage<PageProps>();
 const rawPage = usePage<any>();
-const { t } = useTrans();
+const { t, locale } = useTrans();
+
+const localize = (en: string, ar: string, ur: string) => {
+    if (locale.value === 'ar') return ar;
+    if (locale.value === 'ur') return ur;
+    return en;
+};
+
+const translateLabel = (label: string) => {
+    const normalized = label.trim().toLowerCase();
+
+    const labels: Record<string, string> = {
+        'all branches': localize('All branches', 'كل الفروع', 'تمام شاخیں'),
+        'this month': localize('This Month', 'هذا الشهر', 'اس مہینے'),
+        'last month': localize('Last Month', 'الشهر الماضي', 'پچھلے مہینے'),
+        'this year': localize('This Year', 'هذه السنة', 'اس سال'),
+        'last year': localize('Last Year', 'السنة الماضية', 'گزشتہ سال'),
+        'new clients': localize('New Clients', 'عملاء جدد', 'نئے کلائنٹس'),
+        'active reservations': localize('Active Reservations', 'الحجوزات النشطة', 'فعال بکنگز'),
+        'platform visits': localize('Platform Visits', 'زيارات المنصة', 'پلیٹ فارم وزٹس'),
+        'total revenue': localize('Total Revenue', 'إجمالي الإيرادات', 'کل آمدنی'),
+        'total cars': localize('Total Cars', 'إجمالي السيارات', 'کل گاڑیاں'),
+        'available cars': localize('Available Cars', 'السيارات المتاحة', 'دستیاب گاڑیاں'),
+        'rented cars': localize('Rented Cars', 'السيارات المؤجرة', 'کرائے پر گاڑیاں'),
+        'unavailable cars': localize('Unavailable Cars', 'السيارات غير المتاحة', 'غیر دستیاب گاڑیاں'),
+        pending: localize('Pending', 'قيد الانتظار', 'زیر التواء'),
+        confirmed: localize('Confirmed', 'مؤكد', 'تصدیق شدہ'),
+        active: localize('Active', 'نشط', 'فعال'),
+        completed: localize('Completed', 'مكتمل', 'مکمل'),
+        cancelled: localize('Cancelled', 'ملغي', 'منسوخ'),
+        'no show': localize('No show', 'لم يحضر', 'حاضر نہیں ہوا'),
+    };
+
+    return labels[normalized] ?? label;
+};
 const selectedPeriod = ref(page.props.currentPeriod);
 const selectedBranchId = ref<number | null>(page.props.selectedBranchId ?? null);
 const subdomain = computed(() => rawPage.props.current_tenant?.slug);
@@ -101,6 +135,18 @@ const chartData = computed(() => page.props.reservationsChart);
 const periodOptions = computed(() => page.props.periodOptions);
 const branches = computed(() => page.props.branches || []);
 const canAccessAllBranches = computed(() => !!page.props.canAccessAllBranches);
+const localizedPeriodOptions = computed(() =>
+    periodOptions.value.map((option) => ({
+        ...option,
+        label: translateLabel(option.label),
+    })),
+);
+const localizedChartDatasets = computed(() =>
+    (chartData.value?.datasets ?? []).map((dataset) => ({
+        ...dataset,
+        label: translateLabel(dataset.label),
+    })),
+);
 
 // Sorted and limited cars performance
 const sortedCarsPerformance = computed(() => {
@@ -174,7 +220,7 @@ const createReservationsChart = () => {
         type: 'bar',
         data: {
             labels: chartData.value.labels,
-            datasets: chartData.value.datasets,
+            datasets: localizedChartDatasets.value,
         },
         options: {
             responsive: true,
@@ -270,9 +316,7 @@ const createReservationsChart = () => {
 };
 
 // Watch for data changes to recreate chart
-watch(() => [chartData.value, selectedPeriod.value], createReservationsChart, {
-    deep: true,
-});
+watch(() => [chartData.value, selectedPeriod.value, locale.value], createReservationsChart, { deep: true });
 
 // Watch for period changes in props
 watch(
@@ -317,7 +361,7 @@ onMounted(() => {
                             @change="handleBranchChange"
                             class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         >
-                            <option :value="null">All branches</option>
+                            <option :value="null">{{ translateLabel('All branches') }}</option>
                             <option
                                 v-for="branch in branches"
                                 :key="branch.id"
@@ -340,7 +384,7 @@ onMounted(() => {
                         class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     >
                         <option
-                            v-for="option in periodOptions"
+                            v-for="option in localizedPeriodOptions"
                             :key="option.value"
                             :value="option.value"
                         >
@@ -380,7 +424,7 @@ onMounted(() => {
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
                                     >
-                                        {{ kpis.totalRevenue.label }}
+                                        {{ translateLabel(kpis.totalRevenue.label) }}
                                     </dt>
                                     <dd
                                         class="text-lg font-medium text-gray-900"
@@ -427,7 +471,7 @@ onMounted(() => {
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
                                     >
-                                        {{ kpis.platformVisits.label }}
+                                        {{ translateLabel(kpis.platformVisits.label) }}
                                     </dt>
                                     <dd
                                         class="text-lg font-medium text-gray-900"
@@ -468,7 +512,7 @@ onMounted(() => {
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
                                     >
-                                        {{ kpis.activeReservations.label }}
+                                        {{ translateLabel(kpis.activeReservations.label) }}
                                     </dt>
                                     <dd
                                         class="text-lg font-medium text-gray-900"
@@ -509,7 +553,7 @@ onMounted(() => {
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
                                     >
-                                        {{ kpis.newClients.label }}
+                                        {{ translateLabel(kpis.newClients.label) }}
                                     </dt>
                                     <dd
                                         class="text-lg font-medium text-gray-900"
@@ -557,7 +601,7 @@ onMounted(() => {
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
                                     >
-                                        {{ carsState.totalCars.label }}
+                                        {{ translateLabel(carsState.totalCars.label) }}
                                     </dt>
                                     <dd
                                         class="text-lg font-medium text-gray-900"
@@ -602,7 +646,7 @@ onMounted(() => {
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
                                     >
-                                        {{ carsState.availableCars.label }}
+                                        {{ translateLabel(carsState.availableCars.label) }}
                                     </dt>
                                     <dd
                                         class="text-lg font-medium text-gray-900"
@@ -647,7 +691,7 @@ onMounted(() => {
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
                                     >
-                                        {{ carsState.rentedCars.label }}
+                                        {{ translateLabel(carsState.rentedCars.label) }}
                                     </dt>
                                     <dd
                                         class="text-lg font-medium text-gray-900"
@@ -692,7 +736,7 @@ onMounted(() => {
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
                                     >
-                                        {{ carsState.unavailableCars.label }}
+                                        {{ translateLabel(carsState.unavailableCars.label) }}
                                     </dt>
                                     <dd
                                         class="text-lg font-medium text-gray-900"

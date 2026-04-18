@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout.vue';
+import { useTrans } from '@/composables/useTrans';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
@@ -33,10 +34,12 @@ const props = defineProps<{
 }>();
 
 const page = usePage<any>();
+const { locale } = useTrans();
 const search = ref('');
 const focusedLocale = ref<string>('');
 const onlyCustomized = ref(false);
 const onlyEmptyForFocusedLocale = ref(false);
+const localize = (en: string, ar: string, ur: string = en) => (locale.value === 'ar' ? ar : locale.value === 'ur' ? ur : en);
 const localeCodes = computed(() => props.supported_locales.map((item) => item.code));
 const localeMetaByCode = computed(() =>
     props.supported_locales.reduce<Record<string, LocaleMeta>>((acc, item) => {
@@ -150,17 +153,17 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Translations Settings" />
+    <Head :title="localize('Translations Settings', 'إعدادات الترجمات', 'ترجمہ کی ترتیبات')" />
 
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">Translations Settings</h1>
-                    <p class="text-sm text-muted-foreground">Enable languages and edit words in table format for this tenant website.</p>
+                    <h1 class="text-2xl font-semibold">{{ localize('Translations Settings', 'إعدادات الترجمات', 'ترجمہ کی ترتیبات') }}</h1>
+                    <p class="text-sm text-muted-foreground">{{ localize('Enable languages and edit words in table format for this tenant website.', 'فعّل اللغات وعدّل الكلمات بصيغة جدول لهذا الموقع الخاص بالمستأجر.', 'اس کرایہ دار ویب سائٹ کے لیے زبانیں فعال کریں اور الفاظ کو جدول کی صورت میں ترمیم کریں.') }}</p>
                 </div>
                 <Button :disabled="form.processing" @click="submit">
-                    {{ form.processing ? 'Saving...' : 'Save Changes' }}
+                    {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...', 'محفوظ کیا جا رہا ہے...') : localize('Save Changes', 'حفظ التغييرات', 'تبدیلیاں محفوظ کریں') }}
                 </Button>
             </div>
 
@@ -171,7 +174,7 @@ function submit() {
                 {{ flashError }}
             </div>
             <div v-if="formErrorList.length" class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                <div class="font-medium">Please fix the following errors:</div>
+                <div class="font-medium">{{ localize('Please fix the following errors:', 'يرجى إصلاح الأخطاء التالية:', 'براہ کرم درج ذیل غلطیاں درست کریں:') }}</div>
                 <ul class="mt-1 list-disc pl-5">
                     <li v-for="(message, idx) in formErrorList" :key="idx">{{ message }}</li>
                 </ul>
@@ -179,7 +182,7 @@ function submit() {
 
             <section class="rounded-lg border p-5 space-y-4">
                 <div>
-                    <h2 class="text-lg font-semibold">Language Activation</h2>
+                    <h2 class="text-lg font-semibold">{{ localize('Language Activation', 'تفعيل اللغات', 'زبانوں کی فعال کاری') }}</h2>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-6 rounded-md border p-3">
@@ -188,7 +191,7 @@ function submit() {
                         {{ locale.native }} ({{ locale.code.toUpperCase() }})
                     </label>
                 </div>
-                <p class="text-xs text-muted-foreground">At least one language must stay enabled.</p>
+                <p class="text-xs text-muted-foreground">{{ localize('At least one language must stay enabled.', 'يجب إبقاء لغة واحدة على الأقل مفعلة.', 'کم از کم ایک زبان فعال رہنی چاہیے.') }}</p>
                 <p v-if="form.errors['enabled_locales']" class="text-sm text-red-600">{{ form.errors['enabled_locales'] }}</p>
                 <p v-if="form.errors['enabled_locales.0']" class="text-sm text-red-600">{{ form.errors['enabled_locales.0'] }}</p>
             </section>
@@ -196,13 +199,13 @@ function submit() {
             <section class="rounded-lg border p-5 space-y-4">
                 <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h2 class="text-lg font-semibold">Translations Table</h2>
-                        <p class="text-sm text-muted-foreground">Edit only the words you need. Empty field uses default system translation.</p>
+                        <h2 class="text-lg font-semibold">{{ localize('Translations Table', 'جدول الترجمات', 'ترجمے کی جدول') }}</h2>
+                        <p class="text-sm text-muted-foreground">{{ localize('Edit only the words you need. Empty field uses default system translation.', 'عدّل الكلمات التي تحتاجها فقط. الحقل الفارغ يستخدم ترجمة النظام الافتراضية.', 'صرف ان الفاظ کی ترمیم کریں جن کی ضرورت ہو۔ خالی فیلڈ سسٹم کی ڈیفالٹ ترجمہ استعمال کرتا ہے.') }}</p>
                     </div>
                     <div class="w-full space-y-3 md:w-auto">
                         <div class="w-full md:w-80">
-                            <Label class="sr-only" for="translation_search">Search</Label>
-                            <Input id="translation_search" v-model="search" placeholder="Search key or value..." />
+                            <Label class="sr-only" for="translation_search">{{ localize('Search', 'بحث', 'تلاش') }}</Label>
+                            <Input id="translation_search" v-model="search" :placeholder="localize('Search key or value...', 'ابحث بالمفتاح أو القيمة...', 'کلید یا قدر تلاش کریں...')" />
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             <select
@@ -210,22 +213,22 @@ function submit() {
                                 class="h-9 rounded-md border border-input bg-transparent px-3 text-sm dark:bg-input/30"
                             >
                                 <option v-for="locale in localeCodes" :key="`focus-${locale}`" :value="locale">
-                                    Focus: {{ locale.toUpperCase() }}
+                                    {{ localize('Focus', 'التركيز', 'فوکس') }}: {{ locale.toUpperCase() }}
                                 </option>
                             </select>
                             <label class="inline-flex items-center gap-2 rounded-md border px-2 py-1 text-xs">
                                 <input v-model="onlyCustomized" type="checkbox" />
-                                Only customized
+                                {{ localize('Only customized', 'المعدلة فقط', 'صرف حسبِ تخصیص') }}
                             </label>
                             <label class="inline-flex items-center gap-2 rounded-md border px-2 py-1 text-xs">
                                 <input v-model="onlyEmptyForFocusedLocale" type="checkbox" />
-                                Only empty in focus locale
+                                {{ localize('Only empty in focus locale', 'فقط الفارغة في لغة التركيز', 'صرف فوکس زبان میں خالی') }}
                             </label>
                             <Button type="button" variant="outline" size="sm" @click="fillEmptyFromDefaultsForFocusedLocale">
-                                Fill Empty From Default
+                                {{ localize('Fill Empty From Default', 'املأ الفارغ من الافتراضي', 'خالی کو ڈیفالٹ سے پُر کریں') }}
                             </Button>
                             <Button type="button" variant="outline" size="sm" @click="clearFocusedLocaleValues">
-                                Clear Focus Locale
+                                {{ localize('Clear Focus Locale', 'مسح لغة التركيز', 'فوکس زبان صاف کریں') }}
                             </Button>
                         </div>
                     </div>
@@ -235,13 +238,13 @@ function submit() {
                     <table class="min-w-full text-sm">
                         <thead class="bg-muted/40 text-left">
                             <tr>
-                                <th class="px-3 py-2 font-semibold">Key</th>
+                                <th class="px-3 py-2 font-semibold">{{ localize('Key', 'المفتاح', 'کلید') }}</th>
                                 <template v-for="localeCode in localeCodes" :key="`h-${localeCode}`">
                                     <th class="px-3 py-2 font-semibold">
-                                        Default {{ localeMetaByCode[localeCode]?.code?.toUpperCase() || localeCode.toUpperCase() }}
+                                        {{ localize('Default', 'الافتراضي', 'ڈیفالٹ') }} {{ localeMetaByCode[localeCode]?.code?.toUpperCase() || localeCode.toUpperCase() }}
                                     </th>
                                     <th class="px-3 py-2 font-semibold">
-                                        Edit {{ localeMetaByCode[localeCode]?.code?.toUpperCase() || localeCode.toUpperCase() }}
+                                        {{ localize('Edit', 'تحرير', 'ترمیم') }} {{ localeMetaByCode[localeCode]?.code?.toUpperCase() || localeCode.toUpperCase() }}
                                     </th>
                                 </template>
                             </tr>
@@ -264,7 +267,7 @@ function submit() {
                                         <div class="space-y-2">
                                             <Input
                                                 v-model="row.formRow.values[localeCode]"
-                                                placeholder="Use default"
+                                                :placeholder="localize('Use default', 'استخدم الافتراضي', 'ڈیفالٹ استعمال کریں')"
                                                 :dir="localeCode === 'ar' ? 'rtl' : 'ltr'"
                                             />
                                             <div class="flex gap-2">
@@ -273,14 +276,14 @@ function submit() {
                                                     class="text-xs text-primary hover:underline"
                                                     @click="copyDefaultToLocale(row, localeCode)"
                                                 >
-                                                    Copy default
+                                                    {{ localize('Copy default', 'نسخ الافتراضي', 'ڈیفالٹ کاپی کریں') }}
                                                 </button>
                                                 <button
                                                     type="button"
                                                     class="text-xs text-muted-foreground hover:underline"
                                                     @click="clearLocaleValue(row, localeCode)"
                                                 >
-                                                    Clear
+                                                    {{ localize('Clear', 'مسح', 'صاف کریں') }}
                                                 </button>
                                             </div>
                                         </div>
@@ -289,7 +292,7 @@ function submit() {
                             </tr>
                             <tr v-if="filteredRows.length === 0">
                                 <td class="px-3 py-5 text-center text-muted-foreground" :colspan="1 + (localeCodes.length * 2)">
-                                    No translation rows found for this search.
+                                    {{ localize('No translation rows found for this search.', 'لم يتم العثور على صفوف ترجمة لهذا البحث.', 'اس تلاش کے لیے کوئی ترجمہ قطار نہیں ملی۔') }}
                                 </td>
                             </tr>
                         </tbody>

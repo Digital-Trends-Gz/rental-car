@@ -11,11 +11,27 @@ enum MaintenanceRecordStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::SCHEDULED => 'Scheduled',
-            self::IN_PROGRESS => 'In Progress',
-            self::COMPLETED => 'Completed',
-            self::CANCELLED => 'Cancelled',
+        $locale = app()->getLocale();
+
+        return match ($locale) {
+            'ar' => match ($this) {
+                self::SCHEDULED => 'مجدول',
+                self::IN_PROGRESS => 'قيد التنفيذ',
+                self::COMPLETED => 'مكتمل',
+                self::CANCELLED => 'ملغي',
+            },
+            'ur' => match ($this) {
+                self::SCHEDULED => 'شیڈول',
+                self::IN_PROGRESS => 'جاری',
+                self::COMPLETED => 'مکمل',
+                self::CANCELLED => 'منسوخ',
+            },
+            default => match ($this) {
+                self::SCHEDULED => 'Scheduled',
+                self::IN_PROGRESS => 'In Progress',
+                self::COMPLETED => 'Completed',
+                self::CANCELLED => 'Cancelled',
+            },
         };
     }
 
@@ -29,4 +45,3 @@ enum MaintenanceRecordStatus: string
         };
     }
 }
-

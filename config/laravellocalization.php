@@ -13,6 +13,12 @@ $supportedLocales = [
             'native' => 'العربية',
             'regional' => 'ar_AE',
         ],
+        'ur' => [
+            'name' => 'Urdu',
+            'script' => 'Arab',
+            'native' => 'اردو',
+            'regional' => 'ur_PK',
+        ],
     ];
 
 return [
