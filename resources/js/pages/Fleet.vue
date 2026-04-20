@@ -2,19 +2,40 @@
 import CarCard from '@/components/CarCard.vue';
 import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+
+interface TenantFilterOption {
+    id: number;
+    name: string;
+    slug: string;
+}
+
+interface BranchFilterOption {
+    id: number;
+    tenant_id: number;
+    name: string;
+    address: string | null;
+}
 
 const $page = usePage<PageProps>();
 const { t } = useTrans();
+const appName = computed(() => $page.props.name || 'Real Rent Car');
+const appBranding = computed(() => $page.props.app_branding ?? {});
+const currentTenant = computed(() => $page.props.current_tenant);
+const isTenant = computed(() => !!currentTenant.value);
 const cars = computed(() => $page.props.cars);
 const filters = computed(() => $page.props.filters);
+const tenants = computed<TenantFilterOption[]>(() => (($page.props as any).tenants ?? []) as TenantFilterOption[]);
+const branches = computed<BranchFilterOption[]>(() => (($page.props as any).branches ?? []) as BranchFilterOption[]);
 const makes = computed(() => $page.props.makes);
 const fuelTypes = computed(() => $page.props.fuelTypes);
 const years = computed(() => $page.props.years);
 
 // Filter state
 const searchQuery = ref(filters.value.search || '');
+const selectedTenant = ref(isTenant.value ? '' : (filters.value.tenant_id || ''));
+const selectedBranch = ref(filters.value.branch_id || '');
 const selectedMake = ref(filters.value.make || '');
 const selectedFuelType = ref(filters.value.fuel_type || '');
 const minPrice = ref(filters.value.min_price || '');
@@ -22,7 +43,12 @@ const maxPrice = ref(filters.value.max_price || '');
 const selectedYear = ref(filters.value.year || '');
 const sortBy = ref(filters.value.sort || 'make_asc');
 
-// Show/hide filters on mobile
+const activeTenantId = computed(() => (isTenant.value ? currentTenant.value?.id ?? '' : selectedTenant.value));
+
+const tenantBranches = computed(() =>
+    branches.value.filter((branch) => String(branch.tenant_id) === String(activeTenantId.value)),
+);
+
 const showFilters = ref(false);
 const isLoading = ref(false);
 
@@ -31,6 +57,8 @@ const applyFilters = () => {
     const params: Record<string, any> = {};
 
     if (searchQuery.value.trim()) params.search = searchQuery.value.trim();
+    if (!isTenant.value && selectedTenant.value) params.tenant_id = selectedTenant.value;
+    if (selectedBranch.value) params.branch_id = selectedBranch.value;
     if (selectedMake.value) params.make = selectedMake.value;
     if (selectedFuelType.value) params.fuel_type = selectedFuelType.value;
     if (minPrice.value) params.min_price = minPrice.value;
@@ -49,6 +77,8 @@ const applyFilters = () => {
 
 const clearFilters = () => {
     searchQuery.value = '';
+    selectedTenant.value = '';
+    selectedBranch.value = '';
     selectedMake.value = '';
     selectedFuelType.value = '';
     minPrice.value = '';
@@ -77,6 +107,10 @@ const handleSearch = (event?: Event) => {
     applyFilters();
 };
 
+watch(selectedTenant, () => {
+    selectedBranch.value = '';
+});
+
 // Watch only for sort changes (immediate feedback)
 watch(sortBy, () => {
     applyFilters();
@@ -98,6 +132,8 @@ const goToPage = (url: string) => {
 const hasActiveFilters = computed(() => {
     return (
         searchQuery.value.trim() ||
+        (!isTenant.value && selectedTenant.value) ||
+        selectedBranch.value ||
         selectedMake.value ||
         selectedFuelType.value ||
         minPrice.value ||
@@ -106,11 +142,24 @@ const hasActiveFilters = computed(() => {
         (sortBy.value && sortBy.value !== 'make_asc')
     );
 });
+
+const fleetThemeVars = computed(() => ({
+    '--fleet-primary': appBranding.value.primary_color || '#3b82f6',
+    '--fleet-secondary': appBranding.value.secondary_color || '#6d28d9',
+}));
+
 </script>
 
 <template>
-    <HomeLayout>
-        <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <Head :title="`${appName} - Fleet`" />
+
+    <HomeLayout :shell-variant="isTenant ? 'tenant' : 'landing'">
+        <div
+            class="min-h-screen bg-background"
+            :class="{ 'fleet-superadmin-theme': !isTenant }"
+            :style="!isTenant ? fleetThemeVars : undefined"
+        >
+            <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
             <!-- Loading Overlay -->
             <div
                 v-if="isLoading"
@@ -167,6 +216,8 @@ const hasActiveFilters = computed(() => {
                                         >{{
                                             Object.values({
                                                 searchQuery: searchQuery.trim(),
+                                                selectedTenant: isTenant ? '' : selectedTenant,
+                                                selectedBranch,
                                                 selectedMake,
                                                 selectedFuelType,
                                                 minPrice,
@@ -235,6 +286,48 @@ const hasActiveFilters = computed(() => {
 
                             <div class="border-t border-gray-200 pt-4">
                                 <div class="space-y-3">
+                                    <!-- Tenant Filter -->
+                                    <div v-if="!isTenant">
+                                        <label
+                                            class="mb-2 block text-sm font-medium text-gray-700"
+                                            >Tenant</label
+                                        >
+                                        <select
+                                            v-model="selectedTenant"
+                                            class="w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+                                        >
+                                            <option value="">All Tenants</option>
+                                            <option
+                                                v-for="tenant in tenants"
+                                                :key="tenant.id"
+                                                :value="String(tenant.id)"
+                                            >
+                                                {{ tenant.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Branch Filter -->
+                                    <div v-if="tenantBranches.length > 0">
+                                        <label
+                                            class="mb-2 block text-sm font-medium text-gray-700"
+                                            >Branch</label
+                                        >
+                                        <select
+                                            v-model="selectedBranch"
+                                            class="w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+                                        >
+                                            <option value="">All Branches</option>
+                                            <option
+                                                v-for="branch in tenantBranches"
+                                                :key="branch.id"
+                                                :value="String(branch.id)"
+                                            >
+                                                {{ branch.address ? `${branch.name} - ${branch.address}` : branch.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+
                                     <!-- Make Filter -->
                                     <div>
                                         <label
@@ -535,10 +628,72 @@ const hasActiveFilters = computed(() => {
                 </div>
             </div>
         </div>
+        </div>
     </HomeLayout>
 </template>
 <style scoped>
     button:hover {
         cursor: pointer;
+    }
+
+    .fleet-superadmin-theme {
+        --fleet-primary: hsl(220 70% 50%);
+        --fleet-secondary: hsl(250 70% 56%);
+    }
+
+    .fleet-superadmin-theme .text-orange-500,
+    .fleet-superadmin-theme .text-orange-600,
+    .fleet-superadmin-theme .text-orange-700,
+    .fleet-superadmin-theme .text-orange-100 {
+        color: var(--fleet-primary) !important;
+    }
+
+    .fleet-superadmin-theme .bg-orange-50,
+    .fleet-superadmin-theme .bg-orange-100,
+    .fleet-superadmin-theme .bg-orange-200 {
+        background-color: color-mix(in srgb, var(--fleet-primary) 12%, white) !important;
+    }
+
+    .fleet-superadmin-theme .bg-orange-500,
+    .fleet-superadmin-theme .bg-orange-600 {
+        background-color: var(--fleet-primary) !important;
+    }
+
+    .fleet-superadmin-theme .border-orange-200,
+    .fleet-superadmin-theme .border-orange-300,
+    .fleet-superadmin-theme .border-orange-500 {
+        border-color: color-mix(in srgb, var(--fleet-primary) 35%, white) !important;
+    }
+
+    .fleet-superadmin-theme .border-t-orange-500 {
+        border-top-color: var(--fleet-primary) !important;
+    }
+
+    .fleet-superadmin-theme [class*='hover:border-orange-']:hover,
+    .fleet-superadmin-theme [class*='focus:border-orange-']:focus {
+        border-color: var(--fleet-primary) !important;
+    }
+
+    .fleet-superadmin-theme [class*='focus:ring-orange-']:focus,
+    .fleet-superadmin-theme [class*='focus:ring-orange-']:focus-visible {
+        --tw-ring-color: color-mix(in srgb, var(--fleet-primary) 30%, white) !important;
+    }
+
+    .fleet-superadmin-theme [class*='from-orange-'] {
+        --tw-gradient-from: var(--fleet-primary) !important;
+        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+    }
+
+    .fleet-superadmin-theme [class*='to-orange-'] {
+        --tw-gradient-to: var(--fleet-secondary) !important;
+    }
+
+    .fleet-superadmin-theme [class*='hover:from-orange-']:hover {
+        --tw-gradient-from: var(--fleet-primary) !important;
+        --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+    }
+
+    .fleet-superadmin-theme [class*='hover:to-orange-']:hover {
+        --tw-gradient-to: var(--fleet-secondary) !important;
     }
 </style>

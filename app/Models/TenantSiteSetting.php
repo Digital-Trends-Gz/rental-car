@@ -18,6 +18,7 @@ class TenantSiteSetting extends Model
         'primary_color',
         'secondary_color',
         'tax_percentage',
+        'document_extraction_daily_limit',
         'enabled_locales',
         'hero',
         'about',
@@ -31,6 +32,7 @@ class TenantSiteSetting extends Model
 
     protected $casts = [
         'tax_percentage' => 'decimal:2',
+        'document_extraction_daily_limit' => 'integer',
         'enabled_locales' => 'array',
         'hero' => 'array',
         'about' => 'array',
@@ -57,6 +59,7 @@ class TenantSiteSetting extends Model
             'primary_color' => '#f97316',
             'secondary_color' => '#ea580c',
             'tax_percentage' => 7.0,
+            'document_extraction_daily_limit' => null,
             'enabled_locales' => $supportedLocales,
             'hero' => [
                 'title' => [
@@ -355,6 +358,9 @@ class TenantSiteSetting extends Model
             'primary_color' => self::normalizeHexColor($data['primary_color'] ?? $defaults['primary_color'], $defaults['primary_color']),
             'secondary_color' => self::normalizeHexColor($data['secondary_color'] ?? $defaults['secondary_color'], $defaults['secondary_color']),
             'tax_percentage' => self::normalizePercentage($data['tax_percentage'] ?? $defaults['tax_percentage'], 7.0),
+            'document_extraction_daily_limit' => self::nullablePositiveInteger(
+                $data['document_extraction_daily_limit'] ?? $defaults['document_extraction_daily_limit']
+            ),
             'enabled_locales' => self::normalizeEnabledLocales($data['enabled_locales'] ?? $defaults['enabled_locales']),
             'hero' => [
                 'title' => [
@@ -628,6 +634,21 @@ class TenantSiteSetting extends Model
         }
 
         return $result;
+    }
+
+    private static function nullablePositiveInteger(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        $integer = (int) $value;
+
+        return $integer >= 1 ? min($integer, 100000) : null;
     }
 
     private static function supportedLocales(): array

@@ -2,6 +2,9 @@
 import { useTrans } from '@/composables/useTrans';
 import { usePage } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
+import { show as tenantFleetShow } from '@/routes/tenant/fleet';
+import { Calendar, MapPin } from 'lucide-vue-next';
+import { computed } from 'vue';
 
 interface Car {
     id: number;
@@ -13,6 +16,12 @@ interface Car {
     fuel_type: string;
     image_url: string;
     status?: string;
+    tenant_slug?: string | null;
+    tenant_name?: string | null;
+    tenant_logo_url?: string | null;
+    tenant_primary_color?: string | null;
+    tenant_secondary_color?: string | null;
+    location_text?: string | null;
 }
 
 interface Props {
@@ -21,6 +30,48 @@ interface Props {
 
 const page = usePage<any>();
 const { t } = useTrans();
+const currentTenant = computed(() => page.props.current_tenant);
+const appBranding = computed(() => page.props.app_branding ?? {});
+
+const hexToRgb = (hex: string): [number, number, number] | null => {
+    const normalized = hex.trim().replace('#', '');
+
+    if (/^[0-9a-fA-F]{3}$/.test(normalized)) {
+        const expanded = normalized.split('').map((char) => char + char).join('');
+        const value = Number.parseInt(expanded, 16);
+        return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+    }
+
+    if (/^[0-9a-fA-F]{6}$/.test(normalized)) {
+        const value = Number.parseInt(normalized, 16);
+        return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+    }
+
+    return null;
+};
+
+const withOpacity = (color: string, alpha: number) => {
+    const rgb = hexToRgb(color);
+
+    return rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : color;
+};
+
+const cardTheme = (car: Car) => {
+    const appPrimary = appBranding.value.primary_color || '#3b82f6';
+    const appSecondary = appBranding.value.secondary_color || '#6d28d9';
+    const primary = currentTenant.value
+        ? (car.tenant_primary_color || appPrimary)
+        : appPrimary;
+    const secondary = currentTenant.value
+        ? (car.tenant_secondary_color || appSecondary)
+        : appSecondary;
+
+    return {
+        primary,
+        secondary,
+        gradient: `linear-gradient(90deg, ${primary}, ${secondary})`,
+    };
+};
 
 const currentLocalePrefix = (): string => {
     const locale = String(page.props.locale || '').trim();
@@ -33,8 +84,8 @@ const currentLocalePrefix = (): string => {
     return pathname === prefixed || pathname.startsWith(`${prefixed}/`) ? prefixed : '';
 };
 
-const bookCar = (carId: number) => {
-    const slug = page.props.current_tenant?.slug;
+const bookCar = (car: Car) => {
+    const slug = car.tenant_slug || page.props.current_tenant?.slug;
     const localePrefix = currentLocalePrefix();
 
     if (!slug) {
@@ -42,7 +93,22 @@ const bookCar = (carId: number) => {
         return;
     }
 
-    router.get(`${localePrefix}/fleet/${carId}`);
+    const bookingUrl = new URL(
+        tenantFleetShow.url({
+            subdomain: slug,
+            car: car.id,
+        }),
+        window.location.origin,
+    );
+
+    const locale = String(page.props.locale || '').trim();
+    if (locale) {
+        bookingUrl.pathname = `/${locale}${bookingUrl.pathname}`;
+    } else if (localePrefix) {
+        bookingUrl.pathname = `${localePrefix}${bookingUrl.pathname}`;
+    }
+
+    window.location.href = bookingUrl.toString();
 };
 
 defineProps<Props>();
@@ -50,7 +116,12 @@ defineProps<Props>();
 
 <template>
     <div
-        class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl"
+        :style="{
+            '--card-primary': cardTheme(car).primary,
+            '--card-secondary': cardTheme(car).secondary,
+            '--card-gradient': cardTheme(car).gradient,
+        }"
+        class="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
     >
         <!-- Car Image -->
         <div
@@ -59,46 +130,71 @@ defineProps<Props>();
             <img
                 :src="car.image_url"
                 :alt="`${car.make} ${car.model}`"
-                class="h-full w-full object-cover transition-all duration-500 group-hover:scale-[1.03]"
+                class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             />
 
             <!-- Price Badge -->
             <div
-                class="absolute top-4 right-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 shadow-lg"
+                class="absolute right-4 top-4 rounded-2xl px-4 py-3 shadow-lg"
+                :style="{ background: 'var(--card-gradient)', boxShadow: '0 12px 24px -12px var(--card-primary)' }"
             >
-                <span class="text-sm font-bold text-white"
-                    >${{ car.price_per_day }}</span
-                >
-                <span class="text-xs text-orange-100">{{ t('car_card.per_day') }}</span>
+                <span class="text-lg font-extrabold leading-none text-white">${{ car.price_per_day }}</span>
+                <span class="ml-1 text-sm font-medium text-primary-foreground/90">{{ t('car_card.per_day') }}</span>
             </div>
 
             <div
                 v-if="car.status && car.status !== 'available'"
-                class="absolute top-4 left-4 rounded-xl bg-black/75 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white"
+                class="absolute left-4 top-4 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur"
             >
                 {{ car.status }}
             </div>
-
-            <!-- Gradient Overlay -->
-            <div
-                class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-            ></div>
         </div>
 
         <!--  Car Details -->
-        <div class=" space-y-4 p-4">
+        <div class="flex flex-1 flex-col gap-3 p-5">
             <!-- Header -->
-            <div class="space-y-2">
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
+                    <div class="flex min-w-0 items-center gap-2">
+                        <div
+                            v-if="car.tenant_logo_url"
+                            class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-white p-0.5"
+                        >
+                            <img
+                                :src="car.tenant_logo_url"
+                                :alt="car.tenant_name || 'Tenant logo'"
+                                class="h-full w-full object-contain"
+                            >
+                        </div>
+                        <div
+                            v-else
+                            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[9px] font-semibold uppercase"
+                            :style="{
+                                backgroundColor: withOpacity(cardTheme(car).primary, 0.12),
+                                color: cardTheme(car).primary,
+                            }"
+                        >
+                            {{ (car.tenant_name || 'T').trim().charAt(0) }}
+                        </div>
+                        <span class="truncate">{{ car.tenant_name || 'Tenant' }}</span>
+                    </div>
+                    <span class="inline-flex shrink-0 items-center gap-1 text-[11px] normal-case tracking-normal text-muted-foreground">
+                        <MapPin :size="12" :style="{ color: cardTheme(car).primary }" />
+                        {{ car.location_text || 'Location not set' }}
+                    </span>
+                </div>
                 <h3
-                    class="text-xl font-bold text-gray-900 transition-colors group-hover:text-orange-600"
+                    class="text-[1.7rem] font-bold tracking-tight text-foreground transition-colors"
+                    :style="{ color: cardTheme(car).primary }"
                 >
                     {{ car.make }} {{ car.model }} - {{ car.year }}
                 </h3>
 
-                <div class="flex items-center gap-2">
-                    <div class="flex items-center gap-1 capitalize">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <div class="flex items-center gap-1.5 capitalize text-sm text-foreground">
                         <svg
-                            class="h-4 w-4 text-orange-500"
+                            class="h-4 w-4"
+                            :style="{ color: cardTheme(car).primary }"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -112,42 +208,30 @@ defineProps<Props>();
                         </svg>
                         <span class="font-medium">{{ car.fuel_type }}</span>
                     </div>
-                    <div class="text-xs bg-slate-400 px-2 py-1 rounded-md text-white">
+                    <div class="rounded-lg bg-slate-400 px-2.5 py-1 text-[11px] text-white">
                         <p>{{ t('car_card.gps_included') }}</p>
                     </div>
-                    <div class="text-xs bg-slate-400 px-2 py-1 rounded-md text-white">
+                    <div class="rounded-lg bg-slate-400 px-2.5 py-1 text-[11px] text-white">
                         <p>{{ t('car_card.insurance_included') }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- Description -->
-            <p class="line-clamp-2 text-sm leading-relaxed text-gray-600">
+            <p class="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
                 {{ car.description }}
             </p>
-        </div>
-        <!--  Book Button -->
-        <div class=" p-4">
+
             <button
-                @click="bookCar(car.id)"
-                class="group/btn w-full cursor-pointer rounded-xl bg-gradient-to-r from-slate-700 to-slate-900 px-6 py-3.5 font-semibold text-white shadow-lg transition-all duration-200 hover:from-orange-600 hover:to-orange-700 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:outline-none"
+                @click="bookCar(car)"
+                class="group/btn mt-auto w-full cursor-pointer rounded-xl px-6 py-4 font-semibold shadow-lg transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none"
+                :style="{
+                    background: 'var(--card-gradient)',
+                    boxShadow: `0 12px 24px -12px ${cardTheme(car).primary}`,
+                }"
             >
-                <span
-                    class="flex items-center justify-center gap-2 text-white"
-                >
-                    <svg
-                        class="h-5 w-5 transition-transform group-hover/btn:scale-110"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        ></path>
-                    </svg>
+                <span class="flex items-center justify-center gap-2 text-white">
+                    <Calendar :size="18" class="transition-transform group-hover/btn:scale-110" />
                     {{ car.status && car.status !== 'available' ? 'Check Availability' : t('car_card.book_now') }}
                 </span>
             </button>

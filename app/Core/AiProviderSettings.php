@@ -12,6 +12,7 @@ class AiProviderSettings
     {
         return [
             'provider' => 'openai',
+            'document_extraction_daily_limit' => 10,
             'openai' => [
                 'api_key' => '',
                 'organization' => '',
@@ -34,12 +35,17 @@ class AiProviderSettings
 
     public static function normalize(?array $data): array
     {
-        $settings = array_replace_recursive(self::defaults(), is_array($data) ? $data : []);
+        $defaults = self::defaults();
+        $settings = array_replace_recursive($defaults, is_array($data) ? $data : []);
 
         return [
             'provider' => in_array(($settings['provider'] ?? ''), ['openai', 'google_document_ai'], true)
                 ? (string) $settings['provider']
                 : 'openai',
+            'document_extraction_daily_limit' => self::normalizePositiveInteger(
+                $settings['document_extraction_daily_limit'] ?? $defaults['document_extraction_daily_limit'],
+                (int) $defaults['document_extraction_daily_limit']
+            ),
             'openai' => [
                 'api_key' => trim((string) ($settings['openai']['api_key'] ?? '')),
                 'organization' => trim((string) ($settings['openai']['organization'] ?? '')),
@@ -114,5 +120,19 @@ class AiProviderSettings
 
         return trim((string) ($settings['openai']['api_key'] ?? '')) !== '';
     }
-}
 
+    private static function normalizePositiveInteger(mixed $value, int $fallback): int
+    {
+        if ($value === null || $value === '') {
+            return max(1, $fallback);
+        }
+
+        if (is_numeric($value)) {
+            $integer = (int) $value;
+
+            return $integer >= 1 ? min($integer, 100000) : max(1, $fallback);
+        }
+
+        return max(1, $fallback);
+    }
+}

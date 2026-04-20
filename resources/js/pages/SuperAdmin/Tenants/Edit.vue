@@ -31,6 +31,9 @@ const props = defineProps<{
         is_active: boolean;
         logo_url: string | null;
     };
+    settings: {
+        document_extraction_daily_limit: number | null;
+    };
     plans: Array<{ id: number; name: string }>;
     admin_user: { id: number; name: string; email: string } | null;
     logoFiles: Array<{ id: number; url: string }>;
@@ -44,6 +47,7 @@ const form = useForm({
     phone: props.tenant.phone ?? '',
     plan_id: props.tenant.plan_id ? String(props.tenant.plan_id) : '',
     is_active: props.tenant.is_active,
+    document_extraction_daily_limit: props.settings.document_extraction_daily_limit ?? '',
     admin_password: '',
     admin_password_confirmation: '',
     logo_temp_folders: [] as string[],
@@ -201,6 +205,26 @@ const submit = () => {
                             <div class="rounded-lg border bg-muted/30 p-4">
                                 <div class="mb-2 text-xs uppercase text-muted-foreground">{{ t('dashboard.super_admin.tenants.form.preview') }}</div>
                                 <img :src="previewLogoUrl" alt="Tenant logo preview" class="h-14 object-contain" />
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="document_extraction_daily_limit">
+                                Daily AI Extraction Limit
+                            </Label>
+                            <Input
+                                id="document_extraction_daily_limit"
+                                v-model.number="form.document_extraction_daily_limit"
+                                type="number"
+                                min="1"
+                                step="1"
+                                placeholder="10"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                Leave blank to use the global Super Admin default.
+                            </p>
+                            <div v-if="form.errors.document_extraction_daily_limit" class="text-sm text-red-600">
+                                {{ form.errors.document_extraction_daily_limit }}
                             </div>
                         </div>
 

@@ -15,16 +15,39 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use MohamedGaldi\ViltFilepond\Services\FilePondService;
 use OpenAI;
 use RuntimeException;
 use Throwable;
 
 class LandingSettingsController extends Controller
 {
+    public function __construct(
+        private readonly FilePondService $filePondService,
+    ) {}
+
     public function edit(): Response
     {
+        $brandingSetting = SiteSetting::query()
+            ->with('files')
+            ->where('key', LandingPageSettings::KEY)
+            ->first();
+
+        $heroFiles = $brandingSetting
+            ? $brandingSetting->files()
+                ->where('collection', 'hero')
+                ->get()
+                ->map(fn ($file) => [
+                    'id' => $file->id,
+                    'url' => SiteSetting::publicUrlFromPath($file->path),
+                ])
+                ->values()
+                ->all()
+            : [];
+
         return Inertia::render('SuperAdmin/Settings/General', [
             'settings' => $this->landingSettings(),
+            'heroFiles' => $heroFiles,
             'aiSettings' => AiAutomationSettings::load(),
             'aiProviderSettings' => AiProviderSettings::forUi(),
         ]);
@@ -85,6 +108,7 @@ class LandingSettingsController extends Controller
             'ai_provider.openai.temperature' => ['nullable', 'numeric', 'min:0', 'max:2'],
             'ai_provider.openai.max_output_tokens' => ['nullable', 'integer', 'min:1', 'max:16384'],
             'ai_provider.openai.system_prompt' => ['nullable', 'string', 'max:10000'],
+            'ai_provider.document_extraction_daily_limit' => ['nullable', 'integer', 'min:1', 'max:100000'],
 
             'ai_provider.google_document_ai.enabled' => ['nullable', 'boolean'],
             'ai_provider.google_document_ai.project_id' => ['nullable', 'string', 'max:255'],
@@ -93,12 +117,13 @@ class LandingSettingsController extends Controller
         ]);
 
         $normalized = $this->validatedLandingSettings($request);
+        $landingSetting = $this->persistLandingSettings($normalized);
         $normalizedAi = AiAutomationSettings::normalize($validated['ai'] ?? []);
         $currentAiProvider = AiProviderSettings::load();
         $normalizedAiProvider = AiProviderSettings::normalize($validated['ai_provider'] ?? []);
         $normalizedAiProvider = AiProviderSettings::mergeSecrets($currentAiProvider, $normalizedAiProvider);
 
-        $this->persistLandingSettings($normalized);
+        $this->syncHeroImageUpload($request, $landingSetting, $normalized);
 
         SiteSetting::query()->updateOrCreate(
             ['key' => AiAutomationSettings::KEY],
@@ -115,7 +140,9 @@ class LandingSettingsController extends Controller
 
     public function updateDesign(Request $request): RedirectResponse
     {
-        $this->persistLandingSettings($this->validatedLandingSettings($request));
+        $normalized = $this->validatedLandingSettings($request);
+        $landingSetting = $this->persistLandingSettings($normalized);
+        $this->syncHeroImageUpload($request, $landingSetting, $normalized);
 
         return back()->with('success', 'Landing page design updated successfully.');
     }
@@ -132,6 +159,7 @@ class LandingSettingsController extends Controller
             'ai_provider.openai.temperature' => ['nullable', 'numeric', 'min:0', 'max:2'],
             'ai_provider.openai.max_output_tokens' => ['nullable', 'integer', 'min:1', 'max:16384'],
             'ai_provider.openai.system_prompt' => ['nullable', 'string', 'max:10000'],
+            'ai_provider.document_extraction_daily_limit' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'ai_provider.google_document_ai.enabled' => ['nullable', 'boolean'],
             'ai_provider.google_document_ai.project_id' => ['nullable', 'string', 'max:255'],
             'ai_provider.google_document_ai.location' => ['nullable', 'string', 'max:255'],
@@ -244,12 +272,52 @@ class LandingSettingsController extends Controller
         return LandingPageSettings::normalize(is_array($stored) ? $stored : null);
     }
 
-    private function persistLandingSettings(array $settings): void
+    private function persistLandingSettings(array $settings): SiteSetting
     {
-        SiteSetting::query()->updateOrCreate(
+        return SiteSetting::query()->updateOrCreate(
             ['key' => LandingPageSettings::KEY],
             ['value' => $settings]
         );
+    }
+
+    private function syncHeroImageUpload(Request $request, SiteSetting $landingSetting, array &$settings): void
+    {
+        $tempFolders = is_array($request->input('hero_temp_folders', []))
+            ? array_values(array_filter($request->input('hero_temp_folders', [])))
+            : [];
+        $removedIds = is_array($request->input('hero_removed_files', []))
+            ? array_values(array_unique(array_filter($request->input('hero_removed_files', []))))
+            : [];
+
+        if (!empty($tempFolders)) {
+            $existingIds = $landingSetting->files()->where('collection', 'hero')->pluck('id')->all();
+            $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+        }
+
+        $this->filePondService->handleFileUpdates(
+            $landingSetting,
+            $tempFolders,
+            $removedIds,
+            'hero'
+        );
+
+        $heroImageUrl = trim((string) data_get($settings, 'hero.image_url', ''));
+
+        if (!empty($tempFolders)) {
+            $heroFile = $landingSetting->files()
+                ->where('collection', 'hero')
+                ->latest('id')
+                ->first();
+
+            $heroImageUrl = $heroFile
+                ? (SiteSetting::publicUrlFromPath($heroFile->path) ?? '')
+                : $heroImageUrl;
+        } elseif (!empty($removedIds)) {
+            $heroImageUrl = '';
+        }
+
+        data_set($settings, 'hero.image_url', $heroImageUrl);
+        $landingSetting->update(['value' => $settings]);
     }
 
     private function validatedLandingSettings(Request $request): array

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { Input } from '@/components/ui/input';
+import { useTrans } from '@/composables/useTrans';
 
 interface Option {
     value: string;
@@ -32,8 +33,10 @@ const emit = defineEmits<{
     blur: [];
 }>();
 
+const { direction } = useTrans();
 const menuOpen = ref(false);
 const search = ref('');
+const isRtl = computed(() => direction.value === 'rtl');
 
 const normalizedValue = computed(() => (props.modelValue === null || props.modelValue === undefined ? '' : String(props.modelValue)));
 
@@ -121,7 +124,8 @@ function handleBlur() {
 
         <button
             type="button"
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            class="absolute top-1/2 -translate-y-1/2 text-muted-foreground"
+            :class="isRtl ? 'left-3' : 'right-3'"
             :disabled="disabled"
             @mousedown.prevent
             @click="menuOpen = !menuOpen"

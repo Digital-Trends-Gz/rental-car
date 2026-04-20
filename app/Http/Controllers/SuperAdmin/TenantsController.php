@@ -184,6 +184,7 @@ class TenantsController
                 'is_active' => $tenant->is_active,
                 'logo_url' => TenantSiteSetting::forTenant($tenant)['logo_url'],
             ],
+            'settings' => TenantSiteSetting::forTenant($tenant),
             'plans' => $plans,
             'admin_user' => $adminUser ? [
                 'id' => $adminUser->id,
@@ -222,6 +223,7 @@ class TenantsController
             'phone' => 'nullable|string|max:20',
             'plan_id' => ['required', 'integer', Rule::exists('plans', 'id')->where(static fn ($query) => $query->where('is_active', true))],
             'is_active' => 'required|boolean',
+            'document_extraction_daily_limit' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'logo_temp_folders' => ['array'],
             'logo_temp_folders.*' => ['string'],
             'logo_removed_files' => ['array'],
@@ -268,6 +270,18 @@ class TenantsController
             ['tenant_id' => $tenant->id],
             ['site_name' => $tenant->name]
         );
+
+        $dailyLimit = null;
+        if (array_key_exists('document_extraction_daily_limit', $validated)) {
+            $dailyLimitValue = $validated['document_extraction_daily_limit'];
+            $dailyLimit = is_numeric($dailyLimitValue) && (int) $dailyLimitValue >= 1
+                ? min((int) $dailyLimitValue, 100000)
+                : null;
+        }
+
+        $siteSetting->update([
+            'document_extraction_daily_limit' => $dailyLimit,
+        ]);
 
         $tempFolders = $request->input('logo_temp_folders', []);
         $removedIds = $request->input('logo_removed_files', []);

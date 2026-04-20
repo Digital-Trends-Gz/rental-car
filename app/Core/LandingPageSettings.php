@@ -44,20 +44,20 @@ class LandingPageSettings
                 ],
             ],
             'getting_started' => [
-                'title' => 'Get started in minutes',
-                'description' => 'Three simple steps to automate your workflow.',
+                'title' => 'Up and running in minutes',
+                'description' => 'Three simple steps to launch your fleet operations quickly.',
                 'items' => [
                     [
-                        'title' => 'Connect your tools',
-                        'description' => 'Link the apps your team already uses.',
+                        'title' => 'Connect your account',
+                        'description' => 'Link your tenant and bring your cars online.',
                     ],
                     [
-                        'title' => 'Build your workflow',
-                        'description' => 'Use the visual builder to define automations.',
+                        'title' => 'Publish your fleet',
+                        'description' => 'Add cars, pricing, and availability in one place.',
                     ],
                     [
-                        'title' => 'Watch it run',
-                        'description' => 'Monitor live progress with dashboards.',
+                        'title' => 'Start receiving bookings',
+                        'description' => 'Track reservations and revenue from the dashboard.',
                     ],
                 ],
             ],

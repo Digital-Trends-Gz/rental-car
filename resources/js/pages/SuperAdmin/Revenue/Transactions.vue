@@ -61,6 +61,7 @@ const props = defineProps<{
 }>();
 
 const { locale } = useTrans();
+const localize = (en: string, ar: string, ur: string = en) => (locale.value === 'ar' ? ar : locale.value === 'ur' ? ur : en);
 
 const filters = reactive({
     search: props.filters.search ?? '',
@@ -148,7 +149,9 @@ const formatDateTime = (value: string | null) => {
 };
 
 const sourceLabel = (source: string) => {
-    return source === 'booking' ? 'Booking Payment' : 'Subscription';
+    return source === 'booking'
+        ? localize('Booking Payment', 'دفعة الحجز', 'بکنگ ادائیگی')
+        : localize('Subscription', 'الاشتراك', 'سبسکرپشن');
 };
 
 const statusClass = (status: string) => {
@@ -161,49 +164,49 @@ const statusClass = (status: string) => {
 </script>
 
 <template>
-    <Head title="Financial Transactions Report" />
+    <Head :title="localize('Financial Transactions Report', 'تقرير المعاملات المالية', 'مالی لین دین کی رپورٹ')" />
 
     <SuperAdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">Financial Transactions Report</h1>
+                    <h1 class="text-2xl font-semibold">{{ localize('Financial Transactions Report', 'تقرير المعاملات المالية', 'مالی لین دین کی رپورٹ') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        Money, payment, and subscription report across all tenant websites.
+                        {{ localize('Money, payment, and subscription report across all tenant websites.', 'تقرير عن الأموال والمدفوعات والاشتراكات عبر جميع مواقع المستأجرين.', 'تمام کرایہ دار ویب سائٹس کے مالی، ادائیگی، اور سبسکرپشن ریکارڈ کی رپورٹ۔') }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <a :href="exportCsvUrl">
-                        <Button type="button" variant="outline">Export Excel (CSV)</Button>
+                        <Button type="button" variant="outline">{{ localize('Export Excel (CSV)', 'تصدير Excel (CSV)', 'ایکسل برآمد کریں (CSV)') }}</Button>
                     </a>
                     <a :href="exportPdfUrl">
-                        <Button type="button">Export PDF</Button>
+                        <Button type="button">{{ localize('Export PDF', 'تصدير PDF', 'PDF برآمد کریں') }}</Button>
                     </a>
                 </div>
             </div>
 
             <div class="grid gap-4 md:grid-cols-4">
                 <div class="rounded-md border p-4">
-                    <div class="text-xs uppercase text-muted-foreground">Rows</div>
+                    <div class="text-xs uppercase text-muted-foreground">{{ localize('Rows', 'الصفوف', 'قطاریں') }}</div>
                     <div class="mt-1 text-2xl font-semibold">{{ props.summary.total_rows }}</div>
                 </div>
                 <div class="rounded-md border p-4">
-                    <div class="text-xs uppercase text-muted-foreground">Booking Revenue</div>
+                    <div class="text-xs uppercase text-muted-foreground">{{ localize('Booking Revenue', 'إيرادات الحجوزات', 'بکنگ آمدنی') }}</div>
                     <div class="mt-1 text-2xl font-semibold">{{ formatAmount(props.summary.booking_revenue, 'USD') }}</div>
                 </div>
                 <div class="rounded-md border p-4">
-                    <div class="text-xs uppercase text-muted-foreground">Subscription Revenue</div>
+                    <div class="text-xs uppercase text-muted-foreground">{{ localize('Subscription Revenue', 'إيرادات الاشتراكات', 'سبسکرپشن آمدنی') }}</div>
                     <div class="mt-1 text-2xl font-semibold">{{ formatAmount(props.summary.subscription_revenue, 'USD') }}</div>
                 </div>
                 <div class="rounded-md border p-4">
-                    <div class="text-xs uppercase text-muted-foreground">Total Revenue</div>
+                    <div class="text-xs uppercase text-muted-foreground">{{ localize('Total Revenue', 'إجمالي الإيرادات', 'کل آمدنی') }}</div>
                     <div class="mt-1 text-2xl font-semibold">{{ props.summary.total_revenue.toFixed(2) }}</div>
-                    <div class="text-xs text-muted-foreground">Mixed currencies total</div>
+                    <div class="text-xs text-muted-foreground">{{ localize('Mixed currencies total', 'إجمالي العملات المتعددة', 'مختلف کرنسیوں کا مجموعی') }}</div>
                 </div>
             </div>
 
             <div v-if="props.revenueByCurrency?.length" class="rounded-md border p-4">
-                <div class="mb-2 text-sm font-medium">Revenue by Currency</div>
+                <div class="mb-2 text-sm font-medium">{{ localize('Revenue by Currency', 'الإيرادات حسب العملة', 'کرنسی کے لحاظ سے آمدنی') }}</div>
                 <div class="flex flex-wrap gap-2">
                     <span
                         v-for="item in props.revenueByCurrency"
@@ -219,25 +222,25 @@ const statusClass = (status: string) => {
                 <input
                     v-model="filters.search"
                     type="text"
-                    placeholder="Search tenant, user, reference..."
+                    :placeholder="localize('Search tenant, user, reference...', 'ابحث عن المستأجر أو المستخدم أو المرجع...', 'کرایہ دار، صارف، یا حوالہ تلاش کریں...')"
                     class="h-10 rounded-md border px-3 text-sm md:col-span-2"
                 />
 
                 <select v-model="filters.source" class="h-10 rounded-md border px-3 text-sm">
-                    <option value="all">All sources</option>
-                    <option value="booking">Booking payments</option>
-                    <option value="subscription">Subscriptions</option>
+                    <option value="all">{{ localize('All sources', 'كل المصادر', 'تمام ذرائع') }}</option>
+                    <option value="booking">{{ localize('Booking payments', 'مدفوعات الحجوزات', 'بکنگ ادائیگیاں') }}</option>
+                    <option value="subscription">{{ localize('Subscriptions', 'الاشتراكات', 'سبسکرپشنز') }}</option>
                 </select>
 
                 <select v-model="filters.status" class="h-10 rounded-md border px-3 text-sm">
-                    <option value="">All statuses</option>
+                    <option value="">{{ localize('All statuses', 'كل الحالات', 'تمام حالتیں') }}</option>
                     <option v-for="status in props.statuses" :key="status" :value="status">
                         {{ status }}
                     </option>
                 </select>
 
                 <select v-model="filters.tenant_id" class="h-10 rounded-md border px-3 text-sm">
-                    <option value="">All tenants</option>
+                    <option value="">{{ localize('All tenants', 'كل المستأجرين', 'تمام کرایہ دار') }}</option>
                     <option v-for="tenant in props.tenants" :key="tenant.id" :value="String(tenant.id)">
                         {{ tenant.name }} ({{ tenant.slug }})
                     </option>
@@ -246,8 +249,8 @@ const statusClass = (status: string) => {
                 <div class="flex items-center gap-2 md:col-span-6">
                     <input v-model="filters.date_from" type="date" class="h-10 rounded-md border px-3 text-sm" />
                     <input v-model="filters.date_to" type="date" class="h-10 rounded-md border px-3 text-sm" />
-                    <Button type="submit">Search</Button>
-                    <Button type="button" variant="outline" @click="resetFilters">Reset</Button>
+                    <Button type="submit">{{ localize('Search', 'بحث', 'تلاش') }}</Button>
+                    <Button type="button" variant="outline" @click="resetFilters">{{ localize('Reset', 'إعادة ضبط', 'ری سیٹ') }}</Button>
                 </div>
             </form>
 
@@ -255,16 +258,16 @@ const statusClass = (status: string) => {
                 <table class="min-w-full divide-y divide-border">
                     <thead>
                         <tr class="bg-muted/30">
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Source</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Date</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Tenant</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">User</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Status</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Method</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Amount</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Reference</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Context</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Plan</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ localize('Source', 'المصدر', 'ذریعہ') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ localize('Date', 'التاريخ', 'تاریخ') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ localize('Tenant', 'المستأجر', 'کرایہ دار') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ localize('User', 'المستخدم', 'صارف') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ localize('Status', 'الحالة', 'حالت') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ localize('Method', 'الطريقة', 'طریقہ') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ localize('Amount', 'المبلغ', 'رقم') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ localize('Reference', 'المرجع', 'حوالہ') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ localize('Context', 'السياق', 'سیاق') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase">{{ localize('Plan', 'الخطة', 'پلان') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-border bg-white">
@@ -285,7 +288,7 @@ const statusClass = (status: string) => {
                             </td>
                             <td class="px-4 py-3 text-sm">
                                 <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(row.status)">
-                                    {{ row.status }}
+                                {{ row.status }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm">{{ row.payment_method || '-' }}</td>
@@ -296,7 +299,7 @@ const statusClass = (status: string) => {
                         </tr>
                         <tr v-if="props.rows.data.length === 0">
                             <td colspan="10" class="px-4 py-8 text-center text-sm text-muted-foreground">
-                                No records found.
+                                {{ localize('No records found.', 'لا توجد سجلات.', 'کوئی ریکارڈ نہیں ملا۔') }}
                             </td>
                         </tr>
                     </tbody>

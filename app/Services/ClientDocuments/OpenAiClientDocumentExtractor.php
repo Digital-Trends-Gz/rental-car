@@ -2,7 +2,9 @@
 
 namespace App\Services\ClientDocuments;
 
+use App\Core\AiExtractionQuota;
 use App\Core\AiProviderSettings;
+use App\Core\TenantContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use MohamedGaldi\ViltFilepond\Models\TempFile;
@@ -176,6 +178,7 @@ class OpenAiClientDocumentExtractor
         $temperature = (float) ($openAi['temperature'] ?? 0.1);
         $maxOutputTokens = max(200, min((int) ($openAi['max_output_tokens'] ?? 1200), 700));
         $systemPrompt = trim((string) ($openAi['system_prompt'] ?? ''));
+        AiExtractionQuota::ensureAvailable(TenantContext::get());
 
         if ($systemPrompt === '') {
             $systemPrompt = 'Extract driver identity or license document fields from Arabic or English documents and return strict JSON only.';

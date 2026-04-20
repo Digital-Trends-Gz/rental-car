@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import { Button } from '@/components/ui/button';
 import { login as mainLogin, register as mainRegister, home as mainHome, fleet as mainFleet, about as mainAbout, contact as mainContact } from '@/routes';
 import { login as tenantLogin, register as tenantRegister, home as tenantHome, fleet as tenantFleet, about as tenantAbout, contact as tenantContact } from '@/routes/tenant';
 import { useTrans } from '@/composables/useTrans';
@@ -6,10 +8,14 @@ import { index as tenantAdminCarsIndex } from '@/routes/admin/cars/index';
 import { index as tenantClientReservationsIndex } from '@/routes/client/reservations/index';
 import { dashboard as superAdminDashboard } from '@/routes/superadmin/index';
 import { Link, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Menu, X } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
 const $page = usePage<any>();
 const { t, locale } = useTrans();
+const props = withDefaults(defineProps<{ shellVariant?: 'tenant' | 'landing' }>(), {
+    shellVariant: 'tenant',
+});
 const currentTenant = computed(() => $page.props.current_tenant);
 const tenantSiteSettings = computed(() => $page.props.tenant_site_settings ?? null);
 const availableLocales = computed<string[]>(() =>
@@ -18,7 +24,9 @@ const availableLocales = computed<string[]>(() =>
         : ['en']
 );
 const isTenant = computed(() => !!currentTenant.value);
+const isLandingShell = computed(() => props.shellVariant === 'landing');
 const role = computed(() => $page.props.auth.user?.role);
+const mobileOpen = ref(false);
 
 const normalizedRedirectPath = computed(() => {
     const currentPath = String($page.url || '/');
@@ -67,6 +75,21 @@ const siteName = computed(() => tenantBranding.value?.site_name || currentTenant
 const siteLogoUrl = computed(() => tenantBranding.value?.logo_url || null);
 const primaryColor = computed(() => tenantBranding.value?.primary_color || '#f97316');
 const secondaryColor = computed(() => tenantBranding.value?.secondary_color || '#ea580c');
+const landingNavLinks = [
+    { label: 'Cars', href: `${mainHome().url}#cars` },
+    { label: 'Features', href: `${mainHome().url}#features` },
+    { label: 'Start in Minutes', href: `${mainHome().url}#how-it-works` },
+    { label: 'Clients', href: `${mainHome().url}#clients` },
+    { label: 'Plans', href: `${mainHome().url}#pricing` },
+    { label: 'FAQ', href: `${mainHome().url}#faq` },
+    { label: 'Contact', href: `${mainHome().url}#contact` },
+];
+const toggleLandingMenu = () => {
+    mobileOpen.value = !mobileOpen.value;
+};
+const closeLandingMenu = () => {
+    mobileOpen.value = false;
+};
 const themeVars = computed(() => ({
     '--tenant-primary': primaryColor.value,
     '--tenant-secondary': secondaryColor.value,
@@ -75,6 +98,105 @@ const themeVars = computed(() => ({
 </script>
 
 <template>
+    <template v-if="isLandingShell">
+        <div class="min-h-screen bg-background">
+            <nav class="fixed left-0 right-0 top-0 z-50 border-b border-border bg-background/95 shadow-sm backdrop-blur-lg">
+                <div class="section-container flex h-16 items-center justify-between gap-4">
+                    <Link href="/" class="inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+                        <AppLogoIcon class="h-6 w-6" />
+                        <span>{{ appName }}</span>
+                    </Link>
+
+                    <div class="hidden items-center gap-8 md:flex">
+                        <a
+                            v-for="link in landingNavLinks"
+                            :key="link.href"
+                            :href="link.href"
+                            class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            {{ link.label }}
+                        </a>
+                        <div
+                            v-if="availableLocales.length > 1"
+                            class="flex items-center rounded-full border border-border bg-muted/50 p-1"
+                        >
+                            <a
+                                v-for="localeCode in availableLocales"
+                                :key="localeCode"
+                                :href="localeSwitcherUrl(localeCode)"
+                                class="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+                                :class="locale === localeCode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
+                            >
+                                {{ localeCode.toUpperCase() }}
+                            </a>
+                        </div>
+                        <Button as-child class="gradient-button rounded-full px-5" size="sm">
+                            <Link :href="mainRegister().url">{{ t('landing.start_free_trial') }}</Link>
+                        </Button>
+                    </div>
+
+                    <button
+                        class="text-foreground md:hidden"
+                        :aria-label="t('landing.toggle_menu')"
+                        type="button"
+                        @click="toggleLandingMenu"
+                    >
+                        <X v-if="mobileOpen" :size="22" />
+                        <Menu v-else :size="22" />
+                    </button>
+                </div>
+
+                <div v-if="mobileOpen" class="animate-fade-in border-b border-border bg-background px-4 pb-4 md:hidden">
+                    <a
+                        v-for="link in landingNavLinks"
+                        :key="`mobile-${link.href}`"
+                        :href="link.href"
+                        class="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                        @click="closeLandingMenu"
+                    >
+                        {{ link.label }}
+                    </a>
+                    <div
+                        v-if="availableLocales.length > 1"
+                        class="mt-3 flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-1"
+                    >
+                        <a
+                            v-for="localeCode in availableLocales"
+                            :key="`mobile-${localeCode}`"
+                            :href="localeSwitcherUrl(localeCode)"
+                            class="flex-1 rounded-lg px-3 py-2 text-center text-xs font-semibold transition-colors"
+                            :class="locale === localeCode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
+                        >
+                            {{ localeCode.toUpperCase() }}
+                        </a>
+                    </div>
+                    <Button as-child class="gradient-button mt-2 w-full rounded-full" size="sm">
+                        <Link :href="mainRegister().url" @click="closeLandingMenu">
+                            {{ t('landing.start_free_trial') }}
+                        </Link>
+                    </Button>
+                </div>
+            </nav>
+
+            <main class="pt-16">
+                <slot />
+            </main>
+
+            <footer class="border-t border-border py-10">
+                <div class="section-container text-center">
+                    <h3 class="text-2xl font-bold text-foreground">{{ appName }}</h3>
+                    <p class="mx-auto mt-3 max-w-2xl text-muted-foreground">
+                        Premium car rental service providing luxury and reliable vehicles for your transportation needs.
+                    </p>
+                    <p class="mt-6 text-sm text-muted-foreground">
+                        &copy; {{ new Date().getFullYear() }} {{ appName }}. {{ t('landing.footer_rights') }}
+                    </p>
+                </div>
+            </footer>
+        </div>
+    </template>
+
+    <template v-else>
     <div class="tenant-public-theme" :style="themeVars">
         <header
             class="sticky top-0 z-50 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur-md"
@@ -362,6 +484,7 @@ const themeVars = computed(() => ({
             </div>
         </footer>
     </div>
+</template>
 </template>
 
 <style>

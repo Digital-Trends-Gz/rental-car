@@ -11,6 +11,7 @@ use App\Http\Controllers\SuperAdmin\DiscountsController;
 use App\Http\Controllers\SuperAdmin\CarsController;
 use App\Http\Controllers\SuperAdmin\ReservationsController;
 use App\Http\Controllers\SuperAdmin\LandingSettingsController;
+use App\Http\Controllers\SuperAdmin\LandingLeadsController;
 use App\Http\Controllers\SuperAdmin\LoginSettingsController;
 use App\Http\Controllers\SuperAdmin\AppBrandingSettingsController;
 use App\Http\Controllers\SuperAdmin\RevenueSubscriptionController;
@@ -52,6 +53,11 @@ Route::middleware(['auth', 'active', 'super_admin'])
             Route::post('support/tenants/{ticket}/reply', [SuperAdminSupportController::class, 'reply'])->name('support.tenants.reply');
             Route::post('support/tenants/{ticket}/close', [SuperAdminSupportController::class, 'close'])->name('support.tenants.close');
         });
+
+        Route::get('leads/landing', [LandingLeadsController::class, 'index'])->name('landing-leads.index');
+        Route::get('leads/landing/{ticket}', [LandingLeadsController::class, 'show'])->name('landing-leads.show');
+        Route::post('leads/landing/{ticket}/reply', [LandingLeadsController::class, 'reply'])->name('landing-leads.reply');
+        Route::put('leads/landing/{ticket}/status', [LandingLeadsController::class, 'updateStatus'])->name('landing-leads.status');
 
         // Revenue
         Route::middleware('permission:manage-revenue')->group(function () {

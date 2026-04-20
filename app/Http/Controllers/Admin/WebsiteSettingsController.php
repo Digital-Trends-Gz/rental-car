@@ -515,6 +515,21 @@ class WebsiteSettingsController extends Controller
         return $value === '' ? null : $value;
     }
 
+    private function nullablePositiveInteger(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        $integer = (int) $value;
+
+        return $integer >= 1 ? $integer : null;
+    }
+
     private function sanitizeEnabledLocales(mixed $value): array
     {
         $supported = $this->supportedLocaleKeys();

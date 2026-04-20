@@ -2,7 +2,9 @@
 
 namespace App\Services\Contracts;
 
+use App\Core\AiExtractionQuota;
 use App\Core\AiProviderSettings;
+use App\Core\TenantContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use MohamedGaldi\ViltFilepond\Models\TempFile;
@@ -168,6 +170,7 @@ class ContractAiExtractor
         $maxOutputTokens = (int) ($openAi['max_output_tokens'] ?? 1200);
         $maxOutputTokens = max(200, min($maxOutputTokens, 500));
         $systemPrompt = trim((string) ($openAi['system_prompt'] ?? ''));
+        AiExtractionQuota::ensureAvailable(TenantContext::get());
         if ($systemPrompt === '') {
             $systemPrompt = 'Extract rental contract fields from Arabic/English text and return strict JSON only.';
         }

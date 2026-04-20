@@ -13,6 +13,8 @@ class AppBrandingSettings
         return [
             'app_name' => config('app.name', 'Real Rent Car'),
             'logo_url' => null,
+            'primary_color' => '#3b82f6',
+            'secondary_color' => '#6d28d9',
         ];
     }
 
@@ -45,6 +47,8 @@ class AppBrandingSettings
         return [
             'app_name' => trim((string) ($data['app_name'] ?? $defaults['app_name'])) ?: $defaults['app_name'],
             'logo_url' => self::nullableString($logoUrl ?: ($data['logo_url'] ?? $defaults['logo_url'])),
+            'primary_color' => self::normalizeHexColor($data['primary_color'] ?? $defaults['primary_color'], $defaults['primary_color']),
+            'secondary_color' => self::normalizeHexColor($data['secondary_color'] ?? $defaults['secondary_color'], $defaults['secondary_color']),
         ];
     }
 
@@ -53,5 +57,16 @@ class AppBrandingSettings
         $normalized = trim((string) $value);
 
         return $normalized !== '' ? $normalized : null;
+    }
+
+    private static function normalizeHexColor(mixed $value, string $fallback): string
+    {
+        $normalized = strtolower(trim((string) ($value ?? '')));
+
+        if (!preg_match('/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/', $normalized)) {
+            return $fallback;
+        }
+
+        return $normalized;
     }
 }

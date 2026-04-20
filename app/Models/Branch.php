@@ -44,6 +44,11 @@ class Branch extends Model
         return $this->hasMany(User::class);
     }
 
+    public function cars(): HasMany
+    {
+        return $this->hasMany(Car::class);
+    }
+
     public function getShowroomImageUrlAttribute(): ?string
     {
         $file = $this->relationLoaded('files')

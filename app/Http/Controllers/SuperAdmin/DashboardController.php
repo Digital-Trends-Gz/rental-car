@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Reservation;
 use App\Models\Payment;
+use App\Models\Ticket;
 use App\Models\SaasVisit;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -106,6 +107,31 @@ class DashboardController
             })
             ->values();
 
+        $recentLandingContacts = Ticket::withoutTenantScope()
+            ->where('channel', 'landing')
+            ->with([
+                'messages' => fn ($q) => $q->latest()->limit(1),
+            ])
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function (Ticket $ticket) {
+                $lastMessage = $ticket->messages->first();
+
+                return [
+                    'id' => $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'guest_name' => $ticket->guest_name,
+                    'guest_email' => $ticket->guest_email,
+                    'subject' => $ticket->subject,
+                    'status' => $ticket->status?->value ?? (string) $ticket->status,
+                    'created_at' => $ticket->created_at?->toISOString(),
+                    'last_message' => $lastMessage?->message,
+                    'last_message_at' => $lastMessage?->created_at?->toISOString(),
+                ];
+            })
+            ->values();
+
         return Inertia::render('SuperAdmin/Dashboard', [
             'stats' => $stats,
             'recentTenants' => $recentTenants,
@@ -114,6 +140,10 @@ class DashboardController
             'tenants' => $tenants,
             'trafficSources' => $trafficSources,
             'recentSaasVisits' => $recentSaasVisits,
+            'recentLandingContacts' => $recentLandingContacts,
+            'urls' => [
+                'landing_leads_index' => route('superadmin.landing-leads.index'),
+            ],
         ]);
     }
 }

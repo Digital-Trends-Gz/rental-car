@@ -115,10 +115,13 @@ const superAdminNav = computed<NavItem[]>(() => [
         permission: 'manage-reservations',
     },
     {
-        title: 'Tenant Support',
-        href: '/superadmin/support/tenants',
+        title: 'Support',
         icon: LifeBuoy,
         permission: 'manage-tenants',
+        children: [
+            { title: 'Tenant Support', href: '/superadmin/support/tenants', icon: LifeBuoy, permission: 'manage-tenants' },
+            { title: 'Landing Leads', href: '/superadmin/leads/landing', icon: LifeBuoy },
+        ].filter(item => hasPermission(item.permission)),
     },
     {
         title: t('dashboard.sidebar.super_admin.settings'),

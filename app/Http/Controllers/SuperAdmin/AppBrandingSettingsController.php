@@ -52,6 +52,8 @@ class AppBrandingSettingsController extends Controller
         $validated = $request->validate([
             'app_name' => ['required', 'string', 'max:255'],
             'logo_url' => ['nullable', 'string', 'max:2000'],
+            'primary_color' => ['required', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
+            'secondary_color' => ['required', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
             'logo_temp_folders' => ['array'],
             'logo_temp_folders.*' => ['string'],
             'logo_removed_files' => ['array'],

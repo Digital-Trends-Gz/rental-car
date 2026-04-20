@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { useTrans } from '@/composables/useTrans';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
@@ -7,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 interface FeatureCard {
     title: string;
@@ -59,6 +60,7 @@ interface LandingSettings {
 
 interface AiProviderSettings {
     provider: 'openai' | 'google_document_ai';
+    document_extraction_daily_limit: number | null;
     openai: {
         api_key: string;
         organization: string;
@@ -103,6 +105,7 @@ const props = defineProps<{
     };
     aiProviderSettings: AiProviderSettings;
     socialLoginSettings: SocialLoginSettings;
+    heroFiles: Array<{ id: number; url: string }>;
 }>();
 
 const { locale } = useTrans();
@@ -116,6 +119,8 @@ const form = useForm<{
     };
     ai_provider: AiProviderSettings;
     social_login: SocialLoginSettings;
+    hero_temp_folders: string[];
+    hero_removed_files: number[];
 }>({
     settings: JSON.parse(JSON.stringify(props.settings)),
     ai: {
@@ -127,7 +132,21 @@ const form = useForm<{
         google: { enabled: false, client_id: '', client_secret: '' },
         apple: { enabled: false, client_id: '', client_secret: '' },
     })),
+    hero_temp_folders: [] as string[],
+    hero_removed_files: [] as number[],
 });
+
+const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
+const heroTempFolders = ref<string[]>([]);
+const heroRemovedFileIds = ref<number[]>([]);
+
+watch(
+    heroTempFolders,
+    (value) => {
+        form.hero_temp_folders = [...value];
+    },
+    { deep: true },
+);
 
 const addHeroFeature = () => {
     form.settings.hero.features.push('');
@@ -176,7 +195,24 @@ const submit = () => {
 
     form.put(updateUrl, {
         preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => {
+            heroTempFolders.value = [];
+            form.hero_temp_folders = [];
+            form.hero_removed_files = [];
+            heroRemovedFileIds.value = [];
+            fileUploadRef.value?.resetFiles();
+        },
     });
+};
+
+const previewHeroUrl = computed(() => props.heroFiles?.[0]?.url || form.settings.hero.image_url || null);
+
+const handleHeroFileRemoved = (data: { type: string; fileId?: number }) => {
+    if (data.type === 'existing' && data.fileId) {
+        heroRemovedFileIds.value.push(data.fileId);
+        form.hero_removed_files = [...new Set(heroRemovedFileIds.value)];
+    }
 };
 
 const testingAiConnection = ref(false);
@@ -397,6 +433,26 @@ async function testAiConnection() {
                                     :placeholder="localize('Extract key fields from Arabic and English rental contract files as JSON.', 'استخرج الحقول الأساسية من ملفات عقود التأجير العربية والإنجليزية بصيغة JSON.')"
                                 />
                             </div>
+
+                            <div class="space-y-2">
+                                <Label for="document_extraction_daily_limit">
+                                    {{ localize('Document Extraction Daily Limit', 'الحد اليومي لاستخراج المستندات') }}
+                                </Label>
+                                <Input
+                                    id="document_extraction_daily_limit"
+                                    v-model.number="form.ai_provider.document_extraction_daily_limit"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    placeholder="10"
+                                />
+                                <p class="text-xs text-muted-foreground">
+                                    {{ localize('Tenants can override this limit in their website settings.', 'يمكن للمستأجرين تغيير هذا الحد من إعدادات موقعهم.') }}
+                                </p>
+                                <p v-if="form.errors['ai_provider.document_extraction_daily_limit']" class="text-sm text-red-600">
+                                    {{ form.errors['ai_provider.document_extraction_daily_limit'] }}
+                                </p>
+                            </div>
                         </div>
 
                         <div class="space-y-4 rounded-md border p-4">
@@ -441,7 +497,7 @@ async function testAiConnection() {
                 <Card>
                     <CardHeader>
                         <CardTitle>{{ localize('Hero Section', 'قسم البطل') }}</CardTitle>
-                        <CardDescription>{{ localize('Title, description, hero features, and image URL.', 'العنوان والوصف ومزايا القسم والرابط الخاص بالصورة.') }}</CardDescription>
+                        <CardDescription>{{ localize('Title, description, hero features, and hero image upload.', 'العنوان والوصف ومزايا القسم ورفع صورة البطل.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
@@ -461,11 +517,24 @@ async function testAiConnection() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="hero_image_url">{{ localize('Image URL', 'رابط الصورة') }}</Label>
-                            <Input id="hero_image_url" v-model="form.settings.hero.image_url" placeholder="https://..." />
-                            <p v-if="form.errors['settings.hero.image_url']" class="text-sm text-red-600">
-                                {{ form.errors['settings.hero.image_url'] }}
+                            <Label>{{ localize('Hero Image Upload', 'رفع صورة البطل') }}</Label>
+                            <FileUpload
+                                ref="fileUploadRef"
+                                v-model="heroTempFolders"
+                                :initial-files="heroFiles || []"
+                                :allow-multiple="false"
+                                :max-files="1"
+                                collection="hero"
+                                theme="light"
+                                width="100%"
+                                @file-removed="handleHeroFileRemoved"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                {{ localize('Upload the hero image here. A new upload replaces the previous image.', 'ارفع صورة القسم الرئيسي هنا. أي رفع جديد سيستبدل الصورة السابقة.') }}
                             </p>
+                            <div v-if="previewHeroUrl" class="overflow-hidden rounded-lg border bg-muted/20">
+                                <img :src="previewHeroUrl" alt="hero preview" class="h-44 w-full object-cover" />
+                            </div>
                         </div>
 
                         <div class="space-y-2">

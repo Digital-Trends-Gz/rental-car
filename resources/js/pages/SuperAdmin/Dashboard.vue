@@ -39,6 +39,17 @@ const props = defineProps<{
         type: string;
         stripe_status: string;
     }>;
+    recentLandingContacts?: Array<{
+        id: number;
+        ticket_number: string;
+        guest_name: string | null;
+        guest_email: string | null;
+        subject: string;
+        status: string | null;
+        created_at: string;
+        last_message: string | null;
+        last_message_at: string | null;
+    }>;
     trafficSources?: Array<{
         source: string;
         visits: number;
@@ -51,6 +62,9 @@ const props = defineProps<{
         campaign: string | null;
         visited_at: string;
     }>;
+    urls?: {
+        landing_leads_index?: string;
+    };
 }>();
 const { t, locale } = useTrans();
 const numberLocale = computed(() => (locale.value === 'ar' ? 'ar' : 'en-US'));
@@ -291,6 +305,54 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                         </table>
                     </div>
                     <div v-else class="py-8 text-center text-muted-foreground">{{ localize('No subscriptions found yet.', 'لا توجد اشتراكات حتى الآن.') }}</div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <CardTitle>{{ localize('Landing contact leads', 'الرسائل الواردة من الصفحة') }}</CardTitle>
+                            <CardDescription>{{ localize('Messages sent from the public landing page contact form.', 'الرسائل المرسلة من نموذج التواصل في الصفحة العامة.') }}</CardDescription>
+                        </div>
+                        <Link v-if="props.urls?.landing_leads_index" :href="props.urls.landing_leads_index" class="text-sm font-medium text-primary hover:underline">
+                            {{ localize('View inbox', 'عرض الصندوق') }}
+                        </Link>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div v-if="props.recentLandingContacts && props.recentLandingContacts.length > 0" class="space-y-4">
+                        <div
+                            v-for="lead in props.recentLandingContacts"
+                            :key="lead.id"
+                            class="rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                        >
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="font-medium text-foreground">{{ lead.guest_name || localize('Guest', 'زائر') }}</span>
+                                        <span class="text-xs text-muted-foreground">{{ lead.guest_email || '-' }}</span>
+                                    </div>
+                                    <div class="mt-1 text-sm text-muted-foreground">
+                                        {{ lead.ticket_number }} • {{ formatDateTime(lead.created_at) }}
+                                    </div>
+                                </div>
+                                <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                                    {{ lead.status || localize('new', 'جديد') }}
+                                </span>
+                            </div>
+
+                            <div class="mt-3">
+                                <p class="text-sm font-medium text-foreground">{{ lead.subject }}</p>
+                                <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                                    {{ lead.last_message || localize('No message body provided.', 'لم يتم إرسال نص الرسالة.') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="py-8 text-center text-muted-foreground">
+                        {{ localize('No landing page messages received yet.', 'لم يتم استلام أي رسائل من الصفحة العامة حتى الآن.') }}
+                    </div>
                 </CardContent>
             </Card>
 

@@ -13,6 +13,8 @@ const props = defineProps<{
     settings: {
         app_name: string;
         logo_url: string | null;
+        primary_color: string;
+        secondary_color: string;
     };
     logoFiles: Array<{ id: number; url: string }>;
     actions: {
@@ -26,6 +28,8 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 const form = useForm({
     app_name: props.settings.app_name ?? '',
     logo_url: props.settings.logo_url ?? '',
+    primary_color: props.settings.primary_color ?? '#3b82f6',
+    secondary_color: props.settings.secondary_color ?? '#6d28d9',
     logo_temp_folders: [] as string[],
     logo_removed_files: [] as number[],
 });
@@ -45,6 +49,9 @@ watch(
 const previewName = computed(() => form.app_name || 'Real Rent Car');
 const uploadedLogoUrl = computed(() => props.logoFiles?.[0]?.url || null);
 const previewLogo = computed(() => uploadedLogoUrl.value || form.logo_url || '/logo/logo.png');
+const previewGradient = computed(
+    () => `linear-gradient(135deg, ${form.primary_color || '#3b82f6'}, ${form.secondary_color || '#6d28d9'})`,
+);
 
 const handleLogoFileRemoved = (data: { type: string; fileId?: number }) => {
     if (data.type === 'existing' && data.fileId) {
@@ -135,6 +142,30 @@ const submit = () => {
                                 {{ form.errors.logo_url }}
                             </p>
                         </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="space-y-2">
+                                <Label for="primary_color">{{ localize('Primary Color', 'اللون الأساسي') }}</Label>
+                                <div class="flex items-center gap-3">
+                                    <input id="primary_color" v-model="form.primary_color" type="color" class="h-10 w-14 rounded border border-input bg-white p-1" />
+                                    <Input v-model="form.primary_color" placeholder="#3b82f6" />
+                                </div>
+                                <p v-if="form.errors.primary_color" class="text-sm text-red-600">
+                                    {{ form.errors.primary_color }}
+                                </p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="secondary_color">{{ localize('Secondary Color', 'اللون الثانوي') }}</Label>
+                                <div class="flex items-center gap-3">
+                                    <input id="secondary_color" v-model="form.secondary_color" type="color" class="h-10 w-14 rounded border border-input bg-white p-1" />
+                                    <Input v-model="form.secondary_color" placeholder="#6d28d9" />
+                                </div>
+                                <p v-if="form.errors.secondary_color" class="text-sm text-red-600">
+                                    {{ form.errors.secondary_color }}
+                                </p>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -152,6 +183,10 @@ const submit = () => {
                                     <p class="truncate text-lg font-semibold">{{ previewName }}</p>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="overflow-hidden rounded-xl border">
+                            <div class="h-16 w-full" :style="{ background: previewGradient }"></div>
                         </div>
 
                         <div class="rounded-xl border bg-muted/30 p-4">

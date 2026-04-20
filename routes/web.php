@@ -82,6 +82,7 @@ Route::domain($baseDomain)->group(function () use ($localizedGroup) {
         Route::get('/fleet', [HomePagesController::class, 'fleet'])->name('fleet');
         Route::get('/about', [HomePagesController::class, 'about'])->name('about');
         Route::get('/contact', [HomePagesController::class, 'contact'])->name('contact');
+        Route::post('/contact/guestContact', [HomePagesController::class, 'landingContact'])->name('contact.guestContact');
 
         Route::get('/dashboard', function () {
             $user = Auth::user();
