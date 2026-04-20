@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use App\Models\Tenant;
+use App\Models\TenantSiteSetting;
 use Illuminate\Support\Facades\RateLimiter;
 use RuntimeException;
 

@@ -101,6 +101,7 @@ Route::middleware(['auth', 'active', 'super_admin'])
             Route::get('settings/general', [LandingSettingsController::class, 'edit'])->name('settings.general');
             Route::put('settings/general', [LandingSettingsController::class, 'update'])->name('settings.general.update');
             Route::post('settings/general/test-ai-connection', [LandingSettingsController::class, 'testAiConnection'])->name('settings.general.test-ai-connection');
+            Route::post('settings/general/test-mail-connection', [LandingSettingsController::class, 'testMailConnection'])->name('settings.general.test-mail-connection');
             Route::get('settings/branding', [AppBrandingSettingsController::class, 'edit'])->name('settings.branding');
             Route::put('settings/branding', [AppBrandingSettingsController::class, 'update'])->name('settings.branding.update');
             Route::get('settings/design', [LandingSettingsController::class, 'design'])->name('settings.design');

@@ -12,6 +12,8 @@ use Google\Cloud\DocumentAI\V1\GetProcessorRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Mailables\Address;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -193,6 +195,48 @@ class LandingSettingsController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    public function testMailConnection(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        $recipient = trim((string) ($validated['email'] ?? $request->user()->email ?? ''));
+        if ($recipient === '') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'A recipient email is required to test mail delivery.',
+            ], 422);
+        }
+
+        Mail::raw(
+            'This is a test email from the Car4u Super Admin mail connection test.',
+            function ($message) use ($recipient): void {
+                $message->to(new Address($recipient))
+                    ->subject('Car4u SMTP test message')
+                    ->from(
+                        config('mail.from.address'),
+                        config('mail.from.name', config('app.name'))
+                    );
+            }
+        );
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Test email sent successfully.',
+            'mail' => [
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host'),
+                'port' => config('mail.mailers.smtp.port'),
+                'username' => config('mail.mailers.smtp.username'),
+                'encryption' => config('mail.mailers.smtp.scheme') ?: config('mail.mailers.smtp.encryption'),
+                'from_address' => config('mail.from.address'),
+                'from_name' => config('mail.from.name'),
+                'recipient' => $recipient,
+            ],
+        ]);
     }
 
     /**
