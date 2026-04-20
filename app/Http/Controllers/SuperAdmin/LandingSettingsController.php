@@ -12,7 +12,6 @@ use Google\Cloud\DocumentAI\V1\GetProcessorRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -214,7 +213,7 @@ class LandingSettingsController extends Controller
         Mail::raw(
             'This is a test email from the Car4u Super Admin mail connection test.',
             function ($message) use ($recipient): void {
-                $message->to(new Address($recipient))
+                $message->to($recipient)
                     ->subject('Car4u SMTP test message')
                     ->from(
                         config('mail.from.address'),
