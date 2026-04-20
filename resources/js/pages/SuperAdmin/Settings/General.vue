@@ -218,6 +218,9 @@ const handleHeroFileRemoved = (data: { type: string; fileId?: number }) => {
 const testingAiConnection = ref(false);
 const aiConnectionTestState = ref<'idle' | 'success' | 'error'>('idle');
 const aiConnectionTestMessage = ref('');
+const testingMailConnection = ref(false);
+const mailConnectionTestState = ref<'idle' | 'success' | 'error'>('idle');
+const mailConnectionTestMessage = ref('');
 
 function extractFirstValidationError(errors: unknown): string | null {
     if (!errors || typeof errors !== 'object') {
@@ -285,6 +288,56 @@ async function testAiConnection() {
         testingAiConnection.value = false;
     }
 }
+
+async function testMailConnection() {
+    if (testingMailConnection.value || typeof window === 'undefined') return;
+
+    testingMailConnection.value = true;
+    mailConnectionTestState.value = 'idle';
+    mailConnectionTestMessage.value = '';
+
+    const csrfToken = document
+        .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+        ?.getAttribute('content');
+    const xsrfToken = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('XSRF-TOKEN='))
+        ?.split('=')[1];
+
+    const basePath = window.location.pathname.replace(/\/$/, '');
+    const testUrl = `${basePath}/test-mail-connection`;
+
+    try {
+        const response = await fetch(testUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                ...(xsrfToken ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrfToken) } : {}),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({}),
+        });
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.ok) {
+            const firstValidationError = extractFirstValidationError(payload?.errors);
+            mailConnectionTestState.value = 'error';
+            mailConnectionTestMessage.value = firstValidationError ?? payload?.message ?? localize('Mail test failed.', 'فشل اختبار البريد الإلكتروني.');
+            return;
+        }
+
+        mailConnectionTestState.value = 'success';
+        mailConnectionTestMessage.value = payload?.message ?? localize('Test email sent successfully.', 'تم إرسال البريد التجريبي بنجاح.');
+    } catch {
+        mailConnectionTestState.value = 'error';
+        mailConnectionTestMessage.value = localize('Could not test mail connection. Please try again.', 'تعذر اختبار اتصال البريد الإلكتروني. حاول مرة أخرى.');
+    } finally {
+        testingMailConnection.value = false;
+    }
+}
 </script>
 
 <template>
@@ -341,19 +394,35 @@ async function testAiConnection() {
                             <p class="text-xs text-muted-foreground">
                                 {{ localize('Test provider credentials before saving.', 'اختبر بيانات اعتماد المزود قبل الحفظ.') }}
                             </p>
-                            <Button type="button" variant="outline" :disabled="testingAiConnection" @click="testAiConnection">
-                                {{ testingAiConnection ? localize('Testing...', 'جارٍ الاختبار...') : localize('Test AI Connection', 'اختبار اتصال الذكاء الاصطناعي') }}
-                            </Button>
+                            <div class="flex flex-wrap gap-2">
+                                <Button type="button" variant="outline" :disabled="testingAiConnection" @click="testAiConnection">
+                                    {{ testingAiConnection ? localize('Testing...', 'جارٍ الاختبار...') : localize('Test AI Connection', 'اختبار اتصال الذكاء الاصطناعي') }}
+                                </Button>
+                                <Button type="button" variant="outline" :disabled="testingMailConnection" @click="testMailConnection">
+                                    {{ testingMailConnection ? localize('Sending...', 'جارٍ الإرسال...') : localize('Send Test Email', 'إرسال بريد تجريبي') }}
+                                </Button>
+                            </div>
                         </div>
 
-                        <div
-                            v-if="aiConnectionTestMessage"
-                            class="rounded-md border p-3 text-sm"
-                            :class="aiConnectionTestState === 'success'
-                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                : 'border-red-200 bg-red-50 text-red-700'"
-                        >
-                            {{ aiConnectionTestMessage }}
+                        <div class="space-y-2">
+                            <div
+                                v-if="aiConnectionTestMessage"
+                                class="rounded-md border p-3 text-sm"
+                                :class="aiConnectionTestState === 'success'
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    : 'border-red-200 bg-red-50 text-red-700'"
+                            >
+                                {{ aiConnectionTestMessage }}
+                            </div>
+                            <div
+                                v-if="mailConnectionTestMessage"
+                                class="rounded-md border p-3 text-sm"
+                                :class="mailConnectionTestState === 'success'
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    : 'border-red-200 bg-red-50 text-red-700'"
+                            >
+                                {{ mailConnectionTestMessage }}
+                            </div>
                         </div>
 
                         <div class="space-y-2">
