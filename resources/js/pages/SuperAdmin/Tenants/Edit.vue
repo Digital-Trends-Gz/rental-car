@@ -18,6 +18,20 @@ import { computed, ref, watch } from 'vue';
 
 const { t } = useTrans();
 
+type CompanyOwner = {
+    name: string;
+    commercial_registration_number: string;
+    tax_number: string;
+    civil_number: string;
+};
+
+const blankOwner = (): CompanyOwner => ({
+    name: '',
+    commercial_registration_number: '',
+    tax_number: '',
+    civil_number: '',
+});
+
 const props = defineProps<{
     tenant: {
         id: number;
@@ -30,6 +44,7 @@ const props = defineProps<{
         subscription_plan?: { id: number; name: string } | null;
         is_active: boolean;
         logo_url: string | null;
+        company_owners?: CompanyOwner[];
     };
     settings: {
         document_extraction_daily_limit: number | null;
@@ -45,6 +60,14 @@ const form = useForm({
     domain: props.tenant.domain ?? '',
     email: props.tenant.email ?? '',
     phone: props.tenant.phone ?? '',
+    company_owners: props.tenant.company_owners?.length
+        ? props.tenant.company_owners.map((owner) => ({
+              name: owner?.name ?? '',
+              commercial_registration_number: owner?.commercial_registration_number ?? '',
+              tax_number: owner?.tax_number ?? '',
+              civil_number: owner?.civil_number ?? '',
+          }))
+        : [blankOwner()],
     plan_id: props.tenant.plan_id ? String(props.tenant.plan_id) : '',
     is_active: props.tenant.is_active,
     document_extraction_daily_limit: props.settings.document_extraction_daily_limit ?? '',
@@ -74,6 +97,23 @@ const handleLogoFileRemoved = (data: { type: string; fileId?: number }) => {
 };
 
 const previewLogoUrl = computed(() => props.logoFiles?.[0]?.url || props.tenant.logo_url || '/logo/logo.png');
+
+function addCompanyOwner() {
+    form.company_owners.push(blankOwner());
+}
+
+function removeCompanyOwner(index: number) {
+    if (form.company_owners.length <= 1) {
+        form.company_owners = [blankOwner()];
+        return;
+    }
+
+    form.company_owners.splice(index, 1);
+}
+
+function companyOwnerFieldName(index: number, field: keyof CompanyOwner) {
+    return `company_owners[${index}][${field}]`;
+}
 
 const submit = () => {
     form
@@ -124,6 +164,107 @@ const submit = () => {
                             />
                             <div v-if="form.errors.name" class="text-sm text-red-600">
                                 {{ form.errors.name }}
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 rounded-lg border bg-muted/20 p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-base font-semibold">{{ t('dashboard.super_admin.tenants.form.company_owners') }}</h3>
+                                    <p class="text-xs text-muted-foreground">{{ t('dashboard.super_admin.tenants.form.company_owners_help') }}</p>
+                                </div>
+                                <Button type="button" variant="outline" size="sm" @click="addCompanyOwner">
+                                    {{ t('dashboard.super_admin.tenants.form.add_owner') }}
+                                </Button>
+                            </div>
+
+                            <div
+                                v-for="(owner, index) in form.company_owners"
+                                :key="index"
+                                class="space-y-4 rounded-md border bg-background p-4"
+                            >
+                                <div class="flex items-center justify-between gap-3">
+                                    <h4 class="text-sm font-medium">
+                                        {{ t('dashboard.super_admin.tenants.form.owner_block', { index: index + 1 }) }}
+                                    </h4>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        :disabled="form.company_owners.length === 1"
+                                        @click="removeCompanyOwner(index)"
+                                    >
+                                        {{ t('dashboard.super_admin.tenants.form.remove_owner') }}
+                                    </Button>
+                                </div>
+
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div class="space-y-2">
+                                        <Label :for="companyOwnerFieldName(index, 'name')">{{ t('dashboard.super_admin.tenants.form.owner_name') }} *</Label>
+                                        <Input
+                                            :id="companyOwnerFieldName(index, 'name')"
+                                            :name="companyOwnerFieldName(index, 'name')"
+                                            v-model="owner.name"
+                                            type="text"
+                                            :placeholder="t('dashboard.super_admin.tenants.form.owner_name_placeholder')"
+                                            required
+                                        />
+                                        <div v-if="form.errors[`company_owners.${index}.name`]" class="text-sm text-red-600">
+                                            {{ form.errors[`company_owners.${index}.name`] }}
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label :for="companyOwnerFieldName(index, 'commercial_registration_number')">
+                                            {{ t('dashboard.super_admin.tenants.form.commercial_registration_number') }} *
+                                        </Label>
+                                        <Input
+                                            :id="companyOwnerFieldName(index, 'commercial_registration_number')"
+                                            :name="companyOwnerFieldName(index, 'commercial_registration_number')"
+                                            v-model="owner.commercial_registration_number"
+                                            type="text"
+                                            :placeholder="t('dashboard.super_admin.tenants.form.commercial_registration_number_placeholder')"
+                                            required
+                                        />
+                                        <div v-if="form.errors[`company_owners.${index}.commercial_registration_number`]" class="text-sm text-red-600">
+                                            {{ form.errors[`company_owners.${index}.commercial_registration_number`] }}
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label :for="companyOwnerFieldName(index, 'tax_number')">
+                                            {{ t('dashboard.super_admin.tenants.form.tax_number') }} *
+                                        </Label>
+                                        <Input
+                                            :id="companyOwnerFieldName(index, 'tax_number')"
+                                            :name="companyOwnerFieldName(index, 'tax_number')"
+                                            v-model="owner.tax_number"
+                                            type="text"
+                                            :placeholder="t('dashboard.super_admin.tenants.form.tax_number_placeholder')"
+                                            required
+                                        />
+                                        <div v-if="form.errors[`company_owners.${index}.tax_number`]" class="text-sm text-red-600">
+                                            {{ form.errors[`company_owners.${index}.tax_number`] }}
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label :for="companyOwnerFieldName(index, 'civil_number')">
+                                            {{ t('dashboard.super_admin.tenants.form.civil_number') }} *
+                                        </Label>
+                                        <Input
+                                            :id="companyOwnerFieldName(index, 'civil_number')"
+                                            :name="companyOwnerFieldName(index, 'civil_number')"
+                                            v-model="owner.civil_number"
+                                            type="text"
+                                            :placeholder="t('dashboard.super_admin.tenants.form.civil_number_placeholder')"
+                                            required
+                                        />
+                                        <div v-if="form.errors[`company_owners.${index}.civil_number`]" class="text-sm text-red-600">
+                                            {{ form.errors[`company_owners.${index}.civil_number`] }}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

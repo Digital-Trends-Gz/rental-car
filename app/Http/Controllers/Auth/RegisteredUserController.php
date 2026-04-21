@@ -55,6 +55,9 @@ class RegisteredUserController extends Controller
                 'phone_country_code' => $registration['phone_country_code'] ?? null,
                 'phone_national' => $registration['phone_national'] ?? null,
                 'phone' => $registration['phone'] ?? null,
+                'commercial_registration_number' => data_get($registration, 'company_identifiers.commercial_registration_number'),
+                'tax_number' => data_get($registration, 'company_identifiers.tax_number'),
+                'civil_number' => data_get($registration, 'company_identifiers.civil_number'),
             ],
             'countries' => $this->registrationCountries(),
         ]);
@@ -132,6 +135,9 @@ class RegisteredUserController extends Controller
                 'max:30',
                 'required_with:country_iso2',
             ],
+            'commercial_registration_number' => ['required', 'string', 'max:255'],
+            'tax_number' => ['required', 'string', 'max:255'],
+            'civil_number' => ['required', 'string', 'max:255'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -156,6 +162,11 @@ class RegisteredUserController extends Controller
             'phone_country_code' => $phoneCountryCode,
             'phone_national' => $phoneNational,
             'phone' => $phoneE164,
+            'company_identifiers' => [
+                'commercial_registration_number' => trim((string) $validated['commercial_registration_number']),
+                'tax_number' => trim((string) $validated['tax_number']),
+                'civil_number' => trim((string) $validated['civil_number']),
+            ],
             'password_hash' => Hash::make($validated['password']),
         ]);
 
@@ -737,6 +748,9 @@ class RegisteredUserController extends Controller
                     'phone_national' => $registration['phone_national'] ?? null,
                     'phone_e164' => $registration['phone'] ?? null,
                     'plan_id' => $plan->id,
+                    'settings' => [
+                        'company_identifiers' => $registration['company_identifiers'] ?? [],
+                    ],
                     'trial_ends_at' => $accessEndsAt,
                     'is_active' => true,
                 ]);

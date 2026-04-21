@@ -19,6 +19,9 @@ type RegisterPrefill = {
     phone_country_code?: string | null;
     phone_national?: string | null;
     phone?: string | null;
+    commercial_registration_number?: string | null;
+    tax_number?: string | null;
+    civil_number?: string | null;
 };
 
 type CountryOption = {
@@ -50,6 +53,9 @@ const loginUrl = computed(() => {
         : buildUrl(page.props.app_url_base, '/tenant/login');
 });
 
+const isArabic = computed(() => page.props.locale === 'ar');
+const text = (en: string, ar: string) => (isArabic.value ? ar : en);
+
 const initial = computed(() => ({
     name: props.prefill?.name ?? '',
     email: props.prefill?.email ?? '',
@@ -58,6 +64,9 @@ const initial = computed(() => ({
     phone_country_code: props.prefill?.phone_country_code ?? '',
     phone_national: props.prefill?.phone_national ?? '',
     phone: props.prefill?.phone ?? '',
+    commercial_registration_number: props.prefill?.commercial_registration_number ?? '',
+    tax_number: props.prefill?.tax_number ?? '',
+    civil_number: props.prefill?.civil_number ?? '',
 }));
 
 const selectedCountryIso2 = ref(initial.value.country_iso2);
@@ -278,6 +287,67 @@ watch(
                                 class="h-11 border-gray-300"
                             />
                             <InputError :message="errors.name" />
+                        </div>
+
+                        <div class="space-y-4 rounded-2xl border border-gray-200 bg-gray-50/60 p-4">
+                            <div class="space-y-1">
+                                <h3 class="text-base font-semibold text-gray-900">
+                                    {{ text('Company Registration Details', 'بيانات السجل التجاري') }}
+                                </h3>
+                                <p class="text-xs text-gray-500">
+                                    {{ text('These company details are shared for the registration and can be updated later from tenant management.', 'هذه البيانات تخص الشركة نفسها ويمكن تحديثها لاحقًا من إدارة المستأجر.') }}
+                                </p>
+                            </div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label for="commercial_registration_number" class="text-sm font-semibold text-gray-800">
+                                        {{ text('Commercial Registration No.', 'رقم السجل التجاري') }}
+                                    </Label>
+                                    <Input
+                                        id="commercial_registration_number"
+                                        name="commercial_registration_number"
+                                        type="text"
+                                        :default-value="initial.commercial_registration_number"
+                                        :placeholder="text('Commercial registration number', 'رقم السجل التجاري')"
+                                        required
+                                        class="h-11 border-gray-300"
+                                    />
+                                    <InputError :message="errors.commercial_registration_number" />
+                                </div>
+
+                                <div class="space-y-2">
+                                    <Label for="tax_number" class="text-sm font-semibold text-gray-800">
+                                        {{ text('Tax No.', 'الرقم الضريبي') }}
+                                    </Label>
+                                    <Input
+                                        id="tax_number"
+                                        name="tax_number"
+                                        type="text"
+                                        :default-value="initial.tax_number"
+                                        :placeholder="text('Tax number', 'الرقم الضريبي')"
+                                        required
+                                        class="h-11 border-gray-300"
+                                    />
+                                    <InputError :message="errors.tax_number" />
+                                </div>
+
+                                <div class="space-y-2 md:col-span-2">
+                                    <Label for="civil_number" class="text-sm font-semibold text-gray-800">
+                                        {{ text('Civil No.', 'الرقم المدني') }}
+                                    </Label>
+                                    <Input
+                                        id="civil_number"
+                                        name="civil_number"
+                                        type="text"
+                                        :default-value="initial.civil_number"
+                                        :placeholder="text('Civil number', 'الرقم المدني')"
+                                        required
+                                        class="h-11 border-gray-300"
+                                    />
+                                    <InputError :message="errors.civil_number" />
+                                </div>
+                            </div>
                         </div>
 
                         <div class="space-y-2">

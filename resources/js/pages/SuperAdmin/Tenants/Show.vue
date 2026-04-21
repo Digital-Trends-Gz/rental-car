@@ -23,6 +23,12 @@ const props = defineProps<{
         payments_count?: number;
         users?: Array<{ id: number; name: string; email: string; role: string }>;
         reservations?: Array<{ id: number; status: string; start_date: string; end_date: string }>;
+        company_owners?: Array<{
+            name: string;
+            commercial_registration_number: string;
+            tax_number: string;
+            civil_number: string;
+        }>;
     };
 }>();
 
@@ -147,6 +153,45 @@ const planColors: Record<string, string> = {
                     </CardContent>
                 </Card>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Company Owners</CardTitle>
+                    <CardDescription>Registration and identity details for all listed owners</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div v-if="props.tenant.company_owners?.length" class="grid gap-4 md:grid-cols-2">
+                        <div
+                            v-for="(owner, index) in props.tenant.company_owners"
+                            :key="index"
+                            class="rounded-lg border p-4"
+                        >
+                            <div class="mb-3 flex items-center justify-between">
+                                <h3 class="font-semibold">Owner {{ index + 1 }}</h3>
+                            </div>
+                            <dl class="space-y-2 text-sm">
+                                <div>
+                                    <dt class="text-muted-foreground">Name</dt>
+                                    <dd class="font-medium">{{ owner.name }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-muted-foreground">Commercial Registration No.</dt>
+                                    <dd class="font-medium">{{ owner.commercial_registration_number }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-muted-foreground">Tax No.</dt>
+                                    <dd class="font-medium">{{ owner.tax_number }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-muted-foreground">Civil No.</dt>
+                                    <dd class="font-medium">{{ owner.civil_number }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                    <p v-else class="text-sm text-muted-foreground">No company owners recorded.</p>
+                </CardContent>
+            </Card>
 
             <div class="grid gap-6 md:grid-cols-2">
                 <Card v-if="props.tenant.users?.length">

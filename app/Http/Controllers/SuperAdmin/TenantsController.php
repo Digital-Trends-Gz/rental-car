@@ -9,6 +9,7 @@ use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Notifications\TenantAdminInvitationNotification;
 use App\Support\BrandLogoImageResizer;
+use App\Support\CompanyOwners;
 use App\Support\TenantAdminAccessSync;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -74,6 +75,11 @@ class TenantsController
             'domain' => ['nullable', 'string', 'max:255', 'regex:/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i', 'unique:tenants,domain'],
             'email' => 'required|email|unique:tenants,email',
             'phone' => 'nullable|string|max:20',
+            'company_owners' => ['required', 'array', 'min:1'],
+            'company_owners.*.name' => ['required', 'string', 'max:255'],
+            'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255'],
+            'company_owners.*.tax_number' => ['required', 'string', 'max:255'],
+            'company_owners.*.civil_number' => ['required', 'string', 'max:255'],
             'plan_id' => ['required', 'integer', Rule::exists('plans', 'id')->where(static fn ($query) => $query->where('is_active', true))],
             'logo_temp_folders' => ['array'],
             'logo_temp_folders.*' => ['string'],
@@ -89,6 +95,9 @@ class TenantsController
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'plan_id' => (int) $validated['plan_id'],
+            'settings' => [
+                'company_owners' => CompanyOwners::normalize($validated['company_owners'] ?? []),
+            ],
             'trial_ends_at' => now()->addMonth(),
             'is_active' => true,
         ];
@@ -183,6 +192,7 @@ class TenantsController
                 'plan_id' => $tenant->plan_id,
                 'is_active' => $tenant->is_active,
                 'logo_url' => TenantSiteSetting::forTenant($tenant)['logo_url'],
+                'company_owners' => data_get($tenant->settings, 'company_owners', []),
             ],
             'settings' => TenantSiteSetting::forTenant($tenant),
             'plans' => $plans,
@@ -221,6 +231,11 @@ class TenantsController
             'domain' => ['nullable', 'string', 'max:255', 'regex:/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i', 'unique:tenants,domain,' . $tenant->id],
             'email' => 'required|email|unique:tenants,email,' . $tenant->id,
             'phone' => 'nullable|string|max:20',
+            'company_owners' => ['required', 'array', 'min:1'],
+            'company_owners.*.name' => ['required', 'string', 'max:255'],
+            'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255'],
+            'company_owners.*.tax_number' => ['required', 'string', 'max:255'],
+            'company_owners.*.civil_number' => ['required', 'string', 'max:255'],
             'plan_id' => ['required', 'integer', Rule::exists('plans', 'id')->where(static fn ($query) => $query->where('is_active', true))],
             'is_active' => 'required|boolean',
             'document_extraction_daily_limit' => ['nullable', 'integer', 'min:1', 'max:100000'],
@@ -244,6 +259,12 @@ class TenantsController
             'phone' => $validated['phone'] ?? null,
             'plan_id' => (int) $validated['plan_id'],
             'is_active' => $validated['is_active'],
+            'settings' => array_merge(
+                is_array($tenant->settings) ? $tenant->settings : [],
+                [
+                    'company_owners' => CompanyOwners::normalize($validated['company_owners'] ?? []),
+                ]
+            ),
         ]);
 
         if (!empty($validated['admin_password'])) {
