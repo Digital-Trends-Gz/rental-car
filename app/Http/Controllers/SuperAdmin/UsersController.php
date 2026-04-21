@@ -20,7 +20,12 @@ class UsersController
     {
         $users = User::withoutGlobalScope('tenant')
             ->where('role', UserRole::SUPER_ADMIN)
-            ->with(['roles:id,name,display_name'])
+            ->with([
+                'roles' => fn ($query) => $query
+                    ->withoutGlobalScope('tenant')
+                    ->whereNull('roles.tenant_id')
+                    ->select('roles.id', 'roles.name', 'roles.display_name'),
+            ])
             ->latest()
             ->paginate(15);
 
@@ -42,7 +47,10 @@ class UsersController
      */
     public function create(): Response
     {
-        $roles = Role::orderBy('name')->get(['id', 'name', 'display_name', 'description']);
+        $roles = Role::withoutGlobalScope('tenant')
+            ->whereNull('tenant_id')
+            ->orderBy('name')
+            ->get(['id', 'name', 'display_name', 'description']);
         
         return Inertia::render('SuperAdmin/Users/Create', [
             'roles' => $roles,
@@ -59,7 +67,9 @@ class UsersController
             'email' => 'required|email|unique:users,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role_ids' => 'array',
-            'role_ids.*' => 'exists:roles,id',
+            'role_ids.*' => [
+                Rule::exists('roles', 'id')->where(fn ($query) => $query->whereNull('tenant_id')),
+            ],
         ]);
 
         $user = User::withoutGlobalScope('tenant')->create([
@@ -95,7 +105,10 @@ class UsersController
         }
 
         $user->load('roles');
-        $roles = Role::orderBy('name')->get(['id', 'name', 'display_name', 'description']);
+        $roles = Role::withoutGlobalScope('tenant')
+            ->whereNull('tenant_id')
+            ->orderBy('name')
+            ->get(['id', 'name', 'display_name', 'description']);
 
         return Inertia::render('SuperAdmin/Users/Edit', [
             'user' => $user,
@@ -117,7 +130,9 @@ class UsersController
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'role_ids' => 'array',
-            'role_ids.*' => 'exists:roles,id',
+            'role_ids.*' => [
+                Rule::exists('roles', 'id')->where(fn ($query) => $query->whereNull('tenant_id')),
+            ],
         ]);
 
         $user->update([

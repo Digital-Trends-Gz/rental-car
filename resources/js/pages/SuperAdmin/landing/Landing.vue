@@ -113,6 +113,7 @@ const availableLocales = computed<string[]>(() =>
         : ['en']
 );
 const appBranding = computed(() => page.props.app_branding ?? {});
+const hasAppLogo = computed(() => !!appBranding.value?.logo_url);
 
 const normalizedRedirectPath = computed(() => {
     const currentPath = String(page.url || '/');
@@ -161,15 +162,32 @@ const carTheme = (car: FeaturedCar) => {
     };
 };
 
-const navLinks = [
-    { label: 'Cars', href: '#cars' },
-    { label: 'Features', href: '#features' },
-    { label: 'Start in Minutes', href: '#how-it-works' },
-    { label: 'Clients', href: '#clients' },
-    { label: 'Plans', href: '#pricing' },
-    { label: 'FAQ', href: '#faq' },
-    { label: 'Contact', href: '#contact' },
-];
+const navLinks = computed(() => {
+    const fallback = [
+        { label: 'Cars', href: '#cars' },
+        { label: 'Features', href: '#features' },
+        { label: 'Start in Minutes', href: '#how-it-works' },
+        { label: 'Clients', href: '#clients' },
+        { label: 'Plans', href: '#pricing' },
+        { label: 'FAQ', href: '#faq' },
+        { label: 'Contact', href: '#contact' },
+    ];
+
+    const configuredLinks = Array.isArray(props.landingSettings.navigation?.links)
+        ? props.landingSettings.navigation.links
+        : [];
+
+    if (!configuredLinks.length) {
+        return fallback;
+    }
+
+    return configuredLinks
+        .map((link, index) => ({
+            label: String(link?.label || fallback[index]?.label || ''),
+            href: String(link?.href || fallback[index]?.href || '#'),
+        }))
+        .filter((link) => link.label !== '');
+});
 
 const mobileOpen = ref(false);
 const scrolled = ref(false);
@@ -179,6 +197,7 @@ const clientsAutoplay = ref<number | null>(null);
 const brokenTenantLogos = ref<Record<number, boolean>>({});
 const currentYear = new Date().getFullYear();
 const registerUrl = mainRegister().url;
+const navigationCtaLabel = computed(() => props.landingSettings.navigation?.cta_label || 'Start Free Trial');
 const heroImage = computed(() => props.landingSettings.hero.image_url || heroMockup);
 const carSearch = ref(props.carSearch ?? '');
 const fleetUrl = mainFleet().url;
@@ -367,11 +386,11 @@ onUnmounted(() => {
                     : 'bg-background/90 shadow-sm backdrop-blur-lg'
             "
         >
-            <div class="section-container flex h-16 items-center justify-between gap-4">
-                <Link href="/" class="inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
-                    <AppLogoIcon class="h-6 w-6" />
-                    <span>{{ appName }}</span>
-                </Link>
+                <div class="section-container flex h-16 items-center justify-between gap-4">
+                    <Link href="/" class="inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+                        <AppLogoIcon class="h-6 w-6" />
+                        <span v-if="!hasAppLogo">{{ appName }}</span>
+                    </Link>
 
                 <div class="hidden items-center gap-8 md:flex">
                     <a
@@ -408,7 +427,7 @@ onUnmounted(() => {
                         </DropdownMenuContent>
                     </DropdownMenu>
                     <Button as-child class="gradient-button rounded-full px-5" size="sm">
-                        <Link :href="registerUrl">{{ t('landing.start_free_trial') }}</Link>
+                        <Link :href="registerUrl">{{ navigationCtaLabel }}</Link>
                     </Button>
                 </div>
 
@@ -463,7 +482,7 @@ onUnmounted(() => {
                     </DropdownMenuContent>
                 </DropdownMenu>
                 <Button as-child class="gradient-button mt-2 w-full rounded-full" size="sm">
-                    <Link :href="registerUrl">{{ t('landing.start_free_trial') }}</Link>
+                    <Link :href="registerUrl">{{ navigationCtaLabel }}</Link>
                 </Button>
             </div>
         </nav>
@@ -480,7 +499,7 @@ onUnmounted(() => {
                         </p>
                         <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                             <Button as-child size="lg" class="gradient-button h-12 rounded-full px-8 text-base">
-                                <Link :href="registerUrl">{{ t('landing.start_free_trial') }}</Link>
+                                <Link :href="registerUrl">{{ navigationCtaLabel }}</Link>
                             </Button>
                             <a
                                 href="#cars"
@@ -832,7 +851,7 @@ onUnmounted(() => {
                             </ul>
 
                             <Button as-child class="gradient-button w-full rounded-full">
-                                <Link :href="registerUrl">{{ t('landing.start_free_trial') }}</Link>
+                                <Link :href="registerUrl">{{ navigationCtaLabel }}</Link>
                             </Button>
                         </div>
                     </div>

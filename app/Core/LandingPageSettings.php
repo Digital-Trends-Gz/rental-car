@@ -7,11 +7,44 @@ class LandingPageSettings
     public const KEY = 'landing_page';
 
     /**
+     * @return array<int, string>
+     */
+    public static function supportedLocaleKeys(): array
+    {
+        $supported = array_values((array) config('app.available_locales', ['en']));
+        $supported = array_values(array_unique(array_map('strval', $supported)));
+
+        return empty($supported) ? ['en'] : $supported;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function contentKeys(): array
+    {
+        return ['navigation', 'hero', 'features_section', 'getting_started', 'plans_section', 'faq_section', 'footer'];
+    }
+
+    /**
      * Default landing page settings used when database value is empty.
      */
     public static function defaults(): array
     {
+        $supportedLocales = self::supportedLocaleKeys();
+
         return [
+            'navigation' => [
+                'cta_label' => 'Start Free Trial',
+                'links' => [
+                    ['label' => 'Cars', 'href' => '#cars'],
+                    ['label' => 'Features', 'href' => '#features'],
+                    ['label' => 'Start in Minutes', 'href' => '#how-it-works'],
+                    ['label' => 'Clients', 'href' => '#clients'],
+                    ['label' => 'Plans', 'href' => '#pricing'],
+                    ['label' => 'FAQ', 'href' => '#faq'],
+                    ['label' => 'Contact', 'href' => '#contact'],
+                ],
+            ],
             'hero' => [
                 'title' => 'Automate your workflows.',
                 'description' => 'Streamline replaces scattered tools with one platform that automates repetitive tasks.',
@@ -83,6 +116,8 @@ class LandingPageSettings
                 'title' => 'Ready to streamline your workflow?',
                 'description' => 'Join teams who already save hours every week.',
             ],
+            'enabled_locales' => $supportedLocales,
+            'translations' => array_fill_keys($supportedLocales, []),
         ];
     }
 
@@ -98,8 +133,27 @@ class LandingPageSettings
         $settings['features_section']['cards'] = self::normalizeCards($settings['features_section']['cards'] ?? []);
         $settings['getting_started']['items'] = self::normalizeStepItems($settings['getting_started']['items'] ?? []);
         $settings['faq_section']['items'] = self::normalizeFaqItems($settings['faq_section']['items'] ?? []);
+        $settings['enabled_locales'] = self::normalizeEnabledLocales($settings['enabled_locales'] ?? []);
+        $settings['translations'] = self::normalizeTranslations($settings['translations'] ?? []);
 
         return $settings;
+    }
+
+    public static function localize(array $settings, ?string $locale): array
+    {
+        $normalized = self::normalize($settings);
+        $locale = trim((string) ($locale ?? ''));
+
+        if ($locale === '' || !in_array($locale, $normalized['enabled_locales'] ?? [], true)) {
+            return $normalized;
+        }
+
+        $overrides = data_get($normalized, "translations.$locale", []);
+        if (!is_array($overrides) || empty($overrides)) {
+            return $normalized;
+        }
+
+        return array_replace_recursive($normalized, $overrides);
     }
 
     private static function normalizeStringList(mixed $items): array
@@ -200,5 +254,54 @@ class LandingPageSettings
         }
 
         return $faqs;
+    }
+
+    private static function normalizeEnabledLocales(mixed $value): array
+    {
+        $supported = self::supportedLocaleKeys();
+        $enabled = is_array($value) ? array_map('strval', $value) : [];
+        $enabled = array_values(array_unique(array_intersect($supported, $enabled)));
+
+        return empty($enabled) ? $supported : $enabled;
+    }
+
+    private static function normalizeTranslations(mixed $translations): array
+    {
+        $supported = self::supportedLocaleKeys();
+        $translations = is_array($translations) ? $translations : [];
+        $normalized = [];
+
+        foreach ($supported as $locale) {
+            $normalized[$locale] = self::pruneTranslationTree($translations[$locale] ?? []);
+        }
+
+        return $normalized;
+    }
+
+    private static function pruneTranslationTree(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $nested = self::pruneTranslationTree($item);
+                if (!empty($nested)) {
+                    $result[$key] = $nested;
+                }
+
+                continue;
+            }
+
+            $text = trim((string) ($item ?? ''));
+            if ($text !== '') {
+                $result[$key] = $text;
+            }
+        }
+
+        return $result;
     }
 }

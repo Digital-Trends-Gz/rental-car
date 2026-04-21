@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
 @import "filepond/dist/filepond.min.css";
 @import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
 
@@ -90,6 +91,30 @@
             'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
             'Noto Color Emoji';
     }
+
+    html[dir='rtl'],
+    html[dir='rtl'] body,
+    html[dir='rtl'] button,
+    html[dir='rtl'] input,
+    html[dir='rtl'] textarea,
+    html[dir='rtl'] select,
+    html[dir='rtl'] a,
+    html[dir='rtl'] p,
+    html[dir='rtl'] span,
+    html[dir='rtl'] div,
+    html[dir='rtl'] li,
+    html[dir='rtl'] label,
+    html[dir='rtl'] h1,
+    html[dir='rtl'] h2,
+    html[dir='rtl'] h3,
+    html[dir='rtl'] h4,
+    html[dir='rtl'] h5,
+    html[dir='rtl'] h6 {
+        font-family:
+            Cairo, ui-sans-serif, system-ui, sans-serif,
+            'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+            'Noto Color Emoji' !important;
+    }
 }
 
 :root {
@@ -171,6 +196,7 @@
     }
     body {
         @apply bg-background text-foreground;
+        font-family: var(--font-sans);
     }
 
     select:not([multiple]):not([size]) {

@@ -40,7 +40,17 @@ class HomePagesController extends Controller
                 ->where('key', LandingPageSettings::KEY)
                 ->value('value');
 
-            $landingSettings = LandingPageSettings::normalize(is_array($stored) ? $stored : null);
+            $landingSettings = LandingPageSettings::localize(
+                LandingPageSettings::normalize(is_array($stored) ? $stored : null),
+                app()->getLocale()
+            );
+            $availableLocales = array_values(array_map('strval', array_filter(
+                (array) data_get($landingSettings, 'enabled_locales', []),
+                static fn ($value) => trim((string) $value) !== ''
+            )));
+            if (empty($availableLocales)) {
+                $availableLocales = LandingPageSettings::supportedLocaleKeys();
+            }
 
             $plans = Plan::query()
                 ->where('is_active', true)
@@ -114,7 +124,7 @@ class HomePagesController extends Controller
 
             $contactSubmitUrl = route('contact.guestContact');
 
-            return inertia('SuperAdmin/landing/Landing', compact('landingSettings', 'plans', 'tenantLogos', 'featuredCars', 'carSearch', 'contactSubmitUrl'));
+            return inertia('SuperAdmin/landing/Landing', compact('landingSettings', 'plans', 'tenantLogos', 'featuredCars', 'carSearch', 'contactSubmitUrl', 'availableLocales'));
         }
 
         $homeCars = Car::whereIn('status', $this->publicFleetStatuses())

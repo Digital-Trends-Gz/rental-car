@@ -13,10 +13,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use MohamedGaldi\ViltFilepond\Services\FilePondService;
+use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use OpenAI;
 use RuntimeException;
 use Throwable;
@@ -51,6 +53,60 @@ class LandingSettingsController extends Controller
             'heroFiles' => $heroFiles,
             'aiSettings' => AiAutomationSettings::load(),
             'aiProviderSettings' => AiProviderSettings::forUi(),
+        ]);
+    }
+
+    public function translations(): Response
+    {
+        $settings = $this->landingSettings();
+        $supportedLocales = $this->supportedLocaleKeys();
+        $supportedLocaleMeta = LaravelLocalization::getSupportedLocales();
+        $defaultRows = $this->flatten(Arr::only(
+            LandingPageSettings::localize($settings, 'en'),
+            LandingPageSettings::contentKeys()
+        ));
+
+        $overrideRowsByLocale = [];
+        $keyPool = array_keys($defaultRows);
+
+        foreach ($supportedLocales as $locale) {
+            $overrideRowsByLocale[$locale] = $this->flatten((array) data_get($settings, "translations.$locale", []));
+            $keyPool = array_merge($keyPool, array_keys($overrideRowsByLocale[$locale]));
+        }
+
+        $keys = array_values(array_unique($keyPool));
+        sort($keys);
+
+        $rows = array_map(function (string $key) use ($supportedLocales, $defaultRows, $overrideRowsByLocale): array {
+            $values = [];
+            foreach ($supportedLocales as $locale) {
+                $values[$locale] = (string) ($overrideRowsByLocale[$locale][$key] ?? '');
+            }
+
+            return [
+                'key' => $key,
+                'default' => (string) ($defaultRows[$key] ?? ''),
+                'values' => $values,
+            ];
+        }, $keys);
+
+        return Inertia::render('SuperAdmin/Settings/LandingTranslations', [
+            'settings' => $settings,
+            'supported_locales' => array_values(array_map(function (string $code) use ($supportedLocaleMeta): array {
+                $meta = (array) ($supportedLocaleMeta[$code] ?? []);
+
+                return [
+                    'code' => $code,
+                    'name' => (string) ($meta['name'] ?? strtoupper($code)),
+                    'native' => (string) ($meta['native'] ?? strtoupper($code)),
+                ];
+            }, $supportedLocales)),
+            'enabled_locales' => data_get($settings, 'enabled_locales', $supportedLocales),
+            'rows' => $rows,
+            'actions' => [
+                'update' => route('superadmin.settings.landing-translations.update'),
+                'auto_translate' => route('superadmin.settings.landing-translations.auto-translate'),
+            ],
         ]);
     }
 
@@ -124,7 +180,7 @@ class LandingSettingsController extends Controller
         $normalizedAiProvider = AiProviderSettings::normalize($validated['ai_provider'] ?? []);
         $normalizedAiProvider = AiProviderSettings::mergeSecrets($currentAiProvider, $normalizedAiProvider);
 
-        $this->syncHeroImageUpload($request, $landingSetting, $normalized);
+        $this->syncHeroImageUpload($request, $landingSetting);
 
         SiteSetting::query()->updateOrCreate(
             ['key' => AiAutomationSettings::KEY],
@@ -143,9 +199,81 @@ class LandingSettingsController extends Controller
     {
         $normalized = $this->validatedLandingSettings($request);
         $landingSetting = $this->persistLandingSettings($normalized);
-        $this->syncHeroImageUpload($request, $landingSetting, $normalized);
+        $this->syncHeroImageUpload($request, $landingSetting);
 
         return back()->with('success', 'Landing page design updated successfully.');
+    }
+
+    public function updateTranslations(Request $request): RedirectResponse
+    {
+        $supportedLocales = $this->supportedLocaleKeys();
+
+        $validated = $request->validate([
+            'enabled_locales' => ['nullable', 'array'],
+            'enabled_locales.*' => ['string', Rule::in($supportedLocales)],
+            'rows' => ['required', 'array'],
+            'rows.*.key' => ['required', 'string', 'max:255'],
+            'rows.*.values' => ['nullable', 'array'],
+        ]);
+
+        $enabledLocales = $this->sanitizeEnabledLocales($validated['enabled_locales'] ?? $supportedLocales);
+        $translations = [];
+        foreach ($supportedLocales as $locale) {
+            $translations[$locale] = [];
+        }
+
+        foreach ((array) ($validated['rows'] ?? []) as $row) {
+            $key = trim((string) ($row['key'] ?? ''));
+            if ($key === '') {
+                continue;
+            }
+
+            $values = is_array($row['values'] ?? null) ? $row['values'] : [];
+            foreach ($supportedLocales as $locale) {
+                $text = trim((string) ($values[$locale] ?? ''));
+                if ($text === '') {
+                    continue;
+                }
+
+                Arr::set($translations[$locale], $key, $text);
+            }
+        }
+
+        $this->persistLandingSettings([
+            'enabled_locales' => $enabledLocales,
+            'translations' => $translations,
+        ]);
+
+        return back()->with('success', 'Landing translations updated successfully.');
+    }
+
+    public function autoTranslateTranslations(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'target_locale' => ['nullable', 'string', Rule::in(['ar'])],
+        ]);
+
+        $targetLocale = (string) ($validated['target_locale'] ?? 'ar');
+        $settings = $this->landingSettings();
+        $sourceRows = $this->flatten(Arr::only(
+            LandingPageSettings::localize($settings, 'en'),
+            LandingPageSettings::contentKeys()
+        ));
+
+        if (empty($sourceRows)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'No landing content is available to translate.',
+            ], 422);
+        }
+
+        $translations = $this->translateLandingContentToArabic($sourceRows, $targetLocale);
+
+        return response()->json([
+            'ok' => true,
+            'target_locale' => $targetLocale,
+            'translations' => $translations,
+        ]);
     }
 
     public function testAiConnection(Request $request): JsonResponse
@@ -213,13 +341,12 @@ class LandingSettingsController extends Controller
         Mail::raw(
             'This is a test email from the Car4u Super Admin mail connection test.',
             function ($message) use ($recipient): void {
-              $message->to('ziad.abo.al22@gmail.com')
-    ->subject('Car4u SMTP test message')
-    ->from(
-        config('mail.from.address'),
-        config('mail.from.name', config('app.name'))
-    );
-
+                $message->to($recipient)
+                    ->subject('Car4u SMTP test message')
+                    ->from(
+                        config('mail.from.address'),
+                        config('mail.from.name', config('app.name'))
+                    );
             }
         );
 
@@ -318,13 +445,16 @@ class LandingSettingsController extends Controller
 
     private function persistLandingSettings(array $settings): SiteSetting
     {
+        $current = $this->landingSettings();
+        $merged = array_replace_recursive($current, $settings);
+
         return SiteSetting::query()->updateOrCreate(
             ['key' => LandingPageSettings::KEY],
-            ['value' => $settings]
+            ['value' => LandingPageSettings::normalize($merged)]
         );
     }
 
-    private function syncHeroImageUpload(Request $request, SiteSetting $landingSetting, array &$settings): void
+    private function syncHeroImageUpload(Request $request, SiteSetting $landingSetting): void
     {
         $tempFolders = is_array($request->input('hero_temp_folders', []))
             ? array_values(array_filter($request->input('hero_temp_folders', [])))
@@ -345,6 +475,7 @@ class LandingSettingsController extends Controller
             'hero'
         );
 
+        $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
         $heroImageUrl = trim((string) data_get($settings, 'hero.image_url', ''));
 
         if (!empty($tempFolders)) {
@@ -361,7 +492,7 @@ class LandingSettingsController extends Controller
         }
 
         data_set($settings, 'hero.image_url', $heroImageUrl);
-        $landingSetting->update(['value' => $settings]);
+        $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
     }
 
     private function validatedLandingSettings(Request $request): array
@@ -400,5 +531,193 @@ class LandingSettingsController extends Controller
         ]);
 
         return LandingPageSettings::normalize($validated['settings'] ?? []);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function supportedLocaleKeys(): array
+    {
+        $supported = array_keys((array) config('laravellocalization.supportedLocales', []));
+        if (empty($supported)) {
+            $supported = LandingPageSettings::supportedLocaleKeys();
+        }
+
+        $supported = array_values(array_unique(array_map('strval', $supported)));
+
+        return empty($supported) ? ['en'] : $supported;
+    }
+
+    /**
+     * @param  mixed  $value
+     * @return array<int, string>
+     */
+    private function sanitizeEnabledLocales(mixed $value): array
+    {
+        $supported = $this->supportedLocaleKeys();
+        $enabled = is_array($value) ? $value : [];
+        $enabled = array_values(array_unique(array_intersect($supported, array_map('strval', $enabled))));
+
+        return empty($enabled) ? $supported : $enabled;
+    }
+
+    /**
+     * @param  array<string, string>  $sourceRows
+     * @return array<string, string>
+     */
+    private function translateLandingContentToArabic(array $sourceRows, string $targetLocale): array
+    {
+        $settings = AiProviderSettings::load();
+        $provider = (string) ($settings['provider'] ?? 'openai');
+
+        if ($provider !== 'openai') {
+            throw new RuntimeException('Landing auto-translate requires OpenAI. Please switch the AI provider to OpenAI.');
+        }
+
+        $openAi = $settings['openai'] ?? [];
+        $apiKey = trim((string) ($openAi['api_key'] ?? ''));
+
+        if ($apiKey === '') {
+            throw new RuntimeException('OpenAI API key is required for auto-translation.');
+        }
+
+        $model = trim((string) ($openAi['model'] ?? 'gpt-4.1-mini'));
+        $temperature = (float) ($openAi['temperature'] ?? 0.1);
+        $maxOutputTokens = (int) ($openAi['max_output_tokens'] ?? 1200);
+        $maxOutputTokens = max(400, min($maxOutputTokens, 2500));
+        $systemPrompt = trim((string) ($openAi['system_prompt'] ?? ''));
+        if ($systemPrompt === '') {
+            $systemPrompt = 'You are a professional Arabic translator for a car-rental SaaS landing page. Translate meaning naturally, keep marketing tone, preserve punctuation and placeholders, and return strict JSON only.';
+        }
+
+        $payload = [];
+        foreach ($sourceRows as $key => $text) {
+            $text = trim((string) $text);
+            if ($text === '') {
+                continue;
+            }
+
+            $payload[$key] = $text;
+        }
+
+        if (empty($payload)) {
+            return [];
+        }
+
+        $factory = OpenAI::factory()->withApiKey($apiKey);
+        $organization = trim((string) ($openAi['organization'] ?? ''));
+        if ($organization !== '') {
+            $factory = $factory->withOrganization($organization);
+        }
+
+        $project = trim((string) ($openAi['project'] ?? ''));
+        if ($project !== '') {
+            $factory = $factory->withProject($project);
+        }
+
+        $baseUri = trim((string) ($openAi['base_uri'] ?? ''));
+        if ($baseUri !== '') {
+            $factory = $factory->withBaseUri($baseUri);
+        }
+
+        $client = $factory->make();
+        $translationProperties = [];
+        $translationRequired = [];
+        foreach (array_keys($payload) as $key) {
+            $translationProperties[$key] = ['type' => 'string'];
+            $translationRequired[] = $key;
+        }
+
+        $response = $client->responses()->create([
+            'model' => $model,
+            'temperature' => $temperature,
+            'max_output_tokens' => $maxOutputTokens,
+            'input' => [
+                [
+                    'role' => 'system',
+                    'content' => [
+                        ['type' => 'input_text', 'text' => $systemPrompt],
+                    ],
+                ],
+                [
+                    'role' => 'user',
+                    'content' => [
+                        [
+                            'type' => 'input_text',
+                            'text' => 'Translate the following landing page content to Arabic. Keep the same JSON keys and return Arabic text only.',
+                        ],
+                        [
+                            'type' => 'input_text',
+                            'text' => json_encode([
+                                'target_locale' => $targetLocale,
+                                'source' => $payload,
+                            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                        ],
+                    ],
+                ],
+            ],
+            'text' => [
+                'format' => [
+                    'type' => 'json_schema',
+                    'name' => 'landing_translation',
+                    'schema' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'properties' => [
+                            'translations' => [
+                                'type' => 'object',
+                                'additionalProperties' => false,
+                                'properties' => $translationProperties,
+                                'required' => $translationRequired,
+                            ],
+                        ],
+                        'required' => ['translations'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $outputText = trim((string) ($response->outputText ?? ''));
+        if ($outputText === '') {
+            throw new RuntimeException('OpenAI returned an empty translation response.');
+        }
+
+        $decoded = json_decode($outputText, true);
+        $translations = is_array($decoded) ? data_get($decoded, 'translations', []) : [];
+        if (!is_array($translations)) {
+            $translations = [];
+        }
+
+        $normalized = [];
+        foreach ($translations as $key => $value) {
+            $text = trim((string) ($value ?? ''));
+            if ($text === '') {
+                continue;
+            }
+
+            $normalized[(string) $key] = $text;
+        }
+
+        return $normalized;
+    }
+
+    private function flatten(array $input, string $prefix = ''): array
+    {
+        $flat = [];
+
+        foreach ($input as $key => $value) {
+            $fullKey = $prefix === '' ? (string) $key : $prefix . '.' . (string) $key;
+
+            if (is_array($value)) {
+                $flat = array_merge($flat, $this->flatten($value, $fullKey));
+                continue;
+            }
+
+            if (is_scalar($value) || $value === null) {
+                $flat[$fullKey] = (string) ($value ?? '');
+            }
+        }
+
+        return $flat;
     }
 }

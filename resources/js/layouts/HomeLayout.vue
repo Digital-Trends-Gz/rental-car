@@ -207,7 +207,7 @@ const themeVars = computed(() => ({
                     <div class="flex flex-col items-center space-x-2">
                         <img v-if="siteLogoUrl" :src="siteLogoUrl" alt="logo" class="h-8 object-contain" />
                         <img v-else src="/logo/logo.png" alt="logo" class="h-6" />
-                        <p class="font-bold">
+                        <p v-if="!siteLogoUrl" class="font-bold">
                             <template v-if="currentTenant">
                                 <span class="truncate max-w-[180px] inline-block align-bottom">{{ siteName }}</span>
                             </template>
