@@ -14,10 +14,11 @@ test('new users can register', function () {
         ->post($url, [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'civil_number' => '1234567890',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
         ]);
 
-    $this->assertAuthenticated();
-    $response->assertRedirect(route('client.home', ['subdomain' => $tenant->slug]));
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
 });

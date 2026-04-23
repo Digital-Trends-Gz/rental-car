@@ -109,4 +109,9 @@ class Contract extends Model
     {
         return $this->hasMany(CarDamageCase::class, 'opened_in_contract_id');
     }
+
+    public function extensionRequests(): HasMany
+    {
+        return $this->hasMany(RentalExtensionRequest::class);
+    }
 }

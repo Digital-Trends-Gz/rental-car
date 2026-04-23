@@ -19,13 +19,16 @@ import { create, index, destroy } from '@/routes/admin/branches';
 import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
-  branches: {
-    data: Array<{
+    branches: {
+      data: Array<{
       id: number
       name: string
       address: string
       phone: string
       email: string
+      cr_number?: string | null
+      manager_name?: string | null
+      manager_civil_number?: string | null
     }>
     links: Array<{ url: string | null; label: string; active: boolean }>
   }
@@ -107,6 +110,9 @@ const destroyBranch = () => {
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.branches.table.name') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.branches.table.cr_number') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.branches.table.manager_name') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.branches.table.manager_civil_number') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.branches.table.address') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.branches.table.phone') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.branches.table.email') }}</th>
@@ -117,6 +123,15 @@ const destroyBranch = () => {
                         <tr v-for="branch in props.branches.data" :key="branch.id">
                             <td class="px-4 py-3">
                                 <div class="font-medium">{{ branch.name }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                {{ branch.cr_number || '-' }}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                {{ branch.manager_name || '-' }}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                {{ branch.manager_civil_number || '-' }}
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-600">
                                 <div class="flex items-center gap-1">
@@ -144,7 +159,7 @@ const destroyBranch = () => {
                             </td>
                         </tr>
                         <tr v-if="props.branches.data.length === 0">
-                            <td colspan="5" class="px-4 py-6 text-center text-gray-500">{{ t('dashboard.admin.branches.empty') }}</td>
+                            <td colspan="8" class="px-4 py-6 text-center text-gray-500">{{ t('dashboard.admin.branches.empty') }}</td>
                         </tr>
                     </tbody>
                 </table>

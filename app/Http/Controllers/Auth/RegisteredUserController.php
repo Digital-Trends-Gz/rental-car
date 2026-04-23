@@ -84,11 +84,13 @@ class RegisteredUserController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+                'civil_number' => ['required', 'string', 'max:255'],
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
             ]);
 
             $user = User::create([
                 'name' => $validated['name'],
+                'civil_number' => trim((string) $validated['civil_number']),
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'role' => UserRole::CLIENT,
@@ -158,6 +160,7 @@ class RegisteredUserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'custom_domain' => $validated['custom_domain'] ?? null,
+            'civil_number' => trim((string) $validated['civil_number']),
             'country_iso2' => strtoupper(trim((string) ($validated['country_iso2'] ?? ''))) ?: null,
             'phone_country_code' => $phoneCountryCode,
             'phone_national' => $phoneNational,
@@ -317,6 +320,7 @@ class RegisteredUserController extends Controller
             'registration' => [
                 'name' => $registration['name'],
                 'email' => $registration['email'],
+                'civil_number' => $registration['civil_number'] ?? data_get($registration, 'company_identifiers.civil_number'),
                 'phone' => $registration['phone'] ?? null,
                 'custom_domain' => $registration['custom_domain'] ?? null,
             ],
@@ -386,6 +390,7 @@ class RegisteredUserController extends Controller
                 'regex:/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i',
                 'unique:tenants,domain',
             ],
+            'civil_number' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'password_hash' => ['required', 'string'],
         ]);
@@ -757,6 +762,7 @@ class RegisteredUserController extends Controller
 
                 $user = User::withoutGlobalScope('tenant')->create([
                     'name' => $registration['name'],
+                    'civil_number' => trim((string) ($registration['civil_number'] ?? data_get($registration, 'company_identifiers.civil_number', ''))),
                     'email' => $registration['email'],
                     'password' => $registration['password_hash'],
                     'role' => UserRole::ADMIN,

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Enums\CarColor;
 use App\Enums\CarStatus;
 use App\Enums\FuelType;
+use App\Enums\ReservationStatus;
 use App\Models\Car;
 use App\Models\CarDamageReport;
 use App\Models\CarDiscount;
@@ -19,6 +20,7 @@ use App\Support\BranchAccess;
 use App\Support\CarCatalogOptions;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -276,10 +278,11 @@ class CarsController extends Controller
                 return [
                     'id' => $document->id,
                     'type' => $document->type,
-                    'type_label' => $document->type === 'license' ? 'Car License' : 'Car Insurance',
+                    'type_label' => CarDocument::labelForType($document->type),
                     'number' => $document->document_number,
                     'issuer' => $document->issuer,
                     'issue_date' => optional($document->issue_date)->toDateString(),
+                    'purchase_date' => optional($document->purchase_date)->toDateString(),
                     'expiry_date' => optional($document->expiry_date)->toDateString(),
                     'days_remaining' => $document->days_remaining,
                     'status_key' => $document->status_key,
@@ -659,6 +662,57 @@ class CarsController extends Controller
                 'window_ends_at' => $rangeEnd->toDateString(),
             ],
             'reservations' => $reservations,
+        ]);
+    }
+
+    public function availabilityCalendar(Request $request, Car $car): JsonResponse
+    {
+        abort_unless($this->branchAccess->canAccessBranchId($request->user(), $car->branch_id), 403);
+
+        $request->validate([
+            'window_start' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
+        $today = now()->startOfDay();
+        $selectedWindowStart = $request->string('window_start')->toString();
+        $windowStart = $selectedWindowStart !== ''
+            ? Carbon::createFromFormat('Y-m-d', $selectedWindowStart)->startOfDay()
+            : $today->copy();
+        $windowEnd = $windowStart->copy()->addDays(29)->endOfDay();
+
+        $blockedRanges = Reservation::query()
+            ->where('car_id', $car->id)
+            ->whereIn('status', [
+                ReservationStatus::PENDING->value,
+                ReservationStatus::CONFIRMED->value,
+                ReservationStatus::ACTIVE->value,
+            ])
+            ->whereDate('start_date', '<=', $windowEnd->toDateString())
+            ->whereDate('end_date', '>=', $windowStart->toDateString())
+            ->orderBy('start_date')
+            ->get(['start_date', 'end_date'])
+            ->map(static function (Reservation $reservation) {
+                return [
+                    'start_date' => optional($reservation->start_date)->toDateString(),
+                    'end_date' => optional($reservation->end_date)->toDateString(),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'availabilityCalendar' => [
+                'window_starts_at' => $windowStart->toDateString(),
+                'window_ends_at' => $windowEnd->toDateString(),
+                'today' => $today->toDateString(),
+                'window' => [
+                    'starts_at' => $windowStart->toDateString(),
+                    'ends_at' => $windowEnd->toDateString(),
+                    'label' => sprintf('%s - %s', $windowStart->format('M j, Y'), $windowEnd->format('M j, Y')),
+                    'previous' => $windowStart->copy()->subDays(30)->toDateString(),
+                    'next' => $windowStart->copy()->addDays(30)->toDateString(),
+                ],
+                'blocked_ranges' => $blockedRanges,
+            ],
         ]);
     }
 

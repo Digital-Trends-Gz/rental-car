@@ -29,15 +29,16 @@ import { create, index, destroy, edit } from '@/routes/admin/employees';
 import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
-  employees: {
-    data: Array<{
-      id: number
-      name: string
-      email: string
-      is_active: boolean
-      branch?: {
+    employees: {
+      data: Array<{
         id: number
         name: string
+        email: string
+        civil_number?: string | null
+        is_active: boolean
+        branch?: {
+          id: number
+          name: string
       }
       roles?: Array<{ id: number; name: string; display_name: string }>
       direct_permissions?: Array<{ id: number; name: string; display_name: string }>
@@ -139,10 +140,11 @@ const destroyEmployee = () => {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.name') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.branch') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.roles_permissions') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.status') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.name') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.civil_number') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.branch') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.roles_permissions') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.status') }}</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
@@ -161,6 +163,9 @@ const destroyEmployee = () => {
                                         </div>
                                     </div>
                                 </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                {{ employee.civil_number || '—' }}
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-600">
                                 <div class="flex items-center gap-1">
@@ -211,7 +216,7 @@ const destroyEmployee = () => {
                             </td>
                         </tr>
                         <tr v-if="props.employees.data.length === 0">
-                            <td colspan="5" class="px-4 py-6 text-center text-gray-500">{{ t('dashboard.admin.employees.empty') }}</td>
+                            <td colspan="6" class="px-4 py-6 text-center text-gray-500">{{ t('dashboard.admin.employees.empty') }}</td>
                         </tr>
                     </tbody>
                 </table>

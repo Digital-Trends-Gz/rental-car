@@ -19,6 +19,7 @@ const props = defineProps<{
         document_number?: string | null;
         issuer?: string | null;
         issue_date?: string | null;
+        purchase_date?: string | null;
         expiry_date?: string | null;
         cost?: string | number | null;
         notes?: string | null;
@@ -36,6 +37,7 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 const typeLabel = (type: string) => {
     if (type === 'license') return localize('Car License', 'رخصة السيارة');
     if (type === 'insurance') return localize('Car Insurance', 'تأمين السيارة');
+    if (type === 'purchase_contract') return localize('Purchase Contract', 'عقد الشراء');
     return type;
 };
 
@@ -44,7 +46,7 @@ const statusLabel = (status: string) => {
     if (status === 'expiring_soon') return localize('Expiring Soon', 'قريب الانتهاء');
     if (status === 'new') return localize('New', 'جديد');
     if (status === 'inactive') return localize('Inactive', 'غير نشط');
-    return localize('Active', 'فعالة');
+    return localize('Active', 'فعّال');
 };
 
 const statusClasses = (status: string) => {
@@ -76,7 +78,7 @@ const destroyDocument = (documentId: number) => {
                     </div>
                     <h1 class="text-2xl font-semibold">{{ localize('Car Documents', 'وثائق السيارة') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        {{ localize('Manage license and insurance documents for this car.', 'إدارة وثائق الرخصة والتأمين لهذه السيارة.') }}
+                        {{ localize('Manage license, insurance, and purchase contract documents for this car.', 'إدارة وثائق الرخصة والتأمين وعقد الشراء لهذه السيارة.') }}
                     </p>
                 </div>
 
@@ -97,6 +99,7 @@ const destroyDocument = (documentId: number) => {
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Type', 'النوع') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Number', 'الرقم') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Issuer', 'جهة الإصدار') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Purchase', 'الشراء') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Expiry', 'الانتهاء') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Status', 'الحالة') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Front', 'الأمام') }}</th>
@@ -109,6 +112,7 @@ const destroyDocument = (documentId: number) => {
                             <td class="px-4 py-3">{{ typeLabel(document.type) }}</td>
                             <td class="px-4 py-3">{{ document.document_number || '-' }}</td>
                             <td class="px-4 py-3">{{ document.issuer || '-' }}</td>
+                            <td class="px-4 py-3">{{ document.purchase_date || '-' }}</td>
                             <td class="px-4 py-3">{{ document.expiry_date || '-' }}</td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="statusClasses(document.status_key)">
@@ -149,7 +153,7 @@ const destroyDocument = (documentId: number) => {
                             </td>
                         </tr>
                         <tr v-if="documents.length === 0">
-                            <td colspan="8" class="px-4 py-8 text-center text-sm text-muted-foreground">
+                            <td colspan="9" class="px-4 py-8 text-center text-sm text-muted-foreground">
                                 {{ localize('No car documents found yet.', 'لا توجد وثائق سيارة بعد.') }}
                             </td>
                         </tr>

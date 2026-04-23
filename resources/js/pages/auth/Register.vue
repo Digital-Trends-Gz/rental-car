@@ -60,13 +60,13 @@ const initial = computed(() => ({
     name: props.prefill?.name ?? '',
     email: props.prefill?.email ?? '',
     custom_domain: props.prefill?.custom_domain ?? '',
+    civil_number: props.prefill?.civil_number ?? '',
     country_iso2: props.prefill?.country_iso2 ?? '',
     phone_country_code: props.prefill?.phone_country_code ?? '',
     phone_national: props.prefill?.phone_national ?? '',
     phone: props.prefill?.phone ?? '',
     commercial_registration_number: props.prefill?.commercial_registration_number ?? '',
     tax_number: props.prefill?.tax_number ?? '',
-    civil_number: props.prefill?.civil_number ?? '',
 }));
 
 const selectedCountryIso2 = ref(initial.value.country_iso2);
@@ -166,6 +166,24 @@ watch(
                                 class="h-11 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
                             />
                             <InputError :message="errors.email" />
+                        </div>
+
+                        <!-- Civil Number -->
+                        <div class="space-y-2">
+                            <Label for="civil_number" class="text-sm font-semibold text-gray-800">
+                                Civil Number
+                            </Label>
+                            <Input
+                                id="civil_number"
+                                name="civil_number"
+                                type="text"
+                                placeholder="Enter your civil number"
+                                :default-value="initial.civil_number"
+                                required
+                                autocomplete="off"
+                                class="h-11 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                            />
+                            <InputError :message="errors.civil_number" />
                         </div>
 
                         <!-- Password -->

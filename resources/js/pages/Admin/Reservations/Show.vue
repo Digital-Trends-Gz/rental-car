@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { computed } from 'vue';
 import { index, edit, print } from '@/routes/admin/reservations';
@@ -13,6 +13,7 @@ const props = defineProps<{
 }>()
 const page = usePage<any>()
 const subdomain = computed(() => page.props.current_tenant?.slug)
+const reservation = computed(() => props.reservation)
 
 const statusMap = computed(() => {
   const map: Record<string, { label: string; color: string }> = {}
@@ -36,6 +37,18 @@ function fmtDate(d?: string) {
 function fmtMoney(n?: number | string) {
   const v = Number(n ?? 0)
   return `${props.currency.symbol}${v.toFixed(2)}`
+}
+
+function collectFinalCash() {
+  if (!subdomain.value || !reservation.value?.id) {
+    return
+  }
+
+  if (!window.confirm('Record the remaining balance as a cash payment and complete this reservation?')) {
+    return
+  }
+
+  router.post(`/admin/reservations/${reservation.value.id}/cash-payment`)
 }
 </script>
 
@@ -167,9 +180,20 @@ function fmtMoney(n?: number | string) {
               <div class="text-sm">Discount</div>
               <div class="font-medium">-{{ fmtMoney(reservation.discount_amount) }}</div>
             </div>
+            <div class="flex items-center justify-between">
+              <div class="text-sm">Amount Paid</div>
+              <div class="font-medium">{{ fmtMoney(reservation.amount_paid) }}</div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="text-sm">Balance Due</div>
+              <div class="font-medium">{{ fmtMoney(reservation.balance_due) }}</div>
+            </div>
             <div class="border-t pt-2 flex items-center justify-between">
               <div class="text-sm">Total</div>
               <div class="text-lg font-semibold">{{ fmtMoney(reservation.total_amount) }}</div>
+            </div>
+            <div v-if="reservation.can_collect_final_cash" class="pt-2">
+              <Button class="w-full" @click="collectFinalCash">Collect Final Cash</Button>
             </div>
           </div>
         </div>

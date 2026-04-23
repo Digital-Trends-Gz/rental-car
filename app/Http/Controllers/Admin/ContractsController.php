@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Core\AiAutomationSettings;
 use App\Core\AiProviderSettings;
 use App\Core\TenantContext;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Models\CarDamageCase;
@@ -12,9 +14,13 @@ use App\Models\Contract;
 use App\Models\ContractArchiveFile;
 use App\Models\ContractDriver;
 use App\Models\ContractDriverDocument;
+use App\Models\Payment;
+use App\Models\RentalExtensionRequest;
 use App\Models\Reservation;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
+use App\Notifications\ContractExtensionRequestedNotification;
+use App\Notifications\ContractForceExtendedNotification;
 use App\Services\Contracts\ContractAiExtractor;
 use App\Services\Contracts\ContractDriverDocumentExtractor;
 use App\Support\BranchAccess;
@@ -29,6 +35,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Carbon\CarbonImmutable;
 use Inertia\Inertia;
 use Inertia\Response;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
@@ -246,6 +253,7 @@ class ContractsController extends Controller
             'primaryDriver.documents',
             'additionalDrivers.documents',
             'damageReports.items',
+            'extensionRequests' => fn ($query) => $query->latest('id'),
         ]);
 
         $damageCreateUrl = route('admin.car-damage-reports.create', array_filter([
@@ -267,6 +275,7 @@ class ContractsController extends Controller
                 'vehicle_odometer' => $contract->vehicle_odometer,
                 'vehicle_fuel_level' => $contract->vehicle_fuel_level,
                 'price_per_day' => $contract->price_per_day,
+                'daily_rate' => $this->resolveContractDailyRate($contract),
                 'price_per_week' => $contract->price_per_week,
                 'price_per_month' => $contract->price_per_month,
                 'allowed_km_per_day' => $contract->allowed_km_per_day,
@@ -322,6 +331,26 @@ class ContractsController extends Controller
                         'edit_url' => route('admin.car-damage-reports.edit', $report),
                     ];
                 })->values()->all(),
+                'extension_requests' => $contract->extensionRequests->map(function (RentalExtensionRequest $request) {
+                    return [
+                        'id' => $request->id,
+                        'status' => $request->status instanceof \App\Enums\RentalExtensionRequestStatus
+                            ? $request->status->value
+                            : (string) $request->status,
+                        'status_label' => $request->status instanceof \App\Enums\RentalExtensionRequestStatus
+                            ? $request->status->label()
+                            : ucfirst((string) $request->status),
+                        'new_end_date' => optional($request->new_end_date)?->toDateString(),
+                        'extra_days' => $request->extra_days,
+                        'extra_amount' => (float) $request->extra_amount,
+                        'reason' => $request->reason,
+                        'client_notes' => $request->client_notes,
+                        'requested_at' => optional($request->created_at)?->toDateTimeString(),
+                        'responded_at' => optional($request->responded_at)?->toDateTimeString(),
+                    ];
+                })->values()->all(),
+                'has_pending_extension_request' => $contract->extensionRequests
+                    ->contains(fn (RentalExtensionRequest $request) => $request->status === \App\Enums\RentalExtensionRequestStatus::PENDING),
             ],
             'startRentalDocument' => $this->firstFileMeta($contract, 'start_contract'),
             'endRentalDocument' => $this->firstFileMeta($contract, 'end_contract'),
@@ -332,6 +361,12 @@ class ContractsController extends Controller
                 'pdf' => route('admin.contracts.pdf', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id]),
                 'pdf_en' => route('admin.contracts.pdf', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id, 'lang' => 'en']),
                 'pdf_ar' => route('admin.contracts.pdf', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id, 'lang' => 'ar']),
+                'request_extend' => $this->isExtendableContract($contract)
+                    ? route('admin.contracts.request-extension', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id])
+                    : null,
+                'extend' => $this->isExtendableContract($contract)
+                    ? route('admin.contracts.extend', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id])
+                    : null,
             ],
         ]);
     }
@@ -648,6 +683,219 @@ class ContractsController extends Controller
             ->with('success', 'Contract updated successfully.');
     }
 
+    public function requestExtension(Request $request): RedirectResponse
+    {
+        $contractId = (int) $request->route('contract');
+        if ($contractId <= 0) {
+            abort(404);
+        }
+
+        $contract = Contract::withoutGlobalScope('tenant')
+            ->with(['reservation.user:id,name,email', 'reservation.car:id,make,model,year,license_plate,price_per_day', 'extensionRequests'])
+            ->findOrFail($contractId);
+
+        abort_unless($this->canAccessContract($contract, $request->user()), 403);
+
+        if (!$this->isExtendableContract($contract)) {
+            throw ValidationException::withMessages([
+                'new_end_date' => 'Only active contracts can be extended.',
+            ]);
+        }
+
+        if ($contract->extensionRequests->contains(fn (RentalExtensionRequest $request) => $request->status === \App\Enums\RentalExtensionRequestStatus::PENDING)) {
+            throw ValidationException::withMessages([
+                'new_end_date' => 'There is already a pending extension request for this contract.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'new_end_date' => ['required', 'date'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        [$extraDays, $dailyRate, $extraAmount] = $this->calculateExtensionPreview($contract, $validated['new_end_date']);
+        $notes = trim((string) ($validated['notes'] ?? ''));
+
+        $extensionRequest = DB::transaction(function () use ($contract, $validated, $extraDays, $extraAmount, $notes, $request): RentalExtensionRequest {
+            $extensionRequest = RentalExtensionRequest::create([
+                'tenant_id' => $contract->tenant_id,
+                'contract_id' => $contract->id,
+                'reservation_id' => $contract->reservation_id,
+                'requested_by_admin_id' => $request->user()?->id,
+                'new_end_date' => $validated['new_end_date'],
+                'extra_days' => $extraDays,
+                'extra_amount' => number_format($extraAmount, 2, '.', ''),
+                'reason' => $notes !== '' ? $notes : null,
+                'status' => \App\Enums\RentalExtensionRequestStatus::PENDING,
+            ]);
+
+            if ($contract->reservation?->user) {
+                $contract->reservation->user->notify(new ContractExtensionRequestedNotification($extensionRequest->load(['contract.reservation.user', 'contract.reservation.car'])));
+            }
+
+            return $extensionRequest;
+        });
+
+        return redirect()
+            ->route('admin.contracts.show', [
+                'subdomain' => $request->route('subdomain'),
+                'contract' => $contract->id,
+            ])
+            ->with('success', sprintf(
+                'Extension request sent for %d day(s).',
+                $extensionRequest->extra_days
+            ));
+    }
+
+    public function extend(Request $request): RedirectResponse
+    {
+        $contractId = (int) $request->route('contract');
+        if ($contractId <= 0) {
+            abort(404);
+        }
+
+        $contract = Contract::withoutGlobalScope('tenant')
+            ->with(['reservation.user:id,name,email', 'reservation.car:id,price_per_day'])
+            ->findOrFail($contractId);
+
+        abort_unless($this->canAccessContract($contract, $request->user()), 403);
+
+        if (!$this->isExtendableContract($contract)) {
+            throw ValidationException::withMessages([
+                'new_end_date' => 'Only active contracts can be extended.',
+            ]);
+        }
+
+        if (!$contract->reservation) {
+            throw ValidationException::withMessages([
+                'new_end_date' => 'This contract is not linked to a reservation.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'new_end_date' => ['required', 'date'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        [$extraDays, $dailyRate, $extraAmount, $currentEndDate, $newEndDateString] = $this->calculateExtensionPreviewData($contract, $validated['new_end_date']);
+        $notes = trim((string) ($validated['notes'] ?? ''));
+
+        DB::transaction(function () use ($contract, $newEndDateString, $extraAmount, $notes, $extraDays, $dailyRate): void {
+            $reservation = $contract->reservation;
+            $baseReservationTotal = (float) ($reservation?->total_amount ?? $contract->total_amount ?? 0);
+            $baseContractTotal = (float) ($contract->total_amount ?? $reservation?->total_amount ?? 0);
+
+            $contract->end_date = $newEndDateString;
+            $contract->total_amount = round($baseContractTotal + $extraAmount, 2);
+            $contract->save();
+
+            if ($reservation) {
+                $reservation->end_date = $newEndDateString;
+                $reservation->total_days = $reservation->start_date
+                    ? $reservation->start_date->diffInDays(CarbonImmutable::parse($newEndDateString)) + 1
+                    : $reservation->total_days;
+                $reservation->subtotal = round((float) ($reservation->subtotal ?? 0) + $extraAmount, 2);
+                $reservation->total_amount = round($baseReservationTotal + $extraAmount, 2);
+                $reservation->save();
+
+                $paymentNotes = sprintf(
+                    'Rental extension payment recorded from contract extension. %s day(s) added at %s %s per day.%s',
+                    $extraDays,
+                    strtoupper((string) ($contract->currency ?: config('app.currency_code', 'USD'))),
+                    number_format($dailyRate, 2, '.', ','),
+                    $notes !== '' ? ' Notes: '.$notes : ''
+                );
+
+                Payment::create([
+                    'tenant_id' => $contract->tenant_id,
+                    'reservation_id' => $reservation->id,
+                    'user_id' => $reservation->user_id,
+                    'amount' => number_format($extraAmount, 2, '.', ''),
+                    'currency' => strtoupper((string) ($contract->currency ?: config('app.currency_code', 'USD'))),
+                    'payment_method' => PaymentMethod::CASH,
+                    'status' => PaymentStatus::COMPLETED,
+                    'notes' => $paymentNotes,
+                    'processed_at' => now(),
+                ]);
+            }
+        });
+
+        if ($contract->reservation?->user) {
+            $contract->reservation->user->notify(
+                new ContractForceExtendedNotification(
+                    $contract,
+                    $extraDays,
+                    $extraAmount,
+                    $notes
+                )
+            );
+        }
+
+        return redirect()
+            ->route('admin.contracts.show', [
+                'subdomain' => $request->route('subdomain'),
+                'contract' => $contract->id,
+            ])
+            ->with('success', sprintf(
+                'Rental force extended by %d day(s).',
+                $extraDays
+            ));
+    }
+
+    /**
+     * @return array{0:int,1:float,2:float,3:?CarbonImmutable,4:string}
+     */
+    private function calculateExtensionPreviewData(Contract $contract, string $newEndDate): array
+    {
+        $currentEndDate = $contract->end_date
+            ? CarbonImmutable::parse($contract->end_date->toDateString())
+            : null;
+        if (!$currentEndDate) {
+            throw ValidationException::withMessages([
+                'new_end_date' => 'This contract does not have an end date to extend from.',
+            ]);
+        }
+
+        $newEndDateCarbon = CarbonImmutable::parse($newEndDate)->startOfDay();
+        if ($newEndDateCarbon->lessThanOrEqualTo($currentEndDate)) {
+            throw ValidationException::withMessages([
+                'new_end_date' => 'The new end date must be after the current end date.',
+            ]);
+        }
+
+        $dailyRate = $this->resolveContractDailyRate($contract);
+        if ($dailyRate === null || $dailyRate <= 0) {
+            throw ValidationException::withMessages([
+                'new_end_date' => 'Unable to determine the daily rate for this contract.',
+            ]);
+        }
+
+        $extraDays = $currentEndDate->diffInDays($newEndDateCarbon);
+        if ($extraDays <= 0) {
+            throw ValidationException::withMessages([
+                'new_end_date' => 'The selected extension must add at least one day.',
+            ]);
+        }
+
+        return [
+            $extraDays,
+            $dailyRate,
+            round($extraDays * $dailyRate, 2),
+            $currentEndDate,
+            $newEndDateCarbon->toDateString(),
+        ];
+    }
+
+    /**
+     * @return array{0:int,1:float,2:float}
+     */
+    private function calculateExtensionPreview(Contract $contract, string $newEndDate): array
+    {
+        [$extraDays, $dailyRate, $extraAmount] = $this->calculateExtensionPreviewData($contract, $newEndDate);
+
+        return [$extraDays, $dailyRate, $extraAmount];
+    }
+
     private function validatePayload(Request $request, int $tenantId, ?int $ignoreId = null, ?Contract $contract = null): array
     {
         $uniqueRule = Rule::unique('contracts', 'contract_number')
@@ -657,11 +905,16 @@ class ContractsController extends Controller
             $uniqueRule->ignore($ignoreId);
         }
 
+        $contractDateRules = ['nullable', 'date'];
+        if ($contract === null) {
+            $contractDateRules[] = 'after_or_equal:today';
+        }
+
         $validator = Validator::make($request->all(), [
             'reservation_id' => ['nullable', 'integer', 'exists:reservations,id'],
             'contract_number' => ['nullable', 'string', 'max:100', $uniqueRule],
             'status' => ['required', Rule::in(['draft', 'active', 'completed', 'cancelled'])],
-            'contract_date' => ['nullable', 'date'],
+            'contract_date' => $contractDateRules,
             'renter_name' => ['nullable', 'string', 'max:255'],
             'renter_id_number' => ['nullable', 'string', 'max:255'],
             'renter_phone' => ['nullable', 'string', 'max:100'],
@@ -1133,6 +1386,33 @@ class ContractsController extends Controller
             $user,
             $contract->branch_id ? (int) $contract->branch_id : null
         );
+    }
+
+    private function isExtendableContract(Contract $contract): bool
+    {
+        return !empty($contract->reservation_id);
+    }
+
+    private function resolveContractDailyRate(Contract $contract): ?float
+    {
+        $rate = $contract->price_per_day;
+        if ($rate !== null && (float) $rate > 0) {
+            return (float) $rate;
+        }
+
+        $contract->loadMissing('reservation.car:id,price_per_day');
+
+        $reservationRate = $contract->reservation?->daily_rate;
+        if ($reservationRate !== null && (float) $reservationRate > 0) {
+            return (float) $reservationRate;
+        }
+
+        $carRate = $contract->reservation?->car?->price_per_day;
+        if ($carRate !== null && (float) $carRate > 0) {
+            return (float) $carRate;
+        }
+
+        return null;
     }
 
     private function syncFiles(Contract $contract, Request $request, string $collection): void

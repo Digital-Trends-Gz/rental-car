@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import SearchableSelect from '@/components/SearchableSelect.vue';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,9 @@ const form = useForm({
     phone_1: props.branch?.phone_1 ?? '',
     phone_2: props.branch?.phone_2 ?? '',
     whatsapp: props.branch?.whatsapp ?? '',
+    cr_number: props.branch?.cr_number ?? '',
+    manager_name: props.branch?.manager_name ?? '',
+    manager_civil_number: props.branch?.manager_civil_number ?? '',
     email: props.branch?.email ?? '',
     showroom_temp_folders: [] as string[],
     showroom_removed_files: [] as number[],
@@ -160,16 +164,12 @@ function submit() {
 
                         <div>
                             <Label for="country">{{ t('dashboard.admin.branches.form.country') }}</Label>
-                            <select
-                                id="country"
+                            <SearchableSelect
                                 v-model="form.country"
-                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                            >
-                                <option value="">{{ t('dashboard.admin.branches.form.select_country') }}</option>
-                                <option v-for="country in countries" :key="country.value" :value="country.value">
-                                    {{ country.label }}
-                                </option>
-                            </select>
+                                :options="countries"
+                                :placeholder="t('dashboard.admin.branches.form.select_country')"
+                                :search-placeholder="t('dashboard.admin.branches.form.select_country')"
+                            />
                             <InputError :message="form.errors.country" class="mt-1" />
                         </div>
 
@@ -256,6 +256,24 @@ function submit() {
                             <Label for="whatsapp">{{ t('dashboard.admin.branches.form.whatsapp') }}</Label>
                             <Input id="whatsapp" v-model="form.whatsapp" :placeholder="t('dashboard.admin.branches.form.phone_placeholder')" />
                             <InputError :message="form.errors.whatsapp" class="mt-1" />
+                        </div>
+
+                        <div>
+                            <Label for="cr_number">{{ t('dashboard.admin.branches.form.cr_number') }}</Label>
+                            <Input id="cr_number" v-model="form.cr_number" :placeholder="t('dashboard.admin.branches.form.cr_number_placeholder')" />
+                            <InputError :message="form.errors.cr_number" class="mt-1" />
+                        </div>
+
+                        <div>
+                            <Label for="manager_name">{{ t('dashboard.admin.branches.form.manager_name') }}</Label>
+                            <Input id="manager_name" v-model="form.manager_name" :placeholder="t('dashboard.admin.branches.form.manager_name_placeholder')" />
+                            <InputError :message="form.errors.manager_name" class="mt-1" />
+                        </div>
+
+                        <div>
+                            <Label for="manager_civil_number">{{ t('dashboard.admin.branches.form.manager_civil_number') }}</Label>
+                            <Input id="manager_civil_number" v-model="form.manager_civil_number" :placeholder="t('dashboard.admin.branches.form.manager_civil_number_placeholder')" />
+                            <InputError :message="form.errors.manager_civil_number" class="mt-1" />
                         </div>
 
                         <div>

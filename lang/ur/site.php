@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 return [
     'language' => [
@@ -1147,7 +1147,7 @@ return [
                 'title' => 'Branches',
                 'new_branch' => 'New Branch',
                 'edit_branch' => 'Edit Branch',
-                'search_placeholder' => 'Search name, address, phone...',
+                'search_placeholder' => 'Search name, CR, manager, phone...',
                 'empty' => 'No branches found.',
                 'form' => [
                     'branch_name' => 'Branch Name',
@@ -1171,19 +1171,28 @@ return [
                     'post_code_placeholder' => '112',
                     'google_map_url' => 'Google Map Location URL',
                     'google_map_url_placeholder' => 'https://maps.google.com/...',
-                    'phone_1' => 'Phone 1',
-                    'phone_2' => 'Phone 2',
-                    'phone_placeholder' => '+968 9000 0000',
-                    'whatsapp' => 'WhatsApp',
-                    'email' => 'Email',
-                    'email_placeholder' => 'branch@example.com',
-                    'showroom_image' => 'Car Rental Showroom Image',
-                ],
-                'table' => [
-                    'name' => 'Name',
-                    'address' => 'Address',
-                    'phone' => 'Phone',
-                    'email' => 'Email',
+                      'phone_1' => 'Phone 1',
+                      'phone_2' => 'Phone 2',
+                      'phone_placeholder' => '+968 9000 0000',
+                      'whatsapp' => 'WhatsApp',
+                      'cr_number' => 'CR Number',
+                      'cr_number_placeholder' => 'CR-123456',
+                      'manager_name' => 'Manager Name',
+                      'manager_name_placeholder' => 'Mohammed Ali',
+                      'manager_civil_number' => 'Manager Civil Number',
+                      'manager_civil_number_placeholder' => '123456789',
+                      'email' => 'Email',
+                      'email_placeholder' => 'branch@example.com',
+                      'showroom_image' => 'Car Rental Showroom Image',
+                  ],
+                  'table' => [
+                      'name' => 'Name',
+                      'cr_number' => 'CR',
+                      'manager_name' => 'Manager Name',
+                      'manager_civil_number' => 'Manager Civil No.',
+                      'address' => 'Address',
+                      'phone' => 'Phone',
+                      'email' => 'Email',
                 ],
                 'delete_dialog' => [
                     'title' => 'Delete Branch',
@@ -1346,19 +1355,22 @@ return [
                 'title' => 'ملازمین',
                 'new_employee' => 'نیا ملازم',
                 'edit_employee' => 'ملازم میں ترمیم',
-                'search_placeholder' => 'نام یا ای میل تلاش کریں...',
+                'search_placeholder' => 'Search name, email, civil number...',
                 'empty' => 'کوئی ملازم نہیں ملا۔',
                 'all_branches' => 'تمام برانچز',
                 'table' => [
                     'name' => 'نام',
-                    'email' => 'ای میل',
+                    'email' => 'Email',
+                    'civil_number' => 'Civil No.',
                     'branch' => 'برانچ',
                     'status' => 'حالت',
                     'roles_permissions' => 'کردار اور اجازتیں',
                     'no_branch' => 'کوئی برانچ نہیں',
                 ],
                 'form' => [
-                    'password' => 'پاس ورڈ',
+                    'civil_number' => 'Civil No.',
+                    'civil_number_placeholder' => '123456789',
+                    'password' => 'Password',
                     'password_confirmation' => 'پاس ورڈ کی تصدیق',
                     'password_help' => 'موجودہ پاس ورڈ برقرار رکھنے کے لئے خالی چھوڑ دیں۔',
                     'direct_permissions' => 'براہ راست اجازتیں',
@@ -1519,3 +1531,4 @@ return [
         ],
     ],
 ];
+

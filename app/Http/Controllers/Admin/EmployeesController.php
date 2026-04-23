@@ -45,7 +45,8 @@ class EmployeesController extends Controller
             ->when($search, function ($q) use ($search) {
                 $q->where(function ($w) use ($search) {
                     $w->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('civil_number', 'like', "%{$search}%");
                 });
             })
             ->with(['branch', 'roles'])
@@ -101,6 +102,7 @@ class EmployeesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')],
+            'civil_number' => ['required', 'string', 'max:255', Rule::unique('users')],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'branch_id' => [
                 $canAccessAllBranches ? 'nullable' : 'nullable',
@@ -127,6 +129,7 @@ class EmployeesController extends Controller
         $employee = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'civil_number' => trim((string) $validated['civil_number']),
             'password' => Hash::make($validated['password']),
             'role' => UserRole::ADMIN,
             'tenant_id' => $this->tenantId(),
@@ -156,7 +159,7 @@ class EmployeesController extends Controller
 
     public function edit(User $employee): Response
     {
-        abort_if($employee->role !== UserRole::ADMIN, 403);
+        abort_unless($this->isAdminEmployee($employee), 403);
         abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $employee->branch_id ? (int) $employee->branch_id : null), 403);
 
         $branches = $this->branchAccess->availableBranchesForUser(request()->user());
@@ -172,6 +175,7 @@ class EmployeesController extends Controller
                 'id' => $employee->id,
                 'name' => $employee->name,
                 'email' => $employee->email,
+                'civil_number' => $employee->civil_number,
                 'branch_id' => $employee->branch_id,
                 'is_active' => (bool) $employee->is_active,
                 'role_ids' => $employee->roles->pluck('id')->toArray(),
@@ -185,7 +189,7 @@ class EmployeesController extends Controller
 
     public function update(Request $request, User $employee)
     {
-        abort_if($employee->role !== UserRole::ADMIN, 403);
+        abort_unless($this->isAdminEmployee($employee), 403);
         abort_unless($this->branchAccess->canAccessBranchId($request->user(), $employee->branch_id ? (int) $employee->branch_id : null), 403);
 
         // Demo mode restriction
@@ -197,6 +201,7 @@ class EmployeesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($employee->id)],
+            'civil_number' => ['required', 'string', 'max:255', Rule::unique('users')->ignore($employee->id)],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'branch_id' => [
                 $canAccessAllBranches ? 'nullable' : 'nullable',
@@ -223,6 +228,7 @@ class EmployeesController extends Controller
         $employee->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'civil_number' => trim((string) $validated['civil_number']),
             'branch_id' => $validated['branch_id'],
             'is_active' => $validated['is_active'],
         ]);
@@ -247,7 +253,7 @@ class EmployeesController extends Controller
 
     public function destroy(User $employee)
     {
-        abort_if($employee->role !== UserRole::ADMIN, 403);
+        abort_unless($this->isAdminEmployee($employee), 403);
         abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $employee->branch_id ? (int) $employee->branch_id : null), 403);
 
         // Demo mode restriction
@@ -270,5 +276,11 @@ class EmployeesController extends Controller
     private function tenantId(): int
     {
         return (int) (TenantContext::id() ?? auth()->user()?->tenant_id ?? 0);
+    }
+
+    private function isAdminEmployee(User $employee): bool
+    {
+        return $employee->role === UserRole::ADMIN
+            || (string) $employee->role === UserRole::ADMIN->value;
     }
 }

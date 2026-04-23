@@ -24,6 +24,7 @@ class CarDocumentsController extends Controller
 
     public function index(Car $car): Response
     {
+        $car = $this->resolveCar(request(), $car);
         $this->authorizeCar($car);
         $car->load([
             'documents.files',
@@ -39,6 +40,7 @@ class CarDocumentsController extends Controller
 
     public function create(Car $car): Response
     {
+        $car = $this->resolveCar(request(), $car);
         $this->authorizeCar($car);
 
         return Inertia::render('Admin/Cars/Documents/Edit', [
@@ -52,16 +54,22 @@ class CarDocumentsController extends Controller
 
     public function store(Request $request, Car $car): RedirectResponse
     {
+        $car = $this->resolveCar($request, $car);
+        $subdomain = $request->route('subdomain');
         $this->authorizeCar($car);
         $validated = $this->validateDocument($request);
 
-        $document = $car->documents()->create([
+        $document = CarDocument::create([
             'tenant_id' => (int) $car->tenant_id,
+            'car_id' => (int) $car->id,
             'type' => $validated['type'],
             'document_number' => $this->nullableString($validated['document_number'] ?? null),
             'issuer' => $this->nullableString($validated['issuer'] ?? null),
             'issue_date' => $validated['issue_date'] ?? null,
-            'expiry_date' => $validated['expiry_date'] ?? null,
+            'purchase_date' => $validated['purchase_date'] ?? null,
+            'expiry_date' => $validated['type'] === 'purchase_contract'
+                ? ($validated['purchase_date'] ?? null)
+                : ($validated['expiry_date'] ?? null),
             'cost' => $validated['cost'] ?? null,
             'notes' => $this->nullableString($validated['notes'] ?? null),
             'is_active' => (bool) ($validated['is_active'] ?? true),
@@ -70,12 +78,13 @@ class CarDocumentsController extends Controller
         $this->syncImages($document, $request);
 
         return redirect()
-            ->route('admin.cars.documents.index', ['car' => $car->id])
+            ->route('admin.cars.documents.index', ['subdomain' => $subdomain, 'car' => $car->id])
             ->with('success', 'Car document created successfully.');
     }
 
     public function edit(Car $car, CarDocument $document): Response
     {
+        $car = $this->resolveCar(request(), $car);
         $this->authorizeDocument($car, $document);
         $document->loadMissing('files');
 
@@ -104,6 +113,8 @@ class CarDocumentsController extends Controller
 
     public function update(Request $request, Car $car, CarDocument $document): RedirectResponse
     {
+        $car = $this->resolveCar($request, $car);
+        $subdomain = $request->route('subdomain');
         $this->authorizeDocument($car, $document);
         $validated = $this->validateDocument($request);
 
@@ -112,7 +123,10 @@ class CarDocumentsController extends Controller
             'document_number' => $this->nullableString($validated['document_number'] ?? null),
             'issuer' => $this->nullableString($validated['issuer'] ?? null),
             'issue_date' => $validated['issue_date'] ?? null,
-            'expiry_date' => $validated['expiry_date'] ?? null,
+            'purchase_date' => $validated['purchase_date'] ?? null,
+            'expiry_date' => $validated['type'] === 'purchase_contract'
+                ? ($validated['purchase_date'] ?? null)
+                : ($validated['expiry_date'] ?? null),
             'cost' => $validated['cost'] ?? null,
             'notes' => $this->nullableString($validated['notes'] ?? null),
             'is_active' => (bool) ($validated['is_active'] ?? true),
@@ -122,17 +136,19 @@ class CarDocumentsController extends Controller
         $this->syncImages($document, $request);
 
         return redirect()
-            ->route('admin.cars.documents.index', ['car' => $car->id])
+            ->route('admin.cars.documents.index', ['subdomain' => $subdomain, 'car' => $car->id])
             ->with('success', 'Car document updated successfully.');
     }
 
     public function destroy(Car $car, CarDocument $document): RedirectResponse
     {
+        $car = $this->resolveCar(request(), $car);
+        $subdomain = request()->route('subdomain');
         $this->authorizeDocument($car, $document);
         $document->delete();
 
         return redirect()
-            ->route('admin.cars.documents.index', ['car' => $car->id])
+            ->route('admin.cars.documents.index', ['subdomain' => $subdomain, 'car' => $car->id])
             ->with('success', 'Car document deleted successfully.');
     }
 
@@ -146,7 +162,8 @@ class CarDocumentsController extends Controller
             'document_number' => ['nullable', 'string', 'max:255'],
             'issuer' => ['nullable', 'string', 'max:255'],
             'issue_date' => ['nullable', 'date'],
-            'expiry_date' => ['required', 'date'],
+            'purchase_date' => ['nullable', 'date', 'required_if:type,purchase_contract'],
+            'expiry_date' => ['nullable', 'date', 'required_unless:type,purchase_contract'],
             'cost' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
@@ -212,6 +229,17 @@ class CarDocumentsController extends Controller
         abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $car->branch_id), 403);
     }
 
+    private function resolveCar(Request $request, ?Car $car = null): Car
+    {
+        if ($car && $car->exists) {
+            return $car;
+        }
+
+        $carId = (int) $request->route('car');
+
+        return Car::query()->findOrFail($carId);
+    }
+
     private function authorizeDocument(Car $car, CarDocument $document): void
     {
         $this->authorizeCar($car);
@@ -244,6 +272,7 @@ class CarDocumentsController extends Controller
             'document_number' => $document->document_number,
             'issuer' => $document->issuer,
             'issue_date' => optional($document->issue_date)->toDateString(),
+            'purchase_date' => optional($document->purchase_date)->toDateString(),
             'expiry_date' => optional($document->expiry_date)->toDateString(),
             'cost' => $document->cost,
             'notes' => $document->notes,
@@ -261,8 +290,9 @@ class CarDocumentsController extends Controller
     private function documentTypeOptions(): array
     {
         return [
-            ['value' => 'license', 'label' => 'Car License'],
-            ['value' => 'insurance', 'label' => 'Car Insurance'],
+            ['value' => 'license', 'label' => CarDocument::labelForType('license')],
+            ['value' => 'insurance', 'label' => CarDocument::labelForType('insurance')],
+            ['value' => 'purchase_contract', 'label' => CarDocument::labelForType('purchase_contract')],
         ];
     }
 

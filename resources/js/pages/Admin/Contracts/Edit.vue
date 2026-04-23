@@ -200,6 +200,16 @@ const localize = (en: string, ar: string) => {
   return arabicTranslations[en] ?? ar;
 };
 
+const contractDateMin = computed(() => {
+  if (props.mode !== 'create') {
+    return undefined;
+  }
+
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+});
+
 const documentTypeOptions = computed(() => [
   { value: '', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0627\u062e\u062a\u0631 \u0646\u0648\u0639 \u0627\u0644\u0645\u0633\u062a\u0646\u062f' : 'Select document type' },
   { value: 'passport', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u062c\u0648\u0627\u0632 \u0633\u0641\u0631 (\u0633\u0627\u0626\u062d)' : 'Passport (Tourist)' },
@@ -1245,7 +1255,7 @@ function submit() {
               </select>
               <InputError :message="form.errors.status" class="mt-1" />
             </div>
-            <div><Label for="contract_date">{{ localize('Contract Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Label><Input id="contract_date" v-model="form.contract_date" type="date" /><InputError :message="form.errors.contract_date" class="mt-1" /></div>
+            <div><Label for="contract_date">{{ localize('Contract Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Label><Input id="contract_date" v-model="form.contract_date" type="date" :min="contractDateMin" /><InputError :message="form.errors.contract_date" class="mt-1" /></div>
             <div><Label for="start_date">{{ localize('Rental Start Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ¨ط·آ¯ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="start_date" v-model="form.start_date" type="date" :disabled="hasLinkedReservation" /><InputError :message="form.errors.start_date" class="mt-1" /></div>
             <div><Label for="end_date">{{ localize('Rental End Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="end_date" v-model="form.end_date" type="date" :disabled="hasLinkedReservation" /><InputError :message="form.errors.end_date" class="mt-1" /></div>
             <div><Label for="total_amount">{{ localize('Total Amount', 'ط·آ§ط¸â€‍ط¸â€¦ط·آ¨ط¸â€‍ط·ط› ط·آ§ط¸â€‍ط·آ¥ط·آ¬ط¸â€¦ط·آ§ط¸â€‍ط¸ظ¹') }}</Label><Input id="total_amount" v-model="form.total_amount" type="number" min="0" step="0.01" :disabled="hasLinkedReservation" /><InputError :message="form.errors.total_amount" class="mt-1" /></div>

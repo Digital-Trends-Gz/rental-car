@@ -24,6 +24,7 @@ const props = defineProps<{
         document_number?: string | null;
         issuer?: string | null;
         issue_date?: string | null;
+        purchase_date?: string | null;
         expiry_date?: string | null;
         cost?: string | number | null;
         notes?: string | null;
@@ -48,12 +49,34 @@ const localizedDocumentTypes = computed(() =>
                 ? localize('Car License', 'رخصة السيارة')
                 : item.value === 'insurance'
                   ? localize('Car Insurance', 'تأمين السيارة')
-                  : item.label,
+                  : item.value === 'purchase_contract'
+                    ? localize('Purchase Contract', 'عقد الشراء')
+                    : item.label,
     })),
 );
 
+const form = useForm({
+    type: props.document?.type ?? 'license',
+    document_number: props.document?.document_number ?? '',
+    issuer: props.document?.issuer ?? '',
+    issue_date: props.document?.issue_date ?? '',
+    purchase_date: props.document?.purchase_date ?? '',
+    expiry_date: props.document?.expiry_date ?? '',
+    cost: props.document?.cost ? String(props.document.cost) : '',
+    notes: props.document?.notes ?? '',
+    is_active: props.document?.is_active ?? true,
+    front_image_temp_folders: [] as string[],
+    front_image_removed_files: [] as number[],
+    back_image_temp_folders: [] as string[],
+    back_image_removed_files: [] as number[],
+});
+
+const isPurchaseContract = computed(() => form.type === 'purchase_contract');
+
 const previewStatusKey = computed(() => {
     if (!form.is_active) return 'inactive';
+
+    if (isPurchaseContract.value) return 'active';
 
     if (form.expiry_date) {
         const today = new Date();
@@ -76,7 +99,7 @@ const statusLabel = (status: string) => {
     if (status === 'expiring_soon') return localize('Expiring Soon', 'قريب الانتهاء');
     if (status === 'new') return localize('New', 'جديد');
     if (status === 'inactive') return localize('Inactive', 'غير نشط');
-    return localize('Active', 'فعالة');
+    return localize('Active', 'فعّال');
 };
 
 const statusClasses = (status: string) => {
@@ -86,21 +109,6 @@ const statusClasses = (status: string) => {
     if (status === 'inactive') return 'bg-gray-100 text-gray-600';
     return 'bg-green-100 text-green-700';
 };
-
-const form = useForm({
-    type: props.document?.type ?? 'license',
-    document_number: props.document?.document_number ?? '',
-    issuer: props.document?.issuer ?? '',
-    issue_date: props.document?.issue_date ?? '',
-    expiry_date: props.document?.expiry_date ?? '',
-    cost: props.document?.cost ? String(props.document.cost) : '',
-    notes: props.document?.notes ?? '',
-    is_active: props.document?.is_active ?? true,
-    front_image_temp_folders: [] as string[],
-    front_image_removed_files: [] as number[],
-    back_image_temp_folders: [] as string[],
-    back_image_removed_files: [] as number[],
-});
 
 const submit = () => {
     const url = isEdit.value
@@ -171,16 +179,22 @@ const submit = () => {
                         <InputError :message="form.errors.cost" class="mt-1" />
                     </div>
 
-                    <div>
+                    <div v-if="!isPurchaseContract">
                         <Label for="issue_date">{{ localize('Issue Date', 'تاريخ الإصدار') }}</Label>
                         <Input id="issue_date" v-model="form.issue_date" type="date" />
                         <InputError :message="form.errors.issue_date" class="mt-1" />
                     </div>
 
-                    <div>
+                    <div v-if="!isPurchaseContract">
                         <Label for="expiry_date">{{ localize('Expiry Date', 'تاريخ الانتهاء') }}</Label>
                         <Input id="expiry_date" v-model="form.expiry_date" type="date" />
                         <InputError :message="form.errors.expiry_date" class="mt-1" />
+                    </div>
+
+                    <div v-if="isPurchaseContract">
+                        <Label for="purchase_date">{{ localize('Purchase Date', 'تاريخ الشراء') }}</Label>
+                        <Input id="purchase_date" v-model="form.purchase_date" type="date" />
+                        <InputError :message="form.errors.purchase_date" class="mt-1" />
                     </div>
                 </div>
 

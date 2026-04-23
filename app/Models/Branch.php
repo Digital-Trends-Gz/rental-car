@@ -30,6 +30,9 @@ class Branch extends Model
         'phone_1',
         'phone_2',
         'whatsapp',
+        'cr_number',
+        'manager_name',
+        'manager_civil_number',
     ];
 
     protected $appends = [

@@ -12,6 +12,7 @@ import {
     Clock,
     CheckCircle2,
     LayoutDashboard,
+    RefreshCcw,
     TrendingUp,
     Layers,
 } from 'lucide-vue-next';
@@ -73,6 +74,34 @@ const props = defineProps<{
         expiry_date: string | null;
         days_remaining: number | null;
         edit_url: string;
+    }>;
+    expiringContracts: Array<{
+        id: number;
+        contract_number: string;
+        reservation_number: string | null;
+        car_name: string;
+        license_plate: string;
+        client_name: string | null;
+        client_email: string | null;
+        branch_name: string | null;
+        end_date: string | null;
+        days_remaining: number | null;
+        show_url: string;
+    }>;
+    recentForcedExtensions: Array<{
+        id: number;
+        payment_number: string;
+        contract_number: string | null;
+        reservation_number: string | null;
+        car_name: string;
+        license_plate: string;
+        client_name: string | null;
+        client_email: string | null;
+        branch_name: string | null;
+        amount: number;
+        processed_at: string | null;
+        note: string;
+        show_url: string;
     }>;
     recentPendingViolations: Array<{
         id: number;
@@ -307,6 +336,142 @@ const kpiCards = computed(() => [
                                 <td class="px-4 py-3" :class="isRtl ? 'text-left' : 'text-right'">
                                     <Link :href="document.edit_url" class="text-xs text-primary hover:underline">
                                         {{ localize('Open', 'فتح') }}
+                                    </Link>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </CardContent>
+            </Card>
+
+            <Card class="border-0 shadow-sm">
+                <CardHeader>
+                    <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
+                        <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
+                            <Calendar class="h-4 w-4 text-primary" />
+                            <CardTitle class="text-base">{{ localize('Contracts Ending Soon', 'العقود المنتهية قريباً') }}</CardTitle>
+                        </div>
+                        <Link href="/admin/contracts" class="text-xs text-primary hover:underline">
+                            {{ localize('View all', 'ط¹ط±ط¶ ط§ظ„ظƒظ„') }} →
+                        </Link>
+                    </div>
+                    <p class="text-xs text-muted-foreground">{{ localize('Active contracts ending within the next 7 days.', 'العقود النشطة التي ستنتهي خلال الأيام السبعة القادمة.') }}</p>
+                </CardHeader>
+                <CardContent class="p-0">
+                    <div v-if="expiringContracts.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                        {{ localize('No contracts are ending soon.', 'لا توجد عقود ستنتهي قريباً.') }}
+                    </div>
+                    <table v-else class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Contract', 'ط§ظ„ط¹ظ‚ط¯') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Car', 'ط§ظ„ط³ظٹط§ط±ط©') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Client', 'ط§ظ„ط¹ظ…ظٹظ„') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('End Date', 'طھط§ط±ظٹط® ط§ظ„ظ†ظ‡ط§ظٹط©') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Remaining', 'ط§ظ„ظ…طھط¨ظ‚ظٹ') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Action', 'ط§ظ„ط¥ط¬ط±ط§ط،') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="contract in expiringContracts"
+                                :key="contract.id"
+                                class="border-b last:border-0 transition-colors hover:bg-muted/40"
+                            >
+                                <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
+                                    <div class="font-medium">{{ contract.contract_number }}</div>
+                                    <div v-if="contract.reservation_number" class="text-xs text-muted-foreground">
+                                        {{ localize('Reservation', 'ط§ظ„ط­ط¬ط²') }} {{ contract.reservation_number }}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
+                                    <div class="font-medium">{{ contract.car_name || localize('Unknown car', 'ط³ظٹط§ط±ط© ط؛ظٹط± ظ…ط¹ط±ظˆظپط©') }}</div>
+                                    <div v-if="contract.license_plate" class="text-xs text-muted-foreground">{{ contract.license_plate }}</div>
+                                    <div v-if="contract.branch_name" class="text-xs text-muted-foreground">{{ contract.branch_name }}</div>
+                                </td>
+                                <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
+                                    <div class="font-medium">{{ contract.client_name || localize('Unknown client', 'ط¹ظ…ظٹظ„ ط؛ظٹط± ظ…ط¹ط±ظˆظپ') }}</div>
+                                    <div v-if="contract.client_email" class="text-xs text-muted-foreground">{{ contract.client_email }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(contract.end_date) }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                                        {{ daysRemainingLabel(contract.days_remaining) }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3" :class="isRtl ? 'text-left' : 'text-right'">
+                                    <Link :href="contract.show_url" class="text-xs text-primary hover:underline">
+                                        {{ localize('Open', 'ظپطھط­') }}
+                                    </Link>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </CardContent>
+            </Card>
+
+            <Card class="border-0 shadow-sm">
+                <CardHeader>
+                    <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
+                        <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
+                            <RefreshCcw class="h-4 w-4 text-primary" />
+                            <CardTitle class="text-base">{{ localize('Forced Extensions', 'ط§ظ„طھظ…ط¯ظٹط¯ ط§ظ„ط¥ط¬ط¨ط§ط±ظٹ') }}</CardTitle>
+                        </div>
+                        <Link href="/admin/contracts" class="text-xs text-primary hover:underline">
+                            {{ localize('View all', 'ط¹ط±ط¶ ط§ظ„ظƒظ„') }} â†’
+                        </Link>
+                    </div>
+                    <p class="text-xs text-muted-foreground">{{ localize('Recent office-driven rental extensions and their recorded payments.', 'ط£ط®ط± طھظ…ط¯ظٹط¯ط§طھ ط§ظ„ط¥ظٹط¬ط§ط± ط§ظ„طھظٹ ط£ط¯ط§طھظ‡ط§ ط§ظ„ظ…ظƒطھط¨ ظ…ط¹ طھط³ط¬ظٹظ„ ط§ظ„ط¯ظپط¹ط§طھ.') }}</p>
+                </CardHeader>
+                <CardContent class="p-0">
+                    <div v-if="recentForcedExtensions.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                        {{ localize('No forced extensions yet.', 'ظ„ط§ طھظˆط¬ط¯ طھظ…ط¯ظٹط¯ط§طھ ط¥ط¬ط¨ط§ط±ظٹط© ط­طھظ‰ ط§ظ„ط¢ظ†.') }}
+                    </div>
+                    <table v-else class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Payment', 'ط§ظ„ط¯ظپط¹ط©') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Contract', 'ط§ظ„ط¹ظ‚ط¯') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Client', 'ط§ظ„ط¹ظ…ظٹظ„') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Car', 'ط§ظ„ط³ظٹط§ط±ط©') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Extra Amount', 'ط§ظ„ظ…ط¨ظ„ط؛ ط§ظ„ط¥ط¶ط§ظپظٹ') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Processed', 'طھظ… طھط³ط¬ظٹظ„ظ‡ط§') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Action', 'ط§ظ„ط¥ط¬ط±ط§ط،') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="item in recentForcedExtensions"
+                                :key="item.id"
+                                class="border-b last:border-0 transition-colors hover:bg-muted/40"
+                            >
+                                <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
+                                    <div class="font-medium">{{ item.payment_number }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ item.branch_name || localize('No branch', 'ظ„ط§ ط§ظ„ظپط±ط¹') }}</div>
+                                </td>
+                                <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
+                                    <div class="font-medium">{{ item.contract_number || localize('N/A', 'طºظٹط± ظ…طھظˆظپط±') }}</div>
+                                    <div v-if="item.reservation_number" class="text-xs text-muted-foreground">
+                                        {{ localize('Reservation', 'ط§ظ„ط­ط¬ط²') }} {{ item.reservation_number }}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
+                                    <div class="font-medium">{{ item.client_name || localize('Unknown client', 'ط¹ظ…ظٹظ„ طºظٹط± ظ…ط¹ط±ظˆظپ') }}</div>
+                                    <div v-if="item.client_email" class="text-xs text-muted-foreground">{{ item.client_email }}</div>
+                                </td>
+                                <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
+                                    <div class="font-medium">{{ item.car_name || localize('Unknown car', 'ط³ظٹط§ط±ط© طºظٹط± ظ…ط¹ط±ظˆظپط©') }}</div>
+                                    <div v-if="item.license_plate" class="text-xs text-muted-foreground">{{ item.license_plate }}</div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap font-semibold">
+                                    {{ fmtCurrency(item.amount) }}
+                                </td>
+                                <td class="px-4 py-3 text-xs text-muted-foreground">
+                                    {{ fmtDate(item.processed_at) }}
+                                </td>
+                                <td class="px-4 py-3" :class="isRtl ? 'text-left' : 'text-right'">
+                                    <Link :href="item.show_url" class="text-xs text-primary hover:underline">
+                                        {{ localize('Open', 'ظپطھط­') }}
                                     </Link>
                                 </td>
                             </tr>

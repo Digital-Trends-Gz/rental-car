@@ -26,6 +26,7 @@ const isEdit = computed(() => !!props.employee);
 const form = useForm({
     name: props.employee?.name ?? '',
     email: props.employee?.email ?? '',
+    civil_number: props.employee?.civil_number ?? '',
     branch_id: props.employee?.branch_id ?? '',
     is_active: props.employee?.is_active ?? true,
     role_ids: props.employee?.role_ids ?? [],
@@ -114,6 +115,19 @@ function onActiveCheckboxChange(event: Event) {
                                 required
                             />
                             <InputError :message="form.errors.email" class="mt-1" />
+                        </div>
+
+                        <!-- Civil Number -->
+                        <div class="md:col-span-2">
+                            <Label for="civil_number">{{ t('dashboard.admin.employees.form.civil_number') }}</Label>
+                            <Input
+                                id="civil_number"
+                                v-model="form.civil_number"
+                                type="text"
+                                :placeholder="t('dashboard.admin.employees.form.civil_number_placeholder')"
+                                required
+                            />
+                            <InputError :message="form.errors.civil_number" class="mt-1" />
                         </div>
 
                         <!-- Branch -->

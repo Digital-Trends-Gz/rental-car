@@ -7,16 +7,20 @@ use Illuminate\Http\Request;
 use App\Models\Reservation;
 use App\Models\Car;
 use App\Models\CarDamageCase;
+use App\Models\Payment;
 use App\Models\User;
 use App\Enums\ReservationStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use App\Support\BranchAccess;
+use App\Services\Rentals\RentalStatusSyncService;
 
 class ReservationsController extends Controller
 {
@@ -166,6 +170,7 @@ class ReservationsController extends Controller
             'pickup_location' => ['nullable', 'string', 'max:255'],
             'return_location' => ['nullable', 'string', 'max:255'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
+            'deposit_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::enum(ReservationStatus::class)],
             'cancellation_reason' => ['nullable', 'string'],
@@ -195,40 +200,78 @@ class ReservationsController extends Controller
         $this->ensureNoReservationConflict($car->id, $start, $end);
 
         $discountAmount = (float) ($validated['discount_amount'] ?? 0);
+        $depositAmount = (float) ($validated['deposit_amount'] ?? 0);
         $totalDays = $start->diffInDays($end) + 1;
         $subtotal = (float) $car->price_per_day * $totalDays;
         $taxAmount = round($subtotal * 0.21, 2);
 
-        $reservation = Reservation::create([
-            'tenant_id' => $user?->tenant_id,
-            'user_id' => $client->id,
-            'car_id' => $car->id,
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'],
-            'pickup_time' => $validated['pickup_time'] ?? '09:00',
-            'return_time' => $validated['return_time'] ?? '18:00',
-            'pickup_location' => $validated['pickup_location'] ?? null,
-            'return_location' => $validated['return_location'] ?? null,
-            'total_days' => $totalDays,
-            'daily_rate' => $car->price_per_day,
-            'subtotal' => $subtotal,
-            'tax_amount' => $taxAmount,
-            'discount_amount' => $discountAmount,
-            'total_amount' => max(0, $subtotal + $taxAmount - $discountAmount),
-            'status' => $validated['status'],
-            'notes' => $validated['notes'] ?? null,
-            'cancellation_reason' => $validated['status'] === ReservationStatus::CANCELLED->value
-                ? ($validated['cancellation_reason'] ?? null)
-                : null,
-            'cancelled_at' => $validated['status'] === ReservationStatus::CANCELLED->value ? now() : null,
-        ]);
+        $reservation = null;
+        $depositPayment = null;
 
-        $reservation->load(['user:id,name,email', 'car:id,branch_id,make,model,year,license_plate', 'contract:id,reservation_id']);
+        DB::transaction(function () use (
+            &$reservation,
+            &$depositPayment,
+            $user,
+            $client,
+            $car,
+            $validated,
+            $totalDays,
+            $subtotal,
+            $taxAmount,
+            $discountAmount,
+            $depositAmount
+        ) {
+            $reservation = Reservation::create([
+                'tenant_id' => $user?->tenant_id,
+                'user_id' => $client->id,
+                'car_id' => $car->id,
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+                'pickup_time' => $validated['pickup_time'] ?? '09:00',
+                'return_time' => $validated['return_time'] ?? '18:00',
+                'pickup_location' => $validated['pickup_location'] ?? null,
+                'return_location' => $validated['return_location'] ?? null,
+                'total_days' => $totalDays,
+                'daily_rate' => $car->price_per_day,
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'discount_amount' => $discountAmount,
+                'total_amount' => max(0, $subtotal + $taxAmount - $discountAmount),
+                'status' => $validated['status'],
+                'notes' => $validated['notes'] ?? null,
+                'cancellation_reason' => $validated['status'] === ReservationStatus::CANCELLED->value
+                    ? ($validated['cancellation_reason'] ?? null)
+                    : null,
+                'cancelled_at' => $validated['status'] === ReservationStatus::CANCELLED->value ? now() : null,
+            ]);
+
+            if ($depositAmount > 0) {
+                $depositPayment = Payment::create([
+                    'tenant_id' => $user?->tenant_id,
+                    'reservation_id' => $reservation->id,
+                    'user_id' => $client->id,
+                    'amount' => $depositAmount,
+                    'currency' => strtoupper((string) config('app.currency_code', 'USD')),
+                    'payment_method' => PaymentMethod::CASH,
+                    'status' => PaymentStatus::COMPLETED,
+                    'notes' => 'Cash deposit recorded from admin reservation form.',
+                    'processed_at' => now(),
+                ]);
+            }
+        });
+
+        $reservation->load([
+            'user:id,name,email',
+            'car:id,branch_id,make,model,year,license_plate',
+            'contract:id,reservation_id',
+            'payments',
+        ]);
 
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Reservation created successfully.',
                 'reservation' => $this->reservationOptionPayload($reservation),
+                'deposit_payment_id' => $depositPayment?->id,
             ], 201);
         }
 
@@ -247,6 +290,19 @@ class ReservationsController extends Controller
     {
         abort_unless($this->canAccessReservation($reservation, request()->user()), 403);
         $reservation->load(['user', 'car', 'payments', 'contract']);
+        $completedPaymentsTotal = (float) $reservation->payments()
+            ->completed()
+            ->sum('amount');
+        $balanceDue = max(0, (float) $reservation->total_amount - $completedPaymentsTotal);
+        $reservationStatus = $reservation->status instanceof ReservationStatus
+            ? $reservation->status->value
+            : (string) $reservation->status;
+        $reservation->setAttribute('amount_paid', $completedPaymentsTotal);
+        $reservation->setAttribute('balance_due', $balanceDue);
+        $reservation->setAttribute('can_collect_final_cash', $balanceDue > 0 && !in_array($reservationStatus, [
+            ReservationStatus::CANCELLED->value,
+            ReservationStatus::COMPLETED->value,
+        ], true));
 
         return Inertia::render('Admin/Reservations/Show', [
             'reservation' => $reservation,
@@ -327,6 +383,80 @@ class ReservationsController extends Controller
                 'reservation' => $reservation->id,
             ])
             ->with('success', 'Reservation updated successfully.');
+    }
+
+    public function collectCashPayment(Request $request)
+    {
+        $reservationId = (int) $request->route('reservation');
+        $subdomain = $request->route('subdomain');
+
+        $reservationModel = Reservation::withoutGlobalScope('tenant')
+            ->with('car:id,branch_id')
+            ->findOrFail($reservationId);
+
+        abort_unless($this->canAccessReservation($reservationModel, $request->user()), 403);
+
+        if (config('app.demo_mode')) {
+            return redirect()
+                ->back()
+                ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
+        }
+
+        if ($reservationModel->status === ReservationStatus::CANCELLED) {
+            return redirect()
+                ->back()
+                ->with('error', 'Cancelled reservations cannot be settled.');
+        }
+
+        $reservationRow = DB::table('reservations')
+            ->where('id', $reservationId)
+            ->first();
+
+        if (!$reservationRow) {
+            abort(404);
+        }
+
+        $completedPaymentsTotal = (float) DB::table('payments')
+            ->where('reservation_id', $reservationRow->id)
+            ->where('status', PaymentStatus::COMPLETED->value)
+            ->sum('amount');
+        $balanceDue = round(max(0, (float) $reservationRow->total_amount - $completedPaymentsTotal), 2);
+
+        if ($balanceDue <= 0) {
+            return redirect()
+                ->back()
+                ->with('info', 'This reservation is already fully paid.');
+        }
+
+        DB::transaction(function () use ($reservationRow, $request, $balanceDue) {
+            Payment::create([
+                'tenant_id' => $request->user()?->tenant_id,
+                'reservation_id' => $reservationRow->id,
+                'user_id' => $reservationRow->user_id,
+                'amount' => $balanceDue,
+                'currency' => strtoupper((string) config('app.currency_code', 'USD')),
+                'payment_method' => PaymentMethod::CASH,
+                'status' => PaymentStatus::COMPLETED,
+                'notes' => 'Final cash payment recorded from admin reservation details.',
+                'processed_at' => now(),
+            ]);
+
+            DB::table('reservations')
+                ->where('id', $reservationRow->id)
+                ->update([
+                    'status' => ReservationStatus::COMPLETED->value,
+                    'updated_at' => now(),
+                ]);
+
+            app(RentalStatusSyncService::class)->syncCarsByIds([$reservationRow->car_id]);
+        });
+
+        return redirect()
+            ->route('admin.reservations.show', [
+                'subdomain' => $subdomain,
+                'reservation' => $reservationRow->id,
+            ])
+            ->with('success', 'Final cash payment recorded and reservation completed.');
     }
 
     /**

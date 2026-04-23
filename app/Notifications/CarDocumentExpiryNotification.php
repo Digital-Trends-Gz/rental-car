@@ -32,7 +32,12 @@ class CarDocumentExpiryNotification extends Notification
     public function toArray(object $notifiable): array
     {
         $car = $this->document->car;
-        $type = $this->document->type === 'license' ? 'license' : 'insurance';
+        $type = match ($this->document->type) {
+            'license' => 'license',
+            'insurance' => 'insurance',
+            'purchase_contract' => 'purchase contract',
+            default => CarDocument::labelForType($this->document->type),
+        };
         $title = $this->daysRemaining === 0
             ? ucfirst($type).' expires today'
             : ucfirst($type).' expiring soon';
@@ -68,7 +73,12 @@ class CarDocumentExpiryNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $car = $this->document->car;
-        $typeLabel = $this->document->type === 'license' ? 'car license' : 'car insurance';
+        $typeLabel = match ($this->document->type) {
+            'license' => 'car license',
+            'insurance' => 'car insurance',
+            'purchase_contract' => 'purchase contract',
+            default => strtolower(CarDocument::labelForType($this->document->type)),
+        };
         $carLabel = trim(sprintf(
             '%s %s %s',
             (string) ($car?->year ?? ''),

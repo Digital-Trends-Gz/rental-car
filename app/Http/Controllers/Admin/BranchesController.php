@@ -30,6 +30,9 @@ class BranchesController extends Controller
                     ->orWhere('address', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('cr_number', 'like', "%{$search}%")
+                    ->orWhere('manager_name', 'like', "%{$search}%")
+                    ->orWhere('manager_civil_number', 'like', "%{$search}%")
                     ->orWhere('country', 'like', "%{$search}%")
                     ->orWhere('city', 'like', "%{$search}%")
                     ->orWhere('street_name', 'like', "%{$search}%")
@@ -83,6 +86,9 @@ class BranchesController extends Controller
             'phone_1' => ['nullable', 'string', 'max:50'],
             'phone_2' => ['nullable', 'string', 'max:50'],
             'whatsapp' => ['nullable', 'string', 'max:50'],
+            'cr_number' => ['nullable', 'string', 'max:255'],
+            'manager_name' => ['nullable', 'string', 'max:255'],
+            'manager_civil_number' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'showroom_temp_folders' => ['array'],
             'showroom_temp_folders.*' => ['string'],
@@ -101,7 +107,7 @@ class BranchesController extends Controller
         $this->syncShowroomImage($branch, $request);
 
         return redirect()
-            ->route('admin.branches.index')
+            ->route('admin.branches.index', ['subdomain' => $request->route('subdomain')])
             ->with('success', 'Branch created successfully.');
     }
 
@@ -138,8 +144,11 @@ class BranchesController extends Controller
     /**
      * Update the specified branch in storage.
      */
-    public function update(Request $request, Branch $branch)
+    public function update(Request $request)
     {
+        $branch = Branch::withoutGlobalScope('tenant')
+            ->findOrFail((int) $request->route('branch'));
+
         $countryCodes = collect(BranchLocationOptions::countrySelectOptions('en'))
             ->pluck('value')
             ->all();
@@ -157,6 +166,9 @@ class BranchesController extends Controller
             'phone_1' => ['nullable', 'string', 'max:50'],
             'phone_2' => ['nullable', 'string', 'max:50'],
             'whatsapp' => ['nullable', 'string', 'max:50'],
+            'cr_number' => ['nullable', 'string', 'max:255'],
+            'manager_name' => ['nullable', 'string', 'max:255'],
+            'manager_civil_number' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'showroom_temp_folders' => ['array'],
             'showroom_temp_folders.*' => ['string'],
@@ -170,11 +182,15 @@ class BranchesController extends Controller
                 ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
         }
 
-        $branch->update($this->branchAttributes($validated));
+        Branch::withoutGlobalScope('tenant')
+            ->whereKey($branch->id)
+            ->update($this->branchAttributes($validated));
+
+        $branch->refresh();
         $this->syncShowroomImage($branch, $request);
 
         return redirect()
-            ->route('admin.branches.index')
+            ->route('admin.branches.index', ['subdomain' => $request->route('subdomain')])
             ->with('success', 'Branch updated successfully.');
     }
 
@@ -233,6 +249,9 @@ class BranchesController extends Controller
             'phone_1' => $this->nullableString($validated['phone_1'] ?? null),
             'phone_2' => $this->nullableString($validated['phone_2'] ?? null),
             'whatsapp' => $this->nullableString($validated['whatsapp'] ?? null),
+            'cr_number' => $this->nullableString($validated['cr_number'] ?? null),
+            'manager_name' => $this->nullableString($validated['manager_name'] ?? null),
+            'manager_civil_number' => $this->nullableString($validated['manager_civil_number'] ?? null),
         ];
     }
 

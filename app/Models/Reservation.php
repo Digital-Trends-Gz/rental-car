@@ -159,6 +159,11 @@ class Reservation extends Model
         return $this->hasMany(CarDamageCase::class, 'opened_in_reservation_id');
     }
 
+    public function extensionRequests(): HasMany
+    {
+        return $this->hasMany(RentalExtensionRequest::class);
+    }
+
     /**
      * Get the formatted total amount attribute.
      *

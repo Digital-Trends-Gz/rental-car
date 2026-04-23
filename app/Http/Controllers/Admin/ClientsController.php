@@ -17,8 +17,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
 use MohamedGaldi\ViltFilepond\Services\FilePondService;
@@ -106,6 +108,81 @@ class ClientsController extends Controller
             'branches' => $branchOptions,
             'canAccessAllBranches' => $canAccessAllBranches,
         ]);
+    }
+
+    public function create(Request $request): Response
+    {
+        $user = $request->user();
+        $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
+
+        $branches = $this->branchAccess
+            ->availableBranchesForUser($user)
+            ->map(fn ($branch) => ['id' => $branch->id, 'name' => $branch->name])
+            ->values();
+
+        return Inertia::render('Admin/Clients/Create', [
+            'branches' => $branches,
+            'canAccessAllBranches' => $canAccessAllBranches,
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse|JsonResponse
+    {
+        if (config('app.demo_mode')) {
+            return redirect()
+                ->back()
+                ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
+        }
+
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')],
+            'civil_number' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'branch_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
+            ],
+        ]);
+
+        $branchId = $this->branchAccess->resolveWritableBranchId(
+            $user,
+            $this->branchAccess->normalizeRequestedBranchId($validated['branch_id'] ?? null)
+        );
+
+        $client = User::create([
+            'name' => $validated['name'],
+            'civil_number' => trim((string) $validated['civil_number']),
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => UserRole::CLIENT,
+            'tenant_id' => $this->tenantId(),
+            'branch_id' => $branchId,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        if ($request->boolean('inline') || $request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'client' => [
+                    'id' => $client->id,
+                    'name' => $client->name,
+                    'email' => $client->email,
+                    'civil_number' => $client->civil_number,
+                ],
+                'message' => 'Client created successfully.',
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.clients.index', [
+                'subdomain' => $request->route('subdomain'),
+            ])
+            ->with('success', 'Client created successfully.');
     }
 
     public function show(User $client): Response
@@ -425,5 +502,10 @@ class ClientsController extends Controller
         $value = trim((string) ($value ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    private function tenantId(): int
+    {
+        return (int) (TenantContext::id() ?? auth()->user()?->tenant_id ?? 0);
     }
 }

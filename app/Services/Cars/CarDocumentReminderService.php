@@ -23,6 +23,7 @@ class CarDocumentReminderService
             ->withoutGlobalScope('tenant')
             ->with('car:id,tenant_id,year,make,model,license_plate')
             ->where('is_active', true)
+            ->whereIn('type', CarDocument::REMINDABLE_TYPES)
             ->whereDate('expiry_date', '>=', $today->toDateString())
             ->whereDate('expiry_date', '<=', $today->addDays(10)->toDateString())
             ->get();

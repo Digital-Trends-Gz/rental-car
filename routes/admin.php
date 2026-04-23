@@ -41,6 +41,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::get('cars/{car}/calendar', [CarsController::class, 'calendar'])
             ->middleware('permission:tenant-manage-cars')
             ->name('cars.calendar');
+        Route::get('cars/{car}/availability-calendar', [CarsController::class, 'availabilityCalendar'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('cars.availability-calendar');
         Route::get('cars/{car}/documents', [CarDocumentsController::class, 'index'])
             ->middleware('permission:tenant-manage-cars')
             ->name('cars.documents.index');
@@ -104,6 +107,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::resource('reservations', ReservationsController::class)
             ->only(['index', 'create', 'store', 'show', 'edit', 'update'])
             ->middleware('permission:tenant-manage-reservations');
+        Route::post('reservations/{reservation}/cash-payment', [ReservationsController::class, 'collectCashPayment'])
+            ->middleware('permission:tenant-manage-reservations')
+            ->name('reservations.cash-payment');
         Route::get('reservations/{reservation}/print', [ReservationsController::class, 'print'])
             ->middleware('permission:tenant-manage-reservations')
             ->name('reservations.print');
@@ -118,6 +124,12 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::post('contracts/drivers/photo/extract', [ContractsController::class, 'extractDriverCustomerPhoto'])
             ->middleware('permission:tenant-manage-reservations')
             ->name('contracts.drivers.photo.extract');
+        Route::post('contracts/{contract}/extension-request', [ContractsController::class, 'requestExtension'])
+            ->middleware('permission:tenant-manage-reservations')
+            ->name('contracts.request-extension');
+        Route::post('contracts/{contract}/extend', [ContractsController::class, 'extend'])
+            ->middleware('permission:tenant-manage-reservations')
+            ->name('contracts.extend');
         Route::get('contracts/{contract}/pdf', [ContractsController::class, 'pdf'])
             ->middleware('permission:tenant-manage-reservations')
             ->name('contracts.pdf');
@@ -127,7 +139,7 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
 
         // Clients
         Route::resource('clients', ClientsController::class)
-            ->only(['index', 'show'])
+            ->only(['index', 'show', 'create', 'store'])
             ->middleware('permission:tenant-manage-clients');
         Route::get('clients/{client}/documents', [ClientsController::class, 'documents'])
             ->middleware('permission:tenant-manage-clients')
@@ -257,6 +269,3 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->name('settings.stripe-connect.login-link');
 
     });
-
-
-

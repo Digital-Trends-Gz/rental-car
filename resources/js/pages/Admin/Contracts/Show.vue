@@ -1,9 +1,22 @@
 <script setup lang="ts">
+import InputError from '@/components/InputError.vue';
 import { useTrans } from '@/composables/useTrans';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
     contract: {
@@ -22,6 +35,8 @@ const props = defineProps<{
         end_date?: string | null;
         total_amount?: string | number | null;
         currency?: string | null;
+        price_per_day?: string | number | null;
+        daily_rate?: string | number | null;
         notes?: string | null;
         ai_extraction_status?: string | null;
         ai_extracted_data?: Record<string, unknown> | null;
@@ -61,6 +76,19 @@ const props = defineProps<{
             }>;
             edit_url: string;
         }>;
+        extension_requests?: Array<{
+            id: number;
+            status: string;
+            status_label: string;
+            new_end_date: string | null;
+            extra_days: number;
+            extra_amount: number;
+            reason: string | null;
+            client_notes: string | null;
+            requested_at: string | null;
+            responded_at: string | null;
+        }>;
+        has_pending_extension_request?: boolean;
     };
     startRentalDocument?: { id: number; name: string; url: string } | null;
     endRentalDocument?: { id: number; name: string; url: string } | null;
@@ -71,15 +99,139 @@ const props = defineProps<{
         pdf?: string;
         pdf_en?: string;
         pdf_ar?: string;
+        request_extend?: string | null;
+        extend?: string | null;
     };
 }>();
 
-const { t } = useTrans();
+const { t, locale } = useTrans();
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 const pageTitle = computed(() =>
     t('dashboard.admin.contracts.show.head_title', {
         number: props.contract.contract_number,
     }),
 );
+const actions = computed(() => props.actions);
+const hasPendingExtensionRequest = computed(() => Boolean(props.contract.has_pending_extension_request));
+const canExtendRental = computed(
+    () => Boolean(actions.value.extend && extensionCurrentEndDate.value && extensionDailyRate.value > 0),
+);
+const canRequestExtension = computed(
+    () =>
+        Boolean(
+            actions.value.request_extend &&
+                extensionCurrentEndDate.value &&
+                extensionDailyRate.value > 0 &&
+                !hasPendingExtensionRequest.value,
+        ),
+);
+
+const showExtendDialog = ref(false);
+const extendForm = useForm({
+    new_end_date: '',
+    notes: '',
+});
+const showRequestDialog = ref(false);
+const requestForm = useForm({
+    new_end_date: '',
+    notes: '',
+});
+
+function parseDate(value: string): Date {
+    return new Date(`${value}T00:00:00`);
+}
+
+function formatDate(value: Date): string {
+    return value.toISOString().slice(0, 10);
+}
+
+function addDays(value: Date, days: number): Date {
+    const next = new Date(value);
+    next.setDate(next.getDate() + days);
+    return next;
+}
+
+function openExtendDialog() {
+    const currentEndDate = props.contract.end_date || '';
+    const defaultDate = currentEndDate ? formatDate(addDays(parseDate(currentEndDate), 1)) : '';
+    extendForm.clearErrors();
+    extendForm.new_end_date = defaultDate;
+    extendForm.notes = '';
+    showExtendDialog.value = true;
+}
+
+function openRequestDialog() {
+    const currentEndDate = props.contract.end_date || '';
+    const defaultDate = currentEndDate ? formatDate(addDays(parseDate(currentEndDate), 1)) : '';
+    requestForm.clearErrors();
+    requestForm.new_end_date = defaultDate;
+    requestForm.notes = '';
+    showRequestDialog.value = true;
+}
+
+const extensionDailyRate = computed(() => Number(props.contract.daily_rate ?? props.contract.price_per_day ?? 0));
+const extensionCurrentTotal = computed(() => Number(props.contract.total_amount ?? 0));
+const extensionCurrentEndDate = computed(() => props.contract.end_date || '');
+const extensionPreview = computed(() => {
+    return buildPreview(extensionCurrentEndDate.value, extendForm.new_end_date, extensionCurrentTotal.value);
+});
+const requestExtensionPreview = computed(() => {
+    return buildPreview(extensionCurrentEndDate.value, requestForm.new_end_date, extensionCurrentTotal.value);
+});
+
+function buildPreview(currentEndDate: string, newEndDate: string, currentTotal: number) {
+    if (!currentEndDate || !newEndDate) {
+        return null;
+    }
+
+    const start = parseDate(currentEndDate);
+    const end = parseDate(newEndDate);
+    const extraDays = Math.max(0, Math.round((end.getTime() - start.getTime()) / 86400000));
+
+    if (extraDays <= 0) {
+        return {
+            extraDays,
+            extraAmount: 0,
+            newTotal: currentTotal,
+        };
+    }
+
+    const extraAmount = extraDays * extensionDailyRate.value;
+
+    return {
+        extraDays,
+        extraAmount,
+        newTotal: currentTotal + extraAmount,
+    };
+}
+
+function submitExtension() {
+    if (!actions.value.extend || !canExtendRental.value) {
+        return;
+    }
+
+    extendForm.post(actions.value.extend, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showExtendDialog.value = false;
+            extendForm.reset();
+        },
+    });
+}
+
+function submitRequestExtension() {
+    if (!actions.value.request_extend || !canRequestExtension.value) {
+        return;
+    }
+
+    requestForm.post(actions.value.request_extend, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showRequestDialog.value = false;
+            requestForm.reset();
+        },
+    });
+}
 </script>
 
 <template>
@@ -129,6 +281,21 @@ const pageTitle = computed(() =>
                             t('dashboard.admin.common.edit')
                         }}</Button>
                     </Link>
+                    <Button
+                        v-if="canRequestExtension"
+                        type="button"
+                        variant="secondary"
+                        @click="openRequestDialog"
+                    >
+                        {{ localize('Extension Request', 'طلب تمديد') }}
+                    </Button>
+                    <Button
+                        v-if="canExtendRental"
+                        type="button"
+                        @click="openExtendDialog"
+                    >
+                        {{ localize('Force Extend', 'تمديد الإيجار') }}
+                    </Button>
                 </div>
             </div>
 
@@ -161,6 +328,11 @@ const pageTitle = computed(() =>
                                 >{{ t('dashboard.admin.contracts.show.fields.amount') }}:</strong
                             >
                             {{ contract.total_amount || '0.00' }}
+                            {{ contract.currency || '' }}
+                        </div>
+                        <div>
+                            <strong>Daily Rate:</strong>
+                            {{ extensionDailyRate || '-' }}
                             {{ contract.currency || '' }}
                         </div>
                     </div>
@@ -262,6 +434,46 @@ const pageTitle = computed(() =>
                                 >{{ t('dashboard.admin.contracts.show.fields.car') }}:</strong
                             >
                             {{ contract.reservation?.car || '-' }}
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    v-if="contract.extension_requests?.length"
+                    class="rounded-md border p-4 md:col-span-2"
+                >
+                    <h2 class="mb-3 font-semibold">
+                        {{ localize('Extension Requests', 'طلبات التمديد') }}
+                    </h2>
+                    <div class="space-y-3">
+                        <div
+                            v-for="request in contract.extension_requests"
+                            :key="request.id"
+                            class="rounded-md border p-3 text-sm"
+                        >
+                            <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                                <div class="space-y-1">
+                                    <div class="font-medium">
+                                        {{ request.status_label }}
+                                    </div>
+                                    <div class="text-muted-foreground">
+                                        {{ localize('New end date', 'تاريخ الانتهاء الجديد') }}: {{ request.new_end_date || '-' }}
+                                    </div>
+                                    <div class="text-muted-foreground">
+                                        {{ localize('Extra days', 'الأيام الإضافية') }}: {{ request.extra_days }}
+                                    </div>
+                                    <div class="text-muted-foreground">
+                                        {{ localize('Extra amount', 'المبلغ الإضافي') }}:
+                                        {{ contract.currency || '' }} {{ request.extra_amount.toFixed(2) }}
+                                    </div>
+                                    <div v-if="request.reason" class="text-muted-foreground">
+                                        {{ localize('Reason', 'السبب') }}: {{ request.reason }}
+                                    </div>
+                                </div>
+                                <div class="text-xs text-muted-foreground">
+                                    {{ request.requested_at || '-' }}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -641,5 +853,195 @@ const pageTitle = computed(() =>
                 </div>
             </div>
         </main>
+
+        <Dialog v-model:open="showExtendDialog">
+            <DialogContent class="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>
+                        {{ localize('Force Extend', 'تمديد الإيجار') }}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {{ localize('Choose a new end date. The system will update the contract immediately, create the extra cash payment, and notify the client.', 'اختر تاريخ انتهاء جديدًا. سيحسب النظام المبلغ الإضافي ويُنشئ دفعة نقدية مكتملة تلقائيًا.') }}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div class="rounded-md border bg-muted/30 p-3 text-sm">
+                            <div class="text-muted-foreground">{{ localize('Current End Date', 'تاريخ الانتهاء الحالي') }}</div>
+                            <div class="font-medium">{{ contract.end_date || '-' }}</div>
+                        </div>
+                        <div class="rounded-md border bg-muted/30 p-3 text-sm">
+                            <div class="text-muted-foreground">{{ localize('Daily Rate', 'السعر اليومي') }}</div>
+                            <div class="font-medium">
+                                {{ contract.currency || '' }} {{ extensionDailyRate.toFixed(2) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <Label for="extend-new-end-date">{{ localize('New End Date', 'تاريخ الانتهاء الجديد') }}</Label>
+                        <Input
+                            id="extend-new-end-date"
+                            v-model="extendForm.new_end_date"
+                            type="date"
+                            class="mt-1"
+                        />
+                        <InputError :message="extendForm.errors.new_end_date" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="extend-notes">{{ localize('Reason / Notes', 'ملاحظات') }}</Label>
+                        <Textarea
+                            id="extend-notes"
+                            v-model="extendForm.notes"
+                            rows="3"
+                            class="mt-1"
+                            :placeholder="localize('Enter the reason for the forced extension', 'ملاحظات اختيارية للتمديد')"
+                        />
+                        <InputError :message="extendForm.errors.notes" class="mt-1" />
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div class="rounded-md border bg-muted/30 p-3 text-sm">
+                            <div class="text-muted-foreground">{{ localize('Extra Days', 'الأيام الإضافية') }}</div>
+                            <div class="font-medium">
+                                {{ extensionPreview ? extensionPreview.extraDays : '-' }}
+                            </div>
+                        </div>
+                        <div class="rounded-md border bg-muted/30 p-3 text-sm">
+                            <div class="text-muted-foreground">{{ localize('Extension Amount', 'مبلغ التمديد') }}</div>
+                            <div class="font-medium">
+                                {{
+                                    extensionPreview
+                                        ? `${contract.currency || ''} ${extensionPreview.extraAmount.toFixed(2)}`
+                                        : '-'
+                                }}
+                            </div>
+                        </div>
+                        <div class="rounded-md border bg-muted/30 p-3 text-sm">
+                            <div class="text-muted-foreground">{{ localize('New Total', 'الإجمالي الجديد') }}</div>
+                            <div class="font-medium">
+                                {{
+                                    extensionPreview
+                                        ? `${contract.currency || ''} ${extensionPreview.newTotal.toFixed(2)}`
+                                        : '-'
+                                }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <DialogFooter class="mt-4 gap-2">
+                    <DialogClose as-child>
+                        <Button type="button" variant="outline">
+                            {{ localize('Cancel', 'إلغاء') }}
+                        </Button>
+                    </DialogClose>
+                    <Button type="button" :disabled="extendForm.processing" @click="submitExtension">
+                        {{
+                            extendForm.processing
+                                ? localize('Saving...', 'جاري الحفظ...')
+                                : localize('Force Extend', 'تمديد الإيجار')
+                        }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog v-model:open="showRequestDialog">
+            <DialogContent class="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>
+                        {{ localize('Extension Request', 'طلب تمديد') }}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {{ localize('Send a pending request to the client. The client will approve or reject it from their dashboard.', 'أرسل طلب تمديد معلق للعميل. سيقوم العميل بالموافقة أو الرفض من لوحته.') }}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div class="rounded-md border bg-muted/30 p-3 text-sm">
+                            <div class="text-muted-foreground">{{ localize('Current End Date', 'تاريخ الانتهاء الحالي') }}</div>
+                            <div class="font-medium">{{ contract.end_date || '-' }}</div>
+                        </div>
+                        <div class="rounded-md border bg-muted/30 p-3 text-sm">
+                            <div class="text-muted-foreground">{{ localize('Daily Rate', 'السعر اليومي') }}</div>
+                            <div class="font-medium">
+                                {{ contract.currency || '' }} {{ extensionDailyRate.toFixed(2) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <Label for="request-extension-new-end-date">{{ localize('New End Date', 'تاريخ الانتهاء الجديد') }}</Label>
+                        <Input
+                            id="request-extension-new-end-date"
+                            v-model="requestForm.new_end_date"
+                            type="date"
+                            class="mt-1"
+                        />
+                        <InputError :message="requestForm.errors.new_end_date" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="request-extension-notes">{{ localize('Reason / Notes', 'السبب / الملاحظات') }}</Label>
+                        <Textarea
+                            id="request-extension-notes"
+                            v-model="requestForm.notes"
+                            rows="3"
+                            class="mt-1"
+                            :placeholder="localize('Enter a reason for requesting the extension', 'أدخل سبب طلب التمديد')"
+                        />
+                        <InputError :message="requestForm.errors.notes" class="mt-1" />
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div class="rounded-md border bg-muted/30 p-3 text-sm">
+                            <div class="text-muted-foreground">{{ localize('Extra Days', 'الأيام الإضافية') }}</div>
+                            <div class="font-medium">
+                                {{ requestExtensionPreview ? requestExtensionPreview.extraDays : '-' }}
+                            </div>
+                        </div>
+                        <div class="rounded-md border bg-muted/30 p-3 text-sm">
+                            <div class="text-muted-foreground">{{ localize('Extension Amount', 'مبلغ التمديد') }}</div>
+                            <div class="font-medium">
+                                {{
+                                    requestExtensionPreview
+                                        ? `${contract.currency || ''} ${requestExtensionPreview.extraAmount.toFixed(2)}`
+                                        : '-'
+                                }}
+                            </div>
+                        </div>
+                        <div class="rounded-md border bg-muted/30 p-3 text-sm">
+                            <div class="text-muted-foreground">{{ localize('New Total', 'الإجمالي الجديد') }}</div>
+                            <div class="font-medium">
+                                {{
+                                    requestExtensionPreview
+                                        ? `${contract.currency || ''} ${requestExtensionPreview.newTotal.toFixed(2)}`
+                                        : '-'
+                                }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <DialogFooter class="mt-4 gap-2">
+                    <DialogClose as-child>
+                        <Button type="button" variant="outline">
+                            {{ localize('Cancel', 'إلغاء') }}
+                        </Button>
+                    </DialogClose>
+                    <Button type="button" :disabled="requestForm.processing" @click="submitRequestExtension">
+                        {{
+                            requestForm.processing
+                                ? localize('Sending...', 'جارٍ الإرسال...')
+                                : localize('Send Request', 'إرسال الطلب')
+                        }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AdminLayout>
 </template>

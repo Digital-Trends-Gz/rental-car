@@ -4,6 +4,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use App\Support\TenantAdminAccessSync;
+use App\Services\Contracts\ContractExpiryReminderService;
 use App\Services\Cars\CarDocumentReminderService;
 use App\Services\Maintenance\MaintenanceScheduleService;
 use App\Services\Rentals\RentalStatusSyncService;
@@ -53,6 +54,15 @@ Artisan::command('cars:notify-expiring-documents', function () {
     $this->line('Notifications sent: '.$result['notified']);
 })->purpose('Notify tenant admins when car license or insurance expires in 10 days');
 
+Artisan::command('contracts:notify-ending-tomorrow', function () {
+    $result = app(ContractExpiryReminderService::class)->run();
+
+    $this->info('Contract reminder check completed.');
+    $this->line('Contracts checked: '.$result['checked']);
+    $this->line('Notifications sent: '.$result['notified']);
+})->purpose('Notify tenant admins when active contracts end tomorrow');
+
 Schedule::command('maintenance:process-schedule')->everyFiveMinutes();
 Schedule::command('rentals:sync-statuses')->everyFiveMinutes();
 Schedule::command('cars:notify-expiring-documents')->dailyAt('14:22');
+Schedule::command('contracts:notify-ending-tomorrow')->dailyAt('14:23');

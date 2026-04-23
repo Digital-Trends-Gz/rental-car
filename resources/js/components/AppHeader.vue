@@ -9,6 +9,7 @@ import {
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Bell, FileCheck, LifeBuoy, Menu } from 'lucide-vue-next';
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -31,8 +32,7 @@ import { index as supportIndex } from '@/routes/client/support/index';
 import { home } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { InertiaLinkProps, Link, usePage } from '@inertiajs/vue3';
-import { Menu, FileCheck, LifeBuoy } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 interface Props {
     breadcrumbs?: BreadcrumbItem[];
@@ -44,11 +44,103 @@ const props = withDefaults(defineProps<Props>(), {
 
 const page = usePage();
 const auth = computed(() => page.props.auth);
+const notifications = ref<Array<{
+    id: string;
+    title: string;
+    message: string;
+    url: string;
+    read_at: string | null;
+    created_at: string | null;
+    kind?: string;
+}>>(Array.isArray(page.props?.auth?.notifications) ? page.props.auth.notifications : []);
+const unreadCount = ref<number>(Number(page.props?.auth?.notifications_unread_count ?? 0));
 
 const isCurrentRoute = computed(
     () => (url: NonNullable<InertiaLinkProps['href']>) =>
         urlIsActive(url, page.url),
 );
+
+watch(
+    () => page.props?.auth?.notifications,
+    (value) => {
+        notifications.value = Array.isArray(value) ? value : [];
+    },
+);
+
+watch(
+    () => page.props?.auth?.notifications_unread_count,
+    (value) => {
+        unreadCount.value = Number(value ?? 0);
+    },
+);
+
+const localePrefix = computed(() => {
+    const currentPath = String(page.url || '/');
+    const locales = Array.isArray(page.props?.available_locales) && page.props.available_locales.length
+        ? page.props.available_locales
+        : ['en'];
+    const escapedLocales = locales.map((item: string) => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const localeRegex = new RegExp(`^\\/(${escapedLocales.join('|')})(?=\\/|$)`);
+    const match = currentPath.match(localeRegex);
+    return match ? `/${match[1]}` : '';
+});
+
+const csrfToken = computed(() => page.props?.csrf_token || '');
+const notificationsBaseUrl = computed(() => `${localePrefix.value}/notifications`);
+
+async function markAsRead(notificationId: string) {
+    const target = notifications.value.find((n) => n.id === notificationId);
+    if (!target || target.read_at) return;
+
+    try {
+        const response = await fetch(`${notificationsBaseUrl.value}/${notificationId}/read`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken.value,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({}),
+        });
+
+        if (!response.ok) return;
+
+        target.read_at = new Date().toISOString();
+        unreadCount.value = Math.max(0, unreadCount.value - 1);
+    } catch {
+        // no-op
+    }
+}
+
+async function markAllAsRead() {
+    if (unreadCount.value <= 0) return;
+
+    try {
+        const response = await fetch(`${notificationsBaseUrl.value}/read-all`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken.value,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({}),
+        });
+
+        if (!response.ok) return;
+
+        notifications.value = notifications.value.map((item) => ({
+            ...item,
+            read_at: item.read_at || new Date().toISOString(),
+        }));
+        unreadCount.value = 0;
+    } catch {
+        // no-op
+    }
+}
 
 const activeItemStyles = computed(
     () => (url: NonNullable<InertiaLinkProps['href']>) =>
@@ -165,6 +257,73 @@ const mainNavItems = computed<NavItem[]>(() => {
                 </div>
 
                 <div class="ml-auto flex items-center space-x-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger :as-child="true">
+                            <Button variant="ghost" size="icon" class="relative size-10 w-auto rounded-full p-1">
+                                <Bell class="h-4 w-4" />
+                                <span
+                                    v-if="unreadCount > 0"
+                                    class="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
+                                >
+                                    {{ unreadCount > 99 ? '99+' : unreadCount }}
+                                </span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" class="w-96 p-0">
+                            <div class="flex items-center justify-between border-b px-3 py-2">
+                                <p class="text-sm font-semibold">Notifications</p>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    class="h-7 px-2 text-xs"
+                                    :disabled="unreadCount <= 0"
+                                    @click="markAllAsRead"
+                                >
+                                    Mark all read
+                                </Button>
+                            </div>
+                            <div class="max-h-96 overflow-y-auto">
+                                <div
+                                    v-for="item in notifications"
+                                    :key="item.id"
+                                    class="border-b px-3 py-2 last:border-b-0"
+                                    :class="item.read_at ? 'bg-white' : 'bg-blue-50/40'"
+                                >
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <p class="truncate text-sm font-medium">{{ item.title }}</p>
+                                            <p class="line-clamp-2 text-xs text-muted-foreground">{{ item.message }}</p>
+                                            <p class="mt-1 text-[11px] text-muted-foreground">
+                                                {{ item.created_at ?? '' }}
+                                            </p>
+                                        </div>
+                                        <div class="shrink-0 space-y-1 text-right">
+                                            <a
+                                                v-if="item.url"
+                                                :href="item.url"
+                                                class="block text-xs font-medium text-primary hover:underline"
+                                                @click="markAsRead(item.id)"
+                                            >
+                                                Open
+                                            </a>
+                                            <button
+                                                v-if="!item.read_at"
+                                                type="button"
+                                                class="block text-xs text-muted-foreground hover:text-foreground"
+                                                @click="markAsRead(item.id)"
+                                            >
+                                                Mark read
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div v-if="notifications.length === 0" class="px-3 py-6 text-center text-sm text-muted-foreground">
+                                    No notifications.
+                                </div>
+                            </div>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <DropdownMenu>
                         <DropdownMenuTrigger :as-child="true">
                             <Button

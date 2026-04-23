@@ -4,7 +4,7 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ref, watch, computed } from 'vue';
-import { show , index } from '@/routes/admin/clients';
+import { create, show, index } from '@/routes/admin/clients';
 import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
@@ -95,6 +95,9 @@ const navigateToClient = (id: number) => {
     <main class="flex-1 p-8 space-y-6">
       <div class="flex items-center justify-between gap-4">
         <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.clients.index.title') }}</h1>
+        <Link v-if="subdomain" :href="create(subdomain).url">
+          <Button>Create Client</Button>
+        </Link>
       </div>
 
       <div class="flex flex-col gap-4">

@@ -18,6 +18,12 @@ class CarDocument extends Model
     public const TYPES = [
         'license',
         'insurance',
+        'purchase_contract',
+    ];
+
+    public const REMINDABLE_TYPES = [
+        'license',
+        'insurance',
     ];
 
     public const STATUS_INACTIVE = 'inactive';
@@ -33,6 +39,7 @@ class CarDocument extends Model
         'document_number',
         'issuer',
         'issue_date',
+        'purchase_date',
         'expiry_date',
         'cost',
         'notes',
@@ -46,6 +53,7 @@ class CarDocument extends Model
 
     protected $casts = [
         'issue_date' => 'date',
+        'purchase_date' => 'date',
         'expiry_date' => 'date',
         'cost' => 'decimal:2',
         'is_active' => 'boolean',
@@ -69,6 +77,16 @@ class CarDocument extends Model
         };
     }
 
+    public static function labelForType(string $type): string
+    {
+        return match ($type) {
+            'license' => 'Car License',
+            'insurance' => 'Car Insurance',
+            'purchase_contract' => 'Purchase Contract',
+            default => ucfirst(str_replace('_', ' ', $type)),
+        };
+    }
+
     public function car(): BelongsTo
     {
         return $this->belongsTo(Car::class);
@@ -78,6 +96,10 @@ class CarDocument extends Model
     {
         if (!$this->is_active) {
             return self::STATUS_INACTIVE;
+        }
+
+        if ($this->type === 'purchase_contract') {
+            return self::STATUS_ACTIVE;
         }
 
         $today = Carbon::today();
@@ -101,6 +123,10 @@ class CarDocument extends Model
 
     public function getDaysRemainingAttribute(): ?int
     {
+        if ($this->type === 'purchase_contract') {
+            return null;
+        }
+
         if (!$this->expiry_date) {
             return null;
         }
