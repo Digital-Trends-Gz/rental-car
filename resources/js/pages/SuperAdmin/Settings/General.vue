@@ -2,13 +2,14 @@
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { useTrans } from '@/composables/useTrans';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { computed, ref, watch } from 'vue';
+import { testAiConnection as testAiConnectionRoute, testMailConnection as testMailConnectionRoute } from '@/routes/superadmin/settings/general';
 
 interface FeatureCard {
     title: string;
@@ -110,6 +111,7 @@ const props = defineProps<{
 
 const { locale } = useTrans();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const page = usePage();
 
 const form = useForm<{
     settings: LandingSettings;
@@ -244,19 +246,14 @@ async function testAiConnection() {
     aiConnectionTestState.value = 'idle';
     aiConnectionTestMessage.value = '';
 
-    const csrfToken = document
-        .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-        ?.getAttribute('content');
+    const csrfToken = String(page.props.csrf_token ?? '');
     const xsrfToken = document.cookie
         .split('; ')
         .find((row) => row.startsWith('XSRF-TOKEN='))
         ?.split('=')[1];
 
-    const basePath = window.location.pathname.replace(/\/$/, '');
-    const testUrl = `${basePath}/test-ai-connection`;
-
     try {
-        const response = await fetch(testUrl, {
+        const response = await fetch(testAiConnectionRoute.url(), {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
@@ -296,19 +293,14 @@ async function testMailConnection() {
     mailConnectionTestState.value = 'idle';
     mailConnectionTestMessage.value = '';
 
-    const csrfToken = document
-        .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-        ?.getAttribute('content');
+    const csrfToken = String(page.props.csrf_token ?? '');
     const xsrfToken = document.cookie
         .split('; ')
         .find((row) => row.startsWith('XSRF-TOKEN='))
         ?.split('=')[1];
 
-    const basePath = window.location.pathname.replace(/\/$/, '');
-    const testUrl = `${basePath}/test-mail-connection`;
-
     try {
-        const response = await fetch(testUrl, {
+        const response = await fetch(testMailConnectionRoute.url(), {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
