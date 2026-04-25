@@ -137,7 +137,7 @@ class Car extends Model
         }
 
         if ($file && $file->path) {
-            return Storage::url($file->path);
+            return $this->resolveFileUrl($file->path);
         }
 
         // Fallback to the public default image
@@ -166,7 +166,7 @@ class Car extends Model
         return $files
             ->map(fn ($file) => [
                 'id' => $file->id,
-                'url' => Storage::url($file->path),
+                'url' => $this->resolveFileUrl($file->path),
                 'alt' => $this->full_name,
             ])
             ->values()
@@ -191,12 +191,23 @@ class Car extends Model
                 return [
                     $type => [
                         'id' => $file?->id,
-                        'url' => $file?->path ? Storage::url($file->path) : null,
+                        'url' => $file?->path ? $this->resolveFileUrl($file->path) : null,
                         'alt' => "{$this->full_name} {$type} photo",
                     ],
                 ];
             })
             ->all();
+    }
+
+    private function resolveFileUrl(string $path): string
+    {
+        $normalized = ltrim(preg_replace('/^storage\//', '', $path) ?? $path, '/');
+
+        if ($normalized !== '' && preg_match('/^https?:\/\//i', $normalized)) {
+            return $normalized;
+        }
+
+        return Storage::url($normalized);
     }
 
     public static function additionalPhotoCollection(string $type): string

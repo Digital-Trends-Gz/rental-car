@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { Button } from '@/components/ui/button';
@@ -929,13 +929,13 @@ function submit() {
                 <option v-for="option in documentTypeOptions" :key="option.value || 'empty'" :value="option.value">{{ option.label }}</option>
               </select>
             </div>
-            <div><Label for="primary-full-name">{{ localize('Full Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ§ط¸â€‍ط¸ئ’ط·آ§ط¸â€¦ط¸â€‍') }}</Label><Input id="primary-full-name" v-model="form.primary_driver.full_name" maxlength="255" /><InputError :message="form.errors['primary_driver.full_name']" class="mt-1" /></div>
+            <div><Label for="primary-full-name">{{ localize('Full Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ§ط¸â€‍ط¸ئ’ط·آ§ط¸â€¦ط¸â€‍') }}</Label><Input id="primary-full-name" v-model="form.primary_driver.full_name" maxlength="255" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.full_name']" class="mt-1" /></div>
             <div><Label for="primary-full-name-ar">{{ localize('Arabic Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ¨ط·آ§ط¸â€‍ط·آ¹ط·آ±ط·آ¨ط¸ظ¹ط·آ©') }}</Label><Input id="primary-full-name-ar" v-model="form.primary_driver.full_name_ar" dir="rtl" maxlength="255" /><InputError :message="form.errors['primary_driver.full_name_ar']" class="mt-1" /></div>
-            <div><Label for="primary-phone">{{ localize('Phone', 'ط·آ§ط¸â€‍ط¸â€،ط·آ§ط·ع¾ط¸ظ¾') }}</Label><Input id="primary-phone" v-model="form.primary_driver.phone" inputmode="tel" maxlength="100" /><InputError :message="form.errors['primary_driver.phone']" class="mt-1" /></div>
+            <div><Label for="primary-phone">{{ localize('Phone', 'ط·آ§ط¸â€‍ط¸â€،ط·آ§ط·ع¾ط¸ظ¾') }}</Label><Input id="primary-phone" v-model="form.primary_driver.phone" inputmode="tel" maxlength="100" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.phone']" class="mt-1" /></div>
             <div><Label for="primary-nationality">{{ localize('Nationality', 'ط·آ§ط¸â€‍ط·آ¬ط¸â€ ط·آ³ط¸ظ¹ط·آ©') }}</Label><Input id="primary-nationality" v-model="form.primary_driver.nationality" maxlength="100" /><InputError :message="form.errors['primary_driver.nationality']" class="mt-1" /></div>
             <div><Label for="primary-place-of-issue">{{ localize('Place Of Issue', 'ط¸â€¦ط¸ئ’ط·آ§ط¸â€  ط·آ§ط¸â€‍ط·آ¥ط·آµط·آ¯ط·آ§ط·آ±') }}</Label><Input id="primary-place-of-issue" v-model="form.primary_driver.place_of_issue" maxlength="255" /><InputError :message="form.errors['primary_driver.place_of_issue']" class="mt-1" /></div>
             <div><Label for="primary-birth-date">{{ localize('Date Of Birth', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¹ط¸â€‍ط·آ§ط·آ¯') }}</Label><Input id="primary-birth-date" v-model="form.primary_driver.date_of_birth" type="date" :max="contractDateMin" /><InputError :message="form.errors['primary_driver.date_of_birth']" class="mt-1" /></div>
-            <div><Label for="primary-identity-number">{{ localize('Identity Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ©') }}</Label><Input id="primary-identity-number" v-model="form.primary_driver.identity_number" maxlength="255" /><InputError :message="form.errors['primary_driver.identity_number']" class="mt-1" /></div>
+            <div><Label for="primary-identity-number">{{ localize('Identity Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ©') }}</Label><Input id="primary-identity-number" v-model="form.primary_driver.identity_number" maxlength="255" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.identity_number']" class="mt-1" /></div>
             <div><Label for="primary-residency-number">{{ localize('Residency Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط·آ¥ط¸â€ڑط·آ§ط¸â€¦ط·آ©') }}</Label><Input id="primary-residency-number" v-model="form.primary_driver.residency_number" maxlength="255" /><InputError :message="form.errors['primary_driver.residency_number']" class="mt-1" /></div>
             <div><Label for="primary-license-number">{{ localize('License Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط·آ±ط·آ®ط·آµط·آ©') }}</Label><Input id="primary-license-number" v-model="form.primary_driver.license_number" maxlength="255" /><InputError :message="form.errors['primary_driver.license_number']" class="mt-1" /></div>
             <div><Label for="primary-identity-expiry">{{ localize('Identity Expiry Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ©') }}</Label><Input id="primary-identity-expiry" v-model="form.primary_driver.identity_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors['primary_driver.identity_expiry_date']" class="mt-1" /></div>
@@ -1181,6 +1181,7 @@ function submit() {
                     v-model="reservationSearch"
                     :placeholder="localize('Search reservation...', 'ط·آ§ط·آ¨ط·آ­ط·آ« ط·آ¹ط¸â€  ط·آ§ط¸â€‍ط·آ­ط·آ¬ط·آ²...')"
                     autocomplete="off"
+                    :required="mode === 'create'"
                     @focus="reservationMenuOpen = true"
                     @blur="handleReservationBlur"
                     @input="
@@ -1259,9 +1260,9 @@ function submit() {
               </select>
               <InputError :message="form.errors.status" class="mt-1" />
             </div>
-            <div><Label for="contract_date">{{ localize('Contract Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Label><Input id="contract_date" v-model="form.contract_date" type="date" :min="contractDateMin" /><InputError :message="form.errors.contract_date" class="mt-1" /></div>
-            <div><Label for="start_date">{{ localize('Rental Start Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ¨ط·آ¯ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="start_date" v-model="form.start_date" type="date" :min="contractStartDateMin" :disabled="hasLinkedReservation" /><InputError :message="form.errors.start_date" class="mt-1" /></div>
-            <div><Label for="end_date">{{ localize('Rental End Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="end_date" v-model="form.end_date" type="date" :min="contractEndDateMin" :disabled="hasLinkedReservation" /><InputError :message="form.errors.end_date" class="mt-1" /></div>
+            <div><Label for="contract_date">{{ localize('Contract Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Label><Input id="contract_date" v-model="form.contract_date" type="date" :min="contractDateMin" :required="mode === 'create'" /><InputError :message="form.errors.contract_date" class="mt-1" /></div>
+            <div><Label for="start_date">{{ localize('Rental Start Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ¨ط·آ¯ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="start_date" v-model="form.start_date" type="date" :min="contractStartDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.start_date" class="mt-1" /></div>
+            <div><Label for="end_date">{{ localize('Rental End Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="end_date" v-model="form.end_date" type="date" :min="contractEndDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.end_date" class="mt-1" /></div>
             <div><Label for="total_amount">{{ localize('Total Amount', 'ط·آ§ط¸â€‍ط¸â€¦ط·آ¨ط¸â€‍ط·ط› ط·آ§ط¸â€‍ط·آ¥ط·آ¬ط¸â€¦ط·آ§ط¸â€‍ط¸ظ¹') }}</Label><Input id="total_amount" v-model="form.total_amount" type="number" min="0" step="0.01" :disabled="hasLinkedReservation" /><InputError :message="form.errors.total_amount" class="mt-1" /></div>
             <div><Label for="currency">{{ localize('Currency', 'ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸â€‍ط·آ©') }}</Label><Input id="currency" v-model="form.currency" maxlength="3" inputmode="text" @input="form.currency = String(form.currency || '').toUpperCase()" /><InputError :message="form.errors.currency" class="mt-1" /></div>
             <div><Label for="return-odometer">{{ localize('Return Mileage', 'عداد العودة') }}</Label><Input id="return-odometer" v-model="form.return_odometer" type="number" min="0" /><InputError :message="form.errors.return_odometer" class="mt-1" /></div>
@@ -1404,6 +1405,8 @@ function submit() {
     </main>
   </AdminLayout>
 </template>
+
+
 
 
 
