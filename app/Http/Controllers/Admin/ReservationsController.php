@@ -153,7 +153,8 @@ class ReservationsController extends Controller
             'cars' => $cars,
             'carDamagesByCar' => $this->serializeCarDamageCaseMap(collect($cars)->pluck('id')->all(), $request->user()),
             'enums' => [
-                'statuses' => ReservationStatus::getMeta(),
+                'statuses' => ReservationStatus::manualMeta(),
+                'allStatuses' => ReservationStatus::getMeta(),
             ],
         ]);
     }
@@ -172,7 +173,7 @@ class ReservationsController extends Controller
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'deposit_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
-            'status' => ['required', 'string', Rule::enum(ReservationStatus::class)],
+            'status' => ['required', 'string', Rule::in(ReservationStatus::manualValues())],
             'cancellation_reason' => ['nullable', 'string'],
         ]);
 
@@ -204,6 +205,7 @@ class ReservationsController extends Controller
         $totalDays = $start->diffInDays($end) + 1;
         $subtotal = (float) $car->price_per_day * $totalDays;
         $taxAmount = round($subtotal * 0.21, 2);
+        $reservationStatus = $this->normalizeReservationStatusForPersistence($validated['status']);
 
         $reservation = null;
         $depositPayment = null;
@@ -219,7 +221,8 @@ class ReservationsController extends Controller
             $subtotal,
             $taxAmount,
             $discountAmount,
-            $depositAmount
+            $depositAmount,
+            $reservationStatus
         ) {
             $reservation = Reservation::create([
                 'tenant_id' => $user?->tenant_id,
@@ -237,12 +240,12 @@ class ReservationsController extends Controller
                 'tax_amount' => $taxAmount,
                 'discount_amount' => $discountAmount,
                 'total_amount' => max(0, $subtotal + $taxAmount - $discountAmount),
-                'status' => $validated['status'],
+                'status' => $reservationStatus,
                 'notes' => $validated['notes'] ?? null,
-                'cancellation_reason' => $validated['status'] === ReservationStatus::CANCELLED->value
+                'cancellation_reason' => $reservationStatus === ReservationStatus::CANCELLED->value
                     ? ($validated['cancellation_reason'] ?? null)
                     : null,
-                'cancelled_at' => $validated['status'] === ReservationStatus::CANCELLED->value ? now() : null,
+                'cancelled_at' => $reservationStatus === ReservationStatus::CANCELLED->value ? now() : null,
             ]);
 
             if ($depositAmount > 0) {
@@ -325,7 +328,8 @@ class ReservationsController extends Controller
             'cars' => [],
             'carDamagesByCar' => $reservation->car?->id ? $this->serializeCarDamageCaseMap([(int) $reservation->car->id], $request->user()) : [],
             'enums' => [
-                'statuses' => ReservationStatus::getMeta(),
+                'statuses' => ReservationStatus::manualMeta($reservation->status instanceof ReservationStatus ? $reservation->status->value : (string) $reservation->status),
+                'allStatuses' => ReservationStatus::getMeta(),
             ],
         ]);
     }
@@ -345,7 +349,7 @@ class ReservationsController extends Controller
             'return_location' => ['nullable', 'string', 'max:255'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
-            'status' => ['required', 'string', Rule::enum(ReservationStatus::class)],
+            'status' => ['required', 'string', Rule::in(ReservationStatus::manualValues($reservation->status instanceof ReservationStatus ? $reservation->status->value : (string) $reservation->status))],
             'cancellation_reason' => ['nullable', 'string'],
         ]);
 
@@ -356,6 +360,10 @@ class ReservationsController extends Controller
         }
 
         $reservation->fill($validated);
+        $reservation->status = $this->normalizeReservationStatusForPersistence(
+            $validated['status'],
+            $reservation->relationLoaded('contract') ? (bool) $reservation->contract : $reservation->contract()->exists()
+        );
 
         // Recalculate totals when dates or discount change
         $start = Carbon::parse($validated['start_date']);
@@ -383,6 +391,15 @@ class ReservationsController extends Controller
                 'reservation' => $reservation->id,
             ])
             ->with('success', 'Reservation updated successfully.');
+    }
+
+    private function normalizeReservationStatusForPersistence(string $requestedStatus, bool $hasContract = false): string
+    {
+        if ($requestedStatus === ReservationStatus::COMPLETED->value && !$hasContract) {
+            return ReservationStatus::COMPLETED_WAIT_CONTRACT->value;
+        }
+
+        return $requestedStatus;
     }
 
     public function collectCashPayment(Request $request)
@@ -429,6 +446,16 @@ class ReservationsController extends Controller
         }
 
         DB::transaction(function () use ($reservationRow, $request, $balanceDue) {
+            $nextStatus = ReservationStatus::COMPLETED_WAIT_CONTRACT->value;
+            $reservationHasContract = Reservation::withoutGlobalScope('tenant')
+                ->where('id', $reservationRow->id)
+                ->whereHas('contract')
+                ->exists();
+
+            if ($reservationHasContract) {
+                $nextStatus = ReservationStatus::COMPLETED->value;
+            }
+
             Payment::create([
                 'tenant_id' => $request->user()?->tenant_id,
                 'reservation_id' => $reservationRow->id,
@@ -444,7 +471,7 @@ class ReservationsController extends Controller
             DB::table('reservations')
                 ->where('id', $reservationRow->id)
                 ->update([
-                    'status' => ReservationStatus::COMPLETED->value,
+                    'status' => $nextStatus,
                     'updated_at' => now(),
                 ]);
 
@@ -456,7 +483,7 @@ class ReservationsController extends Controller
                 'subdomain' => $subdomain,
                 'reservation' => $reservationRow->id,
             ])
-            ->with('success', 'Final cash payment recorded and reservation completed.');
+            ->with('success', 'Final cash payment recorded and reservation status updated.');
     }
 
     /**

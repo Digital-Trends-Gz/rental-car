@@ -7,6 +7,7 @@ enum ReservationStatus: string
     case PENDING = 'pending';
     case CONFIRMED = 'confirmed';
     case ACTIVE = 'active';
+    case COMPLETED_WAIT_CONTRACT = 'completed_wait_contract';
     case COMPLETED = 'completed';
     case CANCELLED = 'cancelled';
     case NO_SHOW = 'no_show';
@@ -17,10 +18,56 @@ enum ReservationStatus: string
             self::PENDING->value => '#F59E0B',    // Gray-900
             self::CONFIRMED->value => '#10B981',  // Green-500
             self::ACTIVE->value => '#3B82F6',     // Amber-500
+            self::COMPLETED_WAIT_CONTRACT->value => '#F59E0B', // Amber-500
             self::COMPLETED->value => '#111827',  // Blue-500
             self::CANCELLED->value => '#EF4444',  // Red-500
             self::NO_SHOW->value => '#6B7280',    // Gray-500
         ];
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::PENDING => 'Pending',
+            self::CONFIRMED => 'Confirmed',
+            self::ACTIVE => 'Active',
+            self::COMPLETED_WAIT_CONTRACT => 'Completed - Waiting for Contract',
+            self::COMPLETED => 'Completed',
+            self::CANCELLED => 'Cancelled',
+            self::NO_SHOW => 'No Show',
+        };
+    }
+
+    public function color(): string
+    {
+        return self::statusColors()[$this->value] ?? '#6B7280';
+    }
+
+    public static function manualCases(?string $currentValue = null): array
+    {
+        $cases = array_values(array_filter(self::cases(), fn (self $case) => $case !== self::COMPLETED_WAIT_CONTRACT));
+
+        if ($currentValue === self::COMPLETED_WAIT_CONTRACT->value) {
+            $cases[] = self::COMPLETED_WAIT_CONTRACT;
+        }
+
+        return $cases;
+    }
+
+    public static function manualValues(?string $currentValue = null): array
+    {
+        return array_map(fn (self $case) => $case->value, self::manualCases($currentValue));
+    }
+
+    public static function manualMeta(?string $currentValue = null): array
+    {
+        return array_map(function (self $case) {
+            return [
+                'value' => $case->value,
+                'label' => $case->label(),
+                'color' => $case->color(),
+            ];
+        }, self::manualCases($currentValue));
     }
 
     public static function getMeta(): array
@@ -28,8 +75,8 @@ enum ReservationStatus: string
         return array_map(function ($case) {
             return [
                 'value' => $case->value,
-                'label' => ucfirst(str_replace('_', ' ', $case->value)),
-                'color' => self::statusColors()[$case->value] ?? '#6B7280',
+                'label' => $case->label(),
+                'color' => $case->color(),
             ];
         }, self::cases());
     }

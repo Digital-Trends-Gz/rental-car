@@ -14,6 +14,7 @@ use App\Models\TenantSiteSetting;
 use App\Models\Tenant;
 use App\Models\Ticket;
 use App\Enums\TicketStatus;
+use App\Rules\LettersOnly;
 use Illuminate\Http\Request;
 
 class HomePagesController extends Controller
@@ -437,7 +438,7 @@ class HomePagesController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:255', new LettersOnly()],
             'email' => 'required|email|max:255',
             'subject' => 'required|string|max:255',
             'message' => 'required|string',
@@ -462,7 +463,7 @@ class HomePagesController extends Controller
     public function landingContact(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:255', new LettersOnly()],
             'email' => 'required|email|max:255',
             'subject' => 'required|string|max:255',
             'message' => 'required|string',

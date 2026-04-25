@@ -12,6 +12,8 @@ use App\Models\ClientDocument;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\ClientDocuments\LocalClientDocumentExtractor;
+use App\Rules\DigitsOnly;
+use App\Rules\LettersOnly;
 use App\Support\BranchAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -137,9 +139,9 @@ class ClientsController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new LettersOnly()],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')],
-            'civil_number' => ['required', 'string', 'max:255'],
+            'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'branch_id' => [
                 'nullable',

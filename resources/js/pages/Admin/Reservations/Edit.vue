@@ -36,6 +36,7 @@ const props = defineProps<{
     }>>;
     enums: {
         statuses: Array<{ value: string; label: string; color: string }>;
+        allStatuses?: Array<{ value: string; label: string; color: string }>;
     };
 }>();
 
@@ -43,6 +44,12 @@ const { locale } = useTrans();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const statuses = computed(() => props.enums.statuses || []);
+const allStatuses = computed(() => props.enums.allStatuses || props.enums.statuses || []);
+const statusMetaMap = computed<Record<string, { value: string; label: string; color: string }>>(() =>
+    Object.fromEntries((allStatuses.value || []).map((status) => [status.value, status])),
+);
+const isSystemManagedStatus = computed(() => form.status === 'completed_wait_contract');
+const currentStatusLabel = computed(() => statusMetaMap.value[form.status]?.label || form.status);
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
 const tenantFeatureFlags = computed<Record<string, boolean>>(
@@ -680,15 +687,26 @@ function submit() {
 
                     <div>
                         <Label for="status">{{ localize('Status', 'ط§ظ„ط­ط§ظ„ط©') }}</Label>
-                        <select
-                            id="status"
-                            v-model="form.status"
-                            class="mt-1 block w-full rounded-md border border-gray-300 py-2 pr-10 pl-3 text-base focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
+                        <template v-if="!isSystemManagedStatus">
+                            <select
+                                id="status"
+                                v-model="form.status"
+                                class="mt-1 block w-full rounded-md border border-gray-300 py-2 pr-10 pl-3 text-base focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
+                            >
+                                <option v-for="s in statuses" :key="s.value" :value="s.value">
+                                    {{ s.label }}
+                                </option>
+                            </select>
+                        </template>
+                        <div
+                            v-else
+                            class="mt-1 rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
                         >
-                            <option v-for="s in statuses" :key="s.value" :value="s.value">
-                                {{ s.label }}
-                            </option>
-                        </select>
+                            <div class="font-medium">{{ currentStatusLabel }}</div>
+                            <div class="text-xs text-amber-700">
+                                {{ localize('System-managed status. It will be updated automatically.', 'الحالة تُدار تلقائيًا ولا يمكن تعديلها يدويًا.') }}
+                            </div>
+                        </div>
                         <InputError :message="form.errors.status" class="mt-1" />
                     </div>
 

@@ -11,6 +11,8 @@ use App\Notifications\TenantAdminInvitationNotification;
 use App\Support\BrandLogoImageResizer;
 use App\Support\CompanyOwners;
 use App\Support\TenantAdminAccessSync;
+use App\Rules\DigitsOnly;
+use App\Rules\LettersOnly;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -76,14 +78,14 @@ class TenantsController
             'email' => 'required|email|unique:tenants,email',
             'phone' => 'nullable|string|max:20',
             'company_owners' => ['required', 'array', 'min:1'],
-            'company_owners.*.name' => ['required', 'string', 'max:255'],
-            'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255'],
-            'company_owners.*.tax_number' => ['required', 'string', 'max:255'],
-            'company_owners.*.civil_number' => ['required', 'string', 'max:255'],
+            'company_owners.*.name' => ['required', 'string', 'max:255', new LettersOnly()],
+            'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'company_owners.*.tax_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'company_owners.*.civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
             'plan_id' => ['required', 'integer', Rule::exists('plans', 'id')->where(static fn ($query) => $query->where('is_active', true))],
             'logo_temp_folders' => ['array'],
             'logo_temp_folders.*' => ['string'],
-            'admin_name' => 'required|string|max:255',
+            'admin_name' => ['required', 'string', 'max:255', new LettersOnly()],
             'admin_email' => 'required|email|unique:users,email',
             'admin_password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
@@ -232,10 +234,10 @@ class TenantsController
             'email' => 'required|email|unique:tenants,email,' . $tenant->id,
             'phone' => 'nullable|string|max:20',
             'company_owners' => ['required', 'array', 'min:1'],
-            'company_owners.*.name' => ['required', 'string', 'max:255'],
-            'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255'],
-            'company_owners.*.tax_number' => ['required', 'string', 'max:255'],
-            'company_owners.*.civil_number' => ['required', 'string', 'max:255'],
+            'company_owners.*.name' => ['required', 'string', 'max:255', new LettersOnly()],
+            'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'company_owners.*.tax_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'company_owners.*.civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
             'plan_id' => ['required', 'integer', Rule::exists('plans', 'id')->where(static fn ($query) => $query->where('is_active', true))],
             'is_active' => 'required|boolean',
             'document_extraction_daily_limit' => ['nullable', 'integer', 'min:1', 'max:100000'],

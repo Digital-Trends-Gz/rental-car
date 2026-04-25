@@ -249,7 +249,7 @@ class ReportsController extends Controller
         $allStatuses = collect(ReservationStatus::cases())->pluck('value')->toArray();
         $statusColors = ReservationStatus::statusColors();
         $statusLabels = collect(ReservationStatus::cases())->mapWithKeys(function ($status) {
-            return [$status->value => ucfirst(str_replace('_', ' ', $status->value))];
+            return [$status->value => $status->label()];
         })->toArray();
 
         // Prepare datasets for each status

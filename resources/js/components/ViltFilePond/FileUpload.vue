@@ -26,10 +26,6 @@ const props = defineProps({
         default: () => [
             "image/jpeg",
             "image/png",
-            "image/gif",
-            "image/svg+xml",
-            "image/webp",
-            "image/avif",
         ],
     },
     allowMultiple: {

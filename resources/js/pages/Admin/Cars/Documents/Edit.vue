@@ -55,6 +55,8 @@ const localizedDocumentTypes = computed(() =>
     })),
 );
 
+const photoAllowedFileTypes = ['image/jpeg', 'image/png'];
+
 const form = useForm({
     type: props.document?.type ?? 'license',
     document_number: props.document?.document_number ?? '',
@@ -219,6 +221,7 @@ const submit = () => {
                             <Label>{{ localize('Front Image', 'الصورة الأمامية') }}</Label>
                             <FileUpload
                                 :initial-files="frontImageFiles"
+                                :allowed-file-types="photoAllowedFileTypes"
                                 :allow-multiple="false"
                                 :max-files="1"
                                 @processfile="form.front_image_temp_folders = $event"
@@ -231,6 +234,7 @@ const submit = () => {
                             <Label>{{ localize('Back Image', 'الصورة الخلفية') }}</Label>
                             <FileUpload
                                 :initial-files="backImageFiles"
+                                :allowed-file-types="photoAllowedFileTypes"
                                 :allow-multiple="false"
                                 :max-files="1"
                                 @processfile="form.back_image_temp_folders = $event"

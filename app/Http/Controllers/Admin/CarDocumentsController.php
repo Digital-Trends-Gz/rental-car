@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Models\CarDocument;
 use App\Support\BranchAccess;
+use App\Support\FileUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -95,7 +96,7 @@ class CarDocumentsController extends Controller
                 ->filter(fn ($file) => in_array($file->collection, ['front_image', 'attachment'], true))
                 ->map(fn ($file) => [
                     'id' => $file->id,
-                    'url' => Storage::url($file->path),
+                    'url' => FileUrl::fromStoragePath($file->path),
                 ])
                 ->values()
                 ->all(),
@@ -103,7 +104,7 @@ class CarDocumentsController extends Controller
                 ->where('collection', 'back_image')
                 ->map(fn ($file) => [
                     'id' => $file->id,
-                    'url' => Storage::url($file->path),
+                    'url' => FileUrl::fromStoragePath($file->path),
                 ])
                 ->values()
                 ->all(),

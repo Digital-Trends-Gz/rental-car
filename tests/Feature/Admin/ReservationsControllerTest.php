@@ -15,6 +15,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Rentals\RentalStatusSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ReservationsControllerTest extends TestCase
@@ -116,6 +117,148 @@ class ReservationsControllerTest extends TestCase
         ]);
     }
 
+    public function test_admin_reservation_create_form_hides_system_managed_status_option(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::SUPER_ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reservations.create', ['subdomain' => $tenant->slug]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Reservations/Edit')
+                ->where('enums.statuses', fn ($statuses) => collect($statuses)->doesntContain(
+                    fn ($status) => ($status['value'] ?? null) === ReservationStatus::COMPLETED_WAIT_CONTRACT->value
+                ))
+            );
+    }
+
+    public function test_admin_cannot_manually_set_system_managed_reservation_status(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::SUPER_ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $client = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::CLIENT,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $car = Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => null,
+            'make' => 'Toyota',
+            'model' => 'Corolla',
+            'year' => 2024,
+            'license_plate' => 'RES-3030',
+            'color' => CarColor::WHITE->value,
+            'price_per_day' => 100,
+            'mileage' => 1000,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'fuel_type' => FuelType::GASOLINE->value,
+            'description' => null,
+            'status' => CarStatus::AVAILABLE->value,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.reservations.store', ['subdomain' => $tenant->slug]), [
+                'user_id' => $client->id,
+                'car_id' => $car->id,
+                'start_date' => '2026-04-25',
+                'end_date' => '2026-04-27',
+                'pickup_time' => '10:00',
+                'return_time' => '18:00',
+                'pickup_location' => 'Main Office',
+                'return_location' => 'Main Office',
+                'discount_amount' => 0,
+                'deposit_amount' => 0,
+                'notes' => 'Reservation created from dashboard.',
+                'status' => ReservationStatus::COMPLETED_WAIT_CONTRACT->value,
+            ])
+            ->assertSessionHasErrors(['status']);
+    }
+
+    public function test_admin_completed_status_without_contract_is_converted_to_waiting_contract_status(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::SUPER_ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $client = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::CLIENT,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $car = Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => null,
+            'make' => 'Toyota',
+            'model' => 'Corolla',
+            'year' => 2024,
+            'license_plate' => 'RES-4040',
+            'color' => CarColor::WHITE->value,
+            'price_per_day' => 100,
+            'mileage' => 1000,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'fuel_type' => FuelType::GASOLINE->value,
+            'description' => null,
+            'status' => CarStatus::AVAILABLE->value,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.reservations.store', ['subdomain' => $tenant->slug]), [
+                'user_id' => $client->id,
+                'car_id' => $car->id,
+                'start_date' => '2026-04-25',
+                'end_date' => '2026-04-27',
+                'pickup_time' => '10:00',
+                'return_time' => '18:00',
+                'pickup_location' => 'Main Office',
+                'return_location' => 'Main Office',
+                'discount_amount' => 0,
+                'deposit_amount' => 0,
+                'notes' => 'Reservation created from dashboard.',
+                'status' => ReservationStatus::COMPLETED->value,
+            ])
+            ->assertRedirect();
+
+        $reservation = Reservation::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $client->id)
+            ->where('car_id', $car->id)
+            ->firstOrFail();
+
+        $this->assertSame(ReservationStatus::COMPLETED_WAIT_CONTRACT, $reservation->status);
+    }
+
     public function test_admin_can_collect_final_cash_payment_and_complete_reservation(): void
     {
         $tenant = Tenant::factory()->create([
@@ -182,7 +325,7 @@ class ReservationsControllerTest extends TestCase
 
         $reservation->refresh()->load('payments');
 
-        $this->assertSame(ReservationStatus::COMPLETED, $reservation->status);
+        $this->assertSame(ReservationStatus::COMPLETED_WAIT_CONTRACT, $reservation->status);
         $this->assertCount(2, $reservation->payments);
 
         $finalPayment = $reservation->payments->sortByDesc('id')->first();

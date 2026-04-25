@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Services\Plans\PlanUsageLimits;
+use App\Rules\DigitsOnly;
+use App\Rules\LettersOnly;
 use App\Support\BranchLocationOptions;
+use App\Support\FileUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
@@ -89,8 +92,8 @@ class BranchesController extends Controller
             'phone_2' => ['nullable', 'string', 'max:50'],
             'whatsapp' => ['nullable', 'string', 'max:50'],
             'cr_number' => ['nullable', 'string', 'max:255'],
-            'manager_name' => ['nullable', 'string', 'max:255'],
-            'manager_civil_number' => ['nullable', 'string', 'max:255'],
+            'manager_name' => ['nullable', 'string', 'max:255', new LettersOnly()],
+            'manager_civil_number' => ['nullable', 'string', 'max:255', new DigitsOnly()],
             'email' => ['nullable', 'email', 'max:255'],
             'showroom_temp_folders' => ['array'],
             'showroom_temp_folders.*' => ['string'],
@@ -130,7 +133,7 @@ class BranchesController extends Controller
                 ->where('collection', 'showroom')
                 ->map(fn ($file) => [
                     'id' => $file->id,
-                    'url' => Storage::url($file->path),
+                    'url' => FileUrl::fromStoragePath($file->path),
                 ])
                 ->values()
                 ->all(),
@@ -173,8 +176,8 @@ class BranchesController extends Controller
             'phone_2' => ['nullable', 'string', 'max:50'],
             'whatsapp' => ['nullable', 'string', 'max:50'],
             'cr_number' => ['nullable', 'string', 'max:255'],
-            'manager_name' => ['nullable', 'string', 'max:255'],
-            'manager_civil_number' => ['nullable', 'string', 'max:255'],
+            'manager_name' => ['nullable', 'string', 'max:255', new LettersOnly()],
+            'manager_civil_number' => ['nullable', 'string', 'max:255', new DigitsOnly()],
             'email' => ['nullable', 'email', 'max:255'],
             'showroom_temp_folders' => ['array'],
             'showroom_temp_folders.*' => ['string'],

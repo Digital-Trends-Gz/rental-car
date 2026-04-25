@@ -19,6 +19,7 @@ use App\Models\Reservation;
 use App\Services\Plans\PlanUsageLimits;
 use App\Support\BranchAccess;
 use App\Support\CarCatalogOptions;
+use App\Support\FileUrl;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -541,7 +542,7 @@ class CarsController extends Controller
             ->get()
             ->map(fn ($f) => [
                 'id' => $f->id,
-                'url' => Storage::url($f->path),
+                'url' => FileUrl::fromStoragePath($f->path),
             ]);
 
         $additionalPhotoFiles = collect(self::ADDITIONAL_PHOTO_TYPES)
@@ -551,7 +552,7 @@ class CarsController extends Controller
                     ->get()
                     ->map(fn ($file) => [
                         'id' => $file->id,
-                        'url' => Storage::url($file->path),
+                        'url' => FileUrl::fromStoragePath($file->path),
                     ])
                     ->values()
                     ->all();

@@ -147,4 +147,56 @@ class EmployeesControllerTest extends TestCase
             'civil_number' => '87654321',
         ]);
     }
+
+    public function test_admin_cannot_create_employee_with_digits_in_name(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+            'email' => 'owner@example.com',
+        ]);
+        TenantContext::set($tenant);
+
+        $branch = Branch::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+        ]);
+
+        $manageEmployeesPermission = Permission::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'tenant-manage-employees',
+            'display_name' => 'Manage Employees',
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'role' => UserRole::ADMIN,
+            'name' => 'Owner',
+            'email' => 'owner@example.com',
+            'civil_number' => '11112222',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+        $admin->syncPermissions([$manageEmployeesPermission->id]);
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.employees.create', ['subdomain' => $tenant->slug]))
+            ->post(route('admin.employees.store', ['subdomain' => $tenant->slug]), [
+                'name' => 'Employee 1',
+                'email' => 'employee1@example.com',
+                'civil_number' => '99887766',
+                'branch_id' => $branch->id,
+                'password' => 'Password123',
+                'password_confirmation' => 'Password123',
+                'is_active' => true,
+                'role_ids' => [],
+                'permission_ids' => [],
+            ]);
+
+        $response->assertSessionHasErrors(['name']);
+        $this->assertDatabaseMissing('users', [
+            'tenant_id' => $tenant->id,
+            'email' => 'employee1@example.com',
+        ]);
+    }
 }

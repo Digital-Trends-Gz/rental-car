@@ -7,6 +7,7 @@ use App\Core\AiProviderSettings;
 use App\Core\TenantContext;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Models\CarDamageCase;
@@ -25,6 +26,8 @@ use App\Notifications\ContractForceExtendedNotification;
 use App\Services\Contracts\ContractAiExtractor;
 use App\Services\Contracts\ContractDriverDocumentExtractor;
 use App\Services\Plans\PlanUsageLimits;
+use App\Rules\DigitsOnly;
+use App\Rules\LettersOnly;
 use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
 use App\Support\ContractCustomerPhotoExtractor;
@@ -254,6 +257,7 @@ class ContractsController extends Controller
             $this->syncFiles($contract, $request, 'end_contract');
             $this->syncContractDrivers($contract, $validated, $reservation);
             $this->syncAdditionalArchiveFiles($contract, $validated);
+            $this->completeWaitingReservationIfNeeded($reservation);
 
             return $contract;
         });
@@ -697,6 +701,7 @@ class ContractsController extends Controller
             $this->syncFiles($contract, $request, 'end_contract');
             $this->syncContractDrivers($contract, $validated, $reservation);
             $this->syncAdditionalArchiveFiles($contract, $validated);
+            $this->completeWaitingReservationIfNeeded($reservation);
         });
 
         return redirect()
@@ -942,8 +947,8 @@ class ContractsController extends Controller
             'contract_number' => ['nullable', 'string', 'max:100', $uniqueRule],
             'status' => ['required', Rule::in(['draft', 'active', 'completed', 'cancelled'])],
             'contract_date' => $contractDateRules,
-            'renter_name' => [$requiredOnCreate, 'string', 'max:255'],
-            'renter_id_number' => [$requiredOnCreate, 'string', 'max:255'],
+            'renter_name' => [$requiredOnCreate, 'string', 'max:255', new LettersOnly()],
+            'renter_id_number' => [$requiredOnCreate, 'string', 'max:255', new DigitsOnly()],
             'renter_phone' => [$requiredOnCreate, 'string', 'max:100'],
             'car_details' => ['nullable', 'string', 'max:255'],
             'plate_number' => ['nullable', 'string', 'max:255'],
@@ -984,18 +989,18 @@ class ContractsController extends Controller
             'primary_driver.id' => ['nullable', 'integer'],
             'primary_driver.client_id' => ['nullable', 'integer', 'exists:users,id'],
             'primary_driver.role' => ['nullable', Rule::in(['primary'])],
-            'primary_driver.full_name' => [$requiredOnCreate, 'string', 'max:255'],
-            'primary_driver.full_name_ar' => ['nullable', 'string', 'max:255'],
+            'primary_driver.full_name' => [$requiredOnCreate, 'string', 'max:255', new LettersOnly()],
+            'primary_driver.full_name_ar' => ['nullable', 'string', 'max:255', new LettersOnly()],
             'primary_driver.phone' => [$requiredOnCreate, 'string', 'max:100'],
             'primary_driver.nationality' => ['nullable', 'string', 'max:100'],
             'primary_driver.place_of_issue' => ['nullable', 'string', 'max:255'],
             'primary_driver.date_of_birth' => ['nullable', 'date'],
-            'primary_driver.identity_number' => [$requiredOnCreate, 'string', 'max:255'],
+            'primary_driver.identity_number' => [$requiredOnCreate, 'string', 'max:255', new DigitsOnly()],
             'primary_driver.passport_number' => ['nullable', 'string', 'max:255'],
             'primary_driver.passport_expiry_date' => ['nullable', 'date'],
             'primary_driver.visa_number' => ['nullable', 'string', 'max:255'],
             'primary_driver.visa_expiry_date' => ['nullable', 'date'],
-            'primary_driver.residency_number' => ['nullable', 'string', 'max:255'],
+            'primary_driver.residency_number' => ['nullable', 'string', 'max:255', new DigitsOnly()],
             'primary_driver.license_number' => ['nullable', 'string', 'max:255'],
             'primary_driver.license_issue_date' => ['nullable', 'date'],
             'primary_driver.identity_expiry_date' => ['nullable', 'date'],
@@ -1028,18 +1033,18 @@ class ContractsController extends Controller
             'additional_drivers.*.id' => ['nullable', 'integer'],
             'additional_drivers.*.client_id' => ['nullable', 'integer', 'exists:users,id'],
             'additional_drivers.*.role' => ['nullable', Rule::in(['additional'])],
-            'additional_drivers.*.full_name' => ['nullable', 'string', 'max:255'],
-            'additional_drivers.*.full_name_ar' => ['nullable', 'string', 'max:255'],
+            'additional_drivers.*.full_name' => ['nullable', 'string', 'max:255', new LettersOnly()],
+            'additional_drivers.*.full_name_ar' => ['nullable', 'string', 'max:255', new LettersOnly()],
             'additional_drivers.*.phone' => ['nullable', 'string', 'max:100'],
             'additional_drivers.*.nationality' => ['nullable', 'string', 'max:100'],
             'additional_drivers.*.place_of_issue' => ['nullable', 'string', 'max:255'],
             'additional_drivers.*.date_of_birth' => ['nullable', 'date'],
-            'additional_drivers.*.identity_number' => ['nullable', 'string', 'max:255'],
+            'additional_drivers.*.identity_number' => ['nullable', 'string', 'max:255', new DigitsOnly()],
             'additional_drivers.*.passport_number' => ['nullable', 'string', 'max:255'],
             'additional_drivers.*.passport_expiry_date' => ['nullable', 'date'],
             'additional_drivers.*.visa_number' => ['nullable', 'string', 'max:255'],
             'additional_drivers.*.visa_expiry_date' => ['nullable', 'date'],
-            'additional_drivers.*.residency_number' => ['nullable', 'string', 'max:255'],
+            'additional_drivers.*.residency_number' => ['nullable', 'string', 'max:255', new DigitsOnly()],
             'additional_drivers.*.license_number' => ['nullable', 'string', 'max:255'],
             'additional_drivers.*.license_issue_date' => ['nullable', 'date'],
             'additional_drivers.*.identity_expiry_date' => ['nullable', 'date'],
@@ -1232,6 +1237,9 @@ class ContractsController extends Controller
         return $query->get()
             ->map(function (Reservation $reservation) {
                 $hasContract = (bool) $reservation->contract;
+                $status = $reservation->status instanceof ReservationStatus
+                    ? $reservation->status
+                    : ReservationStatus::tryFrom((string) $reservation->status);
                 return [
                     'id' => $reservation->id,
                     'reservation_number' => $reservation->reservation_number,
@@ -1254,6 +1262,9 @@ class ContractsController extends Controller
                     'end_date' => optional($reservation->end_date)->toDateString(),
                     'total_amount' => $reservation->total_amount,
                     'has_contract' => $hasContract,
+                    'status' => $status?->value ?? (string) $reservation->status,
+                    'status_label' => $status?->label() ?? ucfirst(str_replace('_', ' ', (string) $reservation->status)),
+                    'status_color' => $status?->color() ?? '#6B7280',
                 ];
             })
             ->values()
@@ -2099,6 +2110,21 @@ class ContractsController extends Controller
 
             $archiveFile->save();
         }
+    }
+
+    private function completeWaitingReservationIfNeeded(?Reservation $reservation): void
+    {
+        if (!$reservation) {
+            return;
+        }
+
+        if ($reservation->status !== ReservationStatus::COMPLETED_WAIT_CONTRACT) {
+            return;
+        }
+
+        $reservation->forceFill([
+            'status' => ReservationStatus::COMPLETED->value,
+        ])->saveQuietly();
     }
 
     private function replaceArchiveFileFromTemp(ContractArchiveFile $archiveFile, string $folder): void

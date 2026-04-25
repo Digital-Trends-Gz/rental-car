@@ -255,11 +255,15 @@ const vehicleConditionOptions = [
   { value: 'not_clean', label: localize('Not Clean', 'غير نظيف') },
 ];
 
-const allowedFileTypes = [
+const photoAllowedFileTypes = [
+  'image/jpeg',
+  'image/png',
+];
+
+const documentAllowedFileTypes = [
   'application/pdf',
   'image/jpeg',
   'image/png',
-  'image/webp',
   'image/jpg',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -334,6 +338,7 @@ function buildDriver(driver: any, role: 'primary' | 'additional') {
     raw_output: payload.raw_output || null,
     confidence: payload.confidence ?? null,
     ai_reviewed: Boolean(payload.ai_reviewed || false),
+    ai_review_required: Boolean(payload.extracted_data || payload.extraction_status === 'extracted'),
     notes: String(payload.notes || ''),
     document_type: type,
     documents: [documentSlot('front', docs, type), documentSlot('back', docs, type)],
@@ -438,6 +443,9 @@ const form = useForm({
   contract_number: props.contract?.contract_number ?? '',
   status: props.contract?.status ?? 'draft',
   contract_date: props.contract?.contract_date ?? '',
+  renter_name: props.contract?.renter_name ?? '',
+  renter_id_number: props.contract?.renter_id_number ?? '',
+  renter_phone: props.contract?.renter_phone ?? '',
   start_date: props.contract?.start_date ?? '',
   end_date: props.contract?.end_date ?? '',
   total_amount: props.contract?.total_amount ?? '',
@@ -538,8 +546,56 @@ const selectedCarDamages = computed(() => {
   return props.carDamagesByCar?.[selectedCarId.value] || [];
 });
 const hasLinkedReservation = computed(() => Boolean(selectedReservation.value));
+const currentContractReservationId = computed(() => Number(props.contract?.reservation_id || 0));
+const selectedReservationIsCurrentContract = computed(() => {
+  if (!selectedReservation.value) return false;
+  return Number(selectedReservation.value.id || 0) === currentContractReservationId.value;
+});
+const selectedReservationUsesAnotherContract = computed(() => {
+  if (!selectedReservation.value) return false;
+  return Boolean(selectedReservation.value.has_contract) && !selectedReservationIsCurrentContract.value;
+});
+const selectedReservationNotice = computed(() => {
+  if (!selectedReservation.value) {
+    return null;
+  }
+
+  const status = String(selectedReservation.value.status || '').toLowerCase();
+
+  if (selectedReservationUsesAnotherContract.value) {
+    return {
+      tone: 'danger',
+      title: localize('Already linked to another contract', 'هذه الحجز مرتبط بعقد آخر'),
+      message: localize(
+        'This reservation already has a contract and cannot be used for a new contract.',
+        'هذا الحجز مرتبط بعقد آخر ولا يمكن استخدامه لإنشاء عقد جديد.',
+      ),
+    };
+  }
+
+  if (status === 'completed_wait_contract') {
+    return {
+      tone: 'warning',
+      title: localize('Completed - Waiting for Contract', 'مكتمل - بانتظار العقد'),
+      message: localize(
+        'This reservation is completed and waiting for contract creation. You can save the contract from here.',
+        'هذا الحجز مكتمل وينتظر إنشاء العقد. يمكنك حفظ العقد من هنا.',
+      ),
+    };
+  }
+
+  return {
+    tone: 'info',
+    title: selectedReservation.value.status_label || localize('Reservation selected', 'تم اختيار الحجز'),
+    message: localize(
+      'This reservation can be used for the contract.',
+      'يمكن استخدام هذا الحجز لإنشاء العقد.',
+    ),
+  };
+});
 const reservationClients = computed(() => props.reservationFormOptions?.clients ?? []);
 const reservationCars = computed(() => props.reservationFormOptions?.cars ?? []);
+const saveError = ref('');
 const additionalArchiveOwnerOptions = computed(() => {
   const options = [
     { value: '', label: localize('No specific driver', 'ط·آ¨ط·آ¯ط¸ث†ط¸â€  ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط¸â€¦ط·آ­ط·آ¯ط·آ¯') },
@@ -752,6 +808,7 @@ async function extractDriver(driver: any, role: 'primary' | 'additional', index:
     driver.confidence = typeof payload.confidence === 'number' ? payload.confidence : null;
     driver.extraction_status = payload.status || 'extracted';
     driver.ai_reviewed = false;
+    driver.ai_review_required = true;
     driver.extract_success = payload.message || localize('Document extraction completed.', 'ط·ع¾ط¸â€¦ ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ ط·آ¨ط¸â€ ط·آ¬ط·آ§ط·آ­.');
   } catch (error) {
     driver.extract_error = error instanceof Error ? error.message : localize('Driver extraction failed.', 'ط¸ظ¾ط·آ´ط¸â€‍ ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ.');
@@ -893,11 +950,23 @@ async function submitReservationFromModal() {
 }
 
 function submit() {
+  saveError.value = '';
+  form.renter_name = String(form.primary_driver.full_name || form.renter_name || '').trim();
+  form.renter_id_number = String(form.primary_driver.identity_number || form.renter_id_number || '').trim();
+  form.renter_phone = String(form.primary_driver.phone || form.renter_phone || '').trim();
+  const submitOptions = {
+    preserveScroll: true,
+    onError: (errors: Record<string, string | undefined>) => {
+      const firstError = Object.values(errors).find((message) => Boolean(message));
+      saveError.value = firstError ? String(firstError) : localize('Contract save failed. Please review the errors.', 'فشل حفظ العقد. يرجى مراجعة الأخطاء.');
+    },
+  };
+
   if (props.mode === 'create') {
-    form.post(props.actions.store || '/admin/contracts');
+    form.post(props.actions.store || '/admin/contracts', submitOptions);
     return;
   }
-  form.put(props.actions.update || '/admin/contracts');
+  form.put(props.actions.update || '/admin/contracts', submitOptions);
 }
 </script>
 
@@ -928,6 +997,7 @@ function submit() {
               <select id="primary-document-type" v-model="form.primary_driver.document_type" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" @change="syncDocumentType(form.primary_driver)">
                 <option v-for="option in documentTypeOptions" :key="option.value || 'empty'" :value="option.value">{{ option.label }}</option>
               </select>
+              <InputError :message="form.errors['primary_driver.document_type']" class="mt-1" />
             </div>
             <div><Label for="primary-full-name">{{ localize('Full Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ§ط¸â€‍ط¸ئ’ط·آ§ط¸â€¦ط¸â€‍') }}</Label><Input id="primary-full-name" v-model="form.primary_driver.full_name" maxlength="255" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.full_name']" class="mt-1" /></div>
             <div><Label for="primary-full-name-ar">{{ localize('Arabic Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ¨ط·آ§ط¸â€‍ط·آ¹ط·آ±ط·آ¨ط¸ظ¹ط·آ©') }}</Label><Input id="primary-full-name-ar" v-model="form.primary_driver.full_name_ar" dir="rtl" maxlength="255" /><InputError :message="form.errors['primary_driver.full_name_ar']" class="mt-1" /></div>
@@ -941,6 +1011,9 @@ function submit() {
             <div><Label for="primary-identity-expiry">{{ localize('Identity Expiry Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ©') }}</Label><Input id="primary-identity-expiry" v-model="form.primary_driver.identity_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors['primary_driver.identity_expiry_date']" class="mt-1" /></div>
             <div><Label for="primary-license-expiry">{{ localize('License Expiry Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ±ط·آ®ط·آµط·آ©') }}</Label><Input id="primary-license-expiry" v-model="form.primary_driver.license_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors['primary_driver.license_expiry_date']" class="mt-1" /></div>
           </div>
+          <div v-if="saveError" class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {{ saveError }}
+          </div>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div><Label for="primary-passport-number">{{ localize('Passport Number', 'رقم الجواز') }}</Label><Input id="primary-passport-number" v-model="form.primary_driver.passport_number" maxlength="255" /><InputError :message="form.errors['primary_driver.passport_number']" class="mt-1" /></div>
             <div><Label for="primary-passport-expiry">{{ localize('Passport Expiry Date', 'تاريخ انتهاء الجواز') }}</Label><Input id="primary-passport-expiry" v-model="form.primary_driver.passport_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors['primary_driver.passport_expiry_date']" class="mt-1" /></div>
@@ -953,17 +1026,19 @@ function submit() {
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <Label class="mb-2 block">{{ localize('Document Front / Single', 'ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ ط·آ§ط¸â€‍ط·آ£ط¸â€¦ط·آ§ط¸â€¦ط¸ظ¹ / ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¾ط·آ±ط·آ¯') }}</Label>
-              <FileUpload v-model="form.primary_driver.documents[0].temp_folders" :initial-files="form.primary_driver.documents[0].existing_files" :allowed-file-types="allowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_driver_front" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(form.primary_driver, 0, data)" />
+              <FileUpload v-model="form.primary_driver.documents[0].temp_folders" :initial-files="form.primary_driver.documents[0].existing_files" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_driver_front" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(form.primary_driver, 0, data)" />
+              <InputError :message="form.errors['primary_driver.documents.0.temp_folders']" class="mt-1" />
             </div>
             <div>
               <Label class="mb-2 block">{{ localize('Document Back', 'ط·آ®ط¸â€‍ط¸ظ¾ط¸ظ¹ط·آ© ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯') }}</Label>
-              <FileUpload v-model="form.primary_driver.documents[1].temp_folders" :initial-files="form.primary_driver.documents[1].existing_files" :allowed-file-types="allowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_driver_back" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(form.primary_driver, 1, data)" />
+              <FileUpload v-model="form.primary_driver.documents[1].temp_folders" :initial-files="form.primary_driver.documents[1].existing_files" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_driver_back" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(form.primary_driver, 1, data)" />
+              <InputError :message="form.errors['primary_driver.documents.1.temp_folders']" class="mt-1" />
             </div>
           </div>
           <div class="space-y-3 rounded-md border bg-slate-50 p-4">
             <div>
               <Label class="mb-2 block">{{ localize('Customer Photo', 'ط·آµط¸ث†ط·آ±ط·آ© ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍') }}</Label>
-              <FileUpload v-model="form.primary_driver.customer_photo_temp_folders" :initial-files="form.primary_driver.customer_photo_existing_files" :allowed-file-types="allowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_customer_photo" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverCustomerPhotoRemoved(form.primary_driver, data)" />
+              <FileUpload v-model="form.primary_driver.customer_photo_temp_folders" :initial-files="form.primary_driver.customer_photo_existing_files" :allowed-file-types="photoAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_customer_photo" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverCustomerPhotoRemoved(form.primary_driver, data)" />
               <InputError :message="form.errors['primary_driver.customer_photo_temp_folders']" class="mt-1" />
             </div>
             <div v-if="form.primary_driver.customer_photo_preview_url" class="max-w-[220px] overflow-hidden rounded-md border bg-white p-2">
@@ -985,7 +1060,7 @@ function submit() {
             <p v-if="form.primary_driver.extract_error" class="text-sm text-red-600">{{ form.primary_driver.extract_error }}</p>
             <p v-if="form.primary_driver.confidence !== null" class="text-sm text-muted-foreground">{{ localize('Confidence', 'ط·آ§ط¸â€‍ط·آ«ط¸â€ڑط·آ©') }}: {{ Number(form.primary_driver.confidence).toFixed(2) }}</p>
           </div>
-          <div v-if="hasAiExtractedData(form.primary_driver)" class="space-y-1">
+          <div v-if="form.primary_driver.ai_review_required" class="space-y-1">
             <label class="flex items-center gap-2 text-sm font-medium text-foreground">
               <input v-model="form.primary_driver.ai_reviewed" type="checkbox" class="h-4 w-4 rounded border-gray-300" />
               {{ localize('I reviewed the AI extracted data and confirm it is correct.', 'ط¸â€‍ط¸â€ڑط·آ¯ ط·آ±ط·آ§ط·آ¬ط·آ¹ط·ع¾ ط·آ§ط¸â€‍ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ¬ط·آ© ط·آ¨ط·آ§ط¸â€‍ط·آ°ط¸ئ’ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ§ط·آµط·آ·ط¸â€ ط·آ§ط·آ¹ط¸ظ¹ ط¸ث†ط·آ£ط·آ¤ط¸ئ’ط·آ¯ ط·آµط·آ­ط·ع¾ط¸â€،ط·آ§.') }}
@@ -1040,11 +1115,13 @@ function submit() {
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <Label class="mb-2 block">{{ localize('Document Front / Single', 'ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ ط·آ§ط¸â€‍ط·آ£ط¸â€¦ط·آ§ط¸â€¦ط¸ظ¹ / ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¾ط·آ±ط·آ¯') }}</Label>
-                <FileUpload v-model="driver.documents[0].temp_folders" :initial-files="driver.documents[0].existing_files" :allowed-file-types="allowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_additional_driver_front" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(driver, 0, data)" />
+                <FileUpload v-model="driver.documents[0].temp_folders" :initial-files="driver.documents[0].existing_files" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_additional_driver_front" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(driver, 0, data)" />
+                <InputError :message="form.errors[`additional_drivers.${index}.documents.0.temp_folders`]" class="mt-1" />
               </div>
               <div>
                 <Label class="mb-2 block">{{ localize('Document Back', 'ط·آ®ط¸â€‍ط¸ظ¾ط¸ظ¹ط·آ© ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯') }}</Label>
-                <FileUpload v-model="driver.documents[1].temp_folders" :initial-files="driver.documents[1].existing_files" :allowed-file-types="allowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_additional_driver_back" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(driver, 1, data)" />
+                <FileUpload v-model="driver.documents[1].temp_folders" :initial-files="driver.documents[1].existing_files" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_additional_driver_back" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(driver, 1, data)" />
+                <InputError :message="form.errors[`additional_drivers.${index}.documents.1.temp_folders`]" class="mt-1" />
               </div>
             </div>
           <div class="flex flex-wrap items-center gap-3">
@@ -1055,7 +1132,7 @@ function submit() {
               <p v-if="driver.extract_error" class="text-sm text-red-600">{{ driver.extract_error }}</p>
               <p v-if="driver.confidence !== null" class="text-sm text-muted-foreground">{{ localize('Confidence', 'ط·آ§ط¸â€‍ط·آ«ط¸â€ڑط·آ©') }}: {{ Number(driver.confidence).toFixed(2) }}</p>
             </div>
-            <div v-if="hasAiExtractedData(driver)" class="space-y-1">
+            <div v-if="driver.ai_review_required" class="space-y-1">
               <label class="flex items-center gap-2 text-sm font-medium text-foreground">
                 <input v-model="driver.ai_reviewed" type="checkbox" class="h-4 w-4 rounded border-gray-300" />
                 {{ localize('I reviewed the AI extracted data and confirm it is correct.', 'ط¸â€‍ط¸â€ڑط·آ¯ ط·آ±ط·آ§ط·آ¬ط·آ¹ط·ع¾ ط·آ§ط¸â€‍ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ¬ط·آ© ط·آ¨ط·آ§ط¸â€‍ط·آ°ط¸ئ’ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ§ط·آµط·آ·ط¸â€ ط·آ§ط·آ¹ط¸ظ¹ ط¸ث†ط·آ£ط·آ¤ط¸ئ’ط·آ¯ ط·آµط·آ­ط·ع¾ط¸â€،ط·آ§.') }}
@@ -1113,7 +1190,7 @@ function submit() {
             </div>
             <div>
               <Label class="mb-2 block">{{ localize('Archive File', 'ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ§ط¸â€‍ط·آ£ط·آ±ط·آ´ط¸ظ¹ط¸ظ¾') }}</Label>
-              <FileUpload v-model="item.temp_folders" :initial-files="item.existing_files || []" :allowed-file-types="allowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_additional_archive" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onAdditionalArchiveFileRemoved(index, data)" />
+              <FileUpload v-model="item.temp_folders" :initial-files="item.existing_files || []" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_additional_archive" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onAdditionalArchiveFileRemoved(index, data)" />
               <InputError :message="form.errors[`additional_archive.${index}.temp_folders`]" class="mt-1" />
             </div>
           </div>
@@ -1247,6 +1324,31 @@ function submit() {
                 <div><span class="font-medium text-foreground">{{ localize('Reservation', 'ط·آ§ط¸â€‍ط·آ­ط·آ¬ط·آ²') }}:</span> {{ selectedReservation.reservation_number }}</div>
                 <div><span class="font-medium text-foreground">{{ localize('Client', 'ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍') }}:</span> {{ selectedReservation.user_name || localize('N/A', 'ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط·ع¾ط¸ث†ط¸ظ¾ط·آ±') }}</div>
                 <div><span class="font-medium text-foreground">{{ localize('Car', 'ط·آ§ط¸â€‍ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ©') }}:</span> {{ selectedReservation.car_details || selectedReservation.car || localize('N/A', 'ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط·ع¾ط¸ث†ط¸ظ¾ط·آ±') }}</div>
+                <div>
+                  <span class="font-medium text-foreground">{{ localize('Status', 'ط·آ§ط¸â€‍ط·آ­ط·آ§ط¸â€‍ط·آ©') }}:</span>
+                  <span
+                    class="ml-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                    :class="{
+                      'bg-red-100 text-red-700': selectedReservationNotice?.tone === 'danger',
+                      'bg-amber-100 text-amber-700': selectedReservationNotice?.tone === 'warning',
+                      'bg-blue-100 text-blue-700': selectedReservationNotice?.tone === 'info',
+                    }"
+                  >
+                    {{ selectedReservation.status_label || selectedReservation.status }}
+                  </span>
+                </div>
+                <div
+                  v-if="selectedReservationNotice"
+                  class="mt-3 rounded-md border p-3 text-sm"
+                  :class="{
+                    'border-red-200 bg-red-50 text-red-700': selectedReservationNotice.tone === 'danger',
+                    'border-amber-200 bg-amber-50 text-amber-700': selectedReservationNotice.tone === 'warning',
+                    'border-blue-200 bg-blue-50 text-blue-700': selectedReservationNotice.tone === 'info',
+                  }"
+                >
+                  <div class="font-medium">{{ selectedReservationNotice.title }}</div>
+                  <div class="mt-1">{{ selectedReservationNotice.message }}</div>
+                </div>
               </div>
             </div>
             <div><Label for="contract_number">{{ localize('Contract Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Label><Input id="contract_number" v-model="form.contract_number" readonly /><InputError :message="form.errors.contract_number" class="mt-1" /></div>
@@ -1304,12 +1406,12 @@ function submit() {
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <Label class="mb-2 block">{{ localize('Start Rental Contract File', 'ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ¹ط¸â€ڑط·آ¯ ط·آ¨ط·آ¯ط·آ§ط¸ظ¹ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label>
-              <FileUpload v-model="form.start_contract_temp_folders" :initial-files="startContractFiles || []" :allowed-file-types="allowedFileTypes" :allow-multiple="false" :max-files="1" collection="start_contract" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onArchiveFileRemoved('start', data)" />
+              <FileUpload v-model="form.start_contract_temp_folders" :initial-files="startContractFiles || []" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="start_contract" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onArchiveFileRemoved('start', data)" />
               <InputError :message="form.errors.start_contract_temp_folders" class="mt-1" />
             </div>
             <div>
               <Label class="mb-2 block">{{ localize('End Rental Contract File', 'ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ¹ط¸â€ڑط·آ¯ ط¸â€ ط¸â€،ط·آ§ط¸ظ¹ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label>
-              <FileUpload v-model="form.end_contract_temp_folders" :initial-files="endContractFiles || []" :allowed-file-types="allowedFileTypes" :allow-multiple="false" :max-files="1" collection="end_contract" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onArchiveFileRemoved('end', data)" />
+              <FileUpload v-model="form.end_contract_temp_folders" :initial-files="endContractFiles || []" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="end_contract" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onArchiveFileRemoved('end', data)" />
               <InputError :message="form.errors.end_contract_temp_folders" class="mt-1" />
             </div>
           </div>

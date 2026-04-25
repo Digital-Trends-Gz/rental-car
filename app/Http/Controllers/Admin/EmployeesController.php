@@ -10,6 +10,8 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Plans\PlanUsageLimits;
+use App\Rules\DigitsOnly;
+use App\Rules\LettersOnly;
 use App\Support\BranchAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -108,9 +110,9 @@ class EmployeesController extends Controller
 
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($request->user());
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new LettersOnly()],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')],
-            'civil_number' => ['required', 'string', 'max:255', Rule::unique('users')],
+            'civil_number' => ['required', 'string', 'max:255', new DigitsOnly(), Rule::unique('users')],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'branch_id' => [
                 $canAccessAllBranches ? 'nullable' : 'nullable',
@@ -207,9 +209,9 @@ class EmployeesController extends Controller
 
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($request->user());
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new LettersOnly()],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($employee->id)],
-            'civil_number' => ['required', 'string', 'max:255', Rule::unique('users')->ignore($employee->id)],
+            'civil_number' => ['required', 'string', 'max:255', new DigitsOnly(), Rule::unique('users')->ignore($employee->id)],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'branch_id' => [
                 $canAccessAllBranches ? 'nullable' : 'nullable',

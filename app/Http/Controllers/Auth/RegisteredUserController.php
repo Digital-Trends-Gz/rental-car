@@ -31,6 +31,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Rules\DigitsOnly;
+use App\Rules\LettersOnly;
 
 class RegisteredUserController extends Controller
 {
@@ -82,9 +84,9 @@ class RegisteredUserController extends Controller
         $tenantSlug = TenantContext::get()?->slug;
         if ($tenantId) {
             $validated = $request->validate([
-                'name' => 'required|string|max:255',
+                'name' => ['required', 'string', 'max:255', new LettersOnly()],
                 'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-                'civil_number' => ['required', 'string', 'max:255'],
+                'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
             ]);
 
@@ -107,7 +109,7 @@ class RegisteredUserController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:255', new LettersOnly()],
             'email' => [
                 'required',
                 'string',
@@ -137,9 +139,9 @@ class RegisteredUserController extends Controller
                 'max:30',
                 'required_with:country_iso2',
             ],
-            'commercial_registration_number' => ['required', 'string', 'max:255'],
-            'tax_number' => ['required', 'string', 'max:255'],
-            'civil_number' => ['required', 'string', 'max:255'],
+            'commercial_registration_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'tax_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
