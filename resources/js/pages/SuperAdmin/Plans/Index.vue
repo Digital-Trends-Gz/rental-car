@@ -19,6 +19,17 @@ const formatDate = (date: string) => {
     });
 };
 
+const formatLimit = (value: number | null | undefined) => {
+    return value === null || value === undefined ? t('dashboard.super_admin.plans.index.unlimited') : String(value);
+};
+
+const formatTenantUsage = (count: number | null | undefined) => {
+    const total = count ?? 0;
+    return total === 0
+        ? t('dashboard.super_admin.plans.index.no_tenants')
+        : `${total} ${t('dashboard.super_admin.plans.index.tenants')}`;
+};
+
 const deletePlan = (planId: number, planName: string) => {
     if (confirm(`Are you sure you want to delete the plan "${planName}"?`)) {
         router.delete(`/superadmin/plans/${planId}`, { preserveScroll: true });
@@ -47,6 +58,7 @@ const deletePlan = (planId: number, planName: string) => {
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.super_admin.plans.index.plan') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.super_admin.plans.index.prices') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.super_admin.plans.index.limits') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.super_admin.plans.index.features') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.status') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.created') }}</th>
@@ -63,6 +75,9 @@ const deletePlan = (planId: number, planName: string) => {
                                     <div>
                                         <div class="font-medium">{{ plan.name }}</div>
                                         <div class="text-xs text-muted-foreground line-clamp-1 max-w-xs">{{ plan.description }}</div>
+                                        <div class="mt-1 text-xs text-gray-500">
+                                            {{ formatTenantUsage(plan.tenants_count) }}
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -80,6 +95,15 @@ const deletePlan = (planId: number, planName: string) => {
                                         <span class="font-medium text-xs uppercase text-gray-400">{{ t('dashboard.super_admin.plans.index.one_time') }}:</span>
                                         ${{ plan.one_time_price }}
                                     </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="space-y-1 text-xs text-gray-600">
+                                    <div>Employees: {{ formatLimit(plan.max_employees) }}</div>
+                                    <div>Branches: {{ formatLimit(plan.max_branches) }}</div>
+                                    <div>Cars: {{ formatLimit(plan.max_cars) }}</div>
+                                    <div>Contracts: {{ formatLimit(plan.max_contracts) }}</div>
+                                    <div>OpenAI/day: {{ formatLimit(plan.openai_requests_per_day) }}</div>
                                 </div>
                             </td>
                             <td class="px-4 py-3">
@@ -118,7 +142,7 @@ const deletePlan = (planId: number, planName: string) => {
                             </td>
                         </tr>
                         <tr v-if="plans.length === 0">
-                            <td colspan="6" class="px-4 py-6 text-center text-gray-500">
+                            <td colspan="7" class="px-4 py-6 text-center text-gray-500">
                                 {{ t('dashboard.super_admin.plans.index.empty') }}
                             </td>
                         </tr>

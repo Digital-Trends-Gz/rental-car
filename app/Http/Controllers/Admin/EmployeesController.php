@@ -9,6 +9,7 @@ use App\Models\Branch;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Plans\PlanUsageLimits;
 use App\Support\BranchAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -19,7 +20,10 @@ use Inertia\Response;
 
 class EmployeesController extends Controller
 {
-    public function __construct(private BranchAccess $branchAccess)
+    public function __construct(
+        private BranchAccess $branchAccess,
+        private PlanUsageLimits $planUsageLimits
+    )
     {
     }
 
@@ -96,6 +100,10 @@ class EmployeesController extends Controller
         // Demo mode restriction
         if (config('app.demo_mode')) {
             return redirect()->back()->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
+        }
+
+        if ($message = $this->planUsageLimits->employeeLimitMessage()) {
+            return redirect()->back()->with('error', $message);
         }
 
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($request->user());

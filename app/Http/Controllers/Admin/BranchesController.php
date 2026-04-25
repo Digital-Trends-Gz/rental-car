@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Services\Plans\PlanUsageLimits;
 use App\Support\BranchLocationOptions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,7 @@ class BranchesController extends Controller
 {
     public function __construct(
         private readonly FilePondService $filePondService,
+        private readonly PlanUsageLimits $planUsageLimits,
     ) {}
 
     /**
@@ -102,6 +104,10 @@ class BranchesController extends Controller
                 ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
         }
 
+        if ($message = $this->planUsageLimits->branchLimitMessage()) {
+            return redirect()->back()->with('error', $message);
+        }
+
         $branch = Branch::create($this->branchAttributes($validated));
 
         $this->syncShowroomImage($branch, $request);
@@ -180,6 +186,10 @@ class BranchesController extends Controller
             return redirect()
                 ->back()
                 ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
+        }
+
+        if ($message = $this->planUsageLimits->branchLimitMessage()) {
+            return redirect()->back()->with('error', $message);
         }
 
         Branch::withoutGlobalScope('tenant')

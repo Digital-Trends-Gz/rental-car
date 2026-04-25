@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const props = defineProps<{
@@ -105,7 +105,20 @@ const props = defineProps<{
 }>();
 
 const { t, locale } = useTrans();
+const page = usePage<any>();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const tenantFeatureFlags = computed<Record<string, boolean>>(
+    () => page.props.current_tenant?.subscription_plan?.feature_flags || {},
+);
+const hasFeature = (feature: string) => {
+    const flags = tenantFeatureFlags.value || {};
+
+    if (Object.keys(flags).length === 0) {
+        return true;
+    }
+
+    return Boolean(flags[feature]);
+};
 const pageTitle = computed(() =>
     t('dashboard.admin.contracts.show.head_title', {
         number: props.contract.contract_number,
@@ -114,12 +127,19 @@ const pageTitle = computed(() =>
 const actions = computed(() => props.actions);
 const hasPendingExtensionRequest = computed(() => Boolean(props.contract.has_pending_extension_request));
 const canExtendRental = computed(
-    () => Boolean(actions.value.extend && extensionCurrentEndDate.value && extensionDailyRate.value > 0),
+    () =>
+        Boolean(
+            hasFeature('force_extend_contract') &&
+                actions.value.extend &&
+                extensionCurrentEndDate.value &&
+                extensionDailyRate.value > 0,
+        ),
 );
 const canRequestExtension = computed(
     () =>
         Boolean(
-            actions.value.request_extend &&
+            hasFeature('extension_request') &&
+                actions.value.request_extend &&
                 extensionCurrentEndDate.value &&
                 extensionDailyRate.value > 0 &&
                 !hasPendingExtensionRequest.value,
@@ -247,7 +267,7 @@ function submitRequestExtension() {
                         }}</Button>
                     </Link>
                     <Button
-                        v-if="actions.pdf_en"
+                        v-if="hasFeature('pdf_export') && actions.pdf_en"
                         as="a"
                         :href="actions.pdf_en"
                         variant="outline"
@@ -257,7 +277,7 @@ function submitRequestExtension() {
                         {{ t('dashboard.admin.contracts.show.pdf_en') }}
                     </Button>
                     <Button
-                        v-if="actions.pdf_ar"
+                        v-if="hasFeature('pdf_export') && actions.pdf_ar"
                         as="a"
                         :href="actions.pdf_ar"
                         variant="outline"
@@ -267,7 +287,7 @@ function submitRequestExtension() {
                         {{ t('dashboard.admin.contracts.show.pdf_ar') }}
                     </Button>
                     <Button
-                        v-else-if="actions.pdf"
+                        v-else-if="hasFeature('pdf_export') && actions.pdf"
                         as="a"
                         :href="actions.pdf"
                         variant="outline"

@@ -6,22 +6,67 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, SwitchCamera } from 'lucide-vue-next';
+import { Plus, Trash2 } from 'lucide-vue-next';
 import { Switch } from '@/components/ui/switch';
-import { ref } from 'vue';
+import { computed } from 'vue';
+
+const props = defineProps<{
+    featureFlags: Array<{ key: string; label: string; helper: string }>;
+}>();
+
+type FeatureFlagField = {
+    key: string;
+    label: string;
+    helper: string;
+};
+
+const featureFlagFields = props.featureFlags as FeatureFlagField[];
+
+const buildFeatureFlags = () => Object.fromEntries(
+    featureFlagFields.map((item) => [item.key, true]),
+) as Record<string, boolean>;
 
 const form = useForm({
     name: '',
     description: '',
     features: [''],
+    feature_flags: buildFeatureFlags(),
     monthly_price: 0,
     monthly_price_id: '',
     yearly_price: 0,
     yearly_price_id: '',
     one_time_price: 0,
     one_time_price_id: '',
+    max_employees: null as number | null,
+    max_branches: null as number | null,
+    max_cars: null as number | null,
+    max_contracts: null as number | null,
+    openai_requests_per_day: null as number | null,
     is_active: true,
 });
+
+const limitFields = [
+    { key: 'max_employees', label: 'Max Employees', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
+    { key: 'max_branches', label: 'Max Branches', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
+    { key: 'max_cars', label: 'Max Cars', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
+    { key: 'max_contracts', label: 'Max Rental Contracts', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
+    { key: 'openai_requests_per_day', label: 'OpenAI Requests / Day', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
+] as const;
+type LimitFieldKey = (typeof limitFields)[number]['key'];
+
+const isLimitEnabled = (field: LimitFieldKey) => form[field] !== null && form[field] !== undefined;
+
+const setLimitEnabled = (field: LimitFieldKey, enabled: boolean) => {
+    form[field] = enabled ? (form[field] ?? 1) : null;
+};
+
+const isFeatureEnabled = (field: string) => Boolean(form.feature_flags[field]);
+
+const setFeatureEnabled = (field: string, enabled: boolean) => {
+    form.feature_flags[field] = enabled;
+};
+
+const enabledFeatureCount = computed(() => Object.values(form.feature_flags).filter(Boolean).length);
 
 const addFeature = () => {
     form.features.push('');
@@ -45,7 +90,7 @@ const submit = () => {
         <main class="flex-1 p-8 space-y-6">
             <div class="flex items-center gap-4">
                 <Link href="/superadmin/plans">
-                    <Button variant="outline">← Back</Button>
+                    <Button variant="outline">Back</Button>
                 </Link>
                 <h1 class="text-2xl font-semibold">Create Subscription Plan</h1>
             </div>
@@ -98,6 +143,29 @@ const submit = () => {
                                 <Button type="button" variant="outline" size="sm" @click="addFeature" class="w-full">
                                     <Plus class="h-4 w-4 mr-2" /> Add Feature
                                 </Button>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Feature Access</CardTitle>
+                                <CardDescription>
+                                    Toggle the product modules available for tenants on this plan. Enabled: {{ enabledFeatureCount }}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent class="space-y-4">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div v-for="field in featureFlagFields" :key="field.key" class="space-y-3 rounded-lg border p-3">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <Label :for="field.key" class="text-sm font-medium">{{ field.label }}</Label>
+                                            <Switch
+                                                :checked="isFeatureEnabled(field.key)"
+                                                @update:checked="(val: boolean) => setFeatureEnabled(field.key, val)"
+                                            />
+                                        </div>
+                                        <p class="text-xs text-muted-foreground">{{ field.helper }}</p>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -153,6 +221,39 @@ const submit = () => {
                                 <div class="space-y-2">
                                     <Label for="one_time_price_id">Price ID</Label>
                                     <Input id="one_time_price_id" v-model="form.one_time_price_id" placeholder="price_..." />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Limits</CardTitle>
+                                <CardDescription>Leave a limit blank to make it unlimited for this plan.</CardDescription>
+                            </CardHeader>
+                            <CardContent class="space-y-4">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div v-for="field in limitFields" :key="field.key" class="space-y-3 rounded-lg border p-3">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <Label :for="field.key" class="text-sm font-medium">{{ field.label }}</Label>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs text-muted-foreground">Unlimited</span>
+                                                <Switch
+                                                    :checked="isLimitEnabled(field.key)"
+                                                    @update:checked="(val: boolean) => setLimitEnabled(field.key, val)"
+                                                />
+                                            </div>
+                                        </div>
+                                        <Input
+                                            :id="field.key"
+                                            v-model="form[field.key]"
+                                            :disabled="!isLimitEnabled(field.key)"
+                                            type="number"
+                                            min="1"
+                                            step="1"
+                                            :placeholder="field.placeholder"
+                                        />
+                                        <p class="text-xs text-muted-foreground">{{ field.helper }}</p>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

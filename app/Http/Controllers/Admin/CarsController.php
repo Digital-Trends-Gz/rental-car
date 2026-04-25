@@ -16,6 +16,7 @@ use App\Models\Contract;
 use App\Models\CarMaintenance;
 use App\Models\CarViolation;
 use App\Models\Reservation;
+use App\Services\Plans\PlanUsageLimits;
 use App\Support\BranchAccess;
 use App\Support\CarCatalogOptions;
 use Carbon\Carbon;
@@ -37,7 +38,11 @@ class CarsController extends Controller
     protected FilePondService $filePondService;
     protected BranchAccess $branchAccess;
 
-    public function __construct(FilePondService $filePondService, BranchAccess $branchAccess)
+    public function __construct(
+        FilePondService $filePondService,
+        BranchAccess $branchAccess,
+        private PlanUsageLimits $planUsageLimits
+    )
     {
         $this->filePondService = $filePondService;
         $this->branchAccess = $branchAccess;
@@ -486,6 +491,10 @@ class CarsController extends Controller
             return redirect()
                 ->back()
                 ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
+        }
+
+        if ($message = $this->planUsageLimits->carLimitMessage()) {
+            return redirect()->back()->with('error', $message);
         }
 
         $car = Car::create(collect($validated)->except(['image', 'additional_photos'])->toArray());

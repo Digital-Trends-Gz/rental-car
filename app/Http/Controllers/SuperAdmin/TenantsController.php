@@ -34,8 +34,8 @@ class TenantsController
     public function index(): Response
     {
         $tenants = Tenant::query()
-            ->with('subscriptionPlan:id,name')
-            ->withCount(['users', 'cars', 'reservations'])
+            ->with('subscriptionPlan:id,name,max_employees,max_branches,max_cars,max_contracts,openai_requests_per_day')
+            ->withCount(['users', 'branches', 'cars', 'reservations', 'contracts'])
             ->latest()
             ->paginate(20);
 

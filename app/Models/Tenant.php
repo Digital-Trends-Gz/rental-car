@@ -80,6 +80,11 @@ class Tenant extends Model
         return $this->hasMany(User::class);
     }
 
+    public function branches(): HasMany
+    {
+        return $this->hasMany(Branch::class);
+    }
+
     /**
      * Get the cars for this tenant.
      */
@@ -94,6 +99,11 @@ class Tenant extends Model
     public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class);
     }
 
     /**
@@ -139,6 +149,11 @@ class Tenant extends Model
     public function siteSetting(): HasOne
     {
         return $this->hasOne(TenantSiteSetting::class);
+    }
+
+    public function supportsFeature(string $feature): bool
+    {
+        return $this->subscriptionPlan?->supportsFeature($feature) ?? false;
     }
 
     /**

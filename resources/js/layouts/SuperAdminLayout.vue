@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import AppSidebarLayout from '@/layouts/app/AppSidebarLayout.vue';
 import { usePage } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const page = usePage();
-const message = ref(page.props.flash?.restricted_action);
+const message = ref<string | null>(page.props.flash?.error ?? page.props.flash?.restricted_action ?? null);
+const tone = ref<'error' | 'warning'>(page.props.flash?.error ? 'error' : 'warning');
+const messageClass = computed(() => (tone.value === 'error' ? 'bg-red-600/95 text-white' : 'bg-yellow-500/90 text-white'));
 
 watch(
-    () => page.props.flash?.restricted_action,
-    (val) => {
-        message.value = val;
-        if (val) {
+    () => [page.props.flash?.error, page.props.flash?.restricted_action],
+    ([error, restrictedAction]) => {
+        const nextMessage = (error ?? restrictedAction ?? null) as string | null;
+        message.value = nextMessage;
+        tone.value = error ? 'error' : 'warning';
+        if (nextMessage) {
             setTimeout(() => (message.value = null), 10000);
         }
     },
@@ -21,7 +25,7 @@ watch(
     <AppSidebarLayout>
         <div
             v-if="message"
-            class="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg bg-yellow-500/90 px-4 py-2 text-sm font-medium text-white shadow-lg"
+            :class="['fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-lg', messageClass]"
         >
             <svg
                 xmlns="http://www.w3.org/2000/svg"

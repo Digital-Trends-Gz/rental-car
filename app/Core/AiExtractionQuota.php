@@ -18,16 +18,27 @@ class AiExtractionQuota
 
     public static function limitForTenant(?Tenant $tenant = null): int
     {
+        $limits = [];
+
         if ($tenant) {
+            $tenant->loadMissing('subscriptionPlan');
+            $planLimit = self::normalizeLimit($tenant->subscriptionPlan?->openai_requests_per_day ?? null);
+            if ($planLimit !== null) {
+                $limits[] = $planLimit;
+            }
+
             $settings = TenantSiteSetting::forTenant($tenant);
             $tenantLimit = self::normalizeLimit($settings['document_extraction_daily_limit'] ?? null);
-
             if ($tenantLimit !== null) {
-                return $tenantLimit;
+                $limits[] = $tenantLimit;
             }
         }
 
-        return self::defaultDailyLimit();
+        if ($limits === []) {
+            return self::defaultDailyLimit();
+        }
+
+        return min($limits);
     }
 
     public static function ensureAvailable(?Tenant $tenant = null): void

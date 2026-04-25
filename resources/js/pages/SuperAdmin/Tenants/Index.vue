@@ -46,6 +46,17 @@ const formatDate = (date: string) => {
     });
 };
 
+const formatLimit = (value: number | null | undefined) => {
+    return value === null || value === undefined
+        ? t('dashboard.super_admin.plans.index.unlimited')
+        : String(value);
+};
+
+const formatUsage = (used: number | null | undefined, limit: number | null | undefined) => {
+    const current = used ?? 0;
+    return `${current} / ${formatLimit(limit)}`;
+};
+
 const planColors: Record<string, string> = {
     basic: 'bg-gray-100 text-gray-700',
     pro: 'bg-blue-100 text-blue-700',
@@ -83,7 +94,7 @@ const planColors: Record<string, string> = {
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.company') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.contact') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.plan') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.stats') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.super_admin.plans.index.usage_summary') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.status') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.created') }}</th>
                             <th class="px-4 py-3"></th>
@@ -125,10 +136,15 @@ const planColors: Record<string, string> = {
                                 </span>
                             </td>
                             <td class="px-4 py-3">
-                                <div class="text-sm space-y-1">
-                                    <div>{{ tenant.users_count || 0 }} {{ t('dashboard.common.users') }}</div>
-                                    <div>{{ tenant.cars_count || 0 }} {{ t('dashboard.common.cars') }}</div>
-                                    <div class="text-gray-500">{{ tenant.reservations_count || 0 }} {{ t('dashboard.common.bookings') }}</div>
+                                <div v-if="tenant.subscription_plan" class="text-sm space-y-1">
+                                    <div>{{ t('dashboard.common.employees') }}: {{ formatUsage(tenant.users_count, tenant.subscription_plan.max_employees) }}</div>
+                                    <div>{{ t('dashboard.common.branches') }}: {{ formatUsage(tenant.branches_count, tenant.subscription_plan.max_branches) }}</div>
+                                    <div>{{ t('dashboard.common.cars') }}: {{ formatUsage(tenant.cars_count, tenant.subscription_plan.max_cars) }}</div>
+                                    <div>{{ t('dashboard.common.contracts') }}: {{ formatUsage(tenant.contracts_count, tenant.subscription_plan.max_contracts) }}</div>
+                                    <div class="text-gray-500">{{ t('dashboard.common.reservations') }}: {{ tenant.reservations_count || 0 }}</div>
+                                </div>
+                                <div v-else class="text-sm text-gray-500">
+                                    {{ tenant.users_count || 0 }} {{ t('dashboard.common.users') }}
                                 </div>
                             </td>
                             <td class="px-4 py-3">

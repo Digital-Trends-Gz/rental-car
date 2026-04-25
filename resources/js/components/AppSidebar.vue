@@ -69,6 +69,12 @@ const isSuperAdmin = computed(() =>
     stripLocalePrefix(String(page.url || '/')).startsWith('/superadmin'),
 );
 const currentTenant = computed(() => page.props.current_tenant);
+const tenantFeatureFlags = computed<Record<string, boolean>>(
+    () => currentTenant.value?.subscription_plan?.feature_flags || {},
+);
+const hasFeatureFlags = computed(
+    () => Object.keys(tenantFeatureFlags.value || {}).length > 0,
+);
 const localePrefix = computed(() => {
     const currentPath = String(page.url || '/');
     const escapedLocales = availableLocales.value.map((locale) =>
@@ -86,6 +92,8 @@ const authPermissions = computed<string[]>(() =>
         ? page.props.auth.permissions
         : [],
 );
+const hasTenantFeature = (feature?: string) =>
+    !feature || !hasFeatureFlags.value || Boolean(tenantFeatureFlags.value[feature]);
 
 const mainNavItems = computed<NavItem[]>(() => {
     const slug = currentTenant.value?.slug;
@@ -114,36 +122,42 @@ const mainNavItems = computed<NavItem[]>(() => {
             href: adminHref('/maintenance-types'),
             icon: Wrench,
             permission: 'tenant-manage-cars',
+            feature: 'maintenance_module',
         },
         {
             title: t('dashboard.sidebar.admin.maintenance_records'),
             href: adminHref('/maintenance-records'),
             icon: Wrench,
             permission: 'tenant-manage-cars',
+            feature: 'maintenance_module',
         },
         {
             title: t('dashboard.sidebar.admin.violation_types'),
             href: adminHref('/violation-types'),
             icon: AlertTriangle,
             permission: 'tenant-manage-cars',
+            feature: 'violations_module',
         },
         {
             title: t('dashboard.sidebar.admin.car_violations'),
             href: adminHref('/car-violations'),
             icon: AlertTriangle,
             permission: 'tenant-manage-cars',
+            feature: 'violations_module',
         },
         {
             title: t('dashboard.sidebar.admin.damage_reports'),
             href: adminHref('/car-damage-reports'),
             icon: ShieldAlert,
             permission: 'tenant-manage-cars',
+            feature: 'damage_reports',
         },
         {
             title: t('dashboard.sidebar.admin.damage_repairs'),
             href: adminHref('/damage-repairs'),
             icon: Wrench,
             permission: 'tenant-manage-cars',
+            feature: 'damage_reports',
         },
         {
             title: t('dashboard.sidebar.admin.contracts'),
@@ -168,18 +182,21 @@ const mainNavItems = computed<NavItem[]>(() => {
             href: adminHref('/coupons'),
             icon: Tag,
             permission: 'tenant-manage-payments',
+            feature: 'coupon_system',
         },
         {
             title: t('dashboard.sidebar.admin.auto_discounts'),
             href: adminHref('/car-discounts'),
             icon: Percent,
             permission: 'tenant-manage-payments',
+            feature: 'auto_discounts',
         },
         {
             title: t('dashboard.sidebar.admin.reports'),
             href: reportsIndex(slug).url,
             icon: BarChart,
             permission: 'tenant-view-reports',
+            feature: 'reports_module',
         },
         {
             title: t('dashboard.sidebar.admin.support'),
@@ -216,6 +233,7 @@ const mainNavItems = computed<NavItem[]>(() => {
             href: adminHref('/settings/payment-providers'),
             icon: CreditCard,
             permission: 'tenant-manage-settings',
+            feature: 'stripe_connect',
         },
         {
             title: t('dashboard.sidebar.admin.website_settings'),
@@ -231,7 +249,8 @@ const mainNavItems = computed<NavItem[]>(() => {
         },
     ].filter(
         (item) =>
-            !item.permission || authPermissions.value.includes(item.permission),
+            (!item.permission || authPermissions.value.includes(item.permission)) &&
+            hasTenantFeature(item.feature),
     );
 });
 </script>

@@ -45,6 +45,18 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 const statuses = computed(() => props.enums.statuses || []);
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
+const tenantFeatureFlags = computed<Record<string, boolean>>(
+    () => page.props.current_tenant?.subscription_plan?.feature_flags || {},
+);
+const hasFeature = (feature: string) => {
+    const flags = tenantFeatureFlags.value || {};
+
+    if (Object.keys(flags).length === 0) {
+        return true;
+    }
+
+    return Boolean(flags[feature]);
+};
 const isEdit = computed(() => Boolean(props.reservation));
 const clients = ref([...(props.clients || [])]);
 const clientOptions = computed(() =>
@@ -528,7 +540,7 @@ function submit() {
 
             <form class="space-y-6" @submit.prevent="submit">
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div v-if="!isEdit">
+                    <div v-if="!isEdit && hasFeature('cash_payments')">
                         <div class="mb-2 flex items-center justify-between gap-3">
                             <Label for="user_id" class="mb-0">{{ localize('Client', 'ط§ظ„ط¹ظ…ظٹظ„') }}</Label>
                             <Button type="button" variant="outline" size="sm" @click="openCreateClientDialog">

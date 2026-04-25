@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/composables/useTrans';
+import { computed } from 'vue';
 
 const props = defineProps<{
     car: {
@@ -149,7 +150,20 @@ const props = defineProps<{
 }>();
 
 const { locale } = useTrans();
+const page = usePage<any>();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const tenantFeatureFlags = computed<Record<string, boolean>>(
+    () => page.props.current_tenant?.subscription_plan?.feature_flags || {},
+);
+const hasFeature = (feature: string) => {
+    const flags = tenantFeatureFlags.value || {};
+
+    if (Object.keys(flags).length === 0) {
+        return true;
+    }
+
+    return Boolean(flags[feature]);
+};
 
 function money(value: number | null) {
     if (value === null) return '-';
@@ -192,7 +206,7 @@ function statusVariant(key: string) {
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <Link :href="`/admin/cars/${car.id}/documents`">
+                    <Link v-if="hasFeature('car_documents')" :href="`/admin/cars/${car.id}/documents`">
                         <Button variant="outline">{{ localize('Documents', 'الوثائق') }}</Button>
                     </Link>
                     <Link :href="`/admin/cars/${car.id}/calendar`">

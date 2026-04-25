@@ -17,12 +17,14 @@ use App\Models\ContractDriverDocument;
 use App\Models\Payment;
 use App\Models\RentalExtensionRequest;
 use App\Models\Reservation;
+use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Notifications\ContractExtensionRequestedNotification;
 use App\Notifications\ContractForceExtendedNotification;
 use App\Services\Contracts\ContractAiExtractor;
 use App\Services\Contracts\ContractDriverDocumentExtractor;
+use App\Services\Plans\PlanUsageLimits;
 use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
 use App\Support\ContractCustomerPhotoExtractor;
@@ -52,7 +54,8 @@ class ContractsController extends Controller
         private FilePondService $filePondService,
         private ContractAiExtractor $contractAiExtractor,
         private ContractDriverDocumentExtractor $contractDriverDocumentExtractor,
-        private ContractCustomerPhotoExtractor $contractCustomerPhotoExtractor
+        private ContractCustomerPhotoExtractor $contractCustomerPhotoExtractor,
+        private PlanUsageLimits $planUsageLimits
     ) {
     }
 
@@ -209,6 +212,27 @@ class ContractsController extends Controller
         $tenantId = (int) (TenantContext::id() ?? 0);
         if ($tenantId <= 0) {
             abort(404);
+        }
+
+        if ($message = $this->planUsageLimits->contractLimitMessage()) {
+            return redirect()->back()->with('error', $message);
+        }
+
+        $tenant = Tenant::query()
+            ->with('subscriptionPlan')
+            ->find($tenantId);
+
+        if ($tenant?->subscriptionPlan?->max_contracts !== null) {
+            $contractCount = Contract::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenant->id)
+                ->count();
+
+            if ($contractCount >= (int) $tenant->subscriptionPlan->max_contracts) {
+                return redirect()->back()->with(
+                    'error',
+                    "Your plan allows up to {$tenant->subscriptionPlan->max_contracts} contracts. Upgrade your plan to add more."
+                );
+            }
         }
 
         $validated = $this->validatePayload($request, $tenantId);
@@ -898,6 +922,7 @@ class ContractsController extends Controller
 
     private function validatePayload(Request $request, int $tenantId, ?int $ignoreId = null, ?Contract $contract = null): array
     {
+        $isCreate = $contract === null;
         $uniqueRule = Rule::unique('contracts', 'contract_number')
             ->where(fn ($query) => $query->where('tenant_id', $tenantId));
 
@@ -905,19 +930,21 @@ class ContractsController extends Controller
             $uniqueRule->ignore($ignoreId);
         }
 
-        $contractDateRules = ['nullable', 'date'];
-        if ($contract === null) {
+        $requiredOnCreate = $isCreate ? 'required' : 'nullable';
+
+        $contractDateRules = [$requiredOnCreate, 'date'];
+        if ($isCreate) {
             $contractDateRules[] = 'after_or_equal:today';
         }
 
         $validator = Validator::make($request->all(), [
-            'reservation_id' => ['nullable', 'integer', 'exists:reservations,id'],
+            'reservation_id' => [$requiredOnCreate, 'integer', 'exists:reservations,id'],
             'contract_number' => ['nullable', 'string', 'max:100', $uniqueRule],
             'status' => ['required', Rule::in(['draft', 'active', 'completed', 'cancelled'])],
             'contract_date' => $contractDateRules,
-            'renter_name' => ['nullable', 'string', 'max:255'],
-            'renter_id_number' => ['nullable', 'string', 'max:255'],
-            'renter_phone' => ['nullable', 'string', 'max:100'],
+            'renter_name' => [$requiredOnCreate, 'string', 'max:255'],
+            'renter_id_number' => [$requiredOnCreate, 'string', 'max:255'],
+            'renter_phone' => [$requiredOnCreate, 'string', 'max:100'],
             'car_details' => ['nullable', 'string', 'max:255'],
             'plate_number' => ['nullable', 'string', 'max:255'],
             'vehicle_odometer' => ['nullable', 'integer', 'min:0'],
@@ -933,8 +960,8 @@ class ContractsController extends Controller
             'vehicle_condition_before' => ['nullable', Rule::in(['clean', 'not_clean'])],
             'vehicle_condition_after' => ['nullable', Rule::in(['clean', 'not_clean'])],
             'actual_return_time' => ['nullable', 'date'],
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'start_date' => [$requiredOnCreate, 'date'],
+            'end_date' => [$requiredOnCreate, 'date', 'after_or_equal:start_date'],
             'total_amount' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'size:3'],
             'notes' => ['nullable', 'string'],
@@ -957,13 +984,13 @@ class ContractsController extends Controller
             'primary_driver.id' => ['nullable', 'integer'],
             'primary_driver.client_id' => ['nullable', 'integer', 'exists:users,id'],
             'primary_driver.role' => ['nullable', Rule::in(['primary'])],
-            'primary_driver.full_name' => ['nullable', 'string', 'max:255'],
+            'primary_driver.full_name' => [$requiredOnCreate, 'string', 'max:255'],
             'primary_driver.full_name_ar' => ['nullable', 'string', 'max:255'],
-            'primary_driver.phone' => ['nullable', 'string', 'max:100'],
+            'primary_driver.phone' => [$requiredOnCreate, 'string', 'max:100'],
             'primary_driver.nationality' => ['nullable', 'string', 'max:100'],
             'primary_driver.place_of_issue' => ['nullable', 'string', 'max:255'],
             'primary_driver.date_of_birth' => ['nullable', 'date'],
-            'primary_driver.identity_number' => ['nullable', 'string', 'max:255'],
+            'primary_driver.identity_number' => [$requiredOnCreate, 'string', 'max:255'],
             'primary_driver.passport_number' => ['nullable', 'string', 'max:255'],
             'primary_driver.passport_expiry_date' => ['nullable', 'date'],
             'primary_driver.visa_number' => ['nullable', 'string', 'max:255'],

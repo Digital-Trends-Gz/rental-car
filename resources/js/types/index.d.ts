@@ -17,6 +17,7 @@ export interface NavItem {
     icon?: LucideIcon;
     isActive?: boolean;
     permission?: string;
+    feature?: string;
     description?: string;
     children?: NavItem[];
 }
@@ -54,12 +55,19 @@ export interface Plan {
     name: string;
     description: string | null;
     features: string[] | null;
+    feature_flags: Record<string, boolean> | null;
     monthly_price: number;
     monthly_price_id: string | null;
     yearly_price: number;
     yearly_price_id: string | null;
     one_time_price: number | null;
     one_time_price_id: string | null;
+    max_employees: number | null;
+    max_branches: number | null;
+    max_cars: number | null;
+    max_contracts: number | null;
+    openai_requests_per_day: number | null;
+    tenants_count?: number;
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -91,6 +99,11 @@ export interface Tenant {
     subscription_plan?: Plan | null;
     is_active: boolean;
     trial_ends_at: string | null;
+    users_count?: number;
+    branches_count?: number;
+    cars_count?: number;
+    reservations_count?: number;
+    contracts_count?: number;
     created_at: string;
     updated_at: string;
 }

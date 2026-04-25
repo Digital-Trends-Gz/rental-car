@@ -128,7 +128,29 @@ class HandleInertiaRequests extends Middleware
                 'code' => config('app.currency_code'),
             ],
             'app_url_base' => parse_url(config('app.url'), PHP_URL_HOST),
-            'current_tenant' => \App\Core\TenantContext::get(),
+            'current_tenant' => function () {
+                $tenant = \App\Core\TenantContext::get();
+
+                if (!$tenant) {
+                    return null;
+                }
+
+                $tenant->load([
+                    'subscriptionPlan' => fn ($query) => $query->select(
+                        'id',
+                        'name',
+                        'is_active',
+                        'feature_flags',
+                        'max_employees',
+                        'max_branches',
+                        'max_cars',
+                        'max_contracts',
+                        'openai_requests_per_day',
+                    ),
+                ]);
+
+                return $tenant;
+            },
             'tenant_site_settings' => function () {
                 $tenant = \App\Core\TenantContext::get();
 

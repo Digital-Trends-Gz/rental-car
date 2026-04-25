@@ -13,7 +13,20 @@ const props = defineProps<{
 }>()
 const page = usePage<any>()
 const subdomain = computed(() => page.props.current_tenant?.slug)
+const tenantFeatureFlags = computed<Record<string, boolean>>(
+  () => page.props.current_tenant?.subscription_plan?.feature_flags || {},
+)
+const hasFeature = (feature: string) => {
+  const flags = tenantFeatureFlags.value || {}
+  if (Object.keys(flags).length === 0) {
+    return true
+  }
+  return Boolean(flags[feature])
+}
 const reservation = computed(() => props.reservation)
+const canCollectFinalCash = computed(
+  () => hasFeature('cash_payments') && Boolean(reservation.value?.can_collect_final_cash),
+)
 
 const statusMap = computed(() => {
   const map: Record<string, { label: string; color: string }> = {}
@@ -192,7 +205,7 @@ function collectFinalCash() {
               <div class="text-sm">Total</div>
               <div class="text-lg font-semibold">{{ fmtMoney(reservation.total_amount) }}</div>
             </div>
-            <div v-if="reservation.can_collect_final_cash" class="pt-2">
+            <div v-if="canCollectFinalCash" class="pt-2">
               <Button class="w-full" @click="collectFinalCash">Collect Final Cash</Button>
             </div>
           </div>

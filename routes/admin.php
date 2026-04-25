@@ -44,94 +44,105 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::get('cars/{car}/availability-calendar', [CarsController::class, 'availabilityCalendar'])
             ->middleware('permission:tenant-manage-cars')
             ->name('cars.availability-calendar');
-        Route::get('cars/{car}/documents', [CarDocumentsController::class, 'index'])
-            ->middleware('permission:tenant-manage-cars')
-            ->name('cars.documents.index');
-        Route::get('cars/{car}/documents/create', [CarDocumentsController::class, 'create'])
-            ->middleware('permission:tenant-manage-cars')
-            ->name('cars.documents.create');
-        Route::post('cars/{car}/documents', [CarDocumentsController::class, 'store'])
-            ->middleware('permission:tenant-manage-cars')
-            ->name('cars.documents.store');
-        Route::get('cars/{car}/documents/{document}/edit', [CarDocumentsController::class, 'edit'])
-            ->middleware('permission:tenant-manage-cars')
-            ->name('cars.documents.edit');
-        Route::put('cars/{car}/documents/{document}', [CarDocumentsController::class, 'update'])
-            ->middleware('permission:tenant-manage-cars')
-            ->name('cars.documents.update');
-        Route::delete('cars/{car}/documents/{document}', [CarDocumentsController::class, 'destroy'])
-            ->middleware('permission:tenant-manage-cars')
-            ->name('cars.documents.destroy');
+        Route::middleware('tenant.feature:car_documents')->group(function () {
+            Route::get('cars/{car}/documents', [CarDocumentsController::class, 'index'])
+                ->middleware('permission:tenant-manage-cars')
+                ->name('cars.documents.index');
+            Route::get('cars/{car}/documents/create', [CarDocumentsController::class, 'create'])
+                ->middleware('permission:tenant-manage-cars')
+                ->name('cars.documents.create');
+            Route::post('cars/{car}/documents', [CarDocumentsController::class, 'store'])
+                ->middleware('permission:tenant-manage-cars')
+                ->name('cars.documents.store');
+            Route::get('cars/{car}/documents/{document}/edit', [CarDocumentsController::class, 'edit'])
+                ->middleware('permission:tenant-manage-cars')
+                ->name('cars.documents.edit');
+            Route::put('cars/{car}/documents/{document}', [CarDocumentsController::class, 'update'])
+                ->middleware('permission:tenant-manage-cars')
+                ->name('cars.documents.update');
+            Route::delete('cars/{car}/documents/{document}', [CarDocumentsController::class, 'destroy'])
+                ->middleware('permission:tenant-manage-cars')
+                ->name('cars.documents.destroy');
+        });
 
         // Maintenance Types
-        Route::resource('maintenance-types', MaintenanceTypesController::class)
-            ->except(['show'])
-            ->middleware('permission:tenant-manage-cars');
+        Route::middleware('tenant.feature:maintenance_module')->group(function () {
+            Route::resource('maintenance-types', MaintenanceTypesController::class)
+                ->except(['show'])
+                ->middleware('permission:tenant-manage-cars');
 
-        // Maintenance Records
-        Route::resource('maintenance-records', MaintenanceRecordsController::class)
-            ->except(['show'])
-            ->parameters(['maintenance-records' => 'maintenance'])
-            ->middleware('permission:tenant-manage-cars');
+            // Maintenance Records
+            Route::resource('maintenance-records', MaintenanceRecordsController::class)
+                ->except(['show'])
+                ->parameters(['maintenance-records' => 'maintenance'])
+                ->middleware('permission:tenant-manage-cars');
+        });
 
         // Car Violations
-        Route::resource('violation-types', ViolationTypesController::class)
-            ->except(['show'])
-            ->middleware('permission:tenant-manage-cars');
-        Route::resource('car-violations', CarViolationsController::class)
-            ->except(['show'])
-            ->parameters(['car-violations' => 'carViolation'])
-            ->middleware('permission:tenant-manage-cars');
-        Route::get('car-violations/{carViolation}/notice', [CarViolationsController::class, 'noticeEdit'])
-            ->middleware('permission:tenant-manage-cars')
-            ->name('car-violations.notice.edit');
-        Route::put('car-violations/{carViolation}/notice', [CarViolationsController::class, 'noticeUpdate'])
-            ->middleware('permission:tenant-manage-cars')
-            ->name('car-violations.notice.update');
-        Route::get('car-violations/{carViolation}/notice/pdf', [CarViolationsController::class, 'noticePdf'])
-            ->middleware('permission:tenant-manage-cars')
-            ->name('car-violations.notice.pdf');
-        Route::get('car-violations/{carViolation}/notice/print', [CarViolationsController::class, 'noticePrint'])
-            ->middleware('permission:tenant-manage-cars')
-            ->name('car-violations.notice.print');
-        Route::resource('car-damage-reports', CarDamageReportsController::class)
-            ->except(['show'])
-            ->parameters(['car-damage-reports' => 'carDamageReport'])
-            ->middleware('permission:tenant-manage-cars');
-        Route::resource('damage-repairs', DamageRepairsController::class)
-            ->except(['show'])
-            ->parameters(['damage-repairs' => 'damageRepair'])
-            ->middleware('permission:tenant-manage-cars');
+        Route::middleware('tenant.feature:violations_module')->group(function () {
+            Route::resource('violation-types', ViolationTypesController::class)
+                ->except(['show'])
+                ->middleware('permission:tenant-manage-cars');
+            Route::resource('car-violations', CarViolationsController::class)
+                ->except(['show'])
+                ->parameters(['car-violations' => 'carViolation'])
+                ->middleware('permission:tenant-manage-cars');
+            Route::get('car-violations/{carViolation}/notice', [CarViolationsController::class, 'noticeEdit'])
+                ->middleware('permission:tenant-manage-cars')
+                ->name('car-violations.notice.edit');
+            Route::put('car-violations/{carViolation}/notice', [CarViolationsController::class, 'noticeUpdate'])
+                ->middleware('permission:tenant-manage-cars')
+                ->name('car-violations.notice.update');
+            Route::get('car-violations/{carViolation}/notice/pdf', [CarViolationsController::class, 'noticePdf'])
+                ->middleware('permission:tenant-manage-cars')
+                ->name('car-violations.notice.pdf');
+            Route::get('car-violations/{carViolation}/notice/print', [CarViolationsController::class, 'noticePrint'])
+                ->middleware('permission:tenant-manage-cars')
+                ->name('car-violations.notice.print');
+        });
+
+        Route::middleware('tenant.feature:damage_reports')->group(function () {
+            Route::resource('car-damage-reports', CarDamageReportsController::class)
+                ->except(['show'])
+                ->parameters(['car-damage-reports' => 'carDamageReport'])
+                ->middleware('permission:tenant-manage-cars');
+            Route::resource('damage-repairs', DamageRepairsController::class)
+                ->except(['show'])
+                ->parameters(['damage-repairs' => 'damageRepair'])
+                ->middleware('permission:tenant-manage-cars');
+        });
 
         // Reservations
         Route::resource('reservations', ReservationsController::class)
             ->only(['index', 'create', 'store', 'show', 'edit', 'update'])
             ->middleware('permission:tenant-manage-reservations');
         Route::post('reservations/{reservation}/cash-payment', [ReservationsController::class, 'collectCashPayment'])
-            ->middleware('permission:tenant-manage-reservations')
+            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:cash_payments'])
             ->name('reservations.cash-payment');
         Route::get('reservations/{reservation}/print', [ReservationsController::class, 'print'])
             ->middleware('permission:tenant-manage-reservations')
             ->name('reservations.print');
 
         // Contracts
-        Route::post('contracts/extract', [ContractsController::class, 'extract'])
-            ->middleware('permission:tenant-manage-reservations')
-            ->name('contracts.extract');
-        Route::post('contracts/drivers/extract', [ContractsController::class, 'extractDriverDocument'])
-            ->middleware('permission:tenant-manage-reservations')
-            ->name('contracts.drivers.extract');
-        Route::post('contracts/drivers/photo/extract', [ContractsController::class, 'extractDriverCustomerPhoto'])
-            ->middleware('permission:tenant-manage-reservations')
-            ->name('contracts.drivers.photo.extract');
+        Route::middleware('tenant.feature:ai_contract_extraction')->group(function () {
+            Route::post('contracts/extract', [ContractsController::class, 'extract'])
+                ->middleware('permission:tenant-manage-reservations')
+                ->name('contracts.extract');
+            Route::post('contracts/drivers/extract', [ContractsController::class, 'extractDriverDocument'])
+                ->middleware('permission:tenant-manage-reservations')
+                ->name('contracts.drivers.extract');
+            Route::post('contracts/drivers/photo/extract', [ContractsController::class, 'extractDriverCustomerPhoto'])
+                ->middleware('permission:tenant-manage-reservations')
+                ->name('contracts.drivers.photo.extract');
+        });
         Route::post('contracts/{contract}/extension-request', [ContractsController::class, 'requestExtension'])
-            ->middleware('permission:tenant-manage-reservations')
+            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:extension_request'])
             ->name('contracts.request-extension');
         Route::post('contracts/{contract}/extend', [ContractsController::class, 'extend'])
-            ->middleware('permission:tenant-manage-reservations')
+            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:force_extend_contract'])
             ->name('contracts.extend');
         Route::get('contracts/{contract}/pdf', [ContractsController::class, 'pdf'])
-            ->middleware('permission:tenant-manage-reservations')
+            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:pdf_export'])
             ->name('contracts.pdf');
         Route::resource('contracts', ContractsController::class)
             ->only(['index', 'create', 'store', 'show', 'edit', 'update'])
@@ -165,16 +176,16 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         // Coupons
         Route::resource('coupons', CouponsController::class)
             ->except(['show'])
-            ->middleware('permission:tenant-manage-payments');
+            ->middleware(['permission:tenant-manage-payments', 'tenant.feature:coupon_system']);
         Route::resource('car-discounts', CarDiscountsController::class)
             ->except(['show'])
             ->parameters(['car-discounts' => 'carDiscount'])
-            ->middleware('permission:tenant-manage-payments');
+            ->middleware(['permission:tenant-manage-payments', 'tenant.feature:auto_discounts']);
 
         // Reports
         Route::resource('reports', ReportsController::class)
             ->except(['show'])
-            ->middleware('permission:tenant-view-reports');
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module']);
 
         // Support
         Route::resource('support', SupportController::class)
@@ -227,10 +238,10 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
 
         // Tenant payment gateway (Stripe Connect)
         Route::get('settings/payment-providers', [PaymentProvidersController::class, 'edit'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:stripe_connect'])
             ->name('settings.payment-providers.edit');
         Route::put('settings/payment-providers', [PaymentProvidersController::class, 'update'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:stripe_connect'])
             ->name('settings.payment-providers.update');
 
         Route::get('settings/website', [WebsiteSettingsController::class, 'edit'])
@@ -253,19 +264,19 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->name('settings.translations.update');
 
         Route::get('settings/stripe-connect', [StripeConnectController::class, 'edit'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:stripe_connect'])
             ->name('settings.stripe-connect.edit');
         Route::post('settings/stripe-connect/connect', [StripeConnectController::class, 'connect'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:stripe_connect'])
             ->name('settings.stripe-connect.connect');
         Route::get('settings/stripe-connect/refresh', [StripeConnectController::class, 'refresh'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:stripe_connect'])
             ->name('settings.stripe-connect.refresh');
         Route::get('settings/stripe-connect/return', [StripeConnectController::class, 'returned'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:stripe_connect'])
             ->name('settings.stripe-connect.return');
         Route::post('settings/stripe-connect/login-link', [StripeConnectController::class, 'loginLink'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:stripe_connect'])
             ->name('settings.stripe-connect.login-link');
 
     });
