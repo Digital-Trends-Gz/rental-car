@@ -249,6 +249,12 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-settings',
         },
         {
+            title: t('dashboard.sidebar.admin.plate_formats'),
+            href: adminHref('/settings/plate-formats'),
+            icon: Tag,
+            permission: 'tenant-manage-settings',
+        },
+        {
             title: t('dashboard.sidebar.admin.reservation_settings'),
             href: adminHref('/settings/reservation-settings'),
             icon: CalendarDays,

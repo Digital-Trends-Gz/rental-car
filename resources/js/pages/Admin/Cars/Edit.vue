@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import SearchableSelect from '@/components/SearchableSelect.vue';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
@@ -19,6 +19,7 @@ interface Car {
     model: string;
     year: number | string;
     license_plate: string;
+    license_plate_format?: string | null;
     branch_id: number | string;
     color: string;
     price_per_day: number | string;
@@ -69,6 +70,14 @@ interface CatalogOption {
     label: string;
 }
 
+interface PlateFormatOption {
+    value: string;
+    label: string;
+    mask?: string | null;
+    example?: string | null;
+    is_active?: boolean;
+}
+
 interface ModelOption extends CatalogOption {
     years: CatalogOption[];
 }
@@ -105,6 +114,8 @@ const props = defineProps<{
     };
     branches: Branch[];
     countries: CountryOption[];
+    plateFormats?: PlateFormatOption[];
+    selectedPlateFormat?: string;
     canAccessAllBranches: boolean;
     enums: Enums;
 }>();
@@ -134,6 +145,21 @@ const statuses = computed(() => props.enums.statuses);
 const statusOptions = computed(() => statuses.value.map((status) => ({ value: status.value, label: status.label })));
 const availableBranches = ref<Branch[]>(Array.isArray(props.branches) ? [...props.branches] : []);
 const branchOptions = computed(() => availableBranches.value.map((branch) => ({ value: String(branch.id), label: branch.name })));
+const plateFormatOptions = computed<PlateFormatOption[]>(() => Array.isArray(props.plateFormats) ? props.plateFormats : []);
+const selectedPlateFormat = computed(() => form.license_plate_format || props.selectedPlateFormat || 'custom');
+const selectedPlateFormatOption = computed(() => plateFormatOptions.value.find((option) => option.value === selectedPlateFormat.value) ?? null);
+const plateFormatHelper = computed(() => {
+    const selected = selectedPlateFormatOption.value;
+    if (!selected) return '';
+
+    const parts = [
+        selected.mask ? `Mask: ${selected.mask}` : '',
+        selected.example ? `Example: ${selected.example}` : '',
+    ].filter(Boolean);
+
+    return parts.join(' | ');
+});
+const plateFormatPlaceholder = computed(() => selectedPlateFormatOption.value?.example || localize('Enter license plate', 'أدخل رقم اللوحة'));
 const transmissionOptions = computed(() => [
     { value: 'automatic', label: localize('Automatic', 'أوتوماتيك') },
     { value: 'manual', label: localize('Manual', 'يدوي') },
@@ -226,6 +252,7 @@ const form = useForm({
     model: safeStr(props.car?.model),
     year: safeNum(props.car?.year),
     license_plate: safeStr(props.car?.license_plate),
+    license_plate_format: safeStr(props.car?.license_plate_format, props.selectedPlateFormat ?? 'custom'),
     branch_id: safeStr(props.car?.branch_id),
     color: safeLower(props.car?.color, 'white'),
     price_per_day: safeNum(props.car?.price_per_day),
@@ -764,9 +791,22 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                         <InputError :message="form.errors.year" class="mt-1" />
                     </div>
 
-                    <div>
+                    <div class="space-y-2">
+                        <Label for="license_plate_format">{{ localize('License Plate Format', 'نمط لوحة السيارة') }}</Label>
+                        <SearchableSelect
+                            v-model="form.license_plate_format"
+                            :options="plateFormatOptions"
+                            :placeholder="localize('Select format', 'اختر النمط')"
+                            :search-placeholder="localize('Search format...', 'ابحث عن النمط...')"
+                            :empty-text="localize('No plate formats found.', 'لا توجد أنماط لوحات.')"
+                        />
+                        <InputError :message="form.errors.license_plate_format" class="mt-1" />
+                        <p v-if="plateFormatHelper" class="text-xs text-muted-foreground">{{ plateFormatHelper }}</p>
+                    </div>
+
+                    <div class="space-y-2">
                         <Label for="license_plate">{{ localize('License Plate', 'رقم اللوحة') }}</Label>
-                        <Input id="license_plate" v-model="form.license_plate" :placeholder="localize('e.g., ABC-1234', 'مثال: ABC-1234')" />
+                        <Input id="license_plate" v-model="form.license_plate" :placeholder="plateFormatPlaceholder" />
                         <InputError :message="form.errors.license_plate" class="mt-1" />
                     </div>
 
@@ -934,3 +974,6 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
         </Dialog>
     </AdminLayout>
 </template>
+
+
+

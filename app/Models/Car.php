@@ -40,6 +40,7 @@ class Car extends Model
         'model',
         'year',
         'license_plate',
+        'license_plate_format',
         'color',
         'price_per_day',
         'price_per_week',

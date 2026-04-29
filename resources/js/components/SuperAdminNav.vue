@@ -135,6 +135,7 @@ const superAdminNav = computed<NavItem[]>(() => [
             { title: 'Landing Translations', href: '/superadmin/settings/landing-translations', icon: Languages },
             { title: 'Login Settings', href: '/superadmin/settings/login', icon: Shield },
             { title: 'Payment Providers', href: '/superadmin/settings/payment-providers', icon: CreditCard },
+            { title: 'Plate Format Templates', href: '/superadmin/settings/plate-format-templates', icon: Tag },
             { title: 'Languages', href: '/superadmin/settings/languages', icon: Cog },
             { title: 'Emails', href: '/superadmin/settings/emails', icon: Mail },
             { title: 'Security Access', href: '/superadmin/settings/security-access', icon: ShieldAlert },

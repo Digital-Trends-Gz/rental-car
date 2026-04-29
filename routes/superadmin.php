@@ -17,6 +17,7 @@ use App\Http\Controllers\SuperAdmin\AppBrandingSettingsController;
 use App\Http\Controllers\SuperAdmin\RevenueSubscriptionController;
 use App\Http\Controllers\SuperAdmin\RevenueTransactionsController;
 use App\Http\Controllers\SuperAdmin\PaymentProvidersController;
+use App\Http\Controllers\SuperAdmin\PlateFormatTemplatesController;
 use App\Http\Controllers\SuperAdmin\LocalizationSettingsController;
 use App\Http\Controllers\SuperAdmin\EmailTemplateSettingsController;
 use App\Http\Controllers\SuperAdmin\SecurityAccessSettingsController;
@@ -121,6 +122,8 @@ Route::middleware(['auth', 'active', 'super_admin'])
             })->name('settings.stripe.update');
             Route::get('settings/payment-providers', [PaymentProvidersController::class, 'index'])->name('settings.payment-providers');
             Route::put('settings/payment-providers/{paymentProvider}', [PaymentProvidersController::class, 'update'])->name('settings.payment-providers.update');
+            Route::get('settings/plate-format-templates', [PlateFormatTemplatesController::class, 'edit'])->name('settings.plate-format-templates');
+            Route::put('settings/plate-format-templates', [PlateFormatTemplatesController::class, 'update'])->name('settings.plate-format-templates.update');
             Route::get('settings/languages', [LocalizationSettingsController::class, 'edit'])->name('settings.languages');
             Route::put('settings/languages', [LocalizationSettingsController::class, 'update'])->name('settings.languages.update');
             Route::get('settings/emails', [EmailTemplateSettingsController::class, 'edit'])->name('settings.emails');

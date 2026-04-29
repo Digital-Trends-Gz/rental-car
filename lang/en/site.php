@@ -539,6 +539,7 @@ return [
                 'payment_providers' => 'Payment Providers',
                 'website_settings' => 'Website Settings',
                 'translations' => 'Translations',
+                'plate_formats' => 'Plate Formats',
                 'reservation_settings' => 'Reservation Settings',
             ],
             'super_admin' => [

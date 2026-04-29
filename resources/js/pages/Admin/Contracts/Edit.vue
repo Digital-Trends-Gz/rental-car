@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useTrans } from '@/composables/useTrans';
+import { getCurrencyOptions } from '@/lib/currencies';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
@@ -27,6 +28,8 @@ const props = defineProps<{
   primaryDriver?: Record<string, any> | null;
   additionalDrivers?: Array<Record<string, any>>;
   reservationOptions: Array<Record<string, any>>;
+  plateFormats?: Array<{ value: string; label: string; mask?: string | null; example?: string | null; is_active?: boolean }>;
+  selectedPlateFormat?: string;
   reservationFormOptions?: {
     clients: Array<{ id: number; name: string; email: string }>;
     cars: Array<{ id: number; label: string; license_plate: string; branch_name?: string | null; price_per_day: number }>;
@@ -38,6 +41,8 @@ const props = defineProps<{
 }>();
 
 const { locale } = useTrans();
+const currencyOptions = computed(() => getCurrencyOptions(locale.value));
+const plateFormatOptions = computed(() => Array.isArray(props.plateFormats) ? props.plateFormats : []);
 const arabicTranslations: Record<string, string> = {
   'Pending': 'قيد الانتظار',
   'Confirmed': 'مؤكد',
@@ -493,6 +498,7 @@ const form = useForm({
     allowed_km_per_month: props.carData?.allowed_km_per_month ?? props.contract?.car_data?.allowed_km_per_month ?? props.contract?.allowed_km_per_month ?? '',
     branch_id: props.carData?.branch_id ?? props.contract?.car_data?.branch_id ?? '',
   },
+  license_plate_format: props.contract?.license_plate_format ?? props.selectedPlateFormat ?? 'custom',
   primary_driver: buildDriver(props.primaryDriver ?? props.contract?.primary_driver ?? {
     full_name: props.contract?.renter_name ?? '',
     identity_number: props.contract?.renter_id_number ?? '',
@@ -1400,7 +1406,20 @@ function submit() {
             <div><Label for="start_date">{{ localize('Rental Start Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ¨ط·آ¯ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="start_date" v-model="form.start_date" type="date" :min="contractStartDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.start_date" class="mt-1" /></div>
             <div><Label for="end_date">{{ localize('Rental End Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="end_date" v-model="form.end_date" type="date" :min="contractRentalEndDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.end_date" class="mt-1" /></div>
             <div><Label for="total_amount">{{ localize('Total Amount', 'ط·آ§ط¸â€‍ط¸â€¦ط·آ¨ط¸â€‍ط·ط› ط·آ§ط¸â€‍ط·آ¥ط·آ¬ط¸â€¦ط·آ§ط¸â€‍ط¸ظ¹') }}</Label><Input id="total_amount" v-model="form.total_amount" type="number" min="0" step="0.01" :disabled="hasLinkedReservation" /><InputError :message="form.errors.total_amount" class="mt-1" /></div>
-            <div><Label for="currency">{{ localize('Currency', 'ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸â€‍ط·آ©') }}</Label><Input id="currency" v-model="form.currency" maxlength="3" inputmode="text" @input="form.currency = String(form.currency || '').toUpperCase()" /><InputError :message="form.errors.currency" class="mt-1" /></div>
+            <div>
+              <Label for="currency">{{ localize('Currency', 'ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸â€‍ط·آ©') }}</Label>
+              <select
+                id="currency"
+                v-model="form.currency"
+                class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30"
+              >
+                <option value="" disabled>{{ localize('Select currency', 'ط§ط®طھط± ط§ظ„ط¹ظ…ظ„ط©') }}</option>
+                <option v-for="option in currencyOptions" :key="option.code" :value="option.code">
+                  {{ option.label }}
+                </option>
+              </select>
+              <InputError :message="form.errors.currency" class="mt-1" />
+            </div>
             <div><Label for="return-odometer">{{ localize('Return Mileage', 'عداد العودة') }}</Label><Input id="return-odometer" v-model="form.return_odometer" type="number" min="0" /><InputError :message="form.errors.return_odometer" class="mt-1" /></div>
             <div>
               <Label for="return-fuel-level">{{ localize('Return Fuel', 'الوقود عند العودة') }}</Label>

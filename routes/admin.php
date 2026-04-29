@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\CarViolationsController;
 use App\Http\Controllers\Admin\ViolationTypesController;
 use App\Http\Controllers\Admin\StripeConnectController;
 use App\Http\Controllers\Admin\PaymentProvidersController;
+use App\Http\Controllers\Admin\PlateFormatSettingsController;
 use App\Http\Controllers\Admin\ReservationSettingsController;
 use App\Http\Controllers\Admin\WebsiteSettingsController;
 use App\Http\Controllers\Admin\TranslationSettingsController;
@@ -267,6 +268,12 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::put('settings/reservation-settings', [ReservationSettingsController::class, 'update'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.reservation-settings.update');
+        Route::get('settings/plate-formats', [PlateFormatSettingsController::class, 'edit'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.plate-formats.edit');
+        Route::put('settings/plate-formats', [PlateFormatSettingsController::class, 'update'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.plate-formats.update');
         Route::get('settings/police-notice', [WebsiteSettingsController::class, 'policeNoticeEdit'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.police-notice.edit');

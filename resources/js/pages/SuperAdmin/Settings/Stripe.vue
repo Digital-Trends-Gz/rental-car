@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { getCurrencyOptions } from '@/lib/currencies';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 interface StripeSettings {
     key: string;
@@ -24,11 +26,15 @@ const props = defineProps<{
 
 const { locale } = useTrans();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const currencyOptions = computed(() => getCurrencyOptions(locale.value));
 
 const form = useForm<{
     settings: StripeSettings;
 }>({
-    settings: JSON.parse(JSON.stringify(props.settings)),
+    settings: {
+        ...JSON.parse(JSON.stringify(props.settings)),
+        currency: String(props.settings.currency || 'USD').toUpperCase(),
+    },
 });
 
 const submit = () => {
@@ -125,7 +131,16 @@ const submit = () => {
                         <div class="grid gap-4 md:grid-cols-3">
                             <div class="space-y-2">
                                 <Label for="cashier_currency">{{ localize('Currency', 'العملة') }}</Label>
-                                <Input id="cashier_currency" v-model="form.settings.currency" placeholder="usd" maxlength="3" />
+                                <select
+                                    id="cashier_currency"
+                                    v-model="form.settings.currency"
+                                    class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30"
+                                >
+                                    <option value="" disabled>{{ localize('Select currency', 'اختر العملة') }}</option>
+                                    <option v-for="option in currencyOptions" :key="option.code" :value="option.code">
+                                        {{ option.label }}
+                                    </option>
+                                </select>
                                 <p v-if="form.errors['settings.currency']" class="text-sm text-red-600">
                                     {{ form.errors['settings.currency'] }}
                                 </p>

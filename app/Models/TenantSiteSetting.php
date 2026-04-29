@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Core\ReservationSettings as ReservationSettingsCore;
+use App\Core\PlateFormatSettings as PlateFormatSettingsCore;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
@@ -30,6 +31,7 @@ class TenantSiteSetting extends Model
         'reservation_settings',
         'translations',
         'footer',
+        'plate_formats',
     ];
 
     protected $casts = [
@@ -45,6 +47,7 @@ class TenantSiteSetting extends Model
         'reservation_settings' => 'array',
         'translations' => 'array',
         'footer' => 'array',
+        'plate_formats' => 'array',
     ];
 
     public function tenant(): BelongsTo
@@ -328,6 +331,7 @@ class TenantSiteSetting extends Model
                 ],
             ],
             'reservation_settings' => ReservationSettingsCore::defaults(),
+            'plate_formats' => PlateFormatSettingsCore::defaults(),
             'translations' => [
                 ...array_fill_keys($supportedLocales, []),
             ],
@@ -558,6 +562,9 @@ class TenantSiteSetting extends Model
             'translations' => self::normalizeTranslations($data['translations'] ?? $defaults['translations']),
             'reservation_settings' => ReservationSettingsCore::normalize(
                 is_array($data['reservation_settings'] ?? null) ? $data['reservation_settings'] : null
+            ),
+            'plate_formats' => PlateFormatSettingsCore::normalize(
+                is_array($data['plate_formats'] ?? null) ? $data['plate_formats'] : null
             ),
             'footer' => [
                 'description' => [

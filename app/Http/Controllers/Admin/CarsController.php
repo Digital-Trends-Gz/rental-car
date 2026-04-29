@@ -7,6 +7,8 @@ use App\Enums\CarColor;
 use App\Enums\CarStatus;
 use App\Enums\FuelType;
 use App\Enums\ReservationStatus;
+use App\Core\PlateFormatSettings as PlateFormatSettingsCore;
+use App\Core\TenantContext;
 use App\Models\Car;
 use App\Models\CarDamageReport;
 use App\Models\CarDiscount;
@@ -16,6 +18,7 @@ use App\Models\Contract;
 use App\Models\CarMaintenance;
 use App\Models\CarViolation;
 use App\Models\Reservation;
+use App\Models\TenantSiteSetting;
 use App\Services\Plans\PlanUsageLimits;
 use App\Support\BranchAccess;
 use App\Support\BranchLocationOptions;
@@ -157,9 +160,12 @@ class CarsController extends Controller
     public function create(): Response
     {
         $user = request()->user();
+        $plateFormats = $this->plateFormatOptions($user);
 
         return Inertia::render('Admin/Cars/Edit', [
             'car' => null,
+            'selectedPlateFormat' => 'custom',
+            'plateFormats' => $plateFormats,
             'imageFiles' => [],
             'additionalPhotoFiles' => [],
             'catalog' => [
@@ -450,12 +456,15 @@ class CarsController extends Controller
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
         $isDraftSubmission = $request->boolean('save_as_draft') || $request->input('status') === CarStatus::DRAFT->value;
         $requiredRule = $isDraftSubmission ? 'nullable' : 'required';
+        $plateFormats = $this->plateFormatOptions($user);
+        $allowedPlateFormatCodes = array_map(static fn (array $format) => (string) ($format['value'] ?? ''), $plateFormats);
 
         $validated = $request->validate([
             'make' => [$requiredRule, 'string', 'max:255'],
             'model' => [$requiredRule, 'string', 'max:255'],
             'year' => [$requiredRule, 'integer', 'min:1900', 'max:2100'],
             'license_plate' => [$requiredRule, 'string', 'max:255', 'unique:cars,license_plate'],
+            'license_plate_format' => [$requiredRule, 'string', Rule::in($allowedPlateFormatCodes)],
             'branch_id' => [
                 $isDraftSubmission ? 'nullable' : ($canAccessAllBranches ? 'required' : 'nullable'),
                 'integer',
@@ -481,6 +490,13 @@ class CarsController extends Controller
             'additional_photos.*.temp_folders' => ['array'],
             'additional_photos.*.temp_folders.*' => ['string'],
         ]);
+
+        $this->validatePlateNumberAgainstFormat(
+            $validated['license_plate'] ?? null,
+            $validated['license_plate_format'] ?? null,
+            $plateFormats,
+            $isDraftSubmission
+        );
 
         $validated['branch_id'] = $this->branchAccess->resolveWritableBranchId(
             $user,
@@ -539,6 +555,7 @@ class CarsController extends Controller
     public function edit(Car $car): Response
     {
         abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $car->branch_id), 403);
+        $plateFormats = $this->plateFormatOptions(request()->user(), $car->license_plate_format);
 
         // Provide initial image files for FilePond (only the 'image' collection)
         $disk = config('vilt-filepond.storage_disk', 'public');
@@ -572,6 +589,8 @@ class CarsController extends Controller
 
         return Inertia::render('Admin/Cars/Edit', [
             'car' => $car,
+            'selectedPlateFormat' => $this->resolveSelectedPlateFormat($car, $plateFormats),
+            'plateFormats' => $plateFormats,
             'imageFiles' => $imageFiles,
             'additionalPhotoFiles' => $additionalPhotoFiles,
             'catalog' => [
@@ -744,6 +763,8 @@ class CarsController extends Controller
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
         $isDraftSubmission = $request->boolean('save_as_draft') || $request->input('status') === CarStatus::DRAFT->value;
         $requiredRule = $isDraftSubmission ? 'nullable' : 'required';
+        $plateFormats = $this->plateFormatOptions($user);
+        $allowedPlateFormatCodes = array_map(static fn (array $format) => (string) ($format['value'] ?? ''), $plateFormats);
 
         $validated = $request->validate([
             'make' => [$requiredRule, 'string', 'max:255'],
@@ -757,6 +778,7 @@ class CarsController extends Controller
             'license_plate' => [
                 $requiredRule, 'string', 'max:255', Rule::unique('cars', 'license_plate')->ignore($car->id),
             ],
+            'license_plate_format' => [$requiredRule, 'string', Rule::in($allowedPlateFormatCodes)],
             'color' => [$requiredRule, 'string', Rule::enum(CarColor::class)],
             'price_per_day' => [$requiredRule, 'numeric', 'min:0'],
             'price_per_week' => ['nullable', 'numeric', 'min:0'],
@@ -784,6 +806,13 @@ class CarsController extends Controller
             'deleted_additional_photo_types' => ['array'],
             'deleted_additional_photo_types.*' => ['string', Rule::in(self::ADDITIONAL_PHOTO_TYPES)],
         ]);
+
+        $this->validatePlateNumberAgainstFormat(
+            $validated['license_plate'] ?? null,
+            $validated['license_plate_format'] ?? null,
+            $plateFormats,
+            $isDraftSubmission
+        );
 
         $validated['branch_id'] = $this->branchAccess->resolveWritableBranchId(
             $user,
@@ -879,6 +908,7 @@ class CarsController extends Controller
                 $car?->license_plate,
                 'DRAFT-' . strtoupper($now->format('YmdHis')) . '-' . Str::upper(Str::random(6))
             ),
+            'license_plate_format' => $this->fallbackString($validated['license_plate_format'] ?? null, $car?->license_plate_format, 'custom'),
             'color' => $this->fallbackString($validated['color'] ?? null, $car?->color?->value ?? $car?->color, CarColor::WHITE->value),
             'price_per_day' => $this->fallbackNumeric($validated['price_per_day'] ?? null, $car?->price_per_day, 0),
             'price_per_week' => $this->fallbackNumeric($validated['price_per_week'] ?? null, $car?->price_per_week, 0),
@@ -893,6 +923,124 @@ class CarsController extends Controller
             'status' => CarStatus::DRAFT->value,
             'branch_id' => $validated['branch_id'] ?? $car?->branch_id,
         ]);
+    }
+
+    /**
+     * @return array<int, array{value:string,label:string,mask:?string,example:?string,is_active:bool}>
+     */
+    private function plateFormatOptions(?\App\Models\User $user, ?string $currentCode = null): array
+    {
+        $tenant = TenantContext::get();
+        if (!$tenant && $user?->tenant_id) {
+            $tenant = \App\Models\Tenant::query()->find($user->tenant_id);
+        }
+
+        $tenantSettings = $tenant
+            ? TenantSiteSetting::query()->where('tenant_id', $tenant->id)->first()
+            : null;
+
+        $normalizedFormats = PlateFormatSettingsCore::normalize(
+            is_array($tenantSettings?->plate_formats) ? $tenantSettings->plate_formats : null
+        );
+        $globalFormats = PlateFormatSettingsCore::activeFormats(PlateFormatSettingsCore::loadGlobal());
+        $formats = collect(array_merge($globalFormats, PlateFormatSettingsCore::activeFormats($normalizedFormats)))
+            ->keyBy(static fn (array $format) => strtolower((string) ($format['code'] ?? '')))
+            ->values()
+            ->all();
+        $allFormats = array_merge(PlateFormatSettingsCore::loadGlobal(), $normalizedFormats);
+
+        $options = array_merge([
+            [
+                'value' => 'custom',
+                'label' => 'Custom / Any',
+                'mask' => null,
+                'example' => null,
+                'is_active' => true,
+            ],
+        ], array_map(static function (array $format): array {
+            $parts = array_filter([
+                $format['name'] ?? null,
+                $format['country'] ? '(' . $format['country'] . ')' : null,
+                $format['mask'] ? '[' . $format['mask'] . ']' : null,
+            ], static fn ($value) => $value !== null && $value !== '');
+
+            return [
+                'value' => (string) ($format['code'] ?? 'custom'),
+                'label' => trim(implode(' ', $parts)) ?: (string) ($format['code'] ?? 'Format'),
+                'mask' => isset($format['mask']) ? (string) $format['mask'] : null,
+                'example' => isset($format['example']) ? (string) $format['example'] : null,
+                'is_active' => (bool) ($format['is_active'] ?? true),
+            ];
+        }, $formats));
+
+        $currentCode = trim((string) ($currentCode ?? ''));
+        if ($currentCode !== '' && !collect($options)->contains(fn (array $option) => strcasecmp((string) ($option['value'] ?? ''), $currentCode) === 0)) {
+            $currentFormat = PlateFormatSettingsCore::findByCode($allFormats, $currentCode);
+
+            $options[] = $currentFormat ? [
+                'value' => (string) ($currentFormat['code'] ?? $currentCode),
+                'label' => trim(implode(' ', array_filter([
+                    $currentFormat['name'] ?? null,
+                    $currentFormat['country'] ? '(' . $currentFormat['country'] . ')' : null,
+                    $currentFormat['mask'] ? '[' . $currentFormat['mask'] . ']' : null,
+                ], static fn ($value) => $value !== null && $value !== ''))) . ' (Inactive)',
+                'mask' => isset($currentFormat['mask']) ? (string) $currentFormat['mask'] : null,
+                'example' => isset($currentFormat['example']) ? (string) $currentFormat['example'] : null,
+                'is_active' => false,
+            ] : [
+                'value' => $currentCode,
+                'label' => $currentCode . ' (Inactive)',
+                'mask' => null,
+                'example' => null,
+                'is_active' => false,
+            ];
+        }
+
+        return array_values($options);
+    }
+
+    private function resolveSelectedPlateFormat(Car $car, array $plateFormats): string
+    {
+        $selected = trim((string) ($car->license_plate_format ?? ''));
+        if ($selected === '') {
+            return 'custom';
+        }
+
+        return collect($plateFormats)->contains(
+            fn (array $format) => strcasecmp((string) ($format['value'] ?? ''), $selected) === 0
+        ) ? $selected : $selected;
+    }
+
+    /**
+     * @param  array<int, array{value:string,label:string,mask:?string,example:?string,is_active:bool}>  $plateFormats
+     */
+    private function validatePlateNumberAgainstFormat(mixed $plateNumber, mixed $formatCode, array $plateFormats, bool $isDraftSubmission): void
+    {
+        $plate = PlateFormatSettingsCore::normalizePlate(is_string($plateNumber) ? $plateNumber : (string) $plateNumber);
+        if ($plate === '' || $isDraftSubmission) {
+            return;
+        }
+
+        $selectedCode = trim((string) ($formatCode ?? 'custom'));
+        if ($selectedCode === '' || $selectedCode === 'custom') {
+            return;
+        }
+
+        $selectedFormat = collect($plateFormats)->firstWhere('value', $selectedCode);
+        if (!$selectedFormat || empty($selectedFormat['mask'])) {
+            return;
+        }
+
+        $regex = PlateFormatSettingsCore::maskToRegex((string) $selectedFormat['mask']);
+        if ($regex === null) {
+            return;
+        }
+
+        if (!preg_match($regex, $plate)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'license_plate' => 'The license plate does not match the selected plate format.',
+            ]);
+        }
     }
 
     private function fallbackString(mixed $value, mixed $current, string $default): string
@@ -936,3 +1084,4 @@ class CarsController extends Controller
             ->with('success', 'Car deleted successfully.');
     }
 }
+

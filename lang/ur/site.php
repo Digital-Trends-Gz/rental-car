@@ -526,6 +526,7 @@ return [
                 'branches' => 'Branches',
                 'employees' => 'Employees',
                 'roles' => 'Roles',
+                'plate_formats' => 'Plate Formats',
                 'reservation_settings' => 'Reservation Settings',
             ],
             'super_admin' => [
