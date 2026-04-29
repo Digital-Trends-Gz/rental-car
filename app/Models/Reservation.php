@@ -33,6 +33,7 @@ class Reservation extends Model
         'return_time',
         'pickup_location',
         'return_location',
+        'return_location_fee',
         'total_days',
         'daily_rate',
         'subtotal',
@@ -59,6 +60,7 @@ class Reservation extends Model
         'end_date' => 'date',
         'pickup_time' => 'datetime:H:i',
         'return_time' => 'datetime:H:i',
+        'return_location_fee' => 'decimal:2',
         'total_days' => 'integer',
         'daily_rate' => 'decimal:2',
         'subtotal' => 'decimal:2',
@@ -142,6 +144,11 @@ class Reservation extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function returnStatusReport(): HasOne
+    {
+        return $this->hasOne(ContractReturnReport::class);
     }
 
     public function contract(): HasOne

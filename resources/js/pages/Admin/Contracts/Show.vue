@@ -40,6 +40,7 @@ const props = defineProps<{
         notes?: string | null;
         ai_extraction_status?: string | null;
         ai_extracted_data?: Record<string, unknown> | null;
+        is_locked?: boolean;
         reservation?: {
             id: number;
             reservation_number: string;
@@ -101,6 +102,7 @@ const props = defineProps<{
         pdf_ar?: string;
         request_extend?: string | null;
         extend?: string | null;
+        return_report?: string;
     };
 }>();
 
@@ -125,6 +127,7 @@ const pageTitle = computed(() =>
     }),
 );
 const actions = computed(() => props.actions);
+const isLocked = computed(() => Boolean(props.contract.is_locked));
 const hasPendingExtensionRequest = computed(() => Boolean(props.contract.has_pending_extension_request));
 const canExtendRental = computed(
     () =>
@@ -296,13 +299,19 @@ function submitRequestExtension() {
                     >
                         {{ t('dashboard.admin.contracts.show.download_pdf') }}
                     </Button>
-                    <Link :href="actions.edit">
+                    <Link v-if="actions.edit && !isLocked" :href="actions.edit">
                         <Button variant="outline">{{
                             t('dashboard.admin.common.edit')
                         }}</Button>
                     </Link>
+                    <Link v-if="actions.return_report" :href="actions.return_report">
+                        <Button variant="secondary">{{ localize('Return Status', 'تقرير الإرجاع') }}</Button>
+                    </Link>
+                    <div v-if="isLocked" class="w-full rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 md:col-span-2 xl:col-span-4">
+                        {{ localize('This contract is locked because the return report is marked paid.', 'هذا العقد مقفل لأن تقرير الإرجاع معلم كمدفوع.') }}
+                    </div>
                     <Button
-                        v-if="canRequestExtension"
+                        v-if="canRequestExtension && !isLocked"
                         type="button"
                         variant="secondary"
                         @click="openRequestDialog"
@@ -310,7 +319,7 @@ function submitRequestExtension() {
                         {{ localize('Extension Request', 'طلب تمديد') }}
                     </Button>
                     <Button
-                        v-if="canExtendRental"
+                        v-if="canExtendRental && !isLocked"
                         type="button"
                         @click="openExtendDialog"
                     >

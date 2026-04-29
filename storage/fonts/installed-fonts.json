@@ -1,0 +1,12 @@
+{
+    "tahomapdf": {
+        "normal": "C:\\laragon\\www\\real-rent-car-main\\storage\\fonts\/tahomapdf_normal_a76e66cf6f49f2837c5206f4eccb3c3d",
+        "bold": "tahomapdf_bold_fdab9c35ce6fd56f7f0e5a69df7c67b7"
+    },
+    "cairo": {
+        "normal": "C:\\laragon\\www\\real-rent-car-main\\storage\\fonts\/cairo_normal_a5cea5fc45f6bf5f483d9f082575cfe3",
+        "600": "C:\\laragon\\www\\real-rent-car-main\\storage\\fonts\/cairo_600_dc01825879fa79a7c51dfcd1e797822b",
+        "bold": "C:\\laragon\\www\\real-rent-car-main\\storage\\fonts\/cairo_bold_23a9b2dc30935e892c606fbbafd14072",
+        "800": "cairo_800_8aad9479b2962017426195f271033cb3"
+    }
+}

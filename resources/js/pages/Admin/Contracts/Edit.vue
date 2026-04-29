@@ -20,6 +20,7 @@ import { computed, ref, watch } from 'vue';
 const props = defineProps<{
   mode: 'create' | 'edit';
   contract: any | null;
+  is_locked?: boolean;
   carData?: Record<string, any> | null;
   currentCarDamages?: Array<Record<string, any>>;
   carDamagesByCar?: Record<number, Array<Record<string, any>>>;
@@ -213,6 +214,27 @@ const contractDateMin = computed(() => {
 const contractStartDateMin = computed(() => form.contract_date || contractDateMin.value);
 
 const contractEndDateMin = computed(() => form.start_date || contractStartDateMin.value);
+const isLocked = computed(() => Boolean(props.is_locked));
+
+function formatDateToInput(value: Date): string {
+  const offset = value.getTimezoneOffset() * 60000;
+  return new Date(value.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function addDaysToDateInput(value: string, days: number): string {
+  const next = new Date(`${value}T00:00:00`);
+  next.setDate(next.getDate() + days);
+  return formatDateToInput(next);
+}
+
+const contractRentalEndDateMin = computed(() => {
+  const source = form.start_date || contractStartDateMin.value;
+  if (!source) {
+    return undefined;
+  }
+
+  return addDaysToDateInput(source, 1);
+});
 
 const documentTypeOptions = computed(() => [
   { value: '', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0627\u062e\u062a\u0631 \u0646\u0648\u0639 \u0627\u0644\u0645\u0633\u062a\u0646\u062f' : 'Select document type' },
@@ -950,6 +972,10 @@ async function submitReservationFromModal() {
 }
 
 function submit() {
+  if (isLocked.value) {
+    return;
+  }
+
   saveError.value = '';
   form.renter_name = String(form.primary_driver.full_name || form.renter_name || '').trim();
   form.renter_id_number = String(form.primary_driver.identity_number || form.renter_id_number || '').trim();
@@ -966,7 +992,11 @@ function submit() {
     form.post(props.actions.store || '/admin/contracts', submitOptions);
     return;
   }
-  form.put(props.actions.update || '/admin/contracts', submitOptions);
+  if (!props.actions.update) {
+    return;
+  }
+
+  form.put(props.actions.update, submitOptions);
 }
 </script>
 
@@ -980,6 +1010,10 @@ function submit() {
           <p class="text-sm text-muted-foreground">{{ localize('Primary driver, additional drivers, car data, rental data, and archive.', 'السائق الأساسي، والسائقون الإضافيون، وبيانات السيارة، وبيانات الإيجار، والأرشيف.') }}</p>
         </div>
         <Link :href="actions.index"><Button variant="outline">{{ localize('Back', 'رجوع') }}</Button></Link>
+      </div>
+
+      <div v-if="isLocked" class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        {{ localize('This contract is locked because the return report is marked paid.', 'هذا العقد مقفل لأن تقرير العودة عليه حالة مدفوعة.') }}
       </div>
 
       <form class="space-y-6" @submit.prevent="submit">
@@ -1364,7 +1398,7 @@ function submit() {
             </div>
             <div><Label for="contract_date">{{ localize('Contract Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Label><Input id="contract_date" v-model="form.contract_date" type="date" :min="contractDateMin" :required="mode === 'create'" /><InputError :message="form.errors.contract_date" class="mt-1" /></div>
             <div><Label for="start_date">{{ localize('Rental Start Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ¨ط·آ¯ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="start_date" v-model="form.start_date" type="date" :min="contractStartDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.start_date" class="mt-1" /></div>
-            <div><Label for="end_date">{{ localize('Rental End Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="end_date" v-model="form.end_date" type="date" :min="contractEndDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.end_date" class="mt-1" /></div>
+            <div><Label for="end_date">{{ localize('Rental End Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="end_date" v-model="form.end_date" type="date" :min="contractRentalEndDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.end_date" class="mt-1" /></div>
             <div><Label for="total_amount">{{ localize('Total Amount', 'ط·آ§ط¸â€‍ط¸â€¦ط·آ¨ط¸â€‍ط·ط› ط·آ§ط¸â€‍ط·آ¥ط·آ¬ط¸â€¦ط·آ§ط¸â€‍ط¸ظ¹') }}</Label><Input id="total_amount" v-model="form.total_amount" type="number" min="0" step="0.01" :disabled="hasLinkedReservation" /><InputError :message="form.errors.total_amount" class="mt-1" /></div>
             <div><Label for="currency">{{ localize('Currency', 'ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸â€‍ط·آ©') }}</Label><Input id="currency" v-model="form.currency" maxlength="3" inputmode="text" @input="form.currency = String(form.currency || '').toUpperCase()" /><InputError :message="form.errors.currency" class="mt-1" /></div>
             <div><Label for="return-odometer">{{ localize('Return Mileage', 'عداد العودة') }}</Label><Input id="return-odometer" v-model="form.return_odometer" type="number" min="0" /><InputError :message="form.errors.return_odometer" class="mt-1" /></div>
@@ -1418,7 +1452,7 @@ function submit() {
         </section>
 
         <div class="flex gap-3">
-          <Button type="submit" :disabled="form.processing">{{ form.processing ? localize('Saving...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍ط·آ­ط¸ظ¾ط·آ¸...') : localize('Save Contract', 'ط·آ­ط¸ظ¾ط·آ¸ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Button>
+          <Button type="submit" :disabled="form.processing || isLocked">{{ form.processing ? localize('Saving...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍ط·آ­ط¸ظ¾ط·آ¸...') : localize('Save Contract', 'ط·آ­ط¸ظ¾ط·آ¸ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Button>
           <Link :href="actions.index"><Button type="button" variant="outline">{{ localize('Cancel', 'ط·آ¥ط¸â€‍ط·ط›ط·آ§ط·طŒ') }}</Button></Link>
         </div>
       </form>

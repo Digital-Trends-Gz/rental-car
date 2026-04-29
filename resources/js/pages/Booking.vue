@@ -34,11 +34,21 @@ interface AvailabilityRange {
     end_date: string;
 }
 
+interface ReservationLocationSetting {
+    name?: string;
+    pickup_fee?: number | string;
+    return_fee?: number | string;
+    pickup_free?: boolean;
+    return_free?: boolean;
+    is_active?: boolean;
+}
+
 const $page = usePage<any>();
 const { t } = useTrans();
 const car = computed<Car>(() => $page.props.car as Car);
 const currentTenant = computed(() => $page.props.current_tenant);
 const tenantSiteSettings = computed(() => $page.props.tenant_site_settings ?? null);
+const reservationSettings = computed<Record<string, any> | null>(() => tenantSiteSettings.value?.reservation_settings ?? null);
 const hasCoupons = computed(() => Boolean($page.props.hasCoupons));
 const availabilityCalendar = computed<{
     window_starts_at: string;
@@ -53,6 +63,44 @@ const availabilityCalendar = computed<{
     };
     blocked_ranges: AvailabilityRange[];
 } | null>(() => $page.props.availabilityCalendar ?? null);
+
+const fallbackLocationOptions = [
+    'Downtown Office',
+    'Airport Terminal 1',
+    'Airport Terminal 2',
+    'Central Station',
+    'Mall Plaza',
+    'Hotel District',
+    'Business District',
+];
+
+const normalizeLocationName = (value: string | null | undefined): string => String(value ?? '').trim();
+const formatMoney = (value: number): string => (Number.isFinite(value) ? Math.max(0, value).toFixed(2) : '0.00');
+
+const locationOptions = computed(() => {
+    const configured = (reservationSettings.value?.pickup_return_locations ?? []) as ReservationLocationSetting[];
+    const activeConfigured = configured
+        .filter((location) => location?.is_active !== false && normalizeLocationName(location?.name) !== '')
+        .map((location) => normalizeLocationName(location.name));
+
+    const currentValues = [form.pickup_location, form.return_location]
+        .filter((value): value is string => Boolean(normalizeLocationName(value)))
+        .map((value) => normalizeLocationName(value));
+
+    const sourceOptions = activeConfigured.length > 0 ? activeConfigured : fallbackLocationOptions;
+
+    return Array.from(new Set([...currentValues, ...sourceOptions]));
+});
+
+const selectedReturnLocation = computed<ReservationLocationSetting | null>(() => {
+    const needle = normalizeLocationName(form.return_location).toLowerCase();
+    if (needle === '') {
+        return null;
+    }
+
+    return ((reservationSettings.value?.pickup_return_locations ?? []) as ReservationLocationSetting[])
+        .find((location) => location?.is_active !== false && normalizeLocationName(location?.name).toLowerCase() === needle) ?? null;
+});
 
 const form = useForm({
     start_date: '',
@@ -215,8 +263,18 @@ const tax = computed(() => {
     return subtotal.value * (taxPercentage.value / 100);
 });
 
+const returnLocationFee = computed(() => {
+    const location = selectedReturnLocation.value;
+    if (!location || location.return_free) {
+        return 0;
+    }
+
+    const rawFee = Number(location.return_fee ?? 0);
+    return Number.isFinite(rawFee) ? Math.max(0, rawFee) : 0;
+});
+
 const total = computed(() => {
-    return Math.max(0, subtotal.value + tax.value - autoDiscount.value - couponDiscount.value);
+    return Math.max(0, subtotal.value + tax.value + returnLocationFee.value - autoDiscount.value - couponDiscount.value);
 });
 
 const canSubmit = computed(() => {
@@ -286,6 +344,7 @@ const requestPricingPreview = async (couponCode = '') => {
         body: JSON.stringify({
             start_date: form.start_date,
             end_date: form.end_date,
+            return_location: form.return_location || undefined,
             coupon_code: couponCode || undefined,
         }),
     });
@@ -422,15 +481,6 @@ watch(
     { immediate: true },
 );
 
-const commonLocations = computed(() => [
-    t('booking.locations.downtown_office'),
-    t('booking.locations.airport_terminal_1'),
-    t('booking.locations.airport_terminal_2'),
-    t('booking.locations.central_station'),
-    t('booking.locations.mall_plaza'),
-    t('booking.locations.hotel_district'),
-    t('booking.locations.business_district'),
-]);
 </script>
 <template>
     <HomeLayout>
@@ -854,7 +904,7 @@ const commonLocations = computed(() => [
                                                     {{ t('booking.select_pickup_location') }}
                                                 </option>
                                                 <option
-                                                    v-for="location in commonLocations"
+                                                    v-for="location in locationOptions"
                                                     :key="location"
                                                     :value="location"
                                                 >
@@ -893,7 +943,7 @@ const commonLocations = computed(() => [
                                                     {{ t('booking.select_return_location') }}
                                                 </option>
                                                 <option
-                                                    v-for="location in commonLocations"
+                                                    v-for="location in locationOptions"
                                                     :key="location"
                                                     :value="location"
                                                 >
@@ -1062,6 +1112,26 @@ const commonLocations = computed(() => [
                                             ${{
                                                 rentalDays > 0
                                                     ? tax.toFixed(2)
+                                                    : '0.00'
+                                            }}
+                                        </span>
+                                    </div>
+
+                                    <div
+                                        class="flex items-center justify-between py-2"
+                                    >
+                                        <span class="font-medium text-gray-600">
+                                            {{ t('booking.return_location_fee') }}
+                                            <span v-if="form.return_location" class="text-xs text-gray-500">
+                                                ({{ form.return_location }})
+                                            </span>
+                                        </span>
+                                        <span
+                                            class="text-lg font-bold text-gray-900"
+                                        >
+                                            ${{
+                                                rentalDays > 0
+                                                    ? returnLocationFee.toFixed(2)
                                                     : '0.00'
                                             }}
                                         </span>

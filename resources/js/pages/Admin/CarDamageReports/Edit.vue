@@ -10,6 +10,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 type ViewSide = 'front' | 'rear' | 'left' | 'right' | 'top';
+type DamageTiming = 'before_pickup' | 'after_return';
 
 interface DamageItem {
     id?: number | null;
@@ -17,6 +18,7 @@ interface DamageItem {
     view_side: ViewSide;
     damage_type: string;
     severity: string;
+    damage_timing: DamageTiming;
     quantity: number;
     marker_x: number | null;
     marker_y: number | null;
@@ -65,6 +67,7 @@ const props = defineProps<{
     statuses: Array<{ value: string; label: string }>;
     damageTypes: Array<{ value: string; label: string }>;
     severityLevels: Array<{ value: string; label: string }>;
+    damageTimings: Array<{ value: string; label: string }>;
     zoneOptions: ZoneOption[];
     zoneViews: ZoneView[];
     zoneLabelMap: Record<string, string>;
@@ -74,6 +77,8 @@ const props = defineProps<{
         view_side_label: string;
         damage_type_label: string;
         severity_label: string;
+        damage_timing: string;
+        damage_timing_label: string;
         quantity: number;
         notes: string | null;
         first_detected_at: string | null;
@@ -107,6 +112,7 @@ const form = useForm({
         view_side: item.view_side,
         damage_type: item.damage_type,
         severity: item.severity,
+        damage_timing: (item as DamageItem & { damage_timing?: DamageTiming }).damage_timing ?? (props.report.report_type === 'after_return' ? 'after_return' : 'before_pickup'),
         quantity: Number(item.quantity || 1),
         marker_x: item.marker_x ?? null,
         marker_y: item.marker_y ?? null,
@@ -205,6 +211,7 @@ function emptyDraft(viewSide: ViewSide = selectedView.value): DamageItem {
         view_side: viewSide,
         damage_type: props.damageTypes[0]?.value ?? 'scratch',
         severity: props.severityLevels[0]?.value ?? 'minor',
+        damage_timing: props.report.report_type === 'after_return' ? 'after_return' : 'before_pickup',
         quantity: 1,
         marker_x: null,
         marker_y: null,
@@ -258,6 +265,7 @@ function startEdit(index: number) {
         view_side: item.view_side as ViewSide,
         damage_type: item.damage_type,
         severity: item.severity,
+        damage_timing: (item as DamageItem & { damage_timing?: DamageTiming }).damage_timing ?? (props.report.report_type === 'after_return' ? 'after_return' : 'before_pickup'),
         quantity: Number(item.quantity || 1),
         marker_x: item.marker_x ?? null,
         marker_y: item.marker_y ?? null,
@@ -291,6 +299,7 @@ function saveItem() {
     if (
         !itemDraft.value.damage_type ||
         !itemDraft.value.severity ||
+        !itemDraft.value.damage_timing ||
         Number(itemDraft.value.quantity) < 1
     ) {
         itemError.value = t(
@@ -309,6 +318,7 @@ function saveItem() {
         view_side: itemDraft.value.view_side,
         damage_type: itemDraft.value.damage_type,
         severity: itemDraft.value.severity,
+        damage_timing: itemDraft.value.damage_timing,
         quantity: Number(itemDraft.value.quantity),
         marker_x: itemDraft.value.marker_x ?? marker.x,
         marker_y: itemDraft.value.marker_y ?? marker.y,
@@ -678,6 +688,25 @@ function submit() {
                             </div>
 
                             <div>
+                                <Label for="damage_timing">{{
+                                    t('dashboard.admin.damage_reports.edit.fields.damage_timing')
+                                }}</Label>
+                                <select
+                                    id="damage_timing"
+                                    v-model="itemDraft.damage_timing"
+                                    class="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2"
+                                >
+                                    <option
+                                        v-for="timing in damageTimings"
+                                        :key="timing.value"
+                                        :value="timing.value"
+                                    >
+                                        {{ timing.label }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
                                 <Label for="quantity">{{
                                     t('dashboard.admin.damage_reports.edit.fields.quantity')
                                 }}</Label>
@@ -834,6 +863,11 @@ function submit() {
                                             }}</th>
                                             <th class="px-3 py-2 text-left">{{
                                                 t(
+                                                    'dashboard.admin.damage_reports.edit.table.timing',
+                                                )
+                                            }}</th>
+                                            <th class="px-3 py-2 text-left">{{
+                                                t(
                                                     'dashboard.admin.damage_reports.edit.table.qty',
                                                 )
                                             }}</th>
@@ -845,6 +879,7 @@ function submit() {
                                             <td class="px-3 py-2">{{ damage.view_side_label }}</td>
                                             <td class="px-3 py-2">{{ damage.damage_type_label }}</td>
                                             <td class="px-3 py-2">{{ damage.severity_label }}</td>
+                                            <td class="px-3 py-2">{{ damage.damage_timing_label || '-' }}</td>
                                             <td class="px-3 py-2">{{ damage.quantity }}</td>
                                         </tr>
                                     </tbody>

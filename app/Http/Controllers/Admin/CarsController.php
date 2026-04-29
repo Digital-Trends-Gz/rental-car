@@ -18,6 +18,7 @@ use App\Models\CarViolation;
 use App\Models\Reservation;
 use App\Services\Plans\PlanUsageLimits;
 use App\Support\BranchAccess;
+use App\Support\BranchLocationOptions;
 use App\Support\CarCatalogOptions;
 use App\Support\FileUrl;
 use Carbon\Carbon;
@@ -26,6 +27,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Str;
 use MohamedGaldi\ViltFilepond\Services\FilePondService;
 use Illuminate\Support\Facades\Storage;
 
@@ -168,6 +170,7 @@ class CarsController extends Controller
                 'id' => $branch->id,
                 'name' => $branch->name,
             ])->values(),
+            'countries' => BranchLocationOptions::countrySelectOptions(app()->getLocale()),
             'canAccessAllBranches' => $this->branchAccess->canAccessAllBranches($user),
             'enums' => [
                 'colors' => CarColor::forFrontend(),
@@ -445,28 +448,30 @@ class CarsController extends Controller
         $user = $request->user();
         $tenantId = (int) ($user?->tenant_id ?? 0);
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
+        $isDraftSubmission = $request->boolean('save_as_draft') || $request->input('status') === CarStatus::DRAFT->value;
+        $requiredRule = $isDraftSubmission ? 'nullable' : 'required';
 
         $validated = $request->validate([
-            'make' => ['required', 'string', 'max:255'],
-            'model' => ['required', 'string', 'max:255'],
-            'year' => ['required', 'integer', 'min:1900', 'max:2100'],
-            'license_plate' => ['required', 'string', 'max:255', 'unique:cars,license_plate'],
+            'make' => [$requiredRule, 'string', 'max:255'],
+            'model' => [$requiredRule, 'string', 'max:255'],
+            'year' => [$requiredRule, 'integer', 'min:1900', 'max:2100'],
+            'license_plate' => [$requiredRule, 'string', 'max:255', 'unique:cars,license_plate'],
             'branch_id' => [
-                $canAccessAllBranches ? 'required' : 'nullable',
+                $isDraftSubmission ? 'nullable' : ($canAccessAllBranches ? 'required' : 'nullable'),
                 'integer',
                 Rule::exists('branches', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
-            'color' => ['required', 'string', Rule::enum(CarColor::class)],
-            'price_per_day' => ['required', 'numeric', 'min:0'],
+            'color' => [$requiredRule, 'string', Rule::enum(CarColor::class)],
+            'price_per_day' => [$requiredRule, 'numeric', 'min:0'],
             'price_per_week' => ['nullable', 'numeric', 'min:0'],
             'price_per_month' => ['nullable', 'numeric', 'min:0'],
             'allowed_km_per_day' => ['nullable', 'integer', 'min:0'],
             'allowed_km_per_week' => ['nullable', 'integer', 'min:0'],
             'allowed_km_per_month' => ['nullable', 'integer', 'min:0'],
-            'mileage' => ['required', 'integer', 'min:0'],
-            'transmission' => ['required', Rule::in(['automatic', 'manual'])],
-            'seats' => ['required', 'integer', 'min:1'],
-            'fuel_type' => ['required', 'string', Rule::enum(FuelType::class)],
+            'mileage' => [$requiredRule, 'integer', 'min:0'],
+            'transmission' => [$requiredRule, Rule::in(['automatic', 'manual'])],
+            'seats' => [$requiredRule, 'integer', 'min:1'],
+            'fuel_type' => [$requiredRule, 'string', Rule::enum(FuelType::class)],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::enum(CarStatus::class)],
             'image' => ['array'],
@@ -482,7 +487,7 @@ class CarsController extends Controller
             $this->branchAccess->normalizeRequestedBranchId($validated['branch_id'] ?? null)
         );
 
-        if (!$validated['branch_id']) {
+        if (!$isDraftSubmission && !$validated['branch_id']) {
             return back()->withErrors([
                 'branch_id' => 'A branch is required to create a car.',
             ])->withInput();
@@ -498,7 +503,7 @@ class CarsController extends Controller
             return redirect()->back()->with('error', $message);
         }
 
-        $car = Car::create(collect($validated)->except(['image', 'additional_photos'])->toArray());
+        $car = Car::create(collect($this->normalizeCarPayload($validated, $isDraftSubmission))->except(['image', 'additional_photos'])->toArray());
 
         // Handle uploaded cover image if provided
         if ($request->filled('image')) {
@@ -524,8 +529,8 @@ class CarsController extends Controller
         }
 
         return redirect()
-            ->route('admin.cars.index')
-            ->with('success', 'Car created successfully.');
+            ->route('admin.cars.index', ['subdomain' => $request->route('subdomain')])
+            ->with('success', $isDraftSubmission ? 'Car draft saved successfully.' : 'Car created successfully.');
     }
 
     /**
@@ -577,6 +582,7 @@ class CarsController extends Controller
                 'id' => $branch->id,
                 'name' => $branch->name,
             ])->values(),
+            'countries' => BranchLocationOptions::countrySelectOptions(app()->getLocale()),
             'canAccessAllBranches' => $this->branchAccess->canAccessAllBranches(request()->user()),
             'enums' => [
                 'colors' => CarColor::forFrontend(),
@@ -736,30 +742,32 @@ class CarsController extends Controller
         $user = $request->user();
         $tenantId = (int) ($user?->tenant_id ?? 0);
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
+        $isDraftSubmission = $request->boolean('save_as_draft') || $request->input('status') === CarStatus::DRAFT->value;
+        $requiredRule = $isDraftSubmission ? 'nullable' : 'required';
 
         $validated = $request->validate([
-            'make' => ['required', 'string', 'max:255'],
-            'model' => ['required', 'string', 'max:255'],
-            'year' => ['required', 'integer', 'min:1900', 'max:2100'],
+            'make' => [$requiredRule, 'string', 'max:255'],
+            'model' => [$requiredRule, 'string', 'max:255'],
+            'year' => [$requiredRule, 'integer', 'min:1900', 'max:2100'],
             'branch_id' => [
-                $canAccessAllBranches ? 'required' : 'nullable',
+                $isDraftSubmission ? 'nullable' : ($canAccessAllBranches ? 'required' : 'nullable'),
                 'integer',
                 Rule::exists('branches', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
             'license_plate' => [
-                'required', 'string', 'max:255', Rule::unique('cars', 'license_plate')->ignore($car->id),
+                $requiredRule, 'string', 'max:255', Rule::unique('cars', 'license_plate')->ignore($car->id),
             ],
-            'color' => ['required', 'string', Rule::enum(CarColor::class)],
-            'price_per_day' => ['required', 'numeric', 'min:0'],
+            'color' => [$requiredRule, 'string', Rule::enum(CarColor::class)],
+            'price_per_day' => [$requiredRule, 'numeric', 'min:0'],
             'price_per_week' => ['nullable', 'numeric', 'min:0'],
             'price_per_month' => ['nullable', 'numeric', 'min:0'],
             'allowed_km_per_day' => ['nullable', 'integer', 'min:0'],
             'allowed_km_per_week' => ['nullable', 'integer', 'min:0'],
             'allowed_km_per_month' => ['nullable', 'integer', 'min:0'],
-            'mileage' => ['required', 'integer', 'min:0'],
-            'transmission' => ['required', Rule::in(['automatic', 'manual'])],
-            'seats' => ['required', 'integer', 'min:1'],
-            'fuel_type' => ['required', 'string', Rule::enum(FuelType::class)],
+            'mileage' => [$requiredRule, 'integer', 'min:0'],
+            'transmission' => [$requiredRule, Rule::in(['automatic', 'manual'])],
+            'seats' => [$requiredRule, 'integer', 'min:1'],
+            'fuel_type' => [$requiredRule, 'string', Rule::enum(FuelType::class)],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::enum(CarStatus::class)],
             // File updates for the cover image
@@ -782,7 +790,7 @@ class CarsController extends Controller
             $this->branchAccess->normalizeRequestedBranchId($validated['branch_id'] ?? null)
         );
 
-        if (!$validated['branch_id']) {
+        if (!$isDraftSubmission && !$validated['branch_id']) {
             return back()->withErrors([
                 'branch_id' => 'A branch is required to update a car.',
             ])->withInput();
@@ -794,8 +802,7 @@ class CarsController extends Controller
                 ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
         }
 
-
-        $car->update(collect($validated)->except([
+        $car->update(collect($this->normalizeCarPayload($validated, $isDraftSubmission, $car))->except([
             'image_temp_folders',
             'image_removed_files',
             'additional_photos',
@@ -845,8 +852,68 @@ class CarsController extends Controller
         }
 
         return redirect()
-            ->route('admin.cars.index')
-            ->with('success', 'Car updated successfully.');
+            ->route('admin.cars.index', ['subdomain' => $request->route('subdomain')])
+            ->with('success', $isDraftSubmission ? 'Car draft saved successfully.' : 'Car updated successfully.');
+    }
+
+    /**
+     * Normalize car attributes for draft saves so incomplete records can still be stored safely.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function normalizeCarPayload(array $validated, bool $isDraftSubmission, ?Car $car = null): array
+    {
+        if (!$isDraftSubmission) {
+            return $validated;
+        }
+
+        $now = now();
+
+        return array_merge($validated, [
+            'make' => $this->fallbackString($validated['make'] ?? null, $car?->make, 'Draft car'),
+            'model' => $this->fallbackString($validated['model'] ?? null, $car?->model, 'Draft car'),
+            'year' => $this->fallbackInteger($validated['year'] ?? null, $car?->year, (int) $now->year),
+            'license_plate' => $this->fallbackString(
+                $validated['license_plate'] ?? null,
+                $car?->license_plate,
+                'DRAFT-' . strtoupper($now->format('YmdHis')) . '-' . Str::upper(Str::random(6))
+            ),
+            'color' => $this->fallbackString($validated['color'] ?? null, $car?->color?->value ?? $car?->color, CarColor::WHITE->value),
+            'price_per_day' => $this->fallbackNumeric($validated['price_per_day'] ?? null, $car?->price_per_day, 0),
+            'price_per_week' => $this->fallbackNumeric($validated['price_per_week'] ?? null, $car?->price_per_week, 0),
+            'price_per_month' => $this->fallbackNumeric($validated['price_per_month'] ?? null, $car?->price_per_month, 0),
+            'allowed_km_per_day' => $this->fallbackInteger($validated['allowed_km_per_day'] ?? null, $car?->allowed_km_per_day, 0),
+            'allowed_km_per_week' => $this->fallbackInteger($validated['allowed_km_per_week'] ?? null, $car?->allowed_km_per_week, 0),
+            'allowed_km_per_month' => $this->fallbackInteger($validated['allowed_km_per_month'] ?? null, $car?->allowed_km_per_month, 0),
+            'mileage' => $this->fallbackInteger($validated['mileage'] ?? null, $car?->mileage, 0),
+            'transmission' => $this->fallbackString($validated['transmission'] ?? null, $car?->transmission, 'automatic'),
+            'seats' => $this->fallbackInteger($validated['seats'] ?? null, $car?->seats, 1),
+            'fuel_type' => $this->fallbackString($validated['fuel_type'] ?? null, $car?->fuel_type?->value ?? $car?->fuel_type, FuelType::GASOLINE->value),
+            'status' => CarStatus::DRAFT->value,
+            'branch_id' => $validated['branch_id'] ?? $car?->branch_id,
+        ]);
+    }
+
+    private function fallbackString(mixed $value, mixed $current, string $default): string
+    {
+        $resolved = $value ?? $current ?? $default;
+
+        return trim((string) $resolved) !== '' ? (string) $resolved : $default;
+    }
+
+    private function fallbackInteger(mixed $value, mixed $current, int $default): int
+    {
+        $resolved = $value ?? $current ?? $default;
+
+        return (int) $resolved;
+    }
+
+    private function fallbackNumeric(mixed $value, mixed $current, float|int $default): float
+    {
+        $resolved = $value ?? $current ?? $default;
+
+        return (float) $resolved;
     }
 
     /**

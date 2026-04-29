@@ -23,6 +23,7 @@ class CarDamageCase extends Model
         'view_side',
         'damage_type',
         'severity',
+        'damage_timing',
         'quantity',
         'marker_x',
         'marker_y',

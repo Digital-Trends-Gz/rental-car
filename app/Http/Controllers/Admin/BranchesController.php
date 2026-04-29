@@ -115,6 +115,16 @@ class BranchesController extends Controller
 
         $this->syncShowroomImage($branch, $request);
 
+        if ($request->boolean('inline') || $request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'message' => 'Branch created successfully.',
+                'branch' => [
+                    'id' => $branch->id,
+                    'name' => $branch->name,
+                ],
+            ], 201);
+        }
+
         return redirect()
             ->route('admin.branches.index', ['subdomain' => $request->route('subdomain')])
             ->with('success', 'Branch created successfully.');

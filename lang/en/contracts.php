@@ -86,6 +86,10 @@ return [
             'moderate' => 'Moderate',
             'major' => 'Major',
         ],
+        'damage_timings' => [
+            'before_pickup' => 'Before pickup',
+            'after_return' => 'After return',
+        ],
         'view_sides' => [
             'front' => 'Front',
             'rear' => 'Rear',

@@ -199,6 +199,46 @@ class PlanUsageLimitsTest extends TestCase
         ]);
     }
 
+    public function test_car_draft_can_be_saved_with_minimal_data(): void
+    {
+        $tenant = $this->tenantWithPlan(['max_cars' => 10]);
+        TenantContext::set($tenant);
+
+        $branch = Branch::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'role' => UserRole::ADMIN,
+            'name' => 'Owner',
+            'email' => 'owner@example.com',
+            'civil_number' => '11112222',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.cars.store', ['subdomain' => $tenant->slug]), [
+                'status' => CarStatus::DRAFT->value,
+                'save_as_draft' => true,
+                'image' => [],
+                'additional_photos' => [],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Car draft saved successfully.');
+
+        $this->assertDatabaseHas('cars', [
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'status' => CarStatus::DRAFT->value,
+            'make' => 'Draft car',
+            'model' => 'Draft car',
+        ]);
+    }
+
     public function test_contract_creation_is_blocked_by_plan_limit(): void
     {
         $tenant = $this->tenantWithPlan(['max_contracts' => 1]);

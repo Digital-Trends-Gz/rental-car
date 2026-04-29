@@ -260,6 +260,110 @@ class ContractsControllerTest extends TestCase
             ]);
     }
 
+    public function test_admin_cannot_create_a_contract_with_end_date_equal_to_start_date(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+        ]);
+        TenantContext::set($tenant);
+
+        $branch = Branch::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'role' => UserRole::SUPER_ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $client = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::CLIENT,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $car = Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'make' => 'Toyota',
+            'model' => 'Camry',
+            'year' => 2024,
+            'license_plate' => 'SAME-1001',
+            'color' => CarColor::WHITE->value,
+            'price_per_day' => 100,
+            'mileage' => 1000,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'fuel_type' => FuelType::GASOLINE->value,
+            'description' => null,
+            'status' => CarStatus::AVAILABLE->value,
+        ]);
+
+        $reservation = Reservation::create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $client->id,
+            'car_id' => $car->id,
+            'reservation_number' => 'RES-SAME-1',
+            'start_date' => today()->toDateString(),
+            'end_date' => today()->addDays(2)->toDateString(),
+            'pickup_time' => '10:00',
+            'return_time' => '18:00',
+            'pickup_location' => 'Main Office',
+            'return_location' => 'Main Office',
+            'total_days' => 3,
+            'daily_rate' => 100,
+            'subtotal' => 300,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'total_amount' => 300,
+            'status' => ReservationStatus::CONFIRMED->value,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.contracts.store', [
+                'subdomain' => $tenant->slug,
+            ]), [
+                'contract_number' => 'CTR-SAME-1',
+                'status' => 'draft',
+                'reservation_id' => $reservation->id,
+                'contract_date' => today()->toDateString(),
+                'renter_name' => $client->name,
+                'renter_id_number' => '123456789',
+                'renter_phone' => '97000000000',
+                'start_date' => today()->toDateString(),
+                'end_date' => today()->toDateString(),
+                'currency' => 'USD',
+                'primary_driver' => [
+                    'full_name' => $client->name,
+                    'phone' => '97000000000',
+                    'identity_number' => '123456789',
+                    'temp_folders' => [],
+                    'removed_file_ids' => [],
+                    'documents' => [],
+                    'customer_photo_temp_folders' => [],
+                    'customer_photo_removed_file_ids' => [],
+                ],
+                'additional_drivers' => [],
+                'contract_archive' => [
+                    'temp_folders' => [],
+                    'removed_file_ids' => [],
+                ],
+                'additional_archive' => [],
+                'additional_archive_removed_ids' => [],
+                'start_contract_temp_folders' => [],
+                'start_contract_removed_files' => [],
+                'end_contract_temp_folders' => [],
+                'end_contract_removed_files' => [],
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors(['end_date']);
+    }
+
     public function test_admin_can_finalize_waiting_reservation_when_contract_is_created(): void
     {
         $tenant = Tenant::factory()->create([

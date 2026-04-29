@@ -11,6 +11,7 @@ use App\Models\Contract;
 use App\Models\Reservation;
 use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
+use App\Support\PaidReturnReportLock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -139,7 +140,7 @@ class CarDamageReportsController extends Controller
                 'branch_id' => $branchId,
                 'car_id' => $carId,
             ],
-            'indexUrl' => route('admin.car-damage-reports.index'),
+            'indexUrl' => url('/admin/car-damage-reports'),
             'contractsIndexUrl' => route('admin.contracts.index'),
         ]);
     }
@@ -149,6 +150,10 @@ class CarDamageReportsController extends Controller
         $prefilledContract = $request->filled('contract_id')
             ? $this->resolveAccessibleContract($request, $request->integer('contract_id'))
             : null;
+
+        if ($prefilledContract) {
+            $this->abortIfContractLocked($prefilledContract);
+        }
 
         [$prefilledReservation, $prefilledCar] = $prefilledContract
             ? $this->resolveContractReservationAndCar($request, $prefilledContract)
@@ -171,8 +176,8 @@ class CarDamageReportsController extends Controller
             ],
             ...$this->formOptions($request),
             'currentCarDamages' => $prefilledCar ? $this->serializeCarDamageCases($prefilledCar->id, $request) : [],
-            'indexUrl' => route('admin.car-damage-reports.index'),
-            'submitUrl' => route('admin.car-damage-reports.store'),
+            'indexUrl' => url('/admin/car-damage-reports'),
+            'submitUrl' => url('/admin/car-damage-reports'),
             'method' => 'post',
         ]);
     }
@@ -186,6 +191,7 @@ class CarDamageReportsController extends Controller
         }
 
         $contract = $this->resolveAccessibleContract($request, (int) $validated['contract_id']);
+        $this->abortIfContractLocked($contract);
         [$reservation, $car] = $this->resolveContractReservationAndCar($request, $contract);
 
         $report = DB::transaction(function () use ($request, $validated, $car, $contract, $reservation) {
@@ -216,6 +222,10 @@ class CarDamageReportsController extends Controller
 
     public function edit(Request $request, CarDamageReport $carDamageReport): Response
     {
+        $reportId = (int) ($request->route('carDamageReport') ?? $carDamageReport->getKey() ?? 0);
+        abort_unless($reportId > 0, 404);
+
+        $carDamageReport = CarDamageReport::query()->withoutGlobalScopes()->findOrFail($reportId);
         abort_unless($this->branchAccess->canAccessBranchId($request->user(), $carDamageReport->branch_id ? (int) $carDamageReport->branch_id : null), 403);
 
         $carDamageReport->loadMissing([
@@ -236,13 +246,14 @@ class CarDamageReportsController extends Controller
                 'inspected_at' => optional($carDamageReport->inspected_at)?->format('Y-m-d\TH:i'),
                 'odometer' => $carDamageReport->odometer,
                 'summary' => $carDamageReport->summary,
-                'items' => $carDamageReport->items->map(function ($item) {
+                'items' => $carDamageReport->items->map(function ($item) use ($carDamageReport) {
                     return [
                         'id' => $item->id,
                         'zone_code' => $item->zone_code,
                         'view_side' => $item->view_side,
                         'damage_type' => $item->damage_type,
                         'severity' => $item->severity,
+                        'damage_timing' => $item->damage_timing ?: ($carDamageReport->report_type === 'after_return' ? 'after_return' : 'before_pickup'),
                         'quantity' => (int) $item->quantity,
                         'marker_x' => $item->marker_x !== null ? (float) $item->marker_x : null,
                         'marker_y' => $item->marker_y !== null ? (float) $item->marker_y : null,
@@ -250,11 +261,12 @@ class CarDamageReportsController extends Controller
                         'notes' => $item->notes,
                     ];
                 })->values()->all(),
+                'is_locked' => PaidReturnReportLock::damageReport($carDamageReport),
             ],
             ...$this->formOptions($request),
             'currentCarDamages' => $this->serializeCarDamageCases($carDamageReport->car_id, $request),
-            'indexUrl' => route('admin.car-damage-reports.index'),
-            'submitUrl' => route('admin.car-damage-reports.update', $carDamageReport),
+            'indexUrl' => url('/admin/car-damage-reports'),
+            'submitUrl' => url('/admin/car-damage-reports/'.$carDamageReport->getKey()),
             'method' => 'put',
         ]);
     }
@@ -262,6 +274,7 @@ class CarDamageReportsController extends Controller
     public function update(Request $request, CarDamageReport $carDamageReport): RedirectResponse
     {
         abort_unless($this->branchAccess->canAccessBranchId($request->user(), $carDamageReport->branch_id ? (int) $carDamageReport->branch_id : null), 403);
+        $this->abortIfDamageReportLocked($carDamageReport);
 
         $validated = $this->validatePayload($request, $carDamageReport);
 
@@ -298,6 +311,7 @@ class CarDamageReportsController extends Controller
     public function destroy(Request $request, CarDamageReport $carDamageReport): RedirectResponse
     {
         abort_unless($this->branchAccess->canAccessBranchId($request->user(), $carDamageReport->branch_id ? (int) $carDamageReport->branch_id : null), 403);
+        $this->abortIfDamageReportLocked($carDamageReport);
 
         if (config('app.demo_mode')) {
             return back()->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
@@ -336,6 +350,7 @@ class CarDamageReportsController extends Controller
             'items.*.view_side' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::viewSides(), 'value'))],
             'items.*.damage_type' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::damageTypes(), 'value'))],
             'items.*.severity' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::severityLevels(), 'value'))],
+            'items.*.damage_timing' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::damageTimings(), 'value'))],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
             'items.*.marker_x' => ['nullable', 'numeric', 'min:0'],
             'items.*.marker_y' => ['nullable', 'numeric', 'min:0'],
@@ -353,6 +368,20 @@ class CarDamageReportsController extends Controller
         abort_if(!$car, 422, 'Selected car is not accessible.');
 
         return $car;
+    }
+
+    private function abortIfContractLocked(Contract $contract): void
+    {
+        if (PaidReturnReportLock::contract($contract)) {
+            abort(423, 'This contract is locked because the return report is paid.');
+        }
+    }
+
+    private function abortIfDamageReportLocked(CarDamageReport $carDamageReport): void
+    {
+        if (PaidReturnReportLock::damageReport($carDamageReport)) {
+            abort(423, 'This damage report is locked because the linked contract return report is paid.');
+        }
     }
 
     private function resolveAccessibleContract(Request $request, mixed $contractId): ?Contract
@@ -433,6 +462,7 @@ class CarDamageReportsController extends Controller
                 'view_side' => $item['view_side'],
                 'damage_type' => $item['damage_type'],
                 'severity' => $item['severity'],
+                'damage_timing' => $item['damage_timing'],
                 'quantity' => (int) $item['quantity'],
                 'marker_x' => $item['marker_x'] ?? null,
                 'marker_y' => $item['marker_y'] ?? null,
@@ -475,6 +505,7 @@ class CarDamageReportsController extends Controller
                 'view_side' => $item['view_side'],
                 'damage_type' => $item['damage_type'],
                 'severity' => $item['severity'],
+                'damage_timing' => $item['damage_timing'],
                 'quantity' => (int) $item['quantity'],
                 'marker_x' => $item['marker_x'] ?? null,
                 'marker_y' => $item['marker_y'] ?? null,
@@ -562,6 +593,7 @@ class CarDamageReportsController extends Controller
             'statuses' => CarDamageCatalog::statuses(),
             'damageTypes' => CarDamageCatalog::damageTypes(),
             'severityLevels' => CarDamageCatalog::severityLevels(),
+            'damageTimings' => CarDamageCatalog::damageTimings(),
             'viewSides' => CarDamageCatalog::viewSides(),
             'zoneOptions' => CarDamageCatalog::zoneDefinitions(),
             'zoneViews' => CarDamageCatalog::zoneViews(),
@@ -593,8 +625,11 @@ class CarDamageReportsController extends Controller
         $severityLabels = collect(CarDamageCatalog::severityLevels())
             ->mapWithKeys(fn (array $option) => [$option['value'] => $option['label']])
             ->all();
+        $damageTimingLabels = collect(CarDamageCatalog::damageTimings())
+            ->mapWithKeys(fn (array $option) => [$option['value'] => $option['label']])
+            ->all();
 
-        return $query->get()->map(function (CarDamageCase $case) use ($zoneLabels, $viewLabels, $damageTypeLabels, $severityLabels) {
+        return $query->get()->map(function (CarDamageCase $case) use ($zoneLabels, $viewLabels, $damageTypeLabels, $severityLabels, $damageTimingLabels) {
             return [
                 'id' => $case->id,
                 'zone_code' => $case->zone_code,
@@ -605,6 +640,8 @@ class CarDamageReportsController extends Controller
                 'damage_type_label' => $damageTypeLabels[$case->damage_type] ?? $case->damage_type,
                 'severity' => $case->severity,
                 'severity_label' => $severityLabels[$case->severity] ?? $case->severity,
+                'damage_timing' => $case->damage_timing ?: 'before_pickup',
+                'damage_timing_label' => $damageTimingLabels[$case->damage_timing ?: 'before_pickup'] ?? ($case->damage_timing ?: 'before_pickup'),
                 'quantity' => (int) $case->quantity,
                 'notes' => $case->notes,
                 'first_detected_at' => optional($case->first_detected_at)?->format('Y-m-d H:i'),

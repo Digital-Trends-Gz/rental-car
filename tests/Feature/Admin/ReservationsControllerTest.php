@@ -12,6 +12,7 @@ use App\Enums\UserRole;
 use App\Models\Car;
 use App\Models\Reservation;
 use App\Models\Tenant;
+use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Services\Rentals\RentalStatusSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -115,6 +116,235 @@ class ReservationsControllerTest extends TestCase
             'payment_method' => PaymentMethod::CASH->value,
             'status' => PaymentStatus::COMPLETED->value,
         ]);
+    }
+
+    public function test_admin_can_create_reservation_with_return_location_fee_from_settings(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+        ]);
+
+        TenantSiteSetting::query()->updateOrCreate(
+            ['tenant_id' => $tenant->id],
+            [
+                'reservation_settings' => [
+                    'return_time_policy' => [
+                        'mode' => 'fixed_fee',
+                        'fixed_fee' => 0,
+                    ],
+                    'pickup_return_locations' => [
+                        [
+                            'name' => 'Main Office',
+                            'pickup_fee' => 0,
+                            'return_fee' => 25,
+                            'pickup_free' => true,
+                            'return_free' => false,
+                            'is_active' => true,
+                        ],
+                    ],
+                ],
+            ]
+        );
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::SUPER_ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $client = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::CLIENT,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $car = Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => null,
+            'make' => 'Toyota',
+            'model' => 'Camry',
+            'year' => 2024,
+            'license_plate' => 'RES-FEE-1',
+            'color' => CarColor::WHITE->value,
+            'price_per_day' => 100,
+            'mileage' => 1000,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'fuel_type' => FuelType::GASOLINE->value,
+            'description' => null,
+            'status' => CarStatus::AVAILABLE->value,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.reservations.store', ['subdomain' => $tenant->slug]), [
+                'user_id' => $client->id,
+                'car_id' => $car->id,
+                'start_date' => '2026-04-25',
+                'end_date' => '2026-04-27',
+                'pickup_time' => '10:00',
+                'return_time' => '18:00',
+                'pickup_location' => 'Main Office',
+                'return_location' => 'Main Office',
+                'discount_amount' => 0,
+                'deposit_amount' => 0,
+                'notes' => 'Reservation created from dashboard.',
+                'status' => 'confirmed',
+            ])
+            ->assertRedirect();
+
+        $reservation = Reservation::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $client->id)
+            ->where('car_id', $car->id)
+            ->firstOrFail();
+
+        $this->assertSame('25.00', (string) $reservation->return_location_fee);
+        $this->assertSame('388.00', (string) $reservation->total_amount);
+    }
+
+    public function test_admin_can_override_return_location_fee_for_single_reservation(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+        ]);
+
+        TenantSiteSetting::query()->updateOrCreate(
+            ['tenant_id' => $tenant->id],
+            [
+                'reservation_settings' => [
+                    'return_time_policy' => [
+                        'mode' => 'fixed_fee',
+                        'fixed_fee' => 0,
+                    ],
+                    'pickup_return_locations' => [
+                        [
+                            'name' => 'Main Office',
+                            'pickup_fee' => 0,
+                            'return_fee' => 25,
+                            'pickup_free' => true,
+                            'return_free' => false,
+                            'is_active' => true,
+                        ],
+                    ],
+                ],
+            ]
+        );
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::SUPER_ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $client = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::CLIENT,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $car = Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => null,
+            'make' => 'Toyota',
+            'model' => 'Camry',
+            'year' => 2024,
+            'license_plate' => 'RES-FEE-2',
+            'color' => CarColor::WHITE->value,
+            'price_per_day' => 100,
+            'mileage' => 1000,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'fuel_type' => FuelType::GASOLINE->value,
+            'description' => null,
+            'status' => CarStatus::AVAILABLE->value,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.reservations.store', ['subdomain' => $tenant->slug]), [
+                'user_id' => $client->id,
+                'car_id' => $car->id,
+                'start_date' => '2026-04-25',
+                'end_date' => '2026-04-27',
+                'pickup_time' => '10:00',
+                'return_time' => '18:00',
+                'pickup_location' => 'Main Office',
+                'return_location' => 'Main Office',
+                'return_location_fee' => 7.5,
+                'discount_amount' => 0,
+                'deposit_amount' => 0,
+                'notes' => 'Reservation created from dashboard.',
+                'status' => 'confirmed',
+            ])
+            ->assertRedirect();
+
+        $reservation = Reservation::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $client->id)
+            ->where('car_id', $car->id)
+            ->firstOrFail();
+
+        $this->assertSame('7.50', (string) $reservation->return_location_fee);
+        $this->assertSame('370.50', (string) $reservation->total_amount);
+    }
+
+    public function test_admin_cannot_create_reservation_with_end_date_equal_to_start_date(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::SUPER_ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $client = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::CLIENT,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $car = Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => null,
+            'make' => 'Toyota',
+            'model' => 'Corolla',
+            'year' => 2024,
+            'license_plate' => 'RES-SAME-1',
+            'color' => CarColor::WHITE->value,
+            'price_per_day' => 100,
+            'mileage' => 1000,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'fuel_type' => FuelType::GASOLINE->value,
+            'description' => null,
+            'status' => CarStatus::AVAILABLE->value,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.reservations.store', ['subdomain' => $tenant->slug]), [
+                'user_id' => $client->id,
+                'car_id' => $car->id,
+                'start_date' => '2026-04-25',
+                'end_date' => '2026-04-25',
+                'pickup_time' => '10:00',
+                'return_time' => '18:00',
+                'pickup_location' => 'Main Office',
+                'return_location' => 'Main Office',
+                'discount_amount' => 0,
+                'deposit_amount' => 0,
+                'notes' => 'Reservation created from dashboard.',
+                'status' => 'confirmed',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors(['end_date']);
     }
 
     public function test_admin_reservation_create_form_hides_system_managed_status_option(): void

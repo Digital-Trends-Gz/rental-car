@@ -24,8 +24,9 @@ const hasFeature = (feature: string) => {
   return Boolean(flags[feature])
 }
 const reservation = computed(() => props.reservation)
+const isLocked = computed(() => Boolean(reservation.value?.is_locked))
 const canCollectFinalCash = computed(
-  () => hasFeature('cash_payments') && Boolean(reservation.value?.can_collect_final_cash),
+  () => hasFeature('cash_payments') && Boolean(reservation.value?.can_collect_final_cash) && !isLocked.value,
 )
 
 const statusMap = computed(() => {
@@ -83,13 +84,17 @@ function collectFinalCash() {
           <Link v-if="subdomain" :href="index(subdomain).url">
             <Button variant="outline">Back</Button>
           </Link>
-          <Link v-if="subdomain" :href="edit([subdomain, reservation.id]).url">
+          <Link v-if="subdomain && !isLocked" :href="edit([subdomain, reservation.id]).url">
             <Button variant="outline">Edit</Button>
           </Link>
           <a v-if="subdomain" :href="print([subdomain, reservation.id]).url" target="_blank" rel="noopener">
             <Button variant="secondary">Print</Button>
           </a>
         </div>
+      </div>
+
+      <div v-if="isLocked" class="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+        This reservation is locked because its return report is marked paid.
       </div>
 
       <!-- Header ribbon -->

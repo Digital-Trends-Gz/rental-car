@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Core\ReservationSettings;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Reservation;
 use App\Models\Car;
 use App\Models\CarDamageCase;
 use App\Models\Payment;
+use App\Models\TenantSiteSetting;
 use App\Models\User;
+use App\Support\PaidReturnReportLock;
 use App\Enums\ReservationStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
@@ -165,11 +168,12 @@ class ReservationsController extends Controller
             'user_id' => ['required', 'integer'],
             'car_id' => ['required', 'integer'],
             'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'end_date' => ['required', 'date', 'after:start_date'],
             'pickup_time' => ['nullable', 'date_format:H:i'],
             'return_time' => ['nullable', 'date_format:H:i'],
             'pickup_location' => ['nullable', 'string', 'max:255'],
             'return_location' => ['nullable', 'string', 'max:255'],
+            'return_location_fee' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'deposit_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
@@ -202,6 +206,11 @@ class ReservationsController extends Controller
 
         $discountAmount = (float) ($validated['discount_amount'] ?? 0);
         $depositAmount = (float) ($validated['deposit_amount'] ?? 0);
+        $returnLocationFee = $this->resolveReservationReturnLocationFee(
+            $user?->tenant_id,
+            $validated['return_location'] ?? null,
+            $validated['return_location_fee'] ?? null
+        );
         $totalDays = $start->diffInDays($end) + 1;
         $subtotal = (float) $car->price_per_day * $totalDays;
         $taxAmount = round($subtotal * 0.21, 2);
@@ -220,6 +229,7 @@ class ReservationsController extends Controller
             $totalDays,
             $subtotal,
             $taxAmount,
+            $returnLocationFee,
             $discountAmount,
             $depositAmount,
             $reservationStatus
@@ -234,12 +244,13 @@ class ReservationsController extends Controller
                 'return_time' => $validated['return_time'] ?? '18:00',
                 'pickup_location' => $validated['pickup_location'] ?? null,
                 'return_location' => $validated['return_location'] ?? null,
+                'return_location_fee' => $returnLocationFee,
                 'total_days' => $totalDays,
                 'daily_rate' => $car->price_per_day,
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
                 'discount_amount' => $discountAmount,
-                'total_amount' => max(0, $subtotal + $taxAmount - $discountAmount),
+                'total_amount' => max(0, $subtotal + $taxAmount + $returnLocationFee - $discountAmount),
                 'status' => $reservationStatus,
                 'notes' => $validated['notes'] ?? null,
                 'cancellation_reason' => $reservationStatus === ReservationStatus::CANCELLED->value
@@ -293,6 +304,7 @@ class ReservationsController extends Controller
     {
         abort_unless($this->canAccessReservation($reservation, request()->user()), 403);
         $reservation->load(['user', 'car', 'payments', 'contract']);
+        $reservation->setAttribute('is_locked', PaidReturnReportLock::reservation($reservation));
         $completedPaymentsTotal = (float) $reservation->payments()
             ->completed()
             ->sum('amount');
@@ -319,11 +331,17 @@ class ReservationsController extends Controller
      */
     public function edit(Request $request, Reservation $reservation): Response
     {
+        $reservationId = (int) ($request->route('reservation') ?? $reservation->getKey() ?? 0);
+        abort_unless($reservationId > 0, 404);
+
+        $reservation = Reservation::query()->withoutGlobalScopes()->findOrFail($reservationId);
         abort_unless($this->canAccessReservation($reservation, request()->user()), 403);
         $reservation->load(['user:id,name,email', 'car:id,make,model,year,license_plate']);
+        $reservation->setAttribute('is_locked', PaidReturnReportLock::reservation($reservation));
 
         return Inertia::render('Admin/Reservations/Edit', [
             'reservation' => $reservation,
+            'is_locked' => PaidReturnReportLock::reservation($reservation),
             'clients' => [],
             'cars' => [],
             'carDamagesByCar' => $reservation->car?->id ? $this->serializeCarDamageCaseMap([(int) $reservation->car->id], $request->user()) : [],
@@ -340,13 +358,15 @@ class ReservationsController extends Controller
     public function update(Request $request, Reservation $reservation)
     {
         abort_unless($this->canAccessReservation($reservation, $request->user()), 403);
+        $this->abortIfReservationLocked($reservation);
         $validated = $request->validate([
             'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'end_date' => ['required', 'date', 'after:start_date'],
             'pickup_time' => ['nullable', 'date_format:H:i'],
             'return_time' => ['nullable', 'date_format:H:i'],
             'pickup_location' => ['nullable', 'string', 'max:255'],
             'return_location' => ['nullable', 'string', 'max:255'],
+            'return_location_fee' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(ReservationStatus::manualValues($reservation->status instanceof ReservationStatus ? $reservation->status->value : (string) $reservation->status))],
@@ -369,10 +389,16 @@ class ReservationsController extends Controller
         $start = Carbon::parse($validated['start_date']);
         $end = Carbon::parse($validated['end_date']);
         $totalDays = $start->diffInDays($end) + 1;
+        $returnLocationFee = $this->resolveReservationReturnLocationFee(
+            $request->user()?->tenant_id,
+            $validated['return_location'] ?? null,
+            $validated['return_location_fee'] ?? null
+        );
         $reservation->total_days = $totalDays;
         $reservation->subtotal = $reservation->daily_rate * $totalDays;
         $reservation->tax_amount = round($reservation->subtotal * 0.21, 2);
-        $reservation->total_amount = $reservation->subtotal + $reservation->tax_amount - (float)($reservation->discount_amount ?? 0);
+        $reservation->return_location_fee = $returnLocationFee;
+        $reservation->total_amount = max(0, $reservation->subtotal + $reservation->tax_amount + $returnLocationFee - (float) ($reservation->discount_amount ?? 0));
 
         // Maintain cancellation metadata
         if ($reservation->status === ReservationStatus::CANCELLED && !$reservation->cancelled_at) {
@@ -412,6 +438,7 @@ class ReservationsController extends Controller
             ->findOrFail($reservationId);
 
         abort_unless($this->canAccessReservation($reservationModel, $request->user()), 403);
+        $this->abortIfReservationLocked($reservationModel);
 
         if (config('app.demo_mode')) {
             return redirect()
@@ -624,8 +651,39 @@ class ReservationsController extends Controller
             'start_date' => optional($reservation->start_date)->toDateString(),
             'end_date' => optional($reservation->end_date)->toDateString(),
             'total_amount' => $reservation->total_amount,
+            'return_location' => $reservation->return_location,
+            'return_location_fee' => (float) $reservation->return_location_fee,
             'has_contract' => (bool) $reservation->contract,
         ];
+    }
+
+    private function resolveReservationReturnLocationFee(?int $tenantId, ?string $returnLocation, mixed $providedFee): float
+    {
+        if ($providedFee !== null && $providedFee !== '' && is_numeric($providedFee)) {
+            return max(0, round((float) $providedFee, 2));
+        }
+
+        $location = trim((string) ($returnLocation ?? ''));
+        if ($tenantId === null || $location === '') {
+            return 0.0;
+        }
+
+        $tenantSettings = TenantSiteSetting::query()
+            ->where('tenant_id', $tenantId)
+            ->first();
+
+        $settings = ReservationSettings::normalize(
+            is_array($tenantSettings?->reservation_settings) ? $tenantSettings->reservation_settings : null
+        );
+
+        return ReservationSettings::resolveLocationFee($settings, $location, 'return');
+    }
+
+    private function abortIfReservationLocked(Reservation $reservation): void
+    {
+        if (PaidReturnReportLock::reservation($reservation)) {
+            abort(423, 'This reservation is locked because the return report is paid.');
+        }
     }
 
     private function serializeCarDamageCaseMap(array $carIds, $user): array

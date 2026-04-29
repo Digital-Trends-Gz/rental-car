@@ -164,7 +164,15 @@ class CarDocumentsController extends Controller
             'issuer' => ['nullable', 'string', 'max:255'],
             'issue_date' => ['nullable', 'date'],
             'purchase_date' => ['nullable', 'date', 'required_if:type,purchase_contract'],
-            'expiry_date' => ['nullable', 'date', 'required_unless:type,purchase_contract'],
+            'expiry_date' => [
+                'nullable',
+                'date',
+                'required_unless:type,purchase_contract',
+                Rule::when(
+                    $request->filled('issue_date') && $request->input('type') !== 'purchase_contract',
+                    ['after:issue_date']
+                ),
+            ],
             'cost' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],

@@ -57,6 +57,17 @@ const localizedDocumentTypes = computed(() =>
 
 const photoAllowedFileTypes = ['image/jpeg', 'image/png'];
 
+function formatDateInput(value: Date): string {
+    const offset = value.getTimezoneOffset() * 60000;
+    return new Date(value.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function addDaysToDateInput(value: string, days: number): string {
+    const next = new Date(`${value}T00:00:00`);
+    next.setDate(next.getDate() + days);
+    return formatDateInput(next);
+}
+
 const form = useForm({
     type: props.document?.type ?? 'license',
     document_number: props.document?.document_number ?? '',
@@ -74,6 +85,13 @@ const form = useForm({
 });
 
 const isPurchaseContract = computed(() => form.type === 'purchase_contract');
+const expiryDateMin = computed(() => {
+    if (isPurchaseContract.value || !form.issue_date) {
+        return '';
+    }
+
+    return addDaysToDateInput(form.issue_date, 1);
+});
 
 const previewStatusKey = computed(() => {
     if (!form.is_active) return 'inactive';
@@ -189,7 +207,7 @@ const submit = () => {
 
                     <div v-if="!isPurchaseContract">
                         <Label for="expiry_date">{{ localize('Expiry Date', 'تاريخ الانتهاء') }}</Label>
-                        <Input id="expiry_date" v-model="form.expiry_date" type="date" />
+                        <Input id="expiry_date" v-model="form.expiry_date" type="date" :min="expiryDateMin" />
                         <InputError :message="form.errors.expiry_date" class="mt-1" />
                     </div>
 

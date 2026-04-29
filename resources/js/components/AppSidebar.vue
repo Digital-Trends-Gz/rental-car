@@ -29,6 +29,7 @@ import {
     AlertTriangle,
     BarChart,
     Calendar,
+    CalendarDays,
     Car,
     CreditCard,
     FileText,
@@ -245,6 +246,12 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: t('dashboard.sidebar.admin.translations'),
             href: adminHref('/settings/translations'),
             icon: Shield,
+            permission: 'tenant-manage-settings',
+        },
+        {
+            title: t('dashboard.sidebar.admin.reservation_settings'),
+            href: adminHref('/settings/reservation-settings'),
+            icon: CalendarDays,
             permission: 'tenant-manage-settings',
         },
     ].filter(

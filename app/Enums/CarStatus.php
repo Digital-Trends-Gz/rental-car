@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum CarStatus: string
 {
+    case DRAFT       = 'draft';
     case AVAILABLE   = 'available';
     case RESERVED    = 'reserved';
     case RENTED      = 'rented';
@@ -15,6 +16,7 @@ enum CarStatus: string
     public function label(): string
     {
         return match ($this) {
+            self::DRAFT       => 'Draft',
             self::AVAILABLE   => 'Available',
             self::RESERVED    => 'Reserved',
             self::RENTED      => 'Rented',
@@ -28,6 +30,7 @@ enum CarStatus: string
     public function description(): string
     {
         return match ($this) {
+            self::DRAFT       => 'The car is saved as a draft and is not bookable yet.',
             self::AVAILABLE   => 'The car is ready for booking and rental.',
             self::RESERVED    => 'The car is reserved for a customer and awaiting pickup.',
             self::RENTED      => 'The car is currently rented by a customer.',
@@ -41,6 +44,7 @@ enum CarStatus: string
     public function color(): string
     {
         return match ($this) {
+            self::DRAFT       => '#9CA3AF', // Gray-400
             self::AVAILABLE   => '#10B981', // Green-500
             self::RESERVED    => '#3B82F6', // Blue-500
             self::RENTED      => '#F59E0B', // Amber-500

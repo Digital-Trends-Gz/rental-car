@@ -300,7 +300,7 @@ class MaintenanceRecordsController extends Controller
             'status' => ['required', 'string', Rule::enum(MaintenanceRecordStatus::class)],
             'scheduled_date' => ['nullable', 'date'],
             'started_at' => ['nullable', 'date'],
-            'completed_at' => ['nullable', 'date', 'after_or_equal:started_at'],
+            'completed_at' => ['nullable', 'date', 'after:started_at'],
             'cost' => ['nullable', 'numeric', 'min:0'],
             'odometer' => ['nullable', 'integer', 'min:0'],
             'notes' => ['nullable', 'string', 'max:5000'],

@@ -86,6 +86,10 @@ return [
             'moderate' => 'متوسط',
             'major' => 'شديد',
         ],
+        'damage_timings' => [
+            'before_pickup' => 'قبل الاستلام',
+            'after_return' => 'بعد التسليم',
+        ],
         'view_sides' => [
             'front' => 'أمام',
             'rear' => 'خلف',

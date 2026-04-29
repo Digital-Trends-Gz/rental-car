@@ -45,6 +45,14 @@ class CarDamageCatalog
         ];
     }
 
+    public static function damageTimings(): array
+    {
+        return [
+            ['value' => 'before_pickup', 'label' => __('contracts.damage_catalog.damage_timings.before_pickup')],
+            ['value' => 'after_return', 'label' => __('contracts.damage_catalog.damage_timings.after_return')],
+        ];
+    }
+
     public static function viewSides(): array
     {
         return [

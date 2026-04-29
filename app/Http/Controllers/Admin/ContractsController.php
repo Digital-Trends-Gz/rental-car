@@ -31,6 +31,7 @@ use App\Rules\LettersOnly;
 use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
 use App\Support\ContractCustomerPhotoExtractor;
+use App\Support\PaidReturnReportLock;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -288,6 +289,7 @@ class ContractsController extends Controller
             'subdomain' => request()->route('subdomain'),
             'contract_id' => $contract->id,
         ], static fn ($value) => $value !== null && $value !== ''));
+        $isLocked = PaidReturnReportLock::contract($contract);
 
         return Inertia::render('Admin/Contracts/Show', [
             'contract' => [
@@ -321,6 +323,7 @@ class ContractsController extends Controller
                 'notes' => $contract->notes,
                 'ai_extraction_status' => $contract->ai_extraction_status,
                 'ai_extracted_data' => $contract->ai_extracted_data,
+                'is_locked' => $isLocked,
                 'reservation' => $contract->reservation ? [
                     'id' => $contract->reservation->id,
                     'reservation_number' => $contract->reservation->reservation_number,
@@ -384,17 +387,18 @@ class ContractsController extends Controller
             'endRentalDocument' => $this->firstFileMeta($contract, 'end_contract'),
             'actions' => [
                 'index' => route('admin.contracts.index', ['subdomain' => request()->route('subdomain')]),
-                'edit' => route('admin.contracts.edit', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id]),
-                'damage_create' => $damageCreateUrl,
+                'edit' => $isLocked ? null : route('admin.contracts.edit', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id]),
+                'damage_create' => $isLocked ? null : $damageCreateUrl,
                 'pdf' => route('admin.contracts.pdf', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id]),
                 'pdf_en' => route('admin.contracts.pdf', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id, 'lang' => 'en']),
                 'pdf_ar' => route('admin.contracts.pdf', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id, 'lang' => 'ar']),
-                'request_extend' => $this->isExtendableContract($contract)
+                'request_extend' => !$isLocked && $this->isExtendableContract($contract)
                     ? route('admin.contracts.request-extension', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id])
                     : null,
-                'extend' => $this->isExtendableContract($contract)
+                'extend' => !$isLocked && $this->isExtendableContract($contract)
                     ? route('admin.contracts.extend', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id])
                     : null,
+                'return_report' => route('admin.contracts.return-report', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id]),
             ],
         ]);
     }
@@ -474,7 +478,12 @@ class ContractsController extends Controller
     }
     public function edit(Request $request, Contract $contract): Response
     {
+        $contractId = (int) ($request->route('contract') ?? $contract->getKey() ?? 0);
+        abort_unless($contractId > 0, 404);
+
+        $contract = Contract::query()->withoutGlobalScopes()->findOrFail($contractId);
         abort_unless($this->canAccessContract($contract, $request->user()), 403);
+        $isLocked = PaidReturnReportLock::contract($contract);
         $contract->loadMissing([
             'files',
             'primaryDriver.documents',
@@ -527,6 +536,7 @@ class ContractsController extends Controller
                 'notes' => $contract->notes,
                 'ai_extracted_data' => $contract->ai_extracted_data,
                 'ai_extraction_status' => $contract->ai_extraction_status,
+                'is_locked' => $isLocked,
                 'primary_driver' => $contract->primaryDriver ? $this->serializeDriver($contract->primaryDriver) : $this->emptyDriverPayload('primary'),
                 'additional_drivers' => $contract->additionalDrivers->map(fn (ContractDriver $driver) => $this->serializeDriver($driver))->values()->all(),
                 'car_data' => $this->serializeCarData($contract),
@@ -553,12 +563,12 @@ class ContractsController extends Controller
             ],
             'actions' => [
                 'index' => route('admin.contracts.index', ['subdomain' => $request->route('subdomain')]),
-                'update' => route('admin.contracts.update', ['subdomain' => $request->route('subdomain'), 'contract' => $contract->id]),
-                'show' => route('admin.contracts.show', ['subdomain' => $request->route('subdomain'), 'contract' => $contract->id]),
-                'extract' => route('admin.contracts.extract', ['subdomain' => $request->route('subdomain')]),
-                'extractDriver' => route('admin.contracts.drivers.extract', ['subdomain' => $request->route('subdomain')]),
-                'extractCustomerPhoto' => route('admin.contracts.drivers.photo.extract', ['subdomain' => $request->route('subdomain')]),
-                'reservationStore' => route('admin.reservations.store', ['subdomain' => $request->route('subdomain')]),
+                'update' => $isLocked ? null : url('/admin/contracts/'.$contract->getKey()),
+                'show' => url('/admin/contracts/'.$contract->getKey()),
+                'extract' => $isLocked ? null : route('admin.contracts.extract', ['subdomain' => $request->route('subdomain')]),
+                'extractDriver' => $isLocked ? null : route('admin.contracts.drivers.extract', ['subdomain' => $request->route('subdomain')]),
+                'extractCustomerPhoto' => $isLocked ? null : route('admin.contracts.drivers.photo.extract', ['subdomain' => $request->route('subdomain')]),
+                'reservationStore' => $isLocked ? null : route('admin.reservations.store', ['subdomain' => $request->route('subdomain')]),
             ],
         ]);
     }
@@ -679,6 +689,7 @@ class ContractsController extends Controller
     public function update(Request $request, Contract $contract): RedirectResponse
     {
         abort_unless($this->canAccessContract($contract, $request->user()), 403);
+        $this->abortIfContractLocked($contract);
         $tenantId = (int) (TenantContext::id() ?? 0);
         if ($tenantId <= 0) {
             abort(404);
@@ -724,6 +735,7 @@ class ContractsController extends Controller
             ->findOrFail($contractId);
 
         abort_unless($this->canAccessContract($contract, $request->user()), 403);
+        $this->abortIfContractLocked($contract);
 
         if (!$this->isExtendableContract($contract)) {
             throw ValidationException::withMessages([
@@ -788,6 +800,7 @@ class ContractsController extends Controller
             ->findOrFail($contractId);
 
         abort_unless($this->canAccessContract($contract, $request->user()), 403);
+        $this->abortIfContractLocked($contract);
 
         if (!$this->isExtendableContract($contract)) {
             throw ValidationException::withMessages([
@@ -869,6 +882,13 @@ class ContractsController extends Controller
                 'Rental force extended by %d day(s).',
                 $extraDays
             ));
+    }
+
+    private function abortIfContractLocked(Contract $contract): void
+    {
+        if (PaidReturnReportLock::contract($contract)) {
+            abort(423, 'This contract is locked because the return report is paid.');
+        }
     }
 
     /**
@@ -966,7 +986,7 @@ class ContractsController extends Controller
             'vehicle_condition_after' => ['nullable', Rule::in(['clean', 'not_clean'])],
             'actual_return_time' => ['nullable', 'date'],
             'start_date' => [$requiredOnCreate, 'date'],
-            'end_date' => [$requiredOnCreate, 'date', 'after_or_equal:start_date'],
+            'end_date' => [$requiredOnCreate, 'date', 'after:start_date'],
             'total_amount' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'size:3'],
             'notes' => ['nullable', 'string'],

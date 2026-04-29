@@ -62,6 +62,30 @@ const form = useForm({
 const workshopSearch = ref(props.record?.workshop_name ?? '');
 const workshopMenuOpen = ref(false);
 
+function formatDateTimeLocalInput(value: Date): string {
+    const pad = (number: number) => String(number).padStart(2, '0');
+
+    return [
+        value.getFullYear(),
+        pad(value.getMonth() + 1),
+        pad(value.getDate()),
+    ].join('-') + `T${pad(value.getHours())}:${pad(value.getMinutes())}`;
+}
+
+const completedAtMin = computed(() => {
+    if (!form.started_at) {
+        return '';
+    }
+
+    const startedAt = new Date(form.started_at);
+    if (Number.isNaN(startedAt.getTime())) {
+        return '';
+    }
+
+    startedAt.setMinutes(startedAt.getMinutes() + 1);
+    return formatDateTimeLocalInput(startedAt);
+});
+
 const availableWorkshops = computed(() => {
     const selectedType = props.maintenanceTypes.find((type) => String(type.id) === form.maintenance_type_id);
     return selectedType?.workshops ?? [];
@@ -232,7 +256,7 @@ function submit() {
 
                         <div class="space-y-2">
                             <Label for="completed_at">{{ t('dashboard.admin.maintenance_records.edit.fields.completed_at') }}</Label>
-                            <Input id="completed_at" v-model="form.completed_at" type="datetime-local" />
+                            <Input id="completed_at" v-model="form.completed_at" type="datetime-local" :min="completedAtMin" />
                             <InputError :message="form.errors.completed_at" />
                         </div>
 

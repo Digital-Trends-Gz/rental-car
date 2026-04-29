@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Core\ReservationSettings;
 use App\Core\TenantContext;
 use App\Enums\CarStatus;
 use App\Enums\CouponType;
@@ -16,6 +17,7 @@ use App\Models\Payment;
 use App\Models\PaymentProvider;
 use App\Models\Reservation;
 use App\Models\Tenant;
+use App\Models\TenantSiteSetting;
 use App\Support\Payments\MyFatoorahSubscriptionProvider;
 use App\Support\TenantStripeConnect;
 use Carbon\Carbon;
@@ -127,6 +129,7 @@ class BookingController extends Controller
         $request->validate([
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'return_location' => 'nullable|string|max:255',
             'coupon_code' => 'nullable|string|max:100',
         ]);
 
@@ -140,9 +143,16 @@ class BookingController extends Controller
 
         $startDate = Carbon::parse((string) $request->input('start_date'));
         $endDate = Carbon::parse((string) $request->input('end_date'));
-        $pricing = $this->calculateBookingTotals($car, $startDate, $endDate, $tenant);
+        $pricing = $this->calculateBookingTotals(
+            $car,
+            $startDate,
+            $endDate,
+            $tenant,
+            (string) $request->input('return_location', '')
+        );
         $subtotal = (float) $pricing['subtotal'];
         $taxAmount = (float) $pricing['tax_amount'];
+        $returnLocationFee = (float) $pricing['return_location_fee'];
 
         [$autoDiscount, $autoDiscountAmount] = $this->resolveAutoDiscountForBooking(
             $tenant,
@@ -177,7 +187,7 @@ class BookingController extends Controller
         }
 
         $totalDiscount = min($subtotal, $autoDiscountAmount + $couponDiscount);
-        $totalBeforeDiscount = $subtotal + $taxAmount;
+        $totalBeforeDiscount = $subtotal + $taxAmount + $returnLocationFee;
         $totalAfterDiscount = max(0, $totalBeforeDiscount - $totalDiscount);
 
         return response()->json([
@@ -196,6 +206,7 @@ class BookingController extends Controller
                 'daily_rate' => $pricing['daily_rate'],
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
+                'return_location_fee' => $returnLocationFee,
                 'auto_discount_amount' => $autoDiscountAmount,
                 'coupon_discount_amount' => $couponDiscount,
                 'discount_amount' => $totalDiscount,
@@ -223,7 +234,7 @@ class BookingController extends Controller
         // form validation
         $request->validate([
             'start_date'       => 'required|date',
-            'end_date'         => 'required|date|after_or_equal:start_date',
+            'end_date'         => 'required|date|after:start_date',
             'pickup_location'  => 'required|string|max:255',
             'return_location'  => 'required|string|max:255',
             'coupon_code'      => 'nullable|string|max:100',
@@ -256,9 +267,16 @@ class BookingController extends Controller
                 ]);
         }
 
-        $pricing = $this->calculateBookingTotals($car, $startDate, $endDate, $tenant);
+        $pricing = $this->calculateBookingTotals(
+            $car,
+            $startDate,
+            $endDate,
+            $tenant,
+            $request->return_location
+        );
         $subtotal = (float) $pricing['subtotal'];
         $taxAmount = (float) $pricing['tax_amount'];
+        $returnLocationFee = (float) $pricing['return_location_fee'];
         $days = (int) $pricing['days'];
         $dailyRate = (float) $pricing['daily_rate'];
         $autoDiscount = null;
@@ -303,7 +321,7 @@ class BookingController extends Controller
         }
 
         $discount = min($subtotal, $autoDiscountAmount + $couponDiscountAmount);
-        $total = max(0, $subtotal + $taxAmount - $discount);
+        $total = max(0, $subtotal + $taxAmount + $returnLocationFee - $discount);
         $providerCode = $this->resolveTenantBookingProvider($tenant, $stripeConnect);
         $reservation = null;
         $payment = null;
@@ -335,6 +353,7 @@ class BookingController extends Controller
                 'end_date' => $endDate,
                 'pickup_location' => $request->pickup_location,
                 'return_location' => $request->return_location,
+                'return_location_fee' => $returnLocationFee,
                 'total_days' => $days,
                 'daily_rate' => $dailyRate,
                 'subtotal' => $subtotal,
@@ -1128,22 +1147,47 @@ class BookingController extends Controller
     }
 
     /**
-     * @return array{days:int,daily_rate:float,subtotal:float,tax_amount:float}
+     * @return array{days:int,daily_rate:float,subtotal:float,tax_amount:float,return_location_fee:float}
      */
-    private function calculateBookingTotals(Car $car, Carbon $startDate, Carbon $endDate, ?Tenant $tenant = null): array
+    private function calculateBookingTotals(
+        Car $car,
+        Carbon $startDate,
+        Carbon $endDate,
+        ?Tenant $tenant = null,
+        string $returnLocation = ''
+    ): array
     {
         $days = max(1, $startDate->diffInDays($endDate));
         $dailyRate = abs((float) $car->price_per_day);
         $subtotal = $dailyRate * $days;
         $taxPercentage = $this->resolveBookingTaxPercentage($tenant);
         $taxAmount = $subtotal * ($taxPercentage / 100);
+        $returnLocationFee = $this->resolveBookingReturnLocationFee($tenant, $returnLocation);
 
         return [
             'days' => $days,
             'daily_rate' => $dailyRate,
             'subtotal' => $subtotal,
             'tax_amount' => $taxAmount,
+            'return_location_fee' => $returnLocationFee,
         ];
+    }
+
+    private function resolveBookingReturnLocationFee(?Tenant $tenant, ?string $returnLocation): float
+    {
+        $tenant = $tenant ?: TenantContext::get();
+        if (!$tenant) {
+            return 0.0;
+        }
+
+        $tenant->loadMissing('siteSetting');
+        $settings = ReservationSettings::normalize(
+            is_array($tenant->siteSetting?->reservation_settings)
+                ? $tenant->siteSetting->reservation_settings
+                : null
+        );
+
+        return ReservationSettings::resolveLocationFee($settings, $returnLocation, 'return');
     }
 
     private function resolveBookingTaxPercentage(?Tenant $tenant): float

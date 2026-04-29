@@ -418,7 +418,7 @@ const kpiCards = computed(() => [
                             <CardTitle class="text-base">{{ localize('Forced Extensions', 'ط§ظ„طھظ…ط¯ظٹط¯ ط§ظ„ط¥ط¬ط¨ط§ط±ظٹ') }}</CardTitle>
                         </div>
                         <Link href="/admin/contracts" class="text-xs text-primary hover:underline">
-                            {{ localize('View all', 'ط¹ط±ط¶ ط§ظ„ظƒظ„') }} â†’
+                            {{ localize('View all', 'عرض الكل') }} →
                         </Link>
                     </div>
                     <p class="text-xs text-muted-foreground">{{ localize('Recent office-driven rental extensions and their recorded payments.', 'ط£ط®ط± طھظ…ط¯ظٹط¯ط§طھ ط§ظ„ط¥ظٹط¬ط§ط± ط§ظ„طھظٹ ط£ط¯ط§طھظ‡ط§ ط§ظ„ظ…ظƒطھط¨ ظ…ط¹ طھط³ط¬ظٹظ„ ط§ظ„ط¯ظپط¹ط§طھ.') }}</p>

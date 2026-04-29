@@ -105,6 +105,11 @@ class Contract extends Model
         return $this->hasMany(CarDamageReport::class);
     }
 
+    public function returnStatusReport(): HasOne
+    {
+        return $this->hasOne(ContractReturnReport::class);
+    }
+
     public function openedDamageCases(): HasMany
     {
         return $this->hasMany(CarDamageCase::class, 'opened_in_contract_id');

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Core\ReservationSettings as ReservationSettingsCore;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
@@ -26,6 +27,7 @@ class TenantSiteSetting extends Model
         'contact_page',
         'pdf_header',
         'police_notice',
+        'reservation_settings',
         'translations',
         'footer',
     ];
@@ -40,6 +42,7 @@ class TenantSiteSetting extends Model
         'contact_page' => 'array',
         'pdf_header' => 'array',
         'police_notice' => 'array',
+        'reservation_settings' => 'array',
         'translations' => 'array',
         'footer' => 'array',
     ];
@@ -324,6 +327,7 @@ class TenantSiteSetting extends Model
                     'ar' => null,
                 ],
             ],
+            'reservation_settings' => ReservationSettingsCore::defaults(),
             'translations' => [
                 ...array_fill_keys($supportedLocales, []),
             ],
@@ -552,6 +556,9 @@ class TenantSiteSetting extends Model
                 ],
             ],
             'translations' => self::normalizeTranslations($data['translations'] ?? $defaults['translations']),
+            'reservation_settings' => ReservationSettingsCore::normalize(
+                is_array($data['reservation_settings'] ?? null) ? $data['reservation_settings'] : null
+            ),
             'footer' => [
                 'description' => [
                     'en' => self::nullableString(data_get($data, 'footer.description.en')),

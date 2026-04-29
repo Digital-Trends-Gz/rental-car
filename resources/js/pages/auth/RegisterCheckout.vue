@@ -193,7 +193,9 @@ const errorMessages = computed(() => {
                             </div>
 
                             <div v-if="form.payment_provider_code === 'myfatoorah'" class="space-y-2">
-                                <label class="text-sm font-medium text-slate-900">طريقة الدفع (MyFatoorah)</label>
+                                <label class="text-sm font-medium text-slate-900">
+                                    {{ text('Payment Method (MyFatoorah)', 'طريقة الدفع (MyFatoorah)') }}
+                                </label>
 
                                 <div v-if="selectedProviderMethods.length > 0" class="grid gap-2">
                                     <label

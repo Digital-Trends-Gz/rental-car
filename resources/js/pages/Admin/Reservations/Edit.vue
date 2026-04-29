@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import SearchableSelect from '@/components/SearchableSelect.vue';
 import { useTrans } from '@/composables/useTrans';
@@ -22,6 +22,7 @@ import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
     reservation: any | null;
+    is_locked?: boolean;
     clients: Array<{ id: number; name: string; email: string }>;
     cars: Array<{ id: number; label: string; license_plate: string; branch_name?: string | null; price_per_day: number }>;
     carDamagesByCar: Record<number, Array<{
@@ -55,6 +56,12 @@ const subdomain = computed(() => page.props.current_tenant?.slug);
 const tenantFeatureFlags = computed<Record<string, boolean>>(
     () => page.props.current_tenant?.subscription_plan?.feature_flags || {},
 );
+const reservationSettings = computed<Record<string, any> | null>(
+    () => page.props.tenant_site_settings?.reservation_settings ?? null,
+);
+const returnTimePolicy = computed<Record<string, any>>(
+    () => reservationSettings.value?.return_time_policy || { mode: 'fixed_time', fixed_time: '18:00' },
+);
 const hasFeature = (feature: string) => {
     const flags = tenantFeatureFlags.value || {};
 
@@ -83,7 +90,34 @@ const pageTitle = computed(() =>
         ? `${localize('Edit Reservation', 'طھط¹ط¯ظٹظ„ ط§ظ„ط­ط¬ط²')} ${props.reservation?.reservation_number || ''}`.trim()
         : localize('Create Reservation', 'ط¥ظ†ط´ط§ط، ط­ط¬ط²'),
 );
+const isLocked = computed(() => Boolean(props.is_locked));
+const formatMoney = (value: number): string => {
+    if (!Number.isFinite(value)) {
+        return '0.00';
+    }
+
+    return Math.max(0, value).toFixed(2);
+};
+
+const resolveReturnLocationFee = (location: string): string => {
+    const selected = (reservationSettings.value?.pickup_return_locations ?? []).find((item: any) => {
+        const name = String(item?.name ?? '').trim().toLowerCase();
+        return name !== '' && name === String(location ?? '').trim().toLowerCase() && item?.is_active !== false;
+    });
+
+    if (!selected || selected.return_free) {
+        return '0.00';
+    }
+
+    const fee = Number(selected.return_fee ?? 0);
+    return formatMoney(Number.isFinite(fee) ? fee : 0);
+};
+
 const locationOptions = computed(() => {
+    const configuredLocations = (reservationSettings.value?.pickup_return_locations ?? [])
+        .filter((location: any) => location?.is_active !== false && String(location?.name ?? '').trim() !== '')
+        .map((location: any) => String(location.name).trim());
+
     const baseOptions = [
         localize('Downtown Office', 'ظ…ظƒطھط¨ ظˆط³ط· ط§ظ„ظ…ط¯ظٹظ†ط©'),
         localize('Airport Terminal 1', 'ظ…ط·ط§ط± - طµط§ظ„ط© 1'),
@@ -103,7 +137,9 @@ const locationOptions = computed(() => {
         .filter((value): value is string => Boolean(value && value.trim()))
         .map((value) => value.trim());
 
-    return Array.from(new Set([...currentValues, ...baseOptions]));
+    const sourceOptions = configuredLocations.length > 0 ? configuredLocations : baseOptions;
+
+    return Array.from(new Set([...currentValues, ...sourceOptions]));
 });
 
 const selectedCarDamageCases = computed(() => {
@@ -148,6 +184,13 @@ const form = useForm({
     return_time: props.reservation?.return_time || '18:00',
     pickup_location: props.reservation?.pickup_location || '',
     return_location: props.reservation?.return_location || '',
+    return_location_fee:
+        props.reservation?.return_location_fee !== null &&
+        props.reservation?.return_location_fee !== undefined
+            ? String(props.reservation.return_location_fee)
+            : props.reservation?.return_location
+                ? resolveReturnLocationFee(props.reservation.return_location)
+                : '',
     discount_amount: props.reservation?.discount_amount || 0,
     deposit_amount: 0,
     notes: props.reservation?.notes || '',
@@ -158,6 +201,50 @@ const form = useForm({
 const selectedCar = computed(() => {
     const selectedCarId = Number(form.car_id || props.reservation?.car?.id || 0);
     return props.cars.find((car) => Number(car.id) === selectedCarId) ?? props.reservation?.car ?? null;
+});
+
+const resolvedReturnTime = computed(() => {
+    const mode = String(returnTimePolicy.value?.mode ?? 'fixed_time');
+    if (mode === 'same_pickup') {
+        return form.pickup_time || '09:00';
+    }
+
+    if (mode === 'fixed_time') {
+        return String(returnTimePolicy.value?.fixed_time || '18:00');
+    }
+
+    return form.return_time || '18:00';
+});
+
+watch(
+    () => form.return_location,
+    (location) => {
+        if (!location) {
+            form.return_location_fee = '';
+            return;
+        }
+
+        form.return_location_fee = resolveReturnLocationFee(location);
+    },
+);
+
+watch(
+    () => [form.pickup_time, returnTimePolicy.value?.mode, returnTimePolicy.value?.fixed_time],
+    () => {
+        const mode = String(returnTimePolicy.value?.mode ?? 'fixed_time');
+        if (mode === 'same_pickup' || mode === 'fixed_time') {
+            form.return_time = resolvedReturnTime.value;
+        }
+    },
+    { immediate: true },
+);
+
+const reservationEndDateMin = computed(() => {
+    if (!form.start_date) {
+        return '';
+    }
+
+    return formatDate(addDays(parseDate(form.start_date), 1));
 });
 
 const availabilityCalendar = ref<AvailabilityCalendar | null>(null);
@@ -227,6 +314,11 @@ function selectAvailableDate(iso: string) {
     if (iso < form.start_date) {
         form.start_date = iso;
         form.end_date = '';
+        return;
+    }
+
+    if (iso === form.start_date) {
+        form.setError('end_date', localize('The end date must be after the start date.', 'ط§ظ„طھط§ط±ظٹط® ط§ظ„ظ†ظ‡ط§ط¦ظٹ ظٹط¬ط¨ ط£ظ† ظٹظƒظˆظ† ط¨ط¹ط¯ طھط§ط±ظٹط® ط§ظ„ط¨ط¯ط،.'));
         return;
     }
 
@@ -406,6 +498,7 @@ watch(
 
 function submit() {
     if (!subdomain.value) return;
+    if (isLocked.value) return;
     if (isEdit.value) {
         form.put(update([subdomain.value, props.reservation.id]).url);
         return;
@@ -545,6 +638,10 @@ function submit() {
                 </div>
             </div>
 
+            <div v-if="isLocked" class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                {{ localize('This reservation is locked because its return report is marked paid.', 'هذا الحجز مقفل لأن تقرير العودة عليه حالة مدفوعة.') }}
+            </div>
+
             <form class="space-y-6" @submit.prevent="submit">
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div v-if="!isEdit && hasFeature('cash_payments')">
@@ -611,7 +708,7 @@ function submit() {
 
                     <div>
                         <Label for="end_date">{{ localize('End Date', 'طھط§ط±ظٹط® ط§ظ„ظ†ظ‡ط§ظٹط©') }}</Label>
-                        <Input id="end_date" v-model="form.end_date" type="date" />
+                        <Input id="end_date" v-model="form.end_date" type="date" :min="reservationEndDateMin" />
                         <InputError :message="form.errors.end_date" class="mt-1" />
                     </div>
 
@@ -623,7 +720,24 @@ function submit() {
 
                     <div>
                         <Label for="return_time">{{ localize('Return Time', 'ظˆظ‚طھ ط§ظ„ط¥ط±ط¬ط§ط¹') }}</Label>
-                        <Input id="return_time" v-model="form.return_time" type="time" />
+                        <Input
+                            id="return_time"
+                            v-model="form.return_time"
+                            type="time"
+                            :disabled="['fixed_time', 'same_pickup'].includes(String(returnTimePolicy.mode || 'fixed_time'))"
+                        />
+                        <p
+                            v-if="String(returnTimePolicy.mode || 'fixed_time') === 'fixed_time'"
+                            class="mt-1 text-xs text-muted-foreground"
+                        >
+                            {{ localize('Return time is fixed by tenant settings.', 'وقت الإرجاع ثابت حسب إعدادات المستأجر.') }}
+                        </p>
+                        <p
+                            v-else-if="String(returnTimePolicy.mode || 'fixed_time') === 'same_pickup'"
+                            class="mt-1 text-xs text-muted-foreground"
+                        >
+                            {{ localize('Return time follows pickup time.', 'وقت الإرجاع يطابق وقت الاستلام.') }}
+                        </p>
                         <InputError :message="form.errors.return_time" class="mt-1" />
                     </div>
 
@@ -645,7 +759,7 @@ function submit() {
                         <InputError :message="form.errors.pickup_location" class="mt-1" />
                     </div>
 
-                                        <div>
+                    <div>
                         <Label for="return_location">{{ localize('Return Location', 'موقع الإرجاع') }}</Label>
                         <select
                             id="return_location"
@@ -661,6 +775,21 @@ function submit() {
                             </option>
                         </select>
                         <InputError :message="form.errors.return_location" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="return_location_fee">{{ localize('Return Location Fee', 'رسوم موقع الإرجاع') }}</Label>
+                        <Input
+                            id="return_location_fee"
+                            v-model="form.return_location_fee"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                        />
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            {{ localize('Defaults from reservation settings and can be overridden for this reservation only.', 'القيمة الافتراضية من إعدادات الحجز ويمكن تعديلها لهذا الحجز فقط.') }}
+                        </p>
+                        <InputError :message="form.errors.return_location_fee" class="mt-1" />
                     </div>
 
                     <div>
@@ -762,7 +891,7 @@ function submit() {
                 </div>
 
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <Button type="submit" :disabled="form.processing">
+                    <Button type="submit" :disabled="form.processing || isLocked">
                         {{ form.processing ? localize('Saving...', 'ط¬ط§ط±ظچ ط§ظ„ط­ظپط¸...') : isEdit ? localize('Save Changes', 'ط­ظپط¸ ط§ظ„طھط؛ظٹظٹط±ط§طھ') : localize('Create Reservation', 'ط¥ظ†ط´ط§ط، ط­ط¬ط²') }}
                     </Button>
                     <Link v-if="subdomain" :href="index(subdomain).url">

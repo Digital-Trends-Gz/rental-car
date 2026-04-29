@@ -3,11 +3,13 @@ import InputError from '@/components/InputError.vue';
 import SearchableSelect from '@/components/SearchableSelect.vue';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { useTrans } from '@/composables/useTrans';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { index, store, update } from '@/routes/admin/cars';
+import { store as branchStore } from '@/routes/admin/branches';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
@@ -57,6 +59,11 @@ interface Branch {
     name: string;
 }
 
+interface CountryOption {
+    value: string;
+    label: string;
+}
+
 interface CatalogOption {
     value: string;
     label: string;
@@ -97,6 +104,7 @@ const props = defineProps<{
         makes: MakeOption[];
     };
     branches: Branch[];
+    countries: CountryOption[];
     canAccessAllBranches: boolean;
     enums: Enums;
 }>();
@@ -124,12 +132,14 @@ const fuelTypes = computed(() =>
 
 const statuses = computed(() => props.enums.statuses);
 const statusOptions = computed(() => statuses.value.map((status) => ({ value: status.value, label: status.label })));
-const branchOptions = computed(() => props.branches.map((branch) => ({ value: String(branch.id), label: branch.name })));
+const availableBranches = ref<Branch[]>(Array.isArray(props.branches) ? [...props.branches] : []);
+const branchOptions = computed(() => availableBranches.value.map((branch) => ({ value: String(branch.id), label: branch.name })));
 const transmissionOptions = computed(() => [
     { value: 'automatic', label: localize('Automatic', 'أوتوماتيك') },
     { value: 'manual', label: localize('Manual', 'يدوي') },
 ]);
 const fuelTypeOptions = computed(() => fuelTypes.value.map((fuel) => ({ value: fuel.value, label: fuel.label })));
+const countryOptions = computed(() => props.countries.map((country) => ({ value: country.value, label: country.label })));
 
 const makeOptions = computed<MakeOption[]>(() => {
     const options = [...props.catalog.makes];
@@ -235,6 +245,20 @@ const form = useForm({
     image_removed_files: [] as number[],
     additional_photos: props.additionalPhotoFiles.map((item) => createAdditionalPhotoRow(item.type, item.files)),
     deleted_additional_photo_types: [] as string[],
+});
+
+const showBranchModal = ref(false);
+const branchSubmitting = ref(false);
+const branchForm = useForm({
+    name: '',
+    country: '',
+    city: '',
+    street_name: '',
+    phone_1: '',
+    email: '',
+    cr_number: '',
+    manager_name: '',
+    manager_civil_number: '',
 });
 
 watch(
@@ -382,10 +406,104 @@ function additionalPhotoMaxFiles(type: string): number {
     return isMultiPhotoType(type) ? 10 : 1;
 }
 
-function submit() {
+function dispatchToast(tone: 'success' | 'error' | 'warning' | 'info', message: string) {
+    window.dispatchEvent(new CustomEvent('flash-toast', { detail: { tone, message } }));
+}
+
+function resetBranchForm() {
+    branchForm.clearErrors();
+    branchForm.reset();
+    branchForm.name = '';
+    branchForm.country = '';
+    branchForm.city = '';
+    branchForm.street_name = '';
+    branchForm.phone_1 = '';
+    branchForm.email = '';
+    branchForm.cr_number = '';
+    branchForm.manager_name = '';
+    branchForm.manager_civil_number = '';
+}
+
+function appendBranch(branch: { id: number; name: string }) {
+    if (availableBranches.value.some((item) => Number(item.id) === Number(branch.id))) {
+        return;
+    }
+
+    availableBranches.value = [...availableBranches.value, { id: branch.id, name: branch.name }];
+}
+
+async function createBranchFromModal() {
+    if (!subdomain.value) {
+        dispatchToast('error', localize('Unable to create branch right now.', 'تعذر إنشاء الفرع الآن.'));
+        return;
+    }
+
+    branchForm.clearErrors();
+    branchSubmitting.value = true;
+
+    try {
+        const url = branchStore({ subdomain: subdomain.value }).url + '?inline=1';
+        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
+        const formData = new FormData();
+
+        formData.append('inline', '1');
+        formData.append('name', branchForm.name);
+        formData.append('country', branchForm.country);
+        formData.append('city', branchForm.city);
+        formData.append('street_name', branchForm.street_name);
+        formData.append('phone_1', branchForm.phone_1);
+        formData.append('email', branchForm.email);
+        formData.append('cr_number', branchForm.cr_number);
+        formData.append('manager_name', branchForm.manager_name);
+        formData.append('manager_civil_number', branchForm.manager_civil_number);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                Accept: 'application/json',
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+            },
+            body: formData,
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            if (response.status === 422 && payload?.errors && typeof payload.errors === 'object') {
+                Object.entries(payload.errors as Record<string, string[]>).forEach(([field, messages]) => {
+                    branchForm.setError(field, Array.isArray(messages) ? String(messages[0] || '') : String(messages || ''));
+                });
+                return;
+            }
+
+            dispatchToast('error', String(payload?.message || localize('Branch creation failed.', 'فشل إنشاء الفرع.')));
+            return;
+        }
+
+        if (payload?.branch) {
+            appendBranch(payload.branch);
+            form.branch_id = String(payload.branch.id);
+        }
+
+        dispatchToast('success', String(payload?.message || localize('Branch created successfully.', 'تم إنشاء الفرع بنجاح.')));
+        showBranchModal.value = false;
+        resetBranchForm();
+    } catch (error) {
+        dispatchToast('error', error instanceof Error ? error.message : localize('Branch creation failed.', 'فشل إنشاء الفرع.'));
+    } finally {
+        branchSubmitting.value = false;
+    }
+}
+
+function submit(saveAsDraft = false) {
     if (!subdomain.value) {
         console.warn('No subdomain found; aborting submit.');
         return;
+    }
+
+    if (saveAsDraft) {
+        form.status = 'draft';
     }
 
     if (isEdit.value) {
@@ -653,7 +771,12 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                     </div>
 
                     <div>
-                        <Label for="branch_id">{{ localize('Branch', 'الفرع') }}</Label>
+                        <div class="mb-1 flex items-center justify-between gap-3">
+                            <Label for="branch_id">{{ localize('Branch', 'الفرع') }}</Label>
+                            <Button type="button" variant="outline" size="sm" @click="showBranchModal = true">
+                                {{ localize('New Branch', 'فرع جديد') }}
+                            </Button>
+                        </div>
                         <SearchableSelect
                             v-model="form.branch_id"
                             :options="branchOptions"
@@ -715,6 +838,9 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                 </div>
 
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <Button type="button" variant="outline" :disabled="form.processing" @click="submit(true)">
+                        {{ localize('Save Draft', 'حفظ كمسودة') }}
+                    </Button>
                     <Button type="submit" :disabled="form.processing">
                         {{ submitLabel }}
                     </Button>
@@ -724,5 +850,87 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                 </div>
             </form>
         </main>
+
+        <Dialog v-model:open="showBranchModal">
+            <DialogContent class="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{{ localize('Create Branch', 'إنشاء فرع') }}</DialogTitle>
+                    <DialogDescription>
+                        {{ localize('Create a branch without leaving the car form.', 'أنشئ فرعًا بدون مغادرة نموذج السيارة.') }}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form class="grid gap-4 md:grid-cols-2" @submit.prevent="createBranchFromModal">
+                    <div>
+                        <Label for="branch-name-modal">{{ localize('Branch Name', 'اسم الفرع') }}</Label>
+                        <Input id="branch-name-modal" v-model="branchForm.name" :placeholder="localize('e.g., Downtown Branch', 'مثال: فرع المركز')" />
+                        <InputError :message="branchForm.errors.name" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="branch-country-modal">{{ localize('Country', 'الدولة') }}</Label>
+                        <SearchableSelect
+                            v-model="branchForm.country"
+                            :options="countryOptions"
+                            :placeholder="localize('Select country', 'اختر الدولة')"
+                            :search-placeholder="localize('Search country...', 'ابحث عن الدولة...')"
+                            :empty-text="localize('No countries found.', 'لا توجد دول.')"
+                        />
+                        <InputError :message="branchForm.errors.country" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="branch-city-modal">{{ localize('City', 'المدينة') }}</Label>
+                        <Input id="branch-city-modal" v-model="branchForm.city" :placeholder="localize('e.g., Gaza', 'مثال: غزة')" />
+                        <InputError :message="branchForm.errors.city" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="branch-street-modal">{{ localize('Street Name', 'اسم الشارع') }}</Label>
+                        <Input id="branch-street-modal" v-model="branchForm.street_name" :placeholder="localize('Street name', 'اسم الشارع')" />
+                        <InputError :message="branchForm.errors.street_name" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="branch-cr-modal">{{ localize('CR Number', 'رقم السجل التجاري') }}</Label>
+                        <Input id="branch-cr-modal" v-model="branchForm.cr_number" :placeholder="localize('Commercial registration number', 'رقم السجل التجاري')" />
+                        <InputError :message="branchForm.errors.cr_number" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="branch-manager-name-modal">{{ localize('Manager Name', 'اسم المدير') }}</Label>
+                        <Input id="branch-manager-name-modal" v-model="branchForm.manager_name" :placeholder="localize('Manager name', 'اسم المدير')" />
+                        <InputError :message="branchForm.errors.manager_name" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="branch-manager-civil-modal">{{ localize('Manager Civil Number', 'رقم المدير المدني') }}</Label>
+                        <Input id="branch-manager-civil-modal" v-model="branchForm.manager_civil_number" :placeholder="localize('Civil number', 'رقم المدير المدني')" />
+                        <InputError :message="branchForm.errors.manager_civil_number" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="branch-phone-modal">{{ localize('Phone', 'الهاتف') }}</Label>
+                        <Input id="branch-phone-modal" v-model="branchForm.phone_1" :placeholder="localize('Phone number', 'رقم الهاتف')" />
+                        <InputError :message="branchForm.errors.phone_1" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="branch-email-modal">{{ localize('Email', 'البريد الإلكتروني') }}</Label>
+                        <Input id="branch-email-modal" v-model="branchForm.email" type="email" :placeholder="localize('Email address', 'البريد الإلكتروني')" />
+                        <InputError :message="branchForm.errors.email" class="mt-1" />
+                    </div>
+
+                    <DialogFooter class="md:col-span-2">
+                        <Button type="button" variant="outline" :disabled="branchSubmitting" @click="showBranchModal = false">
+                            {{ localize('Cancel', 'إلغاء') }}
+                        </Button>
+                        <Button type="submit" :disabled="branchSubmitting">
+                            {{ branchSubmitting ? localize('Creating...', 'جارٍ الإنشاء...') : localize('Create Branch', 'إنشاء فرع') }}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </AdminLayout>
 </template>

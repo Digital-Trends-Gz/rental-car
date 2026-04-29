@@ -17,9 +17,11 @@ use App\Http\Controllers\Admin\CarViolationsController;
 use App\Http\Controllers\Admin\ViolationTypesController;
 use App\Http\Controllers\Admin\StripeConnectController;
 use App\Http\Controllers\Admin\PaymentProvidersController;
+use App\Http\Controllers\Admin\ReservationSettingsController;
 use App\Http\Controllers\Admin\WebsiteSettingsController;
 use App\Http\Controllers\Admin\TranslationSettingsController;
 use App\Http\Controllers\Admin\ContractsController;
+use App\Http\Controllers\Admin\ContractReturnReportsController;
 use App\Http\Controllers\Admin\CouponsController;
 use App\Http\Controllers\Admin\CarDiscountsController;
 use App\Http\Controllers\Admin\CarDamageReportsController;
@@ -141,6 +143,15 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::post('contracts/{contract}/extend', [ContractsController::class, 'extend'])
             ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:force_extend_contract'])
             ->name('contracts.extend');
+        Route::get('contracts/{contract}/return-status-report', [ContractReturnReportsController::class, 'create'])
+            ->middleware('permission:tenant-manage-reservations')
+            ->name('contracts.return-report');
+        Route::post('contracts/{contract}/return-status-report', [ContractReturnReportsController::class, 'store'])
+            ->middleware('permission:tenant-manage-reservations')
+            ->name('contracts.return-report.store');
+        Route::get('contracts/{contractId}/return-status-report/pdf', [ContractReturnReportsController::class, 'pdf'])
+            ->middleware('permission:tenant-manage-reservations')
+            ->name('contracts.return-report.pdf');
         Route::get('contracts/{contract}/pdf', [ContractsController::class, 'pdf'])
             ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:pdf_export'])
             ->name('contracts.pdf');
@@ -250,6 +261,12 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::put('settings/website', [WebsiteSettingsController::class, 'update'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.website.update');
+        Route::get('settings/reservation-settings', [ReservationSettingsController::class, 'edit'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.reservation-settings.edit');
+        Route::put('settings/reservation-settings', [ReservationSettingsController::class, 'update'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.reservation-settings.update');
         Route::get('settings/police-notice', [WebsiteSettingsController::class, 'policeNoticeEdit'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.police-notice.edit');
