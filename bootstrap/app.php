@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -83,5 +84,19 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            $status = $e instanceof HttpExceptionInterface ? $e->getStatusCode() : (int) $e->getCode();
+
+            if ($status === 423) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => $e->getMessage() ?: 'This resource is locked.',
+                    ], 423);
+                }
+
+                return back()->with('error', $e->getMessage() ?: 'This resource is locked.');
+            }
+
+            return null;
+        });
     })->create();
