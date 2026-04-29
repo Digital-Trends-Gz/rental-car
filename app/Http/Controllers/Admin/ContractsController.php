@@ -285,10 +285,7 @@ class ContractsController extends Controller
             'extensionRequests' => fn ($query) => $query->latest('id'),
         ]);
 
-        $damageCreateUrl = route('admin.car-damage-reports.create', array_filter([
-            'subdomain' => request()->route('subdomain'),
-            'contract_id' => $contract->id,
-        ], static fn ($value) => $value !== null && $value !== ''));
+        $damageCreateUrl = url('/admin/car-damage-reports/create') . '?contract_id=' . $contract->id;
         $isLocked = PaidReturnReportLock::contract($contract);
 
         return Inertia::render('Admin/Contracts/Show', [
@@ -359,7 +356,7 @@ class ContractsController extends Controller
                                 'notes' => $item->notes,
                             ];
                         })->values()->all(),
-                        'edit_url' => route('admin.car-damage-reports.edit', $report),
+                        'edit_url' => url('/admin/car-damage-reports/'.$report->getKey().'/edit'),
                     ];
                 })->values()->all(),
                 'extension_requests' => $contract->extensionRequests->map(function (RentalExtensionRequest $request) {
@@ -386,19 +383,19 @@ class ContractsController extends Controller
             'startRentalDocument' => $this->firstFileMeta($contract, 'start_contract'),
             'endRentalDocument' => $this->firstFileMeta($contract, 'end_contract'),
             'actions' => [
-                'index' => route('admin.contracts.index', ['subdomain' => request()->route('subdomain')]),
-                'edit' => $isLocked ? null : route('admin.contracts.edit', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id]),
+                'index' => url('/admin/contracts'),
+                'edit' => $isLocked ? null : url('/admin/contracts/'.$contract->id.'/edit'),
                 'damage_create' => $isLocked ? null : $damageCreateUrl,
-                'pdf' => route('admin.contracts.pdf', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id]),
-                'pdf_en' => route('admin.contracts.pdf', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id, 'lang' => 'en']),
-                'pdf_ar' => route('admin.contracts.pdf', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id, 'lang' => 'ar']),
+                'pdf' => url('/admin/contracts/'.$contract->id.'/pdf'),
+                'pdf_en' => url('/admin/contracts/'.$contract->id.'/pdf?lang=en'),
+                'pdf_ar' => url('/admin/contracts/'.$contract->id.'/pdf?lang=ar'),
                 'request_extend' => !$isLocked && $this->isExtendableContract($contract)
-                    ? route('admin.contracts.request-extension', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id])
+                    ? url('/admin/contracts/'.$contract->id.'/extension-request')
                     : null,
                 'extend' => !$isLocked && $this->isExtendableContract($contract)
-                    ? route('admin.contracts.extend', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id])
+                    ? url('/admin/contracts/'.$contract->id.'/extend')
                     : null,
-                'return_report' => route('admin.contracts.return-report', ['subdomain' => request()->route('subdomain'), 'contract' => $contract->id]),
+                'return_report' => url('/admin/contracts/'.$contract->id.'/return-status-report'),
             ],
         ]);
     }
@@ -562,13 +559,13 @@ class ContractsController extends Controller
                 'contracts_extraction_enabled' => AiAutomationSettings::isContractsExtractionEnabled(),
             ],
             'actions' => [
-                'index' => route('admin.contracts.index', ['subdomain' => $request->route('subdomain')]),
+                'index' => url('/admin/contracts'),
                 'update' => $isLocked ? null : url('/admin/contracts/'.$contract->getKey()),
                 'show' => url('/admin/contracts/'.$contract->getKey()),
-                'extract' => $isLocked ? null : route('admin.contracts.extract', ['subdomain' => $request->route('subdomain')]),
-                'extractDriver' => $isLocked ? null : route('admin.contracts.drivers.extract', ['subdomain' => $request->route('subdomain')]),
-                'extractCustomerPhoto' => $isLocked ? null : route('admin.contracts.drivers.photo.extract', ['subdomain' => $request->route('subdomain')]),
-                'reservationStore' => $isLocked ? null : route('admin.reservations.store', ['subdomain' => $request->route('subdomain')]),
+                'extract' => $isLocked ? null : url('/admin/contracts/extract'),
+                'extractDriver' => $isLocked ? null : url('/admin/contracts/drivers/extract'),
+                'extractCustomerPhoto' => $isLocked ? null : url('/admin/contracts/drivers/photo/extract'),
+                'reservationStore' => $isLocked ? null : url('/admin/reservations'),
             ],
         ]);
     }

@@ -123,8 +123,8 @@ class CarDamageReportsController extends Controller
                 'items_count' => (int) $report->items_count,
                 'total_quantity' => (int) ($report->total_quantity ?? 0),
                 'total_estimated_cost' => (float) ($report->total_estimated_cost ?? 0),
-                'edit_url' => route('admin.car-damage-reports.edit', $report),
-                'destroy_url' => route('admin.car-damage-reports.destroy', $report),
+                'edit_url' => url('/admin/car-damage-reports/'.$report->getKey().'/edit'),
+                'destroy_url' => url('/admin/car-damage-reports/'.$report->getKey()),
             ];
         });
 
@@ -141,7 +141,7 @@ class CarDamageReportsController extends Controller
                 'car_id' => $carId,
             ],
             'indexUrl' => url('/admin/car-damage-reports'),
-            'contractsIndexUrl' => route('admin.contracts.index'),
+            'contractsIndexUrl' => url('/admin/contracts'),
         ]);
     }
 
@@ -216,7 +216,7 @@ class CarDamageReportsController extends Controller
         });
 
         return redirect()
-            ->route('admin.car-damage-reports.edit', $report)
+            ->to(url('/admin/car-damage-reports/'.$report->getKey().'/edit'))
             ->with('success', 'Damage report created successfully.');
     }
 
@@ -304,7 +304,7 @@ class CarDamageReportsController extends Controller
         });
 
         return redirect()
-            ->route('admin.car-damage-reports.edit', $carDamageReport)
+            ->to(url('/admin/car-damage-reports/'.$carDamageReport->getKey().'/edit'))
             ->with('success', 'Damage report updated successfully.');
     }
 
