@@ -475,7 +475,10 @@ class ContractsController extends Controller
     }
     public function edit(Request $request, Contract $contract): Response
     {
-        $contractId = (int) ($request->route('contract') ?? $contract->getKey() ?? 0);
+        $routeContract = $request->route('contract');
+        $contractId = $routeContract instanceof Contract
+            ? (int) $routeContract->getKey()
+            : (int) ($routeContract ?? $contract->getKey() ?? 0);
         abort_unless($contractId > 0, 404);
 
         $contract = Contract::query()->withoutGlobalScopes()->findOrFail($contractId);
@@ -722,7 +725,10 @@ class ContractsController extends Controller
 
     public function requestExtension(Request $request): RedirectResponse
     {
-        $contractId = (int) $request->route('contract');
+        $routeContract = $request->route('contract');
+        $contractId = $routeContract instanceof Contract
+            ? (int) $routeContract->getKey()
+            : (int) $routeContract;
         if ($contractId <= 0) {
             abort(404);
         }
@@ -787,7 +793,10 @@ class ContractsController extends Controller
 
     public function extend(Request $request): RedirectResponse
     {
-        $contractId = (int) $request->route('contract');
+        $routeContract = $request->route('contract');
+        $contractId = $routeContract instanceof Contract
+            ? (int) $routeContract->getKey()
+            : (int) $routeContract;
         if ($contractId <= 0) {
             abort(404);
         }
