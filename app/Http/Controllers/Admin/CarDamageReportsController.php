@@ -222,7 +222,10 @@ class CarDamageReportsController extends Controller
 
     public function edit(Request $request, CarDamageReport $carDamageReport): Response
     {
-        $reportId = (int) ($request->route('carDamageReport') ?? $carDamageReport->getKey() ?? 0);
+        $routeReport = $request->route('carDamageReport');
+        $reportId = $routeReport instanceof CarDamageReport
+            ? (int) $routeReport->getKey()
+            : (int) ($routeReport ?? $carDamageReport->getKey() ?? 0);
         abort_unless($reportId > 0, 404);
 
         $carDamageReport = CarDamageReport::query()->withoutGlobalScopes()->findOrFail($reportId);

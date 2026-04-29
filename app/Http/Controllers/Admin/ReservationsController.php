@@ -331,7 +331,10 @@ class ReservationsController extends Controller
      */
     public function edit(Request $request, Reservation $reservation): Response
     {
-        $reservationId = (int) ($request->route('reservation') ?? $reservation->getKey() ?? 0);
+        $routeReservation = $request->route('reservation');
+        $reservationId = $routeReservation instanceof Reservation
+            ? (int) $routeReservation->getKey()
+            : (int) ($routeReservation ?? $reservation->getKey() ?? 0);
         abort_unless($reservationId > 0, 404);
 
         $reservation = Reservation::query()->withoutGlobalScopes()->findOrFail($reservationId);
@@ -430,7 +433,10 @@ class ReservationsController extends Controller
 
     public function collectCashPayment(Request $request)
     {
-        $reservationId = (int) $request->route('reservation');
+        $routeReservation = $request->route('reservation');
+        $reservationId = $routeReservation instanceof Reservation
+            ? (int) $routeReservation->getKey()
+            : (int) $routeReservation;
         $subdomain = $request->route('subdomain');
 
         $reservationModel = Reservation::withoutGlobalScope('tenant')
