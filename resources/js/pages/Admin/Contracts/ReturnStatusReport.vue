@@ -64,7 +64,7 @@ const props = defineProps<{
         id: number | null;
         report_number: string;
         status: string;
-        payment_status: string;
+        payment_status?: string | null;
         actual_return_time: string | null;
         return_location: string | null;
         return_odometer: number | null;
@@ -142,7 +142,7 @@ const options = props.options ?? { fuelLevels: [], vehicleConditions: [] };
 
 const form = useForm({
     actual_return_time: props.report.actual_return_time ?? '',
-    payment_status: props.report.payment_status ?? (Number(props.report.total_extra_charges || 0) > 0 ? 'paid' : 'not_paid'),
+    payment_status: props.report.payment_status ?? 'not_paid',
     return_location: props.report.return_location ?? props.contract.reservation?.return_location ?? '',
     return_odometer: props.report.return_odometer ?? props.contract.vehicle_odometer ?? '',
     return_fuel_level: props.report.return_fuel_level ?? '',
@@ -161,7 +161,7 @@ const form = useForm({
     notes: props.report.notes ?? '',
 });
 
-const isLocked = computed(() => Boolean(props.report.is_locked || props.report.payment_status === 'paid'));
+const isLocked = computed(() => props.report.id !== null && (props.report.payment_status ?? 'not_paid') === 'paid');
 
 const selectedDamageReport = computed<DamageReport | null>(() => {
     const selectedId = Number(form.damage_report_id || 0);
@@ -642,7 +642,7 @@ function submit() {
 
     form.transform((data) => ({
         ...data,
-        payment_status: data.payment_status || 'paid',
+        payment_status: data.payment_status || 'not_paid',
         extra_kilometers: Number(data.extra_kilometers || 0),
         kilometer_rate: Number(data.kilometer_rate || 0),
         cleaning_fee: Number(data.cleaning_fee || 0),
@@ -731,23 +731,24 @@ function submit() {
             </Card>
 
             <form class="space-y-6" @submit.prevent="submit">
+                <div v-if="isLocked" class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                    {{ localize('This return report is marked paid and locked. You can print it, but editing is disabled.', 'تم تسجيل هذا التقرير كمدفوع ومقفل. يمكنك طباعته لكن لا يمكن تعديله.') }}
+                </div>
+                <fieldset :disabled="isLocked" class="space-y-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>{{ localize('Return Details', 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¥ط±ط¬ط§ط¹') }}</CardTitle>
                         <CardDescription>{{ localize('Record the actual return state for this contract.', 'ط³ط¬ظ„ ط­ط§ظ„ط© ط§ظ„ط¥ط±ط¬ط§ط¹ ط§ظ„ظپط¹ظ„ظٹط© ظ„ظ‡ط°ط§ ط§ظ„ط¹ظ‚ط¯.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <div v-if="isLocked" class="md:col-span-2 xl:col-span-3 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                            {{ localize('This return report is marked paid and locked. You can print it, but editing is disabled.', 'تقرير الإرجاع معلم كمدفوع ومقفل. يمكنك طباعته فقط، والتعديل معطل.') }}
-                        </div>
                         <div>
                             <Label for="actual_return_time">{{ localize('Actual Return Time', 'ظˆظ‚طھ ط§ظ„ط¥ط±ط¬ط§ط¹ ط§ظ„ظپط¹ظ„ظٹ') }}</Label>
-                            <Input id="actual_return_time" v-model="form.actual_return_time" type="datetime-local" class="mt-1" :disabled="isLocked" />
+                            <Input id="actual_return_time" v-model="form.actual_return_time" type="datetime-local" class="mt-1" />
                             <InputError :message="form.errors.actual_return_time" class="mt-1" />
                         </div>
                         <div>
                             <Label for="return_location">{{ localize('Return Location', 'ظ…ظƒط§ظ† ط§ظ„ط¥ط±ط¬ط§ط¹') }}</Label>
-                            <select id="return_location" v-model="form.return_location" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" :disabled="isLocked">
+                            <select id="return_location" v-model="form.return_location" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                                 <option value="">{{ localize('Select return location', 'ط§ط®طھط± ظ…ظƒط§ظ† ط§ظ„ط¥ط±ط¬ط§ط¹') }}</option>
                                 <option v-for="location in settings.pickup_return_locations" :key="location.name" :value="location.name">
                                     {{ location.name }}
@@ -760,12 +761,12 @@ function submit() {
                         </div>
                         <div>
                             <Label for="return_odometer">{{ localize('Return Odometer', 'ط¹ط¯ط§ط¯ ط§ظ„ط¹ظˆط¯ط©') }}</Label>
-                            <Input id="return_odometer" v-model="form.return_odometer" type="number" min="0" class="mt-1" :disabled="isLocked" />
+                            <Input id="return_odometer" v-model="form.return_odometer" type="number" min="0" class="mt-1" />
                             <InputError :message="form.errors.return_odometer" class="mt-1" />
                         </div>
                         <div>
                             <Label for="return_fuel_level">{{ localize('Return Fuel Level', 'ظƒظ…ظٹط© ط§ظ„ط¨ظ†ط²ظٹظ† ط§ظ„ظ…ط±ط¬ط¹ط©') }}</Label>
-                            <select id="return_fuel_level" v-model="form.return_fuel_level" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" :disabled="isLocked">
+                            <select id="return_fuel_level" v-model="form.return_fuel_level" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                                 <option value="">{{ localize('Select fuel level', 'ط§ط®طھط± ظƒظ…ظٹط© ط§ظ„ط¨ظ†ط²ظٹظ†') }}</option>
                                 <option v-for="fuelLevel in options.fuelLevels" :key="fuelLevel.value" :value="fuelLevel.value">{{ fuelLevel.label }}</option>
                             </select>
@@ -773,20 +774,31 @@ function submit() {
                         </div>
                         <div>
                             <Label for="vehicle_condition_after">{{ localize('Vehicle Condition After Return', 'ط­ط§ظ„ط© ط§ظ„ط³ظٹط§ط±ط© ط¨ط¹ط¯ ط§ظ„ط¥ط±ط¬ط§ط¹') }}</Label>
-                            <select id="vehicle_condition_after" v-model="form.vehicle_condition_after" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" :disabled="isLocked">
+                            <select id="vehicle_condition_after" v-model="form.vehicle_condition_after" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                                 <option v-for="condition in options.vehicleConditions" :key="condition.value" :value="condition.value">{{ condition.label }}</option>
                             </select>
                             <InputError :message="form.errors.vehicle_condition_after" class="mt-1" />
                         </div>
                         <div>
                             <Label for="damage_report_id">{{ localize('Linked Damage Report', 'طھظ‚ط§ط±ظٹط± ط§ظ„ط¶ط±ط± ط§ظ„ظ…ط±طھط¨ط·ط©') }}</Label>
-                            <select id="damage_report_id" v-model="form.damage_report_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" :disabled="isLocked">
+                            <select id="damage_report_id" v-model="form.damage_report_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                                 <option value="">{{ localize('None', 'ط¨ط¯ظˆظ†') }}</option>
                                 <option v-for="damageReport in afterReturnDamageReports" :key="damageReport.id" :value="damageReport.id">
                                     {{ damageReport.report_number }} - {{ damageReport.items_count }} {{ localize('items', 'ط¹ظ†طµط±') }} - ${{ Number(damageReport.total_estimated_cost).toFixed(2) }}
                                 </option>
                             </select>
                             <InputError :message="form.errors.damage_report_id" class="mt-1" />
+                        </div>
+                        <div>
+                            <Label for="payment_status">{{ localize('Payment Status', 'حالة الدفع') }}</Label>
+                            <select id="payment_status" v-model="form.payment_status" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
+                                <option value="not_paid">{{ localize('Not Paid', 'غير مدفوعة') }}</option>
+                                <option value="paid">{{ localize('Paid', 'مدفوعة') }}</option>
+                            </select>
+                            <p class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('Set Paid to create the extra payment and lock the report after saving.', 'اختر مدفوعة لإنشاء الدفعة الإضافية وقفل التقرير بعد الحفظ.') }}
+                            </p>
+                            <InputError :message="form.errors.payment_status" class="mt-1" />
                         </div>
                     </CardContent>
                 </Card>
@@ -895,26 +907,13 @@ function submit() {
                         </div>
                         <div>
                             <Label for="maintenance_fee">{{ localize('Maintenance Fee', 'ط±ط³ظˆظ… ط§ظ„طµظٹط§ظ†ط©') }}</Label>
-                            <Input id="maintenance_fee" v-model="form.maintenance_fee" type="number" min="0" step="0.01" class="mt-1" :disabled="isLocked" />
+                            <Input id="maintenance_fee" v-model="form.maintenance_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.maintenance_fee" class="mt-1" />
                         </div>
                         <div>
                             <Label for="other_fee">{{ localize('Other Fee', 'ط±ط³ظˆظ… ط£ط®ط±ظ‰') }}</Label>
-                            <Input id="other_fee" v-model="form.other_fee" type="number" min="0" step="0.01" class="mt-1" :disabled="isLocked" />
+                            <Input id="other_fee" v-model="form.other_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.other_fee" class="mt-1" />
-                        </div>
-                        <div>
-                            <Label for="payment_status">{{ localize('Payment Status', 'حالة الدفع') }}</Label>
-                            <select
-                                id="payment_status"
-                                v-model="form.payment_status"
-                                class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
-                                :disabled="isLocked"
-                            >
-                                <option value="paid">{{ localize('Paid', 'مدفوع') }}</option>
-                                <option value="not_paid">{{ localize('Not Paid', 'غير مدفوع') }}</option>
-                            </select>
-                            <InputError :message="form.errors.payment_status" class="mt-1" />
                         </div>
                     </CardContent>
                 </Card>
@@ -1039,11 +1038,12 @@ function submit() {
                         <CardTitle>{{ localize('Notes', 'ظ…ظ„ط§ط­ط¸ط§طھ') }}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Textarea v-model="form.notes" rows="4" :disabled="isLocked" />
+                        <Textarea v-model="form.notes" rows="4" />
                         <InputError :message="form.errors.notes" class="mt-1" />
                     </CardContent>
                 </Card>
 
+                </fieldset>
                 <div class="flex items-center gap-3">
                     <Button type="submit" :disabled="form.processing || isLocked">
                         {{ form.processing ? localize('Saving...', 'ط¬ط§ط±ظٹ ط§ظ„ط­ظپط¸...') : localize('Save Return Report', 'ط­ظپط¸ طھظ‚ط±ظٹط± ط§ظ„ط¥ط±ط¬ط§ط¹') }}
@@ -1056,4 +1056,3 @@ function submit() {
         </main>
     </AdminLayout>
 </template>
-

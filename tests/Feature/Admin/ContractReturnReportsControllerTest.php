@@ -78,6 +78,7 @@ class ContractReturnReportsControllerTest extends TestCase
                 'return_fuel_level' => 'half',
                 'vehicle_condition_after' => 'not_clean',
                 'damage_report_id' => $fixtures['damageReport']->id,
+                'payment_status' => 'paid',
                 'extra_kilometers' => 0,
                 'kilometer_rate' => 0,
                 'cleaning_fee' => 0,

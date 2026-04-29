@@ -14,7 +14,6 @@ use App\Models\ContractReturnReport;
 use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
-use App\Support\PaidReturnReportLock;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -54,7 +53,6 @@ class ContractReturnReportsController extends Controller
         ]);
 
         $existingReport = $contract->returnStatusReport;
-        $isLocked = PaidReturnReportLock::contract($contract);
         $settings = $this->reservationSettings((int) $contract->tenant_id);
         $afterReturnDamageReports = $contract->damageReports
             ->filter(fn (CarDamageReport $report) => $report->report_type === 'after_return')
@@ -119,7 +117,6 @@ class ContractReturnReportsController extends Controller
                 })->values()->all(),
             ],
             'report' => $this->serializeReport($existingReport),
-            'isLocked' => $isLocked,
             'settings' => [
                 'return_time_policy' => $settings['return_time_policy'] ?? [],
                 'pickup_return_locations' => $settings['pickup_return_locations'] ?? [],
@@ -315,9 +312,7 @@ class ContractReturnReportsController extends Controller
         $settings = $this->reservationSettings($tenantId);
         $damageReport = null;
         $existingReport = $contract->returnStatusReport()->first();
-        if ($existingReport && (string) ($existingReport->payment_status ?? '') === 'paid') {
-            abort(423, 'This return report is paid and locked.');
-        }
+        $paymentStatus = (string) ($validated['payment_status'] ?? 'not_paid');
 
         if (!empty($validated['damage_report_id'])) {
             $damageReport = $contract->damageReports
@@ -370,6 +365,7 @@ class ContractReturnReportsController extends Controller
             $validated,
             $contract,
             $damageReport,
+            $paymentStatus,
             $extraKilometers,
             $kilometerRate,
             $cleaningFee,
@@ -388,11 +384,11 @@ class ContractReturnReportsController extends Controller
                     'branch_id' => $contract->branch_id ?: $contract->reservation?->car?->branch_id,
                     'reservation_id' => $contract->reservation_id,
                     'car_id' => $contract->reservation?->car?->id,
-                'damage_report_id' => $damageReport?->id,
-                    'payment_status' => $validated['payment_status'] ?? 'paid',
+                    'damage_report_id' => $damageReport?->id,
                     'created_by' => $request->user()?->id,
                     'report_number' => $existingReport?->report_number ?: $this->generateReportNumber(),
                     'status' => 'finalized',
+                    'payment_status' => $paymentStatus,
                     'actual_return_time' => $validated['actual_return_time'] ?? null,
                     'return_location' => $validated['return_location'] ?? null,
                     'return_odometer' => $validated['return_odometer'] ?? null,
@@ -413,7 +409,7 @@ class ContractReturnReportsController extends Controller
                 ]
             );
 
-            if (($validated['payment_status'] ?? 'paid') === 'paid' && $totalExtraCharges > 0) {
+            if ($paymentStatus === 'paid' && $totalExtraCharges > 0) {
                 $payment = $report->payment_id
                     ? Payment::query()->where('tenant_id', $contract->tenant_id)->find($report->payment_id)
                     : null;
@@ -438,9 +434,6 @@ class ContractReturnReportsController extends Controller
                 $payment->save();
 
                 $report->payment_id = $payment->id;
-                $report->save();
-            } else {
-                $report->payment_id = null;
                 $report->save();
             }
 
@@ -477,8 +470,8 @@ class ContractReturnReportsController extends Controller
             'return_odometer' => ['nullable', 'integer', 'min:0'],
             'return_fuel_level' => ['nullable', Rule::in(['empty', 'quarter', 'half', 'three_quarters', 'full'])],
             'vehicle_condition_after' => ['nullable', Rule::in(['clean', 'not_clean'])],
-            'damage_report_id' => ['nullable', 'integer'],
             'payment_status' => ['nullable', Rule::in(['paid', 'not_paid'])],
+            'damage_report_id' => ['nullable', 'integer'],
             'extra_kilometers' => ['nullable', 'numeric', 'min:0'],
             'kilometer_rate' => ['nullable', 'numeric', 'min:0'],
             'cleaning_fee' => ['nullable', 'numeric', 'min:0'],
@@ -542,9 +535,8 @@ class ContractReturnReportsController extends Controller
                 'return_odometer' => null,
                 'return_fuel_level' => '',
                 'vehicle_condition_after' => 'clean',
+                'payment_status' => 'not_paid',
                 'damage_report_id' => null,
-                'payment_status' => 'paid',
-                'is_locked' => false,
                 'extra_kilometers' => 0,
                 'kilometer_rate' => 0,
                 'cleaning_fee' => 0,
@@ -569,9 +561,8 @@ class ContractReturnReportsController extends Controller
             'return_odometer' => $report->return_odometer,
             'return_fuel_level' => $report->return_fuel_level,
             'vehicle_condition_after' => $report->vehicle_condition_after,
+            'payment_status' => $report->payment_status ?? ($report->payment ? 'paid' : 'not_paid'),
             'damage_report_id' => $report->damage_report_id,
-            'payment_status' => $report->payment_status ?: ($report->payment ? 'paid' : 'not_paid'),
-            'is_locked' => (string) ($report->payment_status ?? '') === 'paid',
             'extra_kilometers' => $report->extra_kilometers,
             'kilometer_rate' => $report->kilometer_rate,
             'cleaning_fee' => $report->cleaning_fee,
