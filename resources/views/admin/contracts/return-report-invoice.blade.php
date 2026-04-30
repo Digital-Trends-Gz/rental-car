@@ -3,13 +3,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ $report->report_number }} - Additional Charges Invoice</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
         body {
             margin: 0;
             color: #0f1c42;
-            font-family: 'Cairo', Arial, sans-serif;
+            font-family: 'DejaVu Sans', Arial, sans-serif;
             font-size: 11px;
             line-height: 1.35;
             background: #fff;
@@ -20,7 +19,7 @@
         table { width: 100%; border-collapse: collapse; }
         td { vertical-align: top; padding: 3px 5px; }
         .ar {
-            font-family: 'Cairo', Arial, sans-serif;
+            font-family: 'DejaVu Sans', Arial, sans-serif;
             direction: rtl;
             unicode-bidi: plaintext;
             text-align: right;
@@ -32,7 +31,7 @@
         .header-center { width: 50%; text-align: center; }
         .header-right { width: 25%; text-align: right; direction: rtl; unicode-bidi: plaintext; }
         .company-name-en { font-size: 18px; font-weight: 800; color: #1a326b; letter-spacing: 1px; }
-        .company-name-ar { font-size: 20px; font-weight: 800; color: #1a326b; margin-top: -4px; font-family: 'Cairo', Arial, sans-serif; }
+        .company-name-ar { font-size: 20px; font-weight: 800; color: #1a326b; margin-top: -4px; font-family: 'DejaVu Sans', Arial, sans-serif; }
         .company-name-ar.center-name {
             margin-top: 0;
             margin-bottom: 2px;
@@ -50,7 +49,7 @@
             color: #1a326b;
             direction: rtl;
             unicode-bidi: plaintext;
-            font-family: 'Cairo', Arial, sans-serif;
+            font-family: 'DejaVu Sans', Arial, sans-serif;
         }
         .meta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
         .meta-card { border: 1px solid #1a326b; border-radius: 4px; padding: 6px 8px; }

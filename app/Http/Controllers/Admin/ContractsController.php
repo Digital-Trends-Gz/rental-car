@@ -487,7 +487,7 @@ class ContractsController extends Controller
         }
 
         return DomPdf::loadView('admin.contracts.pdf', $viewData)
-            ->setOption('defaultFont', 'TahomaPdf')
+            ->setOption('defaultFont', 'DejaVu Sans')
             ->setOption('isRemoteEnabled', true)
             ->setPaper('a4', 'portrait')
             ->download($fileName);

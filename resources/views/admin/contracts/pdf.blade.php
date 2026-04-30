@@ -4,16 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ __('contracts.pdf.document_title', ['number' => $contract->contract_number]) }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
-        body { margin: 0; color: #0f1c42; font-family: 'Cairo', Arial, sans-serif; font-size: 11px; line-height: 1.25; background: #fff; font-weight: 600; }
+        body { margin: 0; color: #0f1c42; font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 11px; line-height: 1.25; background: #fff; font-weight: 600; }
         .page { width: 100%; padding: 4px 6px; }
         .sheet { border: 2px solid #1a326b; background: #fff; padding: 2px; }
         table { width: 100%; border-collapse: collapse; }
         td { vertical-align: top; padding: 3px 5px; }
         .ar {
-            font-family: 'Cairo', Arial, sans-serif;
+            font-family: 'DejaVu Sans', Arial, sans-serif;
             direction: rtl;
             unicode-bidi: plaintext;
             text-align: right;

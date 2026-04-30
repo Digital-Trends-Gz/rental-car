@@ -283,7 +283,7 @@ class ContractReturnReportsController extends Controller
         }
 
         $dompdf = DomPdf::loadView('admin.contracts.return-report-invoice', $viewData)
-            ->setOption('defaultFont', 'TahomaPdf')
+            ->setOption('defaultFont', 'DejaVu Sans')
             ->setOption('isRemoteEnabled', true)
             ->setPaper('a4', 'portrait');
 
