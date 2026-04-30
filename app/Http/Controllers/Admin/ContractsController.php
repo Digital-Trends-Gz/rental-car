@@ -448,14 +448,10 @@ class ContractsController extends Controller
             : [];
         $branding = $this->pdfBranding($contract->tenant);
 
-        $pdfFallback = !PdfRuntime::hasNodeBinary();
-
         $viewData = [
             'contract' => $contract,
             'currentDamageCases' => $currentDamageCases,
-            'damageDiagram' => $pdfFallback
-                ? ['data_uri' => null, 'empty' => true]
-                : $this->buildPrintableDamageDiagram($currentDamageCases, $viewSideLabels),
+            'damageDiagram' => $this->buildPrintableDamageDiagram($currentDamageCases, $viewSideLabels),
             'reportTypeLabels' => $reportTypeLabels,
             'statusLabels' => $statusLabels,
             'damageTypeLabels' => $damageTypeLabels,
@@ -464,8 +460,7 @@ class ContractsController extends Controller
             'zoneLabels' => $zoneLabels,
             'generatedAt' => now(),
             'companyName' => $branding['name'],
-            'companyLogo' => $pdfFallback ? null : $branding['logo'],
-            'pdfFallback' => $pdfFallback,
+            'companyLogo' => $branding['logo'],
             'currencySymbol' => config('app.currency_symbol', '$'),
             'locale' => $locale,
             'direction' => $direction,
@@ -473,37 +468,42 @@ class ContractsController extends Controller
 
         $fileName = $contract->contract_number.'-'.$locale.'-report.pdf';
 
-        if (!$pdfFallback) {
-            try {
-                return Pdf::view('admin.contracts.pdf', $viewData)
-                    ->format(Format::A4)
-                    ->portrait()
-                    ->margins(4, 4, 4, 4)
-                    ->withBrowsershot(function (Browsershot $browsershot): void {
-                        $nodeBinary = PdfRuntime::nodeBinary();
-                        if ($nodeBinary) {
-                            $browsershot->setNodeBinary($nodeBinary);
-                        }
+        try {
+            return Pdf::view('admin.contracts.pdf', $viewData)
+                ->format(Format::A4)
+                ->portrait()
+                ->margins(4, 4, 4, 4)
+                ->withBrowsershot(function (Browsershot $browsershot): void {
+                    $nodeBinary = PdfRuntime::nodeBinary();
+                    if ($nodeBinary) {
+                        $browsershot->setNodeBinary($nodeBinary);
+                    }
 
-                        $npmBinary = trim((string) config('laravel-pdf.browsershot.npm_binary', ''));
-                        if ($npmBinary !== '') {
-                            $browsershot->setNpmBinary($npmBinary);
-                        }
+                    $npmBinary = PdfRuntime::npmBinary();
+                    if ($npmBinary) {
+                        $browsershot->setNpmBinary($npmBinary);
+                    }
 
-                        $chromePath = trim((string) config('laravel-pdf.browsershot.chrome_path', ''));
-                        if ($chromePath !== '') {
-                            $browsershot->setChromePath($chromePath);
-                        }
+                    $chromePath = PdfRuntime::chromeBinary();
+                    if ($chromePath) {
+                        $browsershot->setChromePath($chromePath);
+                    }
 
-                        $browsershot
-                            ->waitUntilNetworkIdle(false)
-                            ->timeout(120)
-                            ->newHeadless();
-                    })
-                    ->download($fileName);
-            } catch (Throwable $e) {
-                report($e);
-            }
+                    $browsershot
+                        ->noSandbox()
+                        ->addChromiumArguments([
+                            'disable-dev-shm-usage',
+                            'disable-gpu',
+                        ])
+                        ->setOption('printBackground', true)
+                        ->setOption('preferCSSPageSize', true)
+                        ->waitUntilNetworkIdle(false)
+                        ->timeout(120)
+                        ->newHeadless();
+                })
+                ->download($fileName);
+        } catch (Throwable $e) {
+            report($e);
         }
 
         $fallbackViewData = $viewData;

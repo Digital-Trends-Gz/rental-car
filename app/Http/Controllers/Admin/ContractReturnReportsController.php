@@ -274,13 +274,13 @@ class ContractReturnReportsController extends Controller
                             $browsershot->setNodeBinary($nodeBinary);
                         }
 
-                        $npmBinary = trim((string) config('laravel-pdf.browsershot.npm_binary', ''));
-                        if ($npmBinary !== '') {
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
                             $browsershot->setNpmBinary($npmBinary);
                         }
 
-                        $chromePath = trim((string) config('laravel-pdf.browsershot.chrome_path', ''));
-                        if ($chromePath !== '') {
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
                             $browsershot->setChromePath($chromePath);
                         }
 

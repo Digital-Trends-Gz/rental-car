@@ -21,8 +21,8 @@
                 <div class="contract-title-ar ar">عقد إيجار سيارة</div>
             </div>
         </td>
-        <td class="header-right ar" style="font-size: 9px; line-height: 1.4; font-weight: 700;">
-            <div>رقم السجل التجاري : {{ $headerCrNumber }} </div>
+        <td class="header-right ar">
+            <div>رقم السجل التجاري : {{ $headerCrNumber }}</div>
             <div>ص.ب : {{ $headerPoBox }}</div>
             <div>الرمز البريدي : {{ $headerPc }}</div>
             <div>{{ $headerCountryAr }}</div>

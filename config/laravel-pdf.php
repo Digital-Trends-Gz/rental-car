@@ -2,27 +2,56 @@
 
 $executableFinder = new Symfony\Component\Process\ExecutableFinder();
 
-$defaultNodeBinary = $executableFinder->find('node')
-    ?: $executableFinder->find('nodejs')
-    ?: collect([
-        '/usr/bin/node',
-        '/usr/local/bin/node',
-        '/opt/homebrew/bin/node',
-    ])->first(fn (string $path) => is_file($path));
+$findExecutable = static function (string $name, array $dirs = []) use ($executableFinder): ?string {
+    $resolved = $executableFinder->find($name, null, $dirs);
 
-$defaultNpmBinary = $executableFinder->find('npm')
-    ?: $executableFinder->find('npm-cli.js')
-    ?: collect([
-        '/usr/bin/npm',
+    return $resolved ?: null;
+};
+
+$linuxBinaryDirs = [
+    '/usr/bin',
+    '/usr/local/bin',
+    '/bin',
+    '/opt/homebrew/bin',
+    '/opt/cpanel/ea-nodejs16/bin',
+    '/opt/cpanel/ea-nodejs18/bin',
+    '/opt/cpanel/ea-nodejs20/bin',
+    '/opt/cpanel/ea-nodejs22/bin',
+    '/opt/plesk/node/16/bin',
+    '/opt/plesk/node/18/bin',
+    '/opt/plesk/node/20/bin',
+    '/usr/local/alt-nodejs/bin',
+];
+
+$defaultNodeBinary = $findExecutable('node', $linuxBinaryDirs)
+    ?: $findExecutable('nodejs', $linuxBinaryDirs)
+    ?: collect(array_merge($linuxBinaryDirs, [
+        '/usr/local/bin/node',
+        '/usr/bin/node',
+        '/usr/bin/nodejs',
+        '/usr/local/bin/nodejs',
+    ]))->first(fn (string $path) => is_file($path));
+
+$defaultNpmBinary = $findExecutable('npm', $linuxBinaryDirs)
+    ?: $findExecutable('npm-cli.js', $linuxBinaryDirs)
+    ?: collect(array_merge($linuxBinaryDirs, [
         '/usr/local/bin/npm',
-        '/opt/homebrew/bin/npm',
-    ])->first(fn (string $path) => is_file($path));
+        '/usr/bin/npm',
+        '/usr/local/bin/npm-cli.js',
+        '/usr/bin/npm-cli.js',
+    ]))->first(fn (string $path) => is_file($path));
 
 $defaultChromePath = collect([
     'C:\Program Files\Google\Chrome\Application\chrome.exe',
     'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
     'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
     'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/microsoft-edge',
+    '/snap/bin/chromium',
 ])->first(fn (string $path) => is_file($path));
 
 return [
