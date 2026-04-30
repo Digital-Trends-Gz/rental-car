@@ -229,12 +229,15 @@ class ContractReturnReportsController extends Controller
         File::ensureDirectoryExists(storage_path('fonts'));
         File::ensureDirectoryExists(storage_path('app/pdf-temp'));
 
+        $pdfFallback = !PdfRuntime::hasNodeBinary();
+
         $viewData = [
             'contract' => $contract,
             'report' => $report,
             'settings' => $settings,
             'companyName' => $companyName,
-            'companyLogo' => $companyLogo,
+            'companyLogo' => $pdfFallback ? null : $companyLogo,
+            'pdfFallback' => $pdfFallback,
             'headerCompanyNameEn' => $headerCompanyNameEn,
             'headerCompanyNameAr' => $headerCompanyNameAr,
             'headerCrNumber' => $headerCrNumber,
@@ -259,7 +262,7 @@ class ContractReturnReportsController extends Controller
         $downloadName = $report->report_number.'-'.$locale.'-invoice.pdf';
         $tempPath = storage_path('app/pdf-temp/'.$downloadName);
 
-        if (PdfRuntime::hasNodeBinary()) {
+        if (!$pdfFallback) {
             try {
                 SpatiePdf::view('admin.contracts.return-report-invoice', $viewData)
                     ->format(Format::A4)

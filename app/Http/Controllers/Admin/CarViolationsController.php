@@ -808,6 +808,8 @@ class CarViolationsController extends Controller
         $renter = $reservation?->user;
         $branch = $carViolation->branch ?? $car?->branch;
 
+        $pdfFallback = !PdfRuntime::hasNodeBinary();
+
         $viewData = [
             'violation' => $carViolation,
             'reservation' => $reservation,
@@ -820,7 +822,8 @@ class CarViolationsController extends Controller
                 ?: (string) data_get($pdfHeader, 'company_name.ar')
                 ?: (string) data_get($pdfHeader, 'company_name.en')
                 ?: $this->resolveCompanyName($carViolation),
-            'companyLogo' => $this->resolveCompanyLogo($carViolation),
+            'companyLogo' => $pdfFallback ? null : $this->resolveCompanyLogo($carViolation),
+            'pdfFallback' => $pdfFallback,
             'generatedAt' => now(),
             'pdfHeader' => $pdfHeader,
             'policeNotice' => $policeNotice,
@@ -828,7 +831,7 @@ class CarViolationsController extends Controller
 
         $fileName = ($carViolation->violation_number ?: ('violation-'.$carViolation->id)).'-police-notice.pdf';
 
-        if (PdfRuntime::hasNodeBinary()) {
+        if (!$pdfFallback) {
             try {
                 $pdf = Pdf::view('admin.car_violations.notice', $viewData)
                     ->format('a4')
@@ -840,7 +843,10 @@ class CarViolationsController extends Controller
             }
         }
 
-        $pdf = DomPdf::loadView('admin.car_violations.notice', $viewData)
+        $fallbackViewData = $viewData;
+        $fallbackViewData['companyLogo'] = null;
+
+        $pdf = DomPdf::loadView('admin.car_violations.notice', $fallbackViewData)
             ->setOption('defaultFont', 'DejaVu Sans')
             ->setOption('isRemoteEnabled', true)
             ->setPaper('a4', 'portrait');

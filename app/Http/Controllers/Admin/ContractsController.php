@@ -448,10 +448,14 @@ class ContractsController extends Controller
             : [];
         $branding = $this->pdfBranding($contract->tenant);
 
+        $pdfFallback = !PdfRuntime::hasNodeBinary();
+
         $viewData = [
             'contract' => $contract,
             'currentDamageCases' => $currentDamageCases,
-            'damageDiagram' => $this->buildPrintableDamageDiagram($currentDamageCases, $viewSideLabels),
+            'damageDiagram' => $pdfFallback
+                ? ['data_uri' => null, 'empty' => true]
+                : $this->buildPrintableDamageDiagram($currentDamageCases, $viewSideLabels),
             'reportTypeLabels' => $reportTypeLabels,
             'statusLabels' => $statusLabels,
             'damageTypeLabels' => $damageTypeLabels,
@@ -460,7 +464,8 @@ class ContractsController extends Controller
             'zoneLabels' => $zoneLabels,
             'generatedAt' => now(),
             'companyName' => $branding['name'],
-            'companyLogo' => $branding['logo'],
+            'companyLogo' => $pdfFallback ? null : $branding['logo'],
+            'pdfFallback' => $pdfFallback,
             'currencySymbol' => config('app.currency_symbol', '$'),
             'locale' => $locale,
             'direction' => $direction,
@@ -468,7 +473,7 @@ class ContractsController extends Controller
 
         $fileName = $contract->contract_number.'-'.$locale.'-report.pdf';
 
-        if (PdfRuntime::hasNodeBinary()) {
+        if (!$pdfFallback) {
             try {
                 return Pdf::view('admin.contracts.pdf', $viewData)
                     ->format(Format::A4)
@@ -486,7 +491,11 @@ class ContractsController extends Controller
             }
         }
 
-        return DomPdf::loadView('admin.contracts.pdf', $viewData)
+        $fallbackViewData = $viewData;
+        $fallbackViewData['companyLogo'] = null;
+        $fallbackViewData['damageDiagram'] = ['data_uri' => null, 'empty' => true];
+
+        return DomPdf::loadView('admin.contracts.pdf', $fallbackViewData)
             ->setOption('defaultFont', 'DejaVu Sans')
             ->setOption('isRemoteEnabled', true)
             ->setPaper('a4', 'portrait')
