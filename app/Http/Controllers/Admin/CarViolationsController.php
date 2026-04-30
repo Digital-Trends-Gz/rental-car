@@ -13,16 +13,19 @@ use App\Models\Reservation;
 use App\Models\User;
 use App\Models\ViolationType;
 use App\Support\BranchAccess;
+use App\Support\PdfRuntime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Barryvdh\DomPDF\Facade\Pdf as DomPdf;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Browsershot\Browsershot;
 use Spatie\LaravelPdf\Enums\Format;
 use Spatie\LaravelPdf\Facades\Pdf;
+use Throwable;
 
 class CarViolationsController extends Controller
 {
@@ -805,7 +808,7 @@ class CarViolationsController extends Controller
         $renter = $reservation?->user;
         $branch = $carViolation->branch ?? $car?->branch;
 
-        $pdf = Pdf::view('admin.car_violations.notice', [
+        $viewData = [
             'violation' => $carViolation,
             'reservation' => $reservation,
             'contract' => $contract,
@@ -821,11 +824,28 @@ class CarViolationsController extends Controller
             'generatedAt' => now(),
             'pdfHeader' => $pdfHeader,
             'policeNotice' => $policeNotice,
-        ])->format('a4')->orientation('portrait');
+        ];
 
         $fileName = ($carViolation->violation_number ?: ('violation-'.$carViolation->id)).'-police-notice.pdf';
 
-        return $download ? $pdf->download($fileName) : $pdf->inline($fileName);
+        if (PdfRuntime::hasNodeBinary()) {
+            try {
+                $pdf = Pdf::view('admin.car_violations.notice', $viewData)
+                    ->format('a4')
+                    ->orientation('portrait');
+
+                return $download ? $pdf->download($fileName) : $pdf->inline($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        $pdf = DomPdf::loadView('admin.car_violations.notice', $viewData)
+            ->setOption('defaultFont', 'TahomaPdf')
+            ->setOption('isRemoteEnabled', true)
+            ->setPaper('a4', 'portrait');
+
+        return $download ? $pdf->download($fileName) : $pdf->stream($fileName);
     }
 
     private function resolveCompanyName(CarViolation $carViolation): string

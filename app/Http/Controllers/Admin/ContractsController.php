@@ -32,6 +32,7 @@ use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
 use App\Support\ContractCustomerPhotoExtractor;
 use App\Support\PaidReturnReportLock;
+use App\Support\PdfRuntime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,9 +48,11 @@ use Inertia\Response;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use MohamedGaldi\ViltFilepond\Models\TempFile;
 use MohamedGaldi\ViltFilepond\Services\FilePondService;
+use Barryvdh\DomPDF\Facade\Pdf as DomPdf;
 use Spatie\Browsershot\Browsershot;
 use Spatie\LaravelPdf\Enums\Format;
 use Spatie\LaravelPdf\Facades\Pdf;
+use Throwable;
 
 class ContractsController extends Controller
 {
@@ -445,7 +448,7 @@ class ContractsController extends Controller
             : [];
         $branding = $this->pdfBranding($contract->tenant);
 
-        return Pdf::view('admin.contracts.pdf', [
+        $viewData = [
             'contract' => $contract,
             'currentDamageCases' => $currentDamageCases,
             'damageDiagram' => $this->buildPrintableDamageDiagram($currentDamageCases, $viewSideLabels),
@@ -461,17 +464,33 @@ class ContractsController extends Controller
             'currencySymbol' => config('app.currency_symbol', '$'),
             'locale' => $locale,
             'direction' => $direction,
-        ])
-            ->format(Format::A4)
-            ->portrait()
-            ->margins(4, 4, 4, 4)
-            ->withBrowsershot(function (Browsershot $browsershot): void {
-                $browsershot
-                    ->waitUntilNetworkIdle(false)
-                    ->timeout(120)
-                    ->newHeadless();
-            })
-            ->download($contract->contract_number.'-'.$locale.'-report.pdf');
+        ];
+
+        $fileName = $contract->contract_number.'-'.$locale.'-report.pdf';
+
+        if (PdfRuntime::hasNodeBinary()) {
+            try {
+                return Pdf::view('admin.contracts.pdf', $viewData)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $browsershot
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    })
+                    ->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        return DomPdf::loadView('admin.contracts.pdf', $viewData)
+            ->setOption('defaultFont', 'TahomaPdf')
+            ->setOption('isRemoteEnabled', true)
+            ->setPaper('a4', 'portrait')
+            ->download($fileName);
     }
     public function edit(Request $request, Contract $contract): Response
     {

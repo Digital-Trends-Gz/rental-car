@@ -15,6 +15,7 @@ use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Support\BranchAccess;
+use App\Support\PdfRuntime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\RedirectResponse;
@@ -258,38 +259,40 @@ class ContractReturnReportsController extends Controller
         $downloadName = $report->report_number.'-'.$locale.'-invoice.pdf';
         $tempPath = storage_path('app/pdf-temp/'.$downloadName);
 
-        try {
-            SpatiePdf::view('admin.contracts.return-report-invoice', $viewData)
-                ->format(Format::A4)
-                ->portrait()
-                ->margins(4, 4, 4, 4)
-                ->withBrowsershot(function (Browsershot $browsershot): void {
-                    $browsershot
-                        ->waitUntilNetworkIdle(false)
-                        ->timeout(120)
-                        ->newHeadless();
-                })
-                ->save($tempPath);
+        if (PdfRuntime::hasNodeBinary()) {
+            try {
+                SpatiePdf::view('admin.contracts.return-report-invoice', $viewData)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $browsershot
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    })
+                    ->save($tempPath);
 
-            return response(file_get_contents($tempPath), 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
-            ]);
-        } catch (Throwable $e) {
-            report($e);
-
-            $dompdf = DomPdf::loadView('admin.contracts.return-report-invoice', $viewData)
-                ->setOption('defaultFont', 'TahomaPdf')
-                ->setOption('isRemoteEnabled', true)
-                ->setPaper('a4', 'portrait');
-
-            file_put_contents($tempPath, $dompdf->output());
-
-            return response(file_get_contents($tempPath), 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
-            ]);
+                return response(file_get_contents($tempPath), 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
+                ]);
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
+
+        $dompdf = DomPdf::loadView('admin.contracts.return-report-invoice', $viewData)
+            ->setOption('defaultFont', 'TahomaPdf')
+            ->setOption('isRemoteEnabled', true)
+            ->setPaper('a4', 'portrait');
+
+        file_put_contents($tempPath, $dompdf->output());
+
+        return response(file_get_contents($tempPath), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
