@@ -837,6 +837,28 @@ class CarViolationsController extends Controller
                     ->format('a4')
                     ->orientation('portrait');
 
+                $pdf = $pdf->withBrowsershot(function (Browsershot $browsershot): void {
+                    $nodeBinary = PdfRuntime::nodeBinary();
+                    if ($nodeBinary) {
+                        $browsershot->setNodeBinary($nodeBinary);
+                    }
+
+                    $npmBinary = trim((string) config('laravel-pdf.browsershot.npm_binary', ''));
+                    if ($npmBinary !== '') {
+                        $browsershot->setNpmBinary($npmBinary);
+                    }
+
+                    $chromePath = trim((string) config('laravel-pdf.browsershot.chrome_path', ''));
+                    if ($chromePath !== '') {
+                        $browsershot->setChromePath($chromePath);
+                    }
+
+                    $browsershot
+                        ->waitUntilNetworkIdle(false)
+                        ->timeout(120)
+                        ->newHeadless();
+                });
+
                 return $download ? $pdf->download($fileName) : $pdf->inline($fileName);
             } catch (Throwable $e) {
                 report($e);

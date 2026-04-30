@@ -6,18 +6,31 @@ use Symfony\Component\Process\ExecutableFinder;
 
 final class PdfRuntime
 {
-    public static function hasNodeBinary(): bool
+    public static function nodeBinary(): ?string
     {
-        static $available = null;
+        static $binary = null;
 
-        if ($available !== null) {
-            return $available;
+        if ($binary !== null) {
+            return $binary ?: null;
+        }
+
+        $configured = trim((string) config('laravel-pdf.browsershot.node_binary', ''));
+        if ($configured !== '') {
+            $binary = $configured;
+
+            return $binary;
         }
 
         $finder = new ExecutableFinder();
+        $binary = $finder->find('node')
+            ?: $finder->find('nodejs')
+            ?: '';
 
-        $available = (bool) ($finder->find('node') ?: $finder->find('nodejs'));
+        return $binary ?: null;
+    }
 
-        return $available;
+    public static function hasNodeBinary(): bool
+    {
+        return self::nodeBinary() !== null;
     }
 }

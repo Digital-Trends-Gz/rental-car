@@ -480,6 +480,21 @@ class ContractsController extends Controller
                     ->portrait()
                     ->margins(4, 4, 4, 4)
                     ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = trim((string) config('laravel-pdf.browsershot.npm_binary', ''));
+                        if ($npmBinary !== '') {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = trim((string) config('laravel-pdf.browsershot.chrome_path', ''));
+                        if ($chromePath !== '') {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
                         $browsershot
                             ->waitUntilNetworkIdle(false)
                             ->timeout(120)

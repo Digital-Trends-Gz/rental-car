@@ -1,5 +1,23 @@
 <?php
 
+$executableFinder = new Symfony\Component\Process\ExecutableFinder();
+
+$defaultNodeBinary = $executableFinder->find('node')
+    ?: $executableFinder->find('nodejs')
+    ?: collect([
+        '/usr/bin/node',
+        '/usr/local/bin/node',
+        '/opt/homebrew/bin/node',
+    ])->first(fn (string $path) => is_file($path));
+
+$defaultNpmBinary = $executableFinder->find('npm')
+    ?: $executableFinder->find('npm-cli.js')
+    ?: collect([
+        '/usr/bin/npm',
+        '/usr/local/bin/npm',
+        '/opt/homebrew/bin/npm',
+    ])->first(fn (string $path) => is_file($path));
+
 $defaultChromePath = collect([
     'C:\Program Files\Google\Chrome\Application\chrome.exe',
     'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
@@ -13,8 +31,8 @@ return [
     'job' => Spatie\LaravelPdf\Jobs\GeneratePdfJob::class,
 
     'browsershot' => [
-        'node_binary' => env('LARAVEL_PDF_NODE_BINARY'),
-        'npm_binary' => env('LARAVEL_PDF_NPM_BINARY'),
+        'node_binary' => env('LARAVEL_PDF_NODE_BINARY', $defaultNodeBinary),
+        'npm_binary' => env('LARAVEL_PDF_NPM_BINARY', $defaultNpmBinary),
         'include_path' => env('LARAVEL_PDF_INCLUDE_PATH'),
         'chrome_path' => env('LARAVEL_PDF_CHROME_PATH', $defaultChromePath),
         'node_modules_path' => env('LARAVEL_PDF_NODE_MODULES_PATH', base_path('node_modules')),
