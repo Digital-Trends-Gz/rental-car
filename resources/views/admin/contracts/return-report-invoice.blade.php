@@ -4,11 +4,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ $report->report_number }} - Additional Charges Invoice</title>
     <style>
+        @font-face {
+            font-family: cairo;
+            src: url("{{ file_exists(storage_path('fonts/cairo_normal_a5cea5fc45f6bf5f483d9f082575cfe3.ttf')) ? 'data:font/truetype;base64,'.base64_encode(file_get_contents(storage_path('fonts/cairo_normal_a5cea5fc45f6bf5f483d9f082575cfe3.ttf'))) : '' }}") format("truetype");
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: cairo;
+            src: url("{{ file_exists(storage_path('fonts/cairo_bold_23a9b2dc30935e892c606fbbafd14072.ttf')) ? 'data:font/truetype;base64,'.base64_encode(file_get_contents(storage_path('fonts/cairo_bold_23a9b2dc30935e892c606fbbafd14072.ttf'))) : '' }}") format("truetype");
+            font-weight: 700 900;
+            font-style: normal;
+        }
         * { box-sizing: border-box; }
         body {
             margin: 0;
             color: #0f1c42;
-            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-family: cairo, 'DejaVu Sans', Arial, sans-serif;
             font-size: 11px;
             line-height: 1.35;
             background: #fff;
@@ -19,38 +31,40 @@
         table { width: 100%; border-collapse: collapse; }
         td { vertical-align: top; padding: 3px 5px; }
         .ar {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-family: cairo, 'DejaVu Sans', Arial, sans-serif;
             direction: rtl;
             unicode-bidi: plaintext;
             text-align: right;
         }
-        .company-logo { max-height: 48px; object-fit: contain; margin-bottom: 2px; }
-        .header-table { margin-bottom: 2px; }
-        .header-table td { padding: 0 4px; vertical-align: top; }
-        .header-left { width: 25%; font-size: 9px; line-height: 1.4; font-weight: 700; }
+        .company-logo { max-height: 54px; max-width: 190px; object-fit: contain; margin-bottom: 0; }
+        .header-table { margin-bottom: 0; table-layout: fixed; }
+        .header-table td { padding: 0 4px; vertical-align: top; border: 0 !important; }
+        .header-left { width: 25%; font-size: 9px; line-height: 1.35; font-weight: 800; }
         .header-center { width: 50%; text-align: center; }
-        .header-right { width: 25%; text-align: right; direction: rtl; unicode-bidi: plaintext; }
-        .company-name-en { font-size: 18px; font-weight: 800; color: #1a326b; letter-spacing: 1px; }
-        .company-name-ar { font-size: 20px; font-weight: 800; color: #1a326b; margin-top: -4px; font-family: 'DejaVu Sans', Arial, sans-serif; }
+        .header-right { width: 25%; text-align: right; direction: rtl; unicode-bidi: plaintext; font-size: 9px; line-height: 1.35; font-weight: 800; }
+        .company-name-en { font-size: 20px; line-height: 1.05; font-weight: 900; color: #1a326b; letter-spacing: 1px; text-transform: uppercase; }
+        .company-name-ar { font-size: 22px; line-height: 1.05; font-weight: 900; color: #1a326b; margin-top: 2px; font-family: cairo, 'DejaVu Sans', Arial, sans-serif; }
         .company-name-ar.center-name {
             margin-top: 0;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             display: block;
             text-align: center;
             direction: rtl;
             unicode-bidi: plaintext;
         }
         .contract-title-row { display: none; }
-        .invoice-title { text-align: center; margin: 4px 0 8px; }
-        .invoice-title .en { font-size: 15px; font-weight: 800; color: #1a326b; }
+        .invoice-title { text-align: center; margin: 8px 0 12px; }
+        .invoice-title .en { font-size: 16px; font-weight: 900; color: #1a326b; letter-spacing: .2px; }
         .invoice-title .ar {
-            font-size: 16px;
-            font-weight: 800;
+            font-size: 22px;
+            font-weight: 900;
             color: #1a326b;
             direction: rtl;
             unicode-bidi: plaintext;
-            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-family: cairo, 'DejaVu Sans', Arial, sans-serif;
+            margin-top: 4px;
         }
+        .serial-no { margin-top: 4px; line-height: 1.35; }
         .meta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
         .meta-card { border: 1px solid #1a326b; border-radius: 4px; padding: 6px 8px; }
         .meta-label { color: #1a326b; font-size: 9px; font-weight: 800; }
