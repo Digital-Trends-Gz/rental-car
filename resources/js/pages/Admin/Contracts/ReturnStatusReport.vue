@@ -81,6 +81,7 @@ const props = defineProps<{
         damage_fee: number | null;
         maintenance_fee: number | null;
         other_fee: number | null;
+        discount: number | null;
         total_extra_charges: number | null;
         notes: string | null;
     };
@@ -131,6 +132,9 @@ const props = defineProps<{
         store: string;
         print?: string | null;
     };
+    permissions?: {
+        can_edit_return_report?: boolean;
+    };
 }>();
 
 
@@ -158,10 +162,12 @@ const form = useForm({
     damage_fee: props.report.damage_fee ?? 0, // Only auto-calculated from after-return damage reports
     maintenance_fee: props.report.maintenance_fee ?? 0,
     other_fee: props.report.other_fee ?? 0,
+    discount: props.report.discount ?? 0,
     notes: props.report.notes ?? '',
 });
 
 const isLocked = computed(() => props.report.id !== null && (props.report.payment_status ?? 'not_paid') === 'paid');
+const canEditReturnReport = computed(() => Boolean(props.permissions?.can_edit_return_report) && !isLocked.value);
 
 const selectedDamageReport = computed<DamageReport | null>(() => {
     const selectedId = Number(form.damage_report_id || 0);
@@ -537,7 +543,7 @@ const extraKilometerCharges = computed(() => {
     return roundMoney(Number(form.extra_kilometers || 0) * Number(form.kilometer_rate || 0));
 });
 
-const totalExtraCharges = computed(() => {
+const chargesBeforeDiscount = computed(() => {
     return roundMoney(
         extraKilometerCharges.value +
             Number(form.cleaning_fee || 0) +
@@ -548,6 +554,14 @@ const totalExtraCharges = computed(() => {
             Number(form.maintenance_fee || 0) +
             Number(form.other_fee || 0),
     );
+});
+
+const appliedDiscount = computed(() => {
+    return Math.min(roundMoney(Number(form.discount || 0)), Math.max(0, chargesBeforeDiscount.value));
+});
+
+const totalExtraCharges = computed(() => {
+    return roundMoney(chargesBeforeDiscount.value - appliedDiscount.value);
 });
 
 watch(
@@ -636,7 +650,7 @@ function roundMoney(value: number): number {
 }
 
 function submit() {
-    if (isLocked.value) {
+    if (!canEditReturnReport.value) {
         return;
     }
 
@@ -653,6 +667,7 @@ function submit() {
         damage_fee: Number(data.damage_fee || 0),
         maintenance_fee: Number(data.maintenance_fee || 0),
         other_fee: Number(data.other_fee || 0),
+        discount: Number(data.discount || 0),
         damage_report_id: data.damage_report_id === '' ? null : Number(data.damage_report_id),
         return_odometer: data.return_odometer === '' ? null : Number(data.return_odometer),
     })).post(props.actions.store, {
@@ -734,7 +749,10 @@ function submit() {
                 <div v-if="isLocked" class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                     {{ localize('This return report is marked paid and locked. You can print it, but editing is disabled.', 'تم تسجيل هذا التقرير كمدفوع ومقفل. يمكنك طباعته لكن لا يمكن تعديله.') }}
                 </div>
-                <fieldset :disabled="isLocked" class="space-y-6">
+                <div v-else-if="!canEditReturnReport" class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    {{ localize('You can view this return report, but your role does not allow editing it.', 'يمكنك عرض تقرير الإرجاع، لكن الدور الحالي لا يسمح بتعديله.') }}
+                </div>
+                <fieldset :disabled="!canEditReturnReport" class="space-y-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>{{ localize('Return Details', 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¥ط±ط¬ط§ط¹') }}</CardTitle>
@@ -849,17 +867,17 @@ function submit() {
                     <CardContent class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <div>
                             <Label for="extra_kilometers">{{ localize('Extra Kilometers', 'ط§ظ„ظƒظٹظ„ظˆظ…طھط±ط§طھ ط§ظ„ط¥ط¶ط§ظپظٹط©') }}</Label>
-                            <Input id="extra_kilometers" v-model="form.extra_kilometers" type="number" min="0" step="0.01" class="mt-1 bg-muted/40" readonly />
+                            <Input id="extra_kilometers" v-model="form.extra_kilometers" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.extra_kilometers" class="mt-1" />
                         </div>
                         <div>
                             <Label for="kilometer_rate">{{ localize('Kilometer Rate', 'ط³ط¹ط± ط§ظ„ظƒظٹظ„ظˆظ…طھط±') }}</Label>
-                            <Input id="kilometer_rate" v-model="form.kilometer_rate" type="number" min="0" step="0.01" class="mt-1 bg-muted/40" readonly />
+                            <Input id="kilometer_rate" v-model="form.kilometer_rate" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.kilometer_rate" class="mt-1" />
                         </div>
                         <div>
                             <Label for="cleaning_fee">{{ localize('Cleaning Fee', 'ط±ط³ظˆظ… ط§ظ„طھظ†ط¸ظٹظپ') }}</Label>
-                            <Input id="cleaning_fee" v-model="form.cleaning_fee" type="number" min="0" step="0.01" class="mt-1 bg-muted/40" readonly />
+                            <Input id="cleaning_fee" v-model="form.cleaning_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <p v-if="cleaningFeeDescription" class="mt-1 text-xs text-muted-foreground">
                                 {{ cleaningFeeDescription }}
                             </p>
@@ -867,7 +885,7 @@ function submit() {
                         </div>
                         <div>
                             <Label for="fuel_fee">{{ localize('Fuel Fee', 'ط±ط³ظˆظ… ط§ظ„ظˆظ‚ظˆط¯') }}</Label>
-                            <Input id="fuel_fee" v-model="form.fuel_fee" type="number" min="0" step="0.01" class="mt-1 bg-muted/40" readonly />
+                            <Input id="fuel_fee" v-model="form.fuel_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <p v-if="fuelComparisonSummary" class="mt-1 text-xs text-muted-foreground">
                                 {{ fuelComparisonSummary }}
                             </p>
@@ -878,7 +896,7 @@ function submit() {
                         </div>
                         <div>
                             <Label for="fuel_credit">{{ localize('Fuel Credit', 'رصيد البنزين') }}</Label>
-                            <Input id="fuel_credit" v-model="form.fuel_credit" type="number" min="0" step="0.01" class="mt-1 bg-muted/40" readonly />
+                            <Input id="fuel_credit" v-model="form.fuel_credit" type="number" min="0" step="0.01" class="mt-1" />
                             <p v-if="fuelGainLevel" class="mt-1 text-xs text-muted-foreground">
                                 {{ localize('Fuel returned higher than pickup, credit applies to the customer.', 'تمت إعادة الوقود أكثر من وقت الاستلام، وسيتم احتساب رصيد لصالح العميل.') }}
                             </p>
@@ -886,12 +904,12 @@ function submit() {
                         </div>
                         <div>
                             <Label for="late_hours">{{ localize('Late Hours', 'ط³ط§ط¹ط§طھ ط§ظ„طھط£ط®ظٹط±') }}</Label>
-                            <Input id="late_hours" v-model="form.late_hours" type="number" min="0" step="0.01" class="mt-1 bg-muted/40" readonly />
+                            <Input id="late_hours" v-model="form.late_hours" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.late_hours" class="mt-1" />
                         </div>
                         <div>
                             <Label for="late_hour_rate">{{ localize('Late Hour Rate', 'ط³ط¹ط± ط³ط§ط¹ط© ط§ظ„طھط£ط®ظٹط±') }}</Label>
-                            <Input id="late_hour_rate" v-model="form.late_hour_rate" type="number" min="0" step="0.01" class="mt-1 bg-muted/40" readonly />
+                            <Input id="late_hour_rate" v-model="form.late_hour_rate" type="number" min="0" step="0.01" class="mt-1" />
                             <p class="mt-1 text-xs text-muted-foreground">
                                 {{ localize('Default from tenant reservation settings.', 'ط§ظ„ظ‚ظٹظ…ط© ط§ظ„ط§ظپطھط±ط§ط¶ظٹط© ظ…ظ† ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط­ط¬ط² ط§ظ„ط®ط§طµط© ط¨ط§ظ„ظ…ط³طھط£ط¬ط±.') }}
                             </p>
@@ -899,7 +917,7 @@ function submit() {
                         </div>
                         <div>
                             <Label for="damage_fee">{{ localize('Damage Fee', 'ط±ط³ظˆظ… ط§ظ„ط¶ط±ط±') }}</Label>
-                            <Input id="damage_fee" v-model="form.damage_fee" type="number" min="0" step="0.01" class="mt-1 bg-muted/40" readonly />
+                            <Input id="damage_fee" v-model="form.damage_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <p v-if="selectedDamageReport && (selectedDamageReport.after_return_total_estimated_cost !== undefined || selectedDamageReport.total_estimated_cost !== undefined)" class="mt-1 text-xs text-muted-foreground">
                                 {{ localize('Selected after-return damage total:', 'ط¥ط¬ظ…ط§ظ„ظٹ ط¶ط±ط± ط¨ط¹ط¯ ط§ظ„طھط³ظ„ظٹظ… ط§ظ„ظ…ط­ط¯ط¯:') }} ${{ Number(selectedDamageReport.after_return_total_estimated_cost ?? selectedDamageReport.total_estimated_cost ?? 0).toFixed(2) }}
                             </p>
@@ -914,6 +932,14 @@ function submit() {
                             <Label for="other_fee">{{ localize('Other Fee', 'ط±ط³ظˆظ… ط£ط®ط±ظ‰') }}</Label>
                             <Input id="other_fee" v-model="form.other_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.other_fee" class="mt-1" />
+                        </div>
+                        <div>
+                            <Label for="discount">{{ localize('Discount', 'الخصم') }}</Label>
+                            <Input id="discount" v-model="form.discount" type="number" min="0" step="0.01" class="mt-1" />
+                            <p v-if="Number(form.discount || 0) > appliedDiscount" class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('Discount is capped at the payable subtotal.', 'يتم تطبيق الخصم حتى قيمة الإجمالي المستحق فقط.') }}
+                            </p>
+                            <InputError :message="form.errors.discount" class="mt-1" />
                         </div>
                     </CardContent>
                 </Card>
@@ -1020,6 +1046,13 @@ function submit() {
                             <div class="text-sm text-muted-foreground">{{ localize('Other Fee', 'رسوم أخرى') }}</div>
                             <div class="mt-1 text-lg font-semibold">${{ Number(form.other_fee || 0).toFixed(2) }}</div>
                         </div>
+                        <div class="rounded-md border bg-muted/20 p-4">
+                            <div class="text-sm text-muted-foreground">{{ localize('Discount', 'الخصم') }}</div>
+                            <div class="mt-1 text-lg font-semibold text-emerald-600">-${{ Number(appliedDiscount).toFixed(2) }}</div>
+                            <div class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('Applied after all charges and credits.', 'يطبق بعد كل الرسوم والأرصدة.') }}
+                            </div>
+                        </div>
                         <div class="rounded-md border border-primary/30 bg-primary/5 p-4">
                             <div class="text-sm text-primary">{{ localize('Total Extra Charges', 'إجمالي الرسوم الإضافية') }}</div>
                             <div class="mt-1 text-2xl font-bold text-primary">${{ Number(totalExtraCharges).toFixed(2) }}</div>
@@ -1045,7 +1078,7 @@ function submit() {
 
                 </fieldset>
                 <div class="flex items-center gap-3">
-                    <Button type="submit" :disabled="form.processing || isLocked">
+                    <Button type="submit" :disabled="form.processing || !canEditReturnReport">
                         {{ form.processing ? localize('Saving...', 'ط¬ط§ط±ظٹ ط§ظ„ط­ظپط¸...') : localize('Save Return Report', 'ط­ظپط¸ طھظ‚ط±ظٹط± ط§ظ„ط¥ط±ط¬ط§ط¹') }}
                     </Button>
                     <Link :href="actions.index">

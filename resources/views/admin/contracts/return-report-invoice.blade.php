@@ -121,6 +121,7 @@
     $maintenanceFee = $maintenanceFee ?? (float) $report->maintenance_fee;
     $otherFee = $otherFee ?? (float) $report->other_fee;
     $fuelCredit = (float) ($report->fuel_credit ?? 0);
+    $discount = (float) ($report->discount ?? 0);
     $total = (float) $report->total_extra_charges;
 @endphp
 <div class="page">
@@ -247,6 +248,17 @@
                     <td>{{ $currency }}{{ number_format((float) $otherFee, 2) }}</td>
                     <td>{{ $currency }}{{ number_format((float) $otherFee, 2) }}</td>
                 </tr>
+                @if($discount > 0)
+                    <tr>
+                        <td class="bilingual-label">
+                            <span class="en">Discount</span>
+                            <span class="ar" dir="rtl">الخصم</span>
+                        </td>
+                        <td>1</td>
+                        <td>{{ $currency }}{{ number_format($discount, 2) }}</td>
+                        <td>-{{ $currency }}{{ number_format($discount, 2) }}</td>
+                    </tr>
+                @endif
             </tbody>
         </table>
 

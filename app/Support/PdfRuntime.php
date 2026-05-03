@@ -83,16 +83,17 @@ final class PdfRuntime
         $configured = trim((string) config('laravel-pdf.browsershot.chrome_path', ''));
         if ($configured !== '') {
             if (Str::contains($configured, DIRECTORY_SEPARATOR) || is_file($configured)) {
-                $binary = $configured;
+                $binary = is_file($configured) ? $configured : '';
 
-                return $binary;
+                return $binary ?: null;
             }
 
             $finder = new ExecutableFinder();
             $binary = $finder->find($configured, null, self::binaryDirs())
-                ?: $configured;
+                ?: self::shellBinaryPath($configured)
+                ?: '';
 
-            return $binary;
+            return $binary ?: null;
         }
 
         $finder = new ExecutableFinder();
@@ -114,6 +115,30 @@ final class PdfRuntime
     public static function hasNodeBinary(): bool
     {
         return self::nodeBinary() !== null;
+    }
+
+    public static function canUseBrowsershot(): bool
+    {
+        return self::nodeBinary() !== null && self::chromeBinary() !== null;
+    }
+
+    public static function dompdfFontDirectory(): string
+    {
+        return storage_path('app/dompdf-fonts');
+    }
+
+    public static function dompdfTempDirectory(): string
+    {
+        return storage_path('app/dompdf-temp');
+    }
+
+    public static function ensureDompdfDirectories(): void
+    {
+        foreach ([self::dompdfFontDirectory(), self::dompdfTempDirectory()] as $directory) {
+            if (! is_dir($directory)) {
+                @mkdir($directory, 0775, true);
+            }
+        }
     }
 
     /**

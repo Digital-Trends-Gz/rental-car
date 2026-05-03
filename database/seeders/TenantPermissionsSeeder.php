@@ -24,6 +24,11 @@ class TenantPermissionsSeeder extends Seeder
                 'description' => 'View and manage all car reservations.',
             ],
             [
+                'name' => 'tenant-edit-return-reports',
+                'display_name' => 'Edit Return Reports',
+                'description' => 'Create and edit return status reports and their extra charges.',
+            ],
+            [
                 'name' => 'tenant-manage-clients',
                 'display_name' => 'Manage Clients',
                 'description' => 'Create and manage client accounts.',

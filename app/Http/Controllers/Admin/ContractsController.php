@@ -470,50 +470,56 @@ class ContractsController extends Controller
 
         $fileName = $contract->contract_number.'-'.$locale.'-report.pdf';
 
-        try {
-            return Pdf::view('admin.contracts.pdf', $viewData)
-                ->format(Format::A4)
-                ->portrait()
-                ->margins(4, 4, 4, 4)
-                ->withBrowsershot(function (Browsershot $browsershot): void {
-                    $nodeBinary = PdfRuntime::nodeBinary();
-                    if ($nodeBinary) {
-                        $browsershot->setNodeBinary($nodeBinary);
-                    }
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                return Pdf::view('admin.contracts.pdf', $viewData)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
 
-                    $npmBinary = PdfRuntime::npmBinary();
-                    if ($npmBinary) {
-                        $browsershot->setNpmBinary($npmBinary);
-                    }
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
 
-                    $chromePath = PdfRuntime::chromeBinary();
-                    if ($chromePath) {
-                        $browsershot->setChromePath($chromePath);
-                    }
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
 
-                    $browsershot
-                        ->noSandbox()
-                        ->addChromiumArguments([
-                            'disable-dev-shm-usage',
-                            'disable-gpu',
-                        ])
-                        ->setOption('printBackground', true)
-                        ->setOption('preferCSSPageSize', true)
-                        ->waitUntilNetworkIdle(false)
-                        ->timeout(120)
-                        ->newHeadless();
-                })
-                ->download($fileName);
-        } catch (Throwable $e) {
-            report($e);
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    })
+                    ->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
 
         $fallbackViewData = $viewData;
         $fallbackViewData['companyLogo'] = null;
         $fallbackViewData['damageDiagram'] = ['data_uri' => null, 'empty' => true];
+        PdfRuntime::ensureDompdfDirectories();
 
         return DomPdf::loadView('admin.contracts.pdf', $fallbackViewData)
             ->setOption('defaultFont', 'DejaVu Sans')
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
             ->setOption('isRemoteEnabled', true)
             ->setPaper('a4', 'portrait')
             ->download($fileName);

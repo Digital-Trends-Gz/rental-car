@@ -148,6 +148,9 @@ class ContractReturnReportsController extends Controller
                     'contractId' => $contract->id,
                 ]) : null,
             ],
+            'permissions' => [
+                'can_edit_return_report' => $this->canEditReturnReport($request->user()),
+            ],
         ]);
     }
 
@@ -220,16 +223,17 @@ class ContractReturnReportsController extends Controller
         $lateFee = $this->calculateLateFee(
             (float) $report->late_hours,
             $settings,
-            $this->normalizeMoney($contract->price_per_day ?? $contract->reservation?->daily_rate ?? 0)
+            $this->normalizeMoney($contract->price_per_day ?? $contract->reservation?->daily_rate ?? 0),
+            $this->normalizeMoney($report->late_hour_rate ?? 0)
         );
         $damageFee = $this->normalizeMoney((float) $report->damage_fee);
         $maintenanceFee = $this->normalizeMoney((float) $report->maintenance_fee);
         $otherFee = $this->normalizeMoney((float) $report->other_fee);
 
-        File::ensureDirectoryExists(storage_path('fonts'));
+        PdfRuntime::ensureDompdfDirectories();
         File::ensureDirectoryExists(storage_path('app/pdf-temp'));
 
-        $pdfFallback = !PdfRuntime::hasNodeBinary();
+        $pdfFallback = !PdfRuntime::canUseBrowsershot();
 
         $viewData = [
             'contract' => $contract,
@@ -302,6 +306,9 @@ class ContractReturnReportsController extends Controller
 
         $dompdf = DomPdf::loadView('admin.contracts.return-report-invoice', $viewData)
             ->setOption('defaultFont', 'DejaVu Sans')
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
             ->setOption('isRemoteEnabled', true)
             ->setPaper('a4', 'portrait');
 
@@ -318,6 +325,16 @@ class ContractReturnReportsController extends Controller
         $contract = $this->findContractFromRequest($request);
         abort_unless($this->canAccessContract($contract, $request->user()), 403);
 
+        $existingReport = $contract->returnStatusReport()->first();
+
+        if ($this->reportIsPaid($existingReport)) {
+            throw ValidationException::withMessages([
+                'payment_status' => 'This return report is paid and locked.',
+            ]);
+        }
+
+        abort_unless($this->canEditReturnReport($request->user()), 403);
+
         $validated = $this->validatePayload($request, $contract);
 
         if (config('app.demo_mode')) {
@@ -332,7 +349,6 @@ class ContractReturnReportsController extends Controller
         $contract->loadMissing(['reservation', 'damageReports.items']);
         $settings = $this->reservationSettings($tenantId);
         $damageReport = null;
-        $existingReport = $contract->returnStatusReport()->first();
         $paymentStatus = (string) ($validated['payment_status'] ?? 'not_paid');
 
         if (!empty($validated['damage_report_id'])) {
@@ -352,36 +368,59 @@ class ContractReturnReportsController extends Controller
 
         $this->ensureReturnOdometerIsNotLowerThanCheckout($contract, $returnOdometer);
 
-        $extraKilometers = $this->resolveExtraKilometers($contract, $settings, $validated['actual_return_time'] ?? null, $returnOdometer);
-        $kilometerRate = ReservationSettings::resolveKilometerRate($settings, $extraKilometers);
-        $cleaningFee = ReservationSettings::resolveCleaningFee($settings);
-        $fuelFee = ReservationSettings::resolveFuelFeeByLoss(
+        $autoExtraKilometers = $this->resolveExtraKilometers($contract, $settings, $validated['actual_return_time'] ?? null, $returnOdometer);
+        $autoKilometerRate = ReservationSettings::resolveKilometerRate($settings, $autoExtraKilometers);
+        $autoCleaningFee = ReservationSettings::resolveCleaningFee($settings);
+        $autoFuelFee = ReservationSettings::resolveFuelFeeByLoss(
             $settings,
             $contract->vehicle_fuel_level,
             $validated['return_fuel_level'] ?? null
         );
-        $fuelCredit = ReservationSettings::resolveFuelCreditByGain(
+        $autoFuelCredit = ReservationSettings::resolveFuelCreditByGain(
             $settings,
             $contract->vehicle_fuel_level,
             $validated['return_fuel_level'] ?? null
         );
-        $lateHours = $this->resolveLateHours($contract, $settings, $validated['actual_return_time'] ?? null);
-        $lateHourRate = ReservationSettings::resolveLateHourlyFee($settings);
-        $damageFee = 0.0;
+        $autoLateHours = $this->resolveLateHours($contract, $settings, $validated['actual_return_time'] ?? null);
+        $autoLateHourRate = ReservationSettings::resolveLateHourlyFee($settings);
+        $autoDamageFee = 0.0;
         if ($damageReport) {
-            $damageFee = $this->normalizeMoney($this->afterReturnDamageItems($damageReport)->sum('estimated_cost'));
+            $autoDamageFee = $this->normalizeMoney($this->afterReturnDamageItems($damageReport)->sum('estimated_cost'));
         }
 
-        $lateFee = $this->calculateLateFee($lateHours, $settings, $this->normalizeMoney($contract->price_per_day ?? $contract->reservation?->daily_rate ?? 0));
-        $totalExtraCharges = $this->normalizeMoney(
+        $extraKilometers = $this->normalizeMoney($validated['extra_kilometers'] ?? $autoExtraKilometers);
+        $kilometerRate = $this->normalizeMoney($validated['kilometer_rate'] ?? $autoKilometerRate);
+        $cleaningFee = $this->normalizeMoney($validated['cleaning_fee'] ?? $autoCleaningFee);
+        $fuelFee = $this->normalizeMoney($validated['fuel_fee'] ?? $autoFuelFee);
+        $fuelCredit = $this->normalizeMoney($validated['fuel_credit'] ?? $autoFuelCredit);
+        $lateHours = $this->normalizeMoney($validated['late_hours'] ?? $autoLateHours);
+        $lateHourRate = $this->normalizeMoney($validated['late_hour_rate'] ?? $autoLateHourRate);
+        $damageFee = $this->normalizeMoney($validated['damage_fee'] ?? $autoDamageFee);
+        $maintenanceFee = $this->normalizeMoney($validated['maintenance_fee'] ?? 0);
+        $otherFee = $this->normalizeMoney($validated['other_fee'] ?? 0);
+
+        $lateFee = $this->calculateLateFee(
+            $lateHours,
+            $settings,
+            $this->normalizeMoney($contract->price_per_day ?? $contract->reservation?->daily_rate ?? 0),
+            $lateHourRate
+        );
+        $subtotalBeforeDiscount = $this->normalizeMoney(
             $extraKilometers * $kilometerRate
             + $cleaningFee
             + $fuelFee
             - $fuelCredit
             + $lateFee
             + $damageFee
-            + ($validated['maintenance_fee'] ?? 0)
-            + ($validated['other_fee'] ?? 0)
+            + $maintenanceFee
+            + $otherFee
+        );
+        $discount = min(
+            $this->normalizeMoney($validated['discount'] ?? 0),
+            max(0.0, $subtotalBeforeDiscount)
+        );
+        $totalExtraCharges = $this->normalizeMoney(
+            $subtotalBeforeDiscount - $discount
         );
 
         $report = DB::transaction(function () use (
@@ -398,6 +437,9 @@ class ContractReturnReportsController extends Controller
             $lateHours,
             $lateHourRate,
             $damageFee,
+            $maintenanceFee,
+            $otherFee,
+            $discount,
             $lateFee,
             $totalExtraCharges,
             $existingReport,
@@ -427,8 +469,9 @@ class ContractReturnReportsController extends Controller
                     'late_hours' => $lateHours,
                     'late_hour_rate' => $lateHourRate,
                     'damage_fee' => $damageFee,
-                    'maintenance_fee' => $validated['maintenance_fee'] ?? 0,
-                    'other_fee' => $validated['other_fee'] ?? 0,
+                    'maintenance_fee' => $maintenanceFee,
+                    'other_fee' => $otherFee,
+                    'discount' => $discount,
                     'total_extra_charges' => $totalExtraCharges,
                     'notes' => $validated['notes'] ?? null,
                 ]
@@ -514,6 +557,7 @@ class ContractReturnReportsController extends Controller
             'damage_fee' => ['nullable', 'numeric', 'min:0'],
             'maintenance_fee' => ['nullable', 'numeric', 'min:0'],
             'other_fee' => ['nullable', 'numeric', 'min:0'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
         ]);
     }
@@ -555,6 +599,18 @@ class ContractReturnReportsController extends Controller
         );
     }
 
+    private function canEditReturnReport(?\App\Models\User $user): bool
+    {
+        return $user !== null
+            && method_exists($user, 'hasPermission')
+            && $user->hasPermission('tenant-edit-return-reports');
+    }
+
+    private function reportIsPaid(?ContractReturnReport $report): bool
+    {
+        return $report !== null && (string) ($report->payment_status ?? ($report->payment_id ? 'paid' : 'not_paid')) === 'paid';
+    }
+
     private function reservationSettings(int $tenantId): array
     {
         $settings = DB::table('tenant_site_settings')
@@ -590,6 +646,7 @@ class ContractReturnReportsController extends Controller
                 'damage_fee' => 0,
                 'maintenance_fee' => 0,
                 'other_fee' => 0,
+                'discount' => 0,
                 'total_extra_charges' => 0,
                 'notes' => '',
             ];
@@ -616,6 +673,7 @@ class ContractReturnReportsController extends Controller
             'damage_fee' => $report->damage_fee,
             'maintenance_fee' => $report->maintenance_fee,
             'other_fee' => $report->other_fee,
+            'discount' => $report->discount ?? 0,
             'total_extra_charges' => $report->total_extra_charges,
             'notes' => $report->notes,
         ];
@@ -677,7 +735,7 @@ class ContractReturnReportsController extends Controller
         return 'data:'.$mime.';base64,'.base64_encode($contents);
     }
 
-    private function calculateLateFee(float $lateHours, array $settings, float $dailyRate): float
+    private function calculateLateFee(float $lateHours, array $settings, float $dailyRate, ?float $hourlyRateOverride = null): float
     {
         if ($lateHours <= 0) {
             return 0.0;
@@ -685,7 +743,9 @@ class ContractReturnReportsController extends Controller
 
         $lateReturn = is_array($settings['late_return'] ?? null) ? $settings['late_return'] : [];
         $mode = (string) ($lateReturn['mode'] ?? 'hourly');
-        $hourlyFee = ReservationSettings::resolveLateHourlyFee($settings);
+        $hourlyFee = $hourlyRateOverride !== null && $hourlyRateOverride > 0
+            ? $hourlyRateOverride
+            : ReservationSettings::resolveLateHourlyFee($settings);
         $afterHours = isset($lateReturn['after_hours']) ? (int) $lateReturn['after_hours'] : 0;
 
         if ($mode === 'daily_after_threshold' && $afterHours > 0 && $lateHours > $afterHours) {

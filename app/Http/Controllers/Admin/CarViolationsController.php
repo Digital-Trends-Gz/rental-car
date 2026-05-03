@@ -808,7 +808,7 @@ class CarViolationsController extends Controller
         $renter = $reservation?->user;
         $branch = $carViolation->branch ?? $car?->branch;
 
-        $pdfFallback = !PdfRuntime::hasNodeBinary();
+        $pdfFallback = !PdfRuntime::canUseBrowsershot();
 
         $viewData = [
             'violation' => $carViolation,
@@ -867,9 +867,13 @@ class CarViolationsController extends Controller
 
         $fallbackViewData = $viewData;
         $fallbackViewData['companyLogo'] = null;
+        PdfRuntime::ensureDompdfDirectories();
 
         $pdf = DomPdf::loadView('admin.car_violations.notice', $fallbackViewData)
             ->setOption('defaultFont', 'DejaVu Sans')
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
             ->setOption('isRemoteEnabled', true)
             ->setPaper('a4', 'portrait');
 

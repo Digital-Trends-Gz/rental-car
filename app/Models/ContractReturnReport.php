@@ -37,6 +37,7 @@ class ContractReturnReport extends Model
         'damage_fee',
         'maintenance_fee',
         'other_fee',
+        'discount',
         'total_extra_charges',
         'notes',
     ];
@@ -62,6 +63,7 @@ class ContractReturnReport extends Model
         'damage_fee' => 'decimal:2',
         'maintenance_fee' => 'decimal:2',
         'other_fee' => 'decimal:2',
+        'discount' => 'decimal:2',
         'total_extra_charges' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
