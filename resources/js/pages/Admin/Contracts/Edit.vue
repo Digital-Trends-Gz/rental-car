@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import SearchableSelect from '@/components/SearchableSelect.vue';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +29,7 @@ const props = defineProps<{
   primaryDriver?: Record<string, any> | null;
   additionalDrivers?: Array<Record<string, any>>;
   reservationOptions: Array<Record<string, any>>;
+  countries?: Array<{ value: string; label: string }>;
   plateFormats?: Array<{ value: string; label: string; mask?: string | null; example?: string | null; is_active?: boolean }>;
   selectedPlateFormat?: string;
   reservationFormOptions?: {
@@ -42,6 +44,7 @@ const props = defineProps<{
 
 const { locale } = useTrans();
 const currencyOptions = computed(() => getCurrencyOptions(locale.value));
+const countryOptions = computed(() => Array.isArray(props.countries) ? props.countries : []);
 const plateFormatOptions = computed(() => Array.isArray(props.plateFormats) ? props.plateFormats : []);
 const arabicTranslations: Record<string, string> = {
   'Pending': 'قيد الانتظار',
@@ -220,6 +223,17 @@ const contractStartDateMin = computed(() => form.contract_date || contractDateMi
 
 const contractEndDateMin = computed(() => form.start_date || contractStartDateMin.value);
 const isLocked = computed(() => Boolean(props.is_locked));
+
+function countryOptionsWithCurrent(current: unknown) {
+  const value = String(current ?? '').trim();
+  const options = countryOptions.value;
+
+  if (!value || options.some((option) => option.value === value)) {
+    return options;
+  }
+
+  return [{ value, label: value }, ...options];
+}
 
 function formatDateToInput(value: Date): string {
   const offset = value.getTimezoneOffset() * 60000;
@@ -1042,8 +1056,30 @@ function submit() {
             <div><Label for="primary-full-name">{{ localize('Full Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ§ط¸â€‍ط¸ئ’ط·آ§ط¸â€¦ط¸â€‍') }}</Label><Input id="primary-full-name" v-model="form.primary_driver.full_name" maxlength="255" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.full_name']" class="mt-1" /></div>
             <div><Label for="primary-full-name-ar">{{ localize('Arabic Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ¨ط·آ§ط¸â€‍ط·آ¹ط·آ±ط·آ¨ط¸ظ¹ط·آ©') }}</Label><Input id="primary-full-name-ar" v-model="form.primary_driver.full_name_ar" dir="rtl" maxlength="255" /><InputError :message="form.errors['primary_driver.full_name_ar']" class="mt-1" /></div>
             <div><Label for="primary-phone">{{ localize('Phone', 'ط·آ§ط¸â€‍ط¸â€،ط·آ§ط·ع¾ط¸ظ¾') }}</Label><Input id="primary-phone" v-model="form.primary_driver.phone" inputmode="tel" maxlength="100" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.phone']" class="mt-1" /></div>
-            <div><Label for="primary-nationality">{{ localize('Nationality', 'ط·آ§ط¸â€‍ط·آ¬ط¸â€ ط·آ³ط¸ظ¹ط·آ©') }}</Label><Input id="primary-nationality" v-model="form.primary_driver.nationality" maxlength="100" /><InputError :message="form.errors['primary_driver.nationality']" class="mt-1" /></div>
-            <div><Label for="primary-place-of-issue">{{ localize('Place Of Issue', 'ط¸â€¦ط¸ئ’ط·آ§ط¸â€  ط·آ§ط¸â€‍ط·آ¥ط·آµط·آ¯ط·آ§ط·آ±') }}</Label><Input id="primary-place-of-issue" v-model="form.primary_driver.place_of_issue" maxlength="255" /><InputError :message="form.errors['primary_driver.place_of_issue']" class="mt-1" /></div>
+            <div>
+              <Label for="primary-nationality">{{ localize('Nationality', 'الجنسية') }}</Label>
+              <SearchableSelect
+                v-model="form.primary_driver.nationality"
+                :options="countryOptionsWithCurrent(form.primary_driver.nationality)"
+                :placeholder="localize('Select country', 'اختر الدولة')"
+                :search-placeholder="localize('Search country...', 'ابحث عن الدولة...')"
+                :empty-text="localize('No countries found.', 'لا توجد دول.')"
+                clearable
+              />
+              <InputError :message="form.errors['primary_driver.nationality']" class="mt-1" />
+            </div>
+            <div>
+              <Label for="primary-place-of-issue">{{ localize('Place Of Issue', 'جهة الإصدار') }}</Label>
+              <SearchableSelect
+                v-model="form.primary_driver.place_of_issue"
+                :options="countryOptionsWithCurrent(form.primary_driver.place_of_issue)"
+                :placeholder="localize('Select country', 'اختر الدولة')"
+                :search-placeholder="localize('Search country...', 'ابحث عن الدولة...')"
+                :empty-text="localize('No countries found.', 'لا توجد دول.')"
+                clearable
+              />
+              <InputError :message="form.errors['primary_driver.place_of_issue']" class="mt-1" />
+            </div>
             <div><Label for="primary-birth-date">{{ localize('Date Of Birth', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¹ط¸â€‍ط·آ§ط·آ¯') }}</Label><Input id="primary-birth-date" v-model="form.primary_driver.date_of_birth" type="date" :max="contractDateMin" /><InputError :message="form.errors['primary_driver.date_of_birth']" class="mt-1" /></div>
             <div><Label for="primary-identity-number">{{ localize('Identity Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ©') }}</Label><Input id="primary-identity-number" v-model="form.primary_driver.identity_number" maxlength="255" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.identity_number']" class="mt-1" /></div>
             <div><Label for="primary-residency-number">{{ localize('Residency Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط·آ¥ط¸â€ڑط·آ§ط¸â€¦ط·آ©') }}</Label><Input id="primary-residency-number" v-model="form.primary_driver.residency_number" maxlength="255" /><InputError :message="form.errors['primary_driver.residency_number']" class="mt-1" /></div>
@@ -1139,8 +1175,30 @@ function submit() {
               <div><Label :for="`driver-full-name-${index}`">{{ localize('Full Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ§ط¸â€‍ط¸ئ’ط·آ§ط¸â€¦ط¸â€‍') }}</Label><Input :id="`driver-full-name-${index}`" v-model="driver.full_name" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.full_name`]" class="mt-1" /></div>
               <div><Label :for="`driver-full-name-ar-${index}`">{{ localize('Arabic Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ¨ط·آ§ط¸â€‍ط·آ¹ط·آ±ط·آ¨ط¸ظ¹ط·آ©') }}</Label><Input :id="`driver-full-name-ar-${index}`" v-model="driver.full_name_ar" dir="rtl" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.full_name_ar`]" class="mt-1" /></div>
               <div><Label :for="`driver-phone-${index}`">{{ localize('Phone', 'ط·آ§ط¸â€‍ط¸â€،ط·آ§ط·ع¾ط¸ظ¾') }}</Label><Input :id="`driver-phone-${index}`" v-model="driver.phone" inputmode="tel" maxlength="100" /><InputError :message="form.errors[`additional_drivers.${index}.phone`]" class="mt-1" /></div>
-              <div><Label :for="`driver-nationality-${index}`">{{ localize('Nationality', 'ط·آ§ط¸â€‍ط·آ¬ط¸â€ ط·آ³ط¸ظ¹ط·آ©') }}</Label><Input :id="`driver-nationality-${index}`" v-model="driver.nationality" maxlength="100" /><InputError :message="form.errors[`additional_drivers.${index}.nationality`]" class="mt-1" /></div>
-              <div><Label :for="`driver-place-of-issue-${index}`">{{ localize('Place of Issue', 'ط¸â€¦ط¸ئ’ط·آ§ط¸â€  ط·آ§ط¸â€‍ط·آ¥ط·آµط·آ¯ط·آ§ط·آ±') }}</Label><Input :id="`driver-place-of-issue-${index}`" v-model="driver.place_of_issue" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.place_of_issue`]" class="mt-1" /></div>
+              <div>
+                <Label :for="`driver-nationality-${index}`">{{ localize('Nationality', 'الجنسية') }}</Label>
+                <SearchableSelect
+                  v-model="driver.nationality"
+                  :options="countryOptionsWithCurrent(driver.nationality)"
+                  :placeholder="localize('Select country', 'اختر الدولة')"
+                  :search-placeholder="localize('Search country...', 'ابحث عن الدولة...')"
+                  :empty-text="localize('No countries found.', 'لا توجد دول.')"
+                  clearable
+                />
+                <InputError :message="form.errors[`additional_drivers.${index}.nationality`]" class="mt-1" />
+              </div>
+              <div>
+                <Label :for="`driver-place-of-issue-${index}`">{{ localize('Place of Issue', 'جهة الإصدار') }}</Label>
+                <SearchableSelect
+                  v-model="driver.place_of_issue"
+                  :options="countryOptionsWithCurrent(driver.place_of_issue)"
+                  :placeholder="localize('Select country', 'اختر الدولة')"
+                  :search-placeholder="localize('Search country...', 'ابحث عن الدولة...')"
+                  :empty-text="localize('No countries found.', 'لا توجد دول.')"
+                  clearable
+                />
+                <InputError :message="form.errors[`additional_drivers.${index}.place_of_issue`]" class="mt-1" />
+              </div>
               <div><Label :for="`driver-birth-date-${index}`">{{ localize('Date Of Birth', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¹ط¸â€‍ط·آ§ط·آ¯') }}</Label><Input :id="`driver-birth-date-${index}`" v-model="driver.date_of_birth" type="date" :max="contractDateMin" /><InputError :message="form.errors[`additional_drivers.${index}.date_of_birth`]" class="mt-1" /></div>
               <div><Label :for="`driver-identity-number-${index}`">{{ localize('Identity Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ©') }}</Label><Input :id="`driver-identity-number-${index}`" v-model="driver.identity_number" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.identity_number`]" class="mt-1" /></div>
               <div><Label :for="`driver-residency-number-${index}`">{{ localize('Residency Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط·آ¥ط¸â€ڑط·آ§ط¸â€¦ط·آ©') }}</Label><Input :id="`driver-residency-number-${index}`" v-model="driver.residency_number" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.residency_number`]" class="mt-1" /></div>

@@ -139,6 +139,10 @@ final class PdfRuntime
 
     private static function shellBinaryPath(string $binary): ?string
     {
+        if (! \function_exists('exec')) {
+            return null;
+        }
+
         $commands = [
             'command -v '.escapeshellarg($binary),
             'which '.escapeshellarg($binary),
@@ -148,7 +152,7 @@ final class PdfRuntime
             $output = [];
             $exitCode = 1;
 
-            @exec('/bin/bash -lc '.escapeshellarg($command).' 2>/dev/null', $output, $exitCode);
+            @\exec('/bin/bash -lc '.escapeshellarg($command).' 2>/dev/null', $output, $exitCode);
 
             if ($exitCode === 0) {
                 $path = trim((string) implode("\n", $output));

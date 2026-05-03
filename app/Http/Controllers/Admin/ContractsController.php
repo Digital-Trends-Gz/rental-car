@@ -31,6 +31,7 @@ use App\Rules\LettersOnly;
 use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
 use App\Support\ContractCustomerPhotoExtractor;
+use App\Support\CountryOptions;
 use App\Support\PaidReturnReportLock;
 use App\Support\PdfRuntime;
 use Illuminate\Http\JsonResponse;
@@ -198,6 +199,7 @@ class ContractsController extends Controller
                 'clients' => $this->reservationClientOptions($request),
                 'cars' => $this->reservationCarOptions($request),
             ],
+            'countries' => $this->contractCountryOptions(app()->getLocale()),
             'startContractFiles' => [],
             'endContractFiles' => [],
             'ai' => [
@@ -599,6 +601,7 @@ class ContractsController extends Controller
                 'clients' => $this->reservationClientOptions($request),
                 'cars' => $this->reservationCarOptions($request),
             ],
+            'countries' => $this->contractCountryOptions(app()->getLocale()),
             'startContractFiles' => $this->collectionFiles($contract, 'start_contract'),
             'endContractFiles' => $this->collectionFiles($contract, 'end_contract'),
             'ai' => [
@@ -2609,6 +2612,39 @@ class ContractsController extends Controller
                 'right' => ['x' => 191, 'y' => 35, 'scale_x' => 1.17, 'scale_y' => 0.78, 'rotation' => 'flip', 'source_width' => 320, 'source_height' => 160, 'width' => 374, 'height' => 125],
             ],
         ];
+    }
+
+    /**
+     * @return array<int, array{value:string,label:string}>
+     */
+    private function contractCountryOptions(string $locale): array
+    {
+        $isArabic = str_starts_with(strtolower($locale), 'ar');
+
+        return collect(CountryOptions::all())
+            ->map(function (array $country) use ($isArabic): ?array {
+                $iso = strtoupper((string) ($country['iso2'] ?? ''));
+                $nameEn = trim((string) ($country['name_en'] ?? ''));
+                $nameAr = trim((string) ($country['name_ar'] ?? $nameEn));
+
+                if ($iso === 'PS') {
+                    $nameEn = 'Palestine';
+                    $nameAr = 'فلسطين';
+                }
+
+                if ($nameEn === '') {
+                    return null;
+                }
+
+                return [
+                    'value' => $nameEn,
+                    'label' => $isArabic ? ($nameAr ?: $nameEn) : $nameEn,
+                ];
+            })
+            ->filter()
+            ->sortBy('label')
+            ->values()
+            ->all();
     }
 
     private function transformPrintableDamagePoint(array $viewLayout, float $x, float $y): array

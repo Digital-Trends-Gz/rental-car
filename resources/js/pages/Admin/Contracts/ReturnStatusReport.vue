@@ -761,7 +761,7 @@ function submit() {
                         </div>
                         <div>
                             <Label for="return_odometer">{{ localize('Return Odometer', 'ط¹ط¯ط§ط¯ ط§ظ„ط¹ظˆط¯ط©') }}</Label>
-                            <Input id="return_odometer" v-model="form.return_odometer" type="number" min="0" class="mt-1" />
+                            <Input id="return_odometer" v-model="form.return_odometer" type="number" :min="props.contract.vehicle_odometer ?? 0" class="mt-1" />
                             <InputError :message="form.errors.return_odometer" class="mt-1" />
                         </div>
                         <div>

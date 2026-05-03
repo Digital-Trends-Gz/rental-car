@@ -349,6 +349,9 @@ class ContractReturnReportsController extends Controller
         $returnOdometer = isset($validated['return_odometer'])
             ? (int) $validated['return_odometer']
             : (int) ($contract->return_odometer ?? 0);
+
+        $this->ensureReturnOdometerIsNotLowerThanCheckout($contract, $returnOdometer);
+
         $extraKilometers = $this->resolveExtraKilometers($contract, $settings, $validated['actual_return_time'] ?? null, $returnOdometer);
         $kilometerRate = ReservationSettings::resolveKilometerRate($settings, $extraKilometers);
         $cleaningFee = ReservationSettings::resolveCleaningFee($settings);
@@ -397,7 +400,8 @@ class ContractReturnReportsController extends Controller
             $damageFee,
             $lateFee,
             $totalExtraCharges,
-            $existingReport
+            $existingReport,
+            $returnOdometer
         ) {
             $report = ContractReturnReport::query()->updateOrCreate(
                 ['tenant_id' => $contract->tenant_id, 'contract_id' => $contract->id],
@@ -470,6 +474,13 @@ class ContractReturnReportsController extends Controller
                 $contract->reservation->update([
                     'status' => ReservationStatus::COMPLETED,
                 ]);
+
+                $car = $contract->reservation->car;
+                if ($car && $returnOdometer > (int) ($car->mileage ?? 0)) {
+                    $car->forceFill([
+                        'mileage' => $returnOdometer,
+                    ])->save();
+                }
             }
 
             return $report;
@@ -505,6 +516,17 @@ class ContractReturnReportsController extends Controller
             'other_fee' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
         ]);
+    }
+
+    private function ensureReturnOdometerIsNotLowerThanCheckout(Contract $contract, int $returnOdometer): void
+    {
+        $checkoutOdometer = (int) ($contract->vehicle_odometer ?? 0);
+
+        if ($returnOdometer < $checkoutOdometer) {
+            throw ValidationException::withMessages([
+                'return_odometer' => "Return odometer cannot be lower than the contract checkout odometer ({$checkoutOdometer}).",
+            ]);
+        }
     }
 
     private function findContractFromRequest(Request $request): Contract
