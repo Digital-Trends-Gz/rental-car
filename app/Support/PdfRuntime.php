@@ -124,21 +124,18 @@ final class PdfRuntime
 
     public static function dompdfFontDirectory(): string
     {
-        return storage_path('app/dompdf-fonts');
+        return self::writableDirectory(storage_path('app/dompdf-fonts'), 'car4u-dompdf-fonts');
     }
 
     public static function dompdfTempDirectory(): string
     {
-        return storage_path('app/dompdf-temp');
+        return self::writableDirectory(storage_path('app/dompdf-temp'), 'car4u-dompdf-temp');
     }
 
     public static function ensureDompdfDirectories(): void
     {
-        foreach ([self::dompdfFontDirectory(), self::dompdfTempDirectory()] as $directory) {
-            if (! is_dir($directory)) {
-                @mkdir($directory, 0775, true);
-            }
-        }
+        self::dompdfFontDirectory();
+        self::dompdfTempDirectory();
     }
 
     /**
@@ -188,5 +185,29 @@ final class PdfRuntime
         }
 
         return null;
+    }
+
+    private static function writableDirectory(string $preferredPath, string $fallbackName): string
+    {
+        if (self::ensureWritable($preferredPath)) {
+            return $preferredPath;
+        }
+
+        $fallbackPath = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$fallbackName;
+
+        if (self::ensureWritable($fallbackPath)) {
+            return $fallbackPath;
+        }
+
+        return sys_get_temp_dir();
+    }
+
+    private static function ensureWritable(string $path): bool
+    {
+        if (! is_dir($path)) {
+            @mkdir($path, 0775, true);
+        }
+
+        return is_dir($path) && is_writable($path);
     }
 }
