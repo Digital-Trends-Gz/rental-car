@@ -363,7 +363,7 @@ class ContractAiExtractor
             return null;
         }
 
-        if (in_array($text, ['draft', 'active', 'completed', 'cancelled'], true)) {
+        if (in_array($text, ['pending', 'active', 'completed', 'cancelled'], true)) {
             return $text;
         }
 

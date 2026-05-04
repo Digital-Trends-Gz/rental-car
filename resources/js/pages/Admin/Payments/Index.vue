@@ -36,6 +36,15 @@ const subdomain = computed(() => page.props.current_tenant?.slug);
 const search = ref(props.filters?.search || '');
 const statusFilter = ref(props.filters?.status || 'all');
 const branchFilter = ref(props.filters?.branch_id ? String(props.filters.branch_id) : 'all');
+const isArabic = computed(() => page.props.locale === 'ar');
+const localize = (en: string, ar: string) => (isArabic.value ? ar : en);
+
+function adminUrl(path: string) {
+    const currentUrl = String(page.url || '');
+    const prefix = currentUrl.startsWith('/ar/') ? '/ar' : currentUrl.startsWith('/fr/') ? '/fr' : '';
+
+    return `${prefix}/admin${path}`;
+}
 
 function doSearch() {
     if (!subdomain.value) return;
@@ -94,6 +103,9 @@ const getStatusColor = (status: string) => {
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.payments.index.title') }}</h1>
+                <Link :href="adminUrl('/payments/debtors')">
+                    <Button variant="outline">{{ localize('Debtors', 'المديونين') }}</Button>
+                </Link>
             </div>
 
             <div class="flex flex-col gap-4">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Core\AiAutomationSettings;
 use App\Core\AiProviderSettings;
 use App\Core\TenantContext;
+use App\Enums\CarStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
@@ -34,6 +35,7 @@ use App\Support\ContractCustomerPhotoExtractor;
 use App\Support\CountryOptions;
 use App\Support\PaidReturnReportLock;
 use App\Support\PdfRuntime;
+use App\Support\TenantPdfTemplateRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -90,9 +92,11 @@ class ContractsController extends Controller
 
         $contractsQuery = Contract::query()
             ->with([
-                'reservation:id,reservation_number,user_id,car_id',
+                'reservation:id,reservation_number,user_id,car_id,status,total_amount',
                 'reservation.user:id,name,email',
-                'reservation.car:id,make,model,year,license_plate',
+                'reservation.car:id,make,model,year,license_plate,status',
+                'reservation.payments:id,reservation_id,amount,status',
+                'returnStatusReport:id,contract_id,total_extra_charges,payment_status',
                 'branch:id,name',
             ])
             ->withCount([
@@ -124,6 +128,10 @@ class ContractsController extends Controller
                 'id' => $contract->id,
                 'contract_number' => $contract->contract_number,
                 'status' => $contract->status,
+                'contract_status' => $this->contractStatusPayload($contract->status->value),
+                'reservation_status' => $this->reservationStatusPayload($contract->reservation?->status),
+                'finance_status' => $this->financeStatusPayload($contract),
+                'car_status' => $this->carStatusPayload($contract->reservation?->car?->status),
                 'reservation_number' => $contract->reservation?->reservation_number,
                 'renter_name' => $contract->renter_name,
                 'branch_name' => $contract->branch?->name,
@@ -145,7 +153,7 @@ class ContractsController extends Controller
             ],
             'branches' => $branchOptions,
             'canAccessAllBranches' => $canAccessAllBranches,
-            'statuses' => ['draft', 'active', 'completed', 'cancelled'],
+            'statuses' => ['draft', 'pending', 'active', 'completed', 'cancelled'],
             'actions' => [
                 'index' => route('admin.contracts.index', ['subdomain' => $request->route('subdomain')]),
                 'create' => route('admin.contracts.create', ['subdomain' => $request->route('subdomain')]),
@@ -265,6 +273,12 @@ class ContractsController extends Controller
             $this->syncAdditionalArchiveFiles($contract, $validated);
             $this->completeWaitingReservationIfNeeded($reservation);
 
+            if ($reservation?->car) {
+                $reservation->car->forceFill([
+                    'status' => CarStatus::RESERVED->value,
+                ])->save();
+            }
+
             return $contract;
         });
 
@@ -281,7 +295,9 @@ class ContractsController extends Controller
         abort_unless($this->canAccessContract($contract, request()->user()), 403);
         $contract->loadMissing([
             'reservation.user:id,name,email',
-            'reservation.car:id,make,model,year,license_plate,mileage',
+            'reservation.car:id,make,model,year,license_plate,mileage,status',
+            'reservation.payments:id,reservation_id,amount,status',
+            'returnStatusReport:id,contract_id,total_extra_charges,payment_status',
             'branch:id,name',
             'files',
             'primaryDriver.documents',
@@ -298,6 +314,10 @@ class ContractsController extends Controller
                 'id' => $contract->id,
                 'contract_number' => $contract->contract_number,
                 'status' => $contract->status,
+                'contract_status' => $this->contractStatusPayload($contract->status->value),
+                'reservation_status' => $this->reservationStatusPayload($contract->reservation?->status),
+                'finance_status' => $this->financeStatusPayload($contract),
+                'car_status' => $this->carStatusPayload($contract->reservation?->car?->status),
                 'contract_date' => optional($contract->contract_date)->toDateString(),
                 'renter_name' => $contract->renter_name,
                 'renter_id_number' => $contract->renter_id_number,
@@ -400,9 +420,55 @@ class ContractsController extends Controller
                 'extend' => !$isLocked && $this->isExtendableContract($contract)
                     ? url('/admin/contracts/'.$contract->id.'/extend')
                     : null,
-                'return_report' => url('/admin/contracts/'.$contract->id.'/return-status-report'),
+                'deliver' => !$isLocked && $this->canDeliverContract($contract)
+                    ? url('/admin/contracts/'.$contract->id.'/deliver')
+                    : null,
+                'return_report' => $this->canOpenReturnReport($contract)
+                    ? url('/admin/contracts/'.$contract->id.'/return-status-report')
+                    : null,
             ],
         ]);
+    }
+
+    public function deliver(Request $request, Contract $contract): RedirectResponse
+    {
+        abort_unless($this->canAccessContract($contract, $request->user()), 403);
+
+        $contract->loadMissing(['reservation.car', 'returnStatusReport']);
+
+        if (PaidReturnReportLock::contract($contract)) {
+            abort(423, 'This contract is locked because the return report is marked paid.');
+        }
+
+        if (!$this->canDeliverContract($contract)) {
+            throw ValidationException::withMessages([
+                'delivery' => 'This contract cannot be delivered in its current status.',
+            ]);
+        }
+
+        $this->validateDeliveryReadiness($contract);
+
+        DB::transaction(function () use ($contract): void {
+            $contract->forceFill([
+                'status' => 'active',
+            ])->save();
+
+            if ($contract->reservation) {
+                $contract->reservation->forceFill([
+                    'status' => ReservationStatus::ACTIVE->value,
+                ])->save();
+            }
+
+            if ($contract->reservation?->car) {
+                $contract->reservation->car->forceFill([
+                    'status' => CarStatus::RENTED->value,
+                ])->save();
+            }
+        });
+
+        return redirect()
+            ->to(url('/admin/contracts/'.$contract->getKey()))
+            ->with('success', 'Vehicle delivered successfully.');
     }
 
     public function pdf(Request $request, Contract $contract)
@@ -449,6 +515,9 @@ class ContractsController extends Controller
             ? $this->serializeCarDamageCases((int) $contract->reservation->car->id, $request->user())
             : [];
         $branding = $this->pdfBranding($contract->tenant);
+        $siteSettings = $contract->tenant?->siteSetting ? TenantSiteSetting::forTenant($contract->tenant) : [];
+        $pdfTemplate = TenantPdfTemplateRegistry::resolveContractTemplate(data_get($siteSettings, 'pdf_templates.contract'));
+        $templateView = $pdfTemplate['view'];
 
         $viewData = [
             'contract' => $contract,
@@ -466,13 +535,16 @@ class ContractsController extends Controller
             'currencySymbol' => config('app.currency_symbol', '$'),
             'locale' => $locale,
             'direction' => $direction,
+            'siteSettings' => $siteSettings,
+            'pdfHeader' => data_get($siteSettings, 'pdf_header', []),
+            'pdfTemplate' => $pdfTemplate,
         ];
 
         $fileName = $contract->contract_number.'-'.$locale.'-report.pdf';
 
         if (PdfRuntime::canUseBrowsershot()) {
             try {
-                return Pdf::view('admin.contracts.pdf', $viewData)
+                return Pdf::view($templateView, $viewData)
                     ->format(Format::A4)
                     ->portrait()
                     ->margins(4, 4, 4, 4)
@@ -515,7 +587,7 @@ class ContractsController extends Controller
         $fallbackViewData['damageDiagram'] = ['data_uri' => null, 'empty' => true];
         PdfRuntime::ensureDompdfDirectories();
 
-        return DomPdf::loadView('admin.contracts.pdf', $fallbackViewData)
+        return DomPdf::loadView($templateView, $fallbackViewData)
             ->setOption('defaultFont', 'DejaVu Sans')
             ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
             ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
@@ -1023,7 +1095,7 @@ class ContractsController extends Controller
         $validator = Validator::make($request->all(), [
             'reservation_id' => [$requiredOnCreate, 'integer', 'exists:reservations,id'],
             'contract_number' => ['nullable', 'string', 'max:100', $uniqueRule],
-            'status' => ['required', Rule::in(['draft', 'active', 'completed', 'cancelled'])],
+            'status' => ['required', Rule::in(['draft', 'pending', 'active', 'completed', 'cancelled'])],
             'contract_date' => $contractDateRules,
             'renter_name' => [$requiredOnCreate, 'string', 'max:255', new LettersOnly()],
             'renter_id_number' => [$requiredOnCreate, 'string', 'max:255', new DigitsOnly()],
@@ -1502,6 +1574,161 @@ class ContractsController extends Controller
             $user,
             $contract->branch_id ? (int) $contract->branch_id : null
         );
+    }
+
+    private function contractStatusPayload(string $status): array
+    {
+        $colors = [
+            'draft' => '#9CA3AF',
+            'pending' => '#F59E0B',
+            'active' => '#3B82F6',
+            'completed' => '#10B981',
+            'cancelled' => '#EF4444',
+        ];
+
+        return [
+            'value' => $status,
+            'label' => Str::title(str_replace('_', ' ', $status ?: 'unknown')),
+            'color' => $colors[$status] ?? '#6B7280',
+        ];
+    }
+
+    private function reservationStatusPayload(mixed $status): ?array
+    {
+        if ($status === null || $status === '') {
+            return null;
+        }
+
+        $reservationStatus = $status instanceof ReservationStatus
+            ? $status
+            : ReservationStatus::tryFrom((string) $status);
+
+        return [
+            'value' => $reservationStatus?->value ?? (string) $status,
+            'label' => $reservationStatus?->label() ?? Str::title(str_replace('_', ' ', (string) $status)),
+            'color' => $reservationStatus?->color() ?? '#6B7280',
+        ];
+    }
+
+    private function carStatusPayload(mixed $status): ?array
+    {
+        if ($status === null || $status === '') {
+            return null;
+        }
+
+        $carStatus = $status instanceof \App\Enums\CarStatus
+            ? $status
+            : \App\Enums\CarStatus::tryFrom((string) $status);
+
+        return [
+            'value' => $carStatus?->value ?? (string) $status,
+            'label' => $carStatus?->label() ?? Str::title(str_replace('_', ' ', (string) $status)),
+            'color' => $carStatus?->color() ?? '#6B7280',
+        ];
+    }
+
+    private function financeStatusPayload(Contract $contract): array
+    {
+        $contractTotal = (float) ($contract->total_amount ?? 0);
+        $returnReportTotal = (float) ($contract->returnStatusReport?->total_extra_charges ?? 0);
+        $totalDue = max(0, $contractTotal + $returnReportTotal);
+        $completedPayments = (float) ($contract->reservation?->payments ?? collect())
+            ->filter(function (Payment $payment): bool {
+                $status = $payment->status instanceof PaymentStatus
+                    ? $payment->status
+                    : PaymentStatus::tryFrom((string) $payment->status);
+
+                return $status === PaymentStatus::COMPLETED;
+            })
+            ->sum(fn (Payment $payment) => (float) $payment->amount);
+        $balance = round(max(0, $totalDue - $completedPayments), 2);
+
+        if ($totalDue <= 0) {
+            $value = 'no_charge';
+            $label = 'No Charge';
+            $color = '#6B7280';
+        } elseif ($balance <= 0) {
+            $value = 'paid';
+            $label = 'Paid';
+            $color = '#10B981';
+        } elseif ($completedPayments > 0) {
+            $value = 'partial';
+            $label = 'Partially Paid';
+            $color = '#F59E0B';
+        } else {
+            $value = 'unpaid';
+            $label = 'Unpaid';
+            $color = '#EF4444';
+        }
+
+        if (($contract->returnStatusReport?->payment_status ?? null) === 'not_paid' && $returnReportTotal > 0 && $balance > 0) {
+            $value = $completedPayments > 0 ? 'partial_with_return_debt' : 'return_debt';
+            $label = $completedPayments > 0 ? 'Partial + Return Debt' : 'Return Debt';
+            $color = '#DC2626';
+        }
+
+        return [
+            'value' => $value,
+            'label' => $label,
+            'color' => $color,
+            'total_due' => round($totalDue, 2),
+            'paid_amount' => round($completedPayments, 2),
+            'balance_due' => $balance,
+        ];
+    }
+
+    private function canDeliverContract(Contract $contract): bool
+    {
+        $status = $contract->status->value;
+
+        return $status === 'pending'
+            && $contract->returnStatusReport === null;
+    }
+
+    private function canOpenReturnReport(Contract $contract): bool
+    {
+        if ($contract->returnStatusReport !== null) {
+            return true;
+        }
+
+        return $contract->status->value === 'active';
+    }
+
+    private function validateDeliveryReadiness(Contract $contract): void
+    {
+        $messages = [];
+
+        if ($contract->vehicle_odometer === null) {
+            $messages['vehicle_odometer'] = 'Delivery odometer is required before delivering the vehicle.';
+        }
+
+        if ($this->nullableString($contract->vehicle_fuel_level) === null) {
+            $messages['vehicle_fuel_level'] = 'Delivery fuel level is required before delivering the vehicle.';
+        }
+
+        if ($this->nullableString($contract->vehicle_condition_before) === null) {
+            $messages['vehicle_condition_before'] = 'Vehicle condition before delivery is required before delivering the vehicle.';
+        }
+
+        $carId = $contract->reservation?->car_id;
+        if (!$carId) {
+            $messages['car'] = 'This contract is not linked to a reservation vehicle.';
+        } elseif ($this->hasAnotherActiveContractForCar($contract, (int) $carId)) {
+            $messages['car'] = 'This vehicle is already linked to another active contract.';
+        }
+
+        if ($messages !== []) {
+            throw ValidationException::withMessages($messages);
+        }
+    }
+
+    private function hasAnotherActiveContractForCar(Contract $contract, int $carId): bool
+    {
+        return Contract::query()
+            ->whereKeyNot($contract->getKey())
+            ->where('status', 'active')
+            ->whereHas('reservation', fn ($query) => $query->where('car_id', $carId))
+            ->exists();
     }
 
     private function isExtendableContract(Contract $contract): bool
@@ -2681,9 +2908,6 @@ class ContractsController extends Controller
         ];
     }
 }
-
-
-
 
 
 

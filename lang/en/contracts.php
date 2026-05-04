@@ -69,7 +69,7 @@ return [
             'custom' => 'Custom',
         ],
         'statuses' => [
-            'draft' => 'Draft',
+            'pending' => 'Pending',
             'finalized' => 'Finalized',
         ],
         'damage_types' => [

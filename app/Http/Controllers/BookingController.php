@@ -19,6 +19,7 @@ use App\Models\Reservation;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Support\Payments\MyFatoorahSubscriptionProvider;
+use App\Support\ClientReturnDebt;
 use App\Support\TenantStripeConnect;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -240,6 +241,15 @@ class BookingController extends Controller
             'coupon_code'      => 'nullable|string|max:100',
         ]);
 
+        $outstandingReturnDebt = ClientReturnDebt::outstandingTotal((int) TenantContext::id(), (int) Auth::id());
+        if ($outstandingReturnDebt > 0) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'start_date' => ClientReturnDebt::blockingMessage($outstandingReturnDebt),
+                ]);
+        }
+
         // convert dates to Carbon
         $startDate = Carbon::parse($request->start_date);
         $endDate   = Carbon::parse($request->end_date);
@@ -337,6 +347,7 @@ class BookingController extends Controller
             $dailyRate,
             $subtotal,
             $taxAmount,
+            $returnLocationFee,
             $autoDiscount,
             $autoDiscountAmount,
             $couponDiscountAmount,

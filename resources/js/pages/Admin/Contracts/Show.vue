@@ -18,11 +18,24 @@ import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
+type StatusPayload = {
+    value: string;
+    label: string;
+    color: string;
+    total_due?: number;
+    paid_amount?: number;
+    balance_due?: number;
+};
+
 const props = defineProps<{
     contract: {
         id: number;
         contract_number: string;
         status: string;
+        contract_status?: StatusPayload | null;
+        reservation_status?: StatusPayload | null;
+        finance_status?: StatusPayload | null;
+        car_status?: StatusPayload | null;
         contract_date?: string | null;
         renter_name?: string | null;
         renter_id_number?: string | null;
@@ -103,6 +116,7 @@ const props = defineProps<{
         request_extend?: string | null;
         extend?: string | null;
         return_report?: string;
+        deliver?: string | null;
     };
 }>();
 
@@ -155,10 +169,12 @@ const extendForm = useForm({
     notes: '',
 });
 const showRequestDialog = ref(false);
+const showDeliverDialog = ref(false);
 const requestForm = useForm({
     new_end_date: '',
     notes: '',
 });
+const deliverForm = useForm({});
 
 function parseDate(value: string): Date {
     return new Date(`${value}T00:00:00`);
@@ -192,6 +208,67 @@ function openRequestDialog() {
     showRequestDialog.value = true;
 }
 
+function openDeliverDialog() {
+    if (!actions.value.deliver) {
+        return;
+    }
+
+    deliverForm.clearErrors();
+    showDeliverDialog.value = true;
+}
+
+function deliverVehicle() {
+    if (!actions.value.deliver) {
+        return;
+    }
+
+    if (
+        !window.confirm(
+            localize(
+                'Deliver this vehicle and mark the contract as active?',
+                'هل تريد تسليم السيارة وتفعيل العقد؟',
+            ),
+        )
+    ) {
+        return;
+    }
+
+    deliverForm.post(actions.value.deliver, {
+        preserveScroll: true,
+    });
+}
+
+function dispatchToast(tone: 'success' | 'error' | 'warning' | 'info', message: string) {
+    window.dispatchEvent(new CustomEvent('flash-toast', { detail: { tone, message } }));
+}
+
+function confirmDeliverVehicle() {
+    if (!actions.value.deliver) {
+        return;
+    }
+
+    deliverForm.post(actions.value.deliver, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showDeliverDialog.value = false;
+        },
+        onError: (errors) => {
+            showDeliverDialog.value = false;
+            const firstMessage = Object.values(errors)[0];
+            dispatchToast(
+                'error',
+                String(
+                    firstMessage ||
+                        localize(
+                            'Unable to deliver the vehicle. Please complete the required data first.',
+                            'تعذر تسليم السيارة. يرجى استكمال البيانات المطلوبة أولاً.',
+                        ),
+                ),
+            );
+        },
+    });
+}
+
 const extensionDailyRate = computed(() => Number(props.contract.daily_rate ?? props.contract.price_per_day ?? 0));
 const extensionCurrentTotal = computed(() => Number(props.contract.total_amount ?? 0));
 const extensionCurrentEndDate = computed(() => props.contract.end_date || '');
@@ -201,6 +278,16 @@ const extensionPreview = computed(() => {
 const requestExtensionPreview = computed(() => {
     return buildPreview(extensionCurrentEndDate.value, requestForm.new_end_date, extensionCurrentTotal.value);
 });
+
+const badgeStyle = (status?: StatusPayload | null) => {
+    const color = status?.color || '#6B7280';
+
+    return {
+        color,
+        backgroundColor: `${color}1f`,
+        borderColor: `${color}4d`,
+    };
+};
 
 function buildPreview(currentEndDate: string, newEndDate: string, currentTotal: number) {
     if (!currentEndDate || !newEndDate) {
@@ -304,6 +391,14 @@ function submitRequestExtension() {
                             t('dashboard.admin.common.edit')
                         }}</Button>
                     </Link>
+                    <Button
+                        v-if="actions.deliver && !isLocked"
+                        type="button"
+                        :disabled="deliverForm.processing"
+                        @click="openDeliverDialog"
+                    >
+                        {{ localize('Deliver Vehicle', 'تسليم السيارة') }}
+                    </Button>
                     <Link v-if="actions.return_report" :href="actions.return_report">
                         <Button variant="secondary">{{ localize('Return Status', 'تقرير الإرجاع') }}</Button>
                     </Link>
@@ -328,6 +423,64 @@ function submitRequestExtension() {
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+                <div class="rounded-md border p-4">
+                    <div class="text-xs font-medium uppercase text-gray-500">
+                        Contract Status
+                    </div>
+                    <span
+                        class="mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
+                        :style="badgeStyle(contract.contract_status)"
+                    >
+                        {{ contract.contract_status?.label || contract.status || '-' }}
+                    </span>
+                </div>
+                <div class="rounded-md border p-4">
+                    <div class="text-xs font-medium uppercase text-gray-500">
+                        Reservation Status
+                    </div>
+                    <span
+                        v-if="contract.reservation_status"
+                        class="mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
+                        :style="badgeStyle(contract.reservation_status)"
+                    >
+                        {{ contract.reservation_status.label }}
+                    </span>
+                    <div v-else class="mt-2 text-sm text-gray-500">-</div>
+                </div>
+                <div class="rounded-md border p-4">
+                    <div class="text-xs font-medium uppercase text-gray-500">
+                        Finance Status
+                    </div>
+                    <span
+                        class="mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
+                        :style="badgeStyle(contract.finance_status)"
+                    >
+                        {{ contract.finance_status?.label || '-' }}
+                    </span>
+                    <div
+                        v-if="Number(contract.finance_status?.balance_due ?? 0) > 0"
+                        class="mt-2 text-xs text-gray-500"
+                    >
+                        Balance: {{ contract.finance_status?.balance_due }}
+                        {{ contract.currency || '' }}
+                    </div>
+                </div>
+                <div class="rounded-md border p-4">
+                    <div class="text-xs font-medium uppercase text-gray-500">
+                        Car Status
+                    </div>
+                    <span
+                        v-if="contract.car_status"
+                        class="mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
+                        :style="badgeStyle(contract.car_status)"
+                    >
+                        {{ contract.car_status.label }}
+                    </span>
+                    <div v-else class="mt-2 text-sm text-gray-500">-</div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div class="rounded-md border p-4">
                     <h2 class="mb-3 font-semibold">
@@ -338,7 +491,7 @@ function submitRequestExtension() {
                             <strong
                                 >{{ t('dashboard.admin.contracts.show.fields.status') }}:</strong
                             >
-                            {{ contract.status }}
+                            {{ contract.contract_status?.label || contract.status }}
                         </div>
                         <div>
                             <strong
@@ -972,6 +1125,62 @@ function submitRequestExtension() {
                             extendForm.processing
                                 ? localize('Saving...', 'جاري الحفظ...')
                                 : localize('Force Extend', 'تمديد الإيجار')
+                        }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog v-model:open="showDeliverDialog">
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>
+                        {{ localize('Deliver Vehicle', 'تسليم السيارة') }}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {{
+                            localize(
+                                'This will activate the contract, activate the reservation, and mark the vehicle as rented.',
+                                'سيتم تفعيل العقد، وتفعيل الحجز، وتغيير حالة السيارة إلى مؤجرة.',
+                            )
+                        }}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div class="space-y-3 text-sm">
+                    <div class="rounded-md border bg-muted/30 p-3">
+                        {{
+                            localize(
+                                'Make sure the delivery odometer, fuel level, and vehicle condition are filled before continuing.',
+                                'تأكد من إدخال عداد التسليم، ومستوى الوقود، وحالة السيارة قبل المتابعة.',
+                            )
+                        }}
+                    </div>
+                    <div class="font-medium">
+                        {{
+                            localize(
+                                'Do you want to deliver this vehicle now?',
+                                'هل تريد تسليم هذه السيارة الآن؟',
+                            )
+                        }}
+                    </div>
+                </div>
+
+                <DialogFooter class="mt-4 gap-2">
+                    <DialogClose as-child>
+                        <Button type="button" variant="outline">
+                            {{ localize('Cancel', 'إلغاء') }}
+                        </Button>
+                    </DialogClose>
+                    <Button
+                        type="button"
+                        :disabled="deliverForm.processing"
+                        @click="confirmDeliverVehicle"
+                    >
+                        {{
+                            deliverForm.processing
+                                ? localize('Delivering...', 'جارٍ التسليم...')
+                                : localize('Confirm Delivery', 'تأكيد التسليم')
                         }}
                     </Button>
                 </DialogFooter>

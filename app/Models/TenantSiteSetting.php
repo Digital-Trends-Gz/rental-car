@@ -27,6 +27,7 @@ class TenantSiteSetting extends Model
         'contact',
         'contact_page',
         'pdf_header',
+        'pdf_templates',
         'police_notice',
         'reservation_settings',
         'translations',
@@ -43,6 +44,7 @@ class TenantSiteSetting extends Model
         'contact' => 'array',
         'contact_page' => 'array',
         'pdf_header' => 'array',
+        'pdf_templates' => 'array',
         'police_notice' => 'array',
         'reservation_settings' => 'array',
         'translations' => 'array',
@@ -181,6 +183,9 @@ class TenantSiteSetting extends Model
                     'en' => null,
                     'ar' => null,
                 ],
+            ],
+            'pdf_templates' => [
+                'contract' => \App\Support\TenantPdfTemplateRegistry::DEFAULT_CONTRACT_TEMPLATE,
             ],
             'police_notice' => [
                 'company_name' => [
@@ -484,6 +489,15 @@ class TenantSiteSetting extends Model
                     'en' => self::nullableString(data_get($data, 'pdf_header.registry_label.en')),
                     'ar' => self::nullableString(data_get($data, 'pdf_header.registry_label.ar')),
                 ],
+            ],
+            'pdf_templates' => [
+                'contract' => in_array(
+                    (string) data_get($data, 'pdf_templates.contract', $defaults['pdf_templates']['contract']),
+                    \App\Support\TenantPdfTemplateRegistry::contractTemplateValues(),
+                    true
+                )
+                    ? (string) data_get($data, 'pdf_templates.contract', $defaults['pdf_templates']['contract'])
+                    : $defaults['pdf_templates']['contract'],
             ],
             'police_notice' => [
                 'company_name' => [

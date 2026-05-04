@@ -144,6 +144,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::post('contracts/{contract}/extend', [ContractsController::class, 'extend'])
             ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:force_extend_contract'])
             ->name('contracts.extend');
+        Route::post('contracts/{contract}/deliver', [ContractsController::class, 'deliver'])
+            ->middleware('permission:tenant-manage-reservations')
+            ->name('contracts.deliver');
         Route::get('contracts/{contract}/return-status-report', [ContractReturnReportsController::class, 'create'])
             ->middleware('permission:tenant-manage-reservations')
             ->name('contracts.return-report');
@@ -181,6 +184,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->name('clients.activate');
 
         // Payments
+        Route::get('payments/debtors', [PaymentsController::class, 'debtors'])
+            ->middleware('permission:tenant-manage-payments')
+            ->name('payments.debtors');
         Route::resource('payments', PaymentsController::class)
             ->only(['index'])
             ->middleware('permission:tenant-manage-payments');

@@ -179,6 +179,12 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-payments',
         },
         {
+            title: page.props.locale === 'ar' ? 'المديونين' : 'Debtors',
+            href: adminHref('/payments/debtors'),
+            icon: CreditCard,
+            permission: 'tenant-manage-payments',
+        },
+        {
             title: t('dashboard.sidebar.admin.coupons'),
             href: adminHref('/coupons'),
             icon: Tag,

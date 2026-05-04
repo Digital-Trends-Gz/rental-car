@@ -69,7 +69,7 @@ return [
             'custom' => 'مخصص',
         ],
         'statuses' => [
-            'draft' => 'مسودة',
+            'pending' => 'في انتظار',
             'finalized' => 'نهائي',
         ],
         'damage_types' => [

@@ -6,12 +6,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ref } from 'vue';
 
+type StatusPayload = {
+    value: string;
+    label: string;
+    color: string;
+    total_due?: number;
+    paid_amount?: number;
+    balance_due?: number;
+};
+
 const props = defineProps<{
     contracts: {
         data: Array<{
             id: number;
             contract_number: string;
             status: string;
+            contract_status?: StatusPayload | null;
+            reservation_status?: StatusPayload | null;
+            finance_status?: StatusPayload | null;
+            car_status?: StatusPayload | null;
             reservation_number?: string | null;
             renter_name?: string | null;
             branch_name?: string | null;
@@ -55,6 +68,16 @@ const submitFilters = () => {
         },
         { preserveState: true, replace: true },
     );
+};
+
+const badgeStyle = (status?: StatusPayload | null) => {
+    const color = status?.color || '#6B7280';
+
+    return {
+        color,
+        backgroundColor: `${color}1f`,
+        borderColor: `${color}4d`,
+    };
 };
 </script>
 
@@ -160,11 +183,22 @@ const submitFilters = () => {
                             <th
                                 class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                             >
-                                {{
-                                    t(
-                                        'dashboard.admin.contracts.index.table.status',
-                                    )
-                                }}
+                                Contract Status
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
+                                Reservation Status
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
+                                Finance Status
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            >
+                                Car Status
                             </th>
                             <th
                                 class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
@@ -200,8 +234,62 @@ const submitFilters = () => {
                             <td class="px-4 py-3">
                                 {{ item.branch_name || '-' }}
                             </td>
-                            <td class="px-4 py-3 capitalize">
-                                {{ item.status }}
+                            <td class="px-4 py-3">
+                                <span
+                                    class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
+                                    :style="badgeStyle(item.contract_status)"
+                                >
+                                    {{
+                                        item.contract_status?.label ||
+                                        item.status ||
+                                        '-'
+                                    }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span
+                                    v-if="item.reservation_status"
+                                    class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
+                                    :style="badgeStyle(item.reservation_status)"
+                                >
+                                    {{ item.reservation_status.label }}
+                                </span>
+                                <span v-else>-</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="space-y-1">
+                                    <span
+                                        class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
+                                        :style="badgeStyle(item.finance_status)"
+                                    >
+                                        {{ item.finance_status?.label || '-' }}
+                                    </span>
+                                    <div
+                                        v-if="
+                                            Number(
+                                                item.finance_status
+                                                    ?.balance_due ?? 0,
+                                            ) > 0
+                                        "
+                                        class="text-xs text-gray-500"
+                                    >
+                                        Balance:
+                                        {{
+                                            item.finance_status?.balance_due
+                                        }}
+                                        {{ item.currency || '' }}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span
+                                    v-if="item.car_status"
+                                    class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
+                                    :style="badgeStyle(item.car_status)"
+                                >
+                                    {{ item.car_status.label }}
+                                </span>
+                                <span v-else>-</span>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-600">
                                 {{
@@ -257,7 +345,7 @@ const submitFilters = () => {
                         </tr>
                         <tr v-if="contracts.data.length === 0">
                             <td
-                                colspan="7"
+                                colspan="10"
                                 class="px-4 py-8 text-center text-gray-500"
                             >
                                 {{ t('dashboard.admin.contracts.index.empty') }}

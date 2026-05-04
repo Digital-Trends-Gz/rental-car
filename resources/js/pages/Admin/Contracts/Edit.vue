@@ -1453,7 +1453,8 @@ function submit() {
             <div>
               <Label for="status">{{ localize('Status', 'ط·آ§ط¸â€‍ط·آ­ط·آ§ط¸â€‍ط·آ©') }}</Label>
               <select id="status" v-model="form.status" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                <option value="draft">{{ localize('Draft', 'ط¸â€¦ط·آ³ط¸ث†ط·آ¯ط·آ©') }}</option>
+                <option value="draft">{{ localize('Draft', 'مسودة') }}</option>
+                <option value="pending">{{ localize('Pending', 'في انتظار') }}</option>
                 <option value="active">{{ localize('Active', 'ط¸â€ ط·آ´ط·آ·') }}</option>
                 <option value="completed">{{ localize('Completed', 'ط¸â€¦ط¸ئ’ط·ع¾ط¸â€¦ط¸â€‍') }}</option>
                 <option value="cancelled">{{ localize('Cancelled', 'ط¸â€¦ط¸â€‍ط·ط›ط¸ظ¹') }}</option>

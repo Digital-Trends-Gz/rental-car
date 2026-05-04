@@ -9,6 +9,11 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 type LocalizedText = { en: string | null; ar: string | null };
+type PdfTemplateOption = {
+    value: string;
+    label: LocalizedText;
+    description: LocalizedText;
+};
 
 const props = defineProps<{
     tenant: {
@@ -65,10 +70,14 @@ const props = defineProps<{
             gsm_3: string | null;
             registry_label: LocalizedText;
         };
+        pdf_templates: {
+            contract: string;
+        };
         footer: {
             description: LocalizedText;
         };
     };
+    pdfTemplateOptions: PdfTemplateOption[];
     logoFiles: Array<{ id: number; url: string }>;
     actions: {
         update: string;
@@ -202,6 +211,9 @@ const form = useForm({
             ar: props.settings.pdf_header?.registry_label?.ar ?? '',
         },
     },
+    pdf_templates: {
+        contract: props.settings.pdf_templates?.contract ?? 'classic',
+    },
     footer: {
         description: {
             en: props.settings.footer?.description?.en ?? '',
@@ -215,6 +227,9 @@ const flashError = computed(() => page.props.flash?.error ?? null);
 const flashRestrictedAction = computed(() => page.props.flash?.restricted_action ?? null);
 const formErrorList = computed(() => Object.values(form.errors ?? {}).filter((value): value is string => typeof value === 'string' && value.length > 0));
 const previewName = computed(() => form.site_name || props.tenant.name);
+const selectedContractPdfTemplate = computed(
+    () => props.pdfTemplateOptions.find((option) => option.value === form.pdf_templates.contract) ?? null,
+);
 const uploadedLogoUrl = computed(() => props.logoFiles?.[0]?.url || null);
 const previewLogoUrl = computed(() => uploadedLogoUrl.value || form.logo_url || null);
 const primarySecondaryGradient = computed(
@@ -609,6 +624,30 @@ function submit() {
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">
+                        <div class="space-y-2 md:col-span-2">
+                            <Label for="pdf_template_contract">{{ localize('Contract PDF Template', 'قالب PDF للعقد') }}</Label>
+                            <select
+                                id="pdf_template_contract"
+                                v-model="form.pdf_templates.contract"
+                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            >
+                                <option v-for="option in pdfTemplateOptions" :key="option.value" :value="option.value">
+                                    {{ localize(option.label.en || option.value, option.label.ar || option.value) }}
+                                </option>
+                            </select>
+                            <p class="text-xs text-muted-foreground">
+                                {{
+                                    selectedContractPdfTemplate
+                                        ? localize(
+                                              selectedContractPdfTemplate.description.en || '',
+                                              selectedContractPdfTemplate.description.ar || '',
+                                          )
+                                        : ''
+                                }}
+                            </p>
+                            <p v-if="form.errors['pdf_templates.contract']" class="text-sm text-red-600">{{ form.errors['pdf_templates.contract'] }}</p>
+                        </div>
+
                         <div class="space-y-2">
                             <Label for="pdf_header_company_name_en">{{ localize('Company Name (EN)', 'اسم الشركة (EN)') }}</Label>
                             <Input id="pdf_header_company_name_en" v-model="form.pdf_header.company_name.en" />

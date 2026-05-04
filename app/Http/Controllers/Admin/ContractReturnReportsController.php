@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CarStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
@@ -40,7 +41,7 @@ class ContractReturnReportsController extends Controller
     {
     }
 
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
         $contract = $this->findContractFromRequest($request);
         abort_unless($this->canAccessContract($contract, $request->user()), 403);
@@ -54,6 +55,14 @@ class ContractReturnReportsController extends Controller
         ]);
 
         $existingReport = $contract->returnStatusReport;
+        if (!$existingReport && $contract->status->value !== 'active') {
+            return redirect()
+                ->to(url('/admin/contracts/'.$contract->getKey()))
+                ->withErrors([
+                    'return_report' => 'The vehicle must be delivered before creating a return status report.',
+                ]);
+        }
+
         $settings = $this->reservationSettings((int) $contract->tenant_id);
         $afterReturnDamageReports = $contract->damageReports
             ->filter(fn (CarDamageReport $report) => $report->report_type === 'after_return')
@@ -477,7 +486,7 @@ class ContractReturnReportsController extends Controller
                 ]
             );
 
-            if ($paymentStatus === 'paid' && $totalExtraCharges > 0) {
+            if ($totalExtraCharges > 0) {
                 $payment = $report->payment_id
                     ? Payment::query()->where('tenant_id', $contract->tenant_id)->find($report->payment_id)
                     : null;
@@ -490,18 +499,36 @@ class ContractReturnReportsController extends Controller
                 }
 
                 $payment->amount = $totalExtraCharges;
-                $payment->currency = $contract->currency ?: ($contract->reservation?->currency ?? config('app.currency', 'USD'));
+                $payment->currency = strtoupper((string) ($contract->currency ?: config('app.currency_code', 'USD')));
                 $payment->payment_method = PaymentMethod::CASH;
-                $payment->status = PaymentStatus::COMPLETED;
-                $payment->processed_at = now();
+                $payment->status = $paymentStatus === 'paid'
+                    ? PaymentStatus::COMPLETED
+                    : PaymentStatus::PENDING;
+                $payment->processed_at = $paymentStatus === 'paid' ? now() : null;
                 $payment->notes = trim(sprintf(
-                    'Return status report %s for contract %s.',
+                    'Return status report %s for contract %s%s.',
                     $report->report_number,
-                    $contract->contract_number
+                    $contract->contract_number,
+                    $paymentStatus === 'paid' ? '' : ' pending settlement'
                 ));
                 $payment->save();
 
                 $report->payment_id = $payment->id;
+                $report->save();
+            } elseif ($report->payment_id) {
+                $payment = Payment::query()->where('tenant_id', $contract->tenant_id)->find($report->payment_id);
+
+                if ($payment && $payment->status !== PaymentStatus::COMPLETED) {
+                    $payment->status = PaymentStatus::CANCELLED;
+                    $payment->processed_at = null;
+                    $payment->notes = trim(sprintf(
+                        'Return status report %s no longer has payable extra charges.',
+                        $report->report_number
+                    ));
+                    $payment->save();
+                }
+
+                $report->payment_id = null;
                 $report->save();
             }
 
@@ -519,10 +546,16 @@ class ContractReturnReportsController extends Controller
                 ]);
 
                 $car = $contract->reservation->car;
-                if ($car && $returnOdometer > (int) ($car->mileage ?? 0)) {
-                    $car->forceFill([
-                        'mileage' => $returnOdometer,
-                    ])->save();
+                if ($car) {
+                    $updates = [
+                        'status' => CarStatus::AVAILABLE->value,
+                    ];
+
+                    if ($returnOdometer > (int) ($car->mileage ?? 0)) {
+                        $updates['mileage'] = $returnOdometer;
+                    }
+
+                    $car->forceFill($updates)->save();
                 }
             }
 

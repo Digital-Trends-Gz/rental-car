@@ -6,6 +6,7 @@ use App\Core\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Models\TenantSiteSetting;
 use App\Support\BrandLogoImageResizer;
+use App\Support\TenantPdfTemplateRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -48,6 +49,7 @@ class WebsiteSettingsController extends Controller
                 'slug' => $tenant->slug,
             ],
             'settings' => TenantSiteSetting::forTenant($tenant),
+            'pdfTemplateOptions' => TenantPdfTemplateRegistry::contractTemplateOptions(),
             'logoFiles' => $logoFiles,
             'actions' => [
                 // Use current localized URL so PUT does not lose locale prefix (/ar or /en).
@@ -138,6 +140,7 @@ class WebsiteSettingsController extends Controller
             'pdf_header.gsm_3' => ['nullable', 'string', 'max:100'],
             'pdf_header.registry_label.en' => ['nullable', 'string', 'max:100'],
             'pdf_header.registry_label.ar' => ['nullable', 'string', 'max:100'],
+            'pdf_templates.contract' => ['nullable', 'string', Rule::in(TenantPdfTemplateRegistry::contractTemplateValues())],
 
             'footer.description.en' => ['nullable', 'string', 'max:2000'],
             'footer.description.ar' => ['nullable', 'string', 'max:2000'],
@@ -160,6 +163,13 @@ class WebsiteSettingsController extends Controller
             : collect($supportedLocales)->mapWithKeys(fn (string $locale) => [
                 $locale => $this->sanitizeLocaleOverrides(data_get($existingSettings?->translations, $locale, [])),
             ])->all();
+        $pdfTemplates = [
+            'contract' => (string) (
+                data_get($validated, 'pdf_templates.contract')
+                ?: data_get($existingSettings?->pdf_templates, 'contract')
+                ?: TenantPdfTemplateRegistry::DEFAULT_CONTRACT_TEMPLATE
+            ),
+        ];
 
         $siteSetting = TenantSiteSetting::updateOrCreate(
             ['tenant_id' => $tenant->id],
@@ -285,6 +295,7 @@ class WebsiteSettingsController extends Controller
                         'ar' => $this->nullableString(data_get($validated, 'pdf_header.registry_label.ar')),
                     ],
                 ],
+                'pdf_templates' => $pdfTemplates,
                 'translations' => $translations,
                 'footer' => [
                     'description' => [

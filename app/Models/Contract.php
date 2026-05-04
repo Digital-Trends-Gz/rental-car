@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ContractStatus;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -49,6 +50,7 @@ class Contract extends Model
     ];
 
     protected $casts = [
+        'status' => ContractStatus::class,
         'contract_date' => 'date',
         'vehicle_odometer' => 'integer',
         'price_per_day' => 'decimal:2',

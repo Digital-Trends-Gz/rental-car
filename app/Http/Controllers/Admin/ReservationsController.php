@@ -11,6 +11,7 @@ use App\Models\CarDamageCase;
 use App\Models\Payment;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
+use App\Support\ClientReturnDebt;
 use App\Support\PaidReturnReportLock;
 use App\Enums\ReservationStatus;
 use App\Enums\PaymentMethod;
@@ -192,6 +193,13 @@ class ReservationsController extends Controller
             ->where('tenant_id', $user?->tenant_id)
             ->where('role', 'client')
             ->findOrFail((int) $validated['user_id']);
+
+        $outstandingReturnDebt = ClientReturnDebt::outstandingTotal((int) ($user?->tenant_id ?? 0), (int) $client->id);
+        if ($outstandingReturnDebt > 0) {
+            throw ValidationException::withMessages([
+                'user_id' => ClientReturnDebt::blockingMessage($outstandingReturnDebt),
+            ]);
+        }
 
         $car = Car::query()
             ->where('tenant_id', $user?->tenant_id)
