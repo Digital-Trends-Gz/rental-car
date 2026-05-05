@@ -139,6 +139,7 @@ const superAdminNav = computed<NavItem[]>(() => [
             { title: 'Languages', href: '/superadmin/settings/languages', icon: Cog },
             { title: 'Emails', href: '/superadmin/settings/emails', icon: Mail },
             { title: 'Security Access', href: '/superadmin/settings/security-access', icon: ShieldAlert },
+            { title: 'SEO Settings', href: '/superadmin/settings/seo', icon: Cog },
         ],
     },
 ]);

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import CarCard from '@/components/CarCard.vue';
+import SeoHead from '@/components/SeoHead.vue';
 import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 interface TenantFilterOption {
@@ -20,7 +21,6 @@ interface BranchFilterOption {
 
 const $page = usePage<PageProps>();
 const { t } = useTrans();
-const appName = computed(() => $page.props.name || 'Real Rent Car');
 const appBranding = computed(() => $page.props.app_branding ?? {});
 const currentTenant = computed(() => $page.props.current_tenant);
 const isTenant = computed(() => !!currentTenant.value);
@@ -31,6 +31,7 @@ const branches = computed<BranchFilterOption[]>(() => (($page.props as any).bran
 const makes = computed(() => $page.props.makes);
 const fuelTypes = computed(() => $page.props.fuelTypes);
 const years = computed(() => $page.props.years);
+const seo = computed(() => $page.props.seo ?? null);
 
 // Filter state
 const searchQuery = ref(filters.value.search || '');
@@ -151,7 +152,7 @@ const fleetThemeVars = computed(() => ({
 </script>
 
 <template>
-    <Head :title="`${appName} - Fleet`" />
+    <SeoHead :seo="seo" />
 
     <HomeLayout :shell-variant="isTenant ? 'tenant' : 'landing'">
         <div

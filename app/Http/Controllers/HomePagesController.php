@@ -15,10 +15,13 @@ use App\Models\Tenant;
 use App\Models\Ticket;
 use App\Enums\TicketStatus;
 use App\Rules\LettersOnly;
+use App\Support\TenantSeoResolver;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class HomePagesController extends Controller
 {
+    private const MAIN_SITE_SEO_KEY = 'main_site_seo';
     /**
      * @return array<int, string>
      */
@@ -124,8 +127,9 @@ class HomePagesController extends Controller
                 ->values();
 
             $contactSubmitUrl = route('contact.guestContact');
+            $seo = TenantSeoResolver::forPage(null, 'home');
 
-            return inertia('SuperAdmin/landing/Landing', compact('landingSettings', 'plans', 'tenantLogos', 'featuredCars', 'carSearch', 'contactSubmitUrl', 'availableLocales'));
+            return inertia('SuperAdmin/landing/Landing', compact('landingSettings', 'plans', 'tenantLogos', 'featuredCars', 'carSearch', 'contactSubmitUrl', 'availableLocales', 'seo'));
         }
 
         $homeCars = Car::whereIn('status', $this->publicFleetStatuses())
@@ -145,8 +149,9 @@ class HomePagesController extends Controller
             ->get()
             ->map(fn (Car $car) => $this->carCardData($car))
             ->values();
+        $seo = TenantSeoResolver::forPage(TenantContext::get(), 'home');
 
-        return inertia('Welcome', compact('homeCars'));
+        return inertia('Welcome', compact('homeCars', 'seo'));
     }
 
     private function recordSaasLandingVisit(Request $request): void
@@ -314,8 +319,9 @@ class HomePagesController extends Controller
             ->values();
 
         $filters = $request->only(['search', 'tenant_id', 'branch_id', 'make', 'fuel_type', 'min_price', 'max_price', 'year']);
+        $seo = TenantSeoResolver::forPage(TenantContext::get(), 'fleet');
 
-        return inertia('Fleet', compact('cars', 'makes', 'fuelTypes', 'years', 'filters', 'tenants', 'branches'));
+        return inertia('Fleet', compact('cars', 'makes', 'fuelTypes', 'years', 'filters', 'tenants', 'branches', 'seo'));
     }
 
     /**
@@ -421,12 +427,111 @@ class HomePagesController extends Controller
 
     public function about()
     {
-        return inertia('About');
+        return inertia('About', [
+            'seo' => TenantSeoResolver::forPage(TenantContext::get(), 'about'),
+        ]);
+    }
+
+    public function sitemap(): Response
+    {
+        $tenant = TenantContext::get();
+        if ($tenant) {
+            $settings = TenantSiteSetting::forTenant($tenant);
+            $pages = (array) data_get($settings, 'seo.technical.sitemap.pages', []);
+        } else {
+            $stored = SiteSetting::query()->where('key', self::MAIN_SITE_SEO_KEY)->value('value');
+            $pages = (array) data_get(is_array($stored) ? $stored : [], 'technical.sitemap.pages', []);
+        }
+        $baseUrl = rtrim((string) url('/'), '/');
+
+        if (empty($pages)) {
+            $pages = [
+                ['path' => '/', 'priority' => 1.0, 'changeFreq' => 'weekly', 'lastmod' => null],
+            ];
+        }
+
+        $urls = collect($pages)
+            ->filter(fn ($page) => is_array($page) && trim((string) data_get($page, 'path')) !== '')
+            ->map(function (array $page) use ($baseUrl) {
+                $path = (string) data_get($page, 'path', '/');
+                if (!str_starts_with($path, '/')) {
+                    $path = '/'.$path;
+                }
+
+                $priority = data_get($page, 'priority');
+                $priority = is_numeric($priority) ? max(0.1, min(1.0, round((float) $priority, 1))) : 0.5;
+
+                $changeFreq = (string) data_get($page, 'changeFreq', 'weekly');
+                $lastmod = $this->nullableString(data_get($page, 'lastmod')) ?: now()->toDateString();
+
+                return [
+                    'loc' => $baseUrl.$path,
+                    'lastmod' => $lastmod,
+                    'changefreq' => $changeFreq,
+                    'priority' => number_format($priority, 1, '.', ''),
+                ];
+            })
+            ->values();
+
+        $xml = view('seo.sitemap', ['urls' => $urls])->render();
+
+        return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+    }
+
+    public function robots(): Response
+    {
+        $tenant = TenantContext::get();
+        if ($tenant) {
+            $settings = TenantSiteSetting::forTenant($tenant);
+            $robots = (array) data_get($settings, 'seo.technical.robots', []);
+        } else {
+            $stored = SiteSetting::query()->where('key', self::MAIN_SITE_SEO_KEY)->value('value');
+            $robots = (array) data_get(is_array($stored) ? $stored : [], 'technical.robots', []);
+        }
+        $baseUrl = rtrim((string) url('/'), '/');
+
+        $allowAll = (bool) data_get($robots, 'allowAll', true);
+        $disallowPaths = collect((array) data_get($robots, 'disallowPaths', []))
+            ->map(fn ($path) => $this->nullableString($path))
+            ->filter()
+            ->values()
+            ->all();
+
+        $crawlDelay = (int) data_get($robots, 'crawlDelay', 1);
+        $requestRate = (int) data_get($robots, 'requestRate', 30);
+        $sitemapUrl = (string) (data_get($robots, 'sitemapUrl') ?: '/sitemap.xml');
+        if (!str_starts_with($sitemapUrl, '/')) {
+            $sitemapUrl = '/'.$sitemapUrl;
+        }
+
+        $content = "User-agent: *\n";
+        if ($allowAll) {
+            $content .= "Allow: /\n";
+        } else {
+            foreach ($disallowPaths as $path) {
+                $linePath = str_starts_with($path, '/') ? $path : '/'.$path;
+                $content .= "Disallow: {$linePath}\n";
+            }
+        }
+
+        if ($crawlDelay > 0) {
+            $content .= "Crawl-delay: {$crawlDelay}\n";
+        }
+
+        if ($requestRate > 0) {
+            $content .= "Request-rate: {$requestRate}/1m\n";
+        }
+
+        $content .= "\nSitemap: {$baseUrl}{$sitemapUrl}\n";
+
+        return response($content, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }
 
     public function contact()
     {
-        return inertia('Contact');
+        return inertia('Contact', [
+            'seo' => TenantSeoResolver::forPage(TenantContext::get(), 'contact'),
+        ]);
     }
 
     public function guestContact(Request $request)

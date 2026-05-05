@@ -22,6 +22,7 @@ use App\Http\Controllers\SuperAdmin\LocalizationSettingsController;
 use App\Http\Controllers\SuperAdmin\EmailTemplateSettingsController;
 use App\Http\Controllers\SuperAdmin\SecurityAccessSettingsController;
 use App\Http\Controllers\SuperAdmin\SupportController as SuperAdminSupportController;
+use App\Http\Controllers\SuperAdmin\MainSiteSeoSettingsController;
 
 use App\Http\Controllers\SuperAdmin\Auth\LoginController;
 use App\Http\Controllers\SuperAdmin\LogViewerController;
@@ -130,5 +131,7 @@ Route::middleware(['auth', 'active', 'super_admin'])
             Route::put('settings/emails', [EmailTemplateSettingsController::class, 'update'])->name('settings.emails.update');
             Route::get('settings/security-access', [SecurityAccessSettingsController::class, 'edit'])->name('settings.security-access');
             Route::put('settings/security-access', [SecurityAccessSettingsController::class, 'update'])->name('settings.security-access.update');
+            Route::get('settings/seo', [MainSiteSeoSettingsController::class, 'edit'])->name('settings.seo');
+            Route::put('settings/seo', [MainSiteSeoSettingsController::class, 'update'])->name('settings.seo.update');
         });
     });

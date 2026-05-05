@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import SeoHead from '@/components/SeoHead.vue';
 import { Button } from '@/components/ui/button';
 import HomeLayout from '@/layouts/HomeLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 type ProviderOption = {
@@ -30,6 +31,17 @@ const props = defineProps<{
         checkout: string;
         confirmation: string;
     };
+    seo?: {
+        title?: string | null;
+        description?: string | null;
+        canonical_url?: string | null;
+        robots?: string | null;
+        og_title?: string | null;
+        og_description?: string | null;
+        og_image?: string | null;
+        alternates?: Array<{ locale: string; url: string }>;
+        schemas?: Array<Record<string, unknown>>;
+    } | null;
 }>();
 
 const selectedProvider = ref<string>(
@@ -54,9 +66,8 @@ function continueCheckout() {
 </script>
 
 <template>
-    <Head title="Choose Payment Provider" />
-
     <HomeLayout>
+        <SeoHead :seo="props.seo || null" />
         <main class="min-h-screen bg-slate-50 py-10">
             <div class="mx-auto max-w-4xl px-4">
                 <div class="mb-6">
@@ -153,4 +164,3 @@ function continueCheckout() {
         </main>
     </HomeLayout>
 </template>
-

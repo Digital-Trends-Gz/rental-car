@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import CarCard from '@/components/CarCard.vue';
+import SeoHead from '@/components/SeoHead.vue';
 import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
-import { Head, usePage } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
 import { about as mainAbout, fleet as mainFleet } from '@/routes';
 import { about as tenantAbout, fleet as tenantFleet } from '@/routes/tenant';
 import { computed } from 'vue';
@@ -31,6 +32,7 @@ const locale = computed(() => String($page.props.locale || 'en'));
 const primaryColor = computed(() => tenantSiteSettings.value?.primary_color || '#f97316');
 const secondaryColor = computed(() => tenantSiteSettings.value?.secondary_color || '#ea580c');
 const accentGradient = computed(() => `linear-gradient(90deg, ${primaryColor.value}, ${secondaryColor.value})`);
+const seo = computed(() => $page.props.seo ?? null);
 
 function localizedText(node: any, fallback: string): string {
     if (!node) return fallback;
@@ -62,13 +64,7 @@ const aboutUrl = computed(() =>
 </script>
 
 <template>
-    <Head>
-        <title>{{ t('welcome.title') }}</title>
-        <meta
-            name="description"
-            :content="t('welcome.meta_description')"
-        />
-    </Head>
+    <SeoHead :seo="seo" />
 
     <HomeLayout>
         <main>

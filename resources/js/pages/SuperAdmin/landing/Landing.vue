@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import SeoHead from '@/components/SeoHead.vue';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -13,7 +14,7 @@ import { useTrans } from '@/composables/useTrans';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { fleet as mainFleet, register as mainRegister } from '@/routes';
 import { show as tenantFleetShow } from '@/routes/tenant/fleet';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { Calendar, Check, ChevronDown, Languages, Menu, Search, X } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import heroMockup from '@/assets/hero-mockup.png';
@@ -101,6 +102,16 @@ const props = defineProps<{
     featuredCars: FeaturedCar[];
     carSearch: string;
     contactSubmitUrl: string;
+    seo?: {
+        title: string;
+        description?: string | null;
+        canonical_url?: string | null;
+        robots?: string | null;
+        og_title?: string | null;
+        og_description?: string | null;
+        og_image?: string | null;
+        alternates?: Array<{ locale: string; url: string }>;
+    } | null;
 }>();
 
 const page = usePage<any>();
@@ -375,7 +386,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Head :title="landingSettings.hero.title" />
+    <SeoHead :seo="props.seo || null" />
 
     <div class="min-h-screen bg-background">
         <nav

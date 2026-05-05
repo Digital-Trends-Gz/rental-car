@@ -26,6 +26,7 @@ class TenantSiteSetting extends Model
         'about',
         'contact',
         'contact_page',
+        'seo',
         'pdf_header',
         'pdf_templates',
         'police_notice',
@@ -43,6 +44,7 @@ class TenantSiteSetting extends Model
         'about' => 'array',
         'contact' => 'array',
         'contact_page' => 'array',
+        'seo' => 'array',
         'pdf_header' => 'array',
         'pdf_templates' => 'array',
         'police_notice' => 'array',
@@ -162,6 +164,126 @@ class TenantSiteSetting extends Model
                 'quick_links_title' => [
                     'en' => null,
                     'ar' => null,
+                ],
+            ],
+            'seo' => [
+                'defaults' => [
+                    'title_suffix' => [
+                        'en' => null,
+                        'ar' => null,
+                    ],
+                    'default_description' => [
+                        'en' => null,
+                        'ar' => null,
+                    ],
+                    'og_image' => null,
+                    'robots' => 'index,follow',
+                ],
+                'pages' => [
+                    'home' => [
+                        'title' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'description' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'canonical_url' => null,
+                        'robots' => null,
+                    ],
+                    'fleet' => [
+                        'title' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'description' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'canonical_url' => null,
+                        'robots' => null,
+                    ],
+                    'about' => [
+                        'title' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'description' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'canonical_url' => null,
+                        'robots' => null,
+                    ],
+                    'contact' => [
+                        'title' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'description' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'canonical_url' => null,
+                        'robots' => null,
+                    ],
+                    'car' => [
+                        'title' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'description' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'canonical_url' => null,
+                        'robots' => null,
+                    ],
+                    'booking_checkout' => [
+                        'title' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'description' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'canonical_url' => null,
+                        'robots' => null,
+                    ],
+                    'booking_confirmation' => [
+                        'title' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'description' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
+                        'canonical_url' => null,
+                        'robots' => null,
+                    ],
+                ],
+                'technical' => [
+                    'sitemap' => [
+                        'pages' => [
+                            ['path' => '/', 'priority' => 1.0, 'changeFreq' => 'weekly', 'lastmod' => null],
+                            ['path' => '/fleet', 'priority' => 0.9, 'changeFreq' => 'weekly', 'lastmod' => null],
+                            ['path' => '/about', 'priority' => 0.8, 'changeFreq' => 'monthly', 'lastmod' => null],
+                            ['path' => '/contact', 'priority' => 0.8, 'changeFreq' => 'monthly', 'lastmod' => null],
+                        ],
+                    ],
+                    'robots' => [
+                        'allowAll' => true,
+                        'disallowPaths' => ['/admin', '/private', '/api/internal'],
+                        'crawlDelay' => 1,
+                        'requestRate' => 30,
+                        'sitemapUrl' => '/sitemap.xml',
+                    ],
+                    'redirects' => [
+                        'items' => [],
+                    ],
                 ],
             ],
             'pdf_header' => [
@@ -468,6 +590,166 @@ class TenantSiteSetting extends Model
                 'quick_links_title' => [
                     'en' => self::nullableString(data_get($data, 'contact_page.quick_links_title.en')),
                     'ar' => self::nullableString(data_get($data, 'contact_page.quick_links_title.ar')),
+                ],
+            ],
+            'seo' => [
+                'defaults' => [
+                    'title_suffix' => [
+                        'en' => self::nullableString(data_get($data, 'seo.defaults.title_suffix.en')),
+                        'ar' => self::nullableString(data_get($data, 'seo.defaults.title_suffix.ar')),
+                    ],
+                    'default_description' => [
+                        'en' => self::nullableString(data_get($data, 'seo.defaults.default_description.en')),
+                        'ar' => self::nullableString(data_get($data, 'seo.defaults.default_description.ar')),
+                    ],
+                    'og_image' => self::nullableString(data_get($data, 'seo.defaults.og_image')),
+                    'robots' => self::nullableString(data_get($data, 'seo.defaults.robots')) ?? 'index,follow',
+                ],
+                'pages' => [
+                    'home' => [
+                        'title' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.home.title.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.home.title.ar')),
+                        ],
+                        'description' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.home.description.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.home.description.ar')),
+                        ],
+                        'canonical_url' => self::nullableString(data_get($data, 'seo.pages.home.canonical_url')),
+                        'robots' => self::nullableString(data_get($data, 'seo.pages.home.robots')),
+                    ],
+                    'fleet' => [
+                        'title' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.fleet.title.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.fleet.title.ar')),
+                        ],
+                        'description' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.fleet.description.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.fleet.description.ar')),
+                        ],
+                        'canonical_url' => self::nullableString(data_get($data, 'seo.pages.fleet.canonical_url')),
+                        'robots' => self::nullableString(data_get($data, 'seo.pages.fleet.robots')),
+                    ],
+                    'about' => [
+                        'title' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.about.title.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.about.title.ar')),
+                        ],
+                        'description' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.about.description.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.about.description.ar')),
+                        ],
+                        'canonical_url' => self::nullableString(data_get($data, 'seo.pages.about.canonical_url')),
+                        'robots' => self::nullableString(data_get($data, 'seo.pages.about.robots')),
+                    ],
+                    'contact' => [
+                        'title' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.contact.title.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.contact.title.ar')),
+                        ],
+                        'description' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.contact.description.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.contact.description.ar')),
+                        ],
+                        'canonical_url' => self::nullableString(data_get($data, 'seo.pages.contact.canonical_url')),
+                        'robots' => self::nullableString(data_get($data, 'seo.pages.contact.robots')),
+                    ],
+                    'car' => [
+                        'title' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.car.title.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.car.title.ar')),
+                        ],
+                        'description' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.car.description.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.car.description.ar')),
+                        ],
+                        'canonical_url' => self::nullableString(data_get($data, 'seo.pages.car.canonical_url')),
+                        'robots' => self::nullableString(data_get($data, 'seo.pages.car.robots')),
+                    ],
+                    'booking_checkout' => [
+                        'title' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.title.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.title.ar')),
+                        ],
+                        'description' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.description.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.description.ar')),
+                        ],
+                        'canonical_url' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.canonical_url')),
+                        'robots' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.robots')),
+                    ],
+                    'booking_confirmation' => [
+                        'title' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.title.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.title.ar')),
+                        ],
+                        'description' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.description.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.description.ar')),
+                        ],
+                        'canonical_url' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.canonical_url')),
+                        'robots' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.robots')),
+                    ],
+                ],
+                'technical' => [
+                    'sitemap' => [
+                        'pages' => collect((array) data_get($data, 'seo.technical.sitemap.pages', data_get($defaults, 'seo.technical.sitemap.pages', [])))
+                            ->map(function ($page) {
+                                $path = self::nullableString(data_get($page, 'path'));
+                                if ($path === null) {
+                                    return null;
+                                }
+
+                                $priority = data_get($page, 'priority');
+                                $priority = is_numeric($priority) ? (float) $priority : 0.5;
+
+                                return [
+                                    'path' => str_starts_with($path, '/') ? $path : '/'.$path,
+                                    'priority' => max(0.1, min(1.0, round($priority, 1))),
+                                    'changeFreq' => (string) (data_get($page, 'changeFreq') ?: 'weekly'),
+                                    'lastmod' => self::nullableString(data_get($page, 'lastmod')),
+                                ];
+                            })
+                            ->filter()
+                            ->values()
+                            ->all(),
+                    ],
+                    'robots' => [
+                        'allowAll' => (bool) data_get($data, 'seo.technical.robots.allowAll', data_get($defaults, 'seo.technical.robots.allowAll', true)),
+                        'disallowPaths' => collect((array) data_get($data, 'seo.technical.robots.disallowPaths', data_get($defaults, 'seo.technical.robots.disallowPaths', [])))
+                            ->map(fn ($path) => self::nullableString($path))
+                            ->filter()
+                            ->values()
+                            ->all(),
+                        'crawlDelay' => (int) data_get($data, 'seo.technical.robots.crawlDelay', data_get($defaults, 'seo.technical.robots.crawlDelay', 1)),
+                        'requestRate' => (int) data_get($data, 'seo.technical.robots.requestRate', data_get($defaults, 'seo.technical.robots.requestRate', 30)),
+                        'sitemapUrl' => (string) data_get($data, 'seo.technical.robots.sitemapUrl', data_get($defaults, 'seo.technical.robots.sitemapUrl', '/sitemap.xml')),
+                    ],
+                    'redirects' => [
+                        'items' => collect((array) data_get($data, 'seo.technical.redirects.items', []))
+                            ->map(function ($item) {
+                                $fromPath = self::nullableString(data_get($item, 'fromPath'));
+                                $toPath = self::nullableString(data_get($item, 'toPath'));
+
+                                if ($fromPath === null || $toPath === null) {
+                                    return null;
+                                }
+
+                                $statusCode = (int) data_get($item, 'statusCode', 301);
+
+                                return [
+                                    'id' => (string) (data_get($item, 'id') ?: uniqid('redirect_', true)),
+                                    'fromPath' => str_starts_with($fromPath, '/') ? $fromPath : '/'.$fromPath,
+                                    'toPath' => str_starts_with($toPath, '/') ? $toPath : '/'.$toPath,
+                                    'statusCode' => in_array($statusCode, [301, 302, 307, 308], true) ? $statusCode : 301,
+                                    'isPermanent' => (bool) data_get($item, 'isPermanent', in_array($statusCode, [301, 308], true)),
+                                    'isActive' => (bool) data_get($item, 'isActive', true),
+                                ];
+                            })
+                            ->filter()
+                            ->values()
+                            ->all(),
+                    ],
                 ],
             ],
             'pdf_header' => [

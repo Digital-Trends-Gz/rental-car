@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 type LocalizedText = { en: string | null; ar: string | null };
@@ -59,6 +59,52 @@ const props = defineProps<{
             hours: LocalizedText;
             quick_links_title: LocalizedText;
         };
+        enabled_locales?: string[];
+        seo: {
+            defaults: {
+                title_suffix: LocalizedText;
+                default_description: LocalizedText;
+                og_image: string | null;
+                robots: string | null;
+            };
+            pages: {
+                home: {
+                    title: LocalizedText;
+                    description: LocalizedText;
+                    canonical_url: string | null;
+                };
+                fleet: {
+                    title: LocalizedText;
+                    description: LocalizedText;
+                    canonical_url: string | null;
+                };
+                about: {
+                    title: LocalizedText;
+                    description: LocalizedText;
+                    canonical_url: string | null;
+                };
+                contact: {
+                    title: LocalizedText;
+                    description: LocalizedText;
+                    canonical_url: string | null;
+                };
+                car: {
+                    title: LocalizedText;
+                    description: LocalizedText;
+                    canonical_url: string | null;
+                };
+                booking_checkout: {
+                    title: LocalizedText;
+                    description: LocalizedText;
+                    canonical_url: string | null;
+                };
+                booking_confirmation: {
+                    title: LocalizedText;
+                    description: LocalizedText;
+                    canonical_url: string | null;
+                };
+            };
+        };
         pdf_header: {
             company_name: LocalizedText;
             cr_number: string | null;
@@ -81,6 +127,9 @@ const props = defineProps<{
     logoFiles: Array<{ id: number; url: string }>;
     actions: {
         update: string;
+        website?: string;
+        seo_edit?: string;
+        seo_audit?: string;
     };
 }>();
 
@@ -191,6 +240,99 @@ const form = useForm({
             ar: props.settings.contact_page?.quick_links_title?.ar ?? '',
         },
     },
+    seo: {
+        defaults: {
+            title_suffix: {
+                en: props.settings.seo?.defaults?.title_suffix?.en ?? '',
+                ar: props.settings.seo?.defaults?.title_suffix?.ar ?? '',
+            },
+            default_description: {
+                en: props.settings.seo?.defaults?.default_description?.en ?? '',
+                ar: props.settings.seo?.defaults?.default_description?.ar ?? '',
+            },
+            og_image: props.settings.seo?.defaults?.og_image ?? '',
+            robots: props.settings.seo?.defaults?.robots ?? 'index,follow',
+        },
+        pages: {
+            home: {
+                title: {
+                    en: props.settings.seo?.pages?.home?.title?.en ?? '',
+                    ar: props.settings.seo?.pages?.home?.title?.ar ?? '',
+                },
+                description: {
+                    en: props.settings.seo?.pages?.home?.description?.en ?? '',
+                    ar: props.settings.seo?.pages?.home?.description?.ar ?? '',
+                },
+                canonical_url: props.settings.seo?.pages?.home?.canonical_url ?? '',
+            },
+            fleet: {
+                title: {
+                    en: props.settings.seo?.pages?.fleet?.title?.en ?? '',
+                    ar: props.settings.seo?.pages?.fleet?.title?.ar ?? '',
+                },
+                description: {
+                    en: props.settings.seo?.pages?.fleet?.description?.en ?? '',
+                    ar: props.settings.seo?.pages?.fleet?.description?.ar ?? '',
+                },
+                canonical_url: props.settings.seo?.pages?.fleet?.canonical_url ?? '',
+            },
+            about: {
+                title: {
+                    en: props.settings.seo?.pages?.about?.title?.en ?? '',
+                    ar: props.settings.seo?.pages?.about?.title?.ar ?? '',
+                },
+                description: {
+                    en: props.settings.seo?.pages?.about?.description?.en ?? '',
+                    ar: props.settings.seo?.pages?.about?.description?.ar ?? '',
+                },
+                canonical_url: props.settings.seo?.pages?.about?.canonical_url ?? '',
+            },
+            contact: {
+                title: {
+                    en: props.settings.seo?.pages?.contact?.title?.en ?? '',
+                    ar: props.settings.seo?.pages?.contact?.title?.ar ?? '',
+                },
+                description: {
+                    en: props.settings.seo?.pages?.contact?.description?.en ?? '',
+                    ar: props.settings.seo?.pages?.contact?.description?.ar ?? '',
+                },
+                canonical_url: props.settings.seo?.pages?.contact?.canonical_url ?? '',
+            },
+            car: {
+                title: {
+                    en: props.settings.seo?.pages?.car?.title?.en ?? '',
+                    ar: props.settings.seo?.pages?.car?.title?.ar ?? '',
+                },
+                description: {
+                    en: props.settings.seo?.pages?.car?.description?.en ?? '',
+                    ar: props.settings.seo?.pages?.car?.description?.ar ?? '',
+                },
+                canonical_url: props.settings.seo?.pages?.car?.canonical_url ?? '',
+            },
+            booking_checkout: {
+                title: {
+                    en: props.settings.seo?.pages?.booking_checkout?.title?.en ?? '',
+                    ar: props.settings.seo?.pages?.booking_checkout?.title?.ar ?? '',
+                },
+                description: {
+                    en: props.settings.seo?.pages?.booking_checkout?.description?.en ?? '',
+                    ar: props.settings.seo?.pages?.booking_checkout?.description?.ar ?? '',
+                },
+                canonical_url: props.settings.seo?.pages?.booking_checkout?.canonical_url ?? '',
+            },
+            booking_confirmation: {
+                title: {
+                    en: props.settings.seo?.pages?.booking_confirmation?.title?.en ?? '',
+                    ar: props.settings.seo?.pages?.booking_confirmation?.title?.ar ?? '',
+                },
+                description: {
+                    en: props.settings.seo?.pages?.booking_confirmation?.description?.en ?? '',
+                    ar: props.settings.seo?.pages?.booking_confirmation?.description?.ar ?? '',
+                },
+                canonical_url: props.settings.seo?.pages?.booking_confirmation?.canonical_url ?? '',
+            },
+        },
+    },
     pdf_header: {
         company_name: {
             en: props.settings.pdf_header?.company_name?.en ?? '',
@@ -232,9 +374,265 @@ const selectedContractPdfTemplate = computed(
 );
 const uploadedLogoUrl = computed(() => props.logoFiles?.[0]?.url || null);
 const previewLogoUrl = computed(() => uploadedLogoUrl.value || form.logo_url || null);
+const enabledSeoLocales = computed(() => {
+    const locales = Array.isArray(props.settings.enabled_locales) ? props.settings.enabled_locales : ['en', 'ar'];
+
+    return locales
+        .map((locale) => String(locale).trim())
+        .filter((locale, index, array) => locale !== '' && array.indexOf(locale) === index);
+});
 const primarySecondaryGradient = computed(
     () => `linear-gradient(135deg, ${form.primary_color || '#f97316'}, ${form.secondary_color || '#ea580c'})`,
 );
+const seoPreviewBaseUrl = computed(() => {
+    if (typeof window !== 'undefined' && window.location?.origin) {
+        return window.location.origin;
+    }
+
+    return 'https://example.com';
+});
+
+const localizedSeoText = (value: LocalizedText | undefined | null): string => {
+    if (!value) {
+        return '';
+    }
+
+    const preferred = locale.value === 'ar' ? value.ar : value.en;
+    const fallback = locale.value === 'ar' ? value.en : value.ar;
+
+    return String(preferred || fallback || '').trim();
+};
+
+type SeoPageKey = 'home' | 'fleet' | 'about' | 'contact' | 'car' | 'booking_checkout' | 'booking_confirmation';
+
+const seoPagePath = (pageKey: SeoPageKey): string => {
+    if (pageKey === 'home') return '/';
+    if (pageKey === 'car') return '/fleet/sample-car';
+    if (pageKey === 'booking_checkout') return '/booking/sample-reservation/checkout';
+    if (pageKey === 'booking_confirmation') return '/booking/sample-reservation';
+
+    return `/${pageKey}`;
+};
+
+const seoPageDefaultTitle = (pageKey: 'home' | 'fleet' | 'about' | 'contact'): string => {
+    const suffix = localizedSeoText(form.seo.defaults.title_suffix) || previewName.value;
+
+    if (pageKey === 'home') {
+        return previewName.value;
+    }
+
+    const labels = {
+        home: localize('Home', 'الرئيسية'),
+        fleet: localize('Fleet', 'الأسطول'),
+        about: localize('About', 'من نحن'),
+        contact: localize('Contact', 'اتصل بنا'),
+    };
+
+    return `${labels[pageKey]} | ${suffix}`;
+};
+
+const seoPageDefaultDescription = (pageKey: 'home' | 'fleet' | 'about' | 'contact'): string => {
+    const shared = localizedSeoText(form.seo.defaults.default_description);
+
+    if (shared) {
+        return shared;
+    }
+
+    const descriptions = {
+        home: localize(`Discover ${previewName.value} and reserve your next rental car online.`, `اكتشف ${previewName.value} واحجز سيارة الإيجار التالية عبر الإنترنت.`),
+        fleet: localize(`Browse available rental vehicles from ${previewName.value}.`, `استعرض سيارات الإيجار المتاحة من ${previewName.value}.`),
+        about: localize(`Learn more about ${previewName.value} and its car rental services.`, `تعرّف أكثر على ${previewName.value} وخدمات تأجير السيارات الخاصة به.`),
+        contact: localize(`Get in touch with ${previewName.value} for bookings and support.`, `تواصل مع ${previewName.value} للحجوزات والدعم.`),
+    };
+
+    return descriptions[pageKey];
+};
+
+const seoPreviewCards = computed(() => {
+    const pages: Array<'home' | 'fleet' | 'about' | 'contact'> = ['home', 'fleet', 'about', 'contact'];
+
+    return pages.map((pageKey) => {
+        const title = localizedSeoText(form.seo.pages[pageKey].title) || seoPageDefaultTitle(pageKey);
+        const description = localizedSeoText(form.seo.pages[pageKey].description) || seoPageDefaultDescription(pageKey);
+        const path = form.seo.pages[pageKey].canonical_url || `${seoPreviewBaseUrl.value}${seoPagePath(pageKey)}`;
+
+        return {
+            key: pageKey,
+            label: localize(
+                `${pageKey.charAt(0).toUpperCase()}${pageKey.slice(1)} Page`,
+                pageKey === 'home' ? 'الصفحة الرئيسية' : pageKey === 'fleet' ? 'صفحة الأسطول' : pageKey === 'about' ? 'صفحة من نحن' : 'صفحة اتصل بنا',
+            ),
+            title,
+            description,
+            path,
+        };
+    });
+});
+
+const seoPageDefaultTitleExtended = (pageKey: SeoPageKey): string => {
+    const suffix = localizedSeoText(form.seo.defaults.title_suffix) || previewName.value;
+
+    if (pageKey === 'home') {
+        return previewName.value;
+    }
+
+    const labels: Record<SeoPageKey, string> = {
+        home: localize('Home', 'الرئيسية'),
+        fleet: localize('Fleet', 'الأسطول'),
+        about: localize('About', 'من نحن'),
+        contact: localize('Contact', 'اتصل بنا'),
+        car: localize('Car Rental', 'تأجير سيارة'),
+        booking_checkout: localize('Booking Checkout', 'إتمام الحجز'),
+        booking_confirmation: localize('Booking Confirmation', 'تأكيد الحجز'),
+    };
+
+    return `${labels[pageKey]} | ${suffix}`;
+};
+
+const seoPageDefaultDescriptionExtended = (pageKey: SeoPageKey): string => {
+    const shared = localizedSeoText(form.seo.defaults.default_description);
+
+    if (shared) {
+        return shared;
+    }
+
+    const descriptions: Record<SeoPageKey, string> = {
+        home: localize(`Discover ${previewName.value} and reserve your next rental car online.`, `اكتشف ${previewName.value} واحجز سيارة الإيجار التالية عبر الإنترنت.`),
+        fleet: localize(`Browse available rental vehicles from ${previewName.value}.`, `استعرض سيارات الإيجار المتاحة من ${previewName.value}.`),
+        about: localize(`Learn more about ${previewName.value} and its car rental services.`, `تعرّف أكثر على ${previewName.value} وخدمات تأجير السيارات الخاصة به.`),
+        contact: localize(`Get in touch with ${previewName.value} for bookings and support.`, `تواصل مع ${previewName.value} للحجوزات والدعم.`),
+        car: localize(`View rental car details and pricing from ${previewName.value}.`, `اطلع على تفاصيل السيارة وسعر الإيجار لدى ${previewName.value}.`),
+        booking_checkout: localize(`Choose your payment provider and complete your booking securely with ${previewName.value}.`, `اختر مزود الدفع وأكمل الحجز بأمان مع ${previewName.value}.`),
+        booking_confirmation: localize(`Review your confirmed booking and reservation details from ${previewName.value}.`, `راجع تفاصيل الحجز المؤكد ومعلومات الحجز لدى ${previewName.value}.`),
+    };
+
+    return descriptions[pageKey];
+};
+
+const seoPreviewCardsData = computed(() => {
+    const pages: SeoPageKey[] = ['home', 'fleet', 'about', 'contact', 'car', 'booking_checkout', 'booking_confirmation'];
+    const englishLabels: Record<SeoPageKey, string> = {
+        home: 'Home Page',
+        fleet: 'Fleet Page',
+        about: 'About Page',
+        contact: 'Contact Page',
+        car: 'Car Details Page',
+        booking_checkout: 'Booking Checkout Page',
+        booking_confirmation: 'Booking Confirmation Page',
+    };
+    const arabicLabels: Record<SeoPageKey, string> = {
+        home: 'الصفحة الرئيسية',
+        fleet: 'صفحة الأسطول',
+        about: 'صفحة من نحن',
+        contact: 'صفحة اتصل بنا',
+        car: 'صفحة السيارة',
+        booking_checkout: 'صفحة إتمام الحجز',
+        booking_confirmation: 'صفحة تأكيد الحجز',
+    };
+
+    return pages.map((pageKey) => {
+        const title = localizedSeoText(form.seo.pages[pageKey].title) || seoPageDefaultTitleExtended(pageKey);
+        const description = localizedSeoText(form.seo.pages[pageKey].description) || seoPageDefaultDescriptionExtended(pageKey);
+        const path = form.seo.pages[pageKey].canonical_url || `${seoPreviewBaseUrl.value}${seoPagePath(pageKey)}`;
+        const robots = pageKey === 'booking_checkout' || pageKey === 'booking_confirmation'
+            ? 'noindex,nofollow'
+            : (form.seo.defaults.robots || 'index,follow');
+        const canonicalValue = (form.seo.pages[pageKey].canonical_url || '').trim();
+        const canonicalLooksValid = canonicalValue === '' || /^https?:\/\/\S+$/i.test(canonicalValue);
+        const alternateUrls = enabledSeoLocales.value.map((locale) => ({
+            locale,
+            url: path,
+        }));
+        const pathname = (() => {
+            try {
+                return new URL(path, seoPreviewBaseUrl.value).pathname;
+            } catch {
+                return seoPagePath(pageKey);
+            }
+        })();
+        const normalizedSlug = pathname.replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
+        const slugLooksValid = normalizedSlug !== '' && /^[a-z0-9/_-]+$/i.test(normalizedSlug) && !/\s/.test(normalizedSlug);
+        const hreflangLooksValid = alternateUrls.length === enabledSeoLocales.value.length && enabledSeoLocales.value.length > 0;
+        const checks = [
+            {
+                ok: title.length >= 30 && title.length <= 60,
+                label: localize('Title length looks good', 'طول العنوان مناسب'),
+                failLabel: localize('Recommended title length is 30-60 characters', 'الطول الموصى به للعنوان هو 30-60 حرفًا'),
+            },
+            {
+                ok: description.length >= 70 && description.length <= 160,
+                label: localize('Description length looks good', 'طول الوصف مناسب'),
+                failLabel: localize('Recommended description length is 70-160 characters', 'الطول الموصى به للوصف هو 70-160 حرفًا'),
+            },
+            {
+                ok: Boolean((form.seo.defaults.og_image || previewLogoUrl.value || '').trim()),
+                label: localize('Open Graph image is set', 'صورة Open Graph مضبوطة'),
+                failLabel: localize('Set an Open Graph image for sharing previews', 'حدد صورة Open Graph لمعاينات المشاركة'),
+            },
+            {
+                ok: canonicalLooksValid,
+                label: localize('Canonical URL is valid', 'رابط Canonical صحيح'),
+                failLabel: localize('Canonical URL must start with http:// or https://', 'رابط Canonical يجب أن يبدأ بـ http:// أو https://'),
+            },
+            {
+                ok: slugLooksValid,
+                label: localize('Slug format looks clean', 'تنسيق الرابط المختصر سليم'),
+                failLabel: localize('Slug should use clean URL segments without spaces', 'يجب أن يستخدم الرابط المختصر مقاطع نظيفة بدون مسافات'),
+            },
+            {
+                ok: hreflangLooksValid,
+                label: localize('hreflang alternates are available for enabled locales', 'روابط hreflang متوفرة للغات المفعلة'),
+                failLabel: localize('hreflang alternates are missing for one or more enabled locales', 'روابط hreflang مفقودة لإحدى اللغات المفعلة أو أكثر'),
+            },
+        ];
+
+        return {
+            key: pageKey,
+            label: localize(englishLabels[pageKey], arabicLabels[pageKey]),
+            title,
+            description,
+            path,
+            robots,
+            ogImage: (form.seo.defaults.og_image || previewLogoUrl.value || '').trim(),
+            twitterCardType: 'summary_large_image',
+            alternates: alternateUrls,
+            slug: normalizedSlug,
+            score: checks.filter((check) => check.ok).length,
+            checks,
+        };
+    });
+});
+
+const seoBlockingPages = computed(() => seoPreviewCardsData.value.filter((preview) => preview.score === 0));
+const seoHealthStatus = computed(() => {
+    const totalChecks = seoPreviewCardsData.value.reduce((sum, preview) => sum + preview.checks.length, 0);
+    const passedChecks = seoPreviewCardsData.value.reduce((sum, preview) => sum + preview.score, 0);
+    const ratio = totalChecks > 0 ? passedChecks / totalChecks : 0;
+
+    if (ratio >= 0.85) {
+        return {
+            label: localize('Good', 'جيد'),
+            description: localize('Most SEO signals are in good shape.', 'معظم إشارات SEO في وضع جيد.'),
+            className: 'bg-emerald-100 text-emerald-700',
+        };
+    }
+
+    if (ratio >= 0.5) {
+        return {
+            label: localize('Needs Work', 'يحتاج تحسين'),
+            description: localize('Some pages still need SEO cleanup.', 'بعض الصفحات ما زالت تحتاج تحسين SEO.'),
+            className: 'bg-amber-100 text-amber-700',
+        };
+    }
+
+    return {
+        label: localize('Critical', 'حرج'),
+        description: localize('SEO coverage is weak and should be fixed before publishing changes.', 'تغطية SEO ضعيفة ويجب إصلاحها قبل اعتماد التغييرات.'),
+        className: 'bg-red-100 text-red-700',
+    };
+});
+const seoSaveBlockedMessage = ref('');
+const seoCopyMessage = ref('');
 
 const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
 const logoTempFolders = ref<string[]>([]);
@@ -249,6 +647,81 @@ watch(
     { deep: true },
 );
 
+function copySeoMetaSummary(preview: {
+    label: string;
+    title: string;
+    description: string;
+    path: string;
+    robots: string;
+    ogImage: string;
+    twitterCardType: string;
+    slug: string;
+}) {
+    const summary = [
+        `${preview.label}`,
+        `Title: ${preview.title}`,
+        `Description: ${preview.description}`,
+        `Canonical: ${preview.path}`,
+        `Slug: ${preview.slug}`,
+        `Robots: ${preview.robots}`,
+        `OG Image: ${preview.ogImage || 'N/A'}`,
+        `Twitter Card: ${preview.twitterCardType}`,
+    ].join('\n');
+
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+        seoCopyMessage.value = localize('Clipboard is not available in this browser.', 'الحافظة غير متاحة في هذا المتصفح.');
+        return;
+    }
+
+    navigator.clipboard.writeText(summary)
+        .then(() => {
+            seoCopyMessage.value = localize(`Copied SEO summary for ${preview.label}.`, `تم نسخ ملخص SEO لصفحة ${preview.label}.`);
+        })
+        .catch(() => {
+            seoCopyMessage.value = localize('Could not copy SEO summary.', 'تعذر نسخ ملخص SEO.');
+        });
+}
+
+function exportSeoReport() {
+    const lines = [
+        `Tenant: ${props.tenant.name}`,
+        `Slug: ${props.tenant.slug}`,
+        `Overall Status: ${seoHealthStatus.value.label}`,
+        `Enabled Locales: ${enabledSeoLocales.value.join(', ')}`,
+        '',
+        ...seoPreviewCardsData.value.flatMap((preview) => [
+            `[${preview.label}]`,
+            `Title: ${preview.title}`,
+            `Description: ${preview.description}`,
+            `Canonical: ${preview.path}`,
+            `Slug: ${preview.slug}`,
+            `Robots: ${preview.robots}`,
+            `OG Image: ${preview.ogImage || 'N/A'}`,
+            `Twitter Card: ${preview.twitterCardType}`,
+            `Alternates: ${preview.alternates.map((alternate) => `${alternate.locale}=${alternate.url}`).join(' | ')}`,
+            `Score: ${preview.score}/${preview.checks.length}`,
+            ...preview.checks.map((check) => `- ${check.ok ? 'PASS' : 'WARN'}: ${check.ok ? check.label : check.failLabel}`),
+            '',
+        ]),
+    ].join('\n');
+
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        seoCopyMessage.value = localize('SEO report export is not available in this environment.', 'تصدير تقرير SEO غير متاح في هذه البيئة.');
+        return;
+    }
+
+    const blob = new Blob([lines], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${props.tenant.slug || 'tenant'}-seo-report.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    seoCopyMessage.value = localize('SEO report exported successfully.', 'تم تصدير تقرير SEO بنجاح.');
+}
+
 watch(
     () => form.errors.logo_url,
     (value) => {
@@ -256,6 +729,16 @@ watch(
             showAdvancedBranding.value = true;
         }
     },
+);
+
+watch(
+    seoBlockingPages,
+    (pages) => {
+        if (pages.length === 0) {
+            seoSaveBlockedMessage.value = '';
+        }
+    },
+    { deep: true },
 );
 
 function handleLogoFileRemoved(data: { type: string; fileId?: number }) {
@@ -266,9 +749,19 @@ function handleLogoFileRemoved(data: { type: string; fileId?: number }) {
 }
 
 function submit() {
+    if (false && seoBlockingPages.value.length > 0) {
+        const labels = seoBlockingPages.value.map((page) => page.label).join(', ');
+        seoSaveBlockedMessage.value = localize(
+            `SEO save blocked. Fix these pages first: ${labels}.`,
+            `تم منع الحفظ بسبب ضعف SEO في هذه الصفحات: ${labels}.`,
+        );
+        return;
+    }
+
     form.put(props.actions.update, {
         preserveScroll: true,
         onSuccess: () => {
+            seoSaveBlockedMessage.value = '';
             logoTempFolders.value = [];
             form.logo_temp_folders = [];
             form.logo_removed_files = [];
@@ -310,6 +803,13 @@ function submit() {
                 <ul class="mt-1 list-disc pl-5">
                     <li v-for="(message, idx) in formErrorList" :key="idx">{{ message }}</li>
                 </ul>
+            </div>
+
+            <div v-if="false && seoSaveBlockedMessage" class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                {{ seoSaveBlockedMessage }}
+            </div>
+            <div v-if="false && seoBlockingPages.length" class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                {{ localize('SEO saving is blocked until every page has at least one valid SEO signal.', 'تم منع حفظ SEO حتى يحتوي كل صفحة على إشارة SEO صحيحة واحدة على الأقل.') }}
             </div>
 
             <form class="space-y-6" @submit.prevent="submit">
@@ -431,6 +931,424 @@ function submit() {
                                         {{ localize('CTA Preview', 'معاينة زر الدعوة') }}
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="rounded-lg border p-5 space-y-4">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-semibold">{{ localize('SEO', 'تهيئة محركات البحث') }}</h2>
+                            <p class="text-sm text-muted-foreground">
+                                {{ localize('SEO management has moved to a dedicated page for cleaner settings management.', 'تم نقل إدارة SEO إلى صفحة مستقلة لتبقى الإعدادات العامة أوضح.') }}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <Link v-if="props.actions.seo_edit" :href="props.actions.seo_edit">
+                                <Button variant="outline">{{ localize('Open SEO Settings', 'فتح إعدادات SEO') }}</Button>
+                            </Link>
+                            <Link v-if="props.actions.seo_audit" :href="props.actions.seo_audit">
+                                <Button>{{ localize('Open SEO Audit', 'فتح تدقيق SEO') }}</Button>
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                <section v-if="false" class="rounded-lg border p-5 space-y-4">
+                    <div>
+                        <h2 class="text-lg font-semibold">{{ localize('SEO', 'تهيئة محركات البحث') }}</h2>
+                        <p class="text-sm text-muted-foreground">
+                            {{ localize('Control page titles, descriptions, canonical URLs, and Open Graph defaults for your public website.', 'تحكم في عناوين الصفحات والأوصاف وروابط canonical وإعدادات Open Graph الافتراضية لموقعك العام.') }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-lg border bg-muted/20 p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="space-y-1">
+                                <h3 class="font-semibold">{{ localize('Overall SEO Status', 'الحالة العامة لـ SEO') }}</h3>
+                                <p class="text-sm text-muted-foreground">{{ seoHealthStatus.description }}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <Link v-if="props.actions.seo_audit" :href="props.actions.seo_audit">
+                                    <button
+                                        type="button"
+                                        class="rounded-full border px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                    >
+                                        {{ localize('Open SEO Audit', 'فتح تدقيق SEO') }}
+                                    </button>
+                                </Link>
+                                <button
+                                    type="button"
+                                    class="rounded-full border px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                    @click="exportSeoReport"
+                                >
+                                    {{ localize('Export SEO Report', 'تصدير تقرير SEO') }}
+                                </button>
+                                <span class="rounded-full px-3 py-1 text-sm font-semibold" :class="seoHealthStatus.className">
+                                    {{ seoHealthStatus.label }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="seoCopyMessage" class="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800">
+                        {{ seoCopyMessage }}
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div class="space-y-2">
+                            <Label for="seo_title_suffix_en">{{ localize('Title Suffix (EN)', 'لاحقة العنوان (EN)') }}</Label>
+                            <Input id="seo_title_suffix_en" v-model="form.seo.defaults.title_suffix.en" />
+                            <p v-if="form.errors['seo.defaults.title_suffix.en']" class="text-sm text-red-600">{{ form.errors['seo.defaults.title_suffix.en'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="seo_title_suffix_ar">{{ localize('Title Suffix (AR)', 'لاحقة العنوان (AR)') }}</Label>
+                            <Input id="seo_title_suffix_ar" v-model="form.seo.defaults.title_suffix.ar" dir="rtl" />
+                            <p v-if="form.errors['seo.defaults.title_suffix.ar']" class="text-sm text-red-600">{{ form.errors['seo.defaults.title_suffix.ar'] }}</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="seo_default_description_en">{{ localize('Default Description (EN)', 'الوصف الافتراضي (EN)') }}</Label>
+                            <textarea id="seo_default_description_en" v-model="form.seo.defaults.default_description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            <p v-if="form.errors['seo.defaults.default_description.en']" class="text-sm text-red-600">{{ form.errors['seo.defaults.default_description.en'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="seo_default_description_ar">{{ localize('Default Description (AR)', 'الوصف الافتراضي (AR)') }}</Label>
+                            <textarea id="seo_default_description_ar" v-model="form.seo.defaults.default_description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            <p v-if="form.errors['seo.defaults.default_description.ar']" class="text-sm text-red-600">{{ form.errors['seo.defaults.default_description.ar'] }}</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="seo_og_image">{{ localize('Open Graph Image URL', 'رابط صورة Open Graph') }}</Label>
+                            <Input id="seo_og_image" v-model="form.seo.defaults.og_image" placeholder="https://example.com/og-image.jpg" />
+                            <p v-if="form.errors['seo.defaults.og_image']" class="text-sm text-red-600">{{ form.errors['seo.defaults.og_image'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="seo_robots">{{ localize('Robots', 'تعليمات Robots') }}</Label>
+                            <Input id="seo_robots" v-model="form.seo.defaults.robots" placeholder="index,follow" />
+                            <p v-if="form.errors['seo.defaults.robots']" class="text-sm text-red-600">{{ form.errors['seo.defaults.robots'] }}</p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg border bg-muted/20 p-4 space-y-3">
+                        <div>
+                            <h3 class="font-semibold">{{ localize('Search Preview', 'معاينة نتائج البحث') }}</h3>
+                            <p class="text-xs text-muted-foreground">
+                                {{ localize('Live preview for each public page using the current form values.', 'معاينة حية لكل صفحة عامة باستخدام القيم الحالية في النموذج.') }}
+                            </p>
+                        </div>
+
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            <div v-for="preview in seoPreviewCardsData" :key="preview.key" class="rounded-lg border bg-background p-4">
+                                <div class="mb-2 flex items-center justify-between gap-3">
+                                    <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                        {{ preview.label }}
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            class="rounded-full border px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                                            @click="copySeoMetaSummary(preview)"
+                                        >
+                                            {{ localize('Copy', 'نسخ') }}
+                                        </button>
+                                        <div class="rounded-full px-2 py-1 text-xs font-medium" :class="preview.score === preview.checks.length ? 'bg-emerald-100 text-emerald-700' : preview.score > 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'">
+                                            {{ preview.score }}/{{ preview.checks.length }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="text-lg font-medium text-blue-700">
+                                        {{ preview.title }}
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="truncate text-sm text-green-700">
+                                            {{ preview.path }}
+                                        </div>
+                                        <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                            {{ preview.robots }}
+                                        </span>
+                                    </div>
+                                    <p class="line-clamp-3 text-sm text-muted-foreground">
+                                        {{ preview.description }}
+                                    </p>
+                                </div>
+                                <div class="mt-4 space-y-2 border-t pt-3">
+                                    <div v-for="(check, index) in preview.checks" :key="`${preview.key}-${index}`" class="flex items-start gap-2 text-xs">
+                                        <span class="mt-0.5 h-2.5 w-2.5 rounded-full" :class="check.ok ? 'bg-emerald-500' : 'bg-amber-500'" />
+                                        <span :class="check.ok ? 'text-emerald-700' : 'text-amber-700'">
+                                            {{ check.ok ? check.label : check.failLabel }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg border bg-muted/20 p-4 space-y-3">
+                        <div>
+                            <h3 class="font-semibold">{{ localize('Open Graph Preview', 'معاينة Open Graph') }}</h3>
+                            <p class="text-xs text-muted-foreground">
+                                {{ localize('Preview how shared links can appear on WhatsApp, Facebook, and similar platforms.', 'معاينة شكل الرابط عند مشاركته في واتساب وفيسبوك والمنصات المشابهة.') }}
+                            </p>
+                        </div>
+
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            <div v-for="preview in seoPreviewCardsData" :key="`${preview.key}-og`" class="overflow-hidden rounded-xl border bg-background">
+                                <div class="flex items-center justify-between gap-3 border-b bg-muted/30 px-4 py-3">
+                                    <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                        {{ preview.label }}
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                            {{ preview.robots }}
+                                        </span>
+                                        <div class="text-[11px] text-muted-foreground">Open Graph</div>
+                                    </div>
+                                </div>
+
+                                <div class="aspect-[1.91/1] w-full overflow-hidden bg-slate-100">
+                                    <img
+                                        v-if="preview.ogImage"
+                                        :src="preview.ogImage"
+                                        :alt="preview.title"
+                                        class="h-full w-full object-cover"
+                                    />
+                                    <div v-else class="flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+                                        {{ localize('No Open Graph image selected yet.', 'لم يتم تحديد صورة Open Graph بعد.') }}
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2 px-4 py-4">
+                                    <div class="truncate text-xs uppercase tracking-wide text-muted-foreground">
+                                        {{ preview.path.replace(/^https?:\/\//, '') }}
+                                    </div>
+                                    <div class="line-clamp-2 text-base font-semibold text-slate-900">
+                                        {{ preview.title }}
+                                    </div>
+                                    <p class="line-clamp-3 text-sm text-slate-600">
+                                        {{ preview.description }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg border bg-muted/20 p-4 space-y-3">
+                        <div>
+                            <h3 class="font-semibold">{{ localize('Twitter / X Card Preview', 'معاينة بطاقة Twitter / X') }}</h3>
+                            <p class="text-xs text-muted-foreground">
+                                {{ localize('Preview the large summary card style used by X/Twitter when the page is shared.', 'معاينة شكل البطاقة الكبيرة المستخدمة في X/Twitter عند مشاركة الصفحة.') }}
+                            </p>
+                        </div>
+
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            <div v-for="preview in seoPreviewCardsData" :key="`${preview.key}-twitter`" class="overflow-hidden rounded-2xl border bg-background shadow-sm">
+                                <div class="flex items-center justify-between border-b bg-muted/30 px-4 py-3">
+                                    <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                        {{ preview.label }}
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                            {{ preview.twitterCardType }}
+                                        </span>
+                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                            {{ preview.robots }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="aspect-[2/1] w-full overflow-hidden bg-slate-100">
+                                    <img
+                                        v-if="preview.ogImage"
+                                        :src="preview.ogImage"
+                                        :alt="preview.title"
+                                        class="h-full w-full object-cover"
+                                    />
+                                    <div v-else class="flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+                                        {{ localize('No card image available.', 'لا توجد صورة للبطاقة.') }}
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2 px-4 py-4">
+                                    <div class="truncate text-xs text-muted-foreground">
+                                        {{ preview.path.replace(/^https?:\/\//, '') }}
+                                    </div>
+                                    <div class="line-clamp-2 text-[15px] font-semibold text-slate-900">
+                                        {{ preview.title }}
+                                    </div>
+                                    <p class="line-clamp-2 text-sm text-slate-600">
+                                        {{ preview.description }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-4 lg:grid-cols-2">
+                        <div class="rounded-lg border p-4 space-y-3">
+                            <h3 class="font-semibold">{{ localize('Home Page SEO', 'SEO الصفحة الرئيسية') }}</h3>
+                            <div class="space-y-2">
+                                <Label for="seo_home_title_en">{{ localize('Title (EN)', 'العنوان (EN)') }}</Label>
+                                <Input id="seo_home_title_en" v-model="form.seo.pages.home.title.en" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_home_title_ar">{{ localize('Title (AR)', 'العنوان (AR)') }}</Label>
+                                <Input id="seo_home_title_ar" v-model="form.seo.pages.home.title.ar" dir="rtl" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_home_description_en">{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
+                                <textarea id="seo_home_description_en" v-model="form.seo.pages.home.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_home_description_ar">{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
+                                <textarea id="seo_home_description_ar" v-model="form.seo.pages.home.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_home_canonical">{{ localize('Canonical URL', 'رابط Canonical') }}</Label>
+                                <Input id="seo_home_canonical" v-model="form.seo.pages.home.canonical_url" />
+                            </div>
+                        </div>
+
+                        <div class="rounded-lg border p-4 space-y-3">
+                            <h3 class="font-semibold">{{ localize('Fleet Page SEO', 'SEO صفحة الأسطول') }}</h3>
+                            <div class="space-y-2">
+                                <Label for="seo_fleet_title_en">{{ localize('Title (EN)', 'العنوان (EN)') }}</Label>
+                                <Input id="seo_fleet_title_en" v-model="form.seo.pages.fleet.title.en" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_fleet_title_ar">{{ localize('Title (AR)', 'العنوان (AR)') }}</Label>
+                                <Input id="seo_fleet_title_ar" v-model="form.seo.pages.fleet.title.ar" dir="rtl" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_fleet_description_en">{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
+                                <textarea id="seo_fleet_description_en" v-model="form.seo.pages.fleet.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_fleet_description_ar">{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
+                                <textarea id="seo_fleet_description_ar" v-model="form.seo.pages.fleet.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_fleet_canonical">{{ localize('Canonical URL', 'رابط Canonical') }}</Label>
+                                <Input id="seo_fleet_canonical" v-model="form.seo.pages.fleet.canonical_url" />
+                            </div>
+                        </div>
+
+                        <div class="rounded-lg border p-4 space-y-3">
+                            <h3 class="font-semibold">{{ localize('About Page SEO', 'SEO صفحة من نحن') }}</h3>
+                            <div class="space-y-2">
+                                <Label for="seo_about_title_en">{{ localize('Title (EN)', 'العنوان (EN)') }}</Label>
+                                <Input id="seo_about_title_en" v-model="form.seo.pages.about.title.en" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_about_title_ar">{{ localize('Title (AR)', 'العنوان (AR)') }}</Label>
+                                <Input id="seo_about_title_ar" v-model="form.seo.pages.about.title.ar" dir="rtl" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_about_description_en">{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
+                                <textarea id="seo_about_description_en" v-model="form.seo.pages.about.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_about_description_ar">{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
+                                <textarea id="seo_about_description_ar" v-model="form.seo.pages.about.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_about_canonical">{{ localize('Canonical URL', 'رابط Canonical') }}</Label>
+                                <Input id="seo_about_canonical" v-model="form.seo.pages.about.canonical_url" />
+                            </div>
+                        </div>
+
+                        <div class="rounded-lg border p-4 space-y-3">
+                            <h3 class="font-semibold">{{ localize('Contact Page SEO', 'SEO صفحة اتصل بنا') }}</h3>
+                            <div class="space-y-2">
+                                <Label for="seo_contact_title_en">{{ localize('Title (EN)', 'العنوان (EN)') }}</Label>
+                                <Input id="seo_contact_title_en" v-model="form.seo.pages.contact.title.en" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_contact_title_ar">{{ localize('Title (AR)', 'العنوان (AR)') }}</Label>
+                                <Input id="seo_contact_title_ar" v-model="form.seo.pages.contact.title.ar" dir="rtl" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_contact_description_en">{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
+                                <textarea id="seo_contact_description_en" v-model="form.seo.pages.contact.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_contact_description_ar">{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
+                                <textarea id="seo_contact_description_ar" v-model="form.seo.pages.contact.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_contact_canonical">{{ localize('Canonical URL', 'رابط Canonical') }}</Label>
+                                <Input id="seo_contact_canonical" v-model="form.seo.pages.contact.canonical_url" />
+                            </div>
+                        </div>
+                        <div class="rounded-lg border p-4 space-y-3">
+                            <h3 class="font-semibold">{{ localize('Car Details Page SEO', 'SEO صفحة السيارة') }}</h3>
+                            <div class="space-y-2">
+                                <Label for="seo_car_title_en">{{ localize('Title (EN)', 'العنوان (EN)') }}</Label>
+                                <Input id="seo_car_title_en" v-model="form.seo.pages.car.title.en" placeholder="Use :car as placeholder" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_car_title_ar">{{ localize('Title (AR)', 'العنوان (AR)') }}</Label>
+                                <Input id="seo_car_title_ar" v-model="form.seo.pages.car.title.ar" dir="rtl" placeholder="استخدم :car كمتغير" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_car_description_en">{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
+                                <textarea id="seo_car_description_en" v-model="form.seo.pages.car.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_car_description_ar">{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
+                                <textarea id="seo_car_description_ar" v-model="form.seo.pages.car.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_car_canonical">{{ localize('Canonical URL', 'رابط Canonical') }}</Label>
+                                <Input id="seo_car_canonical" v-model="form.seo.pages.car.canonical_url" />
+                            </div>
+                        </div>
+                        <div class="rounded-lg border p-4 space-y-3">
+                            <h3 class="font-semibold">{{ localize('Booking Checkout SEO', 'SEO صفحة إتمام الحجز') }}</h3>
+                            <div class="space-y-2">
+                                <Label for="seo_checkout_title_en">{{ localize('Title (EN)', 'العنوان (EN)') }}</Label>
+                                <Input id="seo_checkout_title_en" v-model="form.seo.pages.booking_checkout.title.en" placeholder="Use :reservation as placeholder" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_checkout_title_ar">{{ localize('Title (AR)', 'العنوان (AR)') }}</Label>
+                                <Input id="seo_checkout_title_ar" v-model="form.seo.pages.booking_checkout.title.ar" dir="rtl" placeholder="استخدم :reservation كمتغير" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_checkout_description_en">{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
+                                <textarea id="seo_checkout_description_en" v-model="form.seo.pages.booking_checkout.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_checkout_description_ar">{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
+                                <textarea id="seo_checkout_description_ar" v-model="form.seo.pages.booking_checkout.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_checkout_canonical">{{ localize('Canonical URL', 'رابط Canonical') }}</Label>
+                                <Input id="seo_checkout_canonical" v-model="form.seo.pages.booking_checkout.canonical_url" />
+                            </div>
+                        </div>
+                        <div class="rounded-lg border p-4 space-y-3">
+                            <h3 class="font-semibold">{{ localize('Booking Confirmation SEO', 'SEO صفحة تأكيد الحجز') }}</h3>
+                            <div class="space-y-2">
+                                <Label for="seo_confirmation_title_en">{{ localize('Title (EN)', 'العنوان (EN)') }}</Label>
+                                <Input id="seo_confirmation_title_en" v-model="form.seo.pages.booking_confirmation.title.en" placeholder="Use :reservation as placeholder" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_confirmation_title_ar">{{ localize('Title (AR)', 'العنوان (AR)') }}</Label>
+                                <Input id="seo_confirmation_title_ar" v-model="form.seo.pages.booking_confirmation.title.ar" dir="rtl" placeholder="استخدم :reservation كمتغير" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_confirmation_description_en">{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
+                                <textarea id="seo_confirmation_description_en" v-model="form.seo.pages.booking_confirmation.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_confirmation_description_ar">{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
+                                <textarea id="seo_confirmation_description_ar" v-model="form.seo.pages.booking_confirmation.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="seo_confirmation_canonical">{{ localize('Canonical URL', 'رابط Canonical') }}</Label>
+                                <Input id="seo_confirmation_canonical" v-model="form.seo.pages.booking_confirmation.canonical_url" />
                             </div>
                         </div>
                     </div>

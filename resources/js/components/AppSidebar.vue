@@ -37,6 +37,7 @@ import {
     LifeBuoy,
     MapPin,
     Percent,
+    Search,
     Shield,
     ShieldAlert,
     Tag,
@@ -246,6 +247,18 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: t('dashboard.sidebar.admin.website_settings'),
             href: adminHref('/settings/website'),
             icon: Shield,
+            permission: 'tenant-manage-settings',
+        },
+        {
+            title: t('dashboard.sidebar.admin.seo_settings'),
+            href: adminHref('/settings/seo'),
+            icon: Search,
+            permission: 'tenant-manage-settings',
+        },
+        {
+            title: t('dashboard.sidebar.admin.seo_audit'),
+            href: adminHref('/settings/seo-audit'),
+            icon: FileText,
             permission: 'tenant-manage-settings',
         },
         {

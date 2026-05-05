@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SeoHead from '@/components/SeoHead.vue';
 import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { usePage } from '@inertiajs/vue3';
@@ -21,6 +22,7 @@ const contactUrl = computed(() =>
         : mainContact().url
 );
 const aboutContent = computed(() => tenantSiteSettings.value?.about ?? null);
+const seo = computed(() => page.props.seo ?? null);
 
 const localizedText = (value: any, fallback = ''): string => {
     const currentLocale = String(locale.value || 'en');
@@ -40,6 +42,7 @@ const localizedText = (value: any, fallback = ''): string => {
 };
 </script>
 <template>
+    <SeoHead :seo="seo" />
     <HomeLayout>
         <div class="min-h-screen bg-white">
             <div class="bg-gray-900 py-20 text-white">

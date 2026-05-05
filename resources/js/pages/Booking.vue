@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SeoHead from '@/components/SeoHead.vue';
 import { useTrans } from '@/composables/useTrans';
 import {
     Dialog,
@@ -48,6 +49,7 @@ const { t } = useTrans();
 const car = computed<Car>(() => $page.props.car as Car);
 const currentTenant = computed(() => $page.props.current_tenant);
 const tenantSiteSettings = computed(() => $page.props.tenant_site_settings ?? null);
+const seo = computed(() => $page.props.seo ?? null);
 const reservationSettings = computed<Record<string, any> | null>(() => tenantSiteSettings.value?.reservation_settings ?? null);
 const hasCoupons = computed(() => Boolean($page.props.hasCoupons));
 const availabilityCalendar = computed<{
@@ -484,6 +486,7 @@ watch(
 </script>
 <template>
     <HomeLayout>
+        <SeoHead :seo="seo" />
         <div
             class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8"
         >

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SeoHead from '@/components/SeoHead.vue';
 import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { useForm } from '@inertiajs/vue3';
@@ -21,6 +22,7 @@ const aboutUrl = computed(() =>
 );
 const canSubmitTenantTicket = computed(() => !!tenantSlug.value);
 const contactPageContent = computed(() => tenantSiteSettings.value?.contact_page ?? null);
+const seo = computed(() => page.props.seo ?? null);
 
 const localizedText = (value: any, fallback = ''): string => {
     const currentLocale = String(locale.value || 'en');
@@ -100,6 +102,7 @@ const sendTicket = () => {
 };
 </script>
 <template>
+    <SeoHead :seo="seo" />
     <HomeLayout>
         <div class="min-h-screen bg-white py-16 ">
             <!-- notification -->

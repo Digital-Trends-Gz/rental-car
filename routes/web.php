@@ -21,6 +21,8 @@ $localizedGroup = [
 // --- Subdomain Routes (Tenant Websites) ---
 Route::domain('{subdomain}.' . $baseDomain)->group(function () use ($localizedGroup) {
     Route::get('/locale/{locale}', [LocalizationController::class, 'switch'])->name('tenant.locale.switch');
+    Route::get('/sitemap.xml', [HomePagesController::class, 'sitemap'])->name('tenant.seo.sitemap');
+    Route::get('/robots.txt', [HomePagesController::class, 'robots'])->name('tenant.seo.robots');
 
     Route::group($localizedGroup, function () {
         Route::middleware('auth')->group(function () {
@@ -29,7 +31,7 @@ Route::domain('{subdomain}.' . $baseDomain)->group(function () use ($localizedGr
             Route::post('/notifications/read-all', [NotificationController::class, 'readAll']);
         });
 
-        Route::middleware('tenant.subscription')->group(function () {
+        Route::middleware(['tenant.subscription', 'tenant.seo.redirects'])->group(function () {
             Route::get('/', [HomePagesController::class, 'index'])->name('tenant.home');
             Route::get('/fleet', [HomePagesController::class, 'fleet'])->name('tenant.fleet');
             Route::get('/about', [HomePagesController::class, 'about'])->name('tenant.about');
@@ -61,6 +63,9 @@ Route::domain('{subdomain}.' . $baseDomain)->group(function () use ($localizedGr
 
 // --- Main Domain Routes (Central Landing & Super Admin) ---
 Route::domain($baseDomain)->group(function () use ($localizedGroup) {
+    Route::get('/sitemap.xml', [HomePagesController::class, 'sitemap'])->name('seo.sitemap');
+    Route::get('/robots.txt', [HomePagesController::class, 'robots'])->name('seo.robots');
+
     Route::post('/payment/webhooks/subscriptions/{provider}', [RegisteredUserController::class, 'subscriptionProviderWebhook'])
         ->name('subscription.provider.webhook');
 
@@ -78,10 +83,12 @@ Route::domain($baseDomain)->group(function () use ($localizedGroup) {
             Route::post('/notifications/read-all', [NotificationController::class, 'readAll']);
         });
 
-        Route::get('/', [HomePagesController::class, 'index'])->name('home');
-        Route::get('/fleet', [HomePagesController::class, 'fleet'])->name('fleet');
-        Route::get('/about', [HomePagesController::class, 'about'])->name('about');
-        Route::get('/contact', [HomePagesController::class, 'contact'])->name('contact');
+        Route::middleware('tenant.seo.redirects')->group(function () {
+            Route::get('/', [HomePagesController::class, 'index'])->name('home');
+            Route::get('/fleet', [HomePagesController::class, 'fleet'])->name('fleet');
+            Route::get('/about', [HomePagesController::class, 'about'])->name('about');
+            Route::get('/contact', [HomePagesController::class, 'contact'])->name('contact');
+        });
         Route::post('/contact/guestContact', [HomePagesController::class, 'landingContact'])->name('contact.guestContact');
 
         Route::get('/dashboard', function () {

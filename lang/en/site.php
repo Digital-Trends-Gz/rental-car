@@ -538,6 +538,8 @@ return [
                 'roles' => 'Roles',
                 'payment_providers' => 'Payment Providers',
                 'website_settings' => 'Website Settings',
+                'seo_settings' => 'SEO Settings',
+                'seo_audit' => 'SEO Audit',
                 'translations' => 'Translations',
                 'plate_formats' => 'Plate Formats',
                 'reservation_settings' => 'Reservation Settings',

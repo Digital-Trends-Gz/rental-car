@@ -20,6 +20,7 @@ use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Support\Payments\MyFatoorahSubscriptionProvider;
 use App\Support\ClientReturnDebt;
+use App\Support\TenantSeoResolver;
 use App\Support\TenantStripeConnect;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -44,6 +45,7 @@ class BookingController extends Controller
     public function show(Request $request, Car $car)
     {
         $tenantSlug = $this->tenantSlug();
+        $tenant = TenantContext::get();
         $tenantId = TenantContext::id();
         $today = now()->startOfDay();
 
@@ -111,6 +113,7 @@ class BookingController extends Controller
         return inertia('Booking', [
             'car' => $car,
             'hasCoupons' => $hasCoupons,
+            'seo' => TenantSeoResolver::forCar($tenant, $car),
             'availabilityCalendar' => [
                 'window_starts_at' => $windowStart->toDateString(),
                 'window_ends_at' => $windowEnd->toDateString(),
@@ -537,6 +540,7 @@ class BookingController extends Controller
                         'reservation' => $reservation->id,
                     ]),
                 ],
+                'seo' => TenantSeoResolver::forReservation($tenant, $reservation->loadMissing('car', 'user'), 'booking_checkout'),
             ]);
         }
 
@@ -804,14 +808,18 @@ class BookingController extends Controller
     public function confirmation(Reservation $reservation)
     {
         $tenantSlug = $this->tenantSlug();
+        $tenant = TenantContext::get();
 
         // Make sure user can only see their own reservations
         if (!Auth::check() || $reservation->user_id !== Auth::user()->id) {
             return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug]);
         }
 
+        $reservation->load(['car', 'user']);
+
         return inertia('BookingConfirmation', [
-            'reservation' => $reservation->load(['car', 'user']),
+            'reservation' => $reservation,
+            'seo' => TenantSeoResolver::forReservation($tenant, $reservation, 'booking_confirmation'),
         ]);
     }
 

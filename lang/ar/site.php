@@ -608,6 +608,8 @@ return array (
         'roles' => 'الأدوار',
         'payment_providers' => 'مزودو الدفع',
         'website_settings' => 'إعدادات الموقع',
+        'seo_settings' => 'إعدادات SEO',
+        'seo_audit' => 'تدقيق SEO',
         'translations' => 'الترجمات',
         'plate_formats' => 'أنماط اللوحات',
         'reservation_settings' => 'إعدادات الحجز',

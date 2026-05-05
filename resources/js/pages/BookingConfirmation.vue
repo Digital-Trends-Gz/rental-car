@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SeoHead from '@/components/SeoHead.vue';
 import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { usePage } from '@inertiajs/vue3';
@@ -40,6 +41,17 @@ interface Reservation {
 
 interface PageProps {
     reservation: Reservation;
+    seo?: {
+        title?: string | null;
+        description?: string | null;
+        canonical_url?: string | null;
+        robots?: string | null;
+        og_title?: string | null;
+        og_description?: string | null;
+        og_image?: string | null;
+        alternates?: Array<{ locale: string; url: string }>;
+        schemas?: Array<Record<string, unknown>>;
+    } | null;
     current_tenant: {
         slug: string;
         name: string;
@@ -50,6 +62,7 @@ const $page = usePage<PageProps>();
 const { t, locale } = useTrans();
 const reservation = $page.props.reservation;
 const currentTenant = $page.props.current_tenant;
+const seo = computed(() => $page.props.seo ?? null);
 
 function toAmount(value: unknown): number {
     const parsed = Number(value ?? 0);
@@ -82,6 +95,7 @@ const amounts = computed(() => {
 
 <template>
     <HomeLayout>
+        <SeoHead :seo="seo" />
         <div class="min-h-screen bg-white py-12">
             <div class="mx-auto max-w-7xl px-6">
                 <!-- Clean success header with minimal styling -->
