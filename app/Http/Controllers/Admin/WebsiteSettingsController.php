@@ -121,6 +121,8 @@ class WebsiteSettingsController extends Controller
             'seo.defaults.default_description.en' => ['nullable', 'string', 'max:500'],
             'seo.defaults.default_description.ar' => ['nullable', 'string', 'max:500'],
             'seo.defaults.og_image' => ['nullable', 'string', 'max:1000'],
+            'seo.defaults.og_image_alt.en' => ['nullable', 'string', 'max:255'],
+            'seo.defaults.og_image_alt.ar' => ['nullable', 'string', 'max:255'],
             'seo.defaults.robots' => ['nullable', 'string', 'max:255'],
             'seo.pages.home.title.en' => ['nullable', 'string', 'max:255'],
             'seo.pages.home.title.ar' => ['nullable', 'string', 'max:255'],
@@ -330,6 +332,10 @@ class WebsiteSettingsController extends Controller
                             'ar' => $this->nullableString(data_get($validated, 'seo.defaults.default_description.ar')),
                         ],
                         'og_image' => $this->nullableString(data_get($validated, 'seo.defaults.og_image')),
+                        'og_image_alt' => [
+                            'en' => $this->nullableString(data_get($validated, 'seo.defaults.og_image_alt.en')),
+                            'ar' => $this->nullableString(data_get($validated, 'seo.defaults.og_image_alt.ar')),
+                        ],
                         'robots' => $this->nullableString(data_get($validated, 'seo.defaults.robots')) ?: 'index,follow',
                     ],
                     'pages' => [
@@ -773,69 +779,10 @@ class WebsiteSettingsController extends Controller
 
     private function seoValidationRules(): array
     {
-        return [
-            'seo.defaults.title_suffix.en' => ['nullable', 'string', 'max:255'],
-            'seo.defaults.title_suffix.ar' => ['nullable', 'string', 'max:255'],
-            'seo.defaults.default_description.en' => ['nullable', 'string', 'max:500'],
-            'seo.defaults.default_description.ar' => ['nullable', 'string', 'max:500'],
+        $supportedLocales = $this->supportedLocaleKeys();
+        $rules = [
             'seo.defaults.og_image' => ['nullable', 'string', 'max:1000'],
             'seo.defaults.robots' => ['nullable', 'string', 'max:255'],
-            'seo.pages.home.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.home.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.home.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.home.description.ar' => ['nullable', 'string', 'max:500'],
-            'seo.pages.home.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.home.robots' => ['nullable', 'string', 'max:255'],
-            'seo.pages.home.focus_keyword.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.home.focus_keyword.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.fleet.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.fleet.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.fleet.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.fleet.description.ar' => ['nullable', 'string', 'max:500'],
-            'seo.pages.fleet.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.fleet.robots' => ['nullable', 'string', 'max:255'],
-            'seo.pages.fleet.focus_keyword.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.fleet.focus_keyword.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.about.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.about.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.about.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.about.description.ar' => ['nullable', 'string', 'max:500'],
-            'seo.pages.about.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.about.robots' => ['nullable', 'string', 'max:255'],
-            'seo.pages.about.focus_keyword.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.about.focus_keyword.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.contact.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.contact.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.contact.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.contact.description.ar' => ['nullable', 'string', 'max:500'],
-            'seo.pages.contact.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.contact.robots' => ['nullable', 'string', 'max:255'],
-            'seo.pages.contact.focus_keyword.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.contact.focus_keyword.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.car.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.car.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.car.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.car.description.ar' => ['nullable', 'string', 'max:500'],
-            'seo.pages.car.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.car.robots' => ['nullable', 'string', 'max:255'],
-            'seo.pages.car.focus_keyword.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.car.focus_keyword.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.booking_checkout.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.booking_checkout.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.booking_checkout.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.booking_checkout.description.ar' => ['nullable', 'string', 'max:500'],
-            'seo.pages.booking_checkout.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.booking_checkout.robots' => ['nullable', 'string', 'max:255'],
-            'seo.pages.booking_checkout.focus_keyword.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.booking_checkout.focus_keyword.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.booking_confirmation.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.booking_confirmation.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.booking_confirmation.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.booking_confirmation.description.ar' => ['nullable', 'string', 'max:500'],
-            'seo.pages.booking_confirmation.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.booking_confirmation.robots' => ['nullable', 'string', 'max:255'],
-            'seo.pages.booking_confirmation.focus_keyword.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.booking_confirmation.focus_keyword.ar' => ['nullable', 'string', 'max:255'],
             'seo.technical.sitemap.pages' => ['nullable', 'array'],
             'seo.technical.sitemap.pages.*.path' => ['nullable', 'string', 'max:500'],
             'seo.technical.sitemap.pages.*.priority' => ['nullable', 'numeric', 'min:0.1', 'max:1.0'],
@@ -855,137 +802,51 @@ class WebsiteSettingsController extends Controller
             'seo.technical.redirects.items.*.isPermanent' => ['nullable', 'boolean'],
             'seo.technical.redirects.items.*.isActive' => ['nullable', 'boolean'],
         ];
+
+        foreach ($supportedLocales as $locale) {
+            $rules["seo.defaults.title_suffix.{$locale}"] = ['nullable', 'string', 'max:255'];
+            $rules["seo.defaults.default_description.{$locale}"] = ['nullable', 'string', 'max:500'];
+            $rules["seo.defaults.og_image_alt.{$locale}"] = ['nullable', 'string', 'max:255'];
+        }
+
+        foreach ($this->seoPageKeys() as $pageKey) {
+            $rules["seo.pages.{$pageKey}.canonical_url"] = ['nullable', 'string', 'max:1000'];
+            $rules["seo.pages.{$pageKey}.robots"] = ['nullable', 'string', 'max:255'];
+
+            foreach ($supportedLocales as $locale) {
+                $rules["seo.pages.{$pageKey}.title.{$locale}"] = ['nullable', 'string', 'max:255'];
+                $rules["seo.pages.{$pageKey}.description.{$locale}"] = ['nullable', 'string', 'max:500'];
+                $rules["seo.pages.{$pageKey}.focus_keyword.{$locale}"] = ['nullable', 'string', 'max:255'];
+            }
+        }
+
+        return $rules;
     }
 
     private function buildSeoPayload(array $validated): array
     {
+        $supportedLocales = $this->supportedLocaleKeys();
+        $pages = [];
+
+        foreach ($this->seoPageKeys() as $pageKey) {
+            $pages[$pageKey] = [
+                'title' => $this->localizedSeoPayload($validated, "seo.pages.{$pageKey}.title", $supportedLocales),
+                'description' => $this->localizedSeoPayload($validated, "seo.pages.{$pageKey}.description", $supportedLocales),
+                'canonical_url' => $this->nullableString(data_get($validated, "seo.pages.{$pageKey}.canonical_url")),
+                'robots' => $this->nullableString(data_get($validated, "seo.pages.{$pageKey}.robots")),
+                'focus_keyword' => $this->localizedSeoPayload($validated, "seo.pages.{$pageKey}.focus_keyword", $supportedLocales),
+            ];
+        }
+
         return [
             'defaults' => [
-                'title_suffix' => [
-                    'en' => $this->nullableString(data_get($validated, 'seo.defaults.title_suffix.en')),
-                    'ar' => $this->nullableString(data_get($validated, 'seo.defaults.title_suffix.ar')),
-                ],
-                'default_description' => [
-                    'en' => $this->nullableString(data_get($validated, 'seo.defaults.default_description.en')),
-                    'ar' => $this->nullableString(data_get($validated, 'seo.defaults.default_description.ar')),
-                ],
+                'title_suffix' => $this->localizedSeoPayload($validated, 'seo.defaults.title_suffix', $supportedLocales),
+                'default_description' => $this->localizedSeoPayload($validated, 'seo.defaults.default_description', $supportedLocales),
                 'og_image' => $this->nullableString(data_get($validated, 'seo.defaults.og_image')),
+                'og_image_alt' => $this->localizedSeoPayload($validated, 'seo.defaults.og_image_alt', $supportedLocales),
                 'robots' => $this->nullableString(data_get($validated, 'seo.defaults.robots')) ?: 'index,follow',
             ],
-            'pages' => [
-                'home' => [
-                    'title' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.home.title.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.home.title.ar')),
-                    ],
-                    'description' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.home.description.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.home.description.ar')),
-                    ],
-                    'canonical_url' => $this->nullableString(data_get($validated, 'seo.pages.home.canonical_url')),
-                    'robots' => $this->nullableString(data_get($validated, 'seo.pages.home.robots')),
-                    'focus_keyword' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.home.focus_keyword.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.home.focus_keyword.ar')),
-                    ],
-                ],
-                'fleet' => [
-                    'title' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.fleet.title.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.fleet.title.ar')),
-                    ],
-                    'description' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.fleet.description.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.fleet.description.ar')),
-                    ],
-                    'canonical_url' => $this->nullableString(data_get($validated, 'seo.pages.fleet.canonical_url')),
-                    'robots' => $this->nullableString(data_get($validated, 'seo.pages.fleet.robots')),
-                    'focus_keyword' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.fleet.focus_keyword.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.fleet.focus_keyword.ar')),
-                    ],
-                ],
-                'about' => [
-                    'title' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.about.title.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.about.title.ar')),
-                    ],
-                    'description' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.about.description.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.about.description.ar')),
-                    ],
-                    'canonical_url' => $this->nullableString(data_get($validated, 'seo.pages.about.canonical_url')),
-                    'robots' => $this->nullableString(data_get($validated, 'seo.pages.about.robots')),
-                    'focus_keyword' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.about.focus_keyword.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.about.focus_keyword.ar')),
-                    ],
-                ],
-                'contact' => [
-                    'title' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.contact.title.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.contact.title.ar')),
-                    ],
-                    'description' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.contact.description.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.contact.description.ar')),
-                    ],
-                    'canonical_url' => $this->nullableString(data_get($validated, 'seo.pages.contact.canonical_url')),
-                    'robots' => $this->nullableString(data_get($validated, 'seo.pages.contact.robots')),
-                    'focus_keyword' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.contact.focus_keyword.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.contact.focus_keyword.ar')),
-                    ],
-                ],
-                'car' => [
-                    'title' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.car.title.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.car.title.ar')),
-                    ],
-                    'description' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.car.description.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.car.description.ar')),
-                    ],
-                    'canonical_url' => $this->nullableString(data_get($validated, 'seo.pages.car.canonical_url')),
-                    'robots' => $this->nullableString(data_get($validated, 'seo.pages.car.robots')),
-                    'focus_keyword' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.car.focus_keyword.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.car.focus_keyword.ar')),
-                    ],
-                ],
-                'booking_checkout' => [
-                    'title' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.booking_checkout.title.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.booking_checkout.title.ar')),
-                    ],
-                    'description' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.booking_checkout.description.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.booking_checkout.description.ar')),
-                    ],
-                    'canonical_url' => $this->nullableString(data_get($validated, 'seo.pages.booking_checkout.canonical_url')),
-                    'robots' => $this->nullableString(data_get($validated, 'seo.pages.booking_checkout.robots')),
-                    'focus_keyword' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.booking_checkout.focus_keyword.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.booking_checkout.focus_keyword.ar')),
-                    ],
-                ],
-                'booking_confirmation' => [
-                    'title' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.booking_confirmation.title.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.booking_confirmation.title.ar')),
-                    ],
-                    'description' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.booking_confirmation.description.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.booking_confirmation.description.ar')),
-                    ],
-                    'canonical_url' => $this->nullableString(data_get($validated, 'seo.pages.booking_confirmation.canonical_url')),
-                    'robots' => $this->nullableString(data_get($validated, 'seo.pages.booking_confirmation.robots')),
-                    'focus_keyword' => [
-                        'en' => $this->nullableString(data_get($validated, 'seo.pages.booking_confirmation.focus_keyword.en')),
-                        'ar' => $this->nullableString(data_get($validated, 'seo.pages.booking_confirmation.focus_keyword.ar')),
-                    ],
-                ],
-            ],
+            'pages' => $pages,
             'technical' => [
                 'sitemap' => [
                     'pages' => collect((array) data_get($validated, 'seo.technical.sitemap.pages', []))
@@ -1046,6 +907,29 @@ class WebsiteSettingsController extends Controller
                 ],
             ],
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function seoPageKeys(): array
+    {
+        return ['home', 'fleet', 'about', 'contact', 'car', 'booking_checkout', 'booking_confirmation'];
+    }
+
+    /**
+     * @param  list<string>  $supportedLocales
+     * @return array<string, string|null>
+     */
+    private function localizedSeoPayload(array $validated, string $prefix, array $supportedLocales): array
+    {
+        $values = [];
+
+        foreach ($supportedLocales as $locale) {
+            $values[$locale] = $this->nullableString(data_get($validated, "{$prefix}.{$locale}"));
+        }
+
+        return $values;
     }
 
     private function validateSeoRedirectRules(array $validated): void

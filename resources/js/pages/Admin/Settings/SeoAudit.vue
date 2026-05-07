@@ -22,6 +22,7 @@ const props = defineProps<{
                 title_suffix: LocalizedText;
                 default_description: LocalizedText;
                 og_image: string | null;
+                og_image_alt: LocalizedText;
                 robots: string | null;
             };
             pages: {
@@ -125,7 +126,7 @@ const fallbackDescription = (pageKey: SeoPageKey): string => {
 };
 
 const auditPages = computed(() => {
-    const pages: SeoPageKey[] = ['home', 'fleet', 'about', 'contact', 'car', 'booking_checkout', 'booking_confirmation'];
+    const pages: SeoPageKey[] = ['home', 'fleet', 'about', 'contact', 'car'];
     const englishLabels: Record<SeoPageKey, string> = {
         home: 'Home Page',
         fleet: 'Fleet Page',
@@ -170,6 +171,7 @@ const auditPages = computed(() => {
         const slug = pathname.replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
         const isPublicPage = pageKey !== 'booking_checkout' && pageKey !== 'booking_confirmation';
         const publicNoindexWarning = isPublicPage && /noindex/i.test(robots);
+        const ogImageAlt = localizedSeoText(props.settings.seo.defaults.og_image_alt);
         const checks = [
             {
                 ok: title.length >= 30 && title.length <= 60,
@@ -185,6 +187,11 @@ const auditPages = computed(() => {
                 ok: Boolean((props.settings.seo.defaults.og_image || props.settings.logo_url || '').trim()),
                 pass: localize('Open Graph image is set', 'صورة Open Graph مضبوطة'),
                 fail: localize('Set an Open Graph image for sharing previews', 'حدد صورة Open Graph لمعاينات المشاركة'),
+            },
+            {
+                ok: !((props.settings.seo.defaults.og_image || props.settings.logo_url || '').trim()) || (ogImageAlt.length >= 8 && ogImageAlt.length <= 125),
+                pass: localize('Open Graph image alt text looks good', 'النص البديل لصورة Open Graph مناسب'),
+                fail: localize('Add descriptive Open Graph image alt text between 8 and 125 characters', 'أضف نصًا بديلاً وصفيًا لصورة Open Graph بين 8 و125 حرفًا'),
             },
             {
                 ok: canonical === '' || /^https?:\/\/\S+$/i.test(canonical),
@@ -218,6 +225,7 @@ const auditPages = computed(() => {
             robots,
             alternates,
             ogImage: (props.settings.seo.defaults.og_image || props.settings.logo_url || '').trim(),
+            ogImageAlt,
             isPublicPage,
             publicNoindexWarning,
             recommended: {
@@ -275,6 +283,7 @@ function exportSeoReport(format: 'txt' | 'json' | 'csv') {
             slug: page.slug,
             robots: page.robots,
             og_image: page.ogImage || null,
+            og_image_alt: page.ogImageAlt || null,
             alternates: page.alternates,
             score: page.score,
             total_checks: page.checks.length,
@@ -289,7 +298,7 @@ function exportSeoReport(format: 'txt' | 'json' | 'csv') {
         ? JSON.stringify(payload, null, 2)
         : format === 'csv'
             ? [
-                ['page_key', 'page_label', 'title', 'description', 'canonical', 'slug', 'robots', 'og_image', 'alternates', 'score', 'total_checks', 'warnings'].join(','),
+                ['page_key', 'page_label', 'title', 'description', 'canonical', 'slug', 'robots', 'og_image', 'og_image_alt', 'alternates', 'score', 'total_checks', 'warnings'].join(','),
                 ...payload.pages.map((page) => ([
                     page.key,
                     `"${String(page.label).replace(/"/g, '""')}"`,
@@ -299,6 +308,7 @@ function exportSeoReport(format: 'txt' | 'json' | 'csv') {
                     `"${String(page.slug).replace(/"/g, '""')}"`,
                     `"${String(page.robots).replace(/"/g, '""')}"`,
                     `"${String(page.og_image || '').replace(/"/g, '""')}"`,
+                    `"${String(page.og_image_alt || '').replace(/"/g, '""')}"`,
                     `"${page.alternates.map((alternate) => `${alternate.locale}=${alternate.url}`).join(' | ').replace(/"/g, '""')}"`,
                     page.score,
                     page.total_checks,
@@ -319,6 +329,7 @@ function exportSeoReport(format: 'txt' | 'json' | 'csv') {
                 `Slug: ${page.slug}`,
                 `Robots: ${page.robots}`,
                 `OG Image: ${page.og_image || 'N/A'}`,
+                `OG Image Alt: ${page.og_image_alt || 'N/A'}`,
                 `Alternates: ${page.alternates.map((alternate) => `${alternate.locale}=${alternate.url}`).join(' | ')}`,
                 `Score: ${page.score}/${page.total_checks}`,
                 ...page.checks.map((check) => `- ${check.status.toUpperCase()}: ${check.message}`),

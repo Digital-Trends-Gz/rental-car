@@ -168,129 +168,61 @@ class TenantSiteSetting extends Model
             ],
             'seo' => [
                 'defaults' => [
-                    'title_suffix' => [
-                        'en' => null,
-                        'ar' => null,
-                    ],
-                    'default_description' => [
-                        'en' => null,
-                        'ar' => null,
-                    ],
+                    'title_suffix' => self::localizedNullMap($supportedLocales),
+                    'default_description' => self::localizedNullMap($supportedLocales),
                     'og_image' => null,
+                    'og_image_alt' => self::localizedNullMap($supportedLocales),
                     'robots' => 'index,follow',
                 ],
                 'pages' => [
                     'home' => [
-                        'title' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
-                        'description' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
                         'canonical_url' => null,
                         'robots' => null,
-                        'focus_keyword' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
                     ],
                     'fleet' => [
-                        'title' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
-                        'description' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
                         'canonical_url' => null,
                         'robots' => null,
-                        'focus_keyword' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
                     ],
                     'about' => [
-                        'title' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
-                        'description' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
                         'canonical_url' => null,
                         'robots' => null,
-                        'focus_keyword' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
                     ],
                     'contact' => [
-                        'title' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
-                        'description' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
                         'canonical_url' => null,
                         'robots' => null,
-                        'focus_keyword' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
                     ],
                     'car' => [
-                        'title' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
-                        'description' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
                         'canonical_url' => null,
                         'robots' => null,
-                        'focus_keyword' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
                     ],
                     'booking_checkout' => [
-                        'title' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
-                        'description' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
                         'canonical_url' => null,
                         'robots' => null,
-                        'focus_keyword' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
                     ],
                     'booking_confirmation' => [
-                        'title' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
-                        'description' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
                         'canonical_url' => null,
                         'robots' => null,
-                        'focus_keyword' => [
-                            'en' => null,
-                            'ar' => null,
-                        ],
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
                     ],
                 ],
                 'technical' => [
@@ -622,129 +554,61 @@ class TenantSiteSetting extends Model
             ],
             'seo' => [
                 'defaults' => [
-                    'title_suffix' => [
-                        'en' => self::nullableString(data_get($data, 'seo.defaults.title_suffix.en')),
-                        'ar' => self::nullableString(data_get($data, 'seo.defaults.title_suffix.ar')),
-                    ],
-                    'default_description' => [
-                        'en' => self::nullableString(data_get($data, 'seo.defaults.default_description.en')),
-                        'ar' => self::nullableString(data_get($data, 'seo.defaults.default_description.ar')),
-                    ],
+                    'title_suffix' => self::normalizeLocalizedMap(data_get($data, 'seo.defaults.title_suffix')),
+                    'default_description' => self::normalizeLocalizedMap(data_get($data, 'seo.defaults.default_description')),
                     'og_image' => self::nullableString(data_get($data, 'seo.defaults.og_image')),
+                    'og_image_alt' => self::normalizeLocalizedMap(data_get($data, 'seo.defaults.og_image_alt')),
                     'robots' => self::nullableString(data_get($data, 'seo.defaults.robots')) ?? 'index,follow',
                 ],
                 'pages' => [
                     'home' => [
-                        'title' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.home.title.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.home.title.ar')),
-                        ],
-                        'description' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.home.description.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.home.description.ar')),
-                        ],
+                        'title' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.home.title')),
+                        'description' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.home.description')),
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.home.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.home.robots')),
-                        'focus_keyword' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.home.focus_keyword.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.home.focus_keyword.ar')),
-                        ],
+                        'focus_keyword' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.home.focus_keyword')),
                     ],
                     'fleet' => [
-                        'title' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.fleet.title.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.fleet.title.ar')),
-                        ],
-                        'description' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.fleet.description.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.fleet.description.ar')),
-                        ],
+                        'title' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.fleet.title')),
+                        'description' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.fleet.description')),
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.fleet.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.fleet.robots')),
-                        'focus_keyword' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.fleet.focus_keyword.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.fleet.focus_keyword.ar')),
-                        ],
+                        'focus_keyword' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.fleet.focus_keyword')),
                     ],
                     'about' => [
-                        'title' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.about.title.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.about.title.ar')),
-                        ],
-                        'description' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.about.description.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.about.description.ar')),
-                        ],
+                        'title' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.about.title')),
+                        'description' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.about.description')),
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.about.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.about.robots')),
-                        'focus_keyword' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.about.focus_keyword.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.about.focus_keyword.ar')),
-                        ],
+                        'focus_keyword' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.about.focus_keyword')),
                     ],
                     'contact' => [
-                        'title' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.contact.title.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.contact.title.ar')),
-                        ],
-                        'description' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.contact.description.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.contact.description.ar')),
-                        ],
+                        'title' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.contact.title')),
+                        'description' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.contact.description')),
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.contact.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.contact.robots')),
-                        'focus_keyword' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.contact.focus_keyword.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.contact.focus_keyword.ar')),
-                        ],
+                        'focus_keyword' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.contact.focus_keyword')),
                     ],
                     'car' => [
-                        'title' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.car.title.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.car.title.ar')),
-                        ],
-                        'description' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.car.description.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.car.description.ar')),
-                        ],
+                        'title' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.car.title')),
+                        'description' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.car.description')),
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.car.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.car.robots')),
-                        'focus_keyword' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.car.focus_keyword.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.car.focus_keyword.ar')),
-                        ],
+                        'focus_keyword' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.car.focus_keyword')),
                     ],
                     'booking_checkout' => [
-                        'title' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.title.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.title.ar')),
-                        ],
-                        'description' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.description.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.description.ar')),
-                        ],
+                        'title' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.booking_checkout.title')),
+                        'description' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.booking_checkout.description')),
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.robots')),
-                        'focus_keyword' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.focus_keyword.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.focus_keyword.ar')),
-                        ],
+                        'focus_keyword' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.booking_checkout.focus_keyword')),
                     ],
                     'booking_confirmation' => [
-                        'title' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.title.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.title.ar')),
-                        ],
-                        'description' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.description.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.description.ar')),
-                        ],
+                        'title' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.booking_confirmation.title')),
+                        'description' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.booking_confirmation.description')),
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.robots')),
-                        'focus_keyword' => [
-                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.focus_keyword.en')),
-                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.focus_keyword.ar')),
-                        ],
+                        'focus_keyword' => self::normalizeLocalizedMap(data_get($data, 'seo.pages.booking_confirmation.focus_keyword')),
                     ],
                 ],
                 'technical' => [
@@ -1015,6 +879,32 @@ class TenantSiteSetting extends Model
         $integer = (int) $value;
 
         return $integer >= 1 ? min($integer, 100000) : null;
+    }
+
+    /**
+     * @param  list<string>  $locales
+     * @return array<string, null>
+     */
+    private static function localizedNullMap(array $locales): array
+    {
+        return collect($locales)
+            ->mapWithKeys(fn (string $locale) => [$locale => null])
+            ->all();
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    private static function normalizeLocalizedMap(mixed $value): array
+    {
+        $value = is_array($value) ? $value : [];
+        $result = [];
+
+        foreach (self::supportedLocales() as $locale) {
+            $result[$locale] = self::nullableString($value[$locale] ?? null);
+        }
+
+        return $result;
     }
 
     private static function supportedLocales(): array

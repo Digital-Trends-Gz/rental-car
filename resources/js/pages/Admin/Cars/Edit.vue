@@ -31,6 +31,7 @@ interface Car {
     mileage: number | string;
     transmission: string;
     seats: number | string;
+    engine_power?: number | string | null;
     fuel_type: string;
     description: string;
     status: string;
@@ -264,6 +265,7 @@ const form = useForm({
     mileage: safeNum(props.car?.mileage),
     transmission: safeStr(props.car?.transmission, 'automatic'),
     seats: safeNum(props.car?.seats),
+    engine_power: safeNum(props.car?.engine_power),
     fuel_type: safeLower(props.car?.fuel_type, 'gasoline'),
     description: safeStr(props.car?.description),
     status: safeStr(props.car?.status, 'available'),
@@ -850,6 +852,18 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                         <Label for="seats">{{ localize('Seats', 'عدد المقاعد') }}</Label>
                         <Input id="seats" v-model="form.seats" type="number" min="1" max="20" :placeholder="localize('e.g., 5', 'مثال: 5')" />
                         <InputError :message="form.errors.seats" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="engine_power">{{ localize('Engine Power (HP)', 'قدرة المحرك (حصان)') }}</Label>
+                        <Input
+                            id="engine_power"
+                            v-model="form.engine_power"
+                            type="number"
+                            min="0"
+                            :placeholder="localize('e.g., 150', 'مثال: 150')"
+                        />
+                        <InputError :message="form.errors.engine_power" class="mt-1" />
                     </div>
 
                     <div>

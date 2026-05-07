@@ -49,6 +49,7 @@ class TenantSeoResolver
             'og_title' => $title,
             'og_description' => $description,
             'og_image' => self::cleanUrl(data_get($seoSettings, 'defaults.og_image'), $settings['logo_url'] ?? null),
+            'og_image_alt' => self::localized(data_get($seoSettings, 'defaults.og_image_alt')),
             'alternates' => self::alternateUrls($enabledLocales),
             'schemas' => self::pageSchemas($tenant, $settings, $pageKey, $title, $description, $canonicalUrl),
         ];
@@ -69,7 +70,7 @@ class TenantSeoResolver
             $titleSuffix
         );
         $title = $customTitle !== null
-            ? self::composeTitle(str_replace(':car', $carName, $customTitle), $titleSuffix)
+            ? self::composeTitle(self::replaceCarSeoPlaceholders($customTitle, $car), $titleSuffix)
             : $fallbackTitle;
 
         $defaultDescription = self::localized(
@@ -78,7 +79,7 @@ class TenantSeoResolver
         );
         $customDescription = self::localized(data_get($pageSettings, 'description'));
         $description = $customDescription !== null
-            ? str_replace(':car', $carName, $customDescription)
+            ? self::replaceCarSeoPlaceholders($customDescription, $car)
             : $defaultDescription;
 
         $canonicalUrl = self::cleanUrl(
@@ -94,6 +95,7 @@ class TenantSeoResolver
             'og_title' => $title,
             'og_description' => $description,
             'og_image' => self::cleanUrl($car->image_url ?: data_get($seoSettings, 'defaults.og_image'), $settings['logo_url'] ?? null),
+            'og_image_alt' => self::localized(data_get($seoSettings, 'defaults.og_image_alt')),
             'alternates' => self::alternateUrls($enabledLocales),
             'schemas' => self::carSchemas($tenant, $settings, $car, $title, $description, $canonicalUrl),
         ];
@@ -136,6 +138,7 @@ class TenantSeoResolver
             'og_title' => $title,
             'og_description' => $description,
             'og_image' => self::cleanUrl($reservation->car?->image_url ?: data_get($seoSettings, 'defaults.og_image'), $settings['logo_url'] ?? null),
+            'og_image_alt' => self::localized(data_get($seoSettings, 'defaults.og_image_alt')),
             'alternates' => self::alternateUrls($enabledLocales),
             'schemas' => self::reservationSchemas($tenant, $settings, $reservation, $pageKey, $title, $description, $canonicalUrl),
         ];
@@ -319,6 +322,66 @@ class TenantSeoResolver
         }
 
         return trim("Book {$carName} with {$siteName}".($price ? " from {$price} per day." : '.').($fuelType !== '' ? " Fuel type: {$fuelType}." : ''));
+    }
+
+    private static function replaceCarSeoPlaceholders(string $text, Car $car): string
+    {
+        $fuelType = self::enumText($car->fuel_type);
+        $transmission = trim((string) $car->transmission);
+        $transmission = $transmission !== '' ? ucfirst($transmission) : '';
+        $seats = $car->seats !== null ? (string) $car->seats : '';
+        $replaced = strtr($text, [
+            ':car' => self::fallbackPlaceholderValue(self::carName($car), 'car'),
+            ':make' => self::fallbackPlaceholderValue(trim((string) $car->make), 'make'),
+            ':model' => self::fallbackPlaceholderValue(trim((string) $car->model), 'model'),
+            ':year' => self::fallbackPlaceholderValue($car->year !== null ? (string) $car->year : '', 'year'),
+            ':model_year' => self::fallbackPlaceholderValue($car->year !== null ? (string) $car->year : '', 'model_year'),
+            ':transmission' => self::fallbackPlaceholderValue($transmission, 'transmission'),
+            ':seats' => self::fallbackPlaceholderValue($seats, 'seats'),
+            ':fuel_type' => self::fallbackPlaceholderValue($fuelType, 'fuel_type'),
+        ]);
+
+        return self::cleanupSeoText($replaced);
+    }
+
+    private static function fallbackPlaceholderValue(string $value, string $placeholder): string
+    {
+        $value = trim($value);
+        if ($value !== '') {
+            return $value;
+        }
+
+        $defaults = (string) app()->getLocale() === 'ar'
+            ? [
+                'car' => 'سيارة للإيجار',
+                'make' => 'الماركة',
+                'model' => 'الموديل',
+                'year' => 'السنة',
+                'model_year' => 'السنة',
+                'transmission' => 'ناقل الحركة',
+                'seats' => 'المقاعد',
+                'fuel_type' => 'نوع الوقود',
+            ]
+            : [
+                'car' => 'rental car',
+                'make' => 'brand',
+                'model' => 'model',
+                'year' => 'year',
+                'model_year' => 'year',
+                'transmission' => 'transmission',
+                'seats' => 'seats',
+                'fuel_type' => 'fuel type',
+            ];
+
+        return $defaults[$placeholder] ?? $value;
+    }
+
+    private static function cleanupSeoText(string $value): string
+    {
+        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+        $value = preg_replace('/\s+([,.;:!?])/u', '$1', $value) ?? $value;
+
+        return trim($value);
     }
 
     private static function enumText(mixed $value): string

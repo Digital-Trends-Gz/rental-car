@@ -18,6 +18,7 @@ interface PreviewCard {
     path: string;
     robots: string;
     ogImage: string;
+    ogImageAlt: string;
     twitterCardType: string;
     slug: string;
     score: number;
@@ -44,6 +45,7 @@ function copySeoMetaSummary(preview: PreviewCard) {
         `Slug: ${preview.slug}`,
         `Robots: ${preview.robots}`,
         `OG Image: ${preview.ogImage || 'N/A'}`,
+        `OG Image Alt: ${preview.ogImageAlt || 'N/A'}`,
         `Twitter Card: ${preview.twitterCardType}`,
     ].join('\n');
 
@@ -72,10 +74,12 @@ function renderedMetaTags(preview: PreviewCard) {
         `<meta property="og:description" content="${preview.description}">`,
         `<meta property="og:url" content="${preview.path}">`,
         `<meta property="og:image" content="${preview.ogImage || ''}">`,
+        ...(preview.ogImageAlt ? [`<meta property="og:image:alt" content="${preview.ogImageAlt}">`] : []),
         `<meta name="twitter:card" content="${preview.twitterCardType}">`,
         `<meta name="twitter:title" content="${preview.title}">`,
         `<meta name="twitter:description" content="${preview.description}">`,
         `<meta name="twitter:image" content="${preview.ogImage || ''}">`,
+        ...(preview.ogImageAlt ? [`<meta name="twitter:image:alt" content="${preview.ogImageAlt}">`] : []),
     ];
 }
 
@@ -154,7 +158,7 @@ function copyRenderedMetaTags(preview: PreviewCard) {
             <div class="grid gap-4 md:grid-cols-2">
                 <div v-for="preview in previewCards" :key="`${preview.key}-og`" class="overflow-hidden rounded-xl border bg-background">
                     <div class="aspect-[1.91/1] bg-slate-100">
-                        <img v-if="preview.ogImage" :src="preview.ogImage" :alt="preview.label" class="h-full w-full object-contain" />
+                        <img v-if="preview.ogImage" :src="preview.ogImage" :alt="preview.ogImageAlt || preview.label" class="h-full w-full object-contain" />
                     </div>
                     <div class="space-y-1 p-4">
                         <div class="truncate text-xs uppercase tracking-wide text-muted-foreground">{{ preview.path }}</div>
@@ -174,7 +178,7 @@ function copyRenderedMetaTags(preview: PreviewCard) {
             <div class="grid gap-4 md:grid-cols-2">
                 <div v-for="preview in previewCards" :key="`${preview.key}-twitter`" class="overflow-hidden rounded-2xl border bg-background shadow-sm">
                     <div class="aspect-[2/1] bg-slate-100">
-                        <img v-if="preview.ogImage" :src="preview.ogImage" :alt="preview.label" class="h-full w-full object-contain" />
+                        <img v-if="preview.ogImage" :src="preview.ogImage" :alt="preview.ogImageAlt || preview.label" class="h-full w-full object-contain" />
                     </div>
                     <div class="space-y-1 p-4">
                         <div class="text-xs text-muted-foreground">{{ preview.path }}</div>

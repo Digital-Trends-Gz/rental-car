@@ -2,11 +2,7 @@
 import { useTrans } from '@/composables/useTrans';
 import { computed } from 'vue';
 
-interface LocalizedText {
-    en: string | null;
-    ar: string | null;
-}
-
+type LocalizedText = Record<string, string | null>;
 type SeoPageKey = 'home' | 'fleet' | 'about' | 'contact' | 'car' | 'booking_checkout' | 'booking_confirmation';
 
 interface PageData {
@@ -20,6 +16,7 @@ interface PageData {
 
 const props = defineProps<{
     pages: PageData[];
+    selectedLocale: string;
 }>();
 
 const { locale } = useTrans();
@@ -30,10 +27,21 @@ function localizedText(value?: LocalizedText | null): string {
         return '';
     }
 
-    const preferred = locale.value === 'ar' ? value.ar : value.en;
-    const fallback = locale.value === 'ar' ? value.en : value.ar;
+    const preferred = String(value[props.selectedLocale] || '').trim();
+    if (preferred !== '') {
+        return preferred;
+    }
 
-    return String(preferred || fallback || '').trim();
+    for (const fallback of ['en', 'ar']) {
+        const resolved = String(value[fallback] || '').trim();
+        if (resolved !== '') {
+            return resolved;
+        }
+    }
+
+    const firstAvailable = Object.values(value).find((item) => String(item || '').trim() !== '');
+
+    return String(firstAvailable || '').trim();
 }
 
 function normalizeText(value: string): string {
@@ -64,7 +72,7 @@ function analyzeKeywordDensity(text: string): Array<{ word: string; count: numbe
 
     const englishStopWords = ['this', 'that', 'with', 'from', 'your', 'have', 'will', 'into', 'them', 'they', 'then', 'were', 'been', 'than'];
     const arabicStopWords = ['هذا', 'هذه', 'هناك', 'على', 'إلى', 'من', 'في', 'عن', 'عند', 'مع', 'تم', 'كل', 'بعد', 'قبل'];
-    const currentStopWords = locale.value === 'ar' ? arabicStopWords : englishStopWords;
+    const currentStopWords = props.selectedLocale === 'ar' ? arabicStopWords : englishStopWords;
     const filteredWords = words.filter((word) => !currentStopWords.includes(word));
 
     const frequency: Record<string, number> = {};
@@ -108,7 +116,7 @@ function analyzeReadability(text: string): { score: number; level: string; isGoo
         return { score: Math.round(score), level: localize('Difficult', 'صعب'), isGood: false };
     }
 
-    return { score: Math.round(score), level: localize('Very Difficult', 'صعب جداً'), isGood: false };
+    return { score: Math.round(score), level: localize('Very Difficult', 'صعب جدا'), isGood: false };
 }
 
 const pageAnalysis = computed(() => {
@@ -123,7 +131,7 @@ const pageAnalysis = computed(() => {
             {
                 ok: focusKeyword.length > 0,
                 label: localize('Focus keyword is set', 'تم تحديد الكلمة المفتاحية'),
-                failLabel: localize('Set a focus keyword first', 'حدد الكلمة المفتاحية أولاً'),
+                failLabel: localize('Set a focus keyword first', 'حدد الكلمة المفتاحية أولا'),
             },
             {
                 ok: focusKeyword.length === 0 || normalizeText(title).includes(normalizeText(focusKeyword)),
@@ -143,7 +151,7 @@ const pageAnalysis = computed(() => {
             {
                 ok: focusKeyword.length === 0 || (focusDensity >= 0.5 && focusDensity <= 3.5),
                 label: localize('Keyword density is balanced', 'كثافة الكلمة المفتاحية متوازنة'),
-                failLabel: localize('Keyword density is too low or too high', 'كثافة الكلمة المفتاحية منخفضة أو مرتفعة جداً'),
+                failLabel: localize('Keyword density is too low or too high', 'كثافة الكلمة المفتاحية منخفضة أو مرتفعة جدا'),
             },
         ];
 
@@ -168,7 +176,7 @@ const pageAnalysis = computed(() => {
             <div>
                 <h2 class="text-lg font-semibold">{{ localize('Content Analysis', 'تحليل المحتوى') }}</h2>
                 <p class="text-sm text-muted-foreground">
-                    {{ localize('Yoast-style checks for focus keyword placement, density, and readability.', 'فحوصات شبيهة بـ Yoast لموضع الكلمة المفتاحية وكثافتها وسهولة القراءة.') }}
+                    {{ localize('Yoast-style checks for the currently selected SEO language.', 'فحوصات شبيهة بـ Yoast للغة SEO المحددة حاليا.') }}
                 </p>
             </div>
 
@@ -250,7 +258,7 @@ const pageAnalysis = computed(() => {
                             </div>
 
                             <div class="rounded-lg border bg-blue-50 p-3 text-sm text-blue-800">
-                                {{ localize('This analysis is generated live from the current form content. Save your changes when the result looks correct.', 'هذا التحليل يتم إنشاؤه مباشرة من محتوى النموذج الحالي. احفظ التغييرات عندما تصبح النتيجة مناسبة.') }}
+                                {{ localize('This analysis is generated live from the currently selected language content. Save after the result looks correct.', 'هذا التحليل يتم إنشاؤه مباشرة من محتوى اللغة المحددة حاليا. احفظ بعد أن تصبح النتيجة مناسبة.') }}
                             </div>
                         </div>
                     </div>
