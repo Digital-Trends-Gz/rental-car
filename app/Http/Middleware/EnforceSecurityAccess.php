@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Core\SecurityAccessSettings;
+use App\Support\RequestClientContext;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -17,10 +18,11 @@ class EnforceSecurityAccess
         }
 
         $settings = SecurityAccessSettings::load();
-        $ip = $this->resolveClientIp($request);
-        $country = $this->detectCountry($request);
+        $ip = RequestClientContext::resolveIp($request);
+        $publicIp = RequestClientContext::publicIp($request);
+        $country = RequestClientContext::detectCountry($request);
 
-        if ($this->matchesIpList($ip, $settings['website_blocked_ips'])) {
+        if ($publicIp !== '' && $this->matchesIpList($publicIp, $settings['website_blocked_ips'])) {
             return $this->deny($request, 'website_blocked_ip', $ip, $country);
         }
 
@@ -28,11 +30,11 @@ class EnforceSecurityAccess
             return $next($request);
         }
 
-        if ($this->matchesIpList($ip, $settings['superadmin_blocked_ips'])) {
+        if ($publicIp !== '' && $this->matchesIpList($publicIp, $settings['superadmin_blocked_ips'])) {
             return $this->deny($request, 'superadmin_blocked_ip', $ip, $country);
         }
 
-        if (!empty($settings['superadmin_allowed_ips']) && !$this->matchesIpList($ip, $settings['superadmin_allowed_ips'])) {
+        if (!empty($settings['superadmin_allowed_ips']) && ($publicIp === '' || !$this->matchesIpList($publicIp, $settings['superadmin_allowed_ips']))) {
             return $this->deny($request, 'superadmin_ip_not_allowed', $ip, $country);
         }
 
@@ -53,56 +55,6 @@ class EnforceSecurityAccess
         }
 
         return ($segments[0] ?? null) === 'superadmin';
-    }
-
-    private function detectCountry(Request $request): ?string
-    {
-        $candidates = [
-            $request->headers->get('CF-IPCountry'),
-            $request->headers->get('CloudFront-Viewer-Country'),
-            $request->headers->get('X-Country-Code'),
-            $request->headers->get('X-Country'),
-            $request->server('GEOIP_COUNTRY_CODE'),
-        ];
-
-        foreach ($candidates as $value) {
-            $country = strtoupper(trim((string) $value));
-
-            if (preg_match('/^[A-Z]{2}$/', $country)) {
-                return $country;
-            }
-        }
-
-        return null;
-    }
-
-    private function resolveClientIp(Request $request): string
-    {
-        $candidates = [
-            $request->headers->get('CF-Connecting-IP'),
-            $request->headers->get('True-Client-IP'),
-            $request->headers->get('X-Real-IP'),
-        ];
-
-        $forwardedFor = $request->headers->get('X-Forwarded-For');
-        if (is_string($forwardedFor) && trim($forwardedFor) !== '') {
-            $firstForwardedIp = trim(explode(',', $forwardedFor)[0] ?? '');
-            if ($firstForwardedIp !== '') {
-                $candidates[] = $firstForwardedIp;
-            }
-        }
-
-        $candidates[] = (string) ($request->ip() ?? '');
-
-        foreach ($candidates as $candidate) {
-            $ip = trim((string) $candidate);
-
-            if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP)) {
-                return $ip;
-            }
-        }
-
-        return '';
     }
 
     /**
@@ -197,6 +149,8 @@ class EnforceSecurityAccess
             'true_client_ip' => $request->headers->get('True-Client-IP'),
             'x_real_ip' => $request->headers->get('X-Real-IP'),
             'x_forwarded_for' => $request->headers->get('X-Forwarded-For'),
+            'candidate_ips' => RequestClientContext::candidateIps($request),
+            'public_ip' => RequestClientContext::publicIp($request),
             'country' => $country,
             'host' => $request->getHost(),
             'path' => $request->path(),

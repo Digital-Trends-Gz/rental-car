@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Core\SecurityAccessSettings;
 use App\Http\Controllers\Controller;
 use App\Support\CountryOptions;
+use App\Support\RequestClientContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -25,8 +26,8 @@ class SecurityAccessSettingsController extends Controller
             ],
             'countries' => CountryOptions::all(),
             'currentRequest' => [
-                'ip' => $request->ip(),
-                'country' => $this->detectCountry($request),
+                'ip' => RequestClientContext::resolveIp($request),
+                'country' => RequestClientContext::detectCountry($request),
             ],
             'actions' => [
                 'update' => route('superadmin.settings.security-access.update'),
@@ -52,26 +53,5 @@ class SecurityAccessSettingsController extends Controller
         ]);
 
         return back()->with('success', 'Security access settings updated successfully.');
-    }
-
-    private function detectCountry(Request $request): ?string
-    {
-        $candidates = [
-            $request->headers->get('CF-IPCountry'),
-            $request->headers->get('CloudFront-Viewer-Country'),
-            $request->headers->get('X-Country-Code'),
-            $request->headers->get('X-Country'),
-            $request->server('GEOIP_COUNTRY_CODE'),
-        ];
-
-        foreach ($candidates as $value) {
-            $country = strtoupper(trim((string) $value));
-
-            if (preg_match('/^[A-Z]{2}$/', $country)) {
-                return $country;
-            }
-        }
-
-        return null;
     }
 }
