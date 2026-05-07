@@ -191,6 +191,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => null,
                         'robots' => null,
+                        'focus_keyword' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
                     ],
                     'fleet' => [
                         'title' => [
@@ -203,6 +207,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => null,
                         'robots' => null,
+                        'focus_keyword' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
                     ],
                     'about' => [
                         'title' => [
@@ -215,6 +223,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => null,
                         'robots' => null,
+                        'focus_keyword' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
                     ],
                     'contact' => [
                         'title' => [
@@ -227,6 +239,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => null,
                         'robots' => null,
+                        'focus_keyword' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
                     ],
                     'car' => [
                         'title' => [
@@ -239,6 +255,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => null,
                         'robots' => null,
+                        'focus_keyword' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
                     ],
                     'booking_checkout' => [
                         'title' => [
@@ -251,6 +271,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => null,
                         'robots' => null,
+                        'focus_keyword' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
                     ],
                     'booking_confirmation' => [
                         'title' => [
@@ -263,6 +287,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => null,
                         'robots' => null,
+                        'focus_keyword' => [
+                            'en' => null,
+                            'ar' => null,
+                        ],
                     ],
                 ],
                 'technical' => [
@@ -617,6 +645,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.home.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.home.robots')),
+                        'focus_keyword' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.home.focus_keyword.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.home.focus_keyword.ar')),
+                        ],
                     ],
                     'fleet' => [
                         'title' => [
@@ -629,6 +661,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.fleet.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.fleet.robots')),
+                        'focus_keyword' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.fleet.focus_keyword.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.fleet.focus_keyword.ar')),
+                        ],
                     ],
                     'about' => [
                         'title' => [
@@ -641,6 +677,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.about.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.about.robots')),
+                        'focus_keyword' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.about.focus_keyword.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.about.focus_keyword.ar')),
+                        ],
                     ],
                     'contact' => [
                         'title' => [
@@ -653,6 +693,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.contact.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.contact.robots')),
+                        'focus_keyword' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.contact.focus_keyword.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.contact.focus_keyword.ar')),
+                        ],
                     ],
                     'car' => [
                         'title' => [
@@ -665,6 +709,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.car.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.car.robots')),
+                        'focus_keyword' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.car.focus_keyword.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.car.focus_keyword.ar')),
+                        ],
                     ],
                     'booking_checkout' => [
                         'title' => [
@@ -677,6 +725,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.robots')),
+                        'focus_keyword' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.focus_keyword.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_checkout.focus_keyword.ar')),
+                        ],
                     ],
                     'booking_confirmation' => [
                         'title' => [
@@ -689,6 +741,10 @@ class TenantSiteSetting extends Model
                         ],
                         'canonical_url' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.canonical_url')),
                         'robots' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.robots')),
+                        'focus_keyword' => [
+                            'en' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.focus_keyword.en')),
+                            'ar' => self::nullableString(data_get($data, 'seo.pages.booking_confirmation.focus_keyword.ar')),
+                        ],
                     ],
                 ],
                 'technical' => [

@@ -7,6 +7,7 @@ use App\Models\Reservation;
 use App\Models\SiteSetting;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
+use BackedEnum;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
 class TenantSeoResolver
@@ -311,13 +312,38 @@ class TenantSeoResolver
     {
         $carName = self::carName($car);
         $price = is_numeric($car->price_per_day) ? number_format((float) $car->price_per_day, 2) : null;
-        $fuelType = method_exists($car->fuel_type, 'label') ? $car->fuel_type->label() : trim((string) $car->fuel_type);
+        $fuelType = self::enumText($car->fuel_type);
 
         if ((string) app()->getLocale() === 'ar') {
             return trim("احجز {$carName} لدى {$siteName}".($price ? " بسعر يبدأ من {$price} يوميًا." : '.').($fuelType !== '' ? " نوع الوقود: {$fuelType}." : ''));
         }
 
         return trim("Book {$carName} with {$siteName}".($price ? " from {$price} per day." : '.').($fuelType !== '' ? " Fuel type: {$fuelType}." : ''));
+    }
+
+    private static function enumText(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if (method_exists($value, 'label')) {
+            $label = trim((string) $value->label());
+
+            if ($label !== '') {
+                return $label;
+            }
+        }
+
+        if ($value instanceof BackedEnum) {
+            return trim((string) $value->value);
+        }
+
+        if ($value instanceof \UnitEnum) {
+            return trim($value->name);
+        }
+
+        return trim((string) $value);
     }
 
     private static function fallbackReservationTitle(string $pageKey, string $reservationNumber): string
