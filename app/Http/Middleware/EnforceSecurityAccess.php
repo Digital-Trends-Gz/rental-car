@@ -17,7 +17,7 @@ class EnforceSecurityAccess
         }
 
         $settings = SecurityAccessSettings::load();
-        $ip = (string) ($request->ip() ?? '');
+        $ip = $this->resolveClientIp($request);
         $country = $this->detectCountry($request);
 
         if ($this->matchesIpList($ip, $settings['website_blocked_ips'])) {
@@ -74,6 +74,35 @@ class EnforceSecurityAccess
         }
 
         return null;
+    }
+
+    private function resolveClientIp(Request $request): string
+    {
+        $candidates = [
+            $request->headers->get('CF-Connecting-IP'),
+            $request->headers->get('True-Client-IP'),
+            $request->headers->get('X-Real-IP'),
+        ];
+
+        $forwardedFor = $request->headers->get('X-Forwarded-For');
+        if (is_string($forwardedFor) && trim($forwardedFor) !== '') {
+            $firstForwardedIp = trim(explode(',', $forwardedFor)[0] ?? '');
+            if ($firstForwardedIp !== '') {
+                $candidates[] = $firstForwardedIp;
+            }
+        }
+
+        $candidates[] = (string) ($request->ip() ?? '');
+
+        foreach ($candidates as $candidate) {
+            $ip = trim((string) $candidate);
+
+            if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -163,6 +192,11 @@ class EnforceSecurityAccess
         Log::warning('Security access denied.', [
             'reason' => $reason,
             'ip' => $ip,
+            'request_ip' => (string) ($request->ip() ?? ''),
+            'cf_connecting_ip' => $request->headers->get('CF-Connecting-IP'),
+            'true_client_ip' => $request->headers->get('True-Client-IP'),
+            'x_real_ip' => $request->headers->get('X-Real-IP'),
+            'x_forwarded_for' => $request->headers->get('X-Forwarded-For'),
             'country' => $country,
             'host' => $request->getHost(),
             'path' => $request->path(),
