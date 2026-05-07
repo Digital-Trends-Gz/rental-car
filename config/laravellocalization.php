@@ -25,7 +25,7 @@ return [
     'supportedLocales' => $supportedLocales,
 
     'useAcceptLanguageHeader' => false,
-    'hideDefaultLocaleInURL' => false,
+    'hideDefaultLocaleInURL' => true,
     'localesOrder' => array_keys($supportedLocales),
     'localesMapping' => [],
     'utf8suffix' => env('LARAVELLOCALIZATION_UTF8SUFFIX', '.UTF-8'),
