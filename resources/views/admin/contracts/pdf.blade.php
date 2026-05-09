@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ $locale }}" dir="ltr">
+<html lang="{{ $locale }}" dir="{{ $direction }}">
 <head>
     <meta charset="UTF-8" />
     <title>{{ __('contracts.pdf.document_title', ['number' => $contract->contract_number]) }}</title>
@@ -38,6 +38,7 @@
             font-size: 9px;
             line-height: 1.22;
             font-weight: 700;
+            direction: {{ $direction }};
         }
         .page { width: 100%; }
         .contract {
