@@ -32,13 +32,6 @@ function localizedText(value?: LocalizedText | null): string {
         return preferred;
     }
 
-    for (const fallback of ['en', 'ar']) {
-        const resolved = String(value[fallback] || '').trim();
-        if (resolved !== '') {
-            return resolved;
-        }
-    }
-
     const firstAvailable = Object.values(value).find((item) => String(item || '').trim() !== '');
 
     return String(firstAvailable || '').trim();

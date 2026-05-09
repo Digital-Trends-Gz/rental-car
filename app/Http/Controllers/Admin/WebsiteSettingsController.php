@@ -121,6 +121,10 @@ class WebsiteSettingsController extends Controller
             'seo.defaults.default_description.en' => ['nullable', 'string', 'max:500'],
             'seo.defaults.default_description.ar' => ['nullable', 'string', 'max:500'],
             'seo.defaults.og_image' => ['nullable', 'string', 'max:1000'],
+            'seo_og_image_temp_folders' => ['array'],
+            'seo_og_image_temp_folders.*' => ['string'],
+            'seo_og_image_removed_files' => ['array'],
+            'seo_og_image_removed_files.*' => ['integer'],
             'seo.defaults.og_image_alt.en' => ['nullable', 'string', 'max:255'],
             'seo.defaults.og_image_alt.ar' => ['nullable', 'string', 'max:255'],
             'seo.defaults.robots' => ['nullable', 'string', 'max:255'],
@@ -479,6 +483,8 @@ class WebsiteSettingsController extends Controller
             }
         }
 
+        $this->syncSeoOgImageUpload($request, $siteSetting);
+
         return back()->with('success', 'Website settings updated successfully.');
     }
 
@@ -496,6 +502,15 @@ class WebsiteSettingsController extends Controller
                 'seo' => $this->buildSeoPayload($validated),
             ]
         );
+
+        $siteSetting = TenantSiteSetting::query()
+            ->where('tenant_id', $tenant->id)
+            ->with('files')
+            ->first();
+
+        if ($siteSetting) {
+            $this->syncSeoOgImageUpload($request, $siteSetting);
+        }
 
         return back()->with('success', 'SEO settings updated successfully.');
     }
@@ -782,6 +797,10 @@ class WebsiteSettingsController extends Controller
         $supportedLocales = $this->supportedLocaleKeys();
         $rules = [
             'seo.defaults.og_image' => ['nullable', 'string', 'max:1000'],
+            'seo_og_image_temp_folders' => ['array'],
+            'seo_og_image_temp_folders.*' => ['string'],
+            'seo_og_image_removed_files' => ['array'],
+            'seo_og_image_removed_files.*' => ['integer'],
             'seo.defaults.robots' => ['nullable', 'string', 'max:255'],
             'seo.technical.sitemap.pages' => ['nullable', 'array'],
             'seo.technical.sitemap.pages.*.path' => ['nullable', 'string', 'max:500'],
@@ -1009,6 +1028,20 @@ class WebsiteSettingsController extends Controller
                 ->all()
             : [];
 
+        $seoOgImageFiles = $tenant->siteSetting
+            ? $tenant->siteSetting->files()
+                ->where('collection', 'seo_og_image')
+                ->get()
+                ->map(function ($file) {
+                    return [
+                        'id' => $file->id,
+                        'url' => TenantSiteSetting::publicUrlFromPath($file->path),
+                    ];
+                })
+                ->values()
+                ->all()
+            : [];
+
         return [
             'tenant' => [
                 'id' => $tenant->id,
@@ -1018,6 +1051,7 @@ class WebsiteSettingsController extends Controller
             'settings' => TenantSiteSetting::forTenant($tenant),
             'pdfTemplateOptions' => TenantPdfTemplateRegistry::contractTemplateOptions(),
             'logoFiles' => $logoFiles,
+            'seoOgImageFiles' => $seoOgImageFiles,
             'actions' => [
                 'update' => route('admin.settings.website.update'),
                 'website' => route('admin.settings.website.edit'),
@@ -1029,6 +1063,22 @@ class WebsiteSettingsController extends Controller
 
     private function seoPageProps($tenant): array
     {
+        $tenant->loadMissing('siteSetting.files');
+
+        $seoOgImageFiles = $tenant->siteSetting
+            ? $tenant->siteSetting->files()
+                ->where('collection', 'seo_og_image')
+                ->get()
+                ->map(function ($file) {
+                    return [
+                        'id' => $file->id,
+                        'url' => TenantSiteSetting::publicUrlFromPath($file->path),
+                    ];
+                })
+                ->values()
+                ->all()
+            : [];
+
         return [
             'tenant' => [
                 'id' => $tenant->id,
@@ -1036,11 +1086,93 @@ class WebsiteSettingsController extends Controller
                 'slug' => $tenant->slug,
             ],
             'settings' => TenantSiteSetting::forTenant($tenant),
+            'seoOgImageFiles' => $seoOgImageFiles,
             'actions' => [
                 'update' => route('admin.settings.seo.update'),
                 'website' => route('admin.settings.website.edit'),
                 'seo_audit' => route('admin.settings.seo-audit'),
             ],
-        ];
+    ];
+    }
+
+    private function syncSeoOgImageUpload(Request $request, TenantSiteSetting $siteSetting): void
+    {
+        $tempFolders = is_array($request->input('seo_og_image_temp_folders', []))
+            ? array_values(array_filter($request->input('seo_og_image_temp_folders', [])))
+            : [];
+        $removedIds = is_array($request->input('seo_og_image_removed_files', []))
+            ? array_values(array_filter($request->input('seo_og_image_removed_files', [])))
+            : [];
+        $removedFileUrls = [];
+
+        if (!empty($removedIds)) {
+            $removedFileUrls = $siteSetting->files()
+                ->where('collection', 'seo_og_image')
+                ->whereIn('id', $removedIds)
+                ->get()
+                ->map(fn ($file) => TenantSiteSetting::publicUrlFromPath($file->path))
+                ->filter()
+                ->values()
+                ->all();
+        }
+
+        if (!empty($tempFolders)) {
+            $existingIds = $siteSetting->files()->where('collection', 'seo_og_image')->pluck('id')->all();
+            $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+        }
+
+        $this->filePondService->handleFileUpdates(
+            $siteSetting,
+            $tempFolders,
+            $removedIds,
+            'seo_og_image'
+        );
+
+        $this->clearSeoOgImageReferenceIfNeeded($siteSetting, $removedFileUrls, $tempFolders);
+
+        if (empty($tempFolders)) {
+            return;
+        }
+
+        $ogImageFile = $siteSetting->files()
+            ->where('collection', 'seo_og_image')
+            ->latest('id')
+            ->first();
+
+        if (!$ogImageFile || !$ogImageFile->path) {
+            return;
+        }
+
+        $seo = is_array($siteSetting->seo) ? $siteSetting->seo : [];
+        data_set($seo, 'defaults.og_image', TenantSiteSetting::publicUrlFromPath($ogImageFile->path));
+
+        $siteSetting->update(['seo' => $seo]);
+
+        return;
+    }
+
+    private function clearSeoOgImageReferenceIfNeeded(TenantSiteSetting $siteSetting, array $removedFileUrls, array $tempFolders): void
+    {
+        if (!empty($tempFolders) || empty($removedFileUrls)) {
+            return;
+        }
+
+        $remainingFileExists = $siteSetting->files()
+            ->where('collection', 'seo_og_image')
+            ->exists();
+
+        if ($remainingFileExists) {
+            return;
+        }
+
+        $seo = is_array($siteSetting->seo) ? $siteSetting->seo : [];
+        $currentOgImage = trim((string) data_get($seo, 'defaults.og_image', ''));
+
+        if ($currentOgImage === '' || !in_array($currentOgImage, $removedFileUrls, true)) {
+            return;
+        }
+
+        data_set($seo, 'defaults.og_image', null);
+        $siteSetting->update(['seo' => $seo]);
     }
 }

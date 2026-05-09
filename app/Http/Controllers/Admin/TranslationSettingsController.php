@@ -66,6 +66,7 @@ class TranslationSettingsController extends Controller
                 'name' => $tenant->name,
                 'slug' => $tenant->slug,
             ],
+            'default_locale' => data_get($settings, 'default_locale', $supportedLocales[0] ?? 'en'),
             'supported_locales' => array_values(array_map(function (string $code) use ($supportedLocaleMeta): array {
                 $meta = (array) ($supportedLocaleMeta[$code] ?? []);
 
@@ -90,6 +91,7 @@ class TranslationSettingsController extends Controller
         $supportedLocales = $this->supportedLocaleKeys();
 
         $validated = $request->validate([
+            'default_locale' => ['required', 'string', Rule::in($supportedLocales)],
             'enabled_locales' => ['nullable', 'array'],
             'enabled_locales.*' => ['string', Rule::in($supportedLocales)],
             'rows' => ['required', 'array'],
@@ -98,6 +100,11 @@ class TranslationSettingsController extends Controller
         ]);
 
         $enabledLocales = $this->sanitizeEnabledLocales($validated['enabled_locales'] ?? $supportedLocales);
+        $defaultLocale = (string) ($validated['default_locale'] ?? ($enabledLocales[0] ?? $supportedLocales[0] ?? 'en'));
+        if (!in_array($defaultLocale, $enabledLocales, true)) {
+            $defaultLocale = (string) ($enabledLocales[0] ?? $supportedLocales[0] ?? 'en');
+        }
+
         $overridesByLocale = [];
         foreach ($supportedLocales as $locale) {
             $overridesByLocale[$locale] = [];
@@ -122,6 +129,7 @@ class TranslationSettingsController extends Controller
         TenantSiteSetting::updateOrCreate(
             ['tenant_id' => $tenant->id],
             [
+                'default_locale' => $defaultLocale,
                 'enabled_locales' => $enabledLocales,
                 'translations' => $overridesByLocale,
             ]

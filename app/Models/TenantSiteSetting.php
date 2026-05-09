@@ -20,6 +20,7 @@ class TenantSiteSetting extends Model
         'primary_color',
         'secondary_color',
         'tax_percentage',
+        'default_locale',
         'document_extraction_daily_limit',
         'enabled_locales',
         'hero',
@@ -69,6 +70,11 @@ class TenantSiteSetting extends Model
             'primary_color' => '#f97316',
             'secondary_color' => '#ea580c',
             'tax_percentage' => 7.0,
+            'default_locale' => self::normalizeDefaultLocale(
+                (string) config('app.locale', 'en'),
+                $supportedLocales,
+                $supportedLocales[0] ?? 'en'
+            ),
             'document_extraction_daily_limit' => null,
             'enabled_locales' => $supportedLocales,
             'hero' => [
@@ -453,6 +459,11 @@ class TenantSiteSetting extends Model
             'primary_color' => self::normalizeHexColor($data['primary_color'] ?? $defaults['primary_color'], $defaults['primary_color']),
             'secondary_color' => self::normalizeHexColor($data['secondary_color'] ?? $defaults['secondary_color'], $defaults['secondary_color']),
             'tax_percentage' => self::normalizePercentage($data['tax_percentage'] ?? $defaults['tax_percentage'], 7.0),
+            'default_locale' => self::normalizeDefaultLocale(
+                $data['default_locale'] ?? $defaults['default_locale'],
+                self::normalizeEnabledLocales($data['enabled_locales'] ?? $defaults['enabled_locales']),
+                $defaults['default_locale']
+            ),
             'document_extraction_daily_limit' => self::nullablePositiveInteger(
                 $data['document_extraction_daily_limit'] ?? $defaults['document_extraction_daily_limit']
             ),
@@ -851,6 +862,25 @@ class TenantSiteSetting extends Model
         $enabled = array_values(array_unique(array_intersect($supported, array_map('strval', $enabled))));
 
         return empty($enabled) ? $supported : $enabled;
+    }
+
+    private static function normalizeDefaultLocale(mixed $value, array $enabledLocales, ?string $fallback = null): string
+    {
+        $candidate = trim((string) ($value ?? ''));
+        $candidate = str_replace('_', '-', $candidate);
+
+        if ($candidate !== '' && in_array($candidate, $enabledLocales, true)) {
+            return $candidate;
+        }
+
+        $fallback = trim((string) ($fallback ?? ''));
+        $fallback = str_replace('_', '-', $fallback);
+
+        if ($fallback !== '' && in_array($fallback, $enabledLocales, true)) {
+            return $fallback;
+        }
+
+        return (string) ($enabledLocales[0] ?? ($fallback !== '' ? $fallback : 'en'));
     }
 
     private static function normalizeTranslations(mixed $value): array

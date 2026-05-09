@@ -1,5 +1,6 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { useTrans } from '@/composables/useTrans';
+import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -16,10 +17,13 @@ const props = defineProps<{
                 robots: string;
             };
         };
+        seo_og_image_temp_folders: string[];
+        seo_og_image_removed_files: number[];
     };
     errors: Record<string, string>;
     selectedLocale: string;
     selectedLocaleLabel: string;
+    seoOgImageFiles?: Array<{ id: number; url: string }>;
 }>();
 
 const { locale } = useTrans();
@@ -90,6 +94,27 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
             </div>
 
             <div class="space-y-2 md:col-span-2">
+                <Label>{{ localize('Open Graph Image Upload', 'رفع صورة Open Graph') }}</Label>
+                <FileUpload
+                    v-model="form.seo_og_image_temp_folders"
+                    :initial-files="seoOgImageFiles || []"
+                    :allow-multiple="false"
+                    :max-files="1"
+                    collection="seo_og_image"
+                    theme="light"
+                    width="100%"
+                    @file-removed="(data: { type: string; fileId?: number }) => {
+                        if (data.type === 'existing' && data.fileId) {
+                            form.seo_og_image_removed_files = [...new Set([...(form.seo_og_image_removed_files || []), data.fileId])];
+                        }
+                    }"
+                />
+                <p class="text-xs text-muted-foreground">
+                    {{ localize('Upload an image for og:image, or paste a URL below as a fallback.', 'ارفع صورة لـ og:image أو الصق رابطًا أدناه كخيار احتياطي.') }}
+                </p>
+            </div>
+
+            <div class="space-y-2 md:col-span-2">
                 <Label for="seo_og_image">{{ localize('Open Graph Image URL', 'رابط صورة Open Graph') }}</Label>
                 <Input
                     id="seo_og_image"
@@ -121,3 +146,4 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
         </div>
     </section>
 </template>
+

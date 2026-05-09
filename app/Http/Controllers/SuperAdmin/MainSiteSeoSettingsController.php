@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Core\LocalizationSettings;
 use App\Http\Controllers\Controller;
 use App\Models\SiteSetting;
 use App\Models\TenantSiteSetting;
@@ -11,15 +12,41 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use MohamedGaldi\ViltFilepond\Services\FilePondService;
 
 class MainSiteSeoSettingsController extends Controller
 {
     public const KEY = 'main_site_seo';
 
+    public function __construct(
+        private readonly FilePondService $filePondService,
+    ) {}
+
     public function edit(): Response
     {
+        $localizationSettings = LocalizationSettings::load();
+        $siteSetting = SiteSetting::query()
+            ->where('key', self::KEY)
+            ->with('files')
+            ->first();
+
+        $seoOgImageFiles = $siteSetting
+            ? $siteSetting->files()
+                ->where('collection', 'seo_og_image')
+                ->get()
+                ->map(fn ($file) => [
+                    'id' => $file->id,
+                    'url' => SiteSetting::publicUrlFromPath($file->path),
+                ])
+                ->values()
+                ->all()
+            : [];
+
         return Inertia::render('SuperAdmin/Settings/SeoSettings', [
             'settings' => $this->seoSettings(),
+            'locales' => $localizationSettings['locales'],
+            'defaultLocale' => $localizationSettings['default_locale'],
+            'seoOgImageFiles' => $seoOgImageFiles,
             'actions' => [
                 'update' => route('superadmin.settings.seo.update'),
             ],
@@ -31,10 +58,19 @@ class MainSiteSeoSettingsController extends Controller
         $validated = $request->validate($this->validationRules());
         $this->validateRedirectRules($validated);
 
-        SiteSetting::query()->updateOrCreate(
+        $siteSetting = SiteSetting::query()->updateOrCreate(
             ['key' => self::KEY],
-            ['value' => $this->buildSeoPayload($validated)]
+            ['value' => $this->buildSeoPayload($validated, $this->seoSettings())]
         );
+
+        $siteSetting = SiteSetting::query()
+            ->where('key', self::KEY)
+            ->with('files')
+            ->first();
+
+        if ($siteSetting) {
+            $this->syncSeoOgImageUpload($request, $siteSetting);
+        }
 
         return back()->with('success', 'Main site SEO settings updated successfully.');
     }
@@ -53,41 +89,19 @@ class MainSiteSeoSettingsController extends Controller
 
     private function validationRules(): array
     {
-        return [
-            'seo.defaults.title_suffix.en' => ['nullable', 'string', 'max:255'],
-            'seo.defaults.title_suffix.ar' => ['nullable', 'string', 'max:255'],
-            'seo.defaults.default_description.en' => ['nullable', 'string', 'max:500'],
-            'seo.defaults.default_description.ar' => ['nullable', 'string', 'max:500'],
-            'seo.defaults.og_image' => ['nullable', 'string', 'max:1000'],
-            'seo.defaults.robots' => ['nullable', 'string', 'max:255'],
+        $supportedLocales = $this->supportedLocaleKeys();
 
-            'seo.pages.home.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.home.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.home.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.home.description.ar' => ['nullable', 'string', 'max:500'],
+        $rules = [
+            'seo.defaults.og_image' => ['nullable', 'string', 'max:1000'],
+            'seo_og_image_temp_folders' => ['array'],
+            'seo_og_image_temp_folders.*' => ['string'],
+            'seo_og_image_removed_files' => ['array'],
+            'seo_og_image_removed_files.*' => ['integer'],
+            'seo.defaults.robots' => ['nullable', 'string', 'max:255'],
             'seo.pages.home.canonical_url' => ['nullable', 'string', 'max:1000'],
             'seo.pages.home.robots' => ['nullable', 'string', 'max:255'],
-
-            'seo.pages.fleet.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.fleet.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.fleet.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.fleet.description.ar' => ['nullable', 'string', 'max:500'],
             'seo.pages.fleet.canonical_url' => ['nullable', 'string', 'max:1000'],
             'seo.pages.fleet.robots' => ['nullable', 'string', 'max:255'],
-
-            'seo.pages.about.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.about.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.about.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.about.description.ar' => ['nullable', 'string', 'max:500'],
-            'seo.pages.about.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.about.robots' => ['nullable', 'string', 'max:255'],
-
-            'seo.pages.contact.title.en' => ['nullable', 'string', 'max:255'],
-            'seo.pages.contact.title.ar' => ['nullable', 'string', 'max:255'],
-            'seo.pages.contact.description.en' => ['nullable', 'string', 'max:500'],
-            'seo.pages.contact.description.ar' => ['nullable', 'string', 'max:500'],
-            'seo.pages.contact.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.contact.robots' => ['nullable', 'string', 'max:255'],
             'seo.technical.sitemap.pages' => ['nullable', 'array'],
             'seo.technical.sitemap.pages.*.path' => ['nullable', 'string', 'max:500'],
             'seo.technical.sitemap.pages.*.priority' => ['nullable', 'numeric', 'min:0.1', 'max:1.0'],
@@ -107,35 +121,43 @@ class MainSiteSeoSettingsController extends Controller
             'seo.technical.redirects.items.*.isPermanent' => ['nullable', 'boolean'],
             'seo.technical.redirects.items.*.isActive' => ['nullable', 'boolean'],
         ];
+
+        foreach ($supportedLocales as $locale) {
+            $rules["seo.defaults.title_suffix.{$locale}"] = ['nullable', 'string', 'max:255'];
+            $rules["seo.defaults.default_description.{$locale}"] = ['nullable', 'string', 'max:500'];
+            $rules["seo.defaults.og_image_alt.{$locale}"] = ['nullable', 'string', 'max:255'];
+        }
+
+        foreach ($this->seoPageKeys() as $pageKey) {
+            foreach ($supportedLocales as $locale) {
+                $rules["seo.pages.{$pageKey}.title.{$locale}"] = ['nullable', 'string', 'max:255'];
+                $rules["seo.pages.{$pageKey}.description.{$locale}"] = ['nullable', 'string', 'max:500'];
+                $rules["seo.pages.{$pageKey}.focus_keyword.{$locale}"] = ['nullable', 'string', 'max:255'];
+            }
+        }
+
+        return $rules;
     }
 
-    private function buildSeoPayload(array $validated): array
+    private function buildSeoPayload(array $validated, array $existing = []): array
     {
+        $supportedLocales = $this->supportedLocaleKeys();
+
         return [
             'defaults' => [
-                'title_suffix' => [
-                    'en' => $this->nullableString(data_get($validated, 'seo.defaults.title_suffix.en')),
-                    'ar' => $this->nullableString(data_get($validated, 'seo.defaults.title_suffix.ar')),
-                ],
-                'default_description' => [
-                    'en' => $this->nullableString(data_get($validated, 'seo.defaults.default_description.en')),
-                    'ar' => $this->nullableString(data_get($validated, 'seo.defaults.default_description.ar')),
-                ],
+                'title_suffix' => $this->localizedPayload($validated, 'seo.defaults.title_suffix', $supportedLocales, $existing, 'defaults.title_suffix'),
+                'default_description' => $this->localizedPayload($validated, 'seo.defaults.default_description', $supportedLocales, $existing, 'defaults.default_description'),
                 'og_image' => $this->nullableString(data_get($validated, 'seo.defaults.og_image')),
+                'og_image_alt' => $this->localizedPayload($validated, 'seo.defaults.og_image_alt', $supportedLocales, $existing, 'defaults.og_image_alt'),
                 'robots' => $this->nullableString(data_get($validated, 'seo.defaults.robots')) ?: 'index,follow',
             ],
             'pages' => [
-                'home' => $this->pagePayload($validated, 'home'),
-                'fleet' => $this->pagePayload($validated, 'fleet'),
-                'about' => $this->pagePayload($validated, 'about'),
-                'contact' => $this->pagePayload($validated, 'contact'),
-                'car' => $this->pagePayload($validated, 'car'),
-                'booking_checkout' => $this->pagePayload($validated, 'booking_checkout'),
-                'booking_confirmation' => $this->pagePayload($validated, 'booking_confirmation'),
+                'home' => $this->pagePayload($validated, 'home', $supportedLocales, $existing),
+                'fleet' => $this->pagePayload($validated, 'fleet', $supportedLocales, $existing),
             ],
             'technical' => [
                 'sitemap' => [
-                    'pages' => collect((array) data_get($validated, 'seo.technical.sitemap.pages', []))
+                    'pages' => collect((array) data_get($validated, 'seo.technical.sitemap.pages', data_get($existing, 'technical.sitemap.pages', [])))
                         ->map(function ($page) {
                             $path = $this->nullableString(data_get($page, 'path'));
                             if ($path === null) {
@@ -155,15 +177,15 @@ class MainSiteSeoSettingsController extends Controller
                 ],
                 'robots' => [
                     'allowAll' => (bool) data_get($validated, 'seo.technical.robots.allowAll', true),
-                    'disallowPaths' => collect((array) data_get($validated, 'seo.technical.robots.disallowPaths', []))
+                    'disallowPaths' => collect((array) data_get($validated, 'seo.technical.robots.disallowPaths', data_get($existing, 'technical.robots.disallowPaths', [])))
                         ->map(fn ($path) => $this->nullableString($path))
                         ->filter()->values()->all(),
-                    'crawlDelay' => (int) data_get($validated, 'seo.technical.robots.crawlDelay', 1),
-                    'requestRate' => (int) data_get($validated, 'seo.technical.robots.requestRate', 30),
-                    'sitemapUrl' => (string) (data_get($validated, 'seo.technical.robots.sitemapUrl') ?: '/sitemap.xml'),
+                    'crawlDelay' => (int) data_get($validated, 'seo.technical.robots.crawlDelay', data_get($existing, 'technical.robots.crawlDelay', 1)),
+                    'requestRate' => (int) data_get($validated, 'seo.technical.robots.requestRate', data_get($existing, 'technical.robots.requestRate', 30)),
+                    'sitemapUrl' => (string) (data_get($validated, 'seo.technical.robots.sitemapUrl') ?: data_get($existing, 'technical.robots.sitemapUrl', '/sitemap.xml')),
                 ],
                 'redirects' => [
-                    'items' => collect((array) data_get($validated, 'seo.technical.redirects.items', []))
+                    'items' => collect((array) data_get($validated, 'seo.technical.redirects.items', data_get($existing, 'technical.redirects.items', [])))
                         ->map(function ($item) {
                             $fromPath = $this->nullableString(data_get($item, 'fromPath'));
                             $toPath = $this->nullableString(data_get($item, 'toPath'));
@@ -187,20 +209,131 @@ class MainSiteSeoSettingsController extends Controller
         ];
     }
 
-    private function pagePayload(array $validated, string $key): array
+    /**
+     * @return list<string>
+     */
+    private function supportedLocaleKeys(): array
+    {
+        $settings = LocalizationSettings::load();
+
+        return LocalizationSettings::localeCodes($settings);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function seoPageKeys(): array
+    {
+        return ['home', 'fleet'];
+    }
+
+    /**
+     * @param  list<string>  $supportedLocales
+     */
+    private function pagePayload(array $validated, string $key, array $supportedLocales, array $existing = []): array
     {
         return [
-            'title' => [
-                'en' => $this->nullableString(data_get($validated, "seo.pages.{$key}.title.en")),
-                'ar' => $this->nullableString(data_get($validated, "seo.pages.{$key}.title.ar")),
-            ],
-            'description' => [
-                'en' => $this->nullableString(data_get($validated, "seo.pages.{$key}.description.en")),
-                'ar' => $this->nullableString(data_get($validated, "seo.pages.{$key}.description.ar")),
-            ],
+            'title' => $this->localizedPayload($validated, "seo.pages.{$key}.title", $supportedLocales, $existing, "pages.{$key}.title"),
+            'description' => $this->localizedPayload($validated, "seo.pages.{$key}.description", $supportedLocales, $existing, "pages.{$key}.description"),
+            'focus_keyword' => $this->localizedPayload($validated, "seo.pages.{$key}.focus_keyword", $supportedLocales, $existing, "pages.{$key}.focus_keyword"),
             'canonical_url' => $this->nullableString(data_get($validated, "seo.pages.{$key}.canonical_url")),
             'robots' => $this->nullableString(data_get($validated, "seo.pages.{$key}.robots")),
         ];
+    }
+
+    /**
+     * @param  list<string>  $supportedLocales
+     * @return array<string, string|null>
+     */
+    private function localizedPayload(array $validated, string $prefix, array $supportedLocales, array $existing = [], ?string $existingPrefix = null): array
+    {
+        $values = [];
+
+        foreach ($supportedLocales as $locale) {
+            $existingValue = $existingPrefix !== null ? data_get($existing, "{$existingPrefix}.{$locale}") : null;
+            $values[$locale] = $this->nullableString(data_get($validated, "{$prefix}.{$locale}", $existingValue));
+        }
+
+        return $values;
+    }
+
+    private function syncSeoOgImageUpload(Request $request, SiteSetting $siteSetting): void
+    {
+        $tempFolders = is_array($request->input('seo_og_image_temp_folders', []))
+            ? array_values(array_filter($request->input('seo_og_image_temp_folders', [])))
+            : [];
+        $removedIds = is_array($request->input('seo_og_image_removed_files', []))
+            ? array_values(array_filter($request->input('seo_og_image_removed_files', [])))
+            : [];
+        $removedFileUrls = [];
+
+        if (!empty($removedIds)) {
+            $removedFileUrls = $siteSetting->files()
+                ->where('collection', 'seo_og_image')
+                ->whereIn('id', $removedIds)
+                ->get()
+                ->map(fn ($file) => SiteSetting::publicUrlFromPath($file->path))
+                ->filter()
+                ->values()
+                ->all();
+        }
+
+        if (!empty($tempFolders)) {
+            $existingIds = $siteSetting->files()->where('collection', 'seo_og_image')->pluck('id')->all();
+            $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+        }
+
+        $this->filePondService->handleFileUpdates(
+            $siteSetting,
+            $tempFolders,
+            $removedIds,
+            'seo_og_image'
+        );
+
+        $this->clearSeoOgImageReferenceIfNeeded($siteSetting, $removedFileUrls, $tempFolders);
+
+        if (empty($tempFolders)) {
+            return;
+        }
+
+        $ogImageFile = $siteSetting->files()
+            ->where('collection', 'seo_og_image')
+            ->latest('id')
+            ->first();
+
+        if (!$ogImageFile || !$ogImageFile->path) {
+            return;
+        }
+
+        $seo = is_array($siteSetting->value) ? $siteSetting->value : [];
+        data_set($seo, 'defaults.og_image', SiteSetting::publicUrlFromPath($ogImageFile->path));
+
+        $siteSetting->update(['value' => $seo]);
+    }
+
+    private function clearSeoOgImageReferenceIfNeeded(SiteSetting $siteSetting, array $removedFileUrls, array $tempFolders): void
+    {
+        if (!empty($tempFolders) || empty($removedFileUrls)) {
+            return;
+        }
+
+        $remainingFileExists = $siteSetting->files()
+            ->where('collection', 'seo_og_image')
+            ->exists();
+
+        if ($remainingFileExists) {
+            return;
+        }
+
+        $seo = is_array($siteSetting->value) ? $siteSetting->value : [];
+        $currentOgImage = trim((string) data_get($seo, 'defaults.og_image', ''));
+
+        if ($currentOgImage === '' || !in_array($currentOgImage, $removedFileUrls, true)) {
+            return;
+        }
+
+        data_set($seo, 'defaults.og_image', null);
+        $siteSetting->update(['value' => $seo]);
     }
 
     private function validateRedirectRules(array $validated): void

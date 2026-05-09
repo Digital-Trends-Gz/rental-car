@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useTrans } from '@/composables/useTrans';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 type LocaleMeta = {
     code: string;
@@ -25,6 +25,7 @@ const props = defineProps<{
         name: string;
         slug: string;
     };
+    default_locale?: string;
     supported_locales: LocaleMeta[];
     enabled_locales: string[];
     rows: TranslationRow[];
@@ -49,6 +50,7 @@ const localeMetaByCode = computed(() =>
 );
 
 const form = useForm({
+    default_locale: props.default_locale || props.enabled_locales[0] || localeCodes.value[0] || 'en',
     enabled_locales: Array.isArray(props.enabled_locales) && props.enabled_locales.length
         ? [...props.enabled_locales]
         : [...localeCodes.value],
@@ -61,6 +63,25 @@ const form = useForm({
 if (!focusedLocale.value) {
     focusedLocale.value = localeCodes.value[0] || 'en';
 }
+
+const enabledLocaleOptions = computed(() =>
+    localeCodes.value.filter((localeCode) => form.enabled_locales.includes(localeCode)),
+);
+
+watch(
+    () => form.enabled_locales.slice(),
+    (enabledLocales) => {
+        const normalized = enabledLocales.filter((localeCode, index, array) => localeCode !== '' && array.indexOf(localeCode) === index);
+        if (normalized.length === 0) {
+            return;
+        }
+
+        if (!normalized.includes(form.default_locale)) {
+            form.default_locale = normalized[0] || localeCodes.value[0] || 'en';
+        }
+    },
+    { immediate: true },
+);
 
 const rowsWithDefaults = computed(() =>
     props.rows.map((row, index) => ({
@@ -146,6 +167,10 @@ function submit() {
         form.enabled_locales = [localeCodes.value[0] || 'en'];
     }
 
+    if (!form.enabled_locales.includes(form.default_locale)) {
+        form.default_locale = form.enabled_locales[0] || localeCodes.value[0] || 'en';
+    }
+
     form.put(props.actions.update, {
         preserveScroll: true,
     });
@@ -179,6 +204,35 @@ function submit() {
                     <li v-for="(message, idx) in formErrorList" :key="idx">{{ message }}</li>
                 </ul>
             </div>
+
+            <section class="rounded-lg border p-5 space-y-4">
+                <div>
+                    <h2 class="text-lg font-semibold">{{ localize('Default Language', 'اللغة الافتراضية', 'طے شدہ زبان') }}</h2>
+                    <p class="text-sm text-muted-foreground">
+                        {{ localize('Visitors will see this language first when opening the tenant website.', 'سیرى الزوار هذه اللغة أولاً عند فتح موقع المستأجر.', 'صارفین ویب سائٹ کھولتے وقت یہ زبان پہلے دیکھیں گے.') }}
+                    </p>
+                </div>
+                <div class="space-y-2">
+                    <Label for="default_locale">Default website language</Label>
+                    <select
+                        id="default_locale"
+                        v-model="form.default_locale"
+                        class="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                    >
+                        <option
+                            v-for="locale in (enabledLocaleOptions.length ? enabledLocaleOptions : localeCodes)"
+                            :key="`default-${locale}`"
+                            :value="locale"
+                        >
+                            {{ localeMetaByCode[locale]?.native || localeMetaByCode[locale]?.name || locale.toUpperCase() }}
+                            ({{ locale.toUpperCase() }})
+                        </option>
+                    </select>
+                    <p v-if="form.errors.default_locale" class="text-sm text-red-600">
+                        {{ form.errors.default_locale }}
+                    </p>
+                </div>
+            </section>
 
             <section class="rounded-lg border p-5 space-y-4">
                 <div>

@@ -4,9 +4,11 @@ namespace App\Http\Middleware;
 
 use App\Core\TenantContext;
 use App\Models\Tenant;
+use App\Models\TenantSiteSetting;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
+use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use Symfony\Component\HttpFoundation\Response;
 
 class IdentifyTenant
@@ -38,6 +40,13 @@ class IdentifyTenant
             if ($tenant) {
                 TenantContext::set($tenant);
                 URL::defaults(['subdomain' => $tenant->slug]);
+
+                $tenantSettings = TenantSiteSetting::forTenant($tenant);
+                $defaultLocale = (string) data_get($tenantSettings, 'default_locale', config('app.locale', 'en'));
+
+                config(['app.locale' => $defaultLocale]);
+                app()->setLocale($defaultLocale);
+                LaravelLocalization::setLocale($defaultLocale);
                 
                 // CRITICAL: Forget the subdomain parameter so it's not passed to controllers
                 if ($request->route()) {
@@ -62,6 +71,13 @@ class IdentifyTenant
         if ($tenant) {
             TenantContext::set($tenant);
             URL::defaults(['subdomain' => $tenant->slug]);
+
+            $tenantSettings = TenantSiteSetting::forTenant($tenant);
+            $defaultLocale = (string) data_get($tenantSettings, 'default_locale', config('app.locale', 'en'));
+
+            config(['app.locale' => $defaultLocale]);
+            app()->setLocale($defaultLocale);
+            LaravelLocalization::setLocale($defaultLocale);
 
             return $next($request);
         }

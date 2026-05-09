@@ -90,8 +90,9 @@ const props = defineProps<{
                     }>;
                 };
             };
+            };
         };
-    };
+    seoOgImageFiles?: Array<{ id: number; url: string }>;
     actions: {
         update: string;
         website: string;
@@ -157,6 +158,8 @@ function createPageFormState(pageSettings?: SeoPageSettings): SeoPageSettings {
 }
 
 const form = useForm({
+    seo_og_image_temp_folders: [] as string[],
+    seo_og_image_removed_files: [] as number[],
     seo: {
         defaults: {
             title_suffix: createLocalizedState(props.settings.seo?.defaults?.title_suffix),
@@ -749,6 +752,7 @@ function submit() {
                                 :errors="form.errors"
                                 :selected-locale="selectedSeoLocale"
                                 :selected-locale-label="selectedSeoLocaleLabel"
+                                :seo-og-image-files="seoOgImageFiles"
                             />
                         </div>
 
