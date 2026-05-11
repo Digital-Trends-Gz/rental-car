@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laratrust\Contracts\LaratrustUser;
 use Laratrust\Traits\HasRolesAndPermissions;
@@ -18,7 +19,7 @@ use Laratrust\Traits\HasRolesAndPermissions;
 class User extends Authenticatable implements LaratrustUser, MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, BelongsToTenant, HasRolesAndPermissions;
+    use HasApiTokens, HasFactory, Notifiable, TwoFactorAuthenticatable, BelongsToTenant, HasRolesAndPermissions;
 
     /**
      * The attributes that are mass assignable.

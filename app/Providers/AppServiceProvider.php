@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Sanctum\Sanctum;
 use Throwable;
 
 class AppServiceProvider extends ServiceProvider
@@ -53,6 +54,8 @@ class AppServiceProvider extends ServiceProvider
                 $config['model'] ?? \App\Models\User::class
             );
         });
+
+        Sanctum::usePersonalAccessTokenModel(\App\Models\PersonalAccessToken::class);
     }
 
     private function applyStripeSettingsFromDatabase(): void
