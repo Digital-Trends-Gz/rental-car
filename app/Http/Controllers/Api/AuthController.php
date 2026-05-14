@@ -27,6 +27,8 @@ class AuthController extends Controller
     private const OTP_EXPIRY_MINUTES = 15;
     private const OTP_VERIFIED_EXPIRY_MINUTES = 10;
     private const OTP_MAX_ATTEMPTS = 5;
+    private const OTP_VERIFY_MAX_FAILURES = 3;
+    private const OTP_VERIFY_BLOCK_MINUTES = 2;
     private const TOKEN_EXPIRY_DAYS = 30;
 
     public function login(LoginRequest $request): JsonResponse
@@ -86,13 +88,35 @@ class AuthController extends Controller
             ], 422);
         }
 
+        if ($this->isOtpVerificationBlocked($email)) {
+            return response()->json([
+                'message' => 'OTP verification is blocked for 2 minutes. Please try again later.',
+                'verified' => false,
+                'blocked' => true,
+            ], 429);
+        }
+
         if (!$this->isValidPasswordResetOtp($email, $code)) {
+            $attempts = $this->incrementOtpVerificationFailures($email);
+
+            if ($attempts >= self::OTP_VERIFY_MAX_FAILURES) {
+                $this->blockOtpVerification($email);
+
+                return response()->json([
+                    'message' => 'OTP verification is blocked for 2 minutes. Please try again later.',
+                    'verified' => false,
+                    'blocked' => true,
+                ], 429);
+            }
+
             return response()->json([
                 'message' => 'no same or not match',
                 'verified' => false,
+                'attempts_left' => max(0, self::OTP_VERIFY_MAX_FAILURES - $attempts),
             ], 422);
         }
 
+        $this->clearOtpVerificationState($email);
         Cache::put(
             $this->otpVerifiedCacheKey($email),
             true,
@@ -173,6 +197,7 @@ class AuthController extends Controller
                 ],
                 now()->addMinutes(self::OTP_EXPIRY_MINUTES)
             );
+            $this->clearOtpVerificationState($email);
             Cache::forget($this->otpVerifiedCacheKey($email));
 
             Notification::send($user, new ApiPasswordResetNotification($token, $otp));
@@ -324,6 +349,43 @@ class AuthController extends Controller
     private function otpVerifiedCacheKey(string $email): string
     {
         return 'api-password-reset-otp-verified:'.sha1(mb_strtolower(trim($email)));
+    }
+
+    private function otpVerificationFailuresKey(string $email): string
+    {
+        return 'api-password-reset-otp-verify-failures:'.sha1(mb_strtolower(trim($email)));
+    }
+
+    private function otpVerificationBlockedKey(string $email): string
+    {
+        return 'api-password-reset-otp-verify-blocked:'.sha1(mb_strtolower(trim($email)));
+    }
+
+    private function incrementOtpVerificationFailures(string $email): int
+    {
+        $key = $this->otpVerificationFailuresKey($email);
+        $attempts = (int) Cache::get($key, 0) + 1;
+
+        Cache::put($key, $attempts, now()->addMinutes(self::OTP_VERIFY_BLOCK_MINUTES));
+
+        return $attempts;
+    }
+
+    private function isOtpVerificationBlocked(string $email): bool
+    {
+        return Cache::has($this->otpVerificationBlockedKey($email));
+    }
+
+    private function blockOtpVerification(string $email): void
+    {
+        Cache::put($this->otpVerificationBlockedKey($email), true, now()->addMinutes(self::OTP_VERIFY_BLOCK_MINUTES));
+        Cache::forget($this->otpVerificationFailuresKey($email));
+    }
+
+    private function clearOtpVerificationState(string $email): void
+    {
+        Cache::forget($this->otpVerificationFailuresKey($email));
+        Cache::forget($this->otpVerificationBlockedKey($email));
     }
 
     private function isValidPasswordResetOtp(string $email, string $otp): bool

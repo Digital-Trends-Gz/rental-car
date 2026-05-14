@@ -23,7 +23,8 @@ class DashboardController extends Controller
 {
     public function __construct(
         private readonly BranchAccess $branchAccess
-    ) {}
+    ) {
+    }
 
     public function summary(Request $request): JsonResponse
     {
@@ -31,6 +32,7 @@ class DashboardController extends Controller
         abort_unless($user, 401);
         abort_unless(in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::ADMIN], true), 403);
 
+        $locale = $this->resolveLocale($request);
         $today = Carbon::today();
         $branchId = $this->resolveBranchId($request, $user);
 
@@ -90,6 +92,7 @@ class DashboardController extends Controller
         $cards = [
             $this->reservationCard(
                 key: 'today_pickups',
+                locale: $locale,
                 titleEn: 'Today Pickup',
                 titleAr: 'استلام اليوم',
                 accent: '#2563EB',
@@ -100,6 +103,7 @@ class DashboardController extends Controller
             ),
             $this->contractCard(
                 key: 'today_returns',
+                locale: $locale,
                 titleEn: 'Today Return',
                 titleAr: 'تسليم اليوم',
                 accent: '#16A34A',
@@ -110,16 +114,18 @@ class DashboardController extends Controller
             ),
             $this->carCard(
                 key: 'needs_cleaning',
+                locale: $locale,
                 titleEn: 'Needs Cleaning',
                 titleAr: 'تحتاج تنظيف',
                 accent: '#F59E0B',
                 count: (clone $cleaningCarsQuery)->count(),
                 items: $cleaningCarsQuery->limit(10)->get()->map(fn (Car $car) => $this->carItem($car))->values()->all(),
                 descriptionEn: 'Cars currently marked for cleaning',
-                descriptionAr: 'السيارات المصنفة حالياً كتنظيف',
+                descriptionAr: 'السيارات المصنفة حاليًا كتنظيف',
             ),
             $this->contractCard(
                 key: 'overdue',
+                locale: $locale,
                 titleEn: 'Overdue',
                 titleAr: 'متأخرة',
                 accent: '#EF4444',
@@ -139,6 +145,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'date' => $today->toDateString(),
+            'locale' => $locale,
             'branch_id' => $branchId,
             'stats' => [
                 'total_cars' => (clone $carsQuery)->count(),
@@ -154,68 +161,90 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function resolveBranchId(Request $request, User $user): ?int
+    private function resolveLocale(Request $request): string
     {
-        $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
+        $supportedLocales = array_values(array_filter((array) config('app.available_locales', ['en']), static fn ($locale) => is_string($locale) && $locale !== ''));
+        $fallback = (string) config('app.fallback_locale', config('app.locale', 'en'));
+        $preferred = $request->getPreferredLanguage($supportedLocales);
 
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            return $requestedBranchId;
+        if (is_string($preferred) && $preferred !== '') {
+            return $preferred;
         }
 
-        return (int) ($user->branch_id ?? 0) > 0 ? (int) $user->branch_id : null;
+        return in_array($fallback, $supportedLocales, true) ? $fallback : ($supportedLocales[0] ?? 'en');
     }
 
-    private function reservationCard(string $key, string $titleEn, string $titleAr, string $accent, int $count, array $items, string $descriptionEn, string $descriptionAr): array
+    private function localizedText(string $locale, array $translations, string $fallbackKey): string
+    {
+        $selected = trim((string) ($translations[$locale] ?? ''));
+        if ($selected !== '') {
+            return $selected;
+        }
+
+        $english = trim((string) ($translations['en'] ?? ''));
+        if ($english !== '') {
+            return $english;
+        }
+
+        $arabic = trim((string) ($translations['ar'] ?? ''));
+        if ($arabic !== '') {
+            return $arabic;
+        }
+
+        return ucfirst(str_replace('_', ' ', $fallbackKey));
+    }
+
+    private function reservationCard(string $key, string $locale, string $titleEn, string $titleAr, string $accent, int $count, array $items, string $descriptionEn, string $descriptionAr): array
     {
         return [
             'key' => $key,
             'type' => 'reservation',
-            'title' => [
+            'title' => $this->localizedText($locale, [
                 'en' => $titleEn,
                 'ar' => $titleAr,
-            ],
-            'description' => [
+            ], $key),
+            'description' => $this->localizedText($locale, [
                 'en' => $descriptionEn,
                 'ar' => $descriptionAr,
-            ],
+            ], $key),
             'accent' => $accent,
             'count' => $count,
             'items' => $items,
         ];
     }
 
-    private function contractCard(string $key, string $titleEn, string $titleAr, string $accent, int $count, array $items, string $descriptionEn, string $descriptionAr): array
+    private function contractCard(string $key, string $locale, string $titleEn, string $titleAr, string $accent, int $count, array $items, string $descriptionEn, string $descriptionAr): array
     {
         return [
             'key' => $key,
             'type' => 'contract',
-            'title' => [
+            'title' => $this->localizedText($locale, [
                 'en' => $titleEn,
                 'ar' => $titleAr,
-            ],
-            'description' => [
+            ], $key),
+            'description' => $this->localizedText($locale, [
                 'en' => $descriptionEn,
                 'ar' => $descriptionAr,
-            ],
+            ], $key),
             'accent' => $accent,
             'count' => $count,
             'items' => $items,
         ];
     }
 
-    private function carCard(string $key, string $titleEn, string $titleAr, string $accent, int $count, array $items, string $descriptionEn, string $descriptionAr): array
+    private function carCard(string $key, string $locale, string $titleEn, string $titleAr, string $accent, int $count, array $items, string $descriptionEn, string $descriptionAr): array
     {
         return [
             'key' => $key,
             'type' => 'car',
-            'title' => [
+            'title' => $this->localizedText($locale, [
                 'en' => $titleEn,
                 'ar' => $titleAr,
-            ],
-            'description' => [
+            ], $key),
+            'description' => $this->localizedText($locale, [
                 'en' => $descriptionEn,
                 'ar' => $descriptionAr,
-            ],
+            ], $key),
             'accent' => $accent,
             'count' => $count,
             'items' => $items,
@@ -284,6 +313,17 @@ class DashboardController extends Controller
             'status' => $car->status instanceof CarStatus ? $car->status->value : (string) $car->status,
             'status_label' => $car->status instanceof CarStatus ? $car->status->label() : (string) $car->status,
         ];
+    }
+
+    private function resolveBranchId(Request $request, User $user): ?int
+    {
+        $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
+
+        if ($this->branchAccess->canAccessAllBranches($user)) {
+            return $requestedBranchId;
+        }
+
+        return (int) ($user->branch_id ?? 0) > 0 ? (int) $user->branch_id : null;
     }
 
     private function applyCarBranchScope($query, ?User $user, ?int $branchId): void

@@ -52,7 +52,7 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('api-otp-verify', function (Request $request) {
             $key = mb_strtolower(trim((string) $request->input('email'))).'|'.$request->ip();
 
-            return Limit::perMinute(10)->by($key);
+            return Limit::perMinutes(2, 3)->by($key);
         });
     }
 }
