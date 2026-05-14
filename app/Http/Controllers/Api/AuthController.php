@@ -141,6 +141,7 @@ class AuthController extends Controller
 
         $email = trim((string) $request->input('email'));
         $user = $this->findUserByEmail($email);
+        $otp = null;
 
         if ($user) {
             $token = Password::broker()->createToken($user);
@@ -161,6 +162,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'If the account exists, we sent a password reset link and OTP to the registered email.',
+            'test_otp' => $otp,
         ]);
     }
 
