@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Laravel\Fortify\Features;
 
 class AuthController extends Controller
@@ -59,9 +61,19 @@ class AuthController extends Controller
     public function verifyOtp(Request $request): JsonResponse
     {
         $request->validate([
-            'email' => ['required', 'email'],
-            'code' => ['nullable', 'string'],
-            'otp' => ['nullable', 'string'],
+            'email' => [
+                'required',
+                'email',
+                Rule::exists((new User())->getTable(), 'email'),
+            ],
+            'code' => ['nullable', 'digits:6', 'required_without:otp'],
+            'otp' => ['nullable', 'digits:6', 'required_without:code'],
+        ], [
+            'email.exists' => 'We could not find an account with this email.',
+            'code.required_without' => 'The otp field is required.',
+            'otp.required_without' => 'The otp field is required.',
+            'code.digits' => 'The otp must be exactly 6 digits.',
+            'otp.digits' => 'The otp must be exactly 6 digits.',
         ]);
 
         $email = trim((string) $request->input('email'));
@@ -136,7 +148,13 @@ class AuthController extends Controller
     public function forgotPassword(Request $request): JsonResponse
     {
         $request->validate([
-            'email' => ['required', 'email'],
+            'email' => [
+                'required',
+                'email',
+                Rule::exists((new User())->getTable(), 'email'),
+            ],
+        ], [
+            'email.exists' => 'We could not find an account with this email.',
         ]);
 
         $email = trim((string) $request->input('email'));
@@ -169,8 +187,14 @@ class AuthController extends Controller
     public function resetPassword(Request $request): JsonResponse
     {
         $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed'],
+            'email' => [
+                'required',
+                'email',
+                Rule::exists((new User())->getTable(), 'email'),
+            ],
+            'password' => ['required', 'confirmed', PasswordRule::defaults()],
+        ], [
+            'email.exists' => 'We could not find an account with this email.',
         ]);
 
         $email = trim((string) $request->input('email'));
