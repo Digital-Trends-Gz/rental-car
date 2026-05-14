@@ -4,6 +4,52 @@ return [
     'pdf' => [
         'document_title' => 'عقد رقم :number',
         'generated_at' => 'تم إنشاء التقرير بتاريخ :datetime',
+        'contract_texts' => [
+            'mileage_notice' => [
+                'en' => 'Excess mileage will charge 50 Bz per kilometer for salon and 100 Bz per kilometer for 4x4.',
+                'ar' => 'الزيادة في عدد الكيلومترات المتفق عليها تحتسب بمبلغ 50 بيسة لكل كيلومتر إضافي للصالون و100 بيسة لكل كيلومتر إضافي للدفع الرباعي.',
+            ],
+            'rental_period_notice' => [
+                'en' => 'Non-renewal of the contract term there is a fine of 5 OMR per day.',
+                'ar' => 'عند عدم تجديد مدة العقد تُفرض غرامة بقيمة 5 ريالات عمانية لكل يوم.',
+            ],
+            'smoking_notice' => [
+                'en' => 'Smoking inside the vehicle fine 20 OMR.',
+                'ar' => 'غرامة التدخين داخل المركبة 20 ريال عماني.',
+            ],
+            'unclean_notice' => [
+                'en' => 'In case of the vehicle returned unclean, 2 OMR will be charged.',
+                'ar' => 'في حال إعادة المركبة غير نظيفة يتم احتساب 2 ريال عماني.',
+            ],
+            'delay_notice' => [
+                'en' => 'Delay for vehicle return will charge 1 OMR for salon, 2 OMR for 4x4 per hour and delays more than 4 hours full day rent will charge.',
+                'ar' => 'التأخير عن موعد تسليم المركبة يحتسب لكل ساعة: 1 ريال عماني للصالون و2 ريال عماني للدفع الرباعي، والتأخير لأكثر من 4 ساعات يحتسب إيجار يوم كامل.',
+            ],
+            'period_change_notice' => [
+                'en' => 'If the monthly or weekly rent is agreed and the vehicle is returned before the end of the period, the contract will change to daily.',
+                'ar' => 'إذا تم الاتفاق على الإيجار الشهري أو الأسبوعي وأعيدت المركبة قبل نهاية المدة، فيتحول العقد إلى إيجار يومي.',
+            ],
+            'accident_notice' => [
+                'en' => 'In the event of any car accident, the renter must pay 600 riyals immediately, without any conditions.',
+                'ar' => 'في حال وقوع أي حادث للمركبة، يلتزم المستأجر بدفع 600 ريال فورًا دون أي شروط.',
+            ],
+            'acknowledgement_title' => [
+                'en' => 'Acknowledgement and Undertaking',
+                'ar' => 'إقرار وتعهد',
+            ],
+            'acknowledgement_body' => [
+                'en' => 'I have read the terms and conditions mentioned above and behind the contract. I have accepted the conditions in full, and I am committed to implement them. I have received the vehicle in good condition.',
+                'ar' => 'أقر بأنني قرأت البنود والشروط المذكورة أعلاه ووراء العقد، وقبلت بها كاملة بإرادتي والتزمت بتنفيذها، وقد استلمت المركبة بحالة جيدة.',
+            ],
+            'important_notice' => [
+                'en' => 'IMPORTANT NOTICE: Smoking inside the vehicle is prohibited. A fine of 20 OMR is charged for smoking inside the vehicle.',
+                'ar' => 'تنبيه هام: يُمنع التدخين داخل السيارة. تفرض غرامة 20 ريالًا عمانيًا في حال التدخين داخل السيارة.',
+            ],
+            'closing_notice' => [
+                'en' => 'THE CONTRACT IS ONLY CLOSED BY PAYING ALL THE AMOUNTS DUE AND HANDING OVER THE VEHICLE AND THE KEY',
+                'ar' => 'لا يُغلق العقد إلا بدفع جميع المبالغ المستحقة وتسليم المركبة والمفتاح.',
+            ],
+        ],
         'sections' => [
             'contract_summary' => 'ملخص العقد',
             'renter_vehicle' => 'المستأجر والمركبة',

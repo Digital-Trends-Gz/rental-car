@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ $locale }}" dir="{{ $direction }}">
+<html lang="{{ $locale }}" dir="ltr">
 <head>
     <meta charset="UTF-8" />
     <title>{{ __('contracts.pdf.document_title', ['number' => $contract->contract_number]) }}</title>
@@ -35,10 +35,10 @@
             background: #fff;
             color: #0f2a63;
             font-family: cairo, "TahomaPdf", "DejaVu Sans", Arial, sans-serif;
-            font-size: 9px;
+            font-size: 8.8px;
             line-height: 1.22;
             font-weight: 700;
-            direction: {{ $direction }};
+            direction: ltr;
         }
         .page { width: 100%; }
         .contract {
@@ -58,8 +58,8 @@
             direction: rtl;
             unicode-bidi: plaintext;
             text-align: right;
-            font-size: 1.14em;
-            line-height: 1.35;
+            font-size: 1em;
+            line-height: 1.18;
         }
         .center { text-align: center; }
         .right { text-align: right; }
@@ -100,15 +100,20 @@
             font-weight: 900;
         }
         .field .ar-label { width: 26%; color: #17306f; white-space: nowrap; }
-        .header td { padding: 0 5px; }
-        .head-left, .head-right { width: 24%; font-size: 8.5px; line-height: 1.42; }
-        .head-main { width: 52%; text-align: center; }
-        .company-en { font-size: 22px; line-height: 1.05; font-weight: 900; letter-spacing: 1px; }
-        .company-ar { font-size: 22px; line-height: 1.05; font-weight: 900; }
-        .title-line { font-size: 15px; line-height: 1.1; font-weight: 900; }
-        .title-line .ar { display: inline-block; margin-left: 8px; font-size: 15px; }
-        .logo { max-height: 42px; max-width: 190px; object-fit: contain; }
-        .serial { margin-top: 6px; font-size: 10px; }
+        .header td { padding: 0 4px; }
+        .head-left, .head-right { width: 23%; font-size: 8px; line-height: 1.35; }
+        .head-main {
+            width: 54%;
+            text-align: center;
+            border-left: 1px solid #d8dbe5;
+            border-right: 1px solid #d8dbe5;
+        }
+        .company-en { font-size: 21px; line-height: 1.02; font-weight: 900; letter-spacing: .5px; }
+        .company-ar { font-size: 21px; line-height: 1.02; font-weight: 900; }
+        .title-line { font-size: 14px; line-height: 1.08; font-weight: 900; }
+        .title-line .ar { display: inline-block; margin-left: 8px; font-size: 14px; }
+        .logo { max-height: 38px; max-width: 180px; object-fit: contain; }
+        .serial { margin-top: 4px; font-size: 9px; }
         .serial span { color: #d6202a; font-size: 11px; font-weight: 900; }
         .inline-fields td { padding: 2px 3px; vertical-align: bottom; }
         .inline-label { white-space: nowrap; color: #17306f; }
@@ -121,10 +126,10 @@
         }
         .diagram-cell { width: 50%; height: 190px; }
         .diagram-head td { font-size: 8px; color: #17306f; padding: 0 3px 3px; }
-        .damage-wrap { height: 132px; text-align: center; }
-        .damage-img { max-width: 300px; max-height: 128px; object-fit: contain; }
+        .damage-wrap { height: 136px; text-align: center; }
+        .damage-img { max-width: 290px; max-height: 124px; object-fit: contain; }
         .empty-diagram { color: #999; padding-top: 48px; font-size: 9px; }
-        .status-table td { padding: 2px 4px; font-size: 8px; }
+        .status-table td { padding: 2px 3px; font-size: 7.5px; }
         .box {
             display: inline-block;
             width: 8px;
@@ -139,8 +144,8 @@
             text-align: center;
             padding: 2px;
         }
-        .rates th { background: #eef3f8; font-size: 8px; }
-        .rates td { font-size: 9px; font-weight: 900; padding: 5px 2px; }
+        .rates th { background: #eef3f8; font-size: 7.8px; }
+        .rates td { font-size: 8.3px; font-weight: 900; padding: 4px 2px; }
         .damage-cases-title {
             font-size: 9px;
             font-weight: 900;
@@ -185,8 +190,8 @@
             padding: 6px 6px;
             margin-top: 6px;
             text-align: center;
-            font-size: 8px;
-            line-height: 2.25;
+            font-size: 7.7px;
+            line-height: 2.05;
         }
         .period td { padding: 1px 2px; }
         .rules > td { border: 1px solid #17306f; padding: 6px 7px; }
@@ -199,17 +204,17 @@
             text-align: center;
             padding: 6px;
         }
-        .ack-title { margin-bottom: 5px; }
-        .ack-title .en { font-size: 9px; }
-        .ack-title .ar { font-size: 9px; }
-        .ack-text { font-size: 7px; line-height: 2.22; }
-        .important { margin-top: 5px; font-size: 8px; line-height: 3.2; }
-        .sign td { text-align: center; padding: 8px 3px 2px; font-size: 8px; }
+        .ack-title { margin-bottom: 4px; }
+        .ack-title .en { font-size: 8.5px; }
+        .ack-title .ar { font-size: 8.5px; }
+        .ack-text { font-size: 6.7px; line-height: 2.15; }
+        .important { margin-top: 4px; font-size: 7.6px; line-height: 3.0; }
+        .sign td { text-align: center; padding: 7px 3px 2px; font-size: 7.8px; }
         .sign-line { border-bottom: 1px dotted #17306f; height: 18px; margin-bottom: 3px; }
         .footer {
             text-align: center;
             color: #17306f;
-            font-size: 8.7px;
+            font-size: 8.2px;
             font-weight: 900;
             padding: 5px 2px 2px;
         }
@@ -226,7 +231,7 @@
     $reservationCar = $reservation?->car;
     $reservationUser = $reservation?->user;
 
-    $siteSettings = $contract->tenant?->siteSetting ? \App\Models\TenantSiteSetting::forTenant($contract->tenant) : [];
+    $siteSettings = $siteSettings ?? ($contract->tenant?->siteSetting ? \App\Models\TenantSiteSetting::forTenant($contract->tenant) : []);
     $contactPhone = data_get($siteSettings, 'contact.phone') ?? $contract->branch?->phone_1 ?? $contract->branch?->phone ?? '-';
     $contactWhatsapp = data_get($siteSettings, 'contact.whatsapp') ?? '-';
     $contactAddress = data_get($siteSettings, 'contact.address.'.$locale) ?? data_get($siteSettings, 'contact.address.en') ?? data_get($siteSettings, 'contact.address.ar') ?? $contract->branch?->address ?? '-';
@@ -242,6 +247,16 @@
     $headerGsm2 = data_get($pdfHeader, 'gsm_2') ?: $contactPhone;
     $headerGsm3 = data_get($pdfHeader, 'gsm_3') ?: '';
     $headerRegistryLabelEn = data_get($pdfHeader, 'registry_label.en') ?: 'No.';
+    $contractPdf = data_get($siteSettings, 'contract_pdf', []);
+    $contractText = static function (string $key, string $lang) use ($contractPdf) {
+        $value = data_get($contractPdf, "{$key}.{$lang}");
+
+        if (filled($value)) {
+            return $value;
+        }
+
+        return \Illuminate\Support\Facades\Lang::get("contracts.pdf.contract_texts.{$key}.{$lang}", [], $lang);
+    };
 
     $dailyRate = $contract->price_per_day ?? $reservation?->daily_rate ?? $reservationCar?->price_per_day;
     $weeklyRate = $contract->price_per_week ?? $reservationCar?->price_per_week;
@@ -409,8 +424,8 @@
                         <tr><td>{{ $lineValue($allowedKmMonth) }}<br>كم - KM</td><td>{{ $lineValue($allowedKmWeek) }}<br>كم - KM</td><td>{{ $lineValue($allowedKmDay) }}<br>كم - KM</td></tr>
                     </table>
                     <div class="notice">
-                        الزيادة في عدد الكيلومترات المتفق عليها تحسب بمبلغ 50 بيسة لكل كيلومتر إضافي للصالون و100 بيسة لكل كيلومتر إضافي للدفع الرباعي<br>
-                        Excess mileage will charge 50 Bz per kilometer for salon and 100 Bz per Kilometer for 4x4.
+                        {{ $contractText('mileage_notice', 'ar') }}<br>
+                        {{ $contractText('mileage_notice', 'en') }}
                     </div>
                 </td>
             </tr>
@@ -454,7 +469,7 @@
             <tr>
                 <td colspan="2" class="cell">
                     <div class="section-title"><table><tr><td>RENTAL PERIOD</td><td class="ar">مدة التأجير - لتجديد مدة التأجير يجب الحضور شخصياً وإحضار المركبة ودفع كامل مبلغ مدة الإيجار</td></tr></table></div>
-                    <div class="center" style="font-size: 7px;">Non-renewal of the contract term there is a fine of 5 OMR per day <span class="ar">عدم تجديد مدة العقد هناك غرامة بقيمة 5 ريال لكل يوم</span></div>
+                    <div class="center" style="font-size: 7px;">{{ $contractText('rental_period_notice', 'en') }} <span class="ar">{{ $contractText('rental_period_notice', 'ar') }}</span></div>
                     <table class="inline-fields period">
                         <tr><td class="inline-label">Return Time:</td><td class="inline-value">{{ $returnTime }}</td><td class="ar inline-label">وقت العودة :</td><td class="inline-label">To</td><td class="inline-value">{{ $returnDate }}</td><td class="ar inline-label">إلى :</td><td class="inline-label">From</td><td class="inline-value" colspan="3">{{ $pickupDate }}</td><td class="ar inline-label">من :</td></tr>
                         <tr><td class="inline-label" colspan="2">Quantity of gasoline in the car at the time of delivery:</td><td class="inline-value">{{ $lineValue($contract->vehicle_fuel_level) }}</td><td class="ar inline-label" colspan="2">كمية البنزين الموجودة بالسيارة وقت الاستلام</td><td class="inline-label">Return Fuel:</td><td class="inline-value" colspan="2">{{ $lineValue($contract->return_fuel_level) }}</td><td class="ar inline-label">الوقود عند العودة :</td><td colspan="6"></td></tr>
@@ -467,22 +482,22 @@
             <tr class="rules">
                 <td style="width: 50%;">
                     <ul class="rules-list">
-                        <li><table class="dual"><tr><td> Smoking inside the Vehicle Fine 20 OMR.</td><td class="ar">غرامة التدخين داخل المركبة 20 ريال عماني </td></tr></table></li>
-                        <li><table class="dual"><tr><td> In case of the Vehicle returned unclean, 2 OMR will be charged.</td><td class="ar">في حالة رجوع المركبة غير نظيفة يدفع 2 ريال عماني </td></tr></table></li>
-                        <li><table class="dual"><tr><td> Delay for Vehicle return will charge 1 OMR for salon, 2 OMR for 4x4 per hours and delays more than 4 hours full day rent will charge.</td><td class="ar">التأخير عن موعد تسليم المركبة يحسب لكل ساعة: 1 ريال عماني للصالون و2 ريال عماني للدفع الرباعي، والتأخير لأكثر من 4 ساعات يحسب إيجار يوم كامل </td></tr></table></li>
-                        <li><table class="dual"><tr><td> If the monthly or weekly rent is agreed and the vehicle is returned before the end of the period, The contract will change to daily.</td><td class="ar">إذا اتفق على الإيجار الشهري أو الأسبوعي وأعيدت المركبة قبل نهاية المدة فإن العقد يتحول إلى إيجار يومي </td></tr></table></li>
-                        <li><table class="dual"><tr><td> In the event of any car accident, the renter must pay 600 riyals immediately, without any conditions.</td><td class="ar">في حال حدوث أي حادث للمركبة يدفع المستأجر 600 ريال فورًا دون أي شروط </td></tr></table></li>
+                        <li><table class="dual"><tr><td>{{ $contractText('smoking_notice', 'en') }}</td><td class="ar">{{ $contractText('smoking_notice', 'ar') }}</td></tr></table></li>
+                        <li><table class="dual"><tr><td>{{ $contractText('unclean_notice', 'en') }}</td><td class="ar">{{ $contractText('unclean_notice', 'ar') }}</td></tr></table></li>
+                        <li><table class="dual"><tr><td>{{ $contractText('delay_notice', 'en') }}</td><td class="ar">{{ $contractText('delay_notice', 'ar') }}</td></tr></table></li>
+                        <li><table class="dual"><tr><td>{{ $contractText('period_change_notice', 'en') }}</td><td class="ar">{{ $contractText('period_change_notice', 'ar') }}</td></tr></table></li>
+                        <li><table class="dual"><tr><td>{{ $contractText('accident_notice', 'en') }}</td><td class="ar">{{ $contractText('accident_notice', 'ar') }}</td></tr></table></li>
                     </ul>
                 </td>
                 <td style="width: 50%;">
                     <div class="ack-title">
-                        <div class="en">Acknowledgement and Undertaking <span class="ar">إقرار وتعهد</span></div>
-                        <div class="ack-text ar">أقر أنني قرأت البنود الواردة أعلاه وخلف العقد وقبلت البنود بكامل إرادتي والتزمت بتنفيذها وقد استلمت المركبة في حالة جيدة وعلى ذلك أوقع</div>
-                        <div class="ack-text">I have read the terms and conditions mentioned above and behind the contract. And I have accepted the conditions in full will and I'm committed to implement them. I have received the vehicle in good condition.</div>
+                        <div class="en">{{ $contractText('acknowledgement_title', 'en') }} <span class="ar">{{ $contractText('acknowledgement_title', 'ar') }}</span></div>
+                        <div class="ack-text ar">{{ $contractText('acknowledgement_body', 'ar') }}</div>
+                        <div class="ack-text">{{ $contractText('acknowledgement_body', 'en') }}</div>
                     </div>
                     <div class="important">
-                        تنبيه هام IMPORTANT NOTICE: ممنوع التدخين داخل السيارة<br>
-                        الغرامة 20 ريال عماني في حال التدخين داخل السيارة. A fine of 20 riyals is charged for each vehicle.
+                        {{ $contractText('important_notice', 'ar') }}<br>
+                        {{ $contractText('important_notice', 'en') }}
                     </div>
                     <table class="sign">
                         <tr><td><div class="sign-line"></div><span class="ar">توقيع المستأجر</span><br>Renter Signature</td><td><div class="sign-line"></div><span class="ar">اليوم</span><br>Day</td><td><div class="sign-line">{{ $generatedAt->format('Y-m-d') }}</div><span class="ar">التاريخ</span><br>Date</td><td><div class="sign-line"></div><span class="ar">توقيع المسؤول</span><br>Incharge Signature</td></tr>
@@ -491,8 +506,8 @@
             </tr>
         </table>
         <div class="footer">
-            THE CONTRACT IS ONLY CLOSED BY PAYING ALL THE AMOUNTS DUE AND HANDING OVER THE VEHICLE AND THE KEY
-            <span class="ar">العقد لا يغلق إلا بدفع جميع المبالغ المستحقة وتسليم المركبة والمفتاح</span>
+            {{ $contractText('closing_notice', 'en') }}
+            <span class="ar">{{ $contractText('closing_notice', 'ar') }}</span>
         </div>
     </div>
 </div>

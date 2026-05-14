@@ -35,6 +35,7 @@ class TenantSiteSetting extends Model
         'translations',
         'footer',
         'plate_formats',
+        'contract_pdf',
     ];
 
     protected $casts = [
@@ -53,6 +54,7 @@ class TenantSiteSetting extends Model
         'translations' => 'array',
         'footer' => 'array',
         'plate_formats' => 'array',
+        'contract_pdf' => 'array',
     ];
 
     public function tenant(): BelongsTo
@@ -274,6 +276,52 @@ class TenantSiteSetting extends Model
             ],
             'pdf_templates' => [
                 'contract' => \App\Support\TenantPdfTemplateRegistry::DEFAULT_CONTRACT_TEMPLATE,
+            ],
+            'contract_pdf' => [
+                'mileage_notice' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'rental_period_notice' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'smoking_notice' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'unclean_notice' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'delay_notice' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'period_change_notice' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'accident_notice' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'acknowledgement_title' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'acknowledgement_body' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'important_notice' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
+                'closing_notice' => [
+                    'en' => null,
+                    'ar' => null,
+                ],
             ],
             'police_notice' => [
                 'company_name' => [
@@ -711,6 +759,52 @@ class TenantSiteSetting extends Model
                 )
                     ? (string) data_get($data, 'pdf_templates.contract', $defaults['pdf_templates']['contract'])
                     : $defaults['pdf_templates']['contract'],
+            ],
+            'contract_pdf' => [
+                'mileage_notice' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.mileage_notice.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.mileage_notice.ar')),
+                ],
+                'rental_period_notice' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.rental_period_notice.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.rental_period_notice.ar')),
+                ],
+                'smoking_notice' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.smoking_notice.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.smoking_notice.ar')),
+                ],
+                'unclean_notice' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.unclean_notice.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.unclean_notice.ar')),
+                ],
+                'delay_notice' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.delay_notice.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.delay_notice.ar')),
+                ],
+                'period_change_notice' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.period_change_notice.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.period_change_notice.ar')),
+                ],
+                'accident_notice' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.accident_notice.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.accident_notice.ar')),
+                ],
+                'acknowledgement_title' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.acknowledgement_title.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.acknowledgement_title.ar')),
+                ],
+                'acknowledgement_body' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.acknowledgement_body.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.acknowledgement_body.ar')),
+                ],
+                'important_notice' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.important_notice.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.important_notice.ar')),
+                ],
+                'closing_notice' => [
+                    'en' => self::nullableString(data_get($data, 'contract_pdf.closing_notice.en')),
+                    'ar' => self::nullableString(data_get($data, 'contract_pdf.closing_notice.ar')),
+                ],
             ],
             'police_notice' => [
                 'company_name' => [

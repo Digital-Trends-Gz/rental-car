@@ -250,6 +250,12 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-settings',
         },
         {
+            title: t('dashboard.sidebar.admin.contract_pdf') || 'Contract PDF',
+            href: adminHref('/settings/contract-pdf'),
+            icon: FileText,
+            permission: 'tenant-manage-settings',
+        },
+        {
             title: t('dashboard.sidebar.admin.seo_settings'),
             href: adminHref('/settings/seo'),
             icon: Search,

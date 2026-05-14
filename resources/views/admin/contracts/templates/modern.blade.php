@@ -239,6 +239,16 @@
     $returnTime = optional($reservation?->return_time)->format('H:i') ?: '-';
     $money = static fn ($value) => $value === null || $value === '' ? '-' : number_format((float) $value, 2).' '.($contract->currency ?: $currencySymbol);
     $line = static fn ($value) => filled($value) ? (string) $value : '-';
+    $contractPdf = data_get($siteSettings, 'contract_pdf', []);
+    $contractText = static function (string $key, string $lang) use ($contractPdf) {
+        $value = data_get($contractPdf, "{$key}.{$lang}");
+
+        if (filled($value)) {
+            return $value;
+        }
+
+        return \Illuminate\Support\Facades\Lang::get("contracts.pdf.contract_texts.{$key}.{$lang}", [], $lang);
+    };
 @endphp
 
 <div class="document">
@@ -634,8 +644,8 @@
     @endif
 
     <div class="footer-note">
-        THE CONTRACT IS ONLY CLOSED AFTER ALL AMOUNTS ARE SETTLED AND THE VEHICLE IS RETURNED.
-        <div class="rtl">لا يغلق العقد إلا بعد تسوية جميع المبالغ وإرجاع المركبة.</div>
+        {{ $contractText('closing_notice', 'en') }}
+        <div class="rtl">{{ $contractText('closing_notice', 'ar') }}</div>
     </div>
 </div>
 </body>

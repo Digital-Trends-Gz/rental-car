@@ -23,6 +23,7 @@ use Laravel\Fortify\Features;
 class AuthController extends Controller
 {
     private const OTP_EXPIRY_MINUTES = 15;
+    private const OTP_VERIFIED_EXPIRY_MINUTES = 10;
     private const OTP_MAX_ATTEMPTS = 5;
     private const TOKEN_EXPIRY_DAYS = 30;
 
@@ -52,6 +53,44 @@ class AuthController extends Controller
             'access_token' => $sanctumToken->plainTextToken,
             'expires_at' => optional($sanctumToken->accessToken->expires_at)->toIso8601String(),
             'user' => $this->userPayload($user),
+        ]);
+    }
+
+    public function verifyOtp(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['nullable', 'string'],
+            'otp' => ['nullable', 'string'],
+        ]);
+
+        $email = trim((string) $request->input('email'));
+        $code = trim((string) ($request->input('code') ?? $request->input('otp')));
+
+        if ($code === '') {
+            return response()->json([
+                'message' => 'no same or not match',
+                'verified' => false,
+            ], 422);
+        }
+
+        if (!$this->isValidPasswordResetOtp($email, $code)) {
+            return response()->json([
+                'message' => 'no same or not match',
+                'verified' => false,
+            ], 422);
+        }
+
+        Cache::put(
+            $this->otpVerifiedCacheKey($email),
+            true,
+            now()->addMinutes(self::OTP_VERIFIED_EXPIRY_MINUTES)
+        );
+        Cache::forget($this->otpCacheKey($email));
+
+        return response()->json([
+            'message' => 'success',
+            'verified' => true,
         ]);
     }
 
@@ -115,6 +154,7 @@ class AuthController extends Controller
                 ],
                 now()->addMinutes(self::OTP_EXPIRY_MINUTES)
             );
+            Cache::forget($this->otpVerifiedCacheKey($email));
 
             Notification::send($user, new ApiPasswordResetNotification($token, $otp));
         }
@@ -129,41 +169,14 @@ class AuthController extends Controller
         $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed'],
-            'token' => ['nullable', 'string'],
-            'otp' => ['nullable', 'string', 'digits_between:6,6'],
         ]);
-
-        if (!$request->filled('token') && !$request->filled('otp')) {
-            throw ValidationException::withMessages([
-                'token' => ['A reset token or OTP is required.'],
-            ]);
-        }
-
-        if ($request->filled('token')) {
-            $status = Password::broker()->reset(
-                $request->only('email', 'password', 'password_confirmation', 'token'),
-                function (User $user) use ($request): void {
-                    $this->completePasswordReset($user, (string) $request->input('password'));
-                }
-            );
-
-            if ($status === Password::PasswordReset) {
-                return response()->json([
-                    'message' => 'Password reset successfully.',
-                ]);
-            }
-
-            throw ValidationException::withMessages([
-                'email' => [__($status)],
-            ]);
-        }
 
         $email = trim((string) $request->input('email'));
         $user = $this->findUserByEmail($email);
 
-        if (!$user || !$this->verifyOtp($email, (string) $request->input('otp'))) {
+        if (!$user || !Cache::pull($this->otpVerifiedCacheKey($email), false)) {
             throw ValidationException::withMessages([
-                'otp' => ['The OTP is invalid or expired.'],
+                'email' => ['Please verify the OTP first.'],
             ]);
         }
 
@@ -282,7 +295,12 @@ class AuthController extends Controller
         return 'api-password-reset-otp:'.sha1(mb_strtolower(trim($email)));
     }
 
-    private function verifyOtp(string $email, string $otp): bool
+    private function otpVerifiedCacheKey(string $email): string
+    {
+        return 'api-password-reset-otp-verified:'.sha1(mb_strtolower(trim($email)));
+    }
+
+    private function isValidPasswordResetOtp(string $email, string $otp): bool
     {
         $cacheKey = $this->otpCacheKey($email);
         $payload = Cache::get($cacheKey);
@@ -308,8 +326,6 @@ class AuthController extends Controller
             return false;
         }
 
-        Cache::forget($cacheKey);
-
         return true;
     }
 
@@ -324,6 +340,7 @@ class AuthController extends Controller
         Password::broker()->deleteToken($user);
         $user->tokens()->delete();
         Cache::forget($this->otpCacheKey((string) $user->email));
+        Cache::forget($this->otpVerifiedCacheKey((string) $user->email));
 
         event(new PasswordReset($user));
     }

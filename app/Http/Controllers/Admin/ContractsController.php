@@ -510,12 +510,23 @@ class ContractsController extends Controller
             ->all();
         $zoneLabels = CarDamageCatalog::zoneLabelMap();
         $direction = str_starts_with($locale, 'ar') ? 'rtl' : 'ltr';
+        $previewMode = $request->boolean('preview');
+        $previewState = json_decode((string) $request->query('preview_state', ''), true);
 
         $currentDamageCases = $contract->reservation?->car?->id
             ? $this->serializeCarDamageCases((int) $contract->reservation->car->id, $request->user())
             : [];
         $branding = $this->pdfBranding($contract->tenant);
         $siteSettings = $contract->tenant?->siteSetting ? TenantSiteSetting::forTenant($contract->tenant) : [];
+        if (is_array($previewState)) {
+            $previewContractPdf = data_get($previewState, 'contract_pdf', []);
+            if (is_array($previewContractPdf)) {
+                $siteSettings['contract_pdf'] = array_replace_recursive(
+                    data_get($siteSettings, 'contract_pdf', []),
+                    $previewContractPdf
+                );
+            }
+        }
         $pdfTemplate = TenantPdfTemplateRegistry::resolveContractTemplate(data_get($siteSettings, 'pdf_templates.contract'));
         $templateView = $pdfTemplate['view'];
 
@@ -544,7 +555,7 @@ class ContractsController extends Controller
 
         if (PdfRuntime::canUseBrowsershot()) {
             try {
-                return Pdf::view($templateView, $viewData)
+                $pdf = Pdf::view($templateView, $viewData)
                     ->format(Format::A4)
                     ->portrait()
                     ->margins(4, 4, 4, 4)
@@ -576,7 +587,11 @@ class ContractsController extends Controller
                             ->timeout(120)
                             ->newHeadless();
                     })
-                    ->download($fileName);
+                    ;
+
+                return $previewMode
+                    ? $pdf->inline($fileName)
+                    : $pdf->download($fileName);
             } catch (Throwable $e) {
                 report($e);
             }
@@ -587,14 +602,17 @@ class ContractsController extends Controller
         $fallbackViewData['damageDiagram'] = ['data_uri' => null, 'empty' => true];
         PdfRuntime::ensureDompdfDirectories();
 
-        return DomPdf::loadView($templateView, $fallbackViewData)
+        $domPdf = DomPdf::loadView($templateView, $fallbackViewData)
             ->setOption('defaultFont', 'DejaVu Sans')
             ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
             ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
             ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
             ->setOption('isRemoteEnabled', true)
-            ->setPaper('a4', 'portrait')
-            ->download($fileName);
+            ->setPaper('a4', 'portrait');
+
+        return $previewMode
+            ? $domPdf->stream($fileName)
+            : $domPdf->download($fileName);
     }
     public function edit(Request $request, Contract $contract): Response
     {
@@ -2908,8 +2926,6 @@ class ContractsController extends Controller
         ];
     }
 }
-
-
 
 
 

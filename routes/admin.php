@@ -295,6 +295,12 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::put('settings/police-notice', [WebsiteSettingsController::class, 'policeNoticeUpdate'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.police-notice.update');
+        Route::get('settings/contract-pdf', [WebsiteSettingsController::class, 'contractPdfEdit'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.contract-pdf.edit');
+        Route::put('settings/contract-pdf', [WebsiteSettingsController::class, 'contractPdfUpdate'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.contract-pdf.update');
         Route::get('settings/translations', [TranslationSettingsController::class, 'edit'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.translations.edit');

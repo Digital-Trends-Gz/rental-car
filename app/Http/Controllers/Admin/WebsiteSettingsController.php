@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Core\TenantContext;
 use App\Http\Controllers\Controller;
+use App\Models\Contract;
 use App\Models\TenantSiteSetting;
 use App\Support\BrandLogoImageResizer;
 use App\Support\TenantPdfTemplateRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -535,6 +537,32 @@ class WebsiteSettingsController extends Controller
         ]);
     }
 
+    public function contractPdfEdit(): Response
+    {
+        $tenant = TenantContext::get();
+        abort_unless($tenant, 404);
+
+        $tenant->loadMissing('siteSetting.files');
+        $previewContractId = Contract::query()
+            ->where('tenant_id', $tenant->id)
+            ->latest('id')
+            ->value('id');
+
+        return Inertia::render('Admin/Settings/ContractPdf', [
+            'tenant' => [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'slug' => $tenant->slug,
+            ],
+            'settings' => TenantSiteSetting::forTenant($tenant),
+            'contractPdfDefaults' => $this->contractPdfDefaults(),
+            'previewUrl' => $previewContractId ? route('admin.contracts.pdf', ['contract' => $previewContractId, 'lang' => app()->getLocale()]) : null,
+            'actions' => [
+                'update' => url()->current(),
+            ],
+        ]);
+    }
+
     public function policeNoticeUpdate(Request $request): RedirectResponse
     {
         $tenant = TenantContext::get();
@@ -693,6 +721,91 @@ class WebsiteSettingsController extends Controller
         );
 
         return back()->with('success', 'Police notice settings updated successfully.');
+    }
+
+    public function contractPdfUpdate(Request $request): RedirectResponse
+    {
+        $tenant = TenantContext::get();
+        abort_unless($tenant, 404);
+
+        $validated = $request->validate([
+            'contract_pdf.mileage_notice.en' => ['nullable', 'string', 'max:1000'],
+            'contract_pdf.mileage_notice.ar' => ['nullable', 'string', 'max:1000'],
+            'contract_pdf.rental_period_notice.en' => ['nullable', 'string', 'max:1000'],
+            'contract_pdf.rental_period_notice.ar' => ['nullable', 'string', 'max:1000'],
+            'contract_pdf.smoking_notice.en' => ['nullable', 'string', 'max:1000'],
+            'contract_pdf.smoking_notice.ar' => ['nullable', 'string', 'max:1000'],
+            'contract_pdf.unclean_notice.en' => ['nullable', 'string', 'max:1000'],
+            'contract_pdf.unclean_notice.ar' => ['nullable', 'string', 'max:1000'],
+            'contract_pdf.delay_notice.en' => ['nullable', 'string', 'max:1500'],
+            'contract_pdf.delay_notice.ar' => ['nullable', 'string', 'max:1500'],
+            'contract_pdf.period_change_notice.en' => ['nullable', 'string', 'max:1500'],
+            'contract_pdf.period_change_notice.ar' => ['nullable', 'string', 'max:1500'],
+            'contract_pdf.accident_notice.en' => ['nullable', 'string', 'max:1500'],
+            'contract_pdf.accident_notice.ar' => ['nullable', 'string', 'max:1500'],
+            'contract_pdf.acknowledgement_title.en' => ['nullable', 'string', 'max:255'],
+            'contract_pdf.acknowledgement_title.ar' => ['nullable', 'string', 'max:255'],
+            'contract_pdf.acknowledgement_body.en' => ['nullable', 'string', 'max:4000'],
+            'contract_pdf.acknowledgement_body.ar' => ['nullable', 'string', 'max:4000'],
+            'contract_pdf.important_notice.en' => ['nullable', 'string', 'max:1500'],
+            'contract_pdf.important_notice.ar' => ['nullable', 'string', 'max:1500'],
+            'contract_pdf.closing_notice.en' => ['nullable', 'string', 'max:1500'],
+            'contract_pdf.closing_notice.ar' => ['nullable', 'string', 'max:1500'],
+        ]);
+
+        TenantSiteSetting::updateOrCreate(
+            ['tenant_id' => $tenant->id],
+            [
+                'contract_pdf' => [
+                    'mileage_notice' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.mileage_notice.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.mileage_notice.ar')),
+                    ],
+                    'rental_period_notice' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.rental_period_notice.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.rental_period_notice.ar')),
+                    ],
+                    'smoking_notice' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.smoking_notice.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.smoking_notice.ar')),
+                    ],
+                    'unclean_notice' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.unclean_notice.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.unclean_notice.ar')),
+                    ],
+                    'delay_notice' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.delay_notice.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.delay_notice.ar')),
+                    ],
+                    'period_change_notice' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.period_change_notice.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.period_change_notice.ar')),
+                    ],
+                    'accident_notice' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.accident_notice.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.accident_notice.ar')),
+                    ],
+                    'acknowledgement_title' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.acknowledgement_title.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.acknowledgement_title.ar')),
+                    ],
+                    'acknowledgement_body' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.acknowledgement_body.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.acknowledgement_body.ar')),
+                    ],
+                    'important_notice' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.important_notice.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.important_notice.ar')),
+                    ],
+                    'closing_notice' => [
+                        'en' => $this->nullableString(data_get($validated, 'contract_pdf.closing_notice.en')),
+                        'ar' => $this->nullableString(data_get($validated, 'contract_pdf.closing_notice.ar')),
+                    ],
+                ],
+            ]
+        );
+
+        return back()->with('success', 'Contract PDF text settings updated successfully.');
     }
 
     private function nullableString(mixed $value): ?string
@@ -1149,6 +1262,56 @@ class WebsiteSettingsController extends Controller
         $siteSetting->update(['seo' => $seo]);
 
         return;
+    }
+
+    private function contractPdfDefaults(): array
+    {
+        return [
+            'mileage_notice' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.mileage_notice.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.mileage_notice.ar', [], 'ar'),
+            ],
+            'rental_period_notice' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.rental_period_notice.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.rental_period_notice.ar', [], 'ar'),
+            ],
+            'smoking_notice' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.smoking_notice.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.smoking_notice.ar', [], 'ar'),
+            ],
+            'unclean_notice' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.unclean_notice.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.unclean_notice.ar', [], 'ar'),
+            ],
+            'delay_notice' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.delay_notice.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.delay_notice.ar', [], 'ar'),
+            ],
+            'period_change_notice' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.period_change_notice.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.period_change_notice.ar', [], 'ar'),
+            ],
+            'accident_notice' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.accident_notice.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.accident_notice.ar', [], 'ar'),
+            ],
+            'acknowledgement_title' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.acknowledgement_title.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.acknowledgement_title.ar', [], 'ar'),
+            ],
+            'acknowledgement_body' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.acknowledgement_body.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.acknowledgement_body.ar', [], 'ar'),
+            ],
+            'important_notice' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.important_notice.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.important_notice.ar', [], 'ar'),
+            ],
+            'closing_notice' => [
+                'en' => Lang::get('contracts.pdf.contract_texts.closing_notice.en', [], 'en'),
+                'ar' => Lang::get('contracts.pdf.contract_texts.closing_notice.ar', [], 'ar'),
+            ],
+        ];
     }
 
     private function clearSeoOgImageReferenceIfNeeded(TenantSiteSetting $siteSetting, array $removedFileUrls, array $tempFolders): void
