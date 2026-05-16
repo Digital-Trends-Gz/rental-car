@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/pin-input';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { login as mainLogin } from '@/routes';
-import { login as tenantLogin } from '@/routes/tenant/login';
+import tenantLogin from '@/routes/tenant/login';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { KeyRound, LoaderCircle, Mail, ShieldCheck } from 'lucide-vue-next';
 import { computed, reactive, ref } from 'vue';

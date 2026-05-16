@@ -577,7 +577,9 @@ class TenantSeoResolver
             '@context' => 'https://schema.org',
             '@type' => 'Reservation',
             'reservationNumber' => $reservation->reservation_number,
-            'reservationStatus' => trim((string) $reservation->status),
+            'reservationStatus' => $reservation->status instanceof \App\Enums\ReservationStatus
+                ? $reservation->status->value
+                : trim((string) $reservation->status),
             'underName' => $reservation->user?->name ? [
                 '@type' => 'Person',
                 'name' => $reservation->user->name,

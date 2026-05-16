@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -88,6 +89,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (\Throwable $e, Request $request) {
             $status = $e instanceof HttpExceptionInterface ? $e->getStatusCode() : (int) $e->getCode();
+
+            if ($e instanceof AuthenticationException && $request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Token not found.',
+                ], 401);
+            }
 
             if ($status === 423) {
                 if ($request->expectsJson()) {

@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ContractsController;
+use App\Http\Controllers\Api\ReservationsController;
 use App\Http\Controllers\Api\SettingsController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +26,17 @@ Route::prefix('auth')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
     Route::get('summary', [DashboardController::class, 'summary'])->name('api.dashboard.summary');
+});
+
+Route::middleware('auth:sanctum')->prefix('reservations')->group(function () {
+    Route::get('today-pickups', [ReservationsController::class, 'todayPickups'])->name('api.reservations.today-pickups');
+    Route::get('returns', [ReservationsController::class, 'returns'])->name('api.reservations.returns');
+    Route::post('{reservation}/note', [ReservationsController::class, 'updateNote'])->name('api.reservations.note');
+    Route::get('{reservation}', [ReservationsController::class, 'show'])->name('api.reservations.show');
+});
+
+Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
+    Route::get('{contract}/documents', [ContractsController::class, 'documents'])->name('api.contracts.documents');
 });
 
 Route::prefix('settings')->group(function () {
