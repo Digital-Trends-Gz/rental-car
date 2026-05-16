@@ -28,6 +28,8 @@ use Illuminate\Validation\ValidationException;
 
 class ReservationsController extends Controller
 {
+    private string $apiLocale = 'en';
+
     public function __construct(
         private readonly BranchAccess $branchAccess
     ) {
@@ -35,34 +37,257 @@ class ReservationsController extends Controller
 
     public function todayPickups(Request $request): JsonResponse
     {
+        $this->setApiLocale($request);
         $user = $this->authorizeAdminApiUser($request);
         $today = Carbon::today();
         $branchId = $this->resolveBranchId($request, $user);
-        $statuses = $this->resolvePickupStatuses($request->input('status'));
+        $typeInput = $request->input('type');
 
-        $query = $this->reservationQuery($user, $branchId)
+        if ($typeInput === null || $typeInput === '') {
+            return $this->taskOverviewResponse($request, $user, $today, $branchId);
+        }
+
+        $taskType = $this->resolveTaskType($typeInput);
+
+        if ($taskType === 'pickup') {
+            $statuses = $this->resolvePickupStatuses($request->input('status'));
+
+            $query = $this->reservationQuery($user, $branchId)
+                ->whereDate('start_date', $today)
+                ->whereIn('status', $statuses)
+                ->orderBy('start_date')
+                ->orderBy('pickup_time')
+                ->orderByDesc('id');
+
+            $paginator = $query->paginate($this->resolvePerPage($request))->withQueryString();
+            $items = $this->mapReservations($paginator, $taskType);
+            $filters = [
+                'status' => $statuses,
+            ];
+        } else {
+            $isOverdue = $taskType === 'overdue';
+
+            $query = $this->contractQuery($user, $branchId)
+                ->where('status', ContractStatus::ACTIVE->value);
+
+            if ($isOverdue) {
+                $query->whereDate('end_date', '<', $today)
+                    ->orderBy('end_date')
+                    ->orderByDesc('id');
+            } else {
+                $query->whereDate('end_date', $today)
+                    ->orderBy('end_date')
+                    ->orderByDesc('id');
+            }
+
+            $paginator = $query->paginate($this->resolvePerPage($request))->withQueryString();
+            $items = $this->mapContracts($paginator, $isOverdue, $taskType);
+            $filters = [];
+        }
+
+        return response()->json([
+            'date' => $today->toDateString(),
+            'type' => $taskType,
+            'type_label' => $this->taskTypeLabel($taskType),
+            'branch_id' => $branchId,
+            'filters' => $filters,
+            'count' => $paginator->total(),
+            'pagination' => $this->paginationPayload($paginator),
+            'items' => $items,
+            'reservations' => $taskType === 'pickup' ? $items : [],
+            'returns' => $taskType === 'pickup' ? [] : $items,
+        ]);
+    }
+
+    public function tasks(Request $request): JsonResponse
+    {
+        $this->setApiLocale($request);
+        $user = $this->authorizeAdminApiUser($request);
+        $today = Carbon::today();
+        $branchId = $this->resolveBranchId($request, $user);
+
+        return $this->taskSummaryResponse($request, $user, $today, $branchId);
+    }
+
+    private function taskSummaryResponse(Request $request, User $user, Carbon $today, ?int $branchId): JsonResponse
+    {
+        $pickupStatuses = $this->resolvePickupStatuses($request->input('status'));
+
+        $pickupCount = $this->reservationQuery($user, $branchId)
             ->whereDate('start_date', $today)
-            ->whereIn('status', $statuses)
-            ->orderBy('start_date')
-            ->orderBy('pickup_time')
-            ->orderByDesc('id');
+            ->whereIn('status', $pickupStatuses)
+            ->count();
 
-        $paginator = $query->paginate($this->resolvePerPage($request))->withQueryString();
+        $returnCount = $this->contractQuery($user, $branchId)
+            ->where('status', ContractStatus::ACTIVE->value)
+            ->whereDate('end_date', $today)
+            ->count();
+
+        $overdueCount = $this->contractQuery($user, $branchId)
+            ->where('status', ContractStatus::ACTIVE->value)
+            ->whereDate('end_date', '<', $today)
+            ->count();
 
         return response()->json([
             'date' => $today->toDateString(),
             'branch_id' => $branchId,
-            'filters' => [
-                'status' => $statuses,
+            'counts' => [
+                'pickup' => $pickupCount,
+                'return' => $returnCount,
+                'overdue' => $overdueCount,
+                'total' => $pickupCount + $returnCount + $overdueCount,
             ],
-            'count' => $paginator->total(),
-            'pagination' => $this->paginationPayload($paginator),
-            'reservations' => $this->mapReservations($paginator),
+            'status' => [
+                [
+                    'key' => 'pickup',
+                    'value' => $pickupCount,
+                    'label' => $this->taskTypeLabel('pickup'),
+                ],
+                [
+                    'key' => 'return',
+                    'value' => $returnCount,
+                    'label' => $this->taskTypeLabel('return'),
+                ],
+                [
+                    'key' => 'overdue',
+                    'value' => $overdueCount,
+                    'label' => $this->taskTypeLabel('overdue'),
+                ],
+                [
+                    'key' => 'total',
+                    'value' => $pickupCount + $returnCount + $overdueCount,
+                    'label' => $this->apiLocale === 'ar' ? 'الكل' : 'All',
+                ],
+            ],
+        ]);
+    }
+
+    private function taskOverviewResponse(Request $request, User $user, Carbon $today, ?int $branchId): JsonResponse
+    {
+        $pickupStatuses = $this->resolvePickupStatuses($request->input('status'));
+
+        $pickupItems = $this->reservationItems(
+            $this->reservationQuery($user, $branchId)
+                ->whereDate('start_date', $today)
+                ->whereIn('status', $pickupStatuses)
+                ->orderBy('start_date')
+                ->orderBy('pickup_time')
+                ->orderByDesc('id')
+                ->get()
+        );
+
+        $returnItems = $this->contractItems(
+            $this->contractQuery($user, $branchId)
+                ->where('status', ContractStatus::ACTIVE->value)
+                ->whereDate('end_date', $today)
+                ->orderBy('end_date')
+                ->orderByDesc('id')
+                ->get(),
+            false,
+            'return'
+        );
+
+        $overdueItems = $this->contractItems(
+            $this->contractQuery($user, $branchId)
+                ->where('status', ContractStatus::ACTIVE->value)
+                ->whereDate('end_date', '<', $today)
+                ->orderBy('end_date')
+                ->orderByDesc('id')
+                ->get(),
+            true,
+            'overdue'
+        );
+
+        return response()->json([
+            'date' => $today->toDateString(),
+            'branch_id' => $branchId,
+            'pickup' => $this->taskBlockPayload('pickup', $branchId, [
+                'status' => $pickupStatuses,
+            ], $pickupItems),
+            'return' => $this->taskBlockPayload('return', $branchId, [], $returnItems),
+            'overdue' => $this->taskBlockPayload('overdue', $branchId, [], $overdueItems),
+        ]);
+    }
+
+    private function taskBlockPayload(string $type, ?int $branchId, array $filters, array $items): array
+    {
+        return [
+            'type' => $type,
+            'type_label' => $this->taskTypeLabel($type),
+            'branch_id' => $branchId,
+            'filters' => $filters,
+            'count' => count($items),
+            'items' => $items,
+            'reservations' => $type === 'pickup' ? $items : [],
+            'returns' => $type === 'pickup' ? [] : $items,
+        ];
+    }
+
+    public function status(Request $request): JsonResponse
+    {
+        $this->setApiLocale($request);
+        $user = $this->authorizeAdminApiUser($request);
+        $today = Carbon::today();
+        $branchId = $this->resolveBranchId($request, $user);
+        return response()->json([
+            'date' => $today->toDateString(),
+            'branch_id' => $branchId,
+            'status' => [
+                [
+                    'key' => 'pickup',
+                    'label' => $this->taskTypeLabel('pickup'),
+                ],
+                [
+                    'key' => 'return',
+                    'label' => $this->taskTypeLabel('return'),
+                ],
+                [
+                    'key' => 'overdue',
+                    'label' => $this->taskTypeLabel('overdue'),
+                ],
+                [
+                    'key' => 'all',
+                    'label' => 'All',
+                ],
+            ],
+            // 'pickup' => [
+            //     'type' => 'pickup',
+            //     'type_label' => $this->taskTypeLabel('pickup'),
+            //     'count' => count($pickupItems),
+            //     'items' => $pickupItems,
+            // ],
+            // 'return' => [
+            //     'type' => 'return',
+            //     'type_label' => $this->taskTypeLabel('return'),
+            //     'count' => count($returnItems),
+            //     'items' => $returnItems,
+            // ],
+            // 'overdue' => [
+            //     'type' => 'overdue',
+            //     'type_label' => $this->taskTypeLabel('overdue'),
+            //     'count' => count($overdueItems),
+            //     'items' => $overdueItems,
+            // ],
+        ]);
+    }
+
+    public function taskTypes(Request $request): JsonResponse
+    {
+        $this->setApiLocale($request);
+        $this->authorizeAdminApiUser($request);
+
+        return response()->json([
+            'task_types' => [
+                ['key' => 'pickup', 'label' => $this->taskTypeLabel('pickup')],
+                ['key' => 'return', 'label' => $this->taskTypeLabel('return')],
+                ['key' => 'overdue', 'label' => $this->taskTypeLabel('overdue')],
+            ],
         ]);
     }
 
     public function returns(Request $request): JsonResponse
     {
+        $this->setApiLocale($request);
         $user = $this->authorizeAdminApiUser($request);
         $today = Carbon::today();
         $branchId = $this->resolveBranchId($request, $user);
@@ -95,6 +320,7 @@ class ReservationsController extends Controller
 
     public function updateNote(Request $request, Reservation $reservation): JsonResponse
     {
+        $this->setApiLocale($request);
         $user = $this->authorizeAdminApiUser($request);
         abort_unless($this->canAccessReservation($reservation, $user), 403);
 
@@ -116,6 +342,7 @@ class ReservationsController extends Controller
 
     public function show(Request $request, Reservation $reservation): JsonResponse
     {
+        $this->setApiLocale($request);
         $user = $this->authorizeAdminApiUser($request);
 
         $reservation->loadMissing([
@@ -207,23 +434,43 @@ class ReservationsController extends Controller
         ]);
     }
 
-    private function mapReservations(LengthAwarePaginator $paginator): array
+    private function mapReservations(LengthAwarePaginator $paginator, string $taskType = 'pickup'): array
     {
-        return $paginator->getCollection()
-            ->map(fn (Reservation $reservation) => $this->reservationItem($reservation))
-            ->values()
-            ->all();
+        return $this->reservationItems($paginator->getCollection(), $taskType);
     }
 
-    private function mapContracts(LengthAwarePaginator $paginator, bool $isOverdue): array
+    private function mapContracts(LengthAwarePaginator $paginator, bool $isOverdue, string $taskType = 'return'): array
     {
-        return $paginator->getCollection()
-            ->map(fn (Contract $contract) => $this->contractItem($contract, $isOverdue))
-            ->values()
-            ->all();
+        return $this->contractItems($paginator->getCollection(), $isOverdue, $taskType);
     }
 
-    private function reservationItem(Reservation $reservation): array
+    private function reservationItems(iterable $reservations, string $taskType = 'pickup'): array
+    {
+        $items = [];
+
+        foreach ($reservations as $reservation) {
+            if ($reservation instanceof Reservation) {
+                $items[] = $this->reservationItem($reservation, $taskType);
+            }
+        }
+
+        return $items;
+    }
+
+    private function contractItems(iterable $contracts, bool $isOverdue = false, string $taskType = 'return'): array
+    {
+        $items = [];
+
+        foreach ($contracts as $contract) {
+            if ($contract instanceof Contract) {
+                $items[] = $this->contractItem($contract, $isOverdue, $taskType);
+            }
+        }
+
+        return $items;
+    }
+
+    private function reservationItem(Reservation $reservation, string $taskType = 'pickup'): array
     {
         $car = $reservation->car;
         $user = $reservation->user;
@@ -254,6 +501,8 @@ class ReservationsController extends Controller
             'pickup_location' => $reservation->pickup_location,
             'return_location' => $reservation->return_location,
             'status' => $reservation->status instanceof ReservationStatus ? $reservation->status->value : (string) $reservation->status,
+            'task_type' => $taskType,
+            'task_type_label' => $this->taskTypeLabel($taskType),
         ];
     }
 
@@ -596,7 +845,7 @@ class ReservationsController extends Controller
         ];
     }
 
-    private function contractItem(Contract $contract, bool $isOverdue = false): array
+    private function contractItem(Contract $contract, bool $isOverdue = false, string $taskType = 'return'): array
     {
         $reservation = $contract->reservation;
         $car = $reservation?->car;
@@ -629,7 +878,39 @@ class ReservationsController extends Controller
             'reservation_status' => $reservation?->status instanceof ReservationStatus
                 ? $reservation->status->value
                 : (string) ($reservation?->status ?? ''),
+            'task_type' => $taskType,
+            'task_type_label' => $this->taskTypeLabel($taskType),
         ];
+    }
+
+    private function resolveTaskType(mixed $typeInput): string
+    {
+        $type = strtolower(trim((string) ($typeInput ?? 'pickup')));
+
+        if (!in_array($type, ['pickup', 'return', 'overdue'], true)) {
+            throw ValidationException::withMessages([
+                'type' => ['The type must be pickup, return, or overdue.'],
+            ]);
+        }
+
+        return $type;
+    }
+
+    private function taskTypeLabel(string $type): string
+    {
+        $isArabic = $this->apiLocale === 'ar';
+
+        return match ($type) {
+            'pickup' => $isArabic ? 'استلام' : 'Pickup',
+            'return' => $isArabic ? 'تسليم' : 'Return',
+            'overdue' => $isArabic ? 'متأخر' : 'Overdue',
+            default => Str::title($type),
+        };
+    }
+
+    private function setApiLocale(Request $request): void
+    {
+        $this->apiLocale = $request->getPreferredLanguage(['ar', 'en']) ?? app()->getLocale() ?? 'en';
     }
 
     private function resolvePerPage(Request $request): int
@@ -756,3 +1037,4 @@ class ReservationsController extends Controller
         $query->whereHas('reservation.car', fn (Builder $q) => $q->where('branch_id', $userBranchId));
     }
 }
+

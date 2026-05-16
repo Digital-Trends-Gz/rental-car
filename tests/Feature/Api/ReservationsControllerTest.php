@@ -177,9 +177,145 @@ test('today pickups api supports pagination and reservation status filtering', f
         'status' => ReservationStatus::CONFIRMED,
     ]);
 
+    $returnCar = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branchA->id,
+        'make' => 'Mazda',
+        'model' => 'CX-5',
+        'year' => 2024,
+        'license_plate' => 'API-A-003',
+        'color' => CarColor::RED->value,
+        'price_per_day' => 120,
+        'mileage' => 300,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::AVAILABLE->value,
+    ]);
+
+    $overdueCar = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branchA->id,
+        'make' => 'Kia',
+        'model' => 'Sportage',
+        'year' => 2023,
+        'license_plate' => 'API-A-004',
+        'color' => CarColor::GRAY->value,
+        'price_per_day' => 95,
+        'mileage' => 600,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::AVAILABLE->value,
+    ]);
+
+    $returnReservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $returnCar->id,
+        'reservation_number' => 'RES-API-004',
+        'start_date' => today()->subDays(2)->toDateString(),
+        'end_date' => today()->toDateString(),
+        'pickup_time' => '08:30',
+        'return_time' => '18:30',
+        'pickup_location' => 'Main Office',
+        'return_location' => 'Main Office',
+        'total_days' => 3,
+        'daily_rate' => 120,
+        'subtotal' => 360,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 360,
+        'status' => ReservationStatus::COMPLETED_WAIT_CONTRACT,
+    ]);
+
+    Contract::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branchA->id,
+        'reservation_id' => $returnReservation->id,
+        'contract_number' => 'CON-API-001',
+        'status' => ContractStatus::ACTIVE,
+        'contract_date' => today()->subDays(2)->toDateString(),
+        'renter_name' => $client->name,
+        'renter_id_number' => '111111111',
+        'renter_phone' => '97000000002',
+        'car_details' => '2024 Mazda CX-5',
+        'plate_number' => 'API-A-003',
+        'start_date' => today()->subDays(2)->toDateString(),
+        'end_date' => today()->toDateString(),
+        'total_amount' => 360,
+        'currency' => 'USD',
+    ]);
+
+    $overdueReservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $overdueCar->id,
+        'reservation_number' => 'RES-API-005',
+        'start_date' => today()->subDays(4)->toDateString(),
+        'end_date' => today()->subDay()->toDateString(),
+        'pickup_time' => '07:30',
+        'return_time' => '17:30',
+        'pickup_location' => 'Airport',
+        'return_location' => 'Airport',
+        'total_days' => 4,
+        'daily_rate' => 95,
+        'subtotal' => 380,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 380,
+        'status' => ReservationStatus::COMPLETED_WAIT_CONTRACT,
+    ]);
+
+    Contract::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branchA->id,
+        'reservation_id' => $overdueReservation->id,
+        'contract_number' => 'CON-API-002',
+        'status' => ContractStatus::ACTIVE,
+        'contract_date' => today()->subDays(4)->toDateString(),
+        'renter_name' => $client->name,
+        'renter_id_number' => '222222222',
+        'renter_phone' => '97000000003',
+        'car_details' => '2023 Kia Sportage',
+        'plate_number' => 'API-A-004',
+        'start_date' => today()->subDays(4)->toDateString(),
+        'end_date' => today()->subDay()->toDateString(),
+        'total_amount' => 380,
+        'currency' => 'USD',
+    ]);
+
+    $overviewResponse = $this->getJson(route('api.reservations.today-pickups', [
+        'branch_id' => $branchA->id,
+    ]));
+
+    $overviewResponse->assertOk()
+        ->assertJson([
+            'date' => today()->toDateString(),
+            'branch_id' => $branchA->id,
+        ])
+        ->assertJsonPath('pickup.type', 'pickup')
+        ->assertJsonPath('pickup.type_label', 'Pickup')
+        ->assertJsonPath('pickup.count', 2)
+        ->assertJsonPath('pickup.items.0.reservation_number', 'RES-API-001')
+        ->assertJsonPath('pickup.reservations.0.reservation_number', 'RES-API-001')
+        ->assertJsonPath('return.type', 'return')
+        ->assertJsonPath('return.type_label', 'Return')
+        ->assertJsonPath('return.count', 1)
+        ->assertJsonPath('return.items.0.contract_number', 'CON-API-001')
+        ->assertJsonPath('return.returns.0.contract_number', 'CON-API-001')
+        ->assertJsonPath('overdue.type', 'overdue')
+        ->assertJsonPath('overdue.type_label', 'Overdue')
+        ->assertJsonPath('overdue.count', 1)
+        ->assertJsonPath('overdue.items.0.contract_number', 'CON-API-002')
+        ->assertJsonPath('overdue.returns.0.contract_number', 'CON-API-002');
+
     $pageOne = $this->getJson(route('api.reservations.today-pickups', [
         'branch_id' => $branchA->id,
         'status' => 'pending',
+        'type' => 'pickup',
         'per_page' => 1,
         'page' => 1,
     ]));
@@ -188,24 +324,18 @@ test('today pickups api supports pagination and reservation status filtering', f
         ->assertJson([
             'date' => today()->toDateString(),
             'branch_id' => $branchA->id,
+            'type' => 'pickup',
             'count' => 2,
-            'filters' => [
-                'status' => [ReservationStatus::PENDING->value],
-            ],
-            'pagination' => [
-                'current_page' => 1,
-                'per_page' => 1,
-                'total' => 2,
-                'last_page' => 2,
-            ],
         ])
-        ->assertJsonCount(1, 'reservations')
-        ->assertJsonPath('reservations.0.reservation_number', 'RES-API-001')
-        ->assertJsonPath('reservations.0.status', ReservationStatus::PENDING->value);
+        ->assertJsonPath('pagination.current_page', 1)
+        ->assertJsonPath('pagination.last_page', 2)
+        ->assertJsonPath('items.0.reservation_number', 'RES-API-001')
+        ->assertJsonPath('reservations.0.reservation_number', 'RES-API-001');
 
     $pageTwo = $this->getJson(route('api.reservations.today-pickups', [
         'branch_id' => $branchA->id,
         'status' => 'pending',
+        'type' => 'pickup',
         'per_page' => 1,
         'page' => 2,
     ]));
@@ -274,6 +404,43 @@ test('returns api supports today and overdue scopes', function () {
         'fuel_type' => FuelType::GASOLINE->value,
         'description' => null,
         'status' => CarStatus::AVAILABLE->value,
+    ]);
+
+    $carPickup = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Nissan',
+        'model' => 'Patrol',
+        'year' => 2023,
+        'license_plate' => 'PICK-001',
+        'color' => CarColor::SILVER->value,
+        'price_per_day' => 150,
+        'mileage' => 500,
+        'transmission' => 'automatic',
+        'seats' => 7,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::AVAILABLE->value,
+    ]);
+
+    Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $carPickup->id,
+        'reservation_number' => 'RES-PICK-001',
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDays(2)->toDateString(),
+        'pickup_time' => '10:00',
+        'return_time' => '18:00',
+        'pickup_location' => 'Branch Office',
+        'return_location' => 'Branch Office',
+        'total_days' => 3,
+        'daily_rate' => 150,
+        'subtotal' => 450,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 450,
+        'status' => ReservationStatus::PENDING,
     ]);
 
     $reservationToday = Reservation::create([
@@ -352,10 +519,13 @@ test('returns api supports today and overdue scopes', function () {
         'currency' => 'USD',
     ]);
 
+    $arHeaders = ['Accept-Language' => 'ar'];
+    $enHeaders = ['Accept-Language' => 'en'];
+
     $todayResponse = $this->getJson(route('api.reservations.returns', [
         'scope' => 'today',
         'per_page' => 1,
-    ]));
+    ]), $arHeaders);
 
     $todayResponse->assertOk()
         ->assertJson([
@@ -373,7 +543,7 @@ test('returns api supports today and overdue scopes', function () {
     $overdueResponse = $this->getJson(route('api.reservations.returns', [
         'scope' => 'overdue',
         'per_page' => 1,
-    ]));
+    ]), $arHeaders);
 
     $overdueResponse->assertOk()
         ->assertJson([
@@ -388,6 +558,86 @@ test('returns api supports today and overdue scopes', function () {
         ->assertJsonPath('returns.0.contract_number', 'CON-RET-002')
         ->assertJsonPath('returns.0.is_overdue', true)
         ->assertJsonPath('returns.0.days_overdue', 1);
+
+    $todayPickupTypeResponse = $this->getJson(route('api.reservations.today-pickups', [
+        'type' => 'return',
+        'per_page' => 1,
+    ]), $arHeaders);
+
+    $todayPickupTypeResponse->assertOk()
+        ->assertJsonPath('type', 'return')
+        ->assertJsonPath('type_label', 'تسليم')
+        ->assertJsonPath('count', 1)
+        ->assertJsonPath('items.0.contract_number', 'CON-RET-001')
+        ->assertJsonPath('items.0.task_type', 'return');
+
+    $tasksResponse = $this->getJson(route('api.reservations.tasks', [
+        'per_page' => 1,
+    ]), $arHeaders);
+
+    $tasksResponse->assertOk()
+        ->assertJsonPath('counts.pickup', 1)
+        ->assertJsonPath('counts.return', 1)
+        ->assertJsonPath('counts.overdue', 1)
+        ->assertJsonPath('status.0.key', 'pickup')
+        ->assertJsonPath('status.0.value', 1)
+        ->assertJsonPath('status.0.label', 'استلام')
+        ->assertJsonPath('status.1.key', 'return')
+        ->assertJsonPath('status.1.value', 1)
+        ->assertJsonPath('status.1.label', 'تسليم')
+        ->assertJsonPath('status.2.key', 'overdue')
+        ->assertJsonPath('status.2.value', 1)
+        ->assertJsonPath('status.2.label', 'متأخر');
+
+    $todayPickupsSummaryResponse = $this->getJson(route('api.reservations.today-pickups', [
+        'per_page' => 1,
+    ]), $arHeaders);
+
+    $todayPickupsSummaryResponse->assertOk()
+        ->assertJsonPath('pickup.type', 'pickup')
+        ->assertJsonPath('pickup.count', 1)
+        ->assertJsonPath('pickup.items.0.reservation_number', 'RES-PICK-001')
+        ->assertJsonPath('pickup.type_label', 'استلام')
+        ->assertJsonPath('return.type', 'return')
+        ->assertJsonPath('return.count', 1)
+        ->assertJsonPath('return.items.0.contract_number', 'CON-RET-001')
+        ->assertJsonPath('return.type_label', 'تسليم')
+        ->assertJsonPath('overdue.type', 'overdue')
+        ->assertJsonPath('overdue.count', 1)
+        ->assertJsonPath('overdue.items.0.contract_number', 'CON-RET-002')
+        ->assertJsonPath('overdue.type_label', 'متأخر');
+
+    $taskTypesResponse = $this->getJson(route('api.reservations.task-types'), $arHeaders);
+
+    $taskTypesResponse->assertOk()
+        ->assertJsonPath('task_types.0.key', 'pickup')
+        ->assertJsonPath('task_types.0.label', 'استلام')
+        ->assertJsonPath('task_types.1.key', 'return')
+        ->assertJsonPath('task_types.1.label', 'تسليم')
+        ->assertJsonPath('task_types.2.key', 'overdue')
+        ->assertJsonPath('task_types.2.label', 'متأخر');
+
+    $overdueTypeResponse = $this->getJson(route('api.reservations.today-pickups', [
+        'type' => 'overdue',
+        'per_page' => 1,
+    ]), $arHeaders);
+
+    $englishTaskTypesResponse = $this->getJson(route('api.reservations.task-types'), $enHeaders);
+
+    $englishTaskTypesResponse->assertOk()
+        ->assertJsonPath('task_types.0.key', 'pickup')
+        ->assertJsonPath('task_types.0.label', 'Pickup')
+        ->assertJsonPath('task_types.1.key', 'return')
+        ->assertJsonPath('task_types.1.label', 'Return')
+        ->assertJsonPath('task_types.2.key', 'overdue')
+        ->assertJsonPath('task_types.2.label', 'Overdue');
+
+    $overdueTypeResponse->assertOk()
+        ->assertJsonPath('type', 'overdue')
+        ->assertJsonPath('type_label', 'متأخر')
+        ->assertJsonPath('items.0.contract_number', 'CON-RET-002')
+        ->assertJsonPath('items.0.task_type', 'overdue')
+        ->assertJsonPath('items.0.is_overdue', true);
 });
 
 test('reservation note api updates reservation notes and returns them in detail response', function () {

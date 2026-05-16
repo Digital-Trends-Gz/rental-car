@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useTrans } from '@/composables/useTrans';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
@@ -16,7 +16,7 @@ import {
     TrendingUp,
     Layers,
 } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
     stats: {
@@ -150,6 +150,125 @@ const daysRemainingLabel = (days: number | null) => {
 
     return localize(`In ${days} days`, `خلال ${days} أيام`);
 };
+
+type TaskType = 'pickup' | 'return' | 'overdue';
+
+type TaskItem = {
+    id: number;
+    reservation_number?: string | null;
+    contract_number?: string | null;
+    client_name?: string | null;
+    client_email?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    pickup_time?: string | null;
+    return_time?: string | null;
+    status?: string | null;
+    reservation_status?: string | null;
+    is_overdue?: boolean;
+    days_overdue?: number;
+    task_type?: TaskType;
+    task_type_label?: string;
+    car?: {
+        id?: number | null;
+        name?: string;
+        license_plate?: string;
+        branch_name?: string;
+        status?: string;
+    } | null;
+};
+
+const taskType = ref<TaskType>('pickup');
+const taskItems = ref<TaskItem[]>([]);
+const taskCount = ref(0);
+const taskLoading = ref(false);
+const taskError = ref('');
+
+const taskTypeMeta = computed(() => {
+    const meta = {
+        pickup: {
+            title: localize('Today Pickups', 'استلام اليوم'),
+            numberLabel: localize('Reservation #', 'رقم الحجز'),
+            dateLabel: localize('Pickup Date', 'تاريخ الاستلام'),
+        },
+        return: {
+            title: localize('Today Returns', 'تسليم اليوم'),
+            numberLabel: localize('Contract #', 'رقم العقد'),
+            dateLabel: localize('Return Date', 'تاريخ التسليم'),
+        },
+        overdue: {
+            title: localize('Overdue Returns', 'المتأخرات'),
+            numberLabel: localize('Contract #', 'رقم العقد'),
+            dateLabel: localize('Due Date', 'تاريخ الاستحقاق'),
+        },
+    }[taskType.value];
+
+    return meta;
+});
+
+const taskTabs = computed(() => [
+    { key: 'pickup' as const, label: localize('Pickup', 'استلام') },
+    { key: 'return' as const, label: localize('Return', 'تسليم') },
+    { key: 'overdue' as const, label: localize('Overdue', 'متأخر') },
+]);
+
+const taskRows = computed(() =>
+    taskItems.value.map((item, index) => ({
+        ...item,
+        rowNumber: item.reservation_number ?? item.contract_number ?? `${index + 1}`,
+        rowDate: taskType.value === 'pickup' ? item.start_date : item.end_date,
+        rowStatus: taskType.value === 'overdue'
+            ? item.is_overdue
+                ? localize(`Overdue ${item.days_overdue ?? 0} days`, `متأخر ${item.days_overdue ?? 0} يوم`)
+                : localize('Due today', 'مستحق اليوم')
+            : item.status ?? item.reservation_status ?? localize('N/A', 'غير متوفر'),
+    })),
+);
+
+const loadTaskItems = async () => {
+    taskLoading.value = true;
+    taskError.value = '';
+
+    try {
+        const response = await fetch(`/api/reservations/today-pickups?type=${taskType.value}&per_page=5`, {
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+            },
+        });
+
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok) {
+            throw new Error(payload?.message ?? localize('Failed to load tasks.', 'تعذر تحميل البيانات.'));
+        }
+
+        const items = Array.isArray(payload?.items)
+            ? payload.items
+            : Array.isArray(payload?.reservations)
+                ? payload.reservations
+                : Array.isArray(payload?.returns)
+                    ? payload.returns
+                    : [];
+
+        taskItems.value = items;
+        taskCount.value = Number(payload?.count ?? items.length ?? 0);
+    } catch (error) {
+        taskItems.value = [];
+        taskCount.value = 0;
+        taskError.value = error instanceof Error ? error.message : localize('Failed to load tasks.', 'تعذر تحميل البيانات.');
+    } finally {
+        taskLoading.value = false;
+    }
+};
+
+watch(taskType, () => {
+    loadTaskItems();
+});
+
+onMounted(() => {
+    loadTaskItems();
+});
 
 const selectedBranch = ref<number | null>(props.filters.branch_id ?? null);
 const applyBranchFilter = () => {
@@ -648,47 +767,82 @@ const kpiCards = computed(() => [
                         <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
                             <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
                                 <Clock class="h-4 w-4 text-primary" />
-                                <CardTitle class="text-base">{{ localize('Recent Reservations', 'أحدث الحجوزات') }}</CardTitle>
+                                <CardTitle class="text-base">{{ taskTypeMeta.title }} ({{ taskCount }})</CardTitle>
                             </div>
                             <Link href="/admin/reservations" class="text-xs text-primary hover:underline">
                                 {{ localize('View all', 'عرض الكل') }} →
                             </Link>
                         </div>
+                        <div class="mt-4 flex flex-wrap gap-2" :class="isRtl ? 'flex-row-reverse justify-end' : ''">
+                            <button
+                                v-for="tab in taskTabs"
+                                :key="tab.key"
+                                type="button"
+                                class="rounded-full border px-4 py-1.5 text-xs font-medium transition-colors"
+                                :class="tab.key === taskType
+                                    ? 'border-primary bg-primary text-primary-foreground'
+                                    : 'border-muted-foreground/20 bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground'"
+                                @click="taskType = tab.key"
+                            >
+                                {{ tab.label }}
+                            </button>
+                        </div>
                     </CardHeader>
                     <CardContent class="p-0">
-                        <div v-if="recentReservations.length === 0" class="py-8 text-center text-sm text-muted-foreground">
-                            {{ localize('No reservations yet.', 'لا توجد حجوزات حتى الآن.') }}
+                        <div v-if="taskLoading" class="py-8 text-center text-sm text-muted-foreground">
+                            {{ localize('Loading tasks...', 'جاري تحميل البيانات...') }}
+                        </div>
+                        <div v-else-if="taskError" class="px-4 py-8 text-center text-sm text-destructive">
+                            {{ taskError }}
+                        </div>
+                        <div v-else-if="taskRows.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                            {{ localize('No tasks for today.', 'لا توجد مهام لليوم.') }}
                         </div>
                         <table v-else class="w-full text-sm">
                             <thead>
                                 <tr class="border-b">
+                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ taskTypeMeta.numberLabel }}</th>
                                     <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Client', 'العميل') }}</th>
                                     <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Car', 'السيارة') }}</th>
-                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Dates', 'التواريخ') }}</th>
-                                    <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Amount', 'المبلغ') }}</th>
+                                    <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ taskTypeMeta.dateLabel }}</th>
+                                    <th class="px-4 py-2 text-right text-xs text-muted-foreground">{{ localize('Task', 'النوع') }}</th>
                                     <th class="px-4 py-2 text-left text-xs text-muted-foreground">{{ localize('Status', 'الحالة') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr
-                                    v-for="res in recentReservations"
-                                    :key="res.id"
-                                    class="border-b last:border-0 transition-colors hover:bg-muted/40"
-                                >
-                                    <td class="px-4 py-3 font-medium">{{ res.client_name ?? localize('N/A', 'غير متوفر') }}</td>
-                                    <td class="max-w-[120px] truncate px-4 py-3 text-muted-foreground">{{ res.car_name }}</td>
+                                <tr v-for="item in taskRows" :key="item.id" class="border-b last:border-0 transition-colors hover:bg-muted/40">
+                                    <td class="px-4 py-3 font-medium">{{ item.rowNumber }}</td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium">{{ item.client_name ?? localize('N/A', 'غير متوفر') }}</div>
+                                        <div v-if="item.client_email" class="text-xs text-muted-foreground">{{ item.client_email }}</div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium">{{ item.car?.name || localize('N/A', 'غير متوفر') }}</div>
+                                        <div class="text-xs text-muted-foreground">
+                                            {{ item.car?.license_plate || localize('No plate', 'لا توجد لوحة') }}
+                                        </div>
+                                        <div v-if="item.car?.branch_name" class="text-xs text-muted-foreground">
+                                            {{ item.car.branch_name }}
+                                        </div>
+                                    </td>
                                     <td class="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
-                                        {{ fmtDate(res.start_date) }}<br>{{ fmtDate(res.end_date) }}
+                                        {{ fmtDate(item.rowDate) }}
+                                        <div v-if="item.pickup_time && taskType === 'pickup'">
+                                            {{ item.pickup_time }}
+                                        </div>
+                                        <div v-else-if="taskType === 'overdue' && item.days_overdue !== undefined">
+                                            {{ localize(`${item.days_overdue} days overdue`, `متأخر ${item.days_overdue} يوم`) }}
+                                        </div>
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3 text-right font-semibold">
-                                        {{ fmtCurrency(res.total_amount) }}
+                                        {{ item.task_type_label || taskTypeMeta.title }}
                                     </td>
                                     <td class="px-4 py-3">
                                         <span
                                             class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize"
-                                            :style="{ background: `${res.status_color}20`, color: res.status_color }"
+                                            :class="item.is_overdue ? 'bg-red-100 text-red-700' : 'bg-muted text-foreground'"
                                         >
-                                            {{ res.status.replace('_', ' ') }}
+                                            {{ item.rowStatus.replace('_', ' ') }}
                                         </span>
                                     </td>
                                 </tr>

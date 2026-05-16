@@ -29,6 +29,9 @@ Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->prefix('reservations')->group(function () {
+    Route::get('task-types', [ReservationsController::class, 'taskTypes'])->name('api.reservations.task-types');
+    Route::get('status', [ReservationsController::class, 'status'])->name('api.reservations.status');
+    Route::get('tasks', [ReservationsController::class, 'tasks'])->name('api.reservations.tasks');
     Route::get('today-pickups', [ReservationsController::class, 'todayPickups'])->name('api.reservations.today-pickups');
     Route::get('returns', [ReservationsController::class, 'returns'])->name('api.reservations.returns');
     Route::post('{reservation}/note', [ReservationsController::class, 'updateNote'])->name('api.reservations.note');
