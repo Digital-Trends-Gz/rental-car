@@ -199,13 +199,17 @@ class ReservationsController extends Controller
         );
 
         return response()->json([
-            'date' => $today->toDateString(),
-            'branch_id' => $branchId,
-            'pickup' => $this->taskBlockPayload('pickup', $branchId, [
-                'status' => $pickupStatuses,
-            ], $pickupItems),
-            'return' => $this->taskBlockPayload('return', $branchId, [], $returnItems),
-            'overdue' => $this->taskBlockPayload('overdue', $branchId, [], $overdueItems),
+                'date' => $today->toDateString(),
+                'branch_id' => $branchId,
+                'pagination' => $this->overviewPaginationPayload(
+                    count($pickupItems) + count($returnItems) + count($overdueItems),
+                    $request
+                ),
+                'pickup' => $this->taskBlockPayload('pickup', $branchId, [
+                    'status' => $pickupStatuses,
+                ], $pickupItems),
+                'return' => $this->taskBlockPayload('return', $branchId, [], $returnItems),
+                'overdue' => $this->taskBlockPayload('overdue', $branchId, [], $overdueItems),
         ]);
     }
 
@@ -220,6 +224,22 @@ class ReservationsController extends Controller
             'items' => $items,
             'reservations' => $type === 'pickup' ? $items : [],
             'returns' => $type === 'pickup' ? [] : $items,
+        ];
+    }
+
+    private function overviewPaginationPayload(int $total, Request $request): array
+    {
+        $perPage = $this->resolvePerPage($request);
+        $lastPage = max(1, (int) ceil($total / $perPage));
+
+        return [
+            'current_page' => (int) $request->integer('page', 1),
+            'per_page' => $perPage,
+            'total' => $total,
+            'last_page' => $lastPage,
+            'from' => $total > 0 ? 1 : null,
+            'to' => $total > 0 ? $total : null,
+            'has_more_pages' => false,
         ];
     }
 
@@ -853,7 +873,8 @@ class ReservationsController extends Controller
         $endDate = optional($contract->end_date)->toDateString();
 
         return [
-            'id' => $contract->id,
+            'id' => $reservation?->id ?? $contract->id,
+            'contract_id' => $contract->id,
             'contract_number' => $contract->contract_number,
             'reservation_number' => $reservation?->reservation_number,
             'client_name' => $client?->name,
@@ -922,13 +943,15 @@ class ReservationsController extends Controller
 
     private function paginationPayload(LengthAwarePaginator $paginator): array
     {
+        $total = $paginator->total();
+
         return [
             'current_page' => $paginator->currentPage(),
             'per_page' => $paginator->perPage(),
-            'total' => $paginator->total(),
+            'total' => $total,
             'last_page' => $paginator->lastPage(),
-            'from' => $paginator->firstItem(),
-            'to' => $paginator->lastItem(),
+            'from' => $total > 0 ? $paginator->firstItem() : null,
+            'to' => $total > 0 ? $paginator->lastItem() : null,
             'has_more_pages' => $paginator->hasMorePages(),
         ];
     }

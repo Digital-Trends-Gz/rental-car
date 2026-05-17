@@ -296,6 +296,13 @@ test('today pickups api supports pagination and reservation status filtering', f
             'date' => today()->toDateString(),
             'branch_id' => $branchA->id,
         ])
+        ->assertJsonPath('pagination.current_page', 1)
+        ->assertJsonPath('pagination.per_page', 15)
+        ->assertJsonPath('pagination.total', 4)
+        ->assertJsonPath('pagination.last_page', 1)
+        ->assertJsonPath('pagination.from', 1)
+        ->assertJsonPath('pagination.to', 4)
+        ->assertJsonPath('pagination.has_more_pages', false)
         ->assertJsonPath('pickup.type', 'pickup')
         ->assertJsonPath('pickup.type_label', 'Pickup')
         ->assertJsonPath('pickup.count', 2)
@@ -304,11 +311,13 @@ test('today pickups api supports pagination and reservation status filtering', f
         ->assertJsonPath('return.type', 'return')
         ->assertJsonPath('return.type_label', 'Return')
         ->assertJsonPath('return.count', 1)
+        ->assertJsonPath('return.items.0.id', $returnReservation->id)
         ->assertJsonPath('return.items.0.contract_number', 'CON-API-001')
         ->assertJsonPath('return.returns.0.contract_number', 'CON-API-001')
         ->assertJsonPath('overdue.type', 'overdue')
         ->assertJsonPath('overdue.type_label', 'Overdue')
         ->assertJsonPath('overdue.count', 1)
+        ->assertJsonPath('overdue.items.0.id', $overdueReservation->id)
         ->assertJsonPath('overdue.items.0.contract_number', 'CON-API-002')
         ->assertJsonPath('overdue.returns.0.contract_number', 'CON-API-002');
 
@@ -594,16 +603,25 @@ test('returns api supports today and overdue scopes', function () {
     ]), $arHeaders);
 
     $todayPickupsSummaryResponse->assertOk()
+        ->assertJsonPath('pagination.current_page', 1)
+        ->assertJsonPath('pagination.per_page', 1)
+        ->assertJsonPath('pagination.total', 3)
+        ->assertJsonPath('pagination.last_page', 3)
+        ->assertJsonPath('pagination.from', 1)
+        ->assertJsonPath('pagination.to', 3)
+        ->assertJsonPath('pagination.has_more_pages', false)
         ->assertJsonPath('pickup.type', 'pickup')
         ->assertJsonPath('pickup.count', 1)
         ->assertJsonPath('pickup.items.0.reservation_number', 'RES-PICK-001')
         ->assertJsonPath('pickup.type_label', 'استلام')
         ->assertJsonPath('return.type', 'return')
         ->assertJsonPath('return.count', 1)
+        ->assertJsonPath('return.items.0.id', $reservationToday->id)
         ->assertJsonPath('return.items.0.contract_number', 'CON-RET-001')
         ->assertJsonPath('return.type_label', 'تسليم')
         ->assertJsonPath('overdue.type', 'overdue')
         ->assertJsonPath('overdue.count', 1)
+        ->assertJsonPath('overdue.items.0.id', $reservationOverdue->id)
         ->assertJsonPath('overdue.items.0.contract_number', 'CON-RET-002')
         ->assertJsonPath('overdue.type_label', 'متأخر');
 
@@ -638,6 +656,38 @@ test('returns api supports today and overdue scopes', function () {
         ->assertJsonPath('items.0.contract_number', 'CON-RET-002')
         ->assertJsonPath('items.0.task_type', 'overdue')
         ->assertJsonPath('items.0.is_overdue', true);
+});
+
+test('returns api returns empty pagination payload when no contracts exist', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::SUPER_ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $response = $this->getJson(route('api.reservations.returns', [
+        'scope' => 'today',
+        'per_page' => 10,
+        'page' => 1,
+    ]));
+
+    $response->assertOk()
+        ->assertJsonPath('count', 0)
+        ->assertJsonPath('pagination.current_page', 1)
+        ->assertJsonPath('pagination.per_page', 10)
+        ->assertJsonPath('pagination.total', 0)
+        ->assertJsonPath('pagination.last_page', 1)
+        ->assertJsonPath('pagination.from', null)
+        ->assertJsonPath('pagination.to', null)
+        ->assertJsonPath('pagination.has_more_pages', false)
+        ->assertJsonCount(0, 'returns');
 });
 
 test('reservation note api updates reservation notes and returns them in detail response', function () {
