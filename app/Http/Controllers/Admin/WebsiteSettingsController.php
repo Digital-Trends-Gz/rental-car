@@ -747,6 +747,7 @@ class WebsiteSettingsController extends Controller
             'contract_pdf.acknowledgement_title.ar' => ['nullable', 'string', 'max:255'],
             'contract_pdf.acknowledgement_body.en' => ['nullable', 'string', 'max:4000'],
             'contract_pdf.acknowledgement_body.ar' => ['nullable', 'string', 'max:4000'],
+            'contract_pdf.mobile_signature_text' => ['nullable', 'string', 'max:4000'],
             'contract_pdf.important_notice.en' => ['nullable', 'string', 'max:1500'],
             'contract_pdf.important_notice.ar' => ['nullable', 'string', 'max:1500'],
             'contract_pdf.closing_notice.en' => ['nullable', 'string', 'max:1500'],
@@ -793,6 +794,7 @@ class WebsiteSettingsController extends Controller
                         'en' => $this->nullableString(data_get($validated, 'contract_pdf.acknowledgement_body.en')),
                         'ar' => $this->nullableString(data_get($validated, 'contract_pdf.acknowledgement_body.ar')),
                     ],
+                    'mobile_signature_text' => $this->nullableString(data_get($validated, 'contract_pdf.mobile_signature_text')),
                     'important_notice' => [
                         'en' => $this->nullableString(data_get($validated, 'contract_pdf.important_notice.en')),
                         'ar' => $this->nullableString(data_get($validated, 'contract_pdf.important_notice.ar')),
@@ -1303,6 +1305,7 @@ class WebsiteSettingsController extends Controller
                 'en' => Lang::get('contracts.pdf.contract_texts.acknowledgement_body.en', [], 'en'),
                 'ar' => Lang::get('contracts.pdf.contract_texts.acknowledgement_body.ar', [], 'ar'),
             ],
+            'mobile_signature_text' => Lang::get('contracts.pdf.contract_texts.mobile_signature_text', [], 'en'),
             'important_notice' => [
                 'en' => Lang::get('contracts.pdf.contract_texts.important_notice.en', [], 'en'),
                 'ar' => Lang::get('contracts.pdf.contract_texts.important_notice.ar', [], 'ar'),

@@ -17,6 +17,7 @@ use App\Models\CarDamageReport;
 use App\Models\CarViolation;
 use App\Models\Contract;
 use App\Models\ContractArchiveFile;
+use App\Models\ContractHandoverPhoto;
 use App\Models\ContractDriver;
 use App\Models\ContractDriverDocument;
 use App\Models\ContractReturnReport;
@@ -25,12 +26,41 @@ use App\Models\Reservation;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Rentals\RentalStatusSyncService;
+use App\Services\Contracts\ContractDriverDocumentExtractor;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 
 beforeEach(function () {
     app()->instance(RentalStatusSyncService::class, new class {
         public function syncCarsByIds(array $carIds): void
         {
+        }
+    });
+
+    app()->instance(ContractDriverDocumentExtractor::class, new class extends ContractDriverDocumentExtractor {
+        public function __construct()
+        {
+        }
+
+        public function extractFromTempFolders(array $tempFolders, string $documentType): array
+        {
+            return [
+                'fields' => [
+                    'full_name' => 'Extracted Customer',
+                    'full_name_ar' => 'عميل مستخرج',
+                    'document_number' => '99881122',
+                    'date_of_birth' => today()->subYears(30)->toDateString(),
+                    'nationality' => 'Jordanian',
+                    'place_of_issue' => 'Amman',
+                    'expiry_date' => today()->addYear()->toDateString(),
+                ],
+                'raw_output' => ['stub' => true, 'document_type' => $documentType],
+                'raw_text' => 'stub preview',
+                'confidence' => 0.95,
+                'provider' => 'openai',
+                'engine' => 'gpt-4.1-mini',
+            ];
         }
     });
 });
@@ -1213,6 +1243,410 @@ test('reservation show api returns contract damage reports violations and paymen
         ->assertJsonPath('contract_opened_damage_cases.0.zone_code', 'REAR')
         ->assertJsonPath('car_violations.0.violation_number', 'VIOL-001');
 });
+
+test('handover api creates a draft contract and continues the wizard', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Handover Branch',
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::SUPER_ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $client = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::CLIENT,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $car = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Toyota',
+        'model' => 'Land Cruiser',
+        'year' => 2024,
+        'license_plate' => 'HAND-001',
+        'color' => CarColor::WHITE->value,
+        'price_per_day' => 150,
+        'mileage' => 500,
+        'transmission' => 'automatic',
+        'seats' => 7,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::AVAILABLE->value,
+    ]);
+
+    $reservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $car->id,
+        'reservation_number' => 'RES-HND-001',
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'pickup_time' => '09:00',
+        'return_time' => '18:00',
+        'pickup_location' => 'Main Office',
+        'return_location' => 'Main Office',
+        'total_days' => 2,
+        'daily_rate' => 150,
+        'subtotal' => 300,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 300,
+        'status' => ReservationStatus::CONFIRMED,
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $showResponse = $this->getJson(route('api.reservations.handover', [
+        'reservation' => $reservation->id,
+    ]));
+
+    $contractId = $showResponse->json('contract.id');
+
+    $showResponse->assertOk()
+        ->assertJsonPath('reservation.id', $reservation->id)
+        ->assertJsonPath('contract.status', 'draft')
+        ->assertJsonPath('contract.reservation.id', $reservation->id)
+        ->assertJsonPath('reservation.client_status', 'active')
+        ->assertJsonPath('handover.current_page', 1)
+        ->assertJsonPath('handover.completed_pages', [])
+        ->assertJsonPath('handover.steps.0.key', 'customer_review')
+        ->assertJsonPath('handover.steps.0.page', 1)
+        ->assertJsonPath('handover.steps.0.payload.reservation.client_status', 'active')
+        ->assertJsonPath('handover.steps.1.key', 'report_upload')
+        ->assertJsonPath('handover.steps.1.page', 2)
+        ->assertJsonPath('handover.steps.1.payload.contract_inputs.renter_name', $client->name);
+
+    $firstStepResponse = $this->patchJson(route('api.contracts.handover', [
+        'contract' => $contractId,
+    ]), [
+        'page' => 1,
+        'payload' => [
+            'reviewed' => true,
+            'notes' => 'Looks good.',
+        ],
+    ]);
+
+    $firstStepResponse->assertOk()
+        ->assertJsonPath('handover.current_page', 2)
+        ->assertJsonPath('handover.completed_pages.0', 1)
+        ->assertJsonPath('handover.steps.0.completed', true)
+        ->assertJsonPath('handover.steps.0.payload.reviewed', true)
+        ->assertJsonPath('handover.steps.0.payload.notes', 'Looks good.');
+
+    Queue::fake();
+
+      $secondStepResponse = $this->post(route('api.contracts.handover', [
+          'contract' => $contractId,
+      ]), [
+          'page' => 2,
+          'documents' => [
+              [
+                  'document_type' => 'passport',
+                  'files' => [
+                      UploadedFile::fake()->image('passport.jpg'),
+                  ],
+                  'notes' => 'Primary document.',
+              ],
+              [
+                  'document_type' => 'id_card',
+                  'files' => [
+                      UploadedFile::fake()->image('id-card.jpg'),
+                  ],
+                  'notes' => 'Archive document.',
+              ],
+          ],
+      ]);
+
+      $secondStepResponse->assertOk()
+        ->assertJsonPath('handover.current_page', 3)
+        ->assertJsonPath('handover.completed_pages.0', 1)
+          ->assertJsonPath('handover.completed_pages.1', 2)
+          ->assertJsonPath('handover.steps.1.completed', true)
+          ->assertJsonPath('handover.steps.1.key', 'report_upload')
+          ->assertJsonPath('handover.steps.1.payload.extraction_status', 'pending')
+          ->assertJsonPath('handover.steps.1.payload.documents.0.storage_target', 'primary_driver')
+          ->assertJsonPath('handover.steps.1.payload.documents.1.storage_target', 'additional_archive')
+          ->assertJsonPath('contract.ai_extraction_status', 'pending')
+          ->assertJsonPath('extraction.status', 'pending');
+
+      Queue::assertPushed(\App\Jobs\ProcessContractHandoverExtraction::class, function ($job) use ($contractId) {
+          return $job->contractId === $contractId;
+      });
+
+      $contract = Contract::findOrFail($contractId);
+      expect($contract->reservation_id)->toBe($reservation->id);
+      expect($contract->ai_extraction_status)->toBe('pending');
+      expect($contract->ai_extracted_data)->toBeNull();
+
+      $contract->loadMissing(['primaryDriver.documents', 'archiveFiles', 'additionalDrivers']);
+      $primaryDriver = $contract->primaryDriver()->first();
+      expect($primaryDriver)->not->toBeNull();
+      expect($primaryDriver?->documents)->toHaveCount(1);
+      expect($primaryDriver?->documents->first()?->document_type)->toBe('passport');
+      expect($primaryDriver?->documents->first()?->side)->toBe('single');
+      expect($contract->archiveFiles)->toHaveCount(1);
+      expect($contract->archiveFiles->first()?->document_type)->toBe('id_card');
+      expect($contract->additionalDrivers)->toHaveCount(0);
+
+      $thirdStepResponse = $this->post(route('api.contracts.handover', [
+          'contract' => $contractId,
+      ]), [
+          'page' => 3,
+          'photos' => [
+              [
+                  'view_side' => 'front',
+                  'photo_type' => 'damage',
+                  'files' => [
+                      UploadedFile::fake()->image('front.jpg'),
+                  ],
+                  'notes' => 'Front view',
+              ],
+              [
+                  'view_side' => 'front',
+                  'photo_type' => 'odometer',
+                  'files' => [
+                      UploadedFile::fake()->image('odometer.jpg'),
+                  ],
+                  'notes' => 'Odometer photo',
+              ],
+              [
+                  'view_side' => 'rear',
+                  'photo_type' => 'fuel',
+                  'files' => [
+                      UploadedFile::fake()->image('rear.jpg'),
+                  ],
+                  'notes' => 'Fuel photo',
+              ],
+          ],
+      ]);
+
+      $thirdStepResponse->assertOk()
+          ->assertJsonPath('handover.current_page', 4)
+          ->assertJsonPath('handover.steps.2.key', 'damage_photo_upload')
+          ->assertJsonPath('handover.steps.2.payload.extraction_status', 'pending')
+          ->assertJsonPath('extraction.status', 'processing')
+          ->assertJsonPath('extraction.damage_report.report_type', 'before_delivery');
+      $thirdStepResponse->assertJsonPath('handover.steps.2.payload.photos.0.photo_type', 'damage')
+          ->assertJsonPath('handover.steps.2.payload.handover_photos.0.storage_target', 'handover_archive')
+          ->assertJsonPath('handover.steps.3.key', 'vehicle_readings')
+          ->assertJsonPath('handover.steps.3.payload.vehicle_odometer', 500)
+          ->assertJsonPath('handover.steps.3.payload.vehicle_fuel_level', null);
+
+      Queue::assertPushed(\App\Jobs\ProcessContractDamagePhotoExtraction::class, function ($job) use ($contractId) {
+          return $job->damageReportId > 0;
+      });
+
+      $damageReport = CarDamageReport::query()
+          ->where('contract_id', $contractId)
+          ->where('report_type', 'before_delivery')
+          ->latest('id')
+          ->first();
+
+      expect($damageReport)->not->toBeNull();
+      $damageReport?->loadMissing('items');
+      expect($damageReport?->items)->toHaveCount(0);
+
+      $contract->refresh()->loadMissing(['handoverPhotos', 'archiveFiles']);
+      expect($contract->handoverPhotos)->toHaveCount(3);
+      expect($contract->handoverPhotos->first()?->phase)->toBe('delivery');
+      expect($contract->handoverPhotos->first()?->photo_type)->toBe('damage');
+      expect($contract->handoverPhotos->where('photo_type', 'odometer')->count())->toBe(1);
+      expect($contract->handoverPhotos->where('photo_type', 'fuel')->count())->toBe(1);
+
+      $repeatResponse = $this->post(route('api.contracts.handover', [
+          'contract' => $contractId,
+      ]), [
+          'page' => 3,
+          'photos' => [
+              [
+                  'view_side' => 'front',
+                  'photo_type' => 'damage',
+                  'files' => [
+                      UploadedFile::fake()->image('front-new.jpg'),
+                  ],
+                  'notes' => 'Front view updated',
+              ],
+              [
+                  'view_side' => 'front',
+                  'photo_type' => 'odometer',
+                  'files' => [
+                      UploadedFile::fake()->image('odometer-new.jpg'),
+                  ],
+                  'notes' => 'Odometer photo updated',
+              ],
+              [
+                  'view_side' => 'rear',
+                  'photo_type' => 'fuel',
+                  'files' => [
+                      UploadedFile::fake()->image('rear-new.jpg'),
+                  ],
+                  'notes' => 'Fuel photo updated',
+              ],
+          ],
+      ]);
+
+      $repeatResponse->assertOk();
+
+      $fourthStepResponse = $this->patch(route('api.contracts.handover', [
+          'contract' => $contractId,
+      ]), [
+          'page' => 4,
+          'payload' => [
+              'reviewed' => true,
+              'vehicle_odometer' => 650,
+              'vehicle_fuel_level' => '1/2',
+              'notes' => 'Please handle with care.',
+          ],
+      ]);
+
+      $fourthStepResponse->assertOk()
+          ->assertJsonPath('handover.current_page', 4)
+          ->assertJsonPath('handover.steps.3.key', 'vehicle_readings')
+          ->assertJsonPath('handover.steps.3.payload.vehicle_odometer', 650)
+          ->assertJsonPath('handover.steps.3.payload.vehicle_fuel_level', '1/2')
+          ->assertJsonPath('handover.steps.3.payload.notes', 'Please handle with care.');
+
+      $contract->refresh()->loadMissing(['handoverPhotos', 'reservation.car']);
+      expect($contract->handoverPhotos)->toHaveCount(3);
+      expect($contract->handoverPhotos->where('photo_type', 'damage')->first()?->notes)->toBe('Front view updated');
+      expect($contract->vehicle_odometer)->toBe(650);
+      expect($contract->vehicle_fuel_level)->toBe('1/2');
+      expect($contract->notes)->toBe('Please handle with care.');
+      expect($contract->reservation?->car?->mileage)->toBe(650);
+      expect($contract->archiveFiles)->toHaveCount(1);
+  });
+
+test('handover api accepts direct uploaded files for document extraction', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Upload Branch',
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::SUPER_ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $client = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::CLIENT,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $car = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Toyota',
+        'model' => 'Corolla',
+        'year' => 2024,
+        'license_plate' => 'UPL-001',
+        'color' => CarColor::WHITE->value,
+        'price_per_day' => 90,
+        'mileage' => 700,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::AVAILABLE->value,
+    ]);
+
+    $reservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $car->id,
+        'reservation_number' => 'RES-UPL-001',
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'pickup_time' => '09:00',
+        'return_time' => '18:00',
+        'pickup_location' => 'Main Office',
+        'return_location' => 'Main Office',
+        'total_days' => 2,
+        'daily_rate' => 90,
+        'subtotal' => 180,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 180,
+        'status' => ReservationStatus::CONFIRMED,
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $showResponse = $this->getJson(route('api.reservations.handover', [
+        'reservation' => $reservation->id,
+    ]));
+
+    $contractId = $showResponse->json('contract.id');
+
+    Queue::fake();
+
+      $uploadResponse = $this->post(route('api.contracts.handover', [
+          'contract' => $contractId,
+      ]), [
+          'page' => 2,
+          'documents' => [
+            [
+                'document_type' => 'passport',
+                'files' => [
+                    UploadedFile::fake()->image('passport.jpg'),
+                ],
+                'notes' => 'Passport image upload',
+            ],
+            [
+                'document_type' => 'id_card',
+                'files' => [
+                    UploadedFile::fake()->image('id-card.jpg'),
+                ],
+                'notes' => 'ID card image upload',
+            ],
+        ],
+      ]);
+
+      $uploadResponse->assertOk()
+          ->assertJsonPath('handover.steps.1.payload.documents.0.document_type', 'passport')
+          ->assertJsonPath('handover.steps.1.payload.documents.1.document_type', 'id_card')
+          ->assertJsonPath('handover.steps.1.payload.documents.0.storage_target', 'primary_driver')
+          ->assertJsonPath('handover.steps.1.payload.documents.1.storage_target', 'additional_archive')
+          ->assertJsonPath('handover.steps.1.payload.extraction_status', 'pending')
+          ->assertJsonPath('contract.ai_extraction_status', 'pending')
+          ->assertJsonPath('extraction.status', 'pending');
+
+      Queue::assertPushed(\App\Jobs\ProcessContractHandoverExtraction::class, function ($job) use ($contractId) {
+          return $job->contractId === $contractId;
+      });
+
+      $contract = Contract::findOrFail($contractId);
+      expect($contract->ai_extraction_status)->toBe('pending');
+      expect($contract->ai_extracted_data)->toBeNull();
+
+      $contract->loadMissing(['primaryDriver.documents', 'archiveFiles', 'additionalDrivers']);
+      $primaryDriver = $contract->primaryDriver()->first();
+      expect($primaryDriver)->not->toBeNull();
+      expect($primaryDriver?->documents)->toHaveCount(1);
+      expect($primaryDriver?->documents->first()?->document_type)->toBe('passport');
+      expect($primaryDriver?->documents->first()?->side)->toBe('single');
+      expect($contract->archiveFiles)->toHaveCount(1);
+      expect($contract->archiveFiles->first()?->document_type)->toBe('id_card');
+      expect($contract->additionalDrivers)->toHaveCount(0);
+  });
 
 test('api requests without a token return a token not found message', function () {
     $response = $this->get('/api/reservations/11');

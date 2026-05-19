@@ -41,6 +41,7 @@ return [
                 'en' => 'I have read the terms and conditions mentioned above and behind the contract. I have accepted the conditions in full, and I am committed to implement them. I have received the vehicle in good condition.',
                 'ar' => 'أقر بأنني قرأت البنود والشروط المذكورة أعلاه ووراء العقد، وقبلت بها كاملة بإرادتي والتزمت بتنفيذها، وقد استلمت المركبة بحالة جيدة.',
             ],
+            'mobile_signature_text' => 'براہ کرم دستخط سے پہلے موبائل پر معاہدے کی تفصیلات کا جائزہ لیں۔',
             'important_notice' => [
                 'en' => 'IMPORTANT NOTICE: Smoking inside the vehicle is prohibited. A fine of 20 OMR is charged for smoking inside the vehicle.',
                 'ar' => 'تنبيه هام: يُمنع التدخين داخل السيارة. تفرض غرامة 20 ريالًا عمانيًا في حال التدخين داخل السيارة.',

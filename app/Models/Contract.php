@@ -45,6 +45,7 @@ class Contract extends Model
         'total_amount',
         'currency',
         'notes',
+        'handover_state',
         'ai_extraction_status',
         'ai_extracted_data',
     ];
@@ -64,6 +65,7 @@ class Contract extends Model
         'end_date' => 'date',
         'total_amount' => 'decimal:2',
         'actual_return_time' => 'datetime',
+        'handover_state' => 'array',
         'ai_extracted_data' => 'array',
     ];
 
@@ -100,6 +102,11 @@ class Contract extends Model
     public function archiveFiles(): HasMany
     {
         return $this->hasMany(ContractArchiveFile::class);
+    }
+
+    public function handoverPhotos(): HasMany
+    {
+        return $this->hasMany(ContractHandoverPhoto::class);
     }
 
     public function damageReports(): HasMany

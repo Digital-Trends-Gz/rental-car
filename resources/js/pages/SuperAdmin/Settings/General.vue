@@ -195,7 +195,10 @@ const removeFaqItem = (index: number) => {
 const submit = () => {
     const updateUrl = typeof window !== 'undefined' ? window.location.pathname : '/superadmin/settings/general';
 
-    form.put(updateUrl, {
+    form.transform((data) => ({
+        ...data,
+        _method: 'put',
+    })).post(updateUrl, {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => {

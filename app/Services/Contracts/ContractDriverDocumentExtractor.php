@@ -28,7 +28,48 @@ class ContractDriverDocumentExtractor
      */
     public function extractFromTempFolders(array $tempFolders, string $documentType): array
     {
-        $result = $this->resolveExtractor()->extractFromTempFolders($tempFolders, $documentType);
+        try {
+            $result = $this->resolveExtractor()->extractFromTempFolders($tempFolders, $documentType);
+        } catch (\Throwable $e) {
+            if ($this->shouldFallbackToLocalOcr($e)) {
+                $result = $this->localClientDocumentExtractor->extractFromTempFolders($tempFolders, $documentType);
+            } else {
+                throw $e;
+            }
+        }
+
+        return [
+            'fields' => $this->mapFields($result['fields'], $documentType),
+            'raw_output' => $result['raw_output'],
+            'raw_text' => $result['raw_text'],
+            'confidence' => $result['confidence'],
+            'provider' => $result['provider'],
+            'engine' => $result['engine'],
+        ];
+    }
+
+    /**
+     * @param  array<int, string>  $filePaths
+     * @return array{
+     *   fields: array<string, mixed>,
+     *   raw_output: array<string, mixed>,
+     *   raw_text: string,
+     *   confidence: float|null,
+     *   provider: string|null,
+     *   engine: string|null
+     * }
+     */
+    public function extractFromFilePaths(array $filePaths, string $documentType): array
+    {
+        try {
+            $result = $this->resolveExtractor()->extractFromFilePaths($filePaths, $documentType);
+        } catch (\Throwable $e) {
+            if ($this->shouldFallbackToLocalOcr($e)) {
+                $result = $this->localClientDocumentExtractor->extractFromFilePaths($filePaths, $documentType);
+            } else {
+                throw $e;
+            }
+        }
 
         return [
             'fields' => $this->mapFields($result['fields'], $documentType),
@@ -54,6 +95,23 @@ class ContractDriverDocumentExtractor
         }
 
         return $this->localClientDocumentExtractor;
+    }
+
+    private function shouldFallbackToLocalOcr(\Throwable $exception): bool
+    {
+        if (!config('local_ocr.enabled', true)) {
+            return false;
+        }
+
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'rate limit')
+            || str_contains($message, 'too many requests')
+            || str_contains($message, '429')
+            || str_contains($message, 'quota')
+            || str_contains($message, 'curl error 28')
+            || str_contains($message, 'operation timed out')
+            || str_contains($message, 'timeout');
     }
 
     /**

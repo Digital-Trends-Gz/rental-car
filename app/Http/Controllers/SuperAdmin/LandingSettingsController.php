@@ -120,6 +120,8 @@ class LandingSettingsController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        $this->normalizeAiProviderPayload($request);
+
         $validated = $request->validate([
             'settings.hero.title' => ['required', 'string', 'max:255'],
             'settings.hero.description' => ['required', 'string', 'max:2000'],
@@ -278,6 +280,8 @@ class LandingSettingsController extends Controller
 
     public function testAiConnection(Request $request): JsonResponse
     {
+        $this->normalizeAiProviderPayload($request);
+
         $validated = $request->validate([
             'ai_provider.provider' => ['required', Rule::in(['openai', 'google_document_ai'])],
             'ai_provider.openai.api_key' => ['nullable', 'string', 'max:5000'],
@@ -699,6 +703,40 @@ class LandingSettingsController extends Controller
         }
 
         return $normalized;
+    }
+
+    private function normalizeAiProviderPayload(Request $request): void
+    {
+        $all = $request->all();
+        $payload = is_array($request->input('ai_provider')) ? $request->input('ai_provider') : [];
+
+        $dottedKeys = [
+            'provider' => 'ai_provider.provider',
+            'openai.api_key' => 'ai_provider.openai.api_key',
+            'openai.organization' => 'ai_provider.openai.organization',
+            'openai.project' => 'ai_provider.openai.project',
+            'openai.base_uri' => 'ai_provider.openai.base_uri',
+            'openai.model' => 'ai_provider.openai.model',
+            'openai.temperature' => 'ai_provider.openai.temperature',
+            'openai.max_output_tokens' => 'ai_provider.openai.max_output_tokens',
+            'openai.system_prompt' => 'ai_provider.openai.system_prompt',
+            'document_extraction_daily_limit' => 'ai_provider.document_extraction_daily_limit',
+            'google_document_ai.enabled' => 'ai_provider.google_document_ai.enabled',
+            'google_document_ai.project_id' => 'ai_provider.google_document_ai.project_id',
+            'google_document_ai.location' => 'ai_provider.google_document_ai.location',
+            'google_document_ai.processor_id' => 'ai_provider.google_document_ai.processor_id',
+            'google_document_ai.service_account_json' => 'ai_provider.google_document_ai.service_account_json',
+        ];
+
+        foreach ($dottedKeys as $targetKey => $sourceKey) {
+            if (!array_key_exists($sourceKey, $all)) {
+                continue;
+            }
+
+            data_set($payload, $targetKey, $all[$sourceKey]);
+        }
+
+        $request->merge(['ai_provider' => $payload]);
     }
 
     private function flatten(array $input, string $prefix = ''): array

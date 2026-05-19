@@ -39,6 +39,14 @@ const props = defineProps<{
   startContractFiles: Array<{ id?: number | null; url?: string | null }>;
   endContractFiles: Array<{ id?: number | null; url?: string | null }>;
   additionalArchive?: Array<Record<string, any>>;
+  handoverPhotos?: {
+    delivery?: Array<Record<string, any>>;
+    return?: Array<Record<string, any>>;
+  };
+  contractHandoverPhotos?: {
+    delivery?: Array<Record<string, any>>;
+    return?: Array<Record<string, any>>;
+  };
   actions: { index: string; store?: string; update?: string; show?: string; extract?: string; extractDriver?: string; extractCustomerPhoto?: string; reservationStore?: string };
 }>();
 
@@ -110,6 +118,25 @@ const arabicTranslations: Record<string, string> = {
   'I reviewed the AI extracted data and confirm it is correct.': 'راجعت البيانات المستخرجة بواسطة الذكاء الاصطناعي وأؤكد أنها صحيحة.',
   'Additional Drivers': 'السائقون الإضافيون',
   'Additional Archive': 'الأرشيف الإضافي',
+  'Handover Photos': 'صور التسليم والاستلام',
+  'Delivery': 'التسليم',
+  'Return': 'الاستلام',
+  'Damage': 'ضرر',
+  'Odometer': 'عداد',
+  'Fuel': 'وقود',
+  'Phase': 'المرحلة',
+  'Photo Type': 'نوع الصورة',
+  'View Side': 'جهة العرض',
+  'Front': 'أمام',
+  'Rear': 'خلف',
+  'Left': 'يسار',
+  'Right': 'يمين',
+  'Top': 'أعلى',
+  'Single': 'مفرد',
+  'Damage Report': 'تقرير الضرر',
+  'Extracted Value': 'القيمة المستخرجة',
+  'No handover photos added yet.': 'لم تتم إضافة صور تسليم أو استلام بعد.',
+  'No handover photos in this phase yet.': 'لا توجد صور في هذه المرحلة بعد.',
   'Independent drivers inside this contract.': 'السائقون المستقلون داخل هذا العقد.',
   'Add Driver': 'إضافة سائق',
   'No additional drivers added.': 'لم تتم إضافة أي سائقين إضافيين.',
@@ -498,15 +525,20 @@ const form = useForm({
   vehicle_condition_after: props.contract?.vehicle_condition_after ?? '',
   actual_return_time: props.contract?.actual_return_time ?? '',
   ai_extracted_data: props.contract?.ai_extracted_data ?? null,
-  car_data: {
-    car_id: props.carData?.car_id ?? props.contract?.car_data?.car_id ?? '',
-    car_details: props.carData?.car_details ?? props.contract?.car_data?.car_details ?? props.contract?.car_details ?? '',
-    plate_number: props.carData?.plate_number ?? props.contract?.car_data?.plate_number ?? props.contract?.plate_number ?? '',
-    vehicle_odometer: props.carData?.vehicle_odometer ?? props.contract?.car_data?.vehicle_odometer ?? props.contract?.vehicle_odometer ?? '',
-    vehicle_fuel_level: props.carData?.vehicle_fuel_level ?? props.contract?.car_data?.vehicle_fuel_level ?? props.contract?.vehicle_fuel_level ?? '',
-    price_per_day: props.carData?.price_per_day ?? props.contract?.car_data?.price_per_day ?? props.contract?.price_per_day ?? '',
-    price_per_week: props.carData?.price_per_week ?? props.contract?.car_data?.price_per_week ?? props.contract?.price_per_week ?? '',
-    price_per_month: props.carData?.price_per_month ?? props.contract?.car_data?.price_per_month ?? props.contract?.price_per_month ?? '',
+    car_data: {
+      car_id: props.carData?.car_id ?? props.contract?.car_data?.car_id ?? '',
+      car_details: props.carData?.car_details ?? props.contract?.car_data?.car_details ?? props.contract?.car_details ?? '',
+      plate_number: props.carData?.plate_number ?? props.contract?.car_data?.plate_number ?? props.contract?.plate_number ?? '',
+      vehicle_odometer: props.carData?.vehicle_odometer ?? props.contract?.car_data?.vehicle_odometer ?? props.contract?.vehicle_odometer ?? '',
+    vehicle_fuel_level: fuelLevelStorageValue(
+      props.carData?.vehicle_fuel_level
+        ?? props.contract?.car_data?.vehicle_fuel_level
+        ?? props.contract?.vehicle_fuel_level
+        ?? ''
+    ),
+      price_per_day: props.carData?.price_per_day ?? props.contract?.car_data?.price_per_day ?? props.contract?.price_per_day ?? '',
+      price_per_week: props.carData?.price_per_week ?? props.contract?.car_data?.price_per_week ?? props.contract?.price_per_week ?? '',
+      price_per_month: props.carData?.price_per_month ?? props.contract?.car_data?.price_per_month ?? props.contract?.price_per_month ?? '',
     allowed_km_per_day: props.carData?.allowed_km_per_day ?? props.contract?.car_data?.allowed_km_per_day ?? props.contract?.allowed_km_per_day ?? '',
     allowed_km_per_week: props.carData?.allowed_km_per_week ?? props.contract?.car_data?.allowed_km_per_week ?? props.contract?.allowed_km_per_week ?? '',
     allowed_km_per_month: props.carData?.allowed_km_per_month ?? props.contract?.car_data?.allowed_km_per_month ?? props.contract?.allowed_km_per_month ?? '',
@@ -587,6 +619,46 @@ const selectedCarDamages = computed(() => {
 
   return props.carDamagesByCar?.[selectedCarId.value] || [];
 });
+const extractedVehicleReadings = computed(() => {
+  const aiData = props.contract?.ai_extracted_data;
+  const fromTopLevel = aiData && typeof aiData === 'object' ? (aiData as Record<string, any>) : null;
+  const readings = fromTopLevel?.vehicle_readings
+    ?? fromTopLevel?.readings
+    ?? fromTopLevel?.extraction?.vehicle_readings
+    ?? null;
+
+  if (!readings || typeof readings !== 'object') {
+    return null;
+  }
+
+  return {
+    vehicle_odometer: readings.vehicle_odometer ?? readings.odometer ?? null,
+    vehicle_fuel_level: readings.vehicle_fuel_level ?? readings.fuel_level ?? null,
+    confidence: readings.confidence ?? fromTopLevel?.confidence ?? null,
+    source: readings.source ?? fromTopLevel?.provider ?? null,
+    extracted_at: readings.extracted_at ?? fromTopLevel?.extracted_at ?? null,
+  };
+});
+const handoverPhotoTab = ref<'delivery' | 'return'>('delivery');
+const handoverPhotoGroups = computed(() => {
+  const source = props.handoverPhotos
+    ?? props.contractHandoverPhotos
+    ?? props.contract?.handover_photos
+    ?? {};
+
+  return {
+    delivery: Array.isArray((source as Record<string, any>).delivery) ? (source as Record<string, any>).delivery : [],
+    return: Array.isArray((source as Record<string, any>).return) ? (source as Record<string, any>).return : [],
+  };
+});
+const handoverPhotoCount = computed(() => handoverPhotoGroups.value.delivery.length + handoverPhotoGroups.value.return.length);
+const hasExtractedVehicleReadings = computed(() => Boolean(
+  extractedVehicleReadings.value
+  && (
+    extractedVehicleReadings.value.vehicle_odometer !== null
+    || extractedVehicleReadings.value.vehicle_fuel_level !== null
+  ),
+));
 const hasLinkedReservation = computed(() => Boolean(selectedReservation.value));
 const currentContractReservationId = computed(() => Number(props.contract?.reservation_id || 0));
 const selectedReservationIsCurrentContract = computed(() => {
@@ -638,6 +710,60 @@ const selectedReservationNotice = computed(() => {
 const reservationClients = computed(() => props.reservationFormOptions?.clients ?? []);
 const reservationCars = computed(() => props.reservationFormOptions?.cars ?? []);
 const saveError = ref('');
+function handoverPhotoTypeLabel(type: unknown) {
+  switch (String(type || '').toLowerCase()) {
+    case 'damage':
+      return localize('Damage', 'ضرر');
+    case 'odometer':
+      return localize('Odometer', 'عداد');
+    case 'fuel':
+      return localize('Fuel', 'وقود');
+    default:
+      return localize('N/A', 'غير متوفر');
+  }
+}
+
+function handoverPhotoSideLabel(side: unknown) {
+  switch (String(side || '').toLowerCase()) {
+    case 'front':
+      return localize('Front', 'أمام');
+    case 'back':
+      return localize('Rear', 'خلف');
+    case 'left':
+      return localize('Left', 'يسار');
+    case 'right':
+      return localize('Right', 'يمين');
+    case 'top':
+      return localize('Top', 'أعلى');
+    case 'single':
+      return localize('Single', 'مفرد');
+    default:
+      return localize('N/A', 'غير متوفر');
+  }
+}
+
+function handoverPhotoPhaseLabel(phase: unknown) {
+  return String(phase || '').toLowerCase() === 'return'
+    ? localize('Return', 'الاستلام')
+    : localize('Delivery', 'التسليم');
+}
+
+function handoverPhotoValueLabel(value: unknown) {
+  if (value === null || value === undefined || value === '') {
+    return localize('N/A', 'غير متوفر');
+  }
+
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return localize('N/A', 'غير متوفر');
+    }
+  }
+
+  return String(value);
+}
+
 const additionalArchiveOwnerOptions = computed(() => {
   const options = [
     { value: '', label: localize('No specific driver', 'ط·آ¨ط·آ¯ط¸ث†ط¸â€  ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط¸â€¦ط·آ­ط·آ¯ط·آ¯') },
@@ -789,6 +915,78 @@ function applyExtractedFields(driver: any, fields: Record<string, any>) {
     if (value === null || value === undefined || value === '') return;
     driver[key] = String(value);
   });
+}
+
+function fuelLevelLabel(value: string | null | undefined) {
+  const normalized = String(value ?? '').trim();
+
+  const labels: Record<string, { en: string; ar: string }> = {
+    empty: { en: 'Empty', ar: 'فارغ' },
+    quarter: { en: '1/4 Tank', ar: 'ربع الخزان' },
+    half: { en: '1/2 Tank', ar: 'نصف الخزان' },
+    three_quarters: { en: '3/4 Tank', ar: '3/4 الخزان' },
+    full: { en: 'Full', ar: 'ممتلئ' },
+  };
+
+  if (!normalized) {
+    return localize('N/A', 'غير متوفر');
+  }
+
+  return locale.value === 'ar'
+    ? labels[normalized]?.ar ?? normalized
+    : labels[normalized]?.en ?? normalized;
+}
+
+function fuelLevelStorageValue(value: string | null | undefined) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  const map: Record<string, string> = {
+    empty: 'empty',
+    '0': 'empty',
+    '0/4': 'empty',
+    '0%': 'empty',
+    'empty tank': 'empty',
+    quarter: 'quarter',
+    '1/4': 'quarter',
+    '1-4': 'quarter',
+    '1 4': 'quarter',
+    '1/4 tank': 'quarter',
+    'quarter tank': 'quarter',
+    half: 'half',
+    '1/2': 'half',
+    '1-2': 'half',
+    '1 2': 'half',
+    '1/2 tank': 'half',
+    'half tank': 'half',
+    three_quarters: 'three_quarters',
+    '3/4': 'three_quarters',
+    '3-4': 'three_quarters',
+    '3 4': 'three_quarters',
+    '3/4 tank': 'three_quarters',
+    'three-quarters': 'three_quarters',
+    'three quarters': 'three_quarters',
+    full: 'full',
+    '1': 'full',
+    '100': 'full',
+    '100%': 'full',
+    'full tank': 'full',
+  };
+
+  return map[normalized] ?? normalized;
+}
+
+function applyExtractedVehicleReadings() {
+  if (!extractedVehicleReadings.value) {
+    return;
+  }
+
+  if (extractedVehicleReadings.value.vehicle_odometer !== null && extractedVehicleReadings.value.vehicle_odometer !== undefined) {
+    form.car_data.vehicle_odometer = extractedVehicleReadings.value.vehicle_odometer;
+  }
+
+  if (extractedVehicleReadings.value.vehicle_fuel_level !== null && extractedVehicleReadings.value.vehicle_fuel_level !== undefined) {
+    form.car_data.vehicle_fuel_level = fuelLevelStorageValue(String(extractedVehicleReadings.value.vehicle_fuel_level));
+  }
 }
 
 function hasAiExtractedData(driver: any) {
@@ -1044,6 +1242,33 @@ function submit() {
           </div>
           <div v-if="hasAiExtractedData(form.primary_driver)" class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             {{ localize('Review the extracted AI data carefully before saving this contract.', 'ط·آ±ط·آ§ط·آ¬ط·آ¹ ط·آ§ط¸â€‍ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ¬ط·آ© ط·آ¨ط·آ§ط¸â€‍ط·آ°ط¸ئ’ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ§ط·آµط·آ·ط¸â€ ط·آ§ط·آ¹ط¸ظ¹ ط·آ¨ط·آ¹ط¸â€ ط·آ§ط¸ظ¹ط·آ© ط¸â€ڑط·آ¨ط¸â€‍ ط·آ­ط¸ظ¾ط·آ¸ ط¸â€،ط·آ°ط·آ§ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯.') }}
+          </div>
+          <div v-if="hasExtractedVehicleReadings" class="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div class="font-medium">{{ localize('Extracted Vehicle Readings', 'القراءات المستخرجة للمركبة') }}</div>
+                <div class="mt-1 text-xs text-emerald-700">{{ localize('Review the AI readings before confirming the contract values.', 'راجع القراءات المستخرجة قبل اعتماد قيم العقد.') }}</div>
+              </div>
+              <Button type="button" variant="outline" @click="applyExtractedVehicleReadings">
+                {{ localize('Apply Extracted Readings', 'اعتماد القراءات المستخرجة') }}
+              </Button>
+            </div>
+            <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div class="rounded-md border bg-white p-3">
+                <div class="text-xs text-muted-foreground">{{ localize('Vehicle Odometer', 'عداد السيارة') }}</div>
+                <div class="mt-1 text-base font-semibold">{{ extractedVehicleReadings?.vehicle_odometer ?? localize('N/A', 'غير متوفر') }}</div>
+              </div>
+              <div class="rounded-md border bg-white p-3">
+                <div class="text-xs text-muted-foreground">{{ localize('Fuel In Vehicle', 'الوقود في السيارة') }}</div>
+                <div class="mt-1 text-base font-semibold">{{ fuelLevelLabel(extractedVehicleReadings?.vehicle_fuel_level) }}</div>
+              </div>
+              <div class="rounded-md border bg-white p-3">
+                <div class="text-xs text-muted-foreground">{{ localize('Confidence', 'نسبة الثقة') }}</div>
+                <div class="mt-1 text-base font-semibold">
+                  {{ extractedVehicleReadings?.confidence !== null && extractedVehicleReadings?.confidence !== undefined ? Number(extractedVehicleReadings.confidence).toFixed(2) : localize('N/A', 'غير متوفر') }}
+                </div>
+              </div>
+            </div>
           </div>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div>
@@ -1616,6 +1841,101 @@ function submit() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <section class="mt-6 space-y-4 rounded-lg border bg-white p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold">{{ localize('Handover Photos', 'صور التسليم والاستلام') }}</h2>
+            <p class="text-sm text-muted-foreground">{{ localize('Delivery and return archive photos for this contract.', 'أرشيف صور التسليم والاستلام الخاصة بهذا العقد.') }}</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="rounded-full border px-4 py-2 text-sm font-medium transition"
+              :class="handoverPhotoTab === 'delivery' ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-muted text-foreground hover:bg-muted/80'"
+              @click="handoverPhotoTab = 'delivery'"
+            >
+              {{ localize('Delivery', 'التسليم') }}
+              <span class="ml-1 text-xs opacity-80">({{ handoverPhotoGroups.delivery.length }})</span>
+            </button>
+            <button
+              type="button"
+              class="rounded-full border px-4 py-2 text-sm font-medium transition"
+              :class="handoverPhotoTab === 'return' ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-muted text-foreground hover:bg-muted/80'"
+              @click="handoverPhotoTab = 'return'"
+            >
+              {{ localize('Return', 'الاستلام') }}
+              <span class="ml-1 text-xs opacity-80">({{ handoverPhotoGroups.return.length }})</span>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="handoverPhotoCount === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+          {{ localize('No handover photos added yet.', 'لم تتم إضافة صور تسليم أو استلام بعد.') }}
+        </div>
+
+        <div v-else-if="(handoverPhotoGroups[handoverPhotoTab] || []).length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+          {{ localize('No handover photos in this phase yet.', 'لا توجد صور في هذه المرحلة بعد.') }}
+        </div>
+
+        <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <article
+            v-for="(photo, index) in handoverPhotoGroups[handoverPhotoTab]"
+            :key="photo.id ?? `${handoverPhotoTab}-${index}`"
+            class="overflow-hidden rounded-lg border bg-background shadow-sm"
+          >
+            <div class="aspect-video bg-muted">
+              <img
+                v-if="photo.url"
+                :src="photo.url"
+                :alt="photo.title || photo.file_name || localize('Handover photo', 'صورة التسليم')"
+                class="h-full w-full object-cover"
+              >
+              <div v-else class="flex h-full items-center justify-center text-sm text-muted-foreground">
+                {{ localize('No preview available', 'لا توجد معاينة متاحة') }}
+              </div>
+            </div>
+
+            <div class="space-y-3 p-4">
+              <div class="flex flex-wrap gap-2 text-xs font-medium">
+                <span class="rounded-full bg-muted px-2 py-1">{{ handoverPhotoPhaseLabel(photo.phase) }}</span>
+                <span class="rounded-full bg-muted px-2 py-1">{{ handoverPhotoTypeLabel(photo.photo_type) }}</span>
+                <span class="rounded-full bg-muted px-2 py-1">{{ handoverPhotoSideLabel(photo.view_side) }}</span>
+              </div>
+
+              <div>
+                <div class="text-sm font-semibold text-foreground">{{ photo.title || photo.file_name || localize('Handover photo', 'صورة التسليم') }}</div>
+                <div class="mt-1 break-words text-xs text-muted-foreground">{{ photo.notes || photo.file_name || localize('No notes', 'لا توجد ملاحظات') }}</div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <div class="text-muted-foreground">{{ localize('Phase', 'المرحلة') }}</div>
+                  <div class="mt-1 font-medium">{{ handoverPhotoPhaseLabel(photo.phase) }}</div>
+                </div>
+                <div>
+                  <div class="text-muted-foreground">{{ localize('Photo Type', 'نوع الصورة') }}</div>
+                  <div class="mt-1 font-medium">{{ handoverPhotoTypeLabel(photo.photo_type) }}</div>
+                </div>
+                <div>
+                  <div class="text-muted-foreground">{{ localize('View Side', 'جهة العرض') }}</div>
+                  <div class="mt-1 font-medium">{{ handoverPhotoSideLabel(photo.view_side) }}</div>
+                </div>
+                <div>
+                  <div class="text-muted-foreground">{{ localize('Damage Report', 'تقرير الضرر') }}</div>
+                  <div class="mt-1 font-medium">{{ photo.damage_report_id ?? localize('N/A', 'غير متوفر') }}</div>
+                </div>
+              </div>
+
+              <div v-if="photo.extracted_value !== null && photo.extracted_value !== undefined && photo.extracted_value !== ''" class="rounded-md bg-muted/40 p-3 text-xs">
+                <div class="text-muted-foreground">{{ localize('Extracted Value', 'القيمة المستخرجة') }}</div>
+                <div class="mt-1 break-words font-medium">{{ handoverPhotoValueLabel(photo.extracted_value) }}</div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
     </main>
   </AdminLayout>
 </template>

@@ -27,16 +27,6 @@ class OpenAiClientDocumentExtractor
      */
     public function extractFromTempFolders(array $tempFolders, string $documentType): array
     {
-        $settings = AiProviderSettings::load();
-        $provider = (string) ($settings['provider'] ?? 'openai');
-        if ($provider !== 'openai') {
-            throw new RuntimeException('Current AI provider is not supported for document extraction on this screen. Switch provider to OpenAI or use local OCR.');
-        }
-
-        if (!AiProviderSettings::isConfiguredForCurrentProvider()) {
-            throw new RuntimeException('OpenAI provider is not fully configured in Super Admin settings.');
-        }
-
         $folders = array_values(array_unique(array_filter(array_map(
             static fn ($folder) => trim((string) $folder),
             $tempFolders
@@ -51,20 +41,63 @@ class OpenAiClientDocumentExtractor
             ->orderByDesc('id')
             ->get();
 
-        if ($tempFiles->isEmpty()) {
+        $paths = [];
+        foreach ($tempFiles as $file) {
+            if ($file->path !== '') {
+                $paths[] = $file->path;
+            }
+        }
+
+        return $this->extractFromFilePaths($paths, $documentType);
+    }
+
+    /**
+     * @param  array<int, string>  $filePaths
+     * @return array{
+     *   fields: array<string, mixed>,
+     *   raw_output: array<string, mixed>,
+     *   raw_text: string,
+     *   confidence: float|null,
+     *   provider: string,
+     *   engine: string|null
+     * }
+     */
+    public function extractFromFilePaths(array $filePaths, string $documentType): array
+    {
+        $settings = AiProviderSettings::load();
+        $provider = (string) ($settings['provider'] ?? 'openai');
+        if ($provider !== 'openai') {
+            throw new RuntimeException('Current AI provider is not supported for document extraction on this screen. Switch provider to OpenAI or use local OCR.');
+        }
+
+        if (!AiProviderSettings::isConfiguredForCurrentProvider()) {
+            throw new RuntimeException('OpenAI provider is not fully configured in Super Admin settings.');
+        }
+
+        $paths = [];
+        foreach ($filePaths as $path) {
+            $resolved = $this->resolveAbsolutePath((string) $path);
+            if ($resolved === null) {
+                continue;
+            }
+
+            $paths[] = $resolved;
+        }
+
+        if ($paths === []) {
             throw new RuntimeException('Uploaded files were not found. Please upload the document again.');
         }
 
         $chunks = [];
         $imageDataUris = [];
 
-        foreach ($tempFiles as $file) {
-            $text = $this->extractTextFromTempFile($file);
+        foreach ($paths as $path) {
+            $text = $this->extractTextFromPath($path);
             if ($text !== '') {
-                $chunks[] = "File: {$file->original_name}\n{$text}";
+                $chunks[] = "File: ".$this->fileLabelFromPath($path)."\n{$text}";
             }
 
-            $imageDataUri = $this->extractImageDataUriFromTempFile($file);
+            $imageDataUri = $this->extractImageDataUriFromPath($path);
             if ($imageDataUri !== null) {
                 $imageDataUris[] = $imageDataUri;
             }
@@ -88,16 +121,14 @@ class OpenAiClientDocumentExtractor
         ];
     }
 
-    private function extractTextFromTempFile(TempFile $file): string
+    private function extractTextFromPath(string $absolutePath): string
     {
-        $disk = Storage::disk(config('vilt-filepond.storage_disk'));
-        if (!$disk->exists($file->path)) {
+        if (!is_file($absolutePath)) {
             return '';
         }
 
-        $absolutePath = $disk->path($file->path);
-        $mime = strtolower((string) ($file->mime_type ?? ''));
-        $extension = strtolower((string) pathinfo((string) $file->original_name, PATHINFO_EXTENSION));
+        $mime = strtolower((string) @mime_content_type($absolutePath));
+        $extension = strtolower((string) pathinfo($absolutePath, PATHINFO_EXTENSION));
 
         if (str_contains($mime, 'pdf') || $extension === 'pdf') {
             try {
@@ -123,22 +154,21 @@ class OpenAiClientDocumentExtractor
         return '';
     }
 
-    private function extractImageDataUriFromTempFile(TempFile $file): ?string
+    private function extractImageDataUriFromPath(string $absolutePath): ?string
     {
-        $disk = Storage::disk(config('vilt-filepond.storage_disk'));
-        if (!$disk->exists($file->path)) {
+        if (!is_file($absolutePath)) {
             return null;
         }
 
-        $mime = strtolower((string) ($file->mime_type ?? ''));
-        $extension = strtolower((string) pathinfo((string) $file->original_name, PATHINFO_EXTENSION));
+        $mime = strtolower((string) @mime_content_type($absolutePath));
+        $extension = strtolower((string) pathinfo($absolutePath, PATHINFO_EXTENSION));
         $isImage = str_starts_with($mime, 'image/') || in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'], true);
         if (!$isImage) {
             return null;
         }
 
         try {
-            $content = $disk->get($file->path);
+            $content = file_get_contents($absolutePath);
             if (!is_string($content) || $content === '') {
                 return null;
             }
@@ -158,6 +188,44 @@ class OpenAiClientDocumentExtractor
         }
     }
 
+    private function resolveAbsolutePath(string $path): ?string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return null;
+        }
+
+        if (is_file($path)) {
+            return $path;
+        }
+
+        $normalized = ltrim($path, '/');
+        if (str_starts_with($normalized, 'storage/')) {
+            $normalized = substr($normalized, strlen('storage/'));
+        }
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $disk = Storage::disk(config('vilt-filepond.storage_disk'));
+        if (!$disk->exists($normalized)) {
+            return null;
+        }
+
+        return $disk->path($normalized);
+    }
+
+    private function fileLabelFromPath(string $path): string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return 'document';
+        }
+
+        return basename($path);
+    }
+
     private function normalizeText(string $text): string
     {
         $text = preg_replace('/[ \t]+/u', ' ', $text) ?? $text;
@@ -167,7 +235,7 @@ class OpenAiClientDocumentExtractor
     }
 
     /**
-     * @param  array<int, string>  $imageDataUris
+     * @param  array<string, mixed>  $fields
      * @return array<string, mixed>
      */
     private function extractStructuredDataWithOpenAi(string $documentType, string $rawText, array $imageDataUris): array
@@ -340,7 +408,3 @@ class OpenAiClientDocumentExtractor
         return $text === '' ? null : $text;
     }
 }
-
-
-
-

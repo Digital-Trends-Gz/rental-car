@@ -6,10 +6,12 @@ use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use MohamedGaldi\ViltFilepond\Traits\HasFiles;
 
 class CarDamageReport extends Model
 {
     use BelongsToTenant;
+    use HasFiles;
 
     protected $fillable = [
         'tenant_id',
@@ -30,6 +32,15 @@ class CarDamageReport extends Model
         'inspected_at' => 'datetime',
         'odometer' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (CarDamageReport $report): void {
+            $report->files()->each(static function ($file): void {
+                $file->delete();
+            });
+        });
+    }
 
     public function car(): BelongsTo
     {

@@ -314,6 +314,7 @@ class TenantSiteSetting extends Model
                     'en' => null,
                     'ar' => null,
                 ],
+                'mobile_signature_text' => null,
                 'important_notice' => [
                     'en' => null,
                     'ar' => null,
@@ -797,6 +798,7 @@ class TenantSiteSetting extends Model
                     'en' => self::nullableString(data_get($data, 'contract_pdf.acknowledgement_body.en')),
                     'ar' => self::nullableString(data_get($data, 'contract_pdf.acknowledgement_body.ar')),
                 ],
+                'mobile_signature_text' => self::nullableString(data_get($data, 'contract_pdf.mobile_signature_text')),
                 'important_notice' => [
                     'en' => self::nullableString(data_get($data, 'contract_pdf.important_notice.en')),
                     'ar' => self::nullableString(data_get($data, 'contract_pdf.important_notice.ar')),

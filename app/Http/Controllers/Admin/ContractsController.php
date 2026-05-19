@@ -14,6 +14,7 @@ use App\Models\Car;
 use App\Models\CarDamageCase;
 use App\Models\Contract;
 use App\Models\ContractArchiveFile;
+use App\Models\ContractHandoverPhoto;
 use App\Models\ContractDriver;
 use App\Models\ContractDriverDocument;
 use App\Models\Payment;
@@ -630,6 +631,7 @@ class ContractsController extends Controller
             'primaryDriver.documents',
             'additionalDrivers.documents',
             'archiveFiles.driver',
+            'handoverPhotos',
         ]);
         $reservationOptions = $this->reservationOptions($request);
         $carDamageMap = $this->serializeCarDamageCaseMap(
@@ -682,6 +684,7 @@ class ContractsController extends Controller
                 'additional_drivers' => $contract->additionalDrivers->map(fn (ContractDriver $driver) => $this->serializeDriver($driver))->values()->all(),
                 'car_data' => $this->serializeCarData($contract),
                 'contract_archive' => $this->serializeContractArchive($contract),
+                'handover_photos' => $this->serializeHandoverPhotos($contract),
             ],
             'carData' => $this->serializeCarData($contract),
             'currentCarDamages' => $contract->reservation?->car?->id
@@ -692,6 +695,7 @@ class ContractsController extends Controller
             'additionalDrivers' => $contract->additionalDrivers->map(fn (ContractDriver $driver) => $this->serializeDriver($driver))->values()->all(),
             'contractArchive' => $this->serializeContractArchive($contract),
             'additionalArchive' => $this->serializeAdditionalArchiveFiles($contract),
+            'handoverPhotos' => $this->serializeHandoverPhotos($contract),
             'reservationOptions' => $reservationOptions,
             'reservationFormOptions' => [
                 'clients' => $this->reservationClientOptions($request),
@@ -2502,6 +2506,47 @@ class ContractsController extends Controller
             ->all();
     }
 
+    private function serializeHandoverPhotos(Contract $contract): array
+    {
+        $photos = $contract->relationLoaded('handoverPhotos')
+            ? $contract->handoverPhotos
+            : $contract->handoverPhotos()->get();
+
+        return [
+            'delivery' => $photos
+                ->where('phase', 'delivery')
+                ->sortBy('id')
+                ->values()
+                ->map(fn (ContractHandoverPhoto $photo) => $this->serializeHandoverPhoto($photo))
+                ->all(),
+            'return' => $photos
+                ->where('phase', 'return')
+                ->sortBy('id')
+                ->values()
+                ->map(fn (ContractHandoverPhoto $photo) => $this->serializeHandoverPhoto($photo))
+                ->all(),
+        ];
+    }
+
+    private function serializeHandoverPhoto(ContractHandoverPhoto $photo): array
+    {
+        return [
+            'id' => $photo->id,
+            'phase' => $photo->phase,
+            'photo_type' => $photo->photo_type,
+            'view_side' => $photo->view_side,
+            'title' => $photo->title,
+            'notes' => $photo->notes,
+            'file_path' => $photo->file_path,
+            'file_name' => $photo->file_name,
+            'mime_type' => $photo->mime_type,
+            'url' => $this->storageUrl($photo->file_path),
+            'extraction_status' => $photo->extraction_status,
+            'damage_report_id' => $photo->damage_report_id,
+            'extracted_value' => $photo->extracted_value,
+        ];
+    }
+
     private function serializeArchiveOwnerKey(ContractArchiveFile $file): string
     {
         $driver = $file->relationLoaded('driver') ? $file->driver : $file->driver()->first();
@@ -2926,8 +2971,6 @@ class ContractsController extends Controller
         ];
     }
 }
-
-
 
 
 

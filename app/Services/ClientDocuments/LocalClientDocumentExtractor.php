@@ -22,10 +22,6 @@ class LocalClientDocumentExtractor
      */
     public function extractFromTempFolders(array $tempFolders, string $documentType): array
     {
-        if (!config('local_ocr.enabled', true)) {
-            throw new RuntimeException('Local OCR is disabled. Set LOCAL_OCR_ENABLED=true to use document extraction.');
-        }
-
         $folders = array_values(array_unique(array_filter(array_map(
             static fn ($folder) => trim((string) $folder),
             $tempFolders
@@ -40,19 +36,42 @@ class LocalClientDocumentExtractor
             ->orderByDesc('id')
             ->get();
 
-        if ($tempFiles->isEmpty()) {
-            throw new RuntimeException('Uploaded files were not found. Please upload the document again.');
+        $paths = [];
+        foreach ($tempFiles as $file) {
+            if ($file->path !== '') {
+                $paths[] = $file->path;
+            }
         }
 
-        $disk = Storage::disk(config('vilt-filepond.storage_disk'));
+        return $this->extractFromFilePaths($paths, $documentType);
+    }
+
+    /**
+     * @param  array<int, string>  $filePaths
+     * @return array{
+     *   fields: array<string, mixed>,
+     *   raw_output: array<string, mixed>,
+     *   raw_text: string,
+     *   confidence: float|null,
+     *   provider: string|null,
+     *   engine: string|null
+     * }
+     */
+    public function extractFromFilePaths(array $filePaths, string $documentType): array
+    {
+        if (!config('local_ocr.enabled', true)) {
+            throw new RuntimeException('Local OCR is disabled. Set LOCAL_OCR_ENABLED=true to use document extraction.');
+        }
+
         $paths = [];
 
-        foreach ($tempFiles as $file) {
-            if (!$disk->exists($file->path)) {
+        foreach ($filePaths as $path) {
+            $resolved = $this->resolvePath((string) $path);
+            if ($resolved === null) {
                 continue;
             }
 
-            $paths[] = $disk->path($file->path);
+            $paths[] = $resolved;
         }
 
         if ($paths === []) {
@@ -142,6 +161,34 @@ class LocalClientDocumentExtractor
             'provider' => $this->nullableString($payload['provider'] ?? null),
             'engine' => $this->nullableString($payload['engine'] ?? null),
         ];
+    }
+
+    private function resolvePath(string $path): ?string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return null;
+        }
+
+        if (is_file($path)) {
+            return $path;
+        }
+
+        $normalized = ltrim($path, '/');
+        if (str_starts_with($normalized, 'storage/')) {
+            $normalized = substr($normalized, strlen('storage/'));
+        }
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $disk = Storage::disk(config('vilt-filepond.storage_disk'));
+        if (!$disk->exists($normalized)) {
+            return null;
+        }
+
+        return $disk->path($normalized);
     }
 
     /**

@@ -283,32 +283,21 @@ class ContractAiExtractor
      */
     private function createResponseWithRetry(array $payload): object
     {
-        $attempts = 3;
-        $delays = [1, 2];
+        try {
+            return OpenAI::responses()->create($payload);
+        } catch (\Throwable $e) {
+            $message = strtolower((string) $e->getMessage());
+            $isRateLimit = str_contains($message, 'rate limit')
+                || str_contains($message, 'too many requests')
+                || str_contains($message, '429')
+                || str_contains($message, 'quota');
 
-        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
-            try {
-                return OpenAI::responses()->create($payload);
-            } catch (\Throwable $e) {
-                $message = strtolower((string) $e->getMessage());
-                $isRateLimit = str_contains($message, 'rate limit')
-                    || str_contains($message, 'too many requests')
-                    || str_contains($message, '429')
-                    || str_contains($message, 'quota');
-
-                if (!$isRateLimit || $attempt === $attempts) {
-                    if ($isRateLimit) {
-                        throw new RuntimeException('Request rate limit has been exceeded. Please wait 30-60 seconds and retry.');
-                    }
-
-                    throw new RuntimeException('AI extraction failed: '.$e->getMessage());
-                }
-
-                sleep($delays[$attempt - 1] ?? 2);
+            if ($isRateLimit) {
+                throw new RuntimeException('Request rate limit has been exceeded. Please wait 30-60 seconds and retry.');
             }
-        }
 
-        throw new RuntimeException('AI extraction failed unexpectedly.');
+            throw new RuntimeException('AI extraction failed: '.$e->getMessage());
+        }
     }
 
     /**

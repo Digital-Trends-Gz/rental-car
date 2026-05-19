@@ -23,8 +23,13 @@ type ContractPdfTextSet = {
     accident_notice: LocalizedText;
     acknowledgement_title: LocalizedText;
     acknowledgement_body: LocalizedText;
+    mobile_signature_text: string;
     important_notice: LocalizedText;
     closing_notice: LocalizedText;
+};
+
+type ContractPdfDefaults = Record<Exclude<keyof ContractPdfTextSet, 'mobile_signature_text'>, { en: string; ar: string }> & {
+    mobile_signature_text: string;
 };
 
 const props = defineProps<{
@@ -36,7 +41,7 @@ const props = defineProps<{
     settings: {
         contract_pdf?: Partial<ContractPdfTextSet>;
     };
-    contractPdfDefaults: Record<keyof ContractPdfTextSet, { en: string; ar: string }>;
+    contractPdfDefaults: ContractPdfDefaults;
     previewUrl: string | null;
     actions: {
         update: string;
@@ -48,6 +53,10 @@ const page = usePage<any>();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const resolvedText = (key: keyof ContractPdfTextSet, lang: 'en' | 'ar'): string => {
+    if (key === 'mobile_signature_text') {
+        return String(props.settings.contract_pdf?.mobile_signature_text ?? props.contractPdfDefaults.mobile_signature_text ?? '').trim();
+    }
+
     const current = props.settings.contract_pdf?.[key]?.[lang];
     const fallback = props.contractPdfDefaults[key]?.[lang] ?? '';
 
@@ -92,6 +101,7 @@ const form = useForm({
             en: resolvedText('acknowledgement_body', 'en'),
             ar: resolvedText('acknowledgement_body', 'ar'),
         },
+        mobile_signature_text: resolvedText('mobile_signature_text', 'en'),
         important_notice: {
             en: resolvedText('important_notice', 'en'),
             ar: resolvedText('important_notice', 'ar'),
@@ -263,6 +273,17 @@ function submit() {
                                 <Label>{{ localize('Acknowledgement body (AR)', 'نص الإقرار (AR)') }}</Label>
                                 <Textarea v-model="form.contract_pdf.acknowledgement_body.ar" rows="4" dir="rtl" />
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{{ localize('Mobile signature note', 'ملاحظة التوقيع عبر الجوال') }}</CardTitle>
+                            <CardDescription>{{ localize('This text is shown on the mobile signature step before confirmation.', 'هذا النص يظهر في صفحة التوقيع على الجوال قبل التأكيد.') }}</CardDescription>
+                        </CardHeader>
+                        <CardContent class="space-y-2">
+                            <Label>{{ localize('Mobile note', 'ملاحظة الجوال') }}</Label>
+                            <Textarea v-model="form.contract_pdf.mobile_signature_text" rows="4" />
                         </CardContent>
                     </Card>
 
