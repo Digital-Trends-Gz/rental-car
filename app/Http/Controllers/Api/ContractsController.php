@@ -82,6 +82,7 @@ class ContractsController extends Controller
     {
         $user = $this->authorizeAdminApiUser($request);
         $locale = $this->resolveApiLocale($request);
+        $phase = $this->normalizeHandoverPhase($request->input('phase', $request->query('phase', 'delivery')));
 
         $reservation->loadMissing([
             'user:id,name,email,is_active',
@@ -94,10 +95,18 @@ class ContractsController extends Controller
             'contract.reservation.car.branch:id,name',
         ]);
 
-        $contract = $reservation->contract ?: $this->createDraftContractForReservation($reservation);
+        if ($phase === 'return') {
+            $contract = $reservation->contract;
+            abort_unless($contract, 404, 'Contract not found for this reservation.');
+        } else {
+            $contract = $reservation->contract ?: $this->createDraftContractForReservation($reservation);
+        }
+
         $reservation->setRelation('contract', $contract);
         abort_unless($this->canAccessContract($contract, $user), 403);
-        $this->retryQueuedExtractionIfNeeded($contract);
+        if ($phase === 'delivery') {
+            $this->retryQueuedExtractionIfNeeded($contract);
+        }
         $contract->refresh();
 
         return response()->json([
@@ -108,7 +117,11 @@ class ContractsController extends Controller
                 'reservation.car.branch:id,name',
                 'branch:id,name',
             ]), $locale),
-            'handover' => $this->handoverPayload($contract, $locale),
+            'phase' => $phase,
+            'phase_label' => $this->handoverPhaseLabel($phase),
+            'handover' => $phase === 'return'
+                ? $this->returnHandoverPayload($contract, $locale)
+                : $this->handoverPayload($contract, $locale),
         ]);
     }
 
@@ -152,6 +165,7 @@ class ContractsController extends Controller
     {
         $user = $this->authorizeAdminApiUser($request);
         $locale = $this->resolveApiLocale($request);
+        $phase = $this->normalizeHandoverPhase($request->input('phase', $request->query('phase', 'delivery')));
 
         $contract->loadMissing([
             'reservation.user:id,name,email,is_active',
@@ -164,7 +178,11 @@ class ContractsController extends Controller
         abort_unless($this->canAccessContract($contract, $user), 403);
 
         $page = (int) $request->integer('page');
-        abort_unless($page >= 1 && $page <= 6, 422, 'The page field is required.');
+        if ($phase === 'return') {
+            abort_unless($page >= 1 && $page <= 2, 422, 'The page field is required.');
+        } else {
+            abort_unless($page >= 1 && $page <= 6, 422, 'The page field is required.');
+        }
 
         $payload = $request->input('payload');
         if (is_string($payload)) {
@@ -175,74 +193,119 @@ class ContractsController extends Controller
         }
 
         if (!is_array($payload)) {
-            $payload = match ($page) {
-                1 => [
-                    'reviewed' => $request->input('reviewed'),
-                    'note' => $request->input('note'),
-                    'notes' => $request->input('notes'),
-                ],
-                2 => [
-                    'document_type' => $request->input('document_type'),
-                    'documents' => $request->input('documents', []),
-                    'temp_folders' => $request->input('temp_folders', []),
-                    'files' => $request->file('files', []),
-                    'note' => $request->input('note'),
-                    'notes' => $request->input('notes'),
-                ],
-                3 => [
-                    'report_type' => $request->input('report_type'),
-                    'photos' => $request->input('photos', []),
-                    'temp_folders' => $request->input('temp_folders', []),
-                    'files' => $request->file('files', []),
-                    'photo_type' => $request->input('photo_type'),
-                    'note' => $request->input('note'),
-                    'notes' => $request->input('notes'),
-                ],
-                4 => [
-                    'vehicle_odometer' => $request->input('vehicle_odometer'),
-                    'vehicle_fuel_level' => $request->input('vehicle_fuel_level'),
-                    'reviewed' => $request->boolean('reviewed', false),
-                    'note' => $request->input('note'),
-                    'notes' => $request->input('notes'),
-                ],
-                5 => [
-                    'accepted_terms' => $request->boolean('accepted_terms', false),
-                    'note' => $request->input('note'),
-                    'notes' => $request->input('notes'),
-                ],
-                6 => [
-                    'delivery_confirmed' => $request->boolean('delivery_confirmed', false),
-                    'note' => $request->input('note'),
-                    'notes' => $request->input('notes'),
-                ],
-                default => [], 
-            };
+            if ($phase === 'return') {
+                $payload = match ($page) {
+                    1 => [
+                        'reviewed' => $request->input('reviewed'),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    2 => [
+                        'photos' => $request->input('photos', []),
+                        'temp_folders' => $request->input('temp_folders', []),
+                        'files' => $request->file('files', []),
+                        'vehicle_odometer' => $request->input('vehicle_odometer'),
+                        'vehicle_fuel_level' => $request->input('vehicle_fuel_level'),
+                        'return_odometer' => $request->input('return_odometer'),
+                        'return_fuel_level' => $request->input('return_fuel_level'),
+                        'reviewed' => $request->boolean('reviewed', false),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    default => [],
+                };
+            } else {
+                $payload = match ($page) {
+                    1 => [
+                        'reviewed' => $request->input('reviewed'),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    2 => [
+                        'document_type' => $request->input('document_type'),
+                        'documents' => $request->input('documents', []),
+                        'temp_folders' => $request->input('temp_folders', []),
+                        'files' => $request->file('files', []),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    3 => [
+                        'report_type' => $request->input('report_type'),
+                        'photos' => $request->input('photos', []),
+                        'temp_folders' => $request->input('temp_folders', []),
+                        'files' => $request->file('files', []),
+                        'photo_type' => $request->input('photo_type'),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    4 => [
+                        'vehicle_odometer' => $request->input('vehicle_odometer'),
+                        'vehicle_fuel_level' => $request->input('vehicle_fuel_level'),
+                        'reviewed' => $request->boolean('reviewed', false),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    5 => [
+                        'accepted_terms' => $request->boolean('accepted_terms', false),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    6 => [
+                        'delivery_confirmed' => $request->boolean('delivery_confirmed', false),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    default => [],
+                };
+            }
         }
 
-        if ($page === 2) {
+        if ($phase === 'delivery' && $page === 2) {
             $payload = $this->normalizeHandoverPageTwoPayload($request, $payload);
         }
 
-        if ($page === 3) {
+        if ($phase === 'delivery' && $page === 3) {
             $payload = $this->normalizeHandoverPageThreePayload($request, $payload);
         }
 
-        if ($page === 4) {
+        if ($phase === 'delivery' && $page === 4) {
             $payload = $this->normalizeHandoverPageFourPayload($request, $payload);
         }
 
-        if ($page === 5) {
+        if ($phase === 'delivery' && $page === 5) {
             $payload = $this->normalizeHandoverPageFivePayload($request, $payload);
         }
 
-        if ($page === 6) {
+        if ($phase === 'delivery' && $page === 6) {
             $payload = $this->normalizeHandoverPageSixPayload($request, $payload);
+        }
+
+        if ($phase === 'return') {
+            return $this->updateReturnHandover($request, $contract, $locale, $page, $payload);
         }
 
         $step = $this->handoverStepForPage($page);
         $stepPayload = $this->validateHandoverStepPayload($page, $payload);
         $extraction = null;
         $appliedFields = [];
+
+        if ($page === 1) {
+            $contractNote = array_key_exists('notes', $stepPayload)
+                ? $stepPayload['notes']
+                : (array_key_exists('note', $stepPayload) ? $stepPayload['note'] : $contract->notes);
+            $contractNote = $this->nullableString($contractNote);
+
+            if ($contractNote !== $contract->notes) {
+                $contract->forceFill([
+                    'notes' => $contractNote,
+                ])->saveQuietly();
+            }
+
+            $stepPayload = array_merge($stepPayload, [
+                'note' => $contractNote,
+                'notes' => $contractNote,
+            ]);
+        }
 
         if ($page === 2) {
             $documents = $this->prepareHandoverDocumentsForExtraction($request, $stepPayload);
@@ -483,6 +546,174 @@ class ContractsController extends Controller
         ]);
     }
 
+    private function updateReturnHandover(Request $request, Contract $contract, string $locale, int $page, array $payload): JsonResponse
+    {
+        if ($page === 2) {
+            $payload = $this->normalizeReturnHandoverPageTwoPayload($request, $payload);
+        } elseif ($page !== 1) {
+            throw ValidationException::withMessages([
+                'page' => ['This return handover page is not implemented yet. Use page 1 or 2.'],
+            ]);
+        }
+
+        $step = $this->returnHandoverStepForPage($page);
+        $stepPayload = $this->validateReturnHandoverStepPayload($page, $payload);
+        $extraction = null;
+
+        if ($page === 2) {
+            $photos = $this->prepareHandoverInspectionPhotosForExtraction($request, $stepPayload);
+            $damageReport = $this->resolveOrCreateDraftDamageReportForHandover($contract, $request, 'return', 'after_return');
+            $vehicleReadingPhotos = $this->prepareHandoverVehicleReadingPhotosForExtraction($photos);
+            $returnReadings = [
+                'return_odometer' => isset($stepPayload['return_odometer']) && is_numeric($stepPayload['return_odometer'])
+                    ? (int) $stepPayload['return_odometer']
+                    : (isset($stepPayload['vehicle_odometer']) && is_numeric($stepPayload['vehicle_odometer'])
+                        ? (int) $stepPayload['vehicle_odometer']
+                        : $contract->return_odometer),
+                'return_fuel_level' => $this->nullableString($stepPayload['return_fuel_level'] ?? ($stepPayload['vehicle_fuel_level'] ?? $contract->return_fuel_level)),
+                'odometer_confidence' => null,
+                'fuel_level_confidence' => null,
+            ];
+
+            if ($vehicleReadingPhotos !== []) {
+                try {
+                    $vehicleExtraction = $this->contractDamagePhotoExtractor->extractFromPhotoGroups(
+                        $vehicleReadingPhotos,
+                        'after_return'
+                    );
+
+                    $returnReadings = $this->normalizeReturnVehicleReadingsPayload($vehicleExtraction['vehicle_readings'] ?? []);
+                } catch (\Throwable $e) {
+                    $returnReadings = $returnReadings;
+                }
+            }
+
+            DB::transaction(function () use ($contract, $returnReadings): void {
+                $contract->forceFill([
+                    'return_odometer' => $returnReadings['return_odometer'],
+                    'return_fuel_level' => $this->nullableString($returnReadings['return_fuel_level'] ?? null),
+                    'actual_return_time' => now(),
+                ])->saveQuietly();
+
+                $car = $contract->reservation?->car;
+                if ($car && $returnReadings['return_odometer'] !== null) {
+                    $currentMileage = (int) ($car->mileage ?? 0);
+                    $car->forceFill([
+                        'mileage' => max($currentMileage, (int) $returnReadings['return_odometer']),
+                    ])->saveQuietly();
+                }
+            });
+
+            $persistedPhotos = $this->persistHandoverHandoverPhotos(
+                $contract,
+                $damageReport,
+                $photos,
+                'return'
+            );
+
+            $stepPayload = array_merge($stepPayload, [
+                'damage_report_id' => $damageReport->id,
+                'damage_report_number' => $damageReport->report_number,
+                'damage_report_status' => $damageReport->status,
+                'damage_report_type' => $damageReport->report_type,
+                'photos' => $persistedPhotos,
+                'stored_photos' => $persistedPhotos,
+                'handover_photos' => $persistedPhotos,
+                'extraction_status' => 'pending',
+                'extraction_error' => null,
+                'extraction_retrying' => false,
+                'extracted_fields' => null,
+                'applied_fields' => [],
+                'raw_output' => null,
+                'text_preview' => null,
+                'vehicle_readings' => $returnReadings,
+                'return_odometer' => $returnReadings['return_odometer'],
+                'return_fuel_level' => $returnReadings['return_fuel_level'],
+            ]);
+
+            if (array_filter($persistedPhotos, static fn (array $photo): bool => (string) ($photo['photo_type'] ?? 'damage') === 'damage') !== []) {
+                ProcessContractDamagePhotoExtraction::dispatch($damageReport->id);
+            }
+
+            $extraction = [
+                'status' => 'processing',
+                'message' => $vehicleReadingPhotos !== []
+                    ? 'Vehicle readings extracted. Damage photo extraction has been queued.'
+                    : 'Damage photo extraction has been queued.',
+                'fields' => null,
+                'applied_fields' => [],
+                'raw_output' => null,
+                'text_preview' => null,
+                'damage_report' => $this->damageReportPayload($damageReport->fresh(['files', 'items'])),
+                'vehicle_readings' => $returnReadings,
+                'handover_photos' => $persistedPhotos,
+            ];
+        } else {
+            $contractNote = array_key_exists('notes', $stepPayload)
+                ? $stepPayload['notes']
+                : (array_key_exists('note', $stepPayload) ? $stepPayload['note'] : $contract->notes);
+            $contractNote = $this->nullableString($contractNote);
+
+            if ($contractNote !== $contract->notes) {
+                $contract->forceFill([
+                    'notes' => $contractNote,
+                ])->saveQuietly();
+            }
+
+            $stepPayload = array_merge($stepPayload, [
+                'reviewed' => (bool) ($stepPayload['reviewed'] ?? false),
+                'note' => $contractNote,
+                'notes' => $contractNote,
+            ]);
+        }
+
+        $state = $this->normalizeReturnHandoverState($contract->handover_state);
+        $state['current_page'] = max($state['current_page'], min($page + 1, 2));
+        $state['completed_pages'] = array_values(array_unique(array_merge($state['completed_pages'], [$page])));
+        $state['steps'][$step['key']] = [
+            'page' => $page,
+            'key' => $step['key'],
+            'label' => $step['label'],
+            'completed' => true,
+            'completed_at' => now()->toIso8601String(),
+            'payload' => $stepPayload,
+        ];
+
+        $allState = is_array($contract->handover_state) ? $contract->handover_state : [];
+        $allState['active_phase'] = 'return';
+        $allState['phases']['return'] = $state;
+
+        $contract->forceFill([
+            'handover_state' => $allState,
+        ])->saveQuietly();
+
+        $contract->refresh()->loadMissing([
+            'reservation.user:id,name,email,is_active',
+            'reservation.car:id,branch_id,year,make,model,license_plate,status,mileage',
+            'reservation.car.branch:id,name',
+            'branch:id,name',
+        ]);
+
+        return response()->json([
+            'message' => 'Return handover step saved successfully.',
+            'reservation' => $this->reservationPayload($contract->reservation),
+            'contract' => $this->contractPayload($contract, $locale),
+            'phase' => 'return',
+            'phase_label' => $this->handoverPhaseLabel('return'),
+            'handover' => $this->returnHandoverPayload($contract, $locale),
+            'extraction' => $extraction ? [
+                'status' => $extraction['status'] ?? 'pending',
+                'message' => $extraction['message'] ?? null,
+                'fields' => $extraction['fields'] ?? null,
+                'applied_fields' => [],
+                'raw_output' => $extraction['raw_output'] ?? null,
+                'text_preview' => $extraction['text_preview'] ?? null,
+                'damage_report' => $extraction['damage_report'] ?? null,
+                'vehicle_readings' => $extraction['vehicle_readings'] ?? null,
+            ] : null,
+        ]);
+    }
+
     private function authorizeAdminApiUser(Request $request): User
     {
         $user = $request->user();
@@ -675,6 +906,56 @@ class ContractsController extends Controller
         ];
     }
 
+    private function returnHandoverPayload(Contract $contract, ?string $locale = null): array
+    {
+        $state = $this->normalizeReturnHandoverState($contract->handover_state);
+
+        return [
+            'phase' => 'return',
+            'phase_label' => $this->handoverPhaseLabel('return'),
+            'current_page' => $state['current_page'],
+            'completed_pages' => $state['completed_pages'],
+            'steps' => array_values(array_map(
+                function (array $step) use ($contract, $locale): array {
+                    $payload = $step['payload'];
+
+                    if ($step['page'] === 1) {
+                        $payload = array_merge([
+                            'reservation' => $this->reservationPayload($contract->reservation),
+                            'client' => $contract->reservation?->user ? [
+                                'id' => $contract->reservation->user->id,
+                                'name' => $contract->reservation->user->name,
+                                'email' => $contract->reservation->user->email,
+                                'is_active' => (bool) $contract->reservation->user->is_active,
+                                'status' => $contract->reservation->user->is_active ? 'active' : 'suspended',
+                                'status_label' => $contract->reservation->user->is_active ? 'Active' : 'Suspended',
+                            ] : null,
+                        ], $payload);
+                    }
+
+                    if ($step['page'] === 2) {
+                        $payload = array_merge([
+                            'contract_inputs' => $this->contractInputsPayload($contract),
+                            'handover_photos' => $this->handoverPhotosPayload($contract, 'return'),
+                            'vehicle_readings' => $this->returnVehicleReadingsPayload($contract),
+                            'return_odometer' => $contract->return_odometer,
+                            'return_fuel_level' => $contract->return_fuel_level,
+                        ], $payload);
+                    }
+
+                    return [
+                        'page' => $step['page'],
+                        'key' => $step['key'],
+                        'label' => $step['label'],
+                        'completed' => $step['completed'],
+                        'payload' => $payload,
+                    ];
+                },
+                $state['steps']
+            )),
+        ];
+    }
+
     private function normalizeHandoverState(mixed $state): array
     {
         $state = is_array($state) ? $state : [];
@@ -742,6 +1023,146 @@ class ContractsController extends Controller
                         : [],
                 ],
             ],
+        ];
+    }
+
+    private function normalizeReturnHandoverState(mixed $state): array
+    {
+        $state = is_array($state) ? $state : [];
+        $returnState = data_get($state, 'phases.return', []);
+        $returnState = is_array($returnState) ? $returnState : [];
+
+        $completedPages = array_values(array_unique(array_map(
+            static fn ($page): int => max(1, (int) $page),
+            data_get($returnState, 'completed_pages', [])
+        )));
+
+        $steps = data_get($returnState, 'steps', []);
+        $steps = is_array($steps) ? $steps : [];
+        $customerReview = $steps['customer_review'] ?? [];
+        $returnInspection = $steps['return_inspection'] ?? [];
+
+        return [
+            'current_page' => max(1, (int) data_get($returnState, 'current_page', 1)),
+            'completed_pages' => $completedPages,
+            'steps' => [
+                'customer_review' => [
+                    'page' => 1,
+                    'key' => 'customer_review',
+                    'label' => 'Customer Review',
+                    'completed' => in_array(1, $completedPages, true),
+                    'payload' => is_array(data_get($customerReview, 'payload')) ? data_get($customerReview, 'payload') : [],
+                ],
+                'return_inspection' => [
+                    'page' => 2,
+                    'key' => 'return_inspection',
+                    'label' => 'Return Inspection',
+                    'completed' => in_array(2, $completedPages, true),
+                    'payload' => is_array(data_get($returnInspection, 'payload')) ? data_get($returnInspection, 'payload') : [],
+                ],
+            ],
+        ];
+    }
+
+    private function returnHandoverStepForPage(int $page): array
+    {
+        return match ($page) {
+            1 => ['key' => 'customer_review', 'label' => 'Customer Review'],
+            2 => ['key' => 'return_inspection', 'label' => 'Return Inspection'],
+            default => throw ValidationException::withMessages([
+                'page' => ['This return handover page is not implemented yet. Use page 1 or 2.'],
+            ]),
+        };
+    }
+
+    private function validateReturnHandoverStepPayload(int $page, array $payload): array
+    {
+        return match ($page) {
+            1 => Validator::make($payload, [
+                'reviewed' => ['required', 'accepted'],
+                'note' => ['nullable', 'string', 'max:5000'],
+                'notes' => ['nullable', 'string', 'max:5000'],
+            ])->validate(),
+            2 => Validator::make($payload, [
+                'photos' => ['nullable', 'array', 'min:1'],
+                'photos.*.view_side' => ['nullable', 'string', Rule::in(array_column(CarDamageCatalog::viewSides(), 'value'))],
+                'photos.*.photo_type' => ['nullable', 'string', Rule::in(['damage', 'odometer', 'fuel'])],
+                'photos.*.temp_folders' => ['nullable', 'array'],
+                'photos.*.temp_folders.*' => ['string'],
+                'photos.*.files' => ['nullable', 'array'],
+                'photos.*.files.*' => ['file', 'max:10240'],
+                'photos.*.notes' => ['nullable', 'string', 'max:5000'],
+                'vehicle_odometer' => ['nullable', 'numeric', 'min:0'],
+                'vehicle_fuel_level' => ['nullable', 'string', Rule::in(['empty', '1/4', '1/2', '3/4', 'full'])],
+                'return_odometer' => ['nullable', 'numeric', 'min:0'],
+                'return_fuel_level' => ['nullable', 'string', Rule::in(['empty', '1/4', '1/2', '3/4', 'full'])],
+                'note' => ['nullable', 'string', 'max:5000'],
+                'notes' => ['nullable', 'string', 'max:5000'],
+            ])->validate(),
+            default => throw ValidationException::withMessages([
+                'page' => ['This return handover page is not implemented yet. Use page 1 or 2.'],
+            ]),
+        };
+    }
+
+    private function normalizeReturnHandoverPageTwoPayload(Request $request, array $payload): array
+    {
+        $payload = $this->normalizeHandoverPageThreePayload($request, $payload);
+
+        if (array_key_exists('vehicle_odometer', $payload) || $request->has('vehicle_odometer')) {
+            $payload['vehicle_odometer'] = $payload['vehicle_odometer'] ?? $request->input('vehicle_odometer');
+        }
+
+        if (array_key_exists('vehicle_fuel_level', $payload) || $request->has('vehicle_fuel_level')) {
+            $payload['vehicle_fuel_level'] = $payload['vehicle_fuel_level'] ?? $request->input('vehicle_fuel_level');
+        }
+
+        if (array_key_exists('return_odometer', $payload) || $request->has('return_odometer')) {
+            $payload['return_odometer'] = $payload['return_odometer'] ?? $request->input('return_odometer');
+        }
+
+        if (array_key_exists('return_fuel_level', $payload) || $request->has('return_fuel_level')) {
+            $payload['return_fuel_level'] = $payload['return_fuel_level'] ?? $request->input('return_fuel_level');
+        }
+
+        if (array_key_exists('reviewed', $payload) || $request->has('reviewed')) {
+            $payload['reviewed'] = (bool) ($payload['reviewed'] ?? $request->boolean('reviewed', false));
+        }
+
+        if (array_key_exists('note', $payload) || $request->has('note')) {
+            $payload['note'] = $payload['note'] ?? $request->input('note');
+        }
+
+        if (array_key_exists('notes', $payload) || $request->has('notes')) {
+            $payload['notes'] = $payload['notes'] ?? $request->input('notes');
+        }
+
+        return $payload;
+    }
+
+    private function normalizeReturnVehicleReadingsPayload(mixed $vehicleReadings): array
+    {
+        $vehicleReadings = is_array($vehicleReadings) ? $vehicleReadings : [];
+
+        return [
+            'return_odometer' => isset($vehicleReadings['vehicle_odometer']) && is_numeric($vehicleReadings['vehicle_odometer'])
+                ? (int) $vehicleReadings['vehicle_odometer']
+                : null,
+            'return_fuel_level' => $this->nullableString($vehicleReadings['vehicle_fuel_level'] ?? null),
+            'odometer_confidence' => isset($vehicleReadings['odometer_confidence']) && is_numeric($vehicleReadings['odometer_confidence'])
+                ? (float) $vehicleReadings['odometer_confidence']
+                : null,
+            'fuel_level_confidence' => isset($vehicleReadings['fuel_level_confidence']) && is_numeric($vehicleReadings['fuel_level_confidence'])
+                ? (float) $vehicleReadings['fuel_level_confidence']
+                : null,
+        ];
+    }
+
+    private function returnVehicleReadingsPayload(Contract $contract): array
+    {
+        return [
+            'return_odometer' => $contract->return_odometer,
+            'return_fuel_level' => $contract->return_fuel_level,
         ];
     }
 
@@ -1275,6 +1696,8 @@ class ContractsController extends Controller
             'plate_number' => $contract->plate_number,
             'vehicle_odometer' => $contract->vehicle_odometer,
             'vehicle_fuel_level' => $contract->vehicle_fuel_level,
+            'return_odometer' => $contract->return_odometer,
+            'return_fuel_level' => $contract->return_fuel_level,
             'start_date' => optional($contract->start_date)->toDateString(),
             'end_date' => optional($contract->end_date)->toDateString(),
             'total_amount' => $contract->total_amount !== null ? (float) $contract->total_amount : null,
@@ -1834,10 +2257,24 @@ class ContractsController extends Controller
         return $this->filePondService->moveTempFileToModel($damageReport, $folder, $collection, $order);
     }
 
-    private function resolveOrCreateDraftDamageReportForHandover(Contract $contract, Request $request): CarDamageReport
+    private function resolveOrCreateDraftDamageReportForHandover(
+        Contract $contract,
+        Request $request,
+        string $phase = 'delivery',
+        string $reportType = 'before_delivery'
+    ): CarDamageReport
     {
-        $state = $this->normalizeHandoverState($contract->handover_state);
-        $existingReportId = (int) data_get($state, 'steps.damage_photo_upload.payload.damage_report_id', 0);
+        $state = $phase === 'return'
+            ? $this->normalizeReturnHandoverState($contract->handover_state)
+            : $this->normalizeHandoverState($contract->handover_state);
+
+        $existingReportId = (int) data_get(
+            $state,
+            $phase === 'return'
+                ? 'steps.return_inspection.payload.damage_report_id'
+                : 'steps.damage_photo_upload.payload.damage_report_id',
+            0
+        );
 
         if ($existingReportId > 0) {
             $existing = CarDamageReport::query()->with(['files', 'items'])->find($existingReportId);
@@ -1854,7 +2291,7 @@ class ContractsController extends Controller
         $existingDraft = CarDamageReport::query()
             ->where('tenant_id', $contract->tenant_id)
             ->where('contract_id', $contract->id)
-            ->where('report_type', 'before_delivery')
+            ->where('report_type', $reportType)
             ->where('status', 'draft')
             ->latest('id')
             ->first();
@@ -1871,7 +2308,7 @@ class ContractsController extends Controller
             'reservation_id' => $contract->reservation_id,
             'created_by' => $request->user()?->id,
             'report_number' => $this->generateReportNumber(),
-            'report_type' => (string) ($contract->handover_state['steps']['damage_photo_upload']['payload']['report_type'] ?? 'before_delivery'),
+            'report_type' => $reportType,
             'status' => 'draft',
             'inspected_at' => now(),
             'odometer' => $contract->reservation?->car?->mileage,
