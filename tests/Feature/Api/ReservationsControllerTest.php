@@ -1511,11 +1511,43 @@ test('handover api creates a draft contract and continues the wizard', function 
       ]);
 
       $fourthStepResponse->assertOk()
-          ->assertJsonPath('handover.current_page', 4)
+          ->assertJsonPath('handover.current_page', 5)
           ->assertJsonPath('handover.steps.3.key', 'vehicle_readings')
           ->assertJsonPath('handover.steps.3.payload.vehicle_odometer', 650)
           ->assertJsonPath('handover.steps.3.payload.vehicle_fuel_level', '1/2')
           ->assertJsonPath('handover.steps.3.payload.notes', 'Please handle with care.');
+
+      $fourthStepResponse->assertJsonPath('handover.steps.4.key', 'terms_confirmation')
+          ->assertJsonPath('handover.steps.4.payload.mobile_signature_text', 'Please review the contract details on mobile and confirm before signing.');
+
+      $fifthStepResponse = $this->post(route('api.contracts.handover', [
+          'contract' => $contractId,
+      ]), [
+          'page' => 5,
+          'accepted_terms' => true,
+      ]);
+
+      $fifthStepResponse->assertOk()
+          ->assertJsonPath('handover.current_page', 6)
+          ->assertJsonPath('handover.steps.4.completed', true)
+          ->assertJsonPath('handover.steps.4.payload.accepted_terms', true)
+          ->assertJsonPath('handover.steps.4.payload.mobile_signature_text', 'Please review the contract details on mobile and confirm before signing.');
+
+      $sixthStepResponse = $this->post(route('api.contracts.handover', [
+          'contract' => $contractId,
+      ]), [
+          'page' => 6,
+          'delivery_confirmed' => true,
+      ]);
+
+      $sixthStepResponse->assertOk()
+          ->assertJsonPath('handover.current_page', 6)
+          ->assertJsonPath('handover.steps.5.key', 'delivery_confirmation')
+          ->assertJsonPath('handover.steps.5.payload.delivery_confirmed', true)
+          ->assertJsonPath('handover.steps.5.payload.mobile_signature_text', 'Please review the contract details on mobile and confirm before signing.')
+          ->assertJsonPath('contract.status', 'active')
+          ->assertJsonPath('reservation.status', 'active')
+          ->assertJsonPath('contract.car.status', 'rented');
 
       $contract->refresh()->loadMissing(['handoverPhotos', 'reservation.car']);
       expect($contract->handoverPhotos)->toHaveCount(3);

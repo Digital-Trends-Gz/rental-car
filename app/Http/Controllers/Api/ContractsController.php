@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\ContractStatus;
+use App\Enums\CarStatus;
+use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
 use App\Core\AiAutomationSettings;
 use App\Jobs\ProcessContractHandoverExtraction;
@@ -16,6 +18,7 @@ use App\Models\ContractDriver;
 use App\Models\ContractDriverDocument;
 use App\Models\CarDamageReport;
 use App\Models\Reservation;
+use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
@@ -26,6 +29,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -77,6 +81,7 @@ class ContractsController extends Controller
     public function handover(Request $request, Reservation $reservation): JsonResponse
     {
         $user = $this->authorizeAdminApiUser($request);
+        $locale = $this->resolveApiLocale($request);
 
         $reservation->loadMissing([
             'user:id,name,email,is_active',
@@ -102,8 +107,8 @@ class ContractsController extends Controller
                 'reservation.car:id,branch_id,year,make,model,license_plate,status,mileage',
                 'reservation.car.branch:id,name',
                 'branch:id,name',
-            ])),
-            'handover' => $this->handoverPayload($contract),
+            ]), $locale),
+            'handover' => $this->handoverPayload($contract, $locale),
         ]);
     }
 
@@ -146,6 +151,7 @@ class ContractsController extends Controller
     public function updateHandover(Request $request, Contract $contract): JsonResponse
     {
         $user = $this->authorizeAdminApiUser($request);
+        $locale = $this->resolveApiLocale($request);
 
         $contract->loadMissing([
             'reservation.user:id,name,email,is_active',
@@ -158,7 +164,7 @@ class ContractsController extends Controller
         abort_unless($this->canAccessContract($contract, $user), 403);
 
         $page = (int) $request->integer('page');
-        abort_unless($page >= 1 && $page <= 4, 422, 'The page field is required.');
+        abort_unless($page >= 1 && $page <= 6, 422, 'The page field is required.');
 
         $payload = $request->input('payload');
         if (is_string($payload)) {
@@ -199,6 +205,16 @@ class ContractsController extends Controller
                     'note' => $request->input('note'),
                     'notes' => $request->input('notes'),
                 ],
+                5 => [
+                    'accepted_terms' => $request->boolean('accepted_terms', false),
+                    'note' => $request->input('note'),
+                    'notes' => $request->input('notes'),
+                ],
+                6 => [
+                    'delivery_confirmed' => $request->boolean('delivery_confirmed', false),
+                    'note' => $request->input('note'),
+                    'notes' => $request->input('notes'),
+                ],
                 default => [], 
             };
         }
@@ -213,6 +229,14 @@ class ContractsController extends Controller
 
         if ($page === 4) {
             $payload = $this->normalizeHandoverPageFourPayload($request, $payload);
+        }
+
+        if ($page === 5) {
+            $payload = $this->normalizeHandoverPageFivePayload($request, $payload);
+        }
+
+        if ($page === 6) {
+            $payload = $this->normalizeHandoverPageSixPayload($request, $payload);
         }
 
         $step = $this->handoverStepForPage($page);
@@ -355,11 +379,60 @@ class ContractsController extends Controller
                 'notes' => $contract->notes,
                 'reviewed' => (bool) ($stepPayload['reviewed'] ?? false),
                 'vehicle_readings' => $this->vehicleReadingsPayload($contract),
+                'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
+            ]);
+        } elseif ($page === 5) {
+            $acceptedTerms = (bool) ($stepPayload['accepted_terms'] ?? false);
+
+            $stepPayload = array_merge($stepPayload, [
+                'accepted_terms' => $acceptedTerms,
+                'accepted_at' => $acceptedTerms ? now()->toIso8601String() : null,
+                'mobile_signature_text' => $this->mobileSignatureTextForContract($contract),
+            ]);
+        } elseif ($page === 6) {
+            $deliveryConfirmed = (bool) ($stepPayload['delivery_confirmed'] ?? false);
+
+            if ($deliveryConfirmed) {
+                DB::transaction(function () use ($contract): void {
+                    $contract->forceFill([
+                        'status' => ContractStatus::ACTIVE->value,
+                    ])->saveQuietly();
+
+                    if ($contract->reservation) {
+                        $contract->reservation->forceFill([
+                            'status' => ReservationStatus::ACTIVE->value,
+                        ])->saveQuietly();
+                    }
+
+                    if ($contract->reservation?->car) {
+                        $contract->reservation->car->forceFill([
+                            'status' => CarStatus::RENTED->value,
+                        ])->saveQuietly();
+                    }
+                });
+            }
+
+            $stepPayload = array_merge($stepPayload, [
+                'delivery_confirmed' => $deliveryConfirmed,
+                'delivered_at' => $deliveryConfirmed ? now()->toIso8601String() : null,
+                'contract_status' => $contract->status instanceof ContractStatus
+                    ? $contract->status->value
+                    : (string) $contract->status,
+                'reservation_status' => $contract->reservation?->status instanceof ReservationStatus
+                    ? $contract->reservation->status->value
+                    : (string) ($contract->reservation?->status ?? ''),
+                'car_status' => $contract->reservation?->car?->status instanceof CarStatus
+                    ? $contract->reservation->car->status->value
+                    : (string) ($contract->reservation?->car?->status ?? ''),
+                'reservation' => $this->reservationPayload($contract->reservation),
+                'contract_inputs' => $this->contractInputsPayload($contract),
+                'vehicle_readings' => $this->vehicleReadingsPayload($contract),
+                'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
             ]);
         }
 
         $state = $this->normalizeHandoverState($contract->handover_state);
-        $state['current_page'] = max($state['current_page'], $page === 4 ? 4 : $page + 1);
+        $state['current_page'] = max($state['current_page'], min($page + 1, 6));
         $state['completed_pages'] = array_values(array_unique(array_merge($state['completed_pages'], [$page])));
         $state['steps'][$step['key']] = [
             'page' => $page,
@@ -395,8 +468,8 @@ class ContractsController extends Controller
         return response()->json([
             'message' => 'Handover step saved successfully.',
             'reservation' => $this->reservationPayload($contract->reservation),
-            'contract' => $this->contractPayload($contract),
-            'handover' => $this->handoverPayload($contract),
+            'contract' => $this->contractPayload($contract, $locale),
+            'handover' => $this->handoverPayload($contract, $locale),
             'extraction' => $extraction ? [
                 'status' => $extraction['status'] ?? 'pending',
                 'message' => $extraction['message'] ?? null,
@@ -419,6 +492,19 @@ class ContractsController extends Controller
         return $user;
     }
 
+    private function resolveApiLocale(Request $request): string
+    {
+        $supportedLocales = array_values(array_filter((array) config('app.available_locales', ['en']), static fn ($locale) => is_string($locale) && $locale !== ''));
+        $fallback = (string) config('app.fallback_locale', config('app.locale', 'en'));
+        $preferred = $request->getPreferredLanguage($supportedLocales);
+
+        if (is_string($preferred) && $preferred !== '') {
+            return $preferred;
+        }
+
+        return in_array($fallback, $supportedLocales, true) ? $fallback : ($supportedLocales[0] ?? 'en');
+    }
+
     private function canAccessContract(Contract $contract, User $user): bool
     {
         $contract->loadMissing('reservation.car:id,branch_id');
@@ -430,7 +516,7 @@ class ContractsController extends Controller
         return $this->branchAccess->canAccessBranchId($user, $branchId);
     }
 
-    private function contractPayload(Contract $contract): array
+    private function contractPayload(Contract $contract, ?string $locale = null): array
     {
         return [
             'id' => $contract->id,
@@ -468,7 +554,7 @@ class ContractsController extends Controller
                     ? $contract->reservation->car->status->value
                     : (string) $contract->reservation->car->status,
             ] : null,
-            'handover' => $this->handoverPayload($contract),
+            'handover' => $this->handoverPayload($contract, $locale),
         ];
     }
 
@@ -509,15 +595,16 @@ class ContractsController extends Controller
         ];
     }
 
-    private function handoverPayload(Contract $contract): array
+    private function handoverPayload(Contract $contract, ?string $locale = null): array
     {
         $state = $this->normalizeHandoverState($contract->handover_state);
 
         return [
             'current_page' => $state['current_page'],
             'completed_pages' => $state['completed_pages'],
+            'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
             'steps' => array_values(array_map(
-                function (array $step) use ($contract): array {
+                function (array $step) use ($contract, $locale): array {
                     $payload = $step['payload'];
                     if ($step['page'] === 1) {
                         $payload = array_merge([
@@ -553,6 +640,25 @@ class ContractsController extends Controller
                             'vehicle_odometer' => $contract->vehicle_odometer,
                             'vehicle_fuel_level' => $contract->vehicle_fuel_level,
                             'vehicle_readings' => $this->vehicleReadingsPayload($contract),
+                            'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
+                        ], $payload);
+                    }
+
+                    if ($step['page'] === 5) {
+                        $payload = array_merge([
+                            'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
+                            'accepted_terms' => (bool) data_get($payload, 'accepted_terms', false),
+                            'accepted_at' => data_get($payload, 'accepted_at'),
+                        ], $payload);
+                    }
+
+                    if ($step['page'] === 6) {
+                        $payload = array_merge([
+                            'reservation' => $this->reservationPayload($contract->reservation),
+                            'contract_inputs' => $this->contractInputsPayload($contract),
+                            'vehicle_readings' => $this->vehicleReadingsPayload($contract),
+                            'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
+                            'delivery_confirmed' => (bool) data_get($payload, 'delivery_confirmed', false),
                         ], $payload);
                     }
 
@@ -617,6 +723,24 @@ class ContractsController extends Controller
                     'completed' => in_array(4, $completedPages, true),
                     'payload' => is_array(data_get($vehicleReadings, 'payload')) ? data_get($vehicleReadings, 'payload') : [],
                 ],
+                'terms_confirmation' => [
+                    'page' => 5,
+                    'key' => 'terms_confirmation',
+                    'label' => 'Terms Confirmation',
+                    'completed' => in_array(5, $completedPages, true),
+                    'payload' => is_array(data_get($steps, 'terms_confirmation.payload'))
+                        ? data_get($steps, 'terms_confirmation.payload')
+                        : [],
+                ],
+                'delivery_confirmation' => [
+                    'page' => 6,
+                    'key' => 'delivery_confirmation',
+                    'label' => 'Delivery Confirmation',
+                    'completed' => in_array(6, $completedPages, true),
+                    'payload' => is_array(data_get($steps, 'delivery_confirmation.payload'))
+                        ? data_get($steps, 'delivery_confirmation.payload')
+                        : [],
+                ],
             ],
         ];
     }
@@ -628,8 +752,10 @@ class ContractsController extends Controller
             2 => ['key' => 'report_upload', 'label' => 'Report Upload'],
             3 => ['key' => 'damage_photo_upload', 'label' => 'Damage Photos'],
             4 => ['key' => 'vehicle_readings', 'label' => 'Vehicle Readings'],
+            5 => ['key' => 'terms_confirmation', 'label' => 'Terms Confirmation'],
+            6 => ['key' => 'delivery_confirmation', 'label' => 'Delivery Confirmation'],
             default => throw ValidationException::withMessages([
-                'page' => ['This handover page is not implemented yet. Use page 1, 2, 3 or 4.'],
+                'page' => ['This handover page is not implemented yet. Use page 1, 2, 3, 4, 5 or 6.'],
             ]),
         };
     }
@@ -684,8 +810,18 @@ class ContractsController extends Controller
                 'note' => ['nullable', 'string', 'max:5000'],
                 'notes' => ['nullable', 'string', 'max:5000'],
             ])->validate(),
+            5 => Validator::make($payload, [
+                'accepted_terms' => ['required', 'accepted'],
+                'note' => ['nullable', 'string', 'max:5000'],
+                'notes' => ['nullable', 'string', 'max:5000'],
+            ])->validate(),
+            6 => Validator::make($payload, [
+                'delivery_confirmed' => ['required', 'accepted'],
+                'note' => ['nullable', 'string', 'max:5000'],
+                'notes' => ['nullable', 'string', 'max:5000'],
+            ])->validate(),
             default => throw ValidationException::withMessages([
-                'page' => ['This handover page is not implemented yet. Use page 1, 2, 3 or 4.'],
+                'page' => ['This handover page is not implemented yet. Use page 1, 2, 3, 4, 5 or 6.'],
             ]),
         };
     }
@@ -854,6 +990,48 @@ class ContractsController extends Controller
 
         if (array_key_exists('reviewed', $payload) || $request->has('reviewed')) {
             $payload['reviewed'] = (bool) ($payload['reviewed'] ?? $request->boolean('reviewed', false));
+        }
+
+        if (array_key_exists('note', $payload) || $request->has('note')) {
+            $payload['note'] = $payload['note'] ?? $request->input('note');
+        }
+
+        if (array_key_exists('notes', $payload) || $request->has('notes')) {
+            $payload['notes'] = $payload['notes'] ?? $request->input('notes');
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function normalizeHandoverPageFivePayload(Request $request, array $payload): array
+    {
+        if (array_key_exists('accepted_terms', $payload) || $request->has('accepted_terms')) {
+            $payload['accepted_terms'] = $request->boolean('accepted_terms', (bool) ($payload['accepted_terms'] ?? false));
+        }
+
+        if (array_key_exists('note', $payload) || $request->has('note')) {
+            $payload['note'] = $payload['note'] ?? $request->input('note');
+        }
+
+        if (array_key_exists('notes', $payload) || $request->has('notes')) {
+            $payload['notes'] = $payload['notes'] ?? $request->input('notes');
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function normalizeHandoverPageSixPayload(Request $request, array $payload): array
+    {
+        if (array_key_exists('delivery_confirmed', $payload) || $request->has('delivery_confirmed')) {
+            $payload['delivery_confirmed'] = $request->boolean('delivery_confirmed', (bool) ($payload['delivery_confirmed'] ?? false));
         }
 
         if (array_key_exists('note', $payload) || $request->has('note')) {
@@ -1752,6 +1930,24 @@ class ContractsController extends Controller
             'vehicle_odometer' => $contract->vehicle_odometer,
             'vehicle_fuel_level' => $contract->vehicle_fuel_level,
         ];
+    }
+
+    private function mobileSignatureTextForContract(Contract $contract, ?string $locale = null): ?string
+    {
+        $translated = trim((string) Lang::get('contracts.pdf.contract_texts.mobile_signature_text', [], $locale));
+        if ($translated !== '') {
+            return $translated;
+        }
+
+        $tenant = $contract->tenant?->loadMissing('siteSetting') ?? $contract->tenant;
+        $settings = $tenant ? TenantSiteSetting::forTenant($tenant) : [];
+        $text = trim((string) data_get($settings, 'contract_pdf.mobile_signature_text', ''));
+
+        if ($text === '') {
+            $text = 'Please review the contract details on mobile and confirm before signing.';
+        }
+
+        return $text !== '' ? $text : null;
     }
 
     /**
