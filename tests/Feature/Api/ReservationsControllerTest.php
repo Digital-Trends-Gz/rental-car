@@ -24,6 +24,7 @@ use App\Models\ContractReturnReport;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Tenant;
+use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Services\Rentals\RentalStatusSyncService;
 use App\Services\Contracts\ContractDriverDocumentExtractor;
@@ -747,6 +748,18 @@ test('reservation note api updates reservation notes and returns them in detail 
         'email_verified_at' => now(),
     ]);
 
+    TenantSiteSetting::create([
+        'tenant_id' => $tenant->id,
+        'reservation_settings' => [
+            'fuel_pricing' => [
+                [
+                    'fuel_level' => 'quarter',
+                    'price' => 20,
+                ],
+            ],
+        ],
+    ]);
+
     $car = Car::create([
         'tenant_id' => $tenant->id,
         'branch_id' => $branch->id,
@@ -833,6 +846,18 @@ test('contract documents api returns driver photos licenses ids passports and ar
         'role' => UserRole::CLIENT,
         'is_active' => true,
         'email_verified_at' => now(),
+    ]);
+
+    TenantSiteSetting::create([
+        'tenant_id' => $tenant->id,
+        'reservation_settings' => [
+            'fuel_pricing' => [
+                [
+                    'fuel_level' => 'quarter',
+                    'price' => 20,
+                ],
+            ],
+        ],
     ]);
 
     $car = Car::create([
@@ -1549,7 +1574,7 @@ test('handover api creates a draft contract and continues the wizard', function 
           ->assertJsonPath('reservation.status', 'active')
           ->assertJsonPath('contract.car.status', 'rented');
 
-      $contract->refresh()->loadMissing(['handoverPhotos', 'reservation.car']);
+      $contract->refresh()->loadMissing(['handoverPhotos', 'reservation.car', 'damageReports.items']);
       expect($contract->handoverPhotos)->toHaveCount(3);
       expect($contract->handoverPhotos->where('photo_type', 'damage')->first()?->notes)->toBe('Front view updated');
       expect($contract->vehicle_odometer)->toBe(650);
@@ -1646,7 +1671,8 @@ test('handover api supports a return wizard with review and inspection steps', f
         ->assertJsonPath('handover.phase', 'return')
         ->assertJsonPath('handover.current_page', 1)
         ->assertJsonPath('handover.steps.0.key', 'customer_review')
-        ->assertJsonPath('handover.steps.1.key', 'return_inspection');
+        ->assertJsonPath('handover.steps.1.key', 'return_inspection')
+        ->assertJsonPath('handover.steps.2.key', 'vehicle_readings');
 
     $firstStepResponse = $this->patchJson(route('api.contracts.handover', [
         'contract' => $contract->id,
@@ -1667,6 +1693,33 @@ test('handover api supports a return wizard with review and inspection steps', f
         ->assertJsonPath('handover.steps.0.payload.notes', 'Return review completed.')
         ->assertJsonPath('handover.steps.0.payload.note', 'Return review completed.');
 
+    $beforeDeliveryReturnReport = CarDamageReport::create([
+        'tenant_id' => $tenant->id,
+        'car_id' => $car->id,
+        'branch_id' => $branch->id,
+        'contract_id' => $contract->id,
+        'reservation_id' => $reservation->id,
+        'created_by' => $admin->id,
+        'report_number' => 'DR-RET-BEFORE-1',
+        'report_type' => 'before_delivery',
+        'status' => 'finalized',
+        'inspected_at' => now()->subDay(),
+        'odometer' => 84200,
+        'summary' => 'Pre-delivery inspection.',
+    ]);
+
+    CarDamageItem::create([
+        'tenant_id' => $tenant->id,
+        'car_damage_report_id' => $beforeDeliveryReturnReport->id,
+        'zone_code' => 'hood',
+        'view_side' => 'front',
+        'damage_type' => 'dent',
+        'severity' => 'minor',
+        'quantity' => 1,
+        'estimated_cost' => 150,
+        'sort_order' => 1,
+    ]);
+
     Queue::fake();
 
     $secondStepResponse = $this->post(route('api.contracts.handover', [
@@ -1674,8 +1727,6 @@ test('handover api supports a return wizard with review and inspection steps', f
     ]), [
         'phase' => 'return',
         'page' => 2,
-        'return_odometer' => 84520,
-        'return_fuel_level' => '1/2',
         'photos' => [
             [
                 'view_side' => 'front',
@@ -1688,27 +1739,453 @@ test('handover api supports a return wizard with review and inspection steps', f
         ],
     ]);
 
-    $secondStepResponse->assertOk()
+      $secondStepResponse->assertOk()
+          ->assertJsonPath('phase', 'return')
+          ->assertJsonPath('handover.current_page', 3)
+          ->assertJsonPath('handover.steps.1.key', 'return_inspection')
+          ->assertJsonPath('extraction.status', 'processing')
+          ->assertJsonPath('extraction.damage_report.report_type', 'after_return')
+          ->assertJsonPath('extraction.damage_report.comparison.against_report.report_number', 'DR-RET-BEFORE-1')
+          ->assertJsonPath('extraction.damage_report.comparison.items_only_in_against.0.zone_code', 'hood')
+          ->assertJsonPath('extraction.damage_report.comparison.merged_items.0.zone_code', 'hood');
+
+      Queue::assertPushed(\App\Jobs\ProcessContractDamagePhotoExtraction::class, function ($job): bool {
+          return $job->damageReportId > 0;
+      });
+
+      $thirdStepResponse = $this->post(route('api.contracts.handover', [
+          'contract' => $contract->id,
+      ]), [
+          'phase' => 'return',
+          'page' => 3,
+        'return_odometer' => 84520,
+        'return_fuel_level' => '1/2',
+        'notes' => 'Return readings confirmed.',
+    ]);
+
+    $thirdStepResponse->assertOk()
         ->assertJsonPath('phase', 'return')
-        ->assertJsonPath('handover.current_page', 2)
-        ->assertJsonPath('handover.steps.1.key', 'return_inspection')
-        ->assertJsonPath('handover.steps.1.payload.return_odometer', 84520)
-        ->assertJsonPath('handover.steps.1.payload.return_fuel_level', '1/2')
-        ->assertJsonPath('extraction.status', 'processing')
-        ->assertJsonPath('extraction.damage_report.report_type', 'after_return');
+        ->assertJsonPath('handover.current_page', 4)
+        ->assertJsonPath('handover.steps.2.key', 'vehicle_readings')
+        ->assertJsonPath('handover.steps.2.payload.return_odometer', 84520)
+        ->assertJsonPath('handover.steps.2.payload.return_fuel_level', '1/2')
+        ->assertJsonPath('handover.steps.2.payload.notes', 'Return readings confirmed.')
+        ->assertJsonPath('extraction.status', 'extracted')
+        ->assertJsonPath('extraction.vehicle_readings.return_odometer', 84520)
+        ->assertJsonPath('extraction.vehicle_readings.return_fuel_level', '1/2');
 
-    Queue::assertPushed(\App\Jobs\ProcessContractDamagePhotoExtraction::class, function ($job): bool {
-        return $job->damageReportId > 0;
-    });
+      $fourthStepResponse = $this->patchJson(route('api.contracts.handover', [
+          'contract' => $contract->id,
+      ]), [
+          'phase' => 'return',
+          'page' => 4,
+          'summary' => 'Return damage reviewed and updated.',
+          'items' => [
+              [
+                  'zone_code' => 'hood',
+                  'view_side' => 'front',
+                  'damage_type' => 'dent',
+                  'severity' => 'major',
+                  'quantity' => 1,
+                'estimated_cost' => 250,
+                'notes' => 'Hood dent updated.',
+            ],
+            [
+                'zone_code' => 'front_bumper',
+                'view_side' => 'front',
+                'damage_type' => 'scratch',
+                'severity' => 'minor',
+                'quantity' => 1,
+                'estimated_cost' => 120,
+                'notes' => 'New bumper scratch.',
+            ],
+        ],
+    ]);
 
-    $contract->refresh()->loadMissing(['handoverPhotos', 'reservation.car']);
-    expect($contract->return_odometer)->toBe(84520);
-    expect($contract->return_fuel_level)->toBe('1/2');
-    expect($contract->notes)->toBe('Return review completed.');
-    expect($contract->handoverPhotos)->toHaveCount(1);
-    expect($contract->handoverPhotos->first()?->phase)->toBe('return');
-    expect($contract->handoverPhotos->first()?->photo_type)->toBe('damage');
-    expect($contract->reservation?->car?->mileage)->toBe(84520);
+      $fourthStepResponse->assertOk()
+          ->assertJsonPath('phase', 'return')
+          ->assertJsonPath('handover.current_page', 5)
+          ->assertJsonPath('handover.steps.3.key', 'damage_review')
+          ->assertJsonPath('handover.steps.3.payload.summary', 'Return damage reviewed and updated.')
+          ->assertJsonPath('handover.steps.3.payload.items.0.zone_code', 'hood')
+          ->assertJsonPath('handover.steps.3.payload.items.1.zone_code', 'front_bumper')
+          ->assertJsonPath('handover.steps.3.payload.final_summary.damage_fee', 370)
+          ->assertJsonPath('handover.steps.3.payload.final_summary.total_extra_charges', 370)
+          ->assertJsonPath('extraction.status', 'extracted')
+          ->assertJsonPath('extraction.damage_report.report_type', 'after_return')
+          ->assertJsonPath('extraction.damage_report.items.0.zone_code', 'hood')
+          ->assertJsonPath('extraction.damage_report.items.1.zone_code', 'front_bumper')
+          ->assertJsonPath('extraction.final_summary.damage_fee', 370)
+          ->assertJsonPath('extraction.final_summary.total_extra_charges', 370);
+
+      $hoodItemId = (int) $fourthStepResponse->json('extraction.damage_report.items.0.id');
+      $frontBumperItemId = (int) $fourthStepResponse->json('extraction.damage_report.items.1.id');
+      expect($hoodItemId)->toBeGreaterThan(0);
+      expect($frontBumperItemId)->toBeGreaterThan(0);
+
+      $finalStepResponse = $this->patchJson(route('api.contracts.handover', [
+          'contract' => $contract->id,
+      ]), [
+          'phase' => 'return',
+          'page' => 4,
+          'summary' => 'Return damage reviewed after deletion.',
+          'items' => [
+              [
+                  'id' => $hoodItemId,
+                  'zone_code' => 'hood',
+                  'view_side' => 'front',
+                  'damage_type' => 'dent',
+                  'severity' => 'major',
+                  'quantity' => 2,
+                  'estimated_cost' => 300,
+                  'notes' => 'Hood dent adjusted again.',
+              ],
+          ],
+          'deleted_item_ids' => [$frontBumperItemId],
+      ]);
+
+      $finalStepResponse->assertOk()
+          ->assertJsonPath('phase', 'return')
+          ->assertJsonPath('handover.current_page', 5)
+          ->assertJsonPath('handover.steps.3.key', 'damage_review')
+          ->assertJsonPath('handover.steps.3.payload.summary', 'Return damage reviewed after deletion.')
+          ->assertJsonPath('handover.steps.3.payload.items.0.id', $hoodItemId)
+          ->assertJsonPath('handover.steps.3.payload.items.0.quantity', 2)
+          ->assertJsonPath('handover.steps.3.payload.final_summary.damage_fee', 300)
+          ->assertJsonPath('handover.steps.3.payload.final_summary.total_extra_charges', 300)
+          ->assertJsonPath('extraction.status', 'extracted')
+          ->assertJsonPath('extraction.damage_report.items.0.id', $hoodItemId)
+          ->assertJsonPath('extraction.damage_report.items.0.quantity', 2)
+          ->assertJsonPath('extraction.final_summary.damage_fee', 300)
+          ->assertJsonPath('extraction.final_summary.total_extra_charges', 300);
+
+      $summaryStepResponse = $this->patchJson(route('api.contracts.handover', [
+          'contract' => $contract->id,
+      ]), [
+          'phase' => 'return',
+          'page' => 5,
+          'payment_status' => 'not_paid',
+          'discount' => 50,
+      ]);
+
+      $summaryStepResponse->assertOk()
+          ->assertJsonPath('phase', 'return')
+          ->assertJsonPath('handover.current_page', 6)
+          ->assertJsonPath('handover.steps.4.key', 'final_summary')
+          ->assertJsonPath('handover.steps.4.payload.final_summary.damage_fee', 300)
+          ->assertJsonPath('handover.steps.4.payload.final_summary.discount', 50)
+          ->assertJsonPath('handover.steps.4.payload.final_summary.total_extra_charges', 250)
+          ->assertJsonPath('handover.steps.4.payload.return_status_report.discount', '50.00')
+          ->assertJsonPath('extraction.final_summary.damage_fee', 300)
+          ->assertJsonPath('extraction.final_summary.discount', 50)
+          ->assertJsonPath('extraction.final_summary.total_extra_charges', 250)
+          ->assertJsonPath('extraction.return_status_report.discount', '50.00');
+
+      $confirmationStepResponse = $this->patchJson(route('api.contracts.handover', [
+          'contract' => $contract->id,
+      ]), [
+          'phase' => 'return',
+          'page' => 6,
+          'return_confirmed' => true,
+          'payment_status' => 'not_paid',
+      ]);
+
+      $confirmationStepResponse->assertOk()
+          ->assertJsonPath('phase', 'return')
+          ->assertJsonPath('handover.current_page', 6)
+          ->assertJsonPath('handover.steps.5.key', 'return_confirmation')
+          ->assertJsonPath('handover.steps.5.payload.return_confirmed', true)
+          ->assertJsonPath('handover.steps.5.payload.contract_status', ContractStatus::COMPLETED->value)
+          ->assertJsonPath('handover.steps.5.payload.reservation_status', ReservationStatus::COMPLETED->value)
+          ->assertJsonPath('handover.steps.5.payload.car_status', CarStatus::AVAILABLE->value)
+          ->assertJsonPath('handover.steps.5.payload.return_status_report.status', 'finalized')
+          ->assertJsonPath('handover.steps.5.payload.final_summary.total_extra_charges', 250)
+          ->assertJsonPath('extraction.status', 'finalized')
+          ->assertJsonPath('extraction.return_status_report.status', 'finalized')
+          ->assertJsonPath('extraction.final_summary.total_extra_charges', 250);
+
+      $contract->refresh()->loadMissing(['handoverPhotos', 'reservation.car', 'returnStatusReport']);
+      expect($contract->return_odometer)->toBe(84520);
+      expect($contract->return_fuel_level)->toBe('1/2');
+      expect($contract->status)->toBe(ContractStatus::COMPLETED);
+      expect($contract->reservation?->status)->toBe(ReservationStatus::COMPLETED);
+      expect($contract->reservation?->car?->status)->toBe(CarStatus::AVAILABLE);
+      expect($contract->returnStatusReport?->status)->toBe('finalized');
+      expect((float) $contract->returnStatusReport?->total_extra_charges)->toBe(250.0);
+      expect($contract->returnStatusReport?->payment_id)->not()->toBeNull();
+      expect(Payment::query()->find($contract->returnStatusReport?->payment_id)?->status)->toBe(PaymentStatus::PENDING);
+      expect($contract->notes)->toBe('Return review completed.');
+      expect($contract->handoverPhotos)->toHaveCount(1);
+      expect($contract->handoverPhotos->first()?->phase)->toBe('return');
+      expect($contract->handoverPhotos->first()?->photo_type)->toBe('damage');
+      expect($contract->reservation?->car?->mileage)->toBe(84520);
+      $returnDamageReport = $contract->damageReports->first(fn (CarDamageReport $report): bool => $report->report_type === 'after_return');
+      expect($returnDamageReport)->not()->toBeNull();
+      expect($returnDamageReport?->items)->toHaveCount(1);
+      expect($returnDamageReport?->items->first()?->id)->toBe($hoodItemId);
+      expect($returnDamageReport?->items->first()?->quantity)->toBe(2);
+  });
+
+test('return handover page four can skip damage report creation when there is no damage', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Return Branch',
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::SUPER_ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $client = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::CLIENT,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    TenantSiteSetting::create([
+        'tenant_id' => $tenant->id,
+        'reservation_settings' => [
+            'fuel_pricing' => [
+                [
+                    'fuel_level' => 'quarter',
+                    'price' => 20,
+                ],
+            ],
+        ],
+    ]);
+
+    $car = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Toyota',
+        'model' => 'Corolla',
+        'year' => 2024,
+        'license_plate' => 'RET-SKIP-001',
+        'color' => CarColor::SILVER->value,
+        'price_per_day' => 95,
+        'mileage' => 12000,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::RENTED->value,
+    ]);
+
+    $reservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $car->id,
+        'reservation_number' => 'RES-RET-SKIP-001',
+        'start_date' => today()->subDay()->toDateString(),
+        'end_date' => today()->toDateString(),
+        'pickup_time' => '09:00',
+        'return_time' => '18:00',
+        'pickup_location' => 'Main Office',
+        'return_location' => 'Main Office',
+        'total_days' => 2,
+        'daily_rate' => 95,
+        'subtotal' => 190,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 190,
+        'status' => ReservationStatus::ACTIVE,
+    ]);
+
+    $contract = Contract::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'reservation_id' => $reservation->id,
+        'contract_number' => 'CON-RET-SKIP-001',
+        'status' => ContractStatus::ACTIVE->value,
+        'contract_date' => today()->subDay()->toDateString(),
+        'start_date' => today()->subDay()->toDateString(),
+        'end_date' => today()->toDateString(),
+        'vehicle_odometer' => 12000,
+        'vehicle_fuel_level' => '1/2',
+        'return_fuel_level' => '1/4',
+    ]);
+
+    $existingDamageReport = CarDamageReport::create([
+        'tenant_id' => $tenant->id,
+        'car_id' => $car->id,
+        'branch_id' => $branch->id,
+        'contract_id' => $contract->id,
+        'reservation_id' => $reservation->id,
+        'created_by' => $admin->id,
+        'report_number' => 'DMG-RET-SKIP-001',
+        'report_type' => 'after_return',
+        'status' => 'draft',
+        'inspected_at' => now(),
+        'odometer' => 12000,
+        'summary' => 'Draft return damage report.',
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $response = $this->patchJson(route('api.contracts.handover', [
+        'contract' => $contract->id,
+    ]), [
+        'phase' => 'return',
+        'page' => 4,
+        'has_damage' => false,
+        'discount' => 5,
+        'vehicle_condition_after' => 'clean',
+        'notes' => 'No visible damage on return.',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('phase', 'return')
+        ->assertJsonPath('handover.current_page', 5)
+        ->assertJsonPath('handover.steps.3.key', 'damage_review')
+        ->assertJsonPath('handover.steps.3.payload.has_damage', false)
+        ->assertJsonPath('handover.steps.3.payload.damage_report_status', 'skipped')
+        ->assertJsonPath('handover.steps.3.payload.final_summary.damage_report_status', 'skipped')
+        ->assertJsonPath('handover.steps.3.payload.final_summary.fuel_fee', 20)
+        ->assertJsonPath('handover.steps.3.payload.final_summary.discount', 5)
+        ->assertJsonPath('handover.steps.3.payload.final_summary.total_extra_charges', 15)
+        ->assertJsonPath('extraction.damage_report_status', 'skipped')
+        ->assertJsonPath('extraction.damage_report', null)
+        ->assertJsonPath('extraction.final_summary.damage_report_status', 'skipped')
+        ->assertJsonPath('extraction.final_summary.fuel_fee', 20)
+        ->assertJsonPath('extraction.final_summary.discount', 5)
+        ->assertJsonPath('extraction.final_summary.total_extra_charges', 15);
+
+    $contract->refresh()->loadMissing(['damageReports', 'returnStatusReport']);
+
+    expect($contract->returnStatusReport?->has_damage)->toBeFalse();
+    expect($contract->damageReports->firstWhere('report_type', 'after_return'))->toBeNull();
+    expect($existingDamageReport->fresh())->toBeNull();
+});
+
+test('damage report status api returns pending until the return damage report is ready', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Return Branch',
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::SUPER_ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $client = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::CLIENT,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $car = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Toyota',
+        'model' => 'RAV4',
+        'year' => 2024,
+        'license_plate' => 'RET-STATUS-001',
+        'color' => CarColor::WHITE->value,
+        'price_per_day' => 110,
+        'mileage' => 25000,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::RENTED->value,
+    ]);
+
+    $reservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $car->id,
+        'reservation_number' => 'RES-RET-STATUS-001',
+        'start_date' => today()->subDay()->toDateString(),
+        'end_date' => today()->toDateString(),
+        'pickup_time' => '09:00',
+        'return_time' => '18:00',
+        'pickup_location' => 'Main Office',
+        'return_location' => 'Main Office',
+        'total_days' => 2,
+        'daily_rate' => 110,
+        'subtotal' => 220,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 220,
+        'status' => ReservationStatus::ACTIVE,
+    ]);
+
+    $contract = Contract::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'reservation_id' => $reservation->id,
+        'contract_number' => 'CON-RET-STATUS-001',
+        'status' => ContractStatus::ACTIVE->value,
+        'contract_date' => today()->subDay()->toDateString(),
+        'start_date' => today()->subDay()->toDateString(),
+        'end_date' => today()->toDateString(),
+        'vehicle_odometer' => 25000,
+        'vehicle_fuel_level' => '1/2',
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $pendingResponse = $this->getJson(route('api.contracts.damage-report-status', [
+        'contract' => $contract->id,
+        'phase' => 'return',
+    ]));
+
+    $pendingResponse->assertOk()
+        ->assertJsonPath('damage_report_status', 'pending')
+        ->assertJsonPath('damage_report', null);
+
+    $damageReport = CarDamageReport::create([
+        'tenant_id' => $tenant->id,
+        'car_id' => $car->id,
+        'branch_id' => $branch->id,
+        'contract_id' => $contract->id,
+        'reservation_id' => $reservation->id,
+        'created_by' => $admin->id,
+        'report_number' => 'DMG-RET-STATUS-001',
+        'report_type' => 'after_return',
+        'status' => 'draft',
+        'inspected_at' => now(),
+        'odometer' => 25000,
+        'summary' => 'Return damage report ready.',
+    ]);
+
+    CarDamageItem::create([
+        'tenant_id' => $tenant->id,
+        'car_damage_report_id' => $damageReport->id,
+        'zone_code' => 'hood',
+        'view_side' => 'front',
+        'damage_type' => 'scratch',
+        'severity' => 'minor',
+        'quantity' => 1,
+        'estimated_cost' => 75,
+        'sort_order' => 1,
+    ]);
+
+    $readyResponse = $this->getJson(route('api.contracts.damage-report-status', [
+        'contract' => $contract->id,
+        'phase' => 'return',
+    ]));
+
+    $readyResponse->assertOk()
+        ->assertJsonPath('damage_report_status', 'done')
+        ->assertJsonPath('damage_report.report_number', 'DMG-RET-STATUS-001')
+        ->assertJsonPath('damage_report.items.0.zone_code', 'hood');
 });
 
 test('handover api accepts direct uploaded files for document extraction', function () {

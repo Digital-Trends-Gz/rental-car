@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import SearchableSelect from '@/components/SearchableSelect.vue';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
@@ -317,6 +317,14 @@ const fuelLevelOptions = [
   { value: 'full', label: localize('Full', 'ط¸ظ¾ط¸â€‍') },
 ];
 
+const returnFuelLevelOptions = [
+  { value: '', label: localize('Select fuel level', 'اختر مستوى الوقود') },
+  { value: 'empty', label: localize('Empty', 'فارغ') },
+  { value: '1/4', label: localize('1/4 Tank', 'ربع الخزان') },
+  { value: '1/2', label: localize('1/2 Tank', 'نصف الخزان') },
+  { value: '3/4', label: localize('3/4 Tank', '3/4 الخزان') },
+  { value: 'full', label: localize('Full', 'ممتلئ') },
+];
 const vehicleConditionOptions = [
   { value: '', label: localize('Select condition', 'اختر الحالة') },
   { value: 'clean', label: localize('Clean', 'نظيف') },
@@ -520,7 +528,7 @@ const form = useForm({
   currency: props.contract?.currency ?? 'USD',
   notes: props.contract?.notes ?? '',
   return_odometer: props.contract?.return_odometer ?? '',
-  return_fuel_level: props.contract?.return_fuel_level ?? '',
+  return_fuel_level: returnFuelLevelStorageValue(props.contract?.return_fuel_level ?? ''),
   vehicle_condition_before: props.contract?.vehicle_condition_before ?? '',
   vehicle_condition_after: props.contract?.vehicle_condition_after ?? '',
   actual_return_time: props.contract?.actual_return_time ?? '',
@@ -965,6 +973,44 @@ function fuelLevelStorageValue(value: string | null | undefined) {
     '3/4 tank': 'three_quarters',
     'three-quarters': 'three_quarters',
     'three quarters': 'three_quarters',
+    full: 'full',
+    '1': 'full',
+    '100': 'full',
+    '100%': 'full',
+    'full tank': 'full',
+  };
+
+  return map[normalized] ?? normalized;
+}
+
+function returnFuelLevelStorageValue(value: string | null | undefined) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  const map: Record<string, string> = {
+    empty: 'empty',
+    '0': 'empty',
+    '0/4': 'empty',
+    '0%': 'empty',
+    'empty tank': 'empty',
+    quarter: '1/4',
+    '1/4': '1/4',
+    '1-4': '1/4',
+    '1 4': '1/4',
+    '1/4 tank': '1/4',
+    'quarter tank': '1/4',
+    half: '1/2',
+    '1/2': '1/2',
+    '1-2': '1/2',
+    '1 2': '1/2',
+    '1/2 tank': '1/2',
+    'half tank': '1/2',
+    three_quarters: '3/4',
+    '3/4': '3/4',
+    '3-4': '3/4',
+    '3 4': '3/4',
+    '3/4 tank': '3/4',
+    'three-quarters': '3/4',
+    'three quarters': '3/4',
     full: 'full',
     '1': 'full',
     '100': 'full',
@@ -1534,7 +1580,7 @@ function submit() {
             <div>
               <Label for="vehicle-fuel-level">{{ localize('Fuel In Vehicle', 'ط§ظ„ط¨ظ†ط²ظٹظ† ط§ظ„ظ…ظˆط¬ظˆط¯ ظپظٹ ط§ظ„ط³ظٹط§ط±ط©') }}</Label>
               <select id="vehicle-fuel-level" v-model="form.car_data.vehicle_fuel_level" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                <option v-for="option in fuelLevelOptions" :key="option.value || 'fuel-empty'" :value="option.value">{{ option.label }}</option>
+                <option v-for="option in returnFuelLevelOptions" :key="option.value || 'fuel-empty'" :value="option.value">{{ option.label }}</option>
               </select>
               <InputError :message="form.errors['car_data.vehicle_fuel_level'] || form.errors.vehicle_fuel_level" class="mt-1" />
             </div>
@@ -1708,7 +1754,7 @@ function submit() {
             <div>
               <Label for="return-fuel-level">{{ localize('Return Fuel', 'الوقود عند العودة') }}</Label>
               <select id="return-fuel-level" v-model="form.return_fuel_level" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                <option v-for="option in fuelLevelOptions" :key="`return-${option.value || 'fuel-empty'}`" :value="option.value">{{ option.label }}</option>
+                <option v-for="option in returnFuelLevelOptions" :key="`return-${option.value || 'fuel-empty'}`" :value="option.value">{{ option.label }}</option>
               </select>
               <InputError :message="form.errors.return_fuel_level" class="mt-1" />
             </div>
@@ -1939,6 +1985,7 @@ function submit() {
     </main>
   </AdminLayout>
 </template>
+
 
 
 

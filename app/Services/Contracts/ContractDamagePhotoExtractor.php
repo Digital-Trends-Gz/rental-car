@@ -7,6 +7,7 @@ use App\Core\AiProviderSettings;
 use App\Core\TenantContext;
 use App\Support\CarDamageCatalog;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use OpenAI\Laravel\Facades\OpenAI;
 use RuntimeException;
 
@@ -37,6 +38,13 @@ class ContractDamagePhotoExtractor
 
             foreach ((array) ($group['file_paths'] ?? []) as $path) {
                 $resolved = $this->resolveAbsolutePath((string) $path);
+                Log::warning('Contract damage photo path resolve.', [
+                    'photo_type' => $photoType,
+                    'view_side' => $viewSide,
+                    'source_path' => (string) $path,
+                    'resolved_path' => $resolved,
+                    'resolved_exists' => $resolved !== null ? is_file($resolved) : false,
+                ]);
                 if ($resolved !== null) {
                     $filePaths[] = $resolved;
                 }
@@ -84,7 +92,19 @@ class ContractDamagePhotoExtractor
         $confidenceValues = [];
 
         foreach ($preparedPhotos as $index => $photoGroup) {
-            $groupResult = $this->extractSinglePhotoGroup($photoGroup, $reportType, $index + 1);
+            try {
+                $groupResult = $this->extractSinglePhotoGroup($photoGroup, $reportType, $index + 1);
+            } catch (\Throwable $e) {
+                Log::warning('Contract damage photo group extraction failed.', [
+                    'group_number' => $index + 1,
+                    'photo_type' => $photoGroup['photo_type'] ?? null,
+                    'view_side' => $photoGroup['view_side'] ?? null,
+                    'report_type' => $reportType,
+                    'error' => $e->getMessage(),
+                ]);
+
+                continue;
+            }
             if ($groupResult === null) {
                 continue;
             }
@@ -150,7 +170,7 @@ class ContractDamagePhotoExtractor
             return $this->extractFuelPhotoGroup($photoGroup, $groupNumber);
         }
 
-        $imageDataUris = [];
+        $imagePayloads = [];
         $rawParts = [];
 
         $label = strtoupper((string) ($photoGroup['view_side'] ?? 'front'));
@@ -158,23 +178,37 @@ class ContractDamagePhotoExtractor
 
         foreach ($photoGroup['file_paths'] as $filePath) {
             $rawParts[] = ' - '.$this->fileLabelFromPath($filePath);
-            $imageDataUri = $this->extractImageDataUriFromPath($filePath);
-            if ($imageDataUri !== null) {
-                $imageDataUris[] = [
+            $fileImageDataUris = $this->extractImageDataUrisFromPath($filePath, $photoType);
+            Log::warning('Contract damage photo image data uri.', [
+                'photo_type' => $photoType,
+                'view_side' => $photoGroup['view_side'] ?? null,
+                'file_path' => $filePath,
+                'has_image_data_uri' => $fileImageDataUris !== [],
+                'has_cropped_image_data_uri' => $photoType === 'damage' ? null : count($fileImageDataUris) > 1,
+                'file_exists' => is_file($filePath),
+                'mime' => is_file($filePath) ? (mime_content_type($filePath) ?: null) : null,
+                'size' => is_file($filePath) ? filesize($filePath) : null,
+            ]);
+            foreach ($fileImageDataUris as $imageDataUri) {
+                if ($imageDataUri === null) {
+                    continue;
+                }
+
+                $imagePayloads[] = [
                     'view_side' => (string) $photoGroup['view_side'],
                     'image_data_uri' => $imageDataUri,
                 ];
             }
         }
 
-        if ($imageDataUris === []) {
+        if ($imagePayloads === []) {
             return null;
         }
 
         $rawText = trim(implode("\n", $rawParts));
         $rawText = mb_substr($rawText, 0, 4000);
 
-        $rawOutput = $this->extractStructuredDamageDataWithOpenAi($rawText, $imageDataUris, $reportType);
+        $rawOutput = $this->extractStructuredDamageDataWithOpenAi($rawText, $imagePayloads, $reportType);
         $items = is_array($rawOutput['items'] ?? null) ? $rawOutput['items'] : [];
 
         return [
@@ -207,6 +241,7 @@ class ContractDamagePhotoExtractor
      */
     private function extractOdometerPhotoGroup(array $photoGroup, int $groupNumber): ?array
     {
+        $photoType = 'odometer';
         $prepared = $this->prepareSinglePhotoGroupTextAndImages($photoGroup, $groupNumber, 'odometer');
         if ($prepared === null) {
             return null;
@@ -247,6 +282,7 @@ class ContractDamagePhotoExtractor
      */
     private function extractFuelPhotoGroup(array $photoGroup, int $groupNumber): ?array
     {
+        $photoType = 'fuel';
         $prepared = $this->prepareSinglePhotoGroupTextAndImages($photoGroup, $groupNumber, 'fuel');
         if ($prepared === null) {
             return null;
@@ -278,7 +314,8 @@ class ContractDamagePhotoExtractor
      */
     private function prepareSinglePhotoGroupTextAndImages(array $photoGroup, int $groupNumber, string $labelSuffix): ?array
     {
-        $imageDataUris = [];
+        $photoType = $this->normalizePhotoType($photoGroup['photo_type'] ?? null);
+        $imagePayloads = [];
         $rawParts = [];
 
         $label = strtoupper((string) ($photoGroup['view_side'] ?? $labelSuffix));
@@ -286,22 +323,36 @@ class ContractDamagePhotoExtractor
 
         foreach ($photoGroup['file_paths'] as $filePath) {
             $rawParts[] = ' - '.$this->fileLabelFromPath($filePath);
-            $imageDataUri = $this->extractImageDataUriFromPath($filePath);
-            if ($imageDataUri !== null) {
-                $imageDataUris[] = [
+            $fileImageDataUris = $this->extractImageDataUrisFromPath($filePath, $photoType);
+            Log::warning('Contract vehicle reading image data uri.', [
+                'photo_type' => $photoType,
+                'view_side' => $photoGroup['view_side'] ?? null,
+                'file_path' => $filePath,
+                'has_image_data_uri' => $fileImageDataUris !== [],
+                'has_cropped_image_data_uri' => count($fileImageDataUris) > 1,
+                'file_exists' => is_file($filePath),
+                'mime' => is_file($filePath) ? (mime_content_type($filePath) ?: null) : null,
+                'size' => is_file($filePath) ? filesize($filePath) : null,
+            ]);
+            foreach ($fileImageDataUris as $imageDataUri) {
+                if ($imageDataUri === null) {
+                    continue;
+                }
+
+                $imagePayloads[] = [
                     'view_side' => (string) $photoGroup['view_side'],
                     'image_data_uri' => $imageDataUri,
                 ];
             }
         }
 
-        if ($imageDataUris === []) {
+        if ($imagePayloads === []) {
             return null;
         }
 
         return [
             'raw_text' => mb_substr(trim(implode("\n", $rawParts)), 0, 4000),
-            'image_data_uris' => $imageDataUris,
+            'image_data_uris' => $imagePayloads,
         ];
     }
 
@@ -681,23 +732,26 @@ class ContractDamagePhotoExtractor
         return $reportType === 'after_return' ? 'after_return' : 'before_pickup';
     }
 
-    private function extractImageDataUriFromPath(string $absolutePath): ?string
+    /**
+     * @return array<int, string>
+     */
+    private function extractImageDataUrisFromPath(string $absolutePath, ?string $photoType = null): array
     {
         if (!is_file($absolutePath)) {
-            return null;
+            return [];
         }
 
         $mime = strtolower((string) @mime_content_type($absolutePath));
         $extension = strtolower((string) pathinfo($absolutePath, PATHINFO_EXTENSION));
         $isImage = str_starts_with($mime, 'image/') || in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'], true);
         if (!$isImage) {
-            return null;
+            return [];
         }
 
         try {
             $content = file_get_contents($absolutePath);
             if (!is_string($content) || $content === '') {
-                return null;
+                return [];
             }
 
             $resolvedMime = str_starts_with($mime, 'image/') ? $mime : match ($extension) {
@@ -709,10 +763,103 @@ class ContractDamagePhotoExtractor
                 default => 'image/jpeg',
             };
 
-            return 'data:'.$resolvedMime.';base64,'.base64_encode($content);
+            $dataUris = [];
+
+            $focusedCrop = $this->createFocusedReadingCropDataUri($absolutePath, $resolvedMime, $photoType);
+            if ($focusedCrop !== null) {
+                $dataUris[] = $focusedCrop;
+            }
+
+            $dataUris[] = 'data:'.$resolvedMime.';base64,'.base64_encode($content);
+
+            return array_values(array_unique(array_filter($dataUris, static fn ($value): bool => is_string($value) && trim($value) !== '')));
         } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    private function createFocusedReadingCropDataUri(string $absolutePath, string $mime, ?string $photoType): ?string
+    {
+        $photoType = $this->normalizePhotoType($photoType);
+        if (!in_array($photoType, ['odometer', 'fuel'], true)) {
             return null;
         }
+
+        $image = $this->createImageResourceFromPath($absolutePath, $mime);
+        if (!$image) {
+            return null;
+        }
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+        if ($width <= 0 || $height <= 0) {
+            imagedestroy($image);
+            return null;
+        }
+
+        if ($photoType === 'fuel') {
+            $cropX = (int) floor($width * 0.62);
+            $cropY = (int) floor($height * 0.52);
+            $cropW = max(1, (int) floor($width * 0.38));
+            $cropH = max(1, (int) floor($height * 0.48));
+        } else {
+            $cropX = (int) floor($width * 0.18);
+            $cropY = (int) floor($height * 0.30);
+            $cropW = max(1, (int) floor($width * 0.64));
+            $cropH = max(1, (int) floor($height * 0.42));
+        }
+
+        $cropX = max(0, min($cropX, $width - 1));
+        $cropY = max(0, min($cropY, $height - 1));
+        $cropW = max(1, min($cropW, $width - $cropX));
+        $cropH = max(1, min($cropH, $height - $cropY));
+
+        $cropped = imagecrop($image, [
+            'x' => $cropX,
+            'y' => $cropY,
+            'width' => $cropW,
+            'height' => $cropH,
+        ]);
+
+        if (!$cropped) {
+            imagedestroy($image);
+            return null;
+        }
+
+        $pngData = $this->encodeImageResourceToDataUri($cropped, 'image/png');
+        imagedestroy($cropped);
+        imagedestroy($image);
+
+        return $pngData;
+    }
+
+    private function createImageResourceFromPath(string $absolutePath, string $mime)
+    {
+        return match (true) {
+            str_contains($mime, 'jpeg'), str_contains($mime, 'jpg') => @imagecreatefromjpeg($absolutePath),
+            str_contains($mime, 'png') => @imagecreatefrompng($absolutePath),
+            str_contains($mime, 'webp') && function_exists('imagecreatefromwebp') => @imagecreatefromwebp($absolutePath),
+            str_contains($mime, 'gif') => @imagecreatefromgif($absolutePath),
+            str_contains($mime, 'bmp') && function_exists('imagecreatefrombmp') => @imagecreatefrombmp($absolutePath),
+            default => false,
+        };
+    }
+
+    private function encodeImageResourceToDataUri($imageResource, string $mime): ?string
+    {
+        if (!$imageResource) {
+            return null;
+        }
+
+        ob_start();
+        $written = imagepng($imageResource);
+        $content = ob_get_clean();
+
+        if (!$written || !is_string($content) || $content === '') {
+            return null;
+        }
+
+        return 'data:'.$mime.';base64,'.base64_encode($content);
     }
 
     private function resolveAbsolutePath(string $path): ?string

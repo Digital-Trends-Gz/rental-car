@@ -4,19 +4,26 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\ContractStatus;
 use App\Enums\CarStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
+use App\Core\ReservationSettings;
 use App\Core\AiAutomationSettings;
 use App\Jobs\ProcessContractHandoverExtraction;
 use App\Jobs\ProcessContractDamagePhotoExtraction;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
+use App\Models\CarDamageCase;
+use App\Models\CarDamageItem;
+use App\Models\ContractReturnReport;
 use App\Models\Contract;
 use App\Models\ContractArchiveFile;
 use App\Models\ContractHandoverPhoto;
 use App\Models\ContractDriver;
 use App\Models\ContractDriverDocument;
 use App\Models\CarDamageReport;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
@@ -28,6 +35,7 @@ use MohamedGaldi\ViltFilepond\Services\FilePondService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Storage;
@@ -75,6 +83,75 @@ class ContractsController extends Controller
                 ->map(fn (ContractArchiveFile $file) => $this->archiveFilePayload($file))
                 ->all(),
             'documents' => $this->flattenDocuments($contract),
+        ]);
+    }
+
+    public function damageReportStatus(Request $request, Contract $contract): JsonResponse
+    {
+        $user = $this->authorizeAdminApiUser($request);
+        $phase = $this->normalizeHandoverPhase($request->input('phase', $request->query('phase', 'return')));
+
+        abort_unless($phase === 'return', 422, 'Only the return damage report status is supported for now.');
+
+        $contract->loadMissing([
+            'reservation.user:id,name,email,is_active',
+            'reservation.car:id,branch_id,year,make,model,license_plate,status,mileage',
+            'reservation.car.branch:id,name',
+            'branch:id,name',
+            'returnStatusReport',
+            'damageReports.files',
+            'damageReports.items',
+        ]);
+
+        abort_unless($this->canAccessContract($contract, $user), 403);
+
+        $state = $this->normalizeReturnHandoverState($contract->handover_state);
+        $stepPayload = is_array(data_get($state, 'steps.return_inspection.payload'))
+            ? data_get($state, 'steps.return_inspection.payload')
+            : [];
+
+        $damageReport = $contract->damageReports
+            ->filter(static fn (CarDamageReport $report): bool => $report->report_type === 'after_return')
+            ->sortByDesc('id')
+            ->first();
+
+        $hasDamage = data_get($stepPayload, 'has_damage');
+        if ($hasDamage === null && $contract->returnStatusReport) {
+            $hasDamage = $contract->returnStatusReport->has_damage;
+        }
+        $hasDamage = filter_var($hasDamage, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        $hasDamage = $hasDamage ?? true;
+
+        if (!$hasDamage) {
+            return response()->json([
+                'damage_report_status' => 'skipped',
+                'damage_report' => null,
+                'damage_report_id' => null,
+                'damage_report_number' => null,
+                'damage_report_type' => null,
+            ]);
+        }
+
+        $extractionStatus = strtolower((string) ($stepPayload['extraction_status'] ?? ''));
+        $hasExtractedItems = $damageReport?->relationLoaded('items')
+            ? $damageReport->items->isNotEmpty()
+            : ($damageReport?->items()->exists() ?? false);
+
+        $status = match (true) {
+            $extractionStatus === 'extracted' || $hasExtractedItems => 'done',
+            $extractionStatus === 'retrying' => 'retrying',
+            $extractionStatus === 'failed' => 'failed',
+            default => 'pending',
+        };
+
+        return response()->json([
+            'damage_report_status' => $status,
+            'damage_report' => $status === 'done' && $damageReport
+                ? $this->damageReportPayload($damageReport->fresh(['files', 'items']))
+                : null,
+            'damage_report_id' => $damageReport?->id,
+            'damage_report_number' => $damageReport?->report_number,
+            'damage_report_type' => $damageReport?->report_type,
         ]);
     }
 
@@ -179,7 +256,7 @@ class ContractsController extends Controller
 
         $page = (int) $request->integer('page');
         if ($phase === 'return') {
-            abort_unless($page >= 1 && $page <= 2, 422, 'The page field is required.');
+            abort_unless($page >= 1 && $page <= 6, 422, 'The page field is required.');
         } else {
             abort_unless($page >= 1 && $page <= 6, 422, 'The page field is required.');
         }
@@ -209,6 +286,39 @@ class ContractsController extends Controller
                         'return_odometer' => $request->input('return_odometer'),
                         'return_fuel_level' => $request->input('return_fuel_level'),
                         'reviewed' => $request->boolean('reviewed', false),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    3 => [
+                        'photos' => $request->input('photos', []),
+                        'temp_folders' => $request->input('temp_folders', []),
+                        'files' => $request->file('files', []),
+                        'view_side' => $request->input('view_side'),
+                        'photo_type' => $request->input('photo_type'),
+                        'return_odometer' => $request->input('return_odometer'),
+                        'return_fuel_level' => $request->input('return_fuel_level'),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    4 => [
+                        'damage_report_id' => $request->input('damage_report_id'),
+                        'summary' => $request->input('summary'),
+                        'has_damage' => $request->boolean('has_damage', true),
+                        'discount' => $request->input('discount'),
+                        'items' => $request->input('items', []),
+                        'deleted_item_ids' => $request->input('deleted_item_ids', []),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    5 => [
+                        'payment_status' => $request->input('payment_status'),
+                        'discount' => $request->input('discount'),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    6 => [
+                        'return_confirmed' => $request->boolean('return_confirmed', false),
+                        'payment_status' => $request->input('payment_status'),
                         'note' => $request->input('note'),
                         'notes' => $request->input('notes'),
                     ],
@@ -550,9 +660,11 @@ class ContractsController extends Controller
     {
         if ($page === 2) {
             $payload = $this->normalizeReturnHandoverPageTwoPayload($request, $payload);
-        } elseif ($page !== 1) {
+        } elseif ($page === 3) {
+            $payload = $this->normalizeReturnHandoverPageThreePayload($request, $payload);
+        } elseif ($page !== 1 && $page !== 4 && $page !== 5 && $page !== 6) {
             throw ValidationException::withMessages([
-                'page' => ['This return handover page is not implemented yet. Use page 1 or 2.'],
+                'page' => ['This return handover page is not implemented yet. Use page 1, 2, 3, 4, 5 or 6.'],
             ]);
         }
 
@@ -562,15 +674,12 @@ class ContractsController extends Controller
 
         if ($page === 2) {
             $photos = $this->prepareHandoverInspectionPhotosForExtraction($request, $stepPayload);
-            $damageReport = $this->resolveOrCreateDraftDamageReportForHandover($contract, $request, 'return', 'after_return');
             $vehicleReadingPhotos = $this->prepareHandoverVehicleReadingPhotosForExtraction($photos);
+            $damageReport = $this->resolveOrCreateDraftDamageReportForHandover($contract, $request, 'return', 'after_return');
+
             $returnReadings = [
-                'return_odometer' => isset($stepPayload['return_odometer']) && is_numeric($stepPayload['return_odometer'])
-                    ? (int) $stepPayload['return_odometer']
-                    : (isset($stepPayload['vehicle_odometer']) && is_numeric($stepPayload['vehicle_odometer'])
-                        ? (int) $stepPayload['vehicle_odometer']
-                        : $contract->return_odometer),
-                'return_fuel_level' => $this->nullableString($stepPayload['return_fuel_level'] ?? ($stepPayload['vehicle_fuel_level'] ?? $contract->return_fuel_level)),
+                'return_odometer' => $contract->return_odometer,
+                'return_fuel_level' => $this->nullableString($contract->return_fuel_level ?? null),
                 'odometer_confidence' => null,
                 'fuel_level_confidence' => null,
             ];
@@ -587,22 +696,6 @@ class ContractsController extends Controller
                     $returnReadings = $returnReadings;
                 }
             }
-
-            DB::transaction(function () use ($contract, $returnReadings): void {
-                $contract->forceFill([
-                    'return_odometer' => $returnReadings['return_odometer'],
-                    'return_fuel_level' => $this->nullableString($returnReadings['return_fuel_level'] ?? null),
-                    'actual_return_time' => now(),
-                ])->saveQuietly();
-
-                $car = $contract->reservation?->car;
-                if ($car && $returnReadings['return_odometer'] !== null) {
-                    $currentMileage = (int) ($car->mileage ?? 0);
-                    $car->forceFill([
-                        'mileage' => max($currentMileage, (int) $returnReadings['return_odometer']),
-                    ])->saveQuietly();
-                }
-            });
 
             $persistedPhotos = $this->persistHandoverHandoverPhotos(
                 $contract,
@@ -635,18 +728,455 @@ class ContractsController extends Controller
                 ProcessContractDamagePhotoExtraction::dispatch($damageReport->id);
             }
 
+            $this->syncReturnStatusReportDraft($contract, [
+                'created_by' => $request->user()?->id,
+                'damage_report_id' => $damageReport->id,
+                'return_location' => $contract->reservation?->return_location ?? null,
+                'return_odometer' => $returnReadings['return_odometer'],
+                'notes' => $stepPayload['notes'] ?? $stepPayload['note'] ?? null,
+            ]);
+
             $extraction = [
                 'status' => 'processing',
-                'message' => $vehicleReadingPhotos !== []
-                    ? 'Vehicle readings extracted. Damage photo extraction has been queued.'
-                    : 'Damage photo extraction has been queued.',
+                'message' => 'Damage photo extraction has been queued.',
                 'fields' => null,
                 'applied_fields' => [],
                 'raw_output' => null,
                 'text_preview' => null,
                 'damage_report' => $this->damageReportPayload($damageReport->fresh(['files', 'items'])),
+                'handover_photos' => $persistedPhotos,
+                'vehicle_readings' => $returnReadings,
+            ];
+        } elseif ($page === 3) {
+            $photos = $this->prepareHandoverInspectionPhotosForExtraction($request, $stepPayload, false);
+            $vehicleReadingPhotos = $this->prepareHandoverVehicleReadingPhotosForExtraction($photos);
+            $damageReport = $this->resolveOrCreateDraftDamageReportForHandover($contract, $request, 'return', 'after_return');
+
+            $returnReadings = [
+                'return_odometer' => isset($stepPayload['return_odometer']) && is_numeric($stepPayload['return_odometer'])
+                    ? (int) $stepPayload['return_odometer']
+                    : $contract->return_odometer,
+                'return_fuel_level' => $this->nullableString($stepPayload['return_fuel_level'] ?? $contract->return_fuel_level),
+                'odometer_confidence' => null,
+                'fuel_level_confidence' => null,
+            ];
+
+            if ($vehicleReadingPhotos !== []) {
+                try {
+                    $vehicleExtraction = $this->contractDamagePhotoExtractor->extractFromPhotoGroups(
+                        $vehicleReadingPhotos,
+                        'after_return'
+                    );
+
+                    $returnReadings = $this->normalizeReturnVehicleReadingsPayload($vehicleExtraction['vehicle_readings'] ?? []);
+                } catch (\Throwable $e) {
+                    $returnReadings = $returnReadings;
+                }
+            }
+
+            $persistedPhotos = [];
+            if ($photos !== []) {
+                $persistedPhotos = $this->persistHandoverHandoverPhotos(
+                    $contract,
+                    $damageReport,
+                    $photos,
+                    'return'
+                );
+            }
+
+            DB::transaction(function () use ($contract, $returnReadings): void {
+                $contract->forceFill([
+                    'return_odometer' => $returnReadings['return_odometer'],
+                    'return_fuel_level' => $this->nullableString($returnReadings['return_fuel_level'] ?? null),
+                    'actual_return_time' => now(),
+                ])->saveQuietly();
+
+                $car = $contract->reservation?->car;
+                if ($car && $returnReadings['return_odometer'] !== null) {
+                    $currentMileage = (int) ($car->mileage ?? 0);
+                    $car->forceFill([
+                        'mileage' => max($currentMileage, (int) $returnReadings['return_odometer']),
+                    ])->saveQuietly();
+                }
+            });
+
+            $returnReport = $this->syncReturnStatusReportDraft($contract, [
+                'created_by' => $request->user()?->id,
+                'damage_report_id' => $damageReport->id,
+                'actual_return_time' => now(),
+                'return_location' => $contract->reservation?->return_location ?? null,
+                'return_odometer' => $returnReadings['return_odometer'],
+                'vehicle_condition_after' => $contract->vehicle_condition_after ?? null,
+                'notes' => $stepPayload['notes'] ?? $stepPayload['note'] ?? null,
+            ]);
+
+            if ($persistedPhotos !== []) {
+                $stepPayload = array_merge($stepPayload, [
+                    'photos' => $persistedPhotos,
+                    'stored_photos' => $persistedPhotos,
+                    'handover_photos' => $persistedPhotos,
+                ]);
+            }
+
+            $stepPayload = array_merge($stepPayload, [
+                'vehicle_readings' => $returnReadings,
+                'return_odometer' => $returnReadings['return_odometer'],
+                'return_fuel_level' => $returnReadings['return_fuel_level'],
+                'extraction_status' => 'extracted',
+                'extraction_error' => null,
+                'extraction_retrying' => false,
+                'extracted_fields' => $returnReadings,
+                'applied_fields' => [],
+                'raw_output' => null,
+                'text_preview' => null,
+            ]);
+
+            $extraction = [
+                'status' => 'extracted',
+                'message' => 'Vehicle readings saved successfully.',
+                'fields' => [
+                    'return_odometer' => $returnReadings['return_odometer'],
+                    'return_fuel_level' => $returnReadings['return_fuel_level'],
+                ],
+                'applied_fields' => [],
+                'raw_output' => null,
+                'text_preview' => null,
+                'damage_report' => $damageReport->fresh(['files', 'items']),
                 'vehicle_readings' => $returnReadings,
                 'handover_photos' => $persistedPhotos,
+                'return_status_report' => [
+                    'id' => $returnReport->id,
+                    'report_number' => $returnReport->report_number,
+                    'status' => $returnReport->status,
+                    'actual_return_time' => optional($returnReport->actual_return_time)->toIso8601String(),
+                    'return_odometer' => $returnReport->return_odometer,
+                    'return_fuel_level' => $returnReport->return_fuel_level,
+                    'vehicle_condition_after' => $returnReport->vehicle_condition_after,
+                    'damage_report_id' => $returnReport->damage_report_id,
+                    'notes' => $returnReport->notes,
+                ],
+            ];
+        } elseif ($page === 4) {
+            $vehicleConditionAfter = $this->nullableString($stepPayload['vehicle_condition_after'] ?? $contract->vehicle_condition_after ?? null);
+            $hasDamage = array_key_exists('has_damage', $stepPayload)
+                ? filter_var($stepPayload['has_damage'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                : null;
+            $hasDamage = $hasDamage ?? true;
+
+            $damageReport = null;
+            if ($hasDamage) {
+                $damageReport = $this->resolveOrCreateDraftDamageReportForHandover($contract, $request, 'return', 'after_return');
+            } else {
+                $this->deleteDraftDamageReportForHandover($contract, 'after_return');
+            }
+
+            $summary = array_key_exists('summary', $stepPayload)
+                ? $this->nullableString($stepPayload['summary'] ?? null)
+                : ($damageReport?->summary);
+
+            $normalizedItems = null;
+            if ($hasDamage && array_key_exists('items', $stepPayload) && is_array($stepPayload['items'])) {
+                $normalizedItems = [];
+
+                foreach (array_values($stepPayload['items']) as $index => $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+
+                    $normalizedItems[] = [
+                        'id' => isset($item['id']) && is_numeric($item['id']) ? (int) $item['id'] : null,
+                        'zone_code' => (string) ($item['zone_code'] ?? ''),
+                        'view_side' => (string) ($item['view_side'] ?? 'front'),
+                        'damage_type' => (string) ($item['damage_type'] ?? 'scratch'),
+                        'severity' => (string) ($item['severity'] ?? 'minor'),
+                        'damage_timing' => 'after_return',
+                        'quantity' => (int) ($item['quantity'] ?? 1),
+                        'marker_x' => $item['marker_x'] ?? null,
+                        'marker_y' => $item['marker_y'] ?? null,
+                        'estimated_cost' => $item['estimated_cost'] ?? null,
+                        'notes' => $item['notes'] ?? null,
+                        'sort_order' => $index,
+                    ];
+                }
+            }
+
+            $deletedItemIds = array_values(array_unique(array_filter(array_map(
+                static fn ($value): int => is_numeric($value) ? (int) $value : 0,
+                (array) ($stepPayload['deleted_item_ids'] ?? [])
+            ))));
+
+            DB::transaction(function () use ($contract, $damageReport, $summary, $normalizedItems, $deletedItemIds, $request): void {
+                if ($damageReport) {
+                    $damageReport->forceFill([
+                        'status' => 'draft',
+                        'summary' => $summary,
+                    ])->saveQuietly();
+
+                    if (is_array($normalizedItems)) {
+                        $this->syncItems($damageReport, $normalizedItems, $deletedItemIds);
+                        $this->syncDamageCases(
+                            $damageReport,
+                            $normalizedItems,
+                            $contract->reservation?->car,
+                            $contract,
+                            $contract->reservation,
+                            $request->user()?->id
+                        );
+                    }
+                }
+            });
+
+            $damageReport = $damageReport?->fresh(['files', 'items']);
+            $discount = array_key_exists('discount', $stepPayload)
+                ? $this->normalizeMoney($stepPayload['discount'])
+                : null;
+
+            $draftReturnReport = $this->syncReturnStatusReportDraft($contract, [
+                'created_by' => $request->user()?->id,
+                'damage_report_id' => $damageReport?->id,
+                'actual_return_time' => $contract->actual_return_time ?? now(),
+                'return_location' => $contract->reservation?->return_location ?? null,
+                'return_odometer' => $contract->return_odometer,
+                'return_fuel_level' => $contract->return_fuel_level,
+                'vehicle_condition_after' => $vehicleConditionAfter,
+                'has_damage' => $hasDamage,
+                'discount' => $discount,
+                'notes' => $summary,
+            ]);
+
+            $summaryPayload = $this->returnStatusReportSummaryPayload(
+                $contract->fresh(['reservation', 'damageReports.items', 'returnStatusReport']),
+                $draftReturnReport,
+                $damageReport,
+                $vehicleConditionAfter,
+                $hasDamage
+            );
+
+            $returnReport = $this->syncReturnStatusReportDraft($contract, [
+                'created_by' => $request->user()?->id,
+                'damage_report_id' => $damageReport?->id,
+                'actual_return_time' => $contract->actual_return_time ?? now(),
+                'return_location' => $contract->reservation?->return_location ?? null,
+                'return_odometer' => $contract->return_odometer,
+                'return_fuel_level' => $contract->return_fuel_level,
+                'vehicle_condition_after' => $vehicleConditionAfter,
+                'has_damage' => $hasDamage,
+                'notes' => $summary,
+                'payment_status' => $summaryPayload['payment_status'] ?? 'not_paid',
+                'discount' => $summaryPayload['discount'] ?? $discount,
+                'extra_kilometers' => $summaryPayload['extra_kilometers'] ?? null,
+                'kilometer_rate' => $summaryPayload['kilometer_rate'] ?? null,
+                'cleaning_fee' => $summaryPayload['cleaning_fee'] ?? null,
+                'fuel_fee' => $summaryPayload['fuel_fee'] ?? null,
+                'fuel_credit' => $summaryPayload['fuel_credit'] ?? null,
+                'late_hours' => $summaryPayload['late_hours'] ?? null,
+                'late_hour_rate' => $summaryPayload['late_hour_rate'] ?? null,
+                'damage_fee' => $summaryPayload['damage_fee'] ?? null,
+                'maintenance_fee' => $summaryPayload['maintenance_fee'] ?? null,
+                'other_fee' => $summaryPayload['other_fee'] ?? null,
+                'total_extra_charges' => $summaryPayload['total_extra_charges'] ?? null,
+            ]);
+
+            $summaryPayload = $this->returnStatusReportSummaryPayload($contract->fresh(['reservation', 'damageReports.items']), $returnReport, $damageReport);
+
+            $stepPayload = array_merge($stepPayload, [
+                'has_damage' => $hasDamage,
+                'damage_report_id' => $damageReport?->id,
+                'damage_report_number' => $damageReport?->report_number,
+                'damage_report_status' => $hasDamage ? $damageReport?->status : 'skipped',
+                'damage_report_type' => $hasDamage ? $damageReport?->report_type : null,
+                'summary' => $summary,
+                'items' => $hasDamage && $damageReport
+                    ? ($normalizedItems ?? $damageReport->items->map(fn ($item) => [
+                        'id' => $item->id,
+                        'zone_code' => $item->zone_code,
+                        'view_side' => $item->view_side,
+                        'damage_type' => $item->damage_type,
+                        'severity' => $item->severity,
+                        'damage_timing' => $item->damage_timing,
+                        'quantity' => (int) $item->quantity,
+                        'marker_x' => $item->marker_x !== null ? (float) $item->marker_x : null,
+                        'marker_y' => $item->marker_y !== null ? (float) $item->marker_y : null,
+                        'estimated_cost' => $item->estimated_cost !== null ? (float) $item->estimated_cost : null,
+                        'notes' => $item->notes,
+                    ])->values()->all())
+                    : [],
+                'damage_report' => $hasDamage && $damageReport ? $this->damageReportPayload($damageReport->fresh(['files', 'items'])) : null,
+                'final_summary' => $summaryPayload,
+            ]);
+
+            $extraction = [
+                'status' => $hasDamage ? 'extracted' : 'skipped',
+                'message' => $hasDamage
+                    ? 'Return damage report saved successfully.'
+                    : 'No damage report created for this return.',
+                'fields' => [
+                    'damage_report_id' => $damageReport?->id,
+                ],
+                'applied_fields' => [],
+                'raw_output' => null,
+                'text_preview' => null,
+                'damage_report_status' => $hasDamage ? ($damageReport?->status ?? 'pending') : 'skipped',
+                'damage_report' => $hasDamage && $damageReport ? $damageReport->fresh(['files', 'items']) : null,
+                'vehicle_readings' => $this->returnVehicleReadingsPayload($contract),
+                'final_summary' => $summaryPayload,
+            ];
+        } elseif ($page === 5) {
+            $paymentStatus = null;
+            if (array_key_exists('payment_status', $stepPayload)) {
+                $paymentStatus = $this->nullableString($stepPayload['payment_status'] ?? null);
+                if ($paymentStatus !== null && !in_array($paymentStatus, ['paid', 'not_paid'], true)) {
+                    throw ValidationException::withMessages([
+                        'payment_status' => ['The selected payment status is invalid.'],
+                    ]);
+                }
+            }
+
+            $report = $this->syncReturnStatusReportDraft($contract, [
+                'created_by' => $request->user()?->id,
+                'payment_status' => $paymentStatus,
+                'discount' => $stepPayload['discount'] ?? null,
+                'notes' => $stepPayload['notes'] ?? $stepPayload['note'] ?? null,
+            ]);
+
+            $summaryPayload = $this->returnStatusReportSummaryPayload($contract->fresh(), $report);
+            $report = $this->syncReturnStatusReportDraft($contract, [
+                'created_by' => $request->user()?->id,
+                'payment_status' => $paymentStatus,
+                'discount' => $summaryPayload['discount'] ?? null,
+                'extra_kilometers' => $summaryPayload['extra_kilometers'] ?? null,
+                'kilometer_rate' => $summaryPayload['kilometer_rate'] ?? null,
+                'cleaning_fee' => $summaryPayload['cleaning_fee'] ?? null,
+                'fuel_fee' => $summaryPayload['fuel_fee'] ?? null,
+                'fuel_credit' => $summaryPayload['fuel_credit'] ?? null,
+                'late_hours' => $summaryPayload['late_hours'] ?? null,
+                'late_hour_rate' => $summaryPayload['late_hour_rate'] ?? null,
+                'damage_fee' => $summaryPayload['damage_fee'] ?? null,
+                'maintenance_fee' => $summaryPayload['maintenance_fee'] ?? null,
+                'other_fee' => $summaryPayload['other_fee'] ?? null,
+                'total_extra_charges' => $summaryPayload['total_extra_charges'] ?? null,
+                'notes' => $stepPayload['notes'] ?? $stepPayload['note'] ?? null,
+            ]);
+            $summaryPayload = $this->returnStatusReportSummaryPayload($contract->fresh(), $report);
+
+            $stepPayload = array_merge($stepPayload, [
+                'payment_status' => $report->payment_status ?? 'not_paid',
+                'discount' => $summaryPayload['discount'] ?? 0,
+                'final_summary' => $summaryPayload,
+                'return_status_report' => $summaryPayload['return_status_report'],
+            ]);
+
+            $extraction = [
+                'status' => 'extracted',
+                'message' => 'Return summary prepared successfully.',
+                'fields' => $summaryPayload,
+                'applied_fields' => [],
+                'raw_output' => null,
+                'text_preview' => null,
+                'damage_report_status' => $summaryPayload['damage_report_status'] ?? null,
+                'damage_report' => $summaryPayload['damage_report'] ?? null,
+                'vehicle_readings' => $summaryPayload['vehicle_readings'] ?? $this->returnVehicleReadingsPayload($contract),
+                'return_status_report' => $summaryPayload['return_status_report'],
+                'final_summary' => $summaryPayload,
+            ];
+        } elseif ($page === 6) {
+            $returnConfirmed = (bool) ($stepPayload['return_confirmed'] ?? false);
+            $paymentStatus = $this->nullableString($stepPayload['payment_status'] ?? null)
+                ?? ($contract->returnStatusReport?->payment_status ?? 'not_paid');
+
+            $summaryPayload = $this->returnStatusReportSummaryPayload($contract->fresh(['reservation', 'damageReports.items', 'returnStatusReport']), $contract->returnStatusReport);
+
+            $report = $this->syncReturnStatusReportDraft($contract, [
+                'created_by' => $request->user()?->id,
+                'damage_report_id' => data_get($summaryPayload, 'damage_report.id') ?? $contract->returnStatusReport?->damage_report_id,
+                'status' => 'finalized',
+                'payment_status' => $paymentStatus,
+                'actual_return_time' => $contract->actual_return_time ?? now(),
+                'return_location' => $contract->reservation?->return_location ?? $contract->returnStatusReport?->return_location,
+                'return_odometer' => $contract->return_odometer,
+                'return_fuel_level' => $contract->return_fuel_level,
+                'vehicle_condition_after' => $contract->vehicle_condition_after ?? $contract->returnStatusReport?->vehicle_condition_after,
+                'has_damage' => $summaryPayload['has_damage'] ?? $contract->returnStatusReport?->has_damage,
+                'extra_kilometers' => $summaryPayload['extra_kilometers'] ?? null,
+                'kilometer_rate' => $summaryPayload['kilometer_rate'] ?? null,
+                'cleaning_fee' => $summaryPayload['cleaning_fee'] ?? null,
+                'fuel_fee' => $summaryPayload['fuel_fee'] ?? null,
+                'fuel_credit' => $summaryPayload['fuel_credit'] ?? null,
+                'late_hours' => $summaryPayload['late_hours'] ?? null,
+                'late_hour_rate' => $summaryPayload['late_hour_rate'] ?? null,
+                'damage_fee' => $summaryPayload['damage_fee'] ?? null,
+                'maintenance_fee' => $summaryPayload['maintenance_fee'] ?? null,
+                'other_fee' => $summaryPayload['other_fee'] ?? null,
+                'discount' => $summaryPayload['discount'] ?? null,
+                'total_extra_charges' => $summaryPayload['total_extra_charges'] ?? null,
+                'notes' => $stepPayload['notes'] ?? $stepPayload['note'] ?? $contract->returnStatusReport?->notes,
+            ]);
+
+            if ($returnConfirmed) {
+                DB::transaction(function () use ($contract, $report, $paymentStatus): void {
+                    $this->syncReturnStatusReportPayment($contract, $report, $paymentStatus);
+
+                    $contract->forceFill([
+                        'actual_return_time' => $report->actual_return_time ?? $contract->actual_return_time ?? now(),
+                        'return_odometer' => $report->return_odometer ?? $contract->return_odometer,
+                        'return_fuel_level' => $report->return_fuel_level ?? $contract->return_fuel_level,
+                        'vehicle_condition_after' => $report->vehicle_condition_after ?? $contract->vehicle_condition_after,
+                        'status' => ContractStatus::COMPLETED->value,
+                    ])->saveQuietly();
+
+                    if ($contract->reservation) {
+                        $contract->reservation->forceFill([
+                            'status' => ReservationStatus::COMPLETED->value,
+                        ])->saveQuietly();
+                    }
+
+                    if ($contract->reservation?->car) {
+                        $updates = [
+                            'status' => CarStatus::AVAILABLE->value,
+                        ];
+
+                        if ($report->return_odometer !== null) {
+                            $updates['mileage'] = max((int) ($contract->reservation->car->mileage ?? 0), (int) $report->return_odometer);
+                        }
+
+                        $contract->reservation->car->forceFill($updates)->saveQuietly();
+                    }
+                });
+
+                $contract->refresh()->loadMissing(['reservation.car', 'returnStatusReport']);
+                $report = $contract->returnStatusReport?->fresh();
+                $summaryPayload = $this->returnStatusReportSummaryPayload($contract->fresh(['reservation', 'damageReports.items', 'returnStatusReport']), $report);
+            }
+
+            $stepPayload = array_merge($stepPayload, [
+                'return_confirmed' => $returnConfirmed,
+                'returned_at' => $returnConfirmed ? now()->toIso8601String() : null,
+                'payment_status' => $paymentStatus,
+                'final_summary' => $summaryPayload,
+                'return_status_report' => $summaryPayload['return_status_report'],
+                'contract_status' => $this->contractStatusValue($contract->status),
+                'reservation_status' => $contract->reservation?->status instanceof ReservationStatus
+                    ? $contract->reservation->status->value
+                    : (string) ($contract->reservation?->status ?? ''),
+                'car_status' => $contract->reservation?->car?->status instanceof CarStatus
+                    ? $contract->reservation->car->status->value
+                    : (string) ($contract->reservation?->car?->status ?? ''),
+            ]);
+
+            $extraction = [
+                'status' => $returnConfirmed ? 'finalized' : 'pending',
+                'message' => $returnConfirmed
+                    ? 'Vehicle return confirmed and return report finalized.'
+                    : 'Vehicle return confirmation is required.',
+                'fields' => $summaryPayload,
+                'applied_fields' => [],
+                'raw_output' => null,
+                'text_preview' => null,
+                'damage_report_status' => $summaryPayload['damage_report_status'] ?? null,
+                'damage_report' => $summaryPayload['damage_report'] ?? null,
+                'vehicle_readings' => $summaryPayload['vehicle_readings'] ?? $this->returnVehicleReadingsPayload($contract),
+                'return_status_report' => $summaryPayload['return_status_report'],
+                'final_summary' => $summaryPayload,
             ];
         } else {
             $contractNote = array_key_exists('notes', $stepPayload)
@@ -665,10 +1195,16 @@ class ContractsController extends Controller
                 'note' => $contractNote,
                 'notes' => $contractNote,
             ]);
+
+            $this->syncReturnStatusReportDraft($contract, [
+                'created_by' => $request->user()?->id,
+                'return_location' => $contract->reservation?->return_location ?? null,
+                'notes' => $contractNote,
+            ]);
         }
 
         $state = $this->normalizeReturnHandoverState($contract->handover_state);
-        $state['current_page'] = max($state['current_page'], min($page + 1, 2));
+        $state['current_page'] = max($state['current_page'], min($page + 1, 6));
         $state['completed_pages'] = array_values(array_unique(array_merge($state['completed_pages'], [$page])));
         $state['steps'][$step['key']] = [
             'page' => $page,
@@ -708,8 +1244,11 @@ class ContractsController extends Controller
                 'applied_fields' => [],
                 'raw_output' => $extraction['raw_output'] ?? null,
                 'text_preview' => $extraction['text_preview'] ?? null,
+                'damage_report_status' => $extraction['damage_report_status'] ?? null,
                 'damage_report' => $extraction['damage_report'] ?? null,
                 'vehicle_readings' => $extraction['vehicle_readings'] ?? null,
+                'return_status_report' => $extraction['return_status_report'] ?? null,
+                'final_summary' => $extraction['final_summary'] ?? null,
             ] : null,
         ]);
     }
@@ -937,9 +1476,78 @@ class ContractsController extends Controller
                         $payload = array_merge([
                             'contract_inputs' => $this->contractInputsPayload($contract),
                             'handover_photos' => $this->handoverPhotosPayload($contract, 'return'),
+                        ], $payload);
+                    }
+
+                    if ($step['page'] === 3) {
+                        $payload = array_merge([
+                            'contract_inputs' => $this->contractInputsPayload($contract),
                             'vehicle_readings' => $this->returnVehicleReadingsPayload($contract),
                             'return_odometer' => $contract->return_odometer,
                             'return_fuel_level' => $contract->return_fuel_level,
+                        ], $payload);
+                    }
+
+                    if ($step['page'] === 4) {
+                        $hasDamage = array_key_exists('has_damage', $payload)
+                            ? filter_var($payload['has_damage'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                            : null;
+                        $hasDamage = $hasDamage ?? true;
+                        $damageReport = $contract->damageReports
+                            ->filter(static fn (CarDamageReport $report): bool => $report->report_type === 'after_return')
+                            ->sortByDesc('id')
+                            ->first();
+
+                        if (!$hasDamage) {
+                            $payload = array_merge([
+                                'has_damage' => false,
+                                'damage_report_status' => 'skipped',
+                                'damage_report' => null,
+                            ], $payload);
+
+                            return [
+                                'page' => $step['page'],
+                                'key' => $step['key'],
+                                'label' => $step['label'],
+                                'completed' => $step['completed'],
+                                'payload' => $payload,
+                            ];
+                        }
+
+                        $payload = array_merge([
+                            'damage_report_status' => $damageReport
+                                ? ($damageReport->items()->exists() ? 'done' : 'pending')
+                                : 'pending',
+                            'damage_report' => $damageReport
+                                ? $this->damageReportPayload($damageReport->fresh(['files', 'items']))
+                                : null,
+                        ], $payload);
+                    }
+
+                    if ($step['page'] === 5) {
+                        $summary = $this->returnStatusReportSummaryPayload($contract, $contract->returnStatusReport);
+
+                        $payload = array_merge([
+                            'payment_status' => $summary['payment_status'] ?? ($contract->returnStatusReport?->payment_status ?? 'not_paid'),
+                            'final_summary' => $summary,
+                            'return_status_report' => $summary['return_status_report'],
+                        ], $payload);
+                    }
+
+                    if ($step['page'] === 6) {
+                        $summary = $this->returnStatusReportSummaryPayload($contract, $contract->returnStatusReport);
+
+                        $payload = array_merge([
+                            'return_confirmed' => data_get($payload, 'return_confirmed', false),
+                            'final_summary' => $summary,
+                            'return_status_report' => $summary['return_status_report'],
+                            'contract_status' => $this->contractStatusValue($contract->status),
+                            'reservation_status' => $contract->reservation?->status instanceof ReservationStatus
+                                ? $contract->reservation->status->value
+                                : (string) ($contract->reservation?->status ?? ''),
+                            'car_status' => $contract->reservation?->car?->status instanceof CarStatus
+                                ? $contract->reservation->car->status->value
+                                : (string) ($contract->reservation?->car?->status ?? ''),
                         ], $payload);
                     }
 
@@ -1041,6 +1649,10 @@ class ContractsController extends Controller
         $steps = is_array($steps) ? $steps : [];
         $customerReview = $steps['customer_review'] ?? [];
         $returnInspection = $steps['return_inspection'] ?? [];
+        $vehicleReadings = $steps['vehicle_readings'] ?? [];
+        $damageReview = $steps['damage_review'] ?? [];
+        $finalSummary = $steps['final_summary'] ?? [];
+        $returnConfirmation = $steps['return_confirmation'] ?? [];
 
         return [
             'current_page' => max(1, (int) data_get($returnState, 'current_page', 1)),
@@ -1060,6 +1672,34 @@ class ContractsController extends Controller
                     'completed' => in_array(2, $completedPages, true),
                     'payload' => is_array(data_get($returnInspection, 'payload')) ? data_get($returnInspection, 'payload') : [],
                 ],
+                'vehicle_readings' => [
+                    'page' => 3,
+                    'key' => 'vehicle_readings',
+                    'label' => 'Vehicle Readings',
+                    'completed' => in_array(3, $completedPages, true),
+                    'payload' => is_array(data_get($vehicleReadings, 'payload')) ? data_get($vehicleReadings, 'payload') : [],
+                ],
+                'damage_review' => [
+                    'page' => 4,
+                    'key' => 'damage_review',
+                    'label' => 'Damage Review',
+                    'completed' => in_array(4, $completedPages, true),
+                    'payload' => is_array(data_get($damageReview, 'payload')) ? data_get($damageReview, 'payload') : [],
+                ],
+                'final_summary' => [
+                    'page' => 5,
+                    'key' => 'final_summary',
+                    'label' => 'Final Summary',
+                    'completed' => in_array(5, $completedPages, true),
+                    'payload' => is_array(data_get($finalSummary, 'payload')) ? data_get($finalSummary, 'payload') : [],
+                ],
+                'return_confirmation' => [
+                    'page' => 6,
+                    'key' => 'return_confirmation',
+                    'label' => 'Return Confirmation',
+                    'completed' => in_array(6, $completedPages, true),
+                    'payload' => is_array(data_get($returnConfirmation, 'payload')) ? data_get($returnConfirmation, 'payload') : [],
+                ],
             ],
         ];
     }
@@ -1069,8 +1709,12 @@ class ContractsController extends Controller
         return match ($page) {
             1 => ['key' => 'customer_review', 'label' => 'Customer Review'],
             2 => ['key' => 'return_inspection', 'label' => 'Return Inspection'],
+            3 => ['key' => 'vehicle_readings', 'label' => 'Vehicle Readings'],
+            4 => ['key' => 'damage_review', 'label' => 'Damage Review'],
+            5 => ['key' => 'final_summary', 'label' => 'Final Summary'],
+            6 => ['key' => 'return_confirmation', 'label' => 'Return Confirmation'],
             default => throw ValidationException::withMessages([
-                'page' => ['This return handover page is not implemented yet. Use page 1 or 2.'],
+                'page' => ['This return handover page is not implemented yet. Use page 1, 2, 3, 4, 5 or 6.'],
             ]),
         };
     }
@@ -1092,15 +1736,59 @@ class ContractsController extends Controller
                 'photos.*.files' => ['nullable', 'array'],
                 'photos.*.files.*' => ['file', 'max:10240'],
                 'photos.*.notes' => ['nullable', 'string', 'max:5000'],
-                'vehicle_odometer' => ['nullable', 'numeric', 'min:0'],
-                'vehicle_fuel_level' => ['nullable', 'string', Rule::in(['empty', '1/4', '1/2', '3/4', 'full'])],
+                'note' => ['nullable', 'string', 'max:5000'],
+                'notes' => ['nullable', 'string', 'max:5000'],
+            ])->validate(),
+            3 => Validator::make($payload, [
+                'photos' => ['nullable', 'array'],
+                'photos.*.view_side' => ['nullable', 'string', Rule::in(array_column(CarDamageCatalog::viewSides(), 'value'))],
+                'photos.*.photo_type' => ['nullable', 'string', Rule::in(['odometer', 'fuel'])],
+                'photos.*.temp_folders' => ['nullable', 'array'],
+                'photos.*.temp_folders.*' => ['string'],
+                'photos.*.files' => ['nullable', 'array'],
+                'photos.*.files.*' => ['file', 'max:10240'],
+                'photos.*.notes' => ['nullable', 'string', 'max:5000'],
                 'return_odometer' => ['nullable', 'numeric', 'min:0'],
                 'return_fuel_level' => ['nullable', 'string', Rule::in(['empty', '1/4', '1/2', '3/4', 'full'])],
                 'note' => ['nullable', 'string', 'max:5000'],
                 'notes' => ['nullable', 'string', 'max:5000'],
             ])->validate(),
+            4 => Validator::make($payload, [
+                  'damage_report_id' => ['nullable', 'integer', 'min:1'],
+                  'summary' => ['nullable', 'string', 'max:5000'],
+                  'vehicle_condition_after' => ['nullable', Rule::in(['clean', 'not_clean'])],
+                  'has_damage' => ['nullable', 'boolean'],
+                  'discount' => ['nullable', 'numeric', 'min:0'],
+                  'items' => ['nullable', 'array'],
+                  'items.*.id' => ['nullable', 'integer', 'min:1'],
+                  'items.*.zone_code' => ['required', 'string', Rule::in(CarDamageCatalog::zoneCodes())],
+                  'items.*.view_side' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::viewSides(), 'value'))],
+                  'items.*.damage_type' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::damageTypes(), 'value'))],
+                  'items.*.severity' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::severityLevels(), 'value'))],
+                  'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
+                  'items.*.marker_x' => ['nullable', 'numeric', 'min:0'],
+                  'items.*.marker_y' => ['nullable', 'numeric', 'min:0'],
+                  'items.*.estimated_cost' => ['nullable', 'numeric', 'min:0'],
+                  'items.*.notes' => ['nullable', 'string', 'max:2000'],
+                  'deleted_item_ids' => ['nullable', 'array'],
+                  'deleted_item_ids.*' => ['integer', 'min:1'],
+                  'note' => ['nullable', 'string', 'max:5000'],
+                  'notes' => ['nullable', 'string', 'max:5000'],
+              ])->validate(),
+            5 => Validator::make($payload, [
+                  'payment_status' => ['nullable', Rule::in(['paid', 'not_paid'])],
+                  'discount' => ['nullable', 'numeric', 'min:0'],
+                  'note' => ['nullable', 'string', 'max:5000'],
+                  'notes' => ['nullable', 'string', 'max:5000'],
+              ])->validate(),
+            6 => Validator::make($payload, [
+                  'return_confirmed' => ['required', 'accepted'],
+                  'payment_status' => ['nullable', Rule::in(['paid', 'not_paid'])],
+                  'note' => ['nullable', 'string', 'max:5000'],
+                  'notes' => ['nullable', 'string', 'max:5000'],
+              ])->validate(),
             default => throw ValidationException::withMessages([
-                'page' => ['This return handover page is not implemented yet. Use page 1 or 2.'],
+                'page' => ['This return handover page is not implemented yet. Use page 1, 2, 3, 4, 5 or 6.'],
             ]),
         };
     }
@@ -1109,13 +1797,75 @@ class ContractsController extends Controller
     {
         $payload = $this->normalizeHandoverPageThreePayload($request, $payload);
 
-        if (array_key_exists('vehicle_odometer', $payload) || $request->has('vehicle_odometer')) {
-            $payload['vehicle_odometer'] = $payload['vehicle_odometer'] ?? $request->input('vehicle_odometer');
+        if (array_key_exists('reviewed', $payload) || $request->has('reviewed')) {
+            $payload['reviewed'] = (bool) ($payload['reviewed'] ?? $request->boolean('reviewed', false));
         }
 
-        if (array_key_exists('vehicle_fuel_level', $payload) || $request->has('vehicle_fuel_level')) {
-            $payload['vehicle_fuel_level'] = $payload['vehicle_fuel_level'] ?? $request->input('vehicle_fuel_level');
+        if (array_key_exists('note', $payload) || $request->has('note')) {
+            $payload['note'] = $payload['note'] ?? $request->input('note');
         }
+
+        if (array_key_exists('notes', $payload) || $request->has('notes')) {
+            $payload['notes'] = $payload['notes'] ?? $request->input('notes');
+        }
+
+        return $payload;
+    }
+
+    private function normalizeReturnHandoverPageThreePayload(Request $request, array $payload): array
+    {
+        $photos = is_array($payload['photos'] ?? null) ? array_values($payload['photos']) : [];
+        $uploadedPhotos = data_get($request->allFiles(), 'photos', []);
+        $topLevelFiles = array_values(array_filter(
+            is_array($request->file('files', [])) ? $request->file('files', []) : [],
+            static fn ($file): bool => $file instanceof UploadedFile
+        ));
+
+        foreach ($photos as $index => $photo) {
+            $photoFiles = data_get($uploadedPhotos, "{$index}.files", []);
+            $photoFiles = array_values(array_filter(
+                is_array($photoFiles) ? $photoFiles : [],
+                static fn ($file): bool => $file instanceof UploadedFile
+            ));
+
+            $storedFolders = $photoFiles === [] ? [] : $this->storeUploadedHandoverFiles($photoFiles);
+            $tempFolders = array_values(array_unique(array_filter(
+                array_merge(
+                    is_array($photo['temp_folders'] ?? null) ? $photo['temp_folders'] : [],
+                    $storedFolders
+                ),
+                static fn ($folder): bool => is_string($folder) && trim($folder) !== ''
+            )));
+
+            $photos[$index] = [
+                'view_side' => $photo['view_side'] ?? 'front',
+                'photo_type' => $photo['photo_type'] ?? 'odometer',
+                'temp_folders' => $tempFolders,
+                'files' => $photoFiles,
+                'notes' => $photo['notes'] ?? null,
+            ];
+        }
+
+        if ($photos === []) {
+            $topLevelPhotoType = strtolower(trim((string) ($payload['photo_type'] ?? $request->input('photo_type', ''))));
+            $topLevelPhotoType = in_array($topLevelPhotoType, ['odometer', 'fuel'], true) ? $topLevelPhotoType : null;
+            $hasTopLevelPhotoData = $topLevelPhotoType !== null
+                || filled($payload['view_side'] ?? null)
+                || filled($request->input('view_side'))
+                || !empty($topLevelFiles);
+
+            if ($hasTopLevelPhotoData) {
+                $photos = [[
+                    'view_side' => $payload['view_side'] ?? $request->input('view_side', 'front'),
+                    'photo_type' => $topLevelPhotoType ?? 'odometer',
+                    'temp_folders' => is_array($payload['temp_folders'] ?? null) ? $payload['temp_folders'] : [],
+                    'files' => $topLevelFiles,
+                    'notes' => $payload['notes'] ?? $payload['note'] ?? null,
+                ]];
+            }
+        }
+
+        $payload['photos'] = $photos;
 
         if (array_key_exists('return_odometer', $payload) || $request->has('return_odometer')) {
             $payload['return_odometer'] = $payload['return_odometer'] ?? $request->input('return_odometer');
@@ -1123,10 +1873,6 @@ class ContractsController extends Controller
 
         if (array_key_exists('return_fuel_level', $payload) || $request->has('return_fuel_level')) {
             $payload['return_fuel_level'] = $payload['return_fuel_level'] ?? $request->input('return_fuel_level');
-        }
-
-        if (array_key_exists('reviewed', $payload) || $request->has('reviewed')) {
-            $payload['reviewed'] = (bool) ($payload['reviewed'] ?? $request->boolean('reviewed', false));
         }
 
         if (array_key_exists('note', $payload) || $request->has('note')) {
@@ -1148,7 +1894,7 @@ class ContractsController extends Controller
             'return_odometer' => isset($vehicleReadings['vehicle_odometer']) && is_numeric($vehicleReadings['vehicle_odometer'])
                 ? (int) $vehicleReadings['vehicle_odometer']
                 : null,
-            'return_fuel_level' => $this->nullableString($vehicleReadings['vehicle_fuel_level'] ?? null),
+            'return_fuel_level' => $this->normalizeFuelLevelForStorage($vehicleReadings['vehicle_fuel_level'] ?? null),
             'odometer_confidence' => isset($vehicleReadings['odometer_confidence']) && is_numeric($vehicleReadings['odometer_confidence'])
                 ? (float) $vehicleReadings['odometer_confidence']
                 : null,
@@ -1164,6 +1910,248 @@ class ContractsController extends Controller
             'return_odometer' => $contract->return_odometer,
             'return_fuel_level' => $contract->return_fuel_level,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function syncReturnStatusReportDraft(Contract $contract, array $attributes = []): ContractReturnReport
+    {
+        $existingReport = ContractReturnReport::query()
+            ->where('tenant_id', $contract->tenant_id)
+            ->where('contract_id', $contract->id)
+            ->latest('id')
+            ->first();
+
+        $report = ContractReturnReport::query()->updateOrCreate(
+            [
+                'tenant_id' => $contract->tenant_id,
+                'contract_id' => $contract->id,
+            ],
+            [
+                'branch_id' => $attributes['branch_id'] ?? $contract->branch_id ?: $contract->reservation?->car?->branch_id,
+                'reservation_id' => $contract->reservation_id,
+                'car_id' => $attributes['car_id'] ?? $contract->reservation?->car?->id,
+                'damage_report_id' => $attributes['damage_report_id'] ?? null,
+                'created_by' => $attributes['created_by'] ?? null,
+                'report_number' => $existingReport?->report_number ?: $this->generateReturnReportNumber((int) $contract->tenant_id),
+                'status' => $attributes['status'] ?? 'draft',
+                'payment_status' => $attributes['payment_status'] ?? 'not_paid',
+                'has_damage' => array_key_exists('has_damage', $attributes)
+                    ? $attributes['has_damage']
+                    : ($existingReport?->has_damage ?? null),
+                'actual_return_time' => $attributes['actual_return_time'] ?? $existingReport?->actual_return_time,
+                'return_location' => $attributes['return_location'] ?? $existingReport?->return_location,
+                'return_odometer' => array_key_exists('return_odometer', $attributes) ? $attributes['return_odometer'] : $existingReport?->return_odometer,
+                'return_fuel_level' => array_key_exists('return_fuel_level', $attributes) ? $attributes['return_fuel_level'] : $existingReport?->return_fuel_level,
+                'vehicle_condition_after' => $attributes['vehicle_condition_after'] ?? $existingReport?->vehicle_condition_after,
+                'extra_kilometers' => $attributes['extra_kilometers'] ?? $existingReport?->extra_kilometers ?? 0,
+                'kilometer_rate' => $attributes['kilometer_rate'] ?? $existingReport?->kilometer_rate ?? 0,
+                'cleaning_fee' => $attributes['cleaning_fee'] ?? $existingReport?->cleaning_fee ?? 0,
+                'fuel_fee' => $attributes['fuel_fee'] ?? $existingReport?->fuel_fee ?? 0,
+                'fuel_credit' => $attributes['fuel_credit'] ?? $existingReport?->fuel_credit ?? 0,
+                'late_hours' => $attributes['late_hours'] ?? $existingReport?->late_hours ?? 0,
+                'late_hour_rate' => $attributes['late_hour_rate'] ?? $existingReport?->late_hour_rate ?? 0,
+                'damage_fee' => $attributes['damage_fee'] ?? $existingReport?->damage_fee ?? 0,
+                'maintenance_fee' => $attributes['maintenance_fee'] ?? $existingReport?->maintenance_fee ?? 0,
+                'other_fee' => $attributes['other_fee'] ?? $existingReport?->other_fee ?? 0,
+                'discount' => $attributes['discount'] ?? $existingReport?->discount ?? 0,
+                'total_extra_charges' => $attributes['total_extra_charges'] ?? $existingReport?->total_extra_charges ?? 0,
+                'notes' => $attributes['notes'] ?? $existingReport?->notes,
+            ]
+        );
+
+        return $report->fresh();
+    }
+
+    private function syncReturnStatusReportPayment(Contract $contract, ContractReturnReport $report, string $paymentStatus): void
+    {
+        $totalExtraCharges = $this->normalizeMoney($report->total_extra_charges ?? 0);
+
+        if ($totalExtraCharges <= 0) {
+            if ($report->payment_id) {
+                $payment = Payment::query()
+                    ->where('tenant_id', $contract->tenant_id)
+                    ->find($report->payment_id);
+
+                if ($payment && $payment->status !== PaymentStatus::COMPLETED) {
+                    $payment->forceFill([
+                        'status' => PaymentStatus::CANCELLED,
+                        'processed_at' => null,
+                        'notes' => trim(sprintf(
+                            'Return status report %s no longer has payable extra charges.',
+                            $report->report_number
+                        )),
+                    ])->save();
+                }
+
+                $report->forceFill(['payment_id' => null])->save();
+            }
+
+            return;
+        }
+
+        $payment = $report->payment_id
+            ? Payment::query()->where('tenant_id', $contract->tenant_id)->find($report->payment_id)
+            : null;
+
+        if (!$payment) {
+            $payment = new Payment();
+            $payment->tenant_id = $contract->tenant_id;
+            $payment->reservation_id = $contract->reservation_id;
+            $payment->user_id = $contract->reservation?->user_id;
+        }
+
+        $payment->forceFill([
+            'amount' => $totalExtraCharges,
+            'currency' => strtoupper((string) ($contract->currency ?: config('app.currency_code', 'USD'))),
+            'payment_method' => PaymentMethod::CASH,
+            'status' => $paymentStatus === 'paid'
+                ? PaymentStatus::COMPLETED
+                : PaymentStatus::PENDING,
+            'processed_at' => $paymentStatus === 'paid' ? now() : null,
+            'notes' => trim(sprintf(
+                'Return status report %s for contract %s%s.',
+                $report->report_number,
+                $contract->contract_number,
+                $paymentStatus === 'paid' ? '' : ' pending settlement'
+            )),
+        ])->save();
+
+        $report->forceFill(['payment_id' => $payment->id])->save();
+    }
+
+    private function deleteDraftDamageReportForHandover(Contract $contract, string $reportType = 'after_return'): void
+    {
+        $draftReports = CarDamageReport::query()
+            ->where('tenant_id', $contract->tenant_id)
+            ->where('contract_id', $contract->id)
+            ->where('report_type', $reportType)
+            ->where('status', 'draft')
+            ->get();
+
+        foreach ($draftReports as $draftReport) {
+            $draftReport->delete();
+        }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    private function syncItems(CarDamageReport $report, array $items, array $deletedItemIds = []): void
+    {
+        $deletedItemIds = array_values(array_unique(array_filter(array_map(
+            static fn ($value): int => is_numeric($value) ? (int) $value : 0,
+            $deletedItemIds
+        ))));
+
+        if ($deletedItemIds !== []) {
+            CarDamageItem::query()
+                ->where('tenant_id', $report->tenant_id)
+                ->where('car_damage_report_id', $report->id)
+                ->whereIn('id', $deletedItemIds)
+                ->delete();
+        }
+
+        foreach (array_values($items) as $index => $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $itemId = isset($item['id']) && is_numeric($item['id']) ? (int) $item['id'] : null;
+            if ($itemId !== null && in_array($itemId, $deletedItemIds, true)) {
+                continue;
+            }
+
+            $attributes = [
+                'tenant_id' => $report->tenant_id,
+                'zone_code' => $item['zone_code'],
+                'view_side' => $item['view_side'],
+                'damage_type' => $item['damage_type'],
+                'severity' => $item['severity'],
+                'damage_timing' => $item['damage_timing'] ?? ($report->report_type === 'after_return' ? 'after_return' : 'before_pickup'),
+                'quantity' => (int) $item['quantity'],
+                'marker_x' => $item['marker_x'] ?? null,
+                'marker_y' => $item['marker_y'] ?? null,
+                'estimated_cost' => $item['estimated_cost'] ?? null,
+                'notes' => $item['notes'] ?? null,
+                'sort_order' => $index,
+            ];
+
+            if ($itemId !== null) {
+                $existingItem = CarDamageItem::query()
+                    ->where('tenant_id', $report->tenant_id)
+                    ->where('car_damage_report_id', $report->id)
+                    ->whereKey($itemId)
+                    ->first();
+
+                if ($existingItem) {
+                    $existingItem->forceFill($attributes)->saveQuietly();
+                    continue;
+                }
+            }
+
+            $report->items()->create($attributes);
+        }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    private function syncDamageCases(
+        CarDamageReport $report,
+        array $items,
+        Car $car,
+        Contract $contract,
+        Reservation $reservation,
+        ?int $userId
+    ): void {
+        foreach (array_values($items) as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $existingCase = CarDamageCase::query()
+                ->where('tenant_id', $report->tenant_id)
+                ->where('car_id', $car->id)
+                ->where('zone_code', $item['zone_code'])
+                ->where('damage_type', $item['damage_type'])
+                ->whereIn('status', ['open', 'in_repair'])
+                ->orderBy('id')
+                ->first();
+
+            $payload = [
+                'branch_id' => $car->branch_id,
+                'opened_in_contract_id' => $existingCase?->opened_in_contract_id ?: $contract->id,
+                'opened_in_reservation_id' => $existingCase?->opened_in_reservation_id ?: $reservation->id,
+                'last_report_id' => $report->id,
+                'created_by' => $existingCase?->created_by ?: $userId,
+                'zone_code' => $item['zone_code'],
+                'view_side' => $item['view_side'],
+                'damage_type' => $item['damage_type'],
+                'severity' => $item['severity'],
+                'damage_timing' => $item['damage_timing'] ?? ($report->report_type === 'after_return' ? 'after_return' : 'before_pickup'),
+                'quantity' => (int) $item['quantity'],
+                'marker_x' => $item['marker_x'] ?? null,
+                'marker_y' => $item['marker_y'] ?? null,
+                'estimated_cost' => $item['estimated_cost'] ?? null,
+                'notes' => $item['notes'] ?? null,
+                'status' => 'open',
+                'first_detected_at' => $existingCase?->first_detected_at ?: ($report->inspected_at ?? now()),
+                'last_detected_at' => $report->inspected_at ?? now(),
+            ];
+
+            if ($existingCase) {
+                $existingCase->update($payload);
+                continue;
+            }
+
+            CarDamageCase::create([
+                'tenant_id' => $report->tenant_id,
+                'car_id' => $car->id,
+                ...$payload,
+            ]);
+        }
     }
 
     private function handoverStepForPage(int $page): array
@@ -1354,7 +2342,7 @@ class ContractsController extends Controller
      */
     private function normalizeHandoverPageThreePayload(Request $request, array $payload): array
     {
-        $photos = is_array($payload['photos'] ?? null) ? array_values($payload['photos']) : [];
+        $photos = is_array($payload['photos'] ?? null) ? $payload['photos'] : [];
         $uploadedPhotos = data_get($request->allFiles(), 'photos', []);
         $topLevelFiles = array_values(array_filter(
             is_array($request->file('files', [])) ? $request->file('files', []) : [],
@@ -1371,6 +2359,7 @@ class ContractsController extends Controller
             ]];
         }
 
+        $normalizedPhotos = [];
         foreach ($photos as $index => $photo) {
             $photoFiles = data_get($uploadedPhotos, "{$index}.files", []);
             $photoFiles = array_values(array_filter(
@@ -1378,7 +2367,7 @@ class ContractsController extends Controller
                 static fn ($file): bool => $file instanceof UploadedFile
             ));
 
-            $photos[$index] = [
+            $normalizedPhotos[$index] = [
                 'view_side' => $photo['view_side'] ?? 'front',
                 'photo_type' => $photo['photo_type'] ?? 'damage',
                 'temp_folders' => array_values(array_filter(
@@ -1390,7 +2379,7 @@ class ContractsController extends Controller
             ];
         }
 
-        $payload['photos'] = $photos;
+        $payload['photos'] = array_values($normalizedPhotos);
 
         return $payload;
     }
@@ -1470,13 +2459,13 @@ class ContractsController extends Controller
      * @param  array<string, mixed>  $stepPayload
      * @return array<int, array{view_side: string, photo_type: string, temp_folders: array<int, string>, notes: mixed}>
      */
-    private function prepareHandoverInspectionPhotosForExtraction(Request $request, array $stepPayload): array
+    private function prepareHandoverInspectionPhotosForExtraction(Request $request, array $stepPayload, bool $allowDefaultPhotoGroup = true): array
     {
         $photos = is_array($stepPayload['photos'] ?? null)
             ? $stepPayload['photos']
             : [];
 
-        if ($photos === []) {
+        if ($photos === [] && $allowDefaultPhotoGroup) {
             $photos = [[
                 'view_side' => $stepPayload['view_side'] ?? 'front',
                 'temp_folders' => $stepPayload['temp_folders'] ?? [],
@@ -2026,6 +3015,15 @@ class ContractsController extends Controller
                 static fn ($folder): bool => is_string($folder) && trim($folder) !== ''
             ));
 
+            $uploadedFiles = array_values(array_filter(
+                is_array($photo['files'] ?? null) ? $photo['files'] : [],
+                static fn ($file): bool => $file instanceof UploadedFile
+            ));
+
+            foreach ($this->storeUploadedHandoverFiles($uploadedFiles) as $folder) {
+                $tempFolders[] = $folder;
+            }
+
             $filePaths = [];
             foreach ($tempFolders as $folder) {
                 $tempFile = TempFile::query()->where('folder', $folder)->first();
@@ -2417,6 +3415,10 @@ class ContractsController extends Controller
     private function damageReportPayload(CarDamageReport $damageReport): array
     {
         $damageReport->loadMissing(['files', 'items']);
+        $comparison = $this->damageReportComparisonPayload($damageReport);
+        $items = $damageReport->report_type === 'after_return'
+            ? $this->afterReturnDamageItems($damageReport)
+            : $damageReport->items->values();
 
         return [
             'id' => $damageReport->id,
@@ -2425,22 +3427,8 @@ class ContractsController extends Controller
             'status' => $damageReport->status,
             'summary' => $damageReport->summary,
             'inspected_at' => optional($damageReport->inspected_at)?->format('Y-m-d H:i'),
-            'items_count' => $damageReport->items->count(),
-            'items' => $damageReport->items->map(function ($item): array {
-                return [
-                    'id' => $item->id,
-                    'zone_code' => $item->zone_code,
-                    'view_side' => $item->view_side,
-                    'damage_type' => $item->damage_type,
-                    'severity' => $item->severity,
-                    'damage_timing' => $item->damage_timing,
-                    'quantity' => (int) $item->quantity,
-                    'marker_x' => $item->marker_x !== null ? (float) $item->marker_x : null,
-                    'marker_y' => $item->marker_y !== null ? (float) $item->marker_y : null,
-                    'estimated_cost' => $item->estimated_cost !== null ? (float) $item->estimated_cost : null,
-                    'notes' => $item->notes,
-                ];
-            })->values()->all(),
+            'items_count' => $items->count(),
+            'items' => $items->map(fn ($item): array => $this->damageReportItemPayload($item))->values()->all(),
             'photos' => $damageReport->files
                 ->sortBy(['collection', 'order', 'id'])
                 ->values()
@@ -2461,7 +3449,128 @@ class ContractsController extends Controller
                     ];
                 })
                 ->all(),
+            'comparison' => $comparison,
+            'merged_items' => $comparison['merged_items'] ?? $items->map(fn ($item): array => $this->damageReportItemPayload($item))->values()->all(),
         ];
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, \App\Models\CarDamageItem>|array<int, \App\Models\CarDamageItem>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function damageReportItemsPayload(iterable $items): array
+    {
+        $payload = [];
+
+        foreach ($items as $item) {
+            if ($item instanceof \App\Models\CarDamageItem) {
+                $payload[] = $this->damageReportItemPayload($item);
+            }
+        }
+
+        return array_values($payload);
+    }
+
+    private function damageReportItemPayload(\App\Models\CarDamageItem $item): array
+    {
+        return [
+            'id' => $item->id,
+            'zone_code' => $item->zone_code,
+            'view_side' => $item->view_side,
+            'damage_type' => $item->damage_type,
+            'severity' => $item->severity,
+            'damage_timing' => $item->damage_timing,
+            'quantity' => (int) $item->quantity,
+            'marker_x' => $item->marker_x !== null ? (float) $item->marker_x : null,
+            'marker_y' => $item->marker_y !== null ? (float) $item->marker_y : null,
+            'estimated_cost' => $item->estimated_cost !== null ? (float) $item->estimated_cost : null,
+            'notes' => $item->notes,
+            'signature' => $this->damageReportItemSignature($item),
+        ];
+    }
+
+    private function damageReportItemSignature(\App\Models\CarDamageItem $item): string
+    {
+        return implode('|', [
+            mb_strtolower(trim((string) ($item->zone_code ?? ''))),
+            mb_strtolower(trim((string) ($item->view_side ?? ''))),
+            mb_strtolower(trim((string) ($item->damage_type ?? ''))),
+            mb_strtolower(trim((string) ($item->severity ?? ''))),
+            (string) max(1, (int) ($item->quantity ?? 1)),
+        ]);
+    }
+
+    private function damageReportComparisonPayload(CarDamageReport $damageReport): array
+    {
+        $oppositeReportType = $damageReport->report_type === 'after_return' ? 'before_delivery' : 'after_return';
+
+        $againstReport = CarDamageReport::query()
+            ->withoutTenantScope()
+            ->where('contract_id', $damageReport->contract_id)
+            ->where('report_type', $oppositeReportType)
+            ->orderByDesc('id')
+            ->with(['items'])
+            ->first();
+
+        $currentItems = $this->damageReportItemsPayload($damageReport->items->values());
+
+        if (! $againstReport) {
+            return [
+                'against_report' => null,
+                'shared_items' => [],
+                'items_only_in_current' => $currentItems,
+                'items_only_in_against' => [],
+                'merged_items' => $currentItems,
+            ];
+        }
+
+        $againstItems = $this->damageReportItemsPayload($againstReport->items->values());
+        $currentBySignature = collect($currentItems)->keyBy('signature');
+        $againstBySignature = collect($againstItems)->keyBy('signature');
+
+        $sharedItems = [];
+        $currentOnlyItems = [];
+        foreach ($currentItems as $item) {
+            if ($againstBySignature->has($item['signature'])) {
+                $sharedItems[] = $this->damageReportComparisonItemPayload($item, 'current', true);
+            } else {
+                $currentOnlyItems[] = $this->damageReportComparisonItemPayload($item, 'current', false);
+            }
+        }
+
+        $againstOnlyItems = [];
+        foreach ($againstItems as $item) {
+            if (! $currentBySignature->has($item['signature'])) {
+                $againstOnlyItems[] = $this->damageReportComparisonItemPayload($item, 'against', false);
+            }
+        }
+
+        $mergedItems = array_values(array_merge(
+            array_map(fn (array $item): array => $this->damageReportComparisonItemPayload($item, 'against', $currentBySignature->has($item['signature'])), $againstItems),
+            $currentOnlyItems
+        ));
+
+        return [
+            'against_report' => [
+                'id' => $againstReport->id,
+                'report_number' => $againstReport->report_number,
+                'report_type' => $againstReport->report_type,
+                'status' => $againstReport->status,
+                'items_count' => $againstReport->items->count(),
+            ],
+            'shared_items' => $sharedItems,
+            'items_only_in_current' => $currentOnlyItems,
+            'items_only_in_against' => $againstOnlyItems,
+            'merged_items' => $mergedItems,
+        ];
+    }
+
+    private function damageReportComparisonItemPayload(array $item, string $source, bool $shared): array
+    {
+        $item['source'] = $source;
+        $item['shared'] = $shared;
+
+        return $item;
     }
 
     /**
@@ -2513,6 +3622,24 @@ class ContractsController extends Controller
     private function generateReportNumber(): string
     {
         return 'DMG-'.now()->format('Ymd').'-'.Str::upper(Str::random(5));
+    }
+
+    private function generateReturnReportNumber(int $tenantId): string
+    {
+        $datePrefix = now()->format('Ymd');
+
+        $latest = ContractReturnReport::query()
+            ->when($tenantId > 0, fn ($query) => $query->where('tenant_id', $tenantId))
+            ->where('report_number', 'like', "RTR-{$datePrefix}-%")
+            ->latest('id')
+            ->value('report_number');
+
+        $nextSequence = 1;
+        if (is_string($latest) && preg_match('/RTR-\d{8}-(\d{4})$/', $latest, $matches)) {
+            $nextSequence = ((int) $matches[1]) + 1;
+        }
+
+        return sprintf('RTR-%s-%04d', $datePrefix, $nextSequence);
     }
 
     private function driverPayload(ContractDriver $driver): array
@@ -2756,6 +3883,325 @@ class ContractsController extends Controller
         }
 
         return Storage::url($normalized);
+    }
+
+    private function returnStatusReportSummaryPayload(
+        Contract $contract,
+        ?ContractReturnReport $report = null,
+        ?CarDamageReport $damageReport = null,
+        ?string $vehicleConditionAfter = null,
+        ?bool $hasDamage = null
+    ): array {
+        $contract->loadMissing(['reservation', 'damageReports.items', 'returnStatusReport']);
+        $report ??= $contract->returnStatusReport;
+        $settings = $this->reservationSettings((int) $contract->tenant_id);
+
+        $returnOdometer = $report?->return_odometer !== null
+            ? (int) $report->return_odometer
+            : ($contract->return_odometer !== null ? (int) $contract->return_odometer : null);
+        $checkoutFuelLevel = $this->normalizeFuelLevelForStorage($contract->vehicle_fuel_level);
+        $returnFuelLevel = $this->normalizeFuelLevelForStorage($report?->return_fuel_level ?? $contract->return_fuel_level);
+        $actualReturnTime = $report?->actual_return_time
+            ? Carbon::parse($report->actual_return_time)->format('Y-m-d H:i')
+            : ($contract->actual_return_time ? Carbon::parse($contract->actual_return_time)->format('Y-m-d H:i') : null);
+        $useStoredCharges = $report?->status === 'finalized';
+
+        if (!$damageReport && $report?->damage_report_id) {
+            $damageReport = $contract->damageReports->firstWhere('id', (int) $report->damage_report_id);
+        }
+
+        $effectiveHasDamage = $hasDamage;
+        if ($effectiveHasDamage === null && $report?->has_damage !== null) {
+            $effectiveHasDamage = (bool) $report->has_damage;
+        }
+        $effectiveHasDamage ??= true;
+
+        if (!$damageReport && $effectiveHasDamage !== false) {
+            $damageReport = $contract->damageReports
+                ->filter(static fn (CarDamageReport $candidate): bool => $candidate->report_type === 'after_return')
+                ->sortByDesc('id')
+                ->first();
+        }
+
+        if ($effectiveHasDamage === false) {
+            $damageReport = null;
+        }
+
+        $calculatedExtraKilometers = $this->resolveExtraKilometers($contract, $settings, $actualReturnTime, $returnOdometer);
+        $extraKilometers = $this->normalizeMoney($useStoredCharges ? ($report?->extra_kilometers ?? $calculatedExtraKilometers) : $calculatedExtraKilometers);
+        $calculatedKilometerRate = ReservationSettings::resolveKilometerRate($settings, $extraKilometers);
+        $kilometerRate = $this->normalizeMoney($useStoredCharges ? ($report?->kilometer_rate ?? $calculatedKilometerRate) : $calculatedKilometerRate);
+        $calculatedCleaningFee = ReservationSettings::resolveCleaningFee($settings);
+        $cleaningFee = $this->normalizeMoney($useStoredCharges ? ($report?->cleaning_fee ?? $calculatedCleaningFee) : $calculatedCleaningFee);
+        $calculatedFuelFee = ReservationSettings::resolveFuelFeeByLoss($settings, $checkoutFuelLevel, $returnFuelLevel);
+        $fuelFee = $this->normalizeMoney($useStoredCharges ? ($report?->fuel_fee ?? $calculatedFuelFee) : $calculatedFuelFee);
+        $calculatedFuelCredit = ReservationSettings::resolveFuelCreditByGain($settings, $checkoutFuelLevel, $returnFuelLevel);
+        $fuelCredit = $this->normalizeMoney($useStoredCharges ? ($report?->fuel_credit ?? $calculatedFuelCredit) : $calculatedFuelCredit);
+        $calculatedLateHours = $this->resolveLateHours($contract, $settings, $actualReturnTime);
+        $lateHours = $this->normalizeMoney($useStoredCharges ? ($report?->late_hours ?? $calculatedLateHours) : $calculatedLateHours);
+        $calculatedLateHourRate = ReservationSettings::resolveLateHourlyFee($settings);
+        $lateHourRate = $this->normalizeMoney($useStoredCharges ? ($report?->late_hour_rate ?? $calculatedLateHourRate) : $calculatedLateHourRate);
+        $damageFee = $this->normalizeMoney($damageReport
+            ? $this->afterReturnDamageItems($damageReport)->sum('estimated_cost')
+            : ($report?->damage_fee ?? 0)
+        );
+        $maintenanceFee = $this->normalizeMoney($report?->maintenance_fee ?? 0);
+        $otherFee = $this->normalizeMoney($report?->other_fee ?? 0);
+        $lateFee = $this->calculateLateFee(
+            $lateHours,
+            $settings,
+            $this->normalizeMoney($contract->price_per_day ?? $contract->reservation?->daily_rate ?? 0),
+            $lateHourRate
+        );
+        $subtotalBeforeDiscount = $this->normalizeMoney(
+            ($extraKilometers * $kilometerRate)
+            + $cleaningFee
+            + $fuelFee
+            - $fuelCredit
+            + $lateFee
+            + $damageFee
+            + $maintenanceFee
+            + $otherFee
+        );
+        $discount = min($this->normalizeMoney($report?->discount ?? 0), max(0.0, $subtotalBeforeDiscount));
+        $totalExtraCharges = $this->normalizeMoney($subtotalBeforeDiscount - $discount);
+        $paymentStatus = $report?->payment_status ?? ($totalExtraCharges > 0 ? 'not_paid' : 'paid');
+        $damageReportStatus = $effectiveHasDamage === false
+            ? 'skipped'
+            : ($damageReport ? ($damageReport->items()->exists() ? 'done' : 'pending') : 'pending');
+
+        $fees = [
+            ['key' => 'extra_kilometer_charges', 'label' => 'Extra Kilometer Charges', 'amount' => $this->normalizeMoney($extraKilometers * $kilometerRate)],
+            ['key' => 'cleaning_fee', 'label' => 'Cleaning Fee', 'amount' => $cleaningFee],
+            ['key' => 'fuel_fee', 'label' => 'Fuel Fee', 'amount' => $fuelFee],
+            ['key' => 'fuel_credit', 'label' => 'Fuel Credit', 'amount' => $fuelCredit > 0 ? -$fuelCredit : 0.0],
+            ['key' => 'late_return_fee', 'label' => 'Late Return Fee', 'amount' => $lateFee],
+            ['key' => 'damage_fee', 'label' => 'Damage Fee', 'amount' => $damageFee],
+            ['key' => 'maintenance_fee', 'label' => 'Maintenance Fee', 'amount' => $maintenanceFee],
+            ['key' => 'other_fee', 'label' => 'Other Fee', 'amount' => $otherFee],
+            ['key' => 'discount', 'label' => 'Discount', 'amount' => $discount > 0 ? -$discount : 0.0],
+        ];
+
+        return [
+            'return_status_report' => $this->returnStatusReportPayload($report),
+            'payment_status' => $paymentStatus,
+            'currency' => strtoupper((string) ($contract->currency ?: config('app.currency_code', 'USD'))),
+            'allowed_kilometers' => $this->resolveAllowedKilometers($contract, $settings, $actualReturnTime),
+            'actual_kilometers_driven' => max(0, (float) ($returnOdometer ?? 0) - (float) ($contract->vehicle_odometer ?? 0)),
+            'extra_kilometers' => $extraKilometers,
+            'kilometer_rate' => $kilometerRate,
+            'extra_kilometer_charges' => $this->normalizeMoney($extraKilometers * $kilometerRate),
+            'cleaning_fee' => $cleaningFee,
+            'fuel_fee' => $fuelFee,
+            'fuel_credit' => $fuelCredit,
+            'late_hours' => $lateHours,
+            'late_hour_rate' => $lateHourRate,
+            'late_fee' => $lateFee,
+            'damage_fee' => $damageFee,
+            'maintenance_fee' => $maintenanceFee,
+            'other_fee' => $otherFee,
+            'discount' => $discount,
+            'total_extra_charges' => $totalExtraCharges,
+            'fees' => $fees,
+            'vehicle_readings' => [
+                'checkout_odometer' => $contract->vehicle_odometer,
+                'return_odometer' => $returnOdometer,
+                'checkout_fuel_level' => $checkoutFuelLevel,
+                'return_fuel_level' => $returnFuelLevel,
+            ],
+            'vehicle_condition_after' => $vehicleConditionAfter ?? $report?->vehicle_condition_after ?? $contract->vehicle_condition_after,
+            'has_damage' => $effectiveHasDamage,
+            'damage_report_status' => $damageReportStatus,
+            'damage_report' => $damageReport ? $this->damageReportPayload($damageReport->fresh(['files', 'items'])) : null,
+        ];
+    }
+
+    private function returnStatusReportPayload(?ContractReturnReport $report): ?array
+    {
+        if (!$report) {
+            return null;
+        }
+
+        return [
+            'id' => $report->id,
+            'report_number' => $report->report_number,
+            'status' => $report->status,
+            'payment_status' => $report->payment_status ?? 'not_paid',
+            'actual_return_time' => optional($report->actual_return_time)?->toIso8601String(),
+            'return_location' => $report->return_location,
+            'return_odometer' => $report->return_odometer,
+            'return_fuel_level' => $report->return_fuel_level,
+            'vehicle_condition_after' => $report->vehicle_condition_after,
+            'has_damage' => $report->has_damage,
+            'damage_report_id' => $report->damage_report_id,
+            'extra_kilometers' => $report->extra_kilometers,
+            'kilometer_rate' => $report->kilometer_rate,
+            'cleaning_fee' => $report->cleaning_fee,
+            'fuel_fee' => $report->fuel_fee,
+            'fuel_credit' => $report->fuel_credit,
+            'late_hours' => $report->late_hours,
+            'late_hour_rate' => $report->late_hour_rate,
+            'damage_fee' => $report->damage_fee,
+            'maintenance_fee' => $report->maintenance_fee,
+            'other_fee' => $report->other_fee,
+            'discount' => $report->discount,
+            'total_extra_charges' => $report->total_extra_charges,
+            'notes' => $report->notes,
+        ];
+    }
+
+    private function reservationSettings(int $tenantId): array
+    {
+        $settings = DB::table('tenant_site_settings')
+            ->where('tenant_id', $tenantId)
+            ->value('reservation_settings');
+
+        $decoded = is_array($settings) ? $settings : (json_decode((string) $settings, true) ?: null);
+
+        return ReservationSettings::normalize($decoded);
+    }
+
+    private function normalizeMoney(mixed $value): float
+    {
+        if ($value === null || $value === '') {
+            return 0.0;
+        }
+
+        return round((float) $value, 2);
+    }
+
+    private function calculateLateFee(float $lateHours, array $settings, float $dailyRate, ?float $hourlyRateOverride = null): float
+    {
+        if ($lateHours <= 0) {
+            return 0.0;
+        }
+
+        $lateReturn = is_array($settings['late_return'] ?? null) ? $settings['late_return'] : [];
+        $mode = (string) ($lateReturn['mode'] ?? 'hourly');
+        $hourlyFee = $hourlyRateOverride !== null && $hourlyRateOverride > 0
+            ? $hourlyRateOverride
+            : ReservationSettings::resolveLateHourlyFee($settings);
+        $afterHours = isset($lateReturn['after_hours']) ? (int) $lateReturn['after_hours'] : 0;
+
+        if ($mode === 'daily_after_threshold' && $afterHours > 0 && $lateHours > $afterHours) {
+            $excessHours = $lateHours - $afterHours;
+            $fullDays = (int) floor($excessHours / 24);
+            $remainingHours = round($excessHours - ($fullDays * 24), 2);
+            $dayRate = $dailyRate > 0 ? $dailyRate : $hourlyFee * 24;
+
+            return round(($fullDays * $dayRate) + ($remainingHours * $hourlyFee), 2);
+        }
+
+        return round($lateHours * $hourlyFee, 2);
+    }
+
+    private function resolveExtraKilometers(Contract $contract, array $settings, ?string $actualReturnTime = null, ?int $returnOdometer = null): float
+    {
+        $vehicleOdometer = (int) ($contract->vehicle_odometer ?? 0);
+        $returnOdometer = $returnOdometer ?? ($contract->return_odometer !== null ? (int) $contract->return_odometer : 0);
+        $drivenKilometers = max(0, $returnOdometer - $vehicleOdometer);
+        $allowedKilometers = $this->resolveAllowedKilometers($contract, $settings, $actualReturnTime);
+
+        return max(0, $drivenKilometers - $allowedKilometers);
+    }
+
+    private function resolveAllowedKilometers(Contract $contract, array $settings, ?string $actualReturnTime = null): float
+    {
+        $days = $this->resolveContractDurationDays($contract) + $this->resolveLateChargeDays($contract, $settings, $actualReturnTime);
+        if ($days <= 0) {
+            return 0.0;
+        }
+
+        $daily = (float) ($contract->allowed_km_per_day ?? 0);
+        if ($daily > 0) {
+            return $this->normalizeMoney($days * $daily);
+        }
+
+        $weekly = (float) ($contract->allowed_km_per_week ?? 0);
+        if ($weekly > 0) {
+            return $this->normalizeMoney(max(1, (int) ceil($days / 7)) * $weekly);
+        }
+
+        $monthly = (float) ($contract->allowed_km_per_month ?? 0);
+        if ($monthly > 0) {
+            return $this->normalizeMoney(max(1, (int) ceil($days / 30)) * $monthly);
+        }
+
+        return 0.0;
+    }
+
+    private function resolveLateChargeDays(Contract $contract, array $settings, ?string $actualReturnTime = null): int
+    {
+        $lateHours = $this->resolveLateHours($contract, $settings, $actualReturnTime);
+        if ($lateHours <= 0) {
+            return 0;
+        }
+
+        $lateSettings = $settings['late_return'] ?? [];
+        if (($lateSettings['mode'] ?? 'hourly') !== 'daily_after_threshold') {
+            return 0;
+        }
+
+        $threshold = (float) ($lateSettings['after_hours'] ?? 0);
+        if ($threshold <= 0 || $lateHours <= $threshold) {
+            return 0;
+        }
+
+        return max(1, (int) ceil(($lateHours - $threshold) / 24));
+    }
+
+    private function resolveContractDurationDays(Contract $contract): int
+    {
+        if (!$contract->start_date || !$contract->end_date) {
+            return 0;
+        }
+
+        return max(1, (int) Carbon::parse($contract->start_date)->diffInDays(Carbon::parse($contract->end_date)) + 1);
+    }
+
+    private function resolveLateHours(Contract $contract, array $settings, ?string $actualReturnTime = null): float
+    {
+        $actual = $actualReturnTime ? Carbon::parse($actualReturnTime) : ($contract->actual_return_time ? Carbon::parse($contract->actual_return_time) : null);
+        $expected = $this->expectedReturnDateTime($contract, $settings);
+
+        if (!$actual || !$expected || $actual->lessThanOrEqualTo($expected)) {
+            return 0.0;
+        }
+
+        return round($expected->diffInMinutes($actual) / 60, 2);
+    }
+
+    private function expectedReturnDateTime(Contract $contract, array $settings): ?Carbon
+    {
+        if (!$contract->end_date) {
+            return null;
+        }
+
+        $policy = $settings['return_time_policy']['mode'] ?? 'fixed_time';
+        $time = match ($policy) {
+            'same_pickup' => (string) ($contract->reservation?->pickup_time ?? '18:00'),
+            'set_during_reservation' => (string) ($contract->reservation?->return_time ?? '18:00'),
+            default => (string) ($settings['return_time_policy']['fixed_time'] ?? '18:00'),
+        };
+
+        return Carbon::parse(Carbon::parse($contract->end_date)->format('Y-m-d').' '.($time ?: '18:00'));
+    }
+
+    private function afterReturnDamageItems(CarDamageReport $report)
+    {
+        $report->loadMissing('items');
+        $items = $report->items;
+        $hasExplicitTiming = $items->contains(fn ($item) => !blank($item->damage_timing));
+
+        if ($hasExplicitTiming) {
+            return $items->filter(fn ($item) => $item->damage_timing === 'after_return')->values();
+        }
+
+        if ($report->report_type === 'after_return') {
+            return $items->values();
+        }
+
+        return collect();
     }
 
     private function nullableString(mixed $value): ?string

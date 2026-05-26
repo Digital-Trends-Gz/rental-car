@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +22,7 @@ type DamageReport = {
     after_return_total_estimated_cost?: number;
     summary: string | null;
     edit_url: string;
+    destroy_url: string;
 };
 
 type OptionItem = { value: string; label: string };
@@ -70,6 +71,7 @@ const props = defineProps<{
         return_odometer: number | null;
         return_fuel_level: string | null;
         vehicle_condition_after: string | null;
+        has_damage?: boolean | null;
         damage_report_id: number | null;
         extra_kilometers: number | null;
         kilometer_rate: number | null;
@@ -144,13 +146,52 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 // Ensure options is always defined from props
 const options = props.options ?? { fuelLevels: [], vehicleConditions: [] };
 
+function fuelLevelStorageValue(value: string | null | undefined) {
+    const normalized = String(value ?? '').trim().toLowerCase();
+
+    const map: Record<string, string> = {
+        empty: 'empty',
+        '0': 'empty',
+        '0/4': 'empty',
+        '0%': 'empty',
+        'empty tank': 'empty',
+        quarter: 'quarter',
+        '1/4': 'quarter',
+        '1-4': 'quarter',
+        '1 4': 'quarter',
+        '1/4 tank': 'quarter',
+        'quarter tank': 'quarter',
+        half: 'half',
+        '1/2': 'half',
+        '1-2': 'half',
+        '1 2': 'half',
+        '1/2 tank': 'half',
+        'half tank': 'half',
+        three_quarters: 'three_quarters',
+        '3/4': 'three_quarters',
+        '3-4': 'three_quarters',
+        '3 4': 'three_quarters',
+        '3/4 tank': 'three_quarters',
+        'three-quarters': 'three_quarters',
+        'three quarters': 'three_quarters',
+        full: 'full',
+        '1': 'full',
+        '100': 'full',
+        '100%': 'full',
+        'full tank': 'full',
+    };
+
+    return map[normalized] ?? normalized;
+}
+
 const form = useForm({
     actual_return_time: props.report.actual_return_time ?? '',
     payment_status: props.report.payment_status ?? 'not_paid',
     return_location: props.report.return_location ?? props.contract.reservation?.return_location ?? '',
     return_odometer: props.report.return_odometer ?? props.contract.vehicle_odometer ?? '',
-    return_fuel_level: props.report.return_fuel_level ?? '',
+    return_fuel_level: fuelLevelStorageValue(props.report.return_fuel_level ?? props.contract.vehicle_fuel_level ?? ''),
     vehicle_condition_after: props.report.vehicle_condition_after ?? props.contract.vehicle_condition_after ?? 'clean',
+    has_damage: props.report.has_damage ?? props.contract.damage_reports.some((report) => report.report_type === 'after_return'),
     damage_report_id: props.report.damage_report_id ?? '',
     extra_kilometers: props.report.extra_kilometers ?? 0,
     kilometer_rate: props.report.kilometer_rate ?? props.defaults.kilometer_rate ?? 0,
@@ -170,6 +211,10 @@ const isLocked = computed(() => props.report.id !== null && (props.report.paymen
 const canEditReturnReport = computed(() => Boolean(props.permissions?.can_edit_return_report) && !isLocked.value);
 
 const selectedDamageReport = computed<DamageReport | null>(() => {
+    if (!form.has_damage) {
+        return null;
+    }
+
     const selectedId = Number(form.damage_report_id || 0);
     if (!selectedId) {
         return null;
@@ -178,9 +223,31 @@ const selectedDamageReport = computed<DamageReport | null>(() => {
     return afterReturnDamageReports.value.find((report) => report.id === selectedId) ?? null;
 });
 
+const hasDamageOptions = [
+    { value: true, label: localize('Yes, there is damage', 'نعم، يوجد ضرر') },
+    { value: false, label: localize('No damage', 'لا يوجد ضرر') },
+];
+
 const afterReturnDamageReports = computed(() => {
     return props.contract.damage_reports.filter((report) => report.report_type === 'after_return');
 });
+
+function deleteDamageReport(report: DamageReport) {
+    const confirmed = window.confirm(
+        localize(
+            `Delete damage report ${report.report_number}?`,
+            `حذف تقرير الضرر ${report.report_number}؟`,
+        ),
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    router.delete(report.destroy_url, {
+        preserveScroll: true,
+    });
+}
 
 // Cleaning fee logic: only charge if car was clean at delivery but returned dirty
 const cleaningFeeShouldApply = computed(() => {
@@ -233,8 +300,8 @@ const fuelLevelOrder: Record<string, number> = {
 };
 
 const fuelLossLevel = computed(() => {
-    const startLevel = props.contract.vehicle_fuel_level ?? '';
-    const returnLevel = form.return_fuel_level ?? '';
+    const startLevel = fuelLevelStorageValue(props.contract.vehicle_fuel_level ?? '');
+    const returnLevel = fuelLevelStorageValue(form.return_fuel_level ?? '');
 
     const start = fuelLevelOrder[startLevel] ?? null;
     const end = fuelLevelOrder[returnLevel] ?? null;
@@ -248,8 +315,8 @@ const fuelLossLevel = computed(() => {
 });
 
 const fuelLossDescription = computed(() => {
-    const startLevel = props.contract.vehicle_fuel_level ?? '';
-    const returnLevel = form.return_fuel_level ?? '';
+    const startLevel = fuelLevelStorageValue(props.contract.vehicle_fuel_level ?? '');
+    const returnLevel = fuelLevelStorageValue(form.return_fuel_level ?? '');
     if (!startLevel || !returnLevel) {
         return '';
     }
@@ -277,8 +344,8 @@ const fuelLossDescription = computed(() => {
 });
 
 const fuelComparisonSummary = computed(() => {
-    const startLevel = props.contract.vehicle_fuel_level ?? '';
-    const returnLevel = form.return_fuel_level ?? '';
+    const startLevel = fuelLevelStorageValue(props.contract.vehicle_fuel_level ?? '');
+    const returnLevel = fuelLevelStorageValue(form.return_fuel_level ?? '');
     if (!startLevel || !returnLevel) {
         return '';
     }
@@ -412,8 +479,8 @@ const defaultFuelFee = computed(() => {
 });
 
 const fuelGainLevel = computed(() => {
-    const startLevel = props.contract.vehicle_fuel_level ?? '';
-    const returnLevel = form.return_fuel_level ?? '';
+    const startLevel = fuelLevelStorageValue(props.contract.vehicle_fuel_level ?? '');
+    const returnLevel = fuelLevelStorageValue(form.return_fuel_level ?? '');
 
     const start = fuelLevelOrder[startLevel] ?? null;
     const end = fuelLevelOrder[returnLevel] ?? null;
@@ -645,6 +712,17 @@ watch(
     { immediate: true },
 );
 
+watch(
+    () => form.has_damage,
+    (hasDamage) => {
+        if (!hasDamage) {
+            form.damage_report_id = '';
+            form.damage_fee = 0;
+        }
+    },
+    { immediate: true },
+);
+
 function roundMoney(value: number): number {
     return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
@@ -668,8 +746,10 @@ function submit() {
         maintenance_fee: Number(data.maintenance_fee || 0),
         other_fee: Number(data.other_fee || 0),
         discount: Number(data.discount || 0),
-        damage_report_id: data.damage_report_id === '' ? null : Number(data.damage_report_id),
+        has_damage: Boolean(data.has_damage),
+        damage_report_id: data.has_damage && data.damage_report_id !== '' ? Number(data.damage_report_id) : null,
         return_odometer: data.return_odometer === '' ? null : Number(data.return_odometer),
+        return_fuel_level: data.return_fuel_level === '' ? null : fuelLevelStorageValue(data.return_fuel_level),
     })).post(props.actions.store, {
         preserveScroll: true,
     });
@@ -798,13 +878,28 @@ function submit() {
                             <InputError :message="form.errors.vehicle_condition_after" class="mt-1" />
                         </div>
                         <div>
+                            <Label for="has_damage">{{ localize('Has Damage?', 'هل يوجد ضرر؟') }}</Label>
+                            <select id="has_damage" v-model="form.has_damage" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
+                                <option v-for="option in hasDamageOptions" :key="String(option.value)" :value="option.value">
+                                    {{ option.label }}
+                                </option>
+                            </select>
+                            <p v-if="!form.has_damage" class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('No damage report will be created for this return.', 'لن يتم إنشاء تقرير ضرر لهذا الإرجاع.') }}
+                            </p>
+                            <InputError :message="form.errors.has_damage" class="mt-1" />
+                        </div>
+                        <div>
                             <Label for="damage_report_id">{{ localize('Linked Damage Report', 'طھظ‚ط§ط±ظٹط± ط§ظ„ط¶ط±ط± ط§ظ„ظ…ط±طھط¨ط·ط©') }}</Label>
-                            <select id="damage_report_id" v-model="form.damage_report_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
+                            <select id="damage_report_id" v-model="form.damage_report_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" :disabled="!form.has_damage">
                                 <option value="">{{ localize('None', 'ط¨ط¯ظˆظ†') }}</option>
                                 <option v-for="damageReport in afterReturnDamageReports" :key="damageReport.id" :value="damageReport.id">
                                     {{ damageReport.report_number }} - {{ damageReport.items_count }} {{ localize('items', 'ط¹ظ†طµط±') }} - ${{ Number(damageReport.total_estimated_cost).toFixed(2) }}
                                 </option>
                             </select>
+                            <p v-if="!form.has_damage" class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('Damage report selection is disabled when there is no damage.', 'يتم تعطيل اختيار تقرير الضرر عند عدم وجود ضرر.') }}
+                            </p>
                             <InputError :message="form.errors.damage_report_id" class="mt-1" />
                         </div>
                         <div>
@@ -953,27 +1048,64 @@ function submit() {
                         <div v-if="afterReturnDamageReports.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
                             {{ localize('No after-return damage reports have been created yet for this contract.', 'ظ„ظ… ظٹطھظ… ط¥ظ†ط´ط§ط، ط£ظٹ طھظ‚ط±ظٹط± ط¶ط±ط± ط¨ط¹ط¯ ط§ظ„طھط³ظ„ظٹظ… ظ„ظ‡ط°ط§ ط§ظ„ط¹ظ‚ط¯ ط¨ط¹ط¯.') }}
                         </div>
-                        <div v-else class="space-y-3">
-                            <div
-                                v-for="damageReport in afterReturnDamageReports"
-                                :key="damageReport.id"
-                                class="rounded-md border p-4"
-                            >
-                                <div class="flex flex-wrap items-start justify-between gap-3">
-                                    <div>
-                                        <div class="font-semibold">{{ damageReport.report_number }}</div>
-                                        <div class="text-sm text-muted-foreground">
-                                            {{ damageReport.items_count }} {{ localize('damage items', 'ط¹ظ†ط§طµط± ط§ظ„ط¶ط±ط±') }} آ· ${{ Number(damageReport.total_estimated_cost).toFixed(2) }}
-                                        </div>
-                                        <div v-if="damageReport.summary" class="mt-1 text-sm">
-                                            {{ damageReport.summary }}
-                                        </div>
-                                    </div>
-                                    <Link :href="damageReport.edit_url">
-                                        <Button variant="outline" size="sm">{{ localize('Open report', 'ظپطھط­ ط§ظ„طھظ‚ط±ظٹط±') }}</Button>
-                                    </Link>
-                                </div>
-                            </div>
+                        <div v-else class="overflow-x-auto">
+                            <table class="w-full min-w-[760px] border-collapse text-sm">
+                                <thead>
+                                    <tr class="border-b bg-muted/30 text-left">
+                                        <th class="px-3 py-2 font-medium">{{ localize('Report', 'التقرير') }}</th>
+                                        <th class="px-3 py-2 font-medium">{{ localize('Items', 'العناصر') }}</th>
+                                        <th class="px-3 py-2 font-medium">{{ localize('Estimated Cost', 'التكلفة التقديرية') }}</th>
+                                        <th class="px-3 py-2 font-medium">{{ localize('Status', 'الحالة') }}</th>
+                                        <th class="px-3 py-2 font-medium">{{ localize('Summary', 'الملخص') }}</th>
+                                        <th class="px-3 py-2 font-medium">{{ localize('Actions', 'الإجراءات') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="damageReport in afterReturnDamageReports"
+                                        :key="damageReport.id"
+                                        class="border-b last:border-0"
+                                    >
+                                        <td class="px-3 py-3 font-medium">
+                                            <div>{{ damageReport.report_number }}</div>
+                                            <div class="text-xs text-muted-foreground">
+                                                {{ damageReport.report_type || 'after_return' }}
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            {{ damageReport.items_count }} {{ localize('items', 'عنصر') }}
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            ${{ Number(damageReport.total_estimated_cost).toFixed(2) }}
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            {{ damageReport.status }}
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <div class="max-w-[280px] truncate text-muted-foreground">
+                                                {{ damageReport.summary || localize('No summary', 'لا يوجد ملخص') }}
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-3">
+                                            <div class="flex flex-wrap gap-2">
+                                                <Link :href="damageReport.edit_url">
+                                                    <Button variant="outline" size="sm">
+                                                        {{ localize('Open', 'فتح') }}
+                                                    </Button>
+                                                </Link>
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    type="button"
+                                                    @click="deleteDamageReport(damageReport)"
+                                                >
+                                                    {{ localize('Delete', 'حذف') }}
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </CardContent>
                 </Card>

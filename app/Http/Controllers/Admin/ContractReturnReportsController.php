@@ -6,6 +6,7 @@ use App\Enums\CarStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
+use App\Enums\UserRole;
 use App\Core\ReservationSettings;
 use App\Core\TenantContext;
 use App\Http\Controllers\Controller;
@@ -123,6 +124,7 @@ class ContractReturnReportsController extends Controller
                         'after_return_total_estimated_cost' => (float) $afterReturnItems->sum('estimated_cost'),
                         'summary' => $report->summary,
                         'edit_url' => url('/admin/car-damage-reports/'.$report->getKey().'/edit'),
+                        'destroy_url' => url('/admin/car-damage-reports/'.$report->getKey()),
                     ];
                 })->values()->all(),
             ],
@@ -461,6 +463,9 @@ class ContractReturnReportsController extends Controller
                     'reservation_id' => $contract->reservation_id,
                     'car_id' => $contract->reservation?->car?->id,
                     'damage_report_id' => $damageReport?->id,
+                    'has_damage' => array_key_exists('has_damage', $validated)
+                        ? (bool) $validated['has_damage']
+                        : ($damageReport !== null),
                     'created_by' => $request->user()?->id,
                     'report_number' => $existingReport?->report_number ?: $this->generateReportNumber(),
                     'status' => 'finalized',
@@ -578,6 +583,7 @@ class ContractReturnReportsController extends Controller
             'return_odometer' => ['nullable', 'integer', 'min:0'],
             'return_fuel_level' => ['nullable', Rule::in(['empty', 'quarter', 'half', 'three_quarters', 'full'])],
             'vehicle_condition_after' => ['nullable', Rule::in(['clean', 'not_clean'])],
+            'has_damage' => ['nullable', 'boolean'],
             'payment_status' => ['nullable', Rule::in(['paid', 'not_paid'])],
             'damage_report_id' => ['nullable', 'integer'],
             'extra_kilometers' => ['nullable', 'numeric', 'min:0'],
@@ -634,9 +640,19 @@ class ContractReturnReportsController extends Controller
 
     private function canEditReturnReport(?\App\Models\User $user): bool
     {
-        return $user !== null
-            && method_exists($user, 'hasPermission')
-            && $user->hasPermission('tenant-edit-return-reports');
+        if ($user === null) {
+            return false;
+        }
+
+        $role = $user->role instanceof UserRole
+            ? $user->role
+            : UserRole::tryFrom((string) $user->role);
+
+        if ($role === UserRole::SUPER_ADMIN) {
+            return true;
+        }
+
+        return method_exists($user, 'hasPermission') && $user->hasPermission('tenant-edit-return-reports');
     }
 
     private function reportIsPaid(?ContractReturnReport $report): bool
@@ -667,6 +683,7 @@ class ContractReturnReportsController extends Controller
                 'return_odometer' => null,
                 'return_fuel_level' => '',
                 'vehicle_condition_after' => 'clean',
+                'has_damage' => false,
                 'payment_status' => 'not_paid',
                 'damage_report_id' => null,
                 'extra_kilometers' => 0,
@@ -694,6 +711,7 @@ class ContractReturnReportsController extends Controller
             'return_odometer' => $report->return_odometer,
             'return_fuel_level' => $report->return_fuel_level,
             'vehicle_condition_after' => $report->vehicle_condition_after,
+            'has_damage' => $report->has_damage,
             'payment_status' => $report->payment_status ?? ($report->payment ? 'paid' : 'not_paid'),
             'damage_report_id' => $report->damage_report_id,
             'extra_kilometers' => $report->extra_kilometers,

@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->prefix('reservations')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
     Route::get('{contract}/documents', [ContractsController::class, 'documents'])->name('api.contracts.documents');
+    Route::get('{contract}/damage-report-status', [ContractsController::class, 'damageReportStatus'])->name('api.contracts.damage-report-status');
     Route::match(['post', 'patch'], '{contract}/handover', [ContractsController::class, 'updateHandover'])->name('api.contracts.handover');
 });
 

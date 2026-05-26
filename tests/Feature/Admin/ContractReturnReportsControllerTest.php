@@ -97,17 +97,23 @@ class ContractReturnReportsControllerTest extends TestCase
         $this->assertNotNull($report);
         $this->assertSame('paid', $report->payment_status);
         $this->assertSame('Main Office', $report->return_location);
-        $this->assertSame(1406.0, (float) $report->total_extra_charges);
+        $this->assertSame(1240, (int) $report->return_odometer);
+        $this->assertSame('half', $report->return_fuel_level);
+        $this->assertSame(35.0, (float) $report->total_extra_charges);
         $this->assertNotNull($report->payment_id);
 
         $payment = Payment::query()->find($report->payment_id);
         $this->assertNotNull($payment);
         $this->assertSame(PaymentMethod::CASH->value, $payment->payment_method instanceof \BackedEnum ? $payment->payment_method->value : (string) $payment->payment_method);
         $this->assertSame(PaymentStatus::COMPLETED->value, $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status);
-        $this->assertSame(1406.0, (float) $payment->amount);
+        $this->assertSame(35.0, (float) $payment->amount);
 
         $this->assertSame(ReservationStatus::COMPLETED->value, $fixtures['reservation']->fresh()->status->value);
-        $this->assertSame('completed', $fixtures['contract']->fresh()->status);
+        $this->assertSame('completed', $fixtures['contract']->fresh()->status instanceof \BackedEnum
+            ? $fixtures['contract']->fresh()->status->value
+            : (string) $fixtures['contract']->fresh()->status);
+        $this->assertSame(1240, (int) $fixtures['contract']->fresh()->return_odometer);
+        $this->assertSame('half', $fixtures['contract']->fresh()->return_fuel_level);
 
         $response = $this->actingAs($fixtures['admin'])
             ->get(route('admin.contracts.return-report.pdf', [
@@ -211,11 +217,18 @@ class ContractReturnReportsControllerTest extends TestCase
         $report = ContractReturnReport::query()->where('contract_id', $fixtures['contract']->id)->first();
         $this->assertNotNull($report);
         $this->assertSame('not_paid', $report->payment_status);
-        $this->assertNull($report->payment_id);
-        $this->assertSame(1406.0, (float) $report->total_extra_charges);
+        $this->assertNotNull($report->payment_id);
+        $this->assertSame('half', $report->return_fuel_level);
+        $this->assertSame(35.0, (float) $report->total_extra_charges);
+
+        $payment = Payment::query()->find($report->payment_id);
+        $this->assertNotNull($payment);
+        $this->assertSame(PaymentStatus::PENDING->value, $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status);
 
         $this->assertSame(ReservationStatus::COMPLETED->value, $fixtures['reservation']->fresh()->status->value);
-        $this->assertSame('completed', $fixtures['contract']->fresh()->status);
+        $this->assertSame('completed', $fixtures['contract']->fresh()->status instanceof \BackedEnum
+            ? $fixtures['contract']->fresh()->status->value
+            : (string) $fixtures['contract']->fresh()->status);
     }
 
     /**
