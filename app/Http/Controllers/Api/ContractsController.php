@@ -55,6 +55,33 @@ class ContractsController extends Controller
     ) {
     }
 
+    public function damageOptions(Request $request): JsonResponse
+    {
+        $this->authorizeAdminApiUser($request);
+        $locale = $this->resolveApiLocale($request);
+
+        return response()->json([
+            'locale' => $locale,
+            'data' => $this->damageOptionsPayload($locale),
+        ]);
+    }
+
+    public function damageOptionGroup(Request $request, string $group): JsonResponse
+    {
+        $this->authorizeAdminApiUser($request);
+        $locale = $this->resolveApiLocale($request);
+        $options = $this->damageOptionsPayload($locale);
+        $normalizedGroup = str_replace('-', '_', trim(strtolower($group)));
+
+        abort_unless(array_key_exists($normalizedGroup, $options), 404, 'Damage option group not found.');
+
+        return response()->json([
+            'locale' => $locale,
+            'group' => $normalizedGroup,
+            'data' => $options[$normalizedGroup],
+        ]);
+    }
+
     public function documents(Request $request, Contract $contract): JsonResponse
     {
         $user = $this->authorizeAdminApiUser($request);
@@ -1154,6 +1181,7 @@ class ContractsController extends Controller
                 'payment_status' => $paymentStatus,
                 'final_summary' => $summaryPayload,
                 'return_status_report' => $summaryPayload['return_status_report'],
+                'return_status_report_file' => $this->returnStatusReportFilePayload($contract, $report),
                 'contract_status' => $this->contractStatusValue($contract->status),
                 'reservation_status' => $contract->reservation?->status instanceof ReservationStatus
                     ? $contract->reservation->status->value
@@ -1176,6 +1204,7 @@ class ContractsController extends Controller
                 'damage_report' => $summaryPayload['damage_report'] ?? null,
                 'vehicle_readings' => $summaryPayload['vehicle_readings'] ?? $this->returnVehicleReadingsPayload($contract),
                 'return_status_report' => $summaryPayload['return_status_report'],
+                'return_status_report_file' => $this->returnStatusReportFilePayload($contract, $report),
                 'final_summary' => $summaryPayload,
             ];
         } else {
@@ -1248,6 +1277,7 @@ class ContractsController extends Controller
                 'damage_report' => $extraction['damage_report'] ?? null,
                 'vehicle_readings' => $extraction['vehicle_readings'] ?? null,
                 'return_status_report' => $extraction['return_status_report'] ?? null,
+                'return_status_report_file' => $extraction['return_status_report_file'] ?? null,
                 'final_summary' => $extraction['final_summary'] ?? null,
             ] : null,
         ]);
@@ -1284,6 +1314,30 @@ class ContractsController extends Controller
             : ($contract->reservation?->car?->branch_id ? (int) $contract->reservation->car->branch_id : null);
 
         return $this->branchAccess->canAccessBranchId($user, $branchId);
+    }
+
+    private function damageOptionsPayload(string $locale): array
+    {
+        $previousLocale = app()->getLocale();
+        app()->setLocale($locale);
+
+        try {
+            return [
+                'zones' => array_map(
+                    static fn (array $zone): array => [
+                        'value' => $zone['code'],
+                        'label' => $zone['label'],
+                    ],
+                    CarDamageCatalog::zoneDefinitions()
+                ),
+                'damage_types' => array_values(CarDamageCatalog::damageTypes()),
+                'severity_levels' => array_values(CarDamageCatalog::severityLevels()),
+                'damage_timings' => array_values(CarDamageCatalog::damageTimings()),
+                'view_sides' => array_values(CarDamageCatalog::viewSides()),
+            ];
+        } finally {
+            app()->setLocale($previousLocale);
+        }
     }
 
     private function contractPayload(Contract $contract, ?string $locale = null): array
@@ -1541,6 +1595,7 @@ class ContractsController extends Controller
                             'return_confirmed' => data_get($payload, 'return_confirmed', false),
                             'final_summary' => $summary,
                             'return_status_report' => $summary['return_status_report'],
+                            'return_status_report_file' => $this->returnStatusReportFilePayload($contract, $contract->returnStatusReport),
                             'contract_status' => $this->contractStatusValue($contract->status),
                             'reservation_status' => $contract->reservation?->status instanceof ReservationStatus
                                 ? $contract->reservation->status->value
@@ -4047,6 +4102,34 @@ class ContractsController extends Controller
             'discount' => $report->discount,
             'total_extra_charges' => $report->total_extra_charges,
             'notes' => $report->notes,
+        ];
+    }
+
+    private function returnStatusReportFilePayload(Contract $contract, ?ContractReturnReport $report): ?array
+    {
+        if (!$report) {
+            return null;
+        }
+
+        $contract->loadMissing('tenant:id,slug');
+        $locale = app()->getLocale();
+
+        return [
+            'type' => 'pdf',
+            'filename' => sprintf('%s-%s-invoice.pdf', $report->report_number, $locale),
+            'url' => route('api.contracts.return-report.pdf', [
+                'contract' => $contract->id,
+                'lang' => $locale,
+            ]),
+            'api_url' => route('api.contracts.return-report.pdf', [
+                'contract' => $contract->id,
+                'lang' => $locale,
+            ]),
+            'admin_url' => route('admin.contracts.return-report.pdf', [
+                'subdomain' => $contract->tenant?->slug,
+                'contractId' => $contract->id,
+                'lang' => $locale,
+            ]),
         ];
     }
 

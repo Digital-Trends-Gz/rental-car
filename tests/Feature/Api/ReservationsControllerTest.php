@@ -1899,10 +1899,16 @@ test('handover api supports a return wizard with review and inspection steps', f
           ->assertJsonPath('handover.steps.5.payload.reservation_status', ReservationStatus::COMPLETED->value)
           ->assertJsonPath('handover.steps.5.payload.car_status', CarStatus::AVAILABLE->value)
           ->assertJsonPath('handover.steps.5.payload.return_status_report.status', 'finalized')
+          ->assertJsonPath('handover.steps.5.payload.return_status_report_file.type', 'pdf')
+          ->assertJsonPath('handover.steps.5.payload.return_status_report_file.filename', 'RTR-'.now()->format('Ymd').'-0001-en-invoice.pdf')
           ->assertJsonPath('handover.steps.5.payload.final_summary.total_extra_charges', 250)
           ->assertJsonPath('extraction.status', 'finalized')
           ->assertJsonPath('extraction.return_status_report.status', 'finalized')
+          ->assertJsonPath('extraction.return_status_report_file.type', 'pdf')
           ->assertJsonPath('extraction.final_summary.total_extra_charges', 250);
+
+      expect($confirmationStepResponse->json('handover.steps.5.payload.return_status_report_file.api_url'))
+          ->toContain('/api/contracts/'.$contract->id.'/return-status-report/pdf');
 
       $contract->refresh()->loadMissing(['handoverPhotos', 'reservation.car', 'returnStatusReport']);
       expect($contract->return_odometer)->toBe(84520);
@@ -2186,6 +2192,47 @@ test('damage report status api returns pending until the return damage report is
         ->assertJsonPath('damage_report_status', 'done')
         ->assertJsonPath('damage_report.report_number', 'DMG-RET-STATUS-001')
         ->assertJsonPath('damage_report.items.0.zone_code', 'hood');
+});
+
+test('damage option APIs return localized select options', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::SUPER_ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $response = $this
+        ->withHeader('Accept-Language', 'en')
+        ->getJson(route('api.contracts.damage-options'));
+
+    $response->assertOk()
+        ->assertJsonPath('locale', 'en')
+        ->assertJsonPath('data.zones.0.value', 'front_bumper')
+        ->assertJsonPath('data.damage_types.0.value', 'scratch')
+        ->assertJsonPath('data.damage_types.0.label', 'Scratch')
+        ->assertJsonPath('data.severity_levels.0.value', 'minor')
+        ->assertJsonPath('data.damage_timings.0.value', 'before_pickup')
+        ->assertJsonPath('data.view_sides.0.value', 'front');
+
+    $groupResponse = $this
+        ->withHeader('Accept-Language', 'ar')
+        ->getJson(route('api.contracts.damage-options.group', [
+            'group' => 'damage-types',
+        ]));
+
+    $groupResponse->assertOk()
+        ->assertJsonPath('locale', 'ar')
+        ->assertJsonPath('group', 'damage_types')
+        ->assertJsonPath('data.0.value', 'scratch');
+
+    expect($groupResponse->json('data.0.label'))->not()->toBe('Scratch');
 });
 
 test('handover api accepts direct uploaded files for document extraction', function () {
