@@ -87,8 +87,8 @@ const carOptions = computed(() =>
 );
 const pageTitle = computed(() =>
     isEdit.value
-        ? `${localize('Edit Reservation', 'طھط¹ط¯ظٹظ„ ط§ظ„ط­ط¬ط²')} ${props.reservation?.reservation_number || ''}`.trim()
-        : localize('Create Reservation', 'ط¥ظ†ط´ط§ط، ط­ط¬ط²'),
+        ? `${localize('Edit Reservation', 'تعديل الحجز')} ${props.reservation?.reservation_number || ''}`.trim()
+        : localize('Create Reservation', 'إنشاء حجز'),
 );
 const isLocked = computed(() => Boolean(props.is_locked));
 const formatMoney = (value: number): string => {
@@ -119,13 +119,13 @@ const locationOptions = computed(() => {
         .map((location: any) => String(location.name).trim());
 
     const baseOptions = [
-        localize('Downtown Office', 'ظ…ظƒطھط¨ ظˆط³ط· ط§ظ„ظ…ط¯ظٹظ†ط©'),
-        localize('Airport Terminal 1', 'ظ…ط·ط§ط± - طµط§ظ„ط© 1'),
-        localize('Airport Terminal 2', 'ظ…ط·ط§ط± - طµط§ظ„ط© 2'),
-        localize('Central Station', 'ظ…ط­ط·ط© ط§ظ„ظ…ط±ظƒط²ظٹط©'),
-        localize('Mall Plaza', 'ظ…ظˆظ„ ط¨ظ„ط§ط²ط§'),
-        localize('Hotel District', 'ظ…ظ†ط·ظ‚ط© ط§ظ„ظپظ†ط§ط¯ظ‚'),
-        localize('Business District', 'ط§ظ„ظ…ظ†ط·ظ‚ط© ط§ظ„طھط¬ط§ط±ظٹط©'),
+        localize('Downtown Office', 'مكتب وسط المدينة'),
+        localize('Airport Terminal 1', 'مطار - صالة 1'),
+        localize('Airport Terminal 2', 'مطار - صالة 2'),
+        localize('Central Station', 'المحطة المركزية'),
+        localize('Mall Plaza', 'مول بلازا'),
+        localize('Hotel District', 'منطقة الفنادق'),
+        localize('Business District', 'المنطقة التجارية'),
     ];
 
     const currentValues = [
@@ -318,12 +318,12 @@ function selectAvailableDate(iso: string) {
     }
 
     if (iso === form.start_date) {
-        form.setError('end_date', localize('The end date must be after the start date.', 'ط§ظ„طھط§ط±ظٹط® ط§ظ„ظ†ظ‡ط§ط¦ظٹ ظٹط¬ط¨ ط£ظ† ظٹظƒظˆظ† ط¨ط¹ط¯ طھط§ط±ظٹط® ط§ظ„ط¨ط¯ط،.'));
+        form.setError('end_date', localize('The end date must be after the start date.', 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية.'));
         return;
     }
 
     if (hasBlockedDateInRange(form.start_date, iso)) {
-        form.setError('end_date', localize('The selected range includes unavailable days.', 'ط§ظ„ظ†ط·ط§ظ‚ ط§ظ„ظ…ط­ط¯ط¯ ظٹط­طھظˆظٹ ط¹ظ„ظ‰ ط£ظٹط§ظ… ط؛ظٹط± ظ…طھط§ط­ط©.'));
+        form.setError('end_date', localize('The selected range includes unavailable days.', 'النطاق المحدد يحتوي على أيام غير متاحة.'));
         return;
     }
 
@@ -392,14 +392,14 @@ async function loadAvailabilityCalendar(windowStart?: string) {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data?.message || localize('Unable to load the car availability calendar.', 'طھط¹ط°ط± طھط­ظ…ظٹظ„ طھظ‚ظˆظٹظ… طھظˆظپط± ط§ظ„ط³ظٹط§ط±ط©.'));
+            throw new Error(data?.message || localize('Unable to load the car availability calendar.', 'تعذر تحميل تقويم توفر السيارة.'));
         }
 
         availabilityCalendar.value = data?.availabilityCalendar ?? null;
         availabilityWindowStart.value = availabilityCalendar.value?.window.starts_at || nextWindowStart || '';
     } catch (error: any) {
         availabilityCalendar.value = null;
-        availabilityError.value = error?.message || localize('Unable to load the car availability calendar.', 'طھط¹ط°ط± طھط­ظ…ظٹظ„ طھظ‚ظˆظٹظ… طھظˆظپط± ط§ظ„ط³ظٹط§ط±ط©.');
+        availabilityError.value = error?.message || localize('Unable to load the car availability calendar.', 'تعذر تحميل تقويم توفر السيارة.');
     } finally {
         availabilityLoading.value = false;
     }
@@ -455,7 +455,7 @@ async function submitCreateClient() {
                 return;
             }
 
-            throw new Error(data?.message || localize('Unable to create client.', 'طھط¹ط°ط± ط¥ظ†ط´ط§ط، ط§ظ„ط¹ظ…ظٹظ„.'));
+            throw new Error(data?.message || localize('Unable to create client.', 'تعذر إنشاء العميل.'));
         }
 
         const newClient = {
@@ -472,7 +472,7 @@ async function submitCreateClient() {
         showCreateClientDialog.value = false;
         clientForm.reset();
     } catch (error: any) {
-        clientForm.setError('name', error?.message || localize('Unable to create client.', 'طھط¹ط°ط± ط¥ظ†ط´ط§ط، ط§ظ„ط¹ظ…ظٹظ„.'));
+        clientForm.setError('name', error?.message || localize('Unable to create client.', 'تعذر إنشاء العميل.'));
     } finally {
         creatingClient.value = false;
     }
@@ -514,26 +514,26 @@ function submit() {
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">
-                    {{ isEdit ? localize('Edit Reservation', 'طھط¹ط¯ظٹظ„ ط§ظ„ط­ط¬ط²') : localize('Create Reservation', 'ط¥ظ†ط´ط§ط، ط­ط¬ط²') }}
+                    {{ isEdit ? localize('Edit Reservation', 'تعديل الحجز') : localize('Create Reservation', 'إنشاء حجز') }}
                 </h1>
                 <Link v-if="subdomain" :href="index(subdomain).url">
-                    <Button variant="outline">{{ localize('Back', 'ط±ط¬ظˆط¹') }}</Button>
+                    <Button variant="outline">{{ localize('Back', 'رجوع') }}</Button>
                 </Link>
             </div>
 
             <div v-if="isEdit" class="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div class="rounded-md border p-4">
-                    <div class="text-sm text-muted-foreground">{{ localize('Reservation #', 'ط±ظ‚ظ… ط§ظ„ط­ط¬ط²') }}</div>
+                    <div class="text-sm text-muted-foreground">{{ localize('Reservation #', 'رقم الحجز') }}</div>
                     <div class="font-medium">{{ reservation.reservation_number }}</div>
                 </div>
                 <div class="rounded-md border p-4">
-                    <div class="text-sm text-muted-foreground">{{ localize('Client', 'ط§ظ„ط¹ظ…ظٹظ„') }}</div>
+                    <div class="text-sm text-muted-foreground">{{ localize('Client', 'العميل') }}</div>
                     <div class="font-medium">
                         {{ reservation.user?.name }} ({{ reservation.user?.email }})
                     </div>
                 </div>
                 <div class="rounded-md border p-4">
-                    <div class="text-sm text-muted-foreground">{{ localize('Car', 'ط§ظ„ط³ظٹط§ط±ط©') }}</div>
+                    <div class="text-sm text-muted-foreground">{{ localize('Car', 'السيارة') }}</div>
                     <div class="font-medium">
                         {{
                             reservation.car
@@ -552,9 +552,9 @@ function submit() {
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-2xl font-bold text-gray-900">{{ localize('Availability Calendar', 'طھظ‚ظˆظٹظ… ط§ظ„طھظˆظپط±') }}</h3>
+                        <h3 class="text-2xl font-bold text-gray-900">{{ localize('Availability Calendar', 'تقويم التوفر') }}</h3>
                         <p class="text-sm text-gray-500">
-                            {{ localize('Green days are free. Red days are already booked. Click a free day to fill rental dates.', 'ط§ظ„ط£ظٹط§ظ… ط§ظ„ط®ط¶ط±ط§ط، ظ…طھط§ط­ط©. ط§ظ„ط£ظٹط§ظ… ط§ظ„ط­ظ…ط±ط§ط، ظ…ط­ط¬ظˆط²ط©. ط§ط¶ط؛ط· ط¹ظ„ظ‰ ظٹظˆظ… ظ…طھط§ط­ ظ„طھط¹ط¨ط¦ط© ط§ظ„طھظˆط§ط±ظٹط®.') }}
+                            {{ localize('Green days are free. Red days are already booked. Click a free day to fill rental dates.', 'الأيام الخضراء متاحة. الأيام الحمراء محجوزة. اضغط على يوم متاح لتعبئة التواريخ.') }}
                         </p>
                     </div>
                 </div>
@@ -562,24 +562,24 @@ function submit() {
                 <div class="mb-6 flex flex-wrap items-center gap-3 text-sm">
                     <div class="flex items-center gap-2">
                         <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
-                        <span class="text-gray-600">{{ localize('Free', 'ظ…طھط§ط­') }}</span>
+                        <span class="text-gray-600">{{ localize('Free', 'متاح') }}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="h-3 w-3 rounded-full bg-red-400"></span>
-                        <span class="text-gray-600">{{ localize('Booked', 'ظ…ط­ط¬ظˆط²') }}</span>
+                        <span class="text-gray-600">{{ localize('Booked', 'محجوز') }}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="h-3 w-3 rounded-full bg-orange-500"></span>
-                        <span class="text-gray-600">{{ localize('Selected', 'ظ…ط­ط¯ط¯') }}</span>
+                        <span class="text-gray-600">{{ localize('Selected', 'محدد') }}</span>
                     </div>
                 </div>
 
                 <div v-if="!selectedCar" class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500">
-                    {{ localize('Select a car first to load the availability calendar.', 'ط§ط®طھط± ط§ظ„ط³ظٹط§ط±ط© ط£ظˆظ„ظ‹ط§ ظ„ط¹ط±ط¶ طھظ‚ظˆظٹظ… ط§ظ„طھظˆظپط±.') }}
+                    {{ localize('Select a car first to load the availability calendar.', 'اختر السيارة أولًا لعرض تقويم التوفر.') }}
                 </div>
 
                 <div v-else-if="availabilityLoading" class="rounded-xl border border-gray-200 bg-gray-50 p-6 text-sm text-gray-500">
-                    {{ localize('Loading availability calendar...', 'ط¬ط§ط±ظٹ طھط­ظ…ظٹظ„ طھظ‚ظˆظٹظ… ط§ظ„طھظˆظپط±...') }}
+                    {{ localize('Loading availability calendar...', 'جاري تحميل تقويم التوفر...') }}
                 </div>
 
                 <div v-else-if="availabilityError" class="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
@@ -590,13 +590,13 @@ function submit() {
                     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div class="flex items-center gap-2">
                             <Button variant="outline" @click="openAvailabilityWindow(availabilityCalendar.window.previous)">
-                                {{ localize('Previous', 'ط§ظ„ط³ط§ط¨ظ‚') }}
+                                {{ localize('Previous', 'السابق') }}
                             </Button>
                             <div class="min-w-40 text-center text-lg font-semibold text-gray-900">
                                 {{ availabilityCalendar.window.label }}
                             </div>
                             <Button variant="outline" @click="openAvailabilityWindow(availabilityCalendar.window.next)">
-                                {{ localize('Next', 'ط§ظ„طھط§ظ„ظٹ') }}
+                                {{ localize('Next', 'التالي') }}
                             </Button>
                         </div>
 
@@ -628,10 +628,10 @@ function submit() {
                             </div>
                             <div class="mt-1 text-base font-semibold">{{ day.label }}</div>
                             <div class="mt-1 text-[11px]">
-                                <span v-if="day.isSelectedStart || day.isSelectedEnd">{{ localize('Selected', 'ظ…ط­ط¯ط¯') }}</span>
-                                <span v-else-if="day.isBlocked">{{ localize('Booked', 'ظ…ط­ط¬ظˆط²') }}</span>
-                                <span v-else-if="day.isPast">{{ localize('Closed', 'ظ…ط؛ظ„ظ‚') }}</span>
-                                <span v-else>{{ localize('Free', 'ظ…طھط§ط­') }}</span>
+                                <span v-if="day.isSelectedStart || day.isSelectedEnd">{{ localize('Selected', 'محدد') }}</span>
+                                <span v-else-if="day.isBlocked">{{ localize('Booked', 'محجوز') }}</span>
+                                <span v-else-if="day.isPast">{{ localize('Closed', 'مغلق') }}</span>
+                                <span v-else>{{ localize('Free', 'متاح') }}</span>
                             </div>
                         </button>
                     </div>
@@ -646,44 +646,44 @@ function submit() {
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div v-if="!isEdit && hasFeature('cash_payments')">
                         <div class="mb-2 flex items-center justify-between gap-3">
-                            <Label for="user_id" class="mb-0">{{ localize('Client', 'ط§ظ„ط¹ظ…ظٹظ„') }}</Label>
+                            <Label for="user_id" class="mb-0">{{ localize('Client', 'العميل') }}</Label>
                             <Button type="button" variant="outline" size="sm" @click="openCreateClientDialog">
-                                {{ localize('Create Client', 'ط¥ظ†ط´ط§ط، ط¹ظ…ظٹظ„') }}
+                                {{ localize('Create Client', 'إنشاء عميل') }}
                             </Button>
                         </div>
                         <SearchableSelect
                             id="user_id"
                             v-model="form.user_id"
                             :options="clientOptions"
-                            :placeholder="localize('Select client', 'ط§ط®طھط± ط§ظ„ط¹ظ…ظٹظ„')"
-                            :search-placeholder="localize('Search client...', 'ط§ط¨ط­ط« ط¹ظ† ط§ظ„ط¹ظ…ظٹظ„...')"
-                            :empty-text="localize('No clients found.', 'ظ„ط§ ظٹظˆط¬ط¯ ط¹ظ…ظ„ط§ط،.')"
+                            :placeholder="localize('Select client', 'اختر العميل')"
+                            :search-placeholder="localize('Search client...', 'ابحث عن العميل...')"
+                            :empty-text="localize('No clients found.', 'لا يوجد عملاء.')"
                         />
                         <InputError :message="form.errors.user_id" class="mt-1" />
                     </div>
 
                     <div v-if="!isEdit">
-                        <Label for="car_id">{{ localize('Car', 'ط§ظ„ط³ظٹط§ط±ط©') }}</Label>
+                        <Label for="car_id">{{ localize('Car', 'السيارة') }}</Label>
                         <SearchableSelect
                             id="car_id"
                             v-model="form.car_id"
                             :options="carOptions"
-                            :placeholder="localize('Select car', 'ط§ط®طھط± ط§ظ„ط³ظٹط§ط±ط©')"
-                            :search-placeholder="localize('Search car...', 'ط§ط¨ط­ط« ط¹ظ† ط§ظ„ط³ظٹط§ط±ط©...')"
-                            :empty-text="localize('No cars found.', 'ظ„ط§ طھظˆط¬ط¯ ط³ظٹط§ط±ط§طھ.')"
+                            :placeholder="localize('Select car', 'اختر السيارة')"
+                            :search-placeholder="localize('Search car...', 'ابحث عن السيارة...')"
+                            :empty-text="localize('No cars found.', 'لا توجد سيارات.')"
                         />
                         <InputError :message="form.errors.car_id" class="mt-1" />
                         <div v-if="selectedCarDamageCases.length" class="mt-3 rounded-md border p-3">
-                            <div class="mb-2 text-sm font-medium">{{ localize('Current Car Damages', 'ط§ظ„ط£ط¶ط±ط§ط± ط§ظ„ط­ط§ظ„ظٹط© ظ„ظ„ط³ظٹط§ط±ط©') }}</div>
+                            <div class="mb-2 text-sm font-medium">{{ localize('Current Car Damages', 'الأضرار الحالية للسيارة') }}</div>
                             <div class="overflow-x-auto">
                                 <table class="min-w-full text-sm">
                                     <thead>
                                         <tr class="border-b text-left text-muted-foreground">
-                                            <th class="px-2 py-2">{{ localize('Zone', 'ط§ظ„ظ…ظ†ط·ظ‚ط©') }}</th>
-                                            <th class="px-2 py-2">{{ localize('View', 'ط§ظ„ط¬ظ‡ط©') }}</th>
-                                            <th class="px-2 py-2">{{ localize('Type', 'ط§ظ„ظ†ظˆط¹') }}</th>
-                                            <th class="px-2 py-2">{{ localize('Severity', 'ط§ظ„ط¯ط±ط¬ط©') }}</th>
-                                            <th class="px-2 py-2">{{ localize('Qty', 'ط§ظ„ظƒظ…ظٹط©') }}</th>
+                                            <th class="px-2 py-2">{{ localize('Zone', 'المنطقة') }}</th>
+                                            <th class="px-2 py-2">{{ localize('View', 'الجهة') }}</th>
+                                            <th class="px-2 py-2">{{ localize('Type', 'النوع') }}</th>
+                                            <th class="px-2 py-2">{{ localize('Severity', 'الدرجة') }}</th>
+                                            <th class="px-2 py-2">{{ localize('Qty', 'الكمية') }}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -701,25 +701,25 @@ function submit() {
                     </div>
 
                     <div>
-                        <Label for="start_date">{{ localize('Start Date', 'طھط§ط±ظٹط® ط§ظ„ط¨ط¯ط§ظٹط©') }}</Label>
+                        <Label for="start_date">{{ localize('Start Date', 'تاريخ البداية') }}</Label>
                         <Input id="start_date" v-model="form.start_date" type="date" />
                         <InputError :message="form.errors.start_date" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="end_date">{{ localize('End Date', 'طھط§ط±ظٹط® ط§ظ„ظ†ظ‡ط§ظٹط©') }}</Label>
+                        <Label for="end_date">{{ localize('End Date', 'تاريخ النهاية') }}</Label>
                         <Input id="end_date" v-model="form.end_date" type="date" :min="reservationEndDateMin" />
                         <InputError :message="form.errors.end_date" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="pickup_time">{{ localize('Pickup Time', 'ظˆظ‚طھ ط§ظ„ط§ط³طھظ„ط§ظ…') }}</Label>
+                        <Label for="pickup_time">{{ localize('Pickup Time', 'وقت الاستلام') }}</Label>
                         <Input id="pickup_time" v-model="form.pickup_time" type="time" />
                         <InputError :message="form.errors.pickup_time" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="return_time">{{ localize('Return Time', 'ظˆظ‚طھ ط§ظ„ط¥ط±ط¬ط§ط¹') }}</Label>
+                        <Label for="return_time">{{ localize('Return Time', 'وقت الإرجاع') }}</Label>
                         <Input
                             id="return_time"
                             v-model="form.return_time"
@@ -793,29 +793,29 @@ function submit() {
                     </div>
 
                     <div>
-                        <Label for="discount_amount">{{ localize('Discount', 'ط§ظ„ط®طµظ…') }}</Label>
+                        <Label for="discount_amount">{{ localize('Discount', 'الخصم') }}</Label>
                         <Input id="discount_amount" v-model="form.discount_amount" type="number" step="0.01" min="0" />
                         <InputError :message="form.errors.discount_amount" class="mt-1" />
                     </div>
 
                     <div v-if="!isEdit">
-                        <Label for="deposit_amount">{{ localize('Cash Deposit', 'ط§ظ„ط¹ط±ط¨ظˆظ† ط§ظ„ظ†ظ‚ط¯ظٹ') }}</Label>
+                        <Label for="deposit_amount">{{ localize('Cash Deposit', 'العربون النقدي') }}</Label>
                         <Input
                             id="deposit_amount"
                             v-model="form.deposit_amount"
                             type="number"
                             step="0.01"
                             min="0"
-                            :placeholder="localize('Optional deposit amount', 'ظ…ط¨ظ„ط؛ ط§ظ„ط¹ط±ط¨ظˆظ† ط¥ظ† ظˆط¬ط¯')"
+                            :placeholder="localize('Optional deposit amount', 'مبلغ العربون إن وجد')"
                         />
                         <p class="mt-1 text-xs text-muted-foreground">
-                            {{ localize('A completed cash payment will be created automatically.', 'ط³ظٹطھظ… ط¥ظ†ط´ط§ط، ط¯ظپط¹ط© ظ†ظ‚ط¯ظٹط© ظ…ظƒطھظ…ظ„ط© طھظ„ظ‚ط§ط¦ظٹظ‹ط§.') }}
+                            {{ localize('A completed cash payment will be created automatically.', 'سيتم إنشاء دفعة نقدية مكتملة تلقائيًا.') }}
                         </p>
                         <InputError :message="form.errors.deposit_amount" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="status">{{ localize('Status', 'ط§ظ„ط­ط§ظ„ط©') }}</Label>
+                        <Label for="status">{{ localize('Status', 'الحالة') }}</Label>
                         <template v-if="!isSystemManagedStatus">
                             <select
                                 id="status"
@@ -840,41 +840,41 @@ function submit() {
                     </div>
 
                     <div class="md:col-span-2">
-                        <Label for="notes">{{ localize('Notes', 'ظ…ظ„ط§ط­ط¸ط§طھ') }}</Label>
+                        <Label for="notes">{{ localize('Notes', 'ملاحظات') }}</Label>
                         <textarea
                             id="notes"
                             v-model="form.notes"
                             rows="4"
                             class="w-full rounded-md border border-input bg-transparent px-3 py-2"
-                            :placeholder="localize('Internal notes...', 'ظ…ظ„ط§ط­ط¸ط§طھ ط¯ط§ط®ظ„ظٹط©...')"
+                            :placeholder="localize('Internal notes...', 'ملاحظات داخلية...')"
                         ></textarea>
                         <InputError :message="form.errors.notes" class="mt-1" />
                     </div>
 
                     <div v-if="form.status === 'cancelled'" class="md:col-span-2">
-                        <Label for="cancellation_reason">{{ localize('Cancellation Reason', 'ط³ط¨ط¨ ط§ظ„ط¥ظ„ط؛ط§ط،') }}</Label>
+                        <Label for="cancellation_reason">{{ localize('Cancellation Reason', 'سبب الإلغاء') }}</Label>
                         <textarea
                             id="cancellation_reason"
                             v-model="form.cancellation_reason"
                             rows="3"
                             class="w-full rounded-md border border-input bg-transparent px-3 py-2"
-                            :placeholder="localize('Why was this reservation cancelled?', 'ظ„ظ…ط§ط°ط§ طھظ… ط¥ظ„ط؛ط§ط، ظ‡ط°ط§ ط§ظ„ط­ط¬ط²طں')"
+                            :placeholder="localize('Why was this reservation cancelled?', 'لماذا تم إلغاء هذا الحجز؟')"
                         ></textarea>
                         <InputError :message="form.errors.cancellation_reason" class="mt-1" />
                     </div>
                 </div>
 
                 <div v-if="isEdit && selectedCarDamageCases.length" class="rounded-md border p-4">
-                    <div class="mb-2 text-sm font-medium">{{ localize('Current Car Damages', 'ط§ظ„ط£ط¶ط±ط§ط± ط§ظ„ط­ط§ظ„ظٹط© ظ„ظ„ط³ظٹط§ط±ط©') }}</div>
+                    <div class="mb-2 text-sm font-medium">{{ localize('Current Car Damages', 'الأضرار الحالية للسيارة') }}</div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
                             <thead>
                                 <tr class="border-b text-left text-muted-foreground">
-                                    <th class="px-2 py-2">{{ localize('Zone', 'ط§ظ„ظ…ظ†ط·ظ‚ط©') }}</th>
-                                    <th class="px-2 py-2">{{ localize('View', 'ط§ظ„ط¬ظ‡ط©') }}</th>
-                                    <th class="px-2 py-2">{{ localize('Type', 'ط§ظ„ظ†ظˆط¹') }}</th>
-                                    <th class="px-2 py-2">{{ localize('Severity', 'ط§ظ„ط¯ط±ط¬ط©') }}</th>
-                                    <th class="px-2 py-2">{{ localize('Qty', 'ط§ظ„ظƒظ…ظٹط©') }}</th>
+                                    <th class="px-2 py-2">{{ localize('Zone', 'المنطقة') }}</th>
+                                    <th class="px-2 py-2">{{ localize('View', 'الجهة') }}</th>
+                                    <th class="px-2 py-2">{{ localize('Type', 'النوع') }}</th>
+                                    <th class="px-2 py-2">{{ localize('Severity', 'الدرجة') }}</th>
+                                    <th class="px-2 py-2">{{ localize('Qty', 'الكمية') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -892,10 +892,10 @@ function submit() {
 
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <Button type="submit" :disabled="form.processing || isLocked">
-                        {{ form.processing ? localize('Saving...', 'ط¬ط§ط±ظچ ط§ظ„ط­ظپط¸...') : isEdit ? localize('Save Changes', 'ط­ظپط¸ ط§ظ„طھط؛ظٹظٹط±ط§طھ') : localize('Create Reservation', 'ط¥ظ†ط´ط§ط، ط­ط¬ط²') }}
+                        {{ form.processing ? localize('Saving...', 'جاري الحفظ...') : isEdit ? localize('Save Changes', 'حفظ التغييرات') : localize('Create Reservation', 'إنشاء حجز') }}
                     </Button>
                     <Link v-if="subdomain" :href="index(subdomain).url">
-                        <Button type="button" variant="outline">{{ localize('Cancel', 'ط¥ظ„ط؛ط§ط،') }}</Button>
+                        <Button type="button" variant="outline">{{ localize('Cancel', 'إلغاء') }}</Button>
                     </Link>
                 </div>
             </form>
@@ -903,49 +903,49 @@ function submit() {
             <Dialog v-model:open="showCreateClientDialog">
                 <DialogContent class="sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>{{ localize('Create Client', 'ط¥ظ†ط´ط§ط، ط¹ظ…ظٹظ„') }}</DialogTitle>
+                        <DialogTitle>{{ localize('Create Client', 'إنشاء عميل') }}</DialogTitle>
                         <DialogDescription>
-                            {{ localize('Add a new client without leaving this reservation page.', 'ط£ط¶ظپ ط¹ظ…ظٹظ„ظ‹ط§ ط¬ط¯ظٹط¯ظ‹ط§ ط¨ط¯ظˆظ† ظ…ط؛ط§ط¯ط±ط© طµظپط­ط© ط§ظ„ط­ط¬ط².') }}
+                            {{ localize('Add a new client without leaving this reservation page.', 'أضف عميلًا جديدًا بدون مغادرة صفحة الحجز.') }}
                         </DialogDescription>
                     </DialogHeader>
 
                     <form class="space-y-4" @submit.prevent="submitCreateClient">
                         <div class="space-y-2">
-                            <Label for="client_name">{{ localize('Full Name', 'ط§ظ„ط§ط³ظ… ط§ظ„ظƒط§ظ…ظ„') }}</Label>
+                            <Label for="client_name">{{ localize('Full Name', 'الاسم الكامل') }}</Label>
                             <Input id="client_name" v-model="clientForm.name" type="text" required />
                             <InputError :message="clientForm.errors.name" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="client_email">{{ localize('Email', 'ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ') }}</Label>
+                            <Label for="client_email">{{ localize('Email', 'البريد الإلكتروني') }}</Label>
                             <Input id="client_email" v-model="clientForm.email" type="email" required />
                             <InputError :message="clientForm.errors.email" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="client_civil_number">{{ localize('Civil Number', 'ط§ظ„ط±ظ‚ظ… ط§ظ„ظ…ط¯ظ†ظٹ') }}</Label>
+                            <Label for="client_civil_number">{{ localize('Civil Number', 'الرقم المدني') }}</Label>
                             <Input id="client_civil_number" v-model="clientForm.civil_number" type="text" required />
                             <InputError :message="clientForm.errors.civil_number" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="client_password">{{ localize('Password', 'ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±') }}</Label>
+                            <Label for="client_password">{{ localize('Password', 'كلمة المرور') }}</Label>
                             <Input id="client_password" v-model="clientForm.password" type="password" required />
                             <InputError :message="clientForm.errors.password" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="client_password_confirmation">{{ localize('Confirm Password', 'طھط£ظƒظٹط¯ ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±') }}</Label>
+                            <Label for="client_password_confirmation">{{ localize('Confirm Password', 'تأكيد كلمة المرور') }}</Label>
                             <Input id="client_password_confirmation" v-model="clientForm.password_confirmation" type="password" required />
                             <InputError :message="clientForm.errors.password_confirmation" />
                         </div>
 
                         <DialogFooter class="gap-2">
                             <Button type="submit" :disabled="creatingClient">
-                                {{ creatingClient ? localize('Creating...', 'ط¬ط§ط±ظٹ ط§ظ„ط¥ظ†ط´ط§ط،...') : localize('Create Client', 'ط¥ظ†ط´ط§ط، ط¹ظ…ظٹظ„') }}
+                                {{ creatingClient ? localize('Creating...', 'جاري الإنشاء...') : localize('Create Client', 'إنشاء عميل') }}
                             </Button>
                             <Button type="button" variant="outline" @click="showCreateClientDialog = false">
-                                {{ localize('Cancel', 'ط¥ظ„ط؛ط§ط،') }}
+                                {{ localize('Cancel', 'إلغاء') }}
                             </Button>
                         </DialogFooter>
                     </form>

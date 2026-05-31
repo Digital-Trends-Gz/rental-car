@@ -141,7 +141,113 @@ const props = defineProps<{
 
 
 const { t, locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const arabicTranslations: Record<string, string> = {
+    'Return Status Report': 'تقرير حالة الإرجاع',
+    'Record the car return, extra charges, and linked damage report in one place.': 'سجل إرجاع السيارة والرسوم الإضافية وتقرير الضرر المرتبط في مكان واحد.',
+    'Print Invoice': 'طباعة الفاتورة',
+    'Back': 'رجوع',
+    'Contract Summary': 'ملخص العقد',
+    'The return report is linked to this contract and reservation.': 'هذا التقرير مرتبط بهذا العقد والحجز.',
+    'Contract No.': 'رقم العقد',
+    'Reservation': 'الحجز',
+    'Client': 'العميل',
+    'Car': 'السيارة',
+    'Branch': 'الفرع',
+    'Reservation Status': 'حالة الحجز',
+    'Contract Start': 'بداية العقد',
+    'Contract End': 'نهاية العقد',
+    'This return report is marked paid and locked. You can print it, but editing is disabled.': 'تم تسجيل هذا التقرير كمدفوع ومقفل. يمكنك طباعته لكن لا يمكن تعديله.',
+    'You can view this return report, but your role does not allow editing it.': 'يمكنك عرض تقرير الإرجاع، لكن الدور الحالي لا يسمح بتعديله.',
+    'Return Details': 'بيانات الإرجاع',
+    'Record the actual return state for this contract.': 'سجل حالة الإرجاع الفعلية لهذا العقد.',
+    'Actual Return Time': 'وقت الإرجاع الفعلي',
+    'Return Location': 'موقع الإرجاع',
+    'Select return location': 'اختر موقع الإرجاع',
+    'Default return fee:': 'رسوم الإرجاع الافتراضية:',
+    'Free': 'مجاني',
+    'Return Odometer': 'عداد الإرجاع',
+    'Return Fuel Level': 'مستوى الوقود عند الإرجاع',
+    'Select fuel level': 'اختر مستوى الوقود',
+    'Vehicle Condition After Return': 'حالة السيارة بعد الإرجاع',
+    'Has Damage?': 'هل يوجد ضرر؟',
+    'Yes, there is damage': 'نعم، يوجد ضرر',
+    'No damage': 'لا يوجد ضرر',
+    'No damage report will be created for this return.': 'لن يتم إنشاء تقرير ضرر لهذا الإرجاع.',
+    'Linked Damage Report': 'تقرير الضرر المرتبط',
+    'None': 'بدون',
+    'items': 'عناصر',
+    'Damage report selection is disabled when there is no damage.': 'يتم تعطيل اختيار تقرير الضرر عند عدم وجود ضرر.',
+    'Payment Status': 'حالة الدفع',
+    'Not Paid': 'غير مدفوعة',
+    'Paid': 'مدفوعة',
+    'Set Paid to create the extra payment and lock the report after saving.': 'اختر مدفوعة لإنشاء الدفعة الإضافية وقفل التقرير بعد الحفظ.',
+    'Contract vs Return': 'مقارنة العقد مع الإرجاع',
+    'Use this section to compare the original contract values with the actual return values.': 'استخدم هذا القسم لمقارنة قيم العقد الأصلية مع قيم الإرجاع الفعلية.',
+    'Compare the contract odometer and expected return time against the actual return values.': 'قارن عداد العقد ووقت الإرجاع المتوقع مع القيم الفعلية عند الإرجاع.',
+    'Contract Odometer': 'عداد العقد',
+    'Expected Return Time': 'وقت الإرجاع المتوقع',
+    'Extra Kilometers': 'الكيلومترات الزائدة',
+    'Late Hours': 'ساعات التأخير',
+    'Extra Charges': 'الرسوم الإضافية',
+    'These charges are auto-calculated from the tenant reservation settings and the actual return data.': 'يتم حساب هذه الرسوم تلقائيًا من إعدادات الحجز وبيانات الإرجاع الفعلية.',
+    'Kilometer Rate': 'سعر الكيلومتر',
+    'Cleaning Fee': 'رسوم التنظيف',
+    'Fuel Fee': 'رسوم الوقود',
+    'Fuel Credit': 'رصيد الوقود',
+    'Fuel returned higher than pickup, credit applies to the customer.': 'تمت إعادة الوقود أكثر من وقت الاستلام، وسيتم احتساب رصيد لصالح العميل.',
+    'Late Hour Rate': 'سعر ساعة التأخير',
+    'Default from tenant reservation settings.': 'القيمة الافتراضية من إعدادات الحجز الخاصة بالمستأجر.',
+    'Damage Fee': 'رسوم الضرر',
+    'Selected after-return damage total:': 'إجمالي ضرر ما بعد الإرجاع المحدد:',
+    'Maintenance Fee': 'رسوم الصيانة',
+    'Other Fee': 'رسوم أخرى',
+    'Discount': 'الخصم',
+    'Discount is capped at the payable subtotal.': 'يتم تطبيق الخصم حتى قيمة الإجمالي المستحق فقط.',
+    'After-Return Damage Reports': 'تقارير الضرر بعد الإرجاع',
+    'Only damage reports created after delivery are used for return charges.': 'يتم استخدام تقارير الضرر التي تم إنشاؤها بعد التسليم فقط لرسوم الإرجاع.',
+    'No after-return damage reports have been created yet for this contract.': 'لم يتم إنشاء أي تقرير ضرر بعد الإرجاع لهذا العقد بعد.',
+    'Report': 'التقرير',
+    'Items': 'العناصر',
+    'Estimated Cost': 'التكلفة التقديرية',
+    'Status': 'الحالة',
+    'Summary': 'الملخص',
+    'Actions': 'الإجراءات',
+    'No summary': 'لا يوجد ملخص',
+    'Open': 'فتح',
+    'Delete': 'حذف',
+    'Final Summary': 'الملخص النهائي',
+    'The report total will be used for the extra cash payment.': 'سيتم استخدام إجمالي التقرير كدفعة نقدية إضافية.',
+    'Allowed Kilometers': 'الكيلومترات المسموحة',
+    'Late extra days:': 'أيام التأخير الإضافية:',
+    'Actual Kilometers Driven': 'الكيلومترات الفعلية المقطوعة',
+    'Contract odometer to return odometer': 'من عداد العقد إلى عداد الإرجاع',
+    'Extra Kilometer Charges': 'رسوم الكيلومترات الإضافية',
+    'Extra kilometers after allowance': 'الكيلومترات الزائدة بعد السماح',
+    'Late Return Fee': 'رسوم التأخير',
+    'hours': 'ساعات',
+    'Applied after all charges and credits.': 'يطبق بعد كل الرسوم والأرصدة.',
+    'Total Extra Charges': 'إجمالي الرسوم الإضافية',
+    'Fuel credit deducted from the total.': 'تم خصم رصيد الوقود من الإجمالي.',
+    'Credit due to customer': 'الرصيد المستحق للعميل',
+    'Notes': 'ملاحظات',
+    'Saving...': 'جاري الحفظ...',
+    'Save Return Report': 'حفظ تقرير الإرجاع',
+    'Cancel': 'إلغاء',
+    'Car was clean at delivery, returned dirty - cleaning fee applies': 'السيارة كانت نظيفة عند التسليم وعادت متسخة - تطبق رسوم التنظيف',
+    'Car was already not clean at delivery - no cleaning fee': 'السيارة كانت غير نظيفة عند التسليم - لا توجد رسوم تنظيف',
+    'Car was clean at delivery and return - no cleaning fee': 'السيارة كانت نظيفة عند التسليم والإرجاع - لا توجد رسوم تنظيف',
+    'Delivery': 'التسليم',
+    'Return': 'الإرجاع',
+    'Fuel gain:': 'زيادة الوقود:',
+    'Fuel loss:': 'نقص الوقود:',
+    'Loss': 'نقص',
+    'Gain': 'زيادة',
+    'No fuel difference': 'لا يوجد فرق بالوقود',
+    'Contract': 'العقد',
+    'day(s)': 'يوم/أيام',
+    'hour(s)': 'ساعة/ساعات',
+};
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? (arabicTranslations[en] ?? ar) : en);
 
 // Ensure options is always defined from props
 const options = props.options ?? { fuelLevels: [], vehicleConditions: [] };
@@ -772,7 +878,7 @@ function submit() {
                         <Button variant="outline" type="button">{{ localize('Print Invoice', 'ط·ط¨ط§ط¹ط© ط§ظ„ظپط§طھظˆط±ط©') }}</Button>
                     </a>
                     <Link :href="actions.index">
-                        <Button variant="outline">{{ t('dashboard.admin.common.back') }}</Button>
+                        <Button variant="outline">{{ localize('Back', 'رجوع') }}</Button>
                     </Link>
                 </div>
             </div>
@@ -1214,7 +1320,7 @@ function submit() {
                         {{ form.processing ? localize('Saving...', 'ط¬ط§ط±ظٹ ط§ظ„ط­ظپط¸...') : localize('Save Return Report', 'ط­ظپط¸ طھظ‚ط±ظٹط± ط§ظ„ط¥ط±ط¬ط§ط¹') }}
                     </Button>
                     <Link :href="actions.index">
-                        <Button variant="outline" type="button">{{ t('dashboard.admin.common.cancel') }}</Button>
+                        <Button variant="outline" type="button">{{ localize('Cancel', 'إلغاء') }}</Button>
                     </Link>
                 </div>
             </form>
