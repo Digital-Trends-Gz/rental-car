@@ -117,8 +117,13 @@ class ContractsController extends Controller
     {
         $user = $this->authorizeAdminApiUser($request);
         $phase = $this->normalizeHandoverPhase($request->input('phase', $request->query('phase', 'return')));
+        $requestedReportType = $request->input('report_type', $request->query('report_type'));
+        $requestedReportType = is_string($requestedReportType)
+            ? str_replace('-', '_', strtolower(trim($requestedReportType)))
+            : null;
+        $reportType = $requestedReportType ?: ($phase === 'return' ? 'after_return' : 'before_delivery');
 
-        abort_unless($phase === 'return', 422, 'Only the return damage report status is supported for now.');
+        abort_unless(in_array($reportType, ['before_delivery', 'after_return'], true), 422, 'The selected damage report type is invalid.');
 
         $contract->loadMissing([
             'reservation.user:id,name,email,is_active',
@@ -132,30 +137,47 @@ class ContractsController extends Controller
 
         abort_unless($this->canAccessContract($contract, $user), 403);
 
-        $state = $this->normalizeReturnHandoverState($contract->handover_state);
-        $stepPayload = is_array(data_get($state, 'steps.return_inspection.payload'))
-            ? data_get($state, 'steps.return_inspection.payload')
-            : [];
+        if ($reportType === 'after_return') {
+            $state = $this->normalizeReturnHandoverState($contract->handover_state);
+            $stepPayload = is_array(data_get($state, 'steps.return_inspection.payload'))
+                ? data_get($state, 'steps.return_inspection.payload')
+                : [];
+        } else {
+            $state = $this->normalizeHandoverState($contract->handover_state);
+            $stepPayload = is_array(data_get($state, 'steps.damage_photo_upload.payload'))
+                ? data_get($state, 'steps.damage_photo_upload.payload')
+                : [];
+            $deliveryConfirmationPayload = is_array(data_get($state, 'steps.delivery_confirmation.payload'))
+                ? data_get($state, 'steps.delivery_confirmation.payload')
+                : [];
+
+            if (array_key_exists('has_damage', $deliveryConfirmationPayload)) {
+                $stepPayload['has_damage'] = $deliveryConfirmationPayload['has_damage'];
+            }
+        }
 
         $damageReport = $contract->damageReports
-            ->filter(static fn (CarDamageReport $report): bool => $report->report_type === 'after_return')
+            ->filter(static fn (CarDamageReport $report): bool => $report->report_type === $reportType)
             ->sortByDesc('id')
             ->first();
 
         $hasDamage = data_get($stepPayload, 'has_damage');
-        if ($hasDamage === null && $contract->returnStatusReport) {
+        if ($reportType === 'after_return' && $hasDamage === null && $contract->returnStatusReport) {
             $hasDamage = $contract->returnStatusReport->has_damage;
         }
-        $hasDamage = filter_var($hasDamage, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        $hasDamage = $hasDamage !== null
+            ? filter_var($hasDamage, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : null;
         $hasDamage = $hasDamage ?? true;
 
         if (!$hasDamage) {
             return response()->json([
+                'phase' => $phase,
                 'damage_report_status' => 'skipped',
                 'damage_report' => null,
                 'damage_report_id' => null,
                 'damage_report_number' => null,
-                'damage_report_type' => null,
+                'damage_report_type' => $reportType,
             ]);
         }
 
@@ -172,6 +194,7 @@ class ContractsController extends Controller
         };
 
         return response()->json([
+            'phase' => $phase,
             'damage_report_status' => $status,
             'damage_report' => $status === 'done' && $damageReport
                 ? $this->damageReportPayload($damageReport->fresh(['files', 'items']))
@@ -285,7 +308,7 @@ class ContractsController extends Controller
         if ($phase === 'return') {
             abort_unless($page >= 1 && $page <= 6, 422, 'The page field is required.');
         } else {
-            abort_unless($page >= 1 && $page <= 6, 422, 'The page field is required.');
+            abort_unless($page >= 1 && $page <= 7, 422, 'The page field is required.');
         }
 
         $payload = $request->input('payload');
@@ -332,8 +355,8 @@ class ContractsController extends Controller
                         'summary' => $request->input('summary'),
                         'has_damage' => $request->boolean('has_damage', true),
                         'discount' => $request->input('discount'),
-                        'items' => $request->input('items', []),
-                        'deleted_item_ids' => $request->input('deleted_item_ids', []),
+                        'items' => $request->has('items') ? $request->input('items') : null,
+                        'deleted_item_ids' => $request->has('deleted_item_ids') ? $request->input('deleted_item_ids') : null,
                         'note' => $request->input('note'),
                         'notes' => $request->input('notes'),
                     ],
@@ -388,6 +411,15 @@ class ContractsController extends Controller
                         'notes' => $request->input('notes'),
                     ],
                     6 => [
+                        'damage_report_id' => $request->input('damage_report_id'),
+                        'summary' => $request->input('summary'),
+                        'has_damage' => $request->has('has_damage') ? $request->boolean('has_damage') : null,
+                        'items' => $request->input('items', []),
+                        'deleted_item_ids' => $request->input('deleted_item_ids', []),
+                        'note' => $request->input('note'),
+                        'notes' => $request->input('notes'),
+                    ],
+                    7 => [
                         'delivery_confirmed' => $request->boolean('delivery_confirmed', false),
                         'note' => $request->input('note'),
                         'notes' => $request->input('notes'),
@@ -415,6 +447,10 @@ class ContractsController extends Controller
 
         if ($phase === 'delivery' && $page === 6) {
             $payload = $this->normalizeHandoverPageSixPayload($request, $payload);
+        }
+
+        if ($phase === 'delivery' && $page === 7) {
+            $payload = $this->normalizeHandoverPageSevenPayload($request, $payload);
         }
 
         if ($phase === 'return') {
@@ -590,6 +626,93 @@ class ContractsController extends Controller
                 'mobile_signature_text' => $this->mobileSignatureTextForContract($contract),
             ]);
         } elseif ($page === 6) {
+            $hasDamage = array_key_exists('has_damage', $stepPayload) && $stepPayload['has_damage'] !== null
+                ? filter_var($stepPayload['has_damage'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                : null;
+            $hasDamage = $hasDamage ?? true;
+
+            $damageReport = null;
+            if ($hasDamage) {
+                $damageReport = $this->resolveOrCreateDraftDamageReportForHandover($contract, $request, 'delivery', 'before_delivery');
+            } else {
+                $this->deleteDraftDamageReportForHandover($contract, 'before_delivery');
+            }
+
+            $summary = array_key_exists('summary', $stepPayload)
+                ? $this->nullableString($stepPayload['summary'] ?? null)
+                : ($damageReport?->summary);
+
+            $normalizedItems = null;
+            if ($hasDamage && array_key_exists('items', $stepPayload) && is_array($stepPayload['items'])) {
+                $normalizedItems = [];
+
+                foreach (array_values($stepPayload['items']) as $index => $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+
+                    $normalizedItems[] = [
+                        'id' => isset($item['id']) && is_numeric($item['id']) ? (int) $item['id'] : null,
+                        'zone_code' => (string) ($item['zone_code'] ?? ''),
+                        'view_side' => (string) ($item['view_side'] ?? 'front'),
+                        'damage_type' => (string) ($item['damage_type'] ?? 'scratch'),
+                        'severity' => (string) ($item['severity'] ?? 'minor'),
+                        'damage_timing' => (string) ($item['damage_timing'] ?? 'before_pickup'),
+                        'quantity' => (int) ($item['quantity'] ?? 1),
+                        'marker_x' => $item['marker_x'] ?? null,
+                        'marker_y' => $item['marker_y'] ?? null,
+                        'estimated_cost' => $item['estimated_cost'] ?? null,
+                        'notes' => $item['notes'] ?? null,
+                        'sort_order' => $index,
+                    ];
+                }
+            }
+
+            $deletedItemIds = array_values(array_unique(array_filter(array_map(
+                static fn ($value): int => is_numeric($value) ? (int) $value : 0,
+                (array) ($stepPayload['deleted_item_ids'] ?? [])
+            ))));
+
+            DB::transaction(function () use ($contract, $damageReport, $summary, $normalizedItems, $deletedItemIds, $request): void {
+                if ($damageReport) {
+                    $damageReport->forceFill([
+                        'status' => 'draft',
+                        'summary' => $summary,
+                    ])->saveQuietly();
+
+                    if (is_array($normalizedItems)) {
+                        $this->syncItems($damageReport, $normalizedItems, $deletedItemIds);
+
+                        if ($contract->reservation?->car && $contract->reservation) {
+                            $this->syncDamageCases(
+                                $damageReport,
+                                $normalizedItems,
+                                $contract->reservation->car,
+                                $contract,
+                                $contract->reservation,
+                                $request->user()?->id
+                            );
+                        }
+                    }
+                }
+            });
+
+            $damageReport = $hasDamage && $damageReport
+                ? $damageReport->fresh(['files', 'items'])
+                : null;
+
+            $stepPayload = array_merge($stepPayload, [
+                'has_damage' => $hasDamage,
+                'damage_report_id' => $damageReport?->id,
+                'damage_report_number' => $damageReport?->report_number,
+                'damage_report_status' => $hasDamage ? ($damageReport?->status ?? 'pending') : 'skipped',
+                'damage_report_type' => $hasDamage ? $damageReport?->report_type : null,
+                'damage_report' => $damageReport ? $this->damageReportPayload($damageReport) : null,
+                'contract_inputs' => $this->contractInputsPayload($contract),
+                'vehicle_readings' => $this->vehicleReadingsPayload($contract),
+                'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
+            ]);
+        } elseif ($page === 7) {
             $deliveryConfirmed = (bool) ($stepPayload['delivery_confirmed'] ?? false);
 
             if ($deliveryConfirmed) {
@@ -612,9 +735,17 @@ class ContractsController extends Controller
                 });
             }
 
+            $contract->refresh()->loadMissing([
+                'tenant:id,slug',
+                'reservation.user:id,name,email,is_active',
+                'reservation.car:id,branch_id,year,make,model,license_plate,status,mileage',
+                'reservation.car.branch:id,name',
+            ]);
+
             $stepPayload = array_merge($stepPayload, [
                 'delivery_confirmed' => $deliveryConfirmed,
                 'delivered_at' => $deliveryConfirmed ? now()->toIso8601String() : null,
+                'contract_file' => $this->contractFilePayload($contract, $locale),
                 'contract_status' => $contract->status instanceof ContractStatus
                     ? $contract->status->value
                     : (string) $contract->status,
@@ -632,7 +763,7 @@ class ContractsController extends Controller
         }
 
         $state = $this->normalizeHandoverState($contract->handover_state);
-        $state['current_page'] = max($state['current_page'], min($page + 1, 6));
+        $state['current_page'] = max($state['current_page'], min($page + 1, 7));
         $state['completed_pages'] = array_values(array_unique(array_merge($state['completed_pages'], [$page])));
         $state['steps'][$step['key']] = [
             'page' => $page,
@@ -1477,12 +1608,45 @@ class ContractsController extends Controller
                     }
 
                     if ($step['page'] === 6) {
+                        $hasDamage = array_key_exists('has_damage', $payload) && $payload['has_damage'] !== null
+                            ? filter_var($payload['has_damage'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+                            : null;
+                        $hasDamage = $hasDamage ?? true;
+                        $damageReport = $contract->damageReports
+                            ->filter(static fn (CarDamageReport $report): bool => $report->report_type === 'before_delivery')
+                            ->sortByDesc('id')
+                            ->first();
+
+                        $payload = array_merge([
+                            'reservation' => $this->reservationPayload($contract->reservation),
+                            'contract_inputs' => $this->contractInputsPayload($contract),
+                            'vehicle_readings' => $this->vehicleReadingsPayload($contract),
+                            'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
+                            'has_damage' => $hasDamage,
+                            'damage_report_status' => $hasDamage
+                                ? ($damageReport ? ($damageReport->items()->exists() ? 'done' : 'pending') : 'pending')
+                                : 'skipped',
+                            'damage_report' => $hasDamage && $damageReport
+                                ? $this->damageReportPayload($damageReport->fresh(['files', 'items']))
+                                : null,
+                        ], $payload);
+                    }
+
+                    if ($step['page'] === 7) {
                         $payload = array_merge([
                             'reservation' => $this->reservationPayload($contract->reservation),
                             'contract_inputs' => $this->contractInputsPayload($contract),
                             'vehicle_readings' => $this->vehicleReadingsPayload($contract),
                             'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
                             'delivery_confirmed' => (bool) data_get($payload, 'delivery_confirmed', false),
+                            'contract_file' => $this->contractFilePayload($contract, $locale),
+                            'contract_status' => $this->contractStatusValue($contract->status),
+                            'reservation_status' => $contract->reservation?->status instanceof ReservationStatus
+                                ? $contract->reservation->status->value
+                                : (string) ($contract->reservation?->status ?? ''),
+                            'car_status' => $contract->reservation?->car?->status instanceof CarStatus
+                                ? $contract->reservation->car->status->value
+                                : (string) ($contract->reservation?->car?->status ?? ''),
                         ], $payload);
                     }
 
@@ -1634,6 +1798,7 @@ class ContractsController extends Controller
         $documentsUpload = $steps['report_upload'] ?? [];
         $damagePhotoUpload = $steps['damage_photo_upload'] ?? [];
         $vehicleReadings = $steps['vehicle_readings'] ?? [];
+        $damageReview = $steps['damage_review'] ?? [];
 
         return [
             'current_page' => max(1, (int) data_get($state, 'current_page', 1)),
@@ -1676,11 +1841,18 @@ class ContractsController extends Controller
                         ? data_get($steps, 'terms_confirmation.payload')
                         : [],
                 ],
-                'delivery_confirmation' => [
+                'damage_review' => [
                     'page' => 6,
+                    'key' => 'damage_review',
+                    'label' => 'Damage Review',
+                    'completed' => in_array(6, $completedPages, true),
+                    'payload' => is_array(data_get($damageReview, 'payload')) ? data_get($damageReview, 'payload') : [],
+                ],
+                'delivery_confirmation' => [
+                    'page' => 7,
                     'key' => 'delivery_confirmation',
                     'label' => 'Delivery Confirmation',
-                    'completed' => in_array(6, $completedPages, true),
+                    'completed' => in_array(7, $completedPages, true),
                     'payload' => is_array(data_get($steps, 'delivery_confirmation.payload'))
                         ? data_get($steps, 'delivery_confirmation.payload')
                         : [],
@@ -2217,9 +2389,10 @@ class ContractsController extends Controller
             3 => ['key' => 'damage_photo_upload', 'label' => 'Damage Photos'],
             4 => ['key' => 'vehicle_readings', 'label' => 'Vehicle Readings'],
             5 => ['key' => 'terms_confirmation', 'label' => 'Terms Confirmation'],
-            6 => ['key' => 'delivery_confirmation', 'label' => 'Delivery Confirmation'],
+            6 => ['key' => 'damage_review', 'label' => 'Damage Review'],
+            7 => ['key' => 'delivery_confirmation', 'label' => 'Delivery Confirmation'],
             default => throw ValidationException::withMessages([
-                'page' => ['This handover page is not implemented yet. Use page 1, 2, 3, 4, 5 or 6.'],
+                'page' => ['This handover page is not implemented yet. Use page 1, 2, 3, 4, 5, 6 or 7.'],
             ]),
         };
     }
@@ -2280,12 +2453,33 @@ class ContractsController extends Controller
                 'notes' => ['nullable', 'string', 'max:5000'],
             ])->validate(),
             6 => Validator::make($payload, [
+                'damage_report_id' => ['nullable', 'integer', 'min:1'],
+                'summary' => ['nullable', 'string', 'max:5000'],
+                'has_damage' => ['nullable', 'boolean'],
+                'items' => ['nullable', 'array'],
+                'items.*.id' => ['nullable', 'integer', 'min:1'],
+                'items.*.zone_code' => ['required', 'string', Rule::in(CarDamageCatalog::zoneCodes())],
+                'items.*.view_side' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::viewSides(), 'value'))],
+                'items.*.damage_type' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::damageTypes(), 'value'))],
+                'items.*.severity' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::severityLevels(), 'value'))],
+                'items.*.damage_timing' => ['nullable', Rule::in(['before_pickup', 'after_return'])],
+                'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
+                'items.*.marker_x' => ['nullable', 'numeric', 'min:0'],
+                'items.*.marker_y' => ['nullable', 'numeric', 'min:0'],
+                'items.*.estimated_cost' => ['nullable', 'numeric', 'min:0'],
+                'items.*.notes' => ['nullable', 'string', 'max:2000'],
+                'deleted_item_ids' => ['nullable', 'array'],
+                'deleted_item_ids.*' => ['integer', 'min:1'],
+                'note' => ['nullable', 'string', 'max:5000'],
+                'notes' => ['nullable', 'string', 'max:5000'],
+            ])->validate(),
+            7 => Validator::make($payload, [
                 'delivery_confirmed' => ['required', 'accepted'],
                 'note' => ['nullable', 'string', 'max:5000'],
                 'notes' => ['nullable', 'string', 'max:5000'],
             ])->validate(),
             default => throw ValidationException::withMessages([
-                'page' => ['This handover page is not implemented yet. Use page 1, 2, 3, 4, 5 or 6.'],
+                'page' => ['This handover page is not implemented yet. Use page 1, 2, 3, 4, 5, 6 or 7.'],
             ]),
         };
     }
@@ -2494,6 +2688,41 @@ class ContractsController extends Controller
      * @return array<string, mixed>
      */
     private function normalizeHandoverPageSixPayload(Request $request, array $payload): array
+    {
+        if (array_key_exists('has_damage', $payload) || $request->has('has_damage')) {
+            $payload['has_damage'] = $request->has('has_damage')
+                ? $request->boolean('has_damage')
+                : $payload['has_damage'];
+        }
+
+        if (array_key_exists('summary', $payload) || $request->has('summary')) {
+            $payload['summary'] = $payload['summary'] ?? $request->input('summary');
+        }
+
+        if (array_key_exists('items', $payload) || $request->has('items')) {
+            $payload['items'] = $payload['items'] ?? $request->input('items');
+        }
+
+        if (array_key_exists('deleted_item_ids', $payload) || $request->has('deleted_item_ids')) {
+            $payload['deleted_item_ids'] = $payload['deleted_item_ids'] ?? $request->input('deleted_item_ids');
+        }
+
+        if (array_key_exists('note', $payload) || $request->has('note')) {
+            $payload['note'] = $payload['note'] ?? $request->input('note');
+        }
+
+        if (array_key_exists('notes', $payload) || $request->has('notes')) {
+            $payload['notes'] = $payload['notes'] ?? $request->input('notes');
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function normalizeHandoverPageSevenPayload(Request $request, array $payload): array
     {
         if (array_key_exists('delivery_confirmed', $payload) || $request->has('delivery_confirmed')) {
             $payload['delivery_confirmed'] = $request->boolean('delivery_confirmed', (bool) ($payload['delivery_confirmed'] ?? false));
@@ -4128,6 +4357,31 @@ class ContractsController extends Controller
             'admin_url' => route('admin.contracts.return-report.pdf', [
                 'subdomain' => $contract->tenant?->slug,
                 'contractId' => $contract->id,
+                'lang' => $locale,
+            ]),
+        ];
+    }
+
+    private function contractFilePayload(Contract $contract, ?string $locale = null): array
+    {
+        $contract->loadMissing('tenant:id,slug');
+        $locale = $locale ?: app()->getLocale();
+        $filename = sprintf('%s-%s-report.pdf', $contract->contract_number, $locale);
+
+        return [
+            'type' => 'pdf',
+            'filename' => $filename,
+            'url' => route('api.contracts.pdf', [
+                'contract' => $contract->id,
+                'lang' => $locale,
+            ]),
+            'api_url' => route('api.contracts.pdf', [
+                'contract' => $contract->id,
+                'lang' => $locale,
+            ]),
+            'admin_url' => route('admin.contracts.pdf', [
+                'subdomain' => $contract->tenant?->slug,
+                'contract' => $contract->id,
                 'lang' => $locale,
             ]),
         ];

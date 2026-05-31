@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
     Route::get('damage-options/{group}', [ContractsController::class, 'damageOptionGroup'])->name('api.contracts.damage-options.group');
     Route::get('{contract}/documents', [ContractsController::class, 'documents'])->name('api.contracts.documents');
     Route::get('{contract}/damage-report-status', [ContractsController::class, 'damageReportStatus'])->name('api.contracts.damage-report-status');
+    Route::get('{contract}/pdf', [\App\Http\Controllers\Admin\ContractsController::class, 'pdf'])->name('api.contracts.pdf');
     Route::get('{contract}/return-status-report/pdf', [\App\Http\Controllers\Admin\ContractReturnReportsController::class, 'pdf'])->name('api.contracts.return-report.pdf');
     Route::match(['post', 'patch'], '{contract}/handover', [ContractsController::class, 'updateHandover'])->name('api.contracts.handover');
 });

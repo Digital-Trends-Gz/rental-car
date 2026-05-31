@@ -1563,16 +1563,91 @@ test('handover api creates a draft contract and continues the wizard', function 
       ]), [
           'page' => 6,
           'delivery_confirmed' => true,
+          'summary' => 'Delivery damage reviewed.',
+          'items' => [
+              [
+                  'zone_code' => 'hood',
+                  'view_side' => 'front',
+                  'damage_type' => 'scratch',
+                  'severity' => 'minor',
+                  'quantity' => 1,
+                  'estimated_cost' => 120,
+                  'notes' => 'Small scratch before delivery.',
+              ],
+              [
+                  'zone_code' => 'front_bumper',
+                  'view_side' => 'front',
+                  'damage_type' => 'dent',
+                  'severity' => 'moderate',
+                  'quantity' => 1,
+                  'estimated_cost' => 220,
+                  'notes' => 'Front bumper dent before delivery.',
+              ],
+          ],
       ]);
 
       $sixthStepResponse->assertOk()
-          ->assertJsonPath('handover.current_page', 6)
-          ->assertJsonPath('handover.steps.5.key', 'delivery_confirmation')
-          ->assertJsonPath('handover.steps.5.payload.delivery_confirmed', true)
+          ->assertJsonPath('handover.current_page', 7)
+          ->assertJsonPath('handover.steps.5.key', 'damage_review')
+          ->assertJsonPath('handover.steps.5.payload.damage_report.report_type', 'before_delivery')
+          ->assertJsonPath('handover.steps.5.payload.damage_report.items_count', 2)
+          ->assertJsonPath('handover.steps.5.payload.damage_report.items.0.zone_code', 'hood')
           ->assertJsonPath('handover.steps.5.payload.mobile_signature_text', 'Please review the contract details on mobile and confirm before signing.')
+          ->assertJsonPath('contract.status', 'draft')
+          ->assertJsonPath('reservation.status', 'confirmed')
+          ->assertJsonPath('contract.car.status', 'available');
+
+      $deliveryItems = $sixthStepResponse->json('handover.steps.5.payload.damage_report.items');
+      $hoodItemId = $deliveryItems[0]['id'];
+      $bumperItemId = $deliveryItems[1]['id'];
+
+      $deliveryDamageUpdateResponse = $this->patchJson(route('api.contracts.handover', [
+          'contract' => $contractId,
+      ]), [
+          'page' => 6,
+          'delivery_confirmed' => true,
+          'summary' => 'Delivery damage reviewed after edit.',
+          'deleted_item_ids' => [$bumperItemId],
+          'items' => [
+              [
+                  'id' => $hoodItemId,
+                  'zone_code' => 'hood',
+                  'view_side' => 'front',
+                  'damage_type' => 'scratch',
+                  'severity' => 'major',
+                  'quantity' => 2,
+                  'estimated_cost' => 300,
+                  'notes' => 'Updated hood scratch before delivery.',
+              ],
+          ],
+      ]);
+
+      $deliveryDamageUpdateResponse->assertOk()
+          ->assertJsonPath('handover.steps.5.payload.damage_report.summary', 'Delivery damage reviewed after edit.')
+          ->assertJsonPath('handover.steps.5.payload.damage_report.items_count', 1)
+          ->assertJsonPath('handover.steps.5.payload.damage_report.items.0.id', $hoodItemId)
+          ->assertJsonPath('handover.steps.5.payload.damage_report.items.0.severity', 'major')
+          ->assertJsonPath('handover.steps.5.payload.damage_report.items.0.quantity', 2);
+
+      $seventhStepResponse = $this->post(route('api.contracts.handover', [
+          'contract' => $contractId,
+      ]), [
+          'page' => 7,
+          'delivery_confirmed' => true,
+      ]);
+
+      $seventhStepResponse->assertOk()
+          ->assertJsonPath('handover.current_page', 7)
+          ->assertJsonPath('handover.steps.6.key', 'delivery_confirmation')
+          ->assertJsonPath('handover.steps.6.payload.delivery_confirmed', true)
+          ->assertJsonPath('handover.steps.6.payload.contract_file.type', 'pdf')
+          ->assertJsonPath('handover.steps.6.payload.contract_file.filename', 'CTR-'.now()->format('Ymd').'-0001-en-report.pdf')
           ->assertJsonPath('contract.status', 'active')
           ->assertJsonPath('reservation.status', 'active')
           ->assertJsonPath('contract.car.status', 'rented');
+
+      expect($seventhStepResponse->json('handover.steps.6.payload.contract_file.api_url'))
+          ->toContain('/api/contracts/'.$contractId.'/pdf');
 
       $contract->refresh()->loadMissing(['handoverPhotos', 'reservation.car', 'damageReports.items']);
       expect($contract->handoverPhotos)->toHaveCount(3);
@@ -1582,6 +1657,7 @@ test('handover api creates a draft contract and continues the wizard', function 
       expect($contract->notes)->toBe('Please handle with care.');
       expect($contract->reservation?->car?->mileage)->toBe(650);
       expect($contract->archiveFiles)->toHaveCount(1);
+      expect($contract->damageReports->firstWhere('report_type', 'before_delivery')?->items)->toHaveCount(1);
   });
 
 test('handover api supports a return wizard with review and inspection steps', function () {
@@ -2155,6 +2231,47 @@ test('damage report status api returns pending until the return damage report is
     $pendingResponse->assertOk()
         ->assertJsonPath('damage_report_status', 'pending')
         ->assertJsonPath('damage_report', null);
+
+    $beforeDeliveryReport = CarDamageReport::create([
+        'tenant_id' => $tenant->id,
+        'car_id' => $car->id,
+        'branch_id' => $branch->id,
+        'contract_id' => $contract->id,
+        'reservation_id' => $reservation->id,
+        'created_by' => $admin->id,
+        'report_number' => 'DMG-DEL-STATUS-001',
+        'report_type' => 'before_delivery',
+        'status' => 'draft',
+        'inspected_at' => now()->subDay(),
+        'odometer' => 24000,
+        'summary' => 'Before delivery damage report ready.',
+    ]);
+
+    CarDamageItem::create([
+        'tenant_id' => $tenant->id,
+        'car_damage_report_id' => $beforeDeliveryReport->id,
+        'zone_code' => 'front_bumper',
+        'view_side' => 'front',
+        'damage_type' => 'dent',
+        'severity' => 'moderate',
+        'damage_timing' => 'before_pickup',
+        'quantity' => 1,
+        'estimated_cost' => 125,
+        'sort_order' => 1,
+    ]);
+
+    $beforeDeliveryResponse = $this->getJson(route('api.contracts.damage-report-status', [
+        'contract' => $contract->id,
+        'phase' => 'return',
+        'report_type' => 'before_delivery',
+    ]));
+
+    $beforeDeliveryResponse->assertOk()
+        ->assertJsonPath('phase', 'return')
+        ->assertJsonPath('damage_report_status', 'done')
+        ->assertJsonPath('damage_report_type', 'before_delivery')
+        ->assertJsonPath('damage_report.report_number', 'DMG-DEL-STATUS-001')
+        ->assertJsonPath('damage_report.items.0.zone_code', 'front_bumper');
 
     $damageReport = CarDamageReport::create([
         'tenant_id' => $tenant->id,
