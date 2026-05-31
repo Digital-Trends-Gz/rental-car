@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\CouponsController;
 use App\Http\Controllers\Admin\CarDiscountsController;
 use App\Http\Controllers\Admin\CarDamageReportsController;
 use App\Http\Controllers\Admin\DamageRepairsController;
+use App\Http\Controllers\Admin\AccidentReportsController;
 use App\Http\Controllers\Admin\CarDocumentsController;
 use App\Http\Controllers\Admin\DashboardController;
 
@@ -161,6 +162,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->name('contracts.pdf');
         Route::resource('contracts', ContractsController::class)
             ->only(['index', 'create', 'store', 'show', 'edit', 'update'])
+            ->middleware('permission:tenant-manage-reservations');
+        Route::resource('accident-reports', AccidentReportsController::class)
+            ->only(['index', 'create', 'store', 'show'])
             ->middleware('permission:tenant-manage-reservations');
 
         // Clients

@@ -241,6 +241,11 @@ class Car extends Model
         return $this->hasMany(CarDamageReport::class);
     }
 
+    public function accidentReports(): HasMany
+    {
+        return $this->hasMany(AccidentReport::class);
+    }
+
     public function damageCases(): HasMany
     {
         return $this->hasMany(CarDamageCase::class)->orderBy('zone_code')->orderBy('id');

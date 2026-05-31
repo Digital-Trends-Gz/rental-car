@@ -161,6 +161,11 @@ class Reservation extends Model
         return $this->hasMany(CarDamageReport::class);
     }
 
+    public function accidentReports(): HasMany
+    {
+        return $this->hasMany(AccidentReport::class);
+    }
+
     public function openedDamageCases(): HasMany
     {
         return $this->hasMany(CarDamageCase::class, 'opened_in_reservation_id');

@@ -40,6 +40,7 @@ import {
     Search,
     Shield,
     ShieldAlert,
+    Siren,
     Tag,
     User,
     Users,
@@ -165,6 +166,12 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: t('dashboard.sidebar.admin.contracts'),
             href: contractsIndex(slug).url,
             icon: FileText,
+            permission: 'tenant-manage-reservations',
+        },
+        {
+            title: page.props.locale === 'ar' ? 'بلاغات الحوادث' : 'Accident Reports',
+            href: adminHref('/accident-reports'),
+            icon: Siren,
             permission: 'tenant-manage-reservations',
         },
         {

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AccidentReportsController;
 use App\Http\Controllers\Api\ContractsController;
 use App\Http\Controllers\Api\ReservationsController;
 use App\Http\Controllers\Api\SettingsController;
@@ -43,11 +44,16 @@ Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
     Route::get('damage-options', [ContractsController::class, 'damageOptions'])->name('api.contracts.damage-options');
     Route::get('damage-options/{group}', [ContractsController::class, 'damageOptionGroup'])->name('api.contracts.damage-options.group');
     Route::get('{contract}/documents', [ContractsController::class, 'documents'])->name('api.contracts.documents');
+    Route::get('{contract}/accident-reports', [AccidentReportsController::class, 'index'])->name('api.contracts.accident-reports.index');
+    Route::post('{contract}/accident-reports', [AccidentReportsController::class, 'store'])->name('api.contracts.accident-reports.store');
     Route::get('{contract}/damage-report-status', [ContractsController::class, 'damageReportStatus'])->name('api.contracts.damage-report-status');
     Route::get('{contract}/pdf', [\App\Http\Controllers\Admin\ContractsController::class, 'pdf'])->name('api.contracts.pdf');
     Route::get('{contract}/return-status-report/pdf', [\App\Http\Controllers\Admin\ContractReturnReportsController::class, 'pdf'])->name('api.contracts.return-report.pdf');
     Route::match(['post', 'patch'], '{contract}/handover', [ContractsController::class, 'updateHandover'])->name('api.contracts.handover');
 });
+
+Route::middleware('auth:sanctum')->get('accident-reports/{accidentReport}', [AccidentReportsController::class, 'show'])
+    ->name('api.accident-reports.show');
 
 Route::prefix('settings')->group(function () {
     Route::get('general', [SettingsController::class, 'general'])->name('api.settings.general');

@@ -114,6 +114,11 @@ class Contract extends Model
         return $this->hasMany(CarDamageReport::class);
     }
 
+    public function accidentReports(): HasMany
+    {
+        return $this->hasMany(AccidentReport::class);
+    }
+
     public function returnStatusReport(): HasOne
     {
         return $this->hasOne(ContractReturnReport::class);
