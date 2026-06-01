@@ -27,6 +27,21 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 const photoFiles = ref<File[]>([]);
 const photoTypes = ref<string[]>([]);
 const photoNotes = ref<string[]>([]);
+const locationError = ref('');
+const locationStatus = ref('');
+const isResolvingLocation = ref(false);
+const mapZoom = 15;
+const tileSize = 256;
+const mapCenterLatitude = ref(31.5017);
+const mapCenterLongitude = ref(34.4668);
+const mapDragState = ref<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startCenterX: number;
+    startCenterY: number;
+    moved: boolean;
+} | null>(null);
 
 const form = useForm({
     contract_id: '',
@@ -48,12 +63,235 @@ const form = useForm({
 });
 
 const selectedContract = computed(() => props.contracts.find((contract) => String(contract.id) === form.contract_id) ?? null);
+const locationQuery = computed(() => {
+    const latitude = Number(form.latitude);
+    const longitude = Number(form.longitude);
+
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        return `${latitude},${longitude}`;
+    }
+
+    return form.location.trim() || 'Gaza';
+});
+const mapsLink = computed(() => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationQuery.value)}`);
+const mapCenter = computed(() => {
+    return { latitude: mapCenterLatitude.value, longitude: mapCenterLongitude.value };
+});
+const mapCenterWorld = computed(() => latLngToWorldPixel(mapCenter.value.latitude, mapCenter.value.longitude, mapZoom));
+const mapTiles = computed(() => {
+    const tileCount = 2 ** mapZoom;
+    const center = mapCenterWorld.value;
+    const centerTileX = Math.floor(center.x / tileSize);
+    const centerTileY = Math.floor(center.y / tileSize);
+    const tiles = [];
+
+    for (let row = -2; row <= 2; row += 1) {
+        for (let column = -3; column <= 3; column += 1) {
+            const tileX = centerTileX + column;
+            const tileY = Math.min(Math.max(centerTileY + row, 0), tileCount - 1);
+            const wrappedTileX = ((tileX % tileCount) + tileCount) % tileCount;
+
+            tiles.push({
+                key: `${tileX}-${tileY}`,
+                url: `https://tile.openstreetmap.org/${mapZoom}/${wrappedTileX}/${tileY}.png`,
+                style: {
+                    left: `calc(50% + ${tileX * tileSize - center.x}px)`,
+                    top: `calc(50% + ${tileY * tileSize - center.y}px)`,
+                },
+            });
+        }
+    }
+
+    return tiles;
+});
+const selectedMarkerStyle = computed(() => {
+    const latitude = Number(form.latitude);
+    const longitude = Number(form.longitude);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null;
+    }
+
+    const selected = latLngToWorldPixel(latitude, longitude, mapZoom);
+    const center = mapCenterWorld.value;
+
+    return {
+        left: `calc(50% + ${selected.x - center.x}px)`,
+        top: `calc(50% + ${selected.y - center.y}px)`,
+    };
+});
 
 function onPhotosSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     photoFiles.value = Array.from(input.files || []);
     photoTypes.value = photoFiles.value.map((_, index) => photoTypes.value[index] || 'scene');
     photoNotes.value = photoFiles.value.map((_, index) => photoNotes.value[index] || '');
+}
+
+async function useCurrentLocation() {
+    locationError.value = '';
+    locationStatus.value = '';
+
+    if (!('geolocation' in navigator)) {
+        locationError.value = localize('Geolocation is not supported by this browser.', '\u0627\u0644\u0645\u062a\u0635\u0641\u062d \u0644\u0627 \u064a\u062f\u0639\u0645 \u062a\u062d\u062f\u064a\u062f \u0627\u0644\u0645\u0648\u0642\u0639.');
+        return;
+    }
+
+    isResolvingLocation.value = true;
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            form.latitude = position.coords.latitude.toFixed(7);
+            form.longitude = position.coords.longitude.toFixed(7);
+            setMapCenter(position.coords.latitude, position.coords.longitude);
+            locationStatus.value = localize('Coordinates captured.', '\u062a\u0645 \u0627\u0644\u062a\u0642\u0627\u0637 \u0627\u0644\u0625\u062d\u062f\u0627\u062b\u064a\u0627\u062a.');
+
+            await reverseGeocodeLocation(position.coords.latitude, position.coords.longitude);
+            isResolvingLocation.value = false;
+        },
+        (error) => {
+            locationError.value = error.message || localize('Unable to read current location.', '\u062a\u0639\u0630\u0631 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0645\u0648\u0642\u0639 \u0627\u0644\u062d\u0627\u0644\u064a.');
+            isResolvingLocation.value = false;
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 60000,
+        },
+    );
+}
+
+async function reverseGeocodeLocation(latitude: number, longitude: number) {
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=${locale.value}`,
+        );
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const address = data?.address || {};
+        const readableLocation =
+            address.city ||
+            address.town ||
+            address.village ||
+            address.suburb ||
+            address.state ||
+            address.country ||
+            data?.display_name;
+
+        if (readableLocation) {
+            form.location = readableLocation;
+        }
+    } catch {
+        // Coordinates are still valid even if reverse geocoding fails.
+    }
+}
+
+async function selectMapPoint(event: MouseEvent) {
+    const element = event.currentTarget as HTMLElement;
+    const rect = element.getBoundingClientRect();
+    const center = mapCenterWorld.value;
+    const worldX = center.x + event.clientX - rect.left - rect.width / 2;
+    const worldY = center.y + event.clientY - rect.top - rect.height / 2;
+    const point = worldPixelToLatLng(worldX, worldY, mapZoom);
+
+    form.latitude = point.latitude.toFixed(7);
+    form.longitude = point.longitude.toFixed(7);
+    locationStatus.value = localize('Map point selected.', '\u062a\u0645 \u062a\u062d\u062f\u064a\u062f \u0627\u0644\u0646\u0642\u0637\u0629 \u0645\u0646 \u0627\u0644\u062e\u0631\u064a\u0637\u0629.');
+    locationError.value = '';
+
+    await reverseGeocodeLocation(point.latitude, point.longitude);
+}
+
+function startMapDrag(event: PointerEvent) {
+    if (event.button !== 0) return;
+
+    const element = event.currentTarget as HTMLElement;
+    const center = mapCenterWorld.value;
+
+    element.setPointerCapture(event.pointerId);
+    mapDragState.value = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startCenterX: center.x,
+        startCenterY: center.y,
+        moved: false,
+    };
+}
+
+function moveMapDrag(event: PointerEvent) {
+    const state = mapDragState.value;
+
+    if (!state || state.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - state.startX;
+    const deltaY = event.clientY - state.startY;
+
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+        state.moved = true;
+    }
+
+    if (!state.moved) return;
+
+    const point = worldPixelToLatLng(state.startCenterX - deltaX, state.startCenterY - deltaY, mapZoom);
+    setMapCenter(point.latitude, point.longitude);
+}
+
+async function endMapDrag(event: PointerEvent) {
+    const state = mapDragState.value;
+
+    if (!state || state.pointerId !== event.pointerId) return;
+
+    const element = event.currentTarget as HTMLElement;
+
+    if (element.hasPointerCapture(event.pointerId)) {
+        element.releasePointerCapture(event.pointerId);
+    }
+
+    mapDragState.value = null;
+
+    if (!state.moved) {
+        await selectMapPoint(event);
+    }
+}
+
+function cancelMapDrag(event: PointerEvent) {
+    const state = mapDragState.value;
+
+    if (!state || state.pointerId !== event.pointerId) return;
+
+    const element = event.currentTarget as HTMLElement;
+
+    if (element.hasPointerCapture(event.pointerId)) {
+        element.releasePointerCapture(event.pointerId);
+    }
+
+    mapDragState.value = null;
+}
+
+function setMapCenter(latitude: number, longitude: number) {
+    mapCenterLatitude.value = Math.min(Math.max(latitude, -85.05112878), 85.05112878);
+    mapCenterLongitude.value = Math.min(Math.max(longitude, -180), 180);
+}
+
+function latLngToWorldPixel(latitude: number, longitude: number, zoom: number) {
+    const sinLatitude = Math.sin((Math.min(Math.max(latitude, -85.05112878), 85.05112878) * Math.PI) / 180);
+    const scale = tileSize * 2 ** zoom;
+
+    return {
+        x: ((longitude + 180) / 360) * scale,
+        y: (0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * Math.PI)) * scale,
+    };
+}
+
+function worldPixelToLatLng(x: number, y: number, zoom: number) {
+    const scale = tileSize * 2 ** zoom;
+    const longitude = (x / scale) * 360 - 180;
+    const n = Math.PI - (2 * Math.PI * y) / scale;
+    const latitude = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+
+    return { latitude, longitude };
 }
 
 function submit() {
@@ -106,22 +344,76 @@ function submit() {
                         <InputError :message="form.errors.accident_at" />
                     </div>
 
-                    <div>
-                        <Label for="location">{{ localize('Location', 'الموقع') }}</Label>
-                        <Input id="location" v-model="form.location" />
-                        <InputError :message="form.errors.location" />
-                    </div>
+                    <div class="md:col-span-2 rounded-md border p-4">
+                        <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+                            <div>
+                                <h2 class="font-semibold">{{ localize('Accident location', '\u0645\u0648\u0642\u0639 \u0627\u0644\u062d\u0627\u062f\u062b') }}</h2>
+                                <p class="text-sm text-muted-foreground">
+                                    {{ localize('Use current location to fill latitude, longitude, and a readable place name.', '\u0627\u0633\u062a\u062e\u062f\u0645 \u0627\u0644\u0645\u0648\u0642\u0639 \u0627\u0644\u062d\u0627\u0644\u064a \u0644\u062a\u0639\u0628\u0626\u0629 \u062e\u0637 \u0627\u0644\u0639\u0631\u0636 \u0648\u062e\u0637 \u0627\u0644\u0637\u0648\u0644 \u0648\u0627\u0633\u0645 \u0627\u0644\u0645\u0643\u0627\u0646.') }}
+                                </p>
+                            </div>
+                            <div class="flex gap-2">
+                                <Button type="button" variant="outline" :disabled="isResolvingLocation" @click="useCurrentLocation">
+                                    {{ isResolvingLocation ? localize('Reading...', '\u062c\u0627\u0631\u064a \u0627\u0644\u0642\u0631\u0627\u0621\u0629...') : localize('Use current location', '\u0627\u0633\u062a\u062e\u062f\u0645 \u0645\u0648\u0642\u0639\u064a \u0627\u0644\u062d\u0627\u0644\u064a') }}
+                                </Button>
+                                <a :href="mapsLink" target="_blank" class="inline-flex h-10 items-center rounded-md border px-3 text-sm hover:bg-muted">
+                                    {{ localize('Open map', '\u0641\u062a\u062d \u0627\u0644\u062e\u0631\u064a\u0637\u0629') }}
+                                </a>
+                            </div>
+                        </div>
 
-                    <div>
-                        <Label for="latitude">{{ localize('Latitude', 'خط العرض') }}</Label>
-                        <Input id="latitude" v-model="form.latitude" type="number" step="0.0000001" />
-                        <InputError :message="form.errors.latitude" />
-                    </div>
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div>
+                                <Label for="location">{{ localize('Location name', '\u0627\u0633\u0645 \u0627\u0644\u0645\u0648\u0642\u0639') }}</Label>
+                                <Input id="location" v-model="form.location" placeholder="Gaza" />
+                                <InputError :message="form.errors.location" />
+                            </div>
 
-                    <div>
-                        <Label for="longitude">{{ localize('Longitude', 'خط الطول') }}</Label>
-                        <Input id="longitude" v-model="form.longitude" type="number" step="0.0000001" />
-                        <InputError :message="form.errors.longitude" />
+                            <div>
+                                <Label for="latitude">{{ localize('Latitude', '\u062e\u0637 \u0627\u0644\u0639\u0631\u0636') }}</Label>
+                                <Input id="latitude" v-model="form.latitude" type="number" step="0.0000001" />
+                                <InputError :message="form.errors.latitude" />
+                            </div>
+
+                            <div>
+                                <Label for="longitude">{{ localize('Longitude', '\u062e\u0637 \u0627\u0644\u0637\u0648\u0644') }}</Label>
+                                <Input id="longitude" v-model="form.longitude" type="number" step="0.0000001" />
+                                <InputError :message="form.errors.longitude" />
+                            </div>
+                        </div>
+
+                        <p v-if="locationStatus" class="mt-3 text-sm text-green-700">{{ locationStatus }}</p>
+                        <p v-if="locationError" class="mt-3 text-sm text-red-600">{{ locationError }}</p>
+
+                        <div
+                            class="relative mt-4 h-72 w-full cursor-grab touch-none overflow-hidden rounded-md border bg-slate-100 active:cursor-grabbing"
+                            role="button"
+                            tabindex="0"
+                            @pointercancel="cancelMapDrag"
+                            @pointerdown="startMapDrag"
+                            @pointermove="moveMapDrag"
+                            @pointerup="endMapDrag"
+                        >
+                            <img
+                                v-for="tile in mapTiles"
+                                :key="tile.key"
+                                :src="tile.url"
+                                alt=""
+                                class="absolute h-64 w-64 select-none"
+                                draggable="false"
+                                :style="tile.style"
+                            />
+                            <div
+                                v-if="selectedMarkerStyle"
+                                class="absolute z-10 h-5 w-5 -translate-x-1/2 -translate-y-full rounded-full border-2 border-white bg-red-600 shadow-lg"
+                                :style="selectedMarkerStyle"
+                            >
+                                <div class="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1 rotate-45 bg-red-600" />
+                            </div>
+                            <div class="pointer-events-none absolute inset-x-0 bottom-0 bg-white/80 px-3 py-2 text-xs text-muted-foreground">
+                                {{ localize('Drag the map to move around, then click to place the red point and update coordinates.', '\u0627\u0633\u062d\u0628 \u0627\u0644\u062e\u0631\u064a\u0637\u0629 \u0644\u0644\u062a\u0646\u0642\u0644\u060c \u062b\u0645 \u0627\u0636\u063a\u0637 \u0644\u0648\u0636\u0639 \u0627\u0644\u0646\u0642\u0637\u0629 \u0627\u0644\u062d\u0645\u0631\u0627\u0621 \u0648\u062a\u062d\u062f\u064a\u062b \u0627\u0644\u0625\u062d\u062f\u0627\u062b\u064a\u0627\u062a.') }}
+                            </div>
+                        </div>
                     </div>
 
                     <div>

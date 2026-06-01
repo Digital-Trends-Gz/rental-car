@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Core\AppBrandingSettings;
+use App\Core\LocalizationSettings;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
@@ -47,6 +48,7 @@ class SettingsController extends Controller
 
         $settings = TenantSiteSetting::forTenant($tenant);
         $siteName = $this->nullableString(data_get($settings, 'site_name')) ?? $tenant->name;
+        $availableLanguages = $this->availableLanguagesForTenant($settings);
 
         return response()->json([
             'source' => 'tenant',
@@ -61,6 +63,12 @@ class SettingsController extends Controller
             'logo_url' => $this->nullableString(data_get($settings, 'logo_url')),
             'primary_color' => $this->normalizeHexColor(data_get($settings, 'primary_color'), '#f97316'),
             'secondary_color' => $this->normalizeHexColor(data_get($settings, 'secondary_color'), '#ea580c'),
+            'default_language' => (string) data_get($settings, 'default_locale', config('app.locale', 'en')),
+            'enabled_language_codes' => array_values(array_map(
+                static fn (array $language): string => (string) $language['code'],
+                $availableLanguages
+            )),
+            'available_languages' => $availableLanguages,
         ]);
     }
 
@@ -80,5 +88,43 @@ class SettingsController extends Controller
         }
 
         return $fallback;
+    }
+
+    /**
+     * @return array<int, array{code: string, name: string, native: string, regional: string, script: string, direction: string}>
+     */
+    private function availableLanguagesForTenant(array $settings): array
+    {
+        $platformLanguages = collect(LocalizationSettings::load()['locales'] ?? [])
+            ->filter(static fn (mixed $language): bool => is_array($language) && !empty($language['code']))
+            ->keyBy(static fn (array $language): string => (string) $language['code']);
+
+        $enabledCodes = array_values(array_filter(
+            array_map('strval', (array) data_get($settings, 'enabled_locales', [])),
+            static fn (string $code): bool => $code !== ''
+        ));
+
+        if (empty($enabledCodes)) {
+            $enabledCodes = $platformLanguages->keys()->map(static fn ($code): string => (string) $code)->all();
+        }
+
+        return collect($enabledCodes)
+            ->unique()
+            ->map(function (string $code) use ($platformLanguages): array {
+                $language = (array) ($platformLanguages->get($code) ?? []);
+
+                return [
+                    'code' => $code,
+                    'name' => trim((string) ($language['name'] ?? strtoupper($code))),
+                    'native' => trim((string) ($language['native'] ?? strtoupper($code))),
+                    'regional' => trim((string) ($language['regional'] ?? '')),
+                    'script' => trim((string) ($language['script'] ?? '')),
+                    'direction' => in_array(($language['direction'] ?? null), ['ltr', 'rtl'], true)
+                        ? (string) $language['direction']
+                        : (str_starts_with($code, 'ar') ? 'rtl' : 'ltr'),
+                ];
+            })
+            ->values()
+            ->all();
     }
 }
