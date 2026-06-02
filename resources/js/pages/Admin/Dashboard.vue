@@ -15,6 +15,7 @@ import {
     RefreshCcw,
     TrendingUp,
     Layers,
+    Bell,
 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 
@@ -115,6 +116,20 @@ const props = defineProps<{
         amount: number;
         edit_url: string;
     }>;
+    operationalNotifications: Array<{
+        id: string;
+        type: string;
+        priority: string;
+        label: string;
+        title: string;
+        message: string;
+        occurred_at: string | null;
+        data: Record<string, any>;
+        ui: {
+            badge_background: string;
+            badge_color: string;
+        };
+    }>;
     branches: Array<{ id: number; name: string }>;
     filters: { branch_id: number | null };
     canAccessAllBranches: boolean;
@@ -138,6 +153,22 @@ const fmtDate = (d: string | null) =>
     d
         ? new Date(d).toLocaleDateString(numberLocale.value, { month: 'short', day: 'numeric', year: 'numeric' })
         : localize('N/A', 'غير متوفر');
+
+const notificationHref = (notification: { type: string; data: Record<string, any> }) => {
+    if (notification.type === 'new_damage' && notification.data.damage_report_id) {
+        return `/admin/car-damage-reports/${notification.data.damage_report_id}/edit`;
+    }
+
+    if (notification.data.contract_id) {
+        return `/admin/contracts/${notification.data.contract_id}`;
+    }
+
+    if (notification.data.reservation_id) {
+        return `/admin/reservations/${notification.data.reservation_id}`;
+    }
+
+    return '/admin/dashboard';
+};
 
 const documentTypeLabel = (type: string) =>
     type === 'license'
@@ -385,6 +416,54 @@ const kpiCards = computed(() => [
                     {{ localize('Police Notice Profile', 'ملف إشعار الشرطة') }}
                 </Link>
             </div>
+
+            <Card class="border-0 shadow-sm">
+                <CardHeader>
+                    <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
+                        <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
+                            <Bell class="h-4 w-4 text-primary" />
+                            <CardTitle class="text-base">{{ localize('Operational Notifications', 'التنبيهات التشغيلية') }}</CardTitle>
+                        </div>
+                        <span class="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold">
+                            {{ operationalNotifications.length }}
+                        </span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">
+                        {{ localize('The same alerts used by the mobile app.', 'نفس التنبيهات المستخدمة في تطبيق الموبايل.') }}
+                    </p>
+                </CardHeader>
+                <CardContent>
+                    <div v-if="operationalNotifications.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+                        {{ localize('No operational notifications right now.', 'لا توجد تنبيهات تشغيلية حاليًا.') }}
+                    </div>
+                    <div v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        <Link
+                            v-for="notification in operationalNotifications"
+                            :key="notification.id"
+                            :href="notificationHref(notification)"
+                            class="rounded-xl border bg-background p-4 transition-colors hover:bg-muted/50"
+                        >
+                            <div class="flex items-start justify-between gap-3" :class="isRtl ? 'flex-row-reverse' : ''">
+                                <div class="min-w-0" :class="isRtl ? 'text-right' : ''">
+                                    <div class="font-semibold">{{ notification.title }}</div>
+                                    <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                                        {{ notification.message }}
+                                    </p>
+                                </div>
+                                <span
+                                    class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
+                                    :style="{
+                                        backgroundColor: notification.ui.badge_background,
+                                        color: notification.ui.badge_color,
+                                    }"
+                                >
+                                    {{ notification.label }}
+                                </span>
+                            </div>
+                        </Link>
+                    </div>
+                </CardContent>
+            </Card>
 
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-7">
                 <Card

@@ -14,6 +14,7 @@ use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\Notifications\OperationalNotificationsService;
 use App\Support\BranchAccess;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -22,7 +23,10 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __construct(private BranchAccess $branchAccess)
+    public function __construct(
+        private BranchAccess $branchAccess,
+        private OperationalNotificationsService $operationalNotifications,
+    )
     {
     }
 
@@ -327,6 +331,9 @@ class DashboardController extends Controller
             })
             ->values();
 
+        $operationalNotifications = $this->operationalNotifications
+            ->forUser($user, $branchId, 6, (string) app()->getLocale());
+
         return Inertia::render('Admin/Dashboard', [
             'stats' => [
                 'total_cars'           => $totalCars,
@@ -347,6 +354,7 @@ class DashboardController extends Controller
             'expiringContracts'    => $expiringContracts,
             'recentForcedExtensions' => $recentForcedExtensions,
             'recentPendingViolations' => $recentPendingViolations,
+            'operationalNotifications' => $operationalNotifications,
             'branches'             => $branchOptions,
             'filters'              => ['branch_id' => $branchId],
             'canAccessAllBranches' => $canAccessAllBranches,

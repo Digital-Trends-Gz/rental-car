@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AccidentReportsController;
 use App\Http\Controllers\Api\ContractsController;
 use App\Http\Controllers\Api\ReservationsController;
+use App\Http\Controllers\Api\NotificationsController;
 use App\Http\Controllers\Api\SettingsController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,9 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
     Route::get('summary', [DashboardController::class, 'summary'])->name('api.dashboard.summary');
 });
+
+Route::middleware('auth:sanctum')->get('notifications', [NotificationsController::class, 'index'])
+    ->name('api.notifications.index');
 
 Route::middleware('auth:sanctum')->prefix('reservations')->group(function () {
     Route::get('task-types', [ReservationsController::class, 'taskTypes'])->name('api.reservations.task-types');
