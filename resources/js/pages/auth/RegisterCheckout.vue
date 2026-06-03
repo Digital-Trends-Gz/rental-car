@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
 import { Button } from '@/components/ui/button';
+import { useTrans } from '@/composables/useTrans';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
 
@@ -37,6 +39,8 @@ interface ProviderPaymentMethodOption {
     image_url?: string | null;
 }
 
+const { t } = useTrans();
+
 const props = defineProps<{
     registration: RegistrationSummary;
     plan: PlanSummary;
@@ -66,14 +70,14 @@ const form = useForm<{
 
 const billingCycleLabel = computed(() => {
     if (props.billingCycle === 'yearly') {
-        return 'Yearly';
+        return t('plans_page.yearly');
     }
 
     if (props.billingCycle === 'one_time') {
-        return 'One time';
+        return t('plans_page.one_time');
     }
 
-    return 'Monthly';
+    return t('plans_page.monthly');
 });
 
 const submit = () => {
@@ -116,39 +120,45 @@ const errorMessages = computed(() => {
 </script>
 
 <template>
-    <Head title="Checkout" />
+    <Head :title="t('checkout.title')" />
 
-    <main class="min-h-screen bg-slate-50 py-10">
+    <main class="relative min-h-screen bg-slate-50 py-10">
+        <div class="absolute top-4 ltr:right-4 rtl:left-4 z-50">
+            <AuthLanguageSwitcher />
+        </div>
+
         <div class="mx-auto max-w-5xl px-4">
             <div class="mb-6">
                 <Link :href="urls.plans" class="text-sm font-medium text-slate-700 hover:underline">
-                    Back to plans
+                    {{ t('checkout.back_to_plans') }}
                 </Link>
             </div>
 
             <div class="mb-8">
-                <p class="text-sm font-semibold text-blue-700">Step 3 of 3</p>
-                <h1 class="mt-2 text-3xl font-bold text-slate-900">Complete payment</h1>
-                <p class="mt-2 text-slate-600">After payment, your tenant subdomain and admin dashboard will be activated.</p>
+                <p class="text-sm font-semibold text-blue-700">{{ t('checkout.step_3_of_3') }}</p>
+                <h1 class="mt-2 text-3xl font-bold text-slate-900">{{ t('checkout.complete_payment') }}</h1>
+                <p class="mt-2 text-slate-600">{{ t('checkout.complete_payment_subtitle') }}</p>
             </div>
 
             <div class="grid gap-6 lg:grid-cols-5">
                 <div class="space-y-6 lg:col-span-3">
                     <section class="rounded-2xl border bg-white p-5">
-                        <h2 class="mb-4 text-lg font-semibold text-slate-900">Company details</h2>
+                        <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ t('checkout.company_details') }}</h2>
                         <div class="space-y-2 text-sm">
-                            <p><span class="font-semibold">Company:</span> {{ registration.name }}</p>
-                            <p><span class="font-semibold">Email:</span> {{ registration.email }}</p>
-                            <p v-if="registration.phone"><span class="font-semibold">Phone:</span> {{ registration.phone }}</p>
-                            <p v-if="registration.custom_domain"><span class="font-semibold">Custom domain:</span> {{ registration.custom_domain }}</p>
+                            <p><span class="font-semibold">{{ t('checkout.company') }}:</span> {{ registration.name }}</p>
+                            <p><span class="font-semibold">{{ t('checkout.email') }}:</span> {{ registration.email }}</p>
+                            <p v-if="registration.phone"><span class="font-semibold">{{ t('checkout.phone') }}:</span> {{ registration.phone }}</p>
+                            <p v-if="registration.custom_domain"><span class="font-semibold">{{ t('checkout.custom_domain') }}:</span> {{ registration.custom_domain }}</p>
                         </div>
                         <div class="mt-4">
-                            <Link :href="urls.register" class="text-sm font-medium text-blue-700 hover:underline">Edit details</Link>
+                            <Link :href="urls.register" class="text-sm font-medium text-blue-700 hover:underline">
+                                {{ t('checkout.edit_details') }}
+                            </Link>
                         </div>
                     </section>
 
                     <section class="rounded-2xl border bg-white p-5">
-                        <h2 class="mb-4 text-lg font-semibold text-slate-900">Payment checkout</h2>
+                        <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ t('checkout.payment_checkout') }}</h2>
                         <form @submit.prevent="submit" class="space-y-4">
                             <div v-if="errorMessages.length" class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                                 <p v-for="(message, index) in errorMessages" :key="`checkout-error-${index}`">
@@ -157,7 +167,7 @@ const errorMessages = computed(() => {
                             </div>
 
                             <div v-if="(paymentProviders || []).length > 0" class="space-y-2">
-                                <label class="text-sm font-medium text-slate-900">Payment provider</label>
+                                <label class="text-sm font-medium text-slate-900">{{ t('checkout.payment_provider') }}</label>
                                 <div class="grid gap-2">
                                     <label
                                         v-for="provider in (paymentProviders || [])"
@@ -178,7 +188,7 @@ const errorMessages = computed(() => {
                                                     {{ provider.mode }}
                                                 </span>
                                                 <span v-if="provider.is_default" class="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
-                                                    default
+                                                    {{ t('checkout.default') }}
                                                 </span>
                                             </div>
                                             <p v-if="provider.description" class="text-xs text-slate-500">
@@ -194,7 +204,7 @@ const errorMessages = computed(() => {
 
                             <div v-if="form.payment_provider_code === 'myfatoorah'" class="space-y-2">
                                 <label class="text-sm font-medium text-slate-900">
-                                    {{ text('Payment Method (MyFatoorah)', 'طريقة الدفع (MyFatoorah)') }}
+                                    {{ t('checkout.payment_method_mf') }}
                                 </label>
 
                                 <div v-if="selectedProviderMethods.length > 0" class="grid gap-2">
@@ -220,18 +230,18 @@ const errorMessages = computed(() => {
                                                 >
                                                 <span class="font-medium text-slate-900">{{ method.name }}</span>
                                                 <span v-if="method.is_direct" class="rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-                                                    direct
+                                                    {{ t('checkout.direct') }}
                                                 </span>
                                             </div>
                                             <p v-if="method.total_amount != null" class="text-xs text-slate-500">
-                                                Total: {{ method.currency || currencyCode }} {{ Number(method.total_amount).toFixed(2) }}
+                                                {{ t('checkout.total') }}: {{ method.currency || currencyCode }} {{ Number(method.total_amount).toFixed(2) }}
                                             </p>
                                         </div>
                                     </label>
                                 </div>
 
                                 <p v-else class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
-                                    Could not load MyFatoorah payment methods. The system will use the configured default `payment_method_id` if available.
+                                    {{ t('checkout.myfatoorah_error') }}
                                 </p>
 
                                 <p v-if="form.errors.payment_method_id" class="text-sm text-red-600">
@@ -240,17 +250,17 @@ const errorMessages = computed(() => {
                             </div>
 
                             <p class="text-sm text-slate-600">
-                                You will be redirected to the selected payment provider secure checkout and charged for the selected plan.
+                                {{ t('checkout.redirect_notice') }}
                             </p>
 
                             <label class="mt-3 flex items-start gap-2 text-sm">
                                 <input v-model="form.accept_terms" type="checkbox" class="mt-0.5">
-                                <span>I confirm this purchase and accept Terms of Service.</span>
+                                <span>{{ t('checkout.terms_confirm') }}</span>
                             </label>
                             <p v-if="form.errors.accept_terms" class="text-sm text-red-600">{{ form.errors.accept_terms }}</p>
 
                             <Button type="submit" :disabled="form.processing" class="w-full">
-                                {{ form.processing ? 'Redirecting...' : `Continue to ${selectedProvider?.name || 'Payment'}` }}
+                                {{ form.processing ? t('checkout.redirecting') : t('checkout.continue_to', { provider: selectedProvider?.name || t('checkout.payment_provider') }) }}
                             </Button>
                         </form>
                     </section>
@@ -258,7 +268,7 @@ const errorMessages = computed(() => {
 
                 <aside class="lg:col-span-2">
                     <section class="rounded-2xl border bg-white p-5">
-                        <h2 class="mb-4 text-lg font-semibold text-slate-900">Order summary</h2>
+                        <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ t('checkout.order_summary') }}</h2>
                         <p class="text-sm text-slate-500">{{ plan.name }}</p>
                         <p class="text-xs text-slate-500">{{ billingCycleLabel }}</p>
                         <p class="mt-2 text-sm text-slate-700">{{ plan.description }}</p>
@@ -268,7 +278,7 @@ const errorMessages = computed(() => {
                         </ul>
 
                         <div class="mt-6 border-t pt-4">
-                            <p class="text-sm text-slate-500">Total</p>
+                            <p class="text-sm text-slate-500">{{ t('checkout.total') }}</p>
                             <p class="text-3xl font-bold text-slate-900">
                                 {{ currencyCode }} {{ Number(amount).toFixed(2) }}
                             </p>

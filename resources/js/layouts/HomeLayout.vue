@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { Button } from '@/components/ui/button';
+import { useBrandTheme } from '@/composables/useBrandTheme';
 import { login as mainLogin, register as mainRegister, home as mainHome, fleet as mainFleet, about as mainAbout, contact as mainContact } from '@/routes';
 import { login as tenantLogin, register as tenantRegister, home as tenantHome, fleet as tenantFleet, about as tenantAbout, contact as tenantContact } from '@/routes/tenant';
 import { useTrans } from '@/composables/useTrans';
@@ -13,8 +14,9 @@ import { computed, ref } from 'vue';
 
 const $page = usePage<any>();
 const { t, locale } = useTrans();
-const props = withDefaults(defineProps<{ shellVariant?: 'tenant' | 'landing' }>(), {
+const props = withDefaults(defineProps<{ shellVariant?: 'tenant' | 'landing'; showLocaleSwitcher?: boolean }>(), {
     shellVariant: 'tenant',
+    showLocaleSwitcher: true,
 });
 const currentTenant = computed(() => $page.props.current_tenant);
 const tenantSiteSettings = computed(() => $page.props.tenant_site_settings ?? null);
@@ -73,8 +75,7 @@ const tenantBranding = computed(() => tenantSiteSettings.value ?? null);
 const appName = computed(() => $page.props.name || 'Real Rent Car');
 const siteName = computed(() => tenantBranding.value?.site_name || currentTenant.value?.name || appName.value);
 const siteLogoUrl = computed(() => tenantBranding.value?.logo_url || null);
-const primaryColor = computed(() => tenantBranding.value?.primary_color || '#f97316');
-const secondaryColor = computed(() => tenantBranding.value?.secondary_color || '#ea580c');
+const { primaryColor, secondaryColor, themeVars: globalThemeVars } = useBrandTheme();
 const landingNavLinks = [
     { label: 'Cars', href: `${mainHome().url}#cars` },
     { label: 'Features', href: `${mainHome().url}#features` },
@@ -91,6 +92,7 @@ const closeLandingMenu = () => {
     mobileOpen.value = false;
 };
 const themeVars = computed(() => ({
+    ...globalThemeVars.value,
     '--tenant-primary': primaryColor.value,
     '--tenant-secondary': secondaryColor.value,
     '--tenant-gradient': `linear-gradient(90deg, ${primaryColor.value}, ${secondaryColor.value})`,
@@ -99,7 +101,7 @@ const themeVars = computed(() => ({
 
 <template>
     <template v-if="isLandingShell">
-        <div class="min-h-screen bg-background">
+        <div class="min-h-screen bg-background" :style="themeVars">
             <nav class="fixed left-0 right-0 top-0 z-50 border-b border-border bg-background/95 shadow-sm backdrop-blur-lg">
                 <div class="section-container flex h-16 items-center justify-between gap-4">
                     <Link href="/" class="inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
@@ -117,7 +119,7 @@ const themeVars = computed(() => ({
                             {{ link.label }}
                         </a>
                         <div
-                            v-if="availableLocales.length > 1"
+                            v-if="props.showLocaleSwitcher && availableLocales.length > 1"
                             class="flex items-center rounded-full border border-border bg-muted/50 p-1"
                         >
                             <a
@@ -157,7 +159,7 @@ const themeVars = computed(() => ({
                         {{ link.label }}
                     </a>
                     <div
-                        v-if="availableLocales.length > 1"
+                        v-if="props.showLocaleSwitcher && availableLocales.length > 1"
                         class="mt-3 flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-1"
                     >
                         <a
@@ -251,7 +253,7 @@ const themeVars = computed(() => ({
 
                     <!-- Auth Buttons -->
                     <div class="flex items-center space-x-3">
-                        <div v-if="availableLocales.length > 0" class="hidden items-center rounded-lg border border-gray-200 bg-white p-1 md:flex">
+                        <div v-if="props.showLocaleSwitcher && availableLocales.length > 0" class="hidden items-center rounded-lg border border-gray-200 bg-white p-1 md:flex">
                             <a
                                 v-for="localeCode in availableLocales"
                                 :key="localeCode"

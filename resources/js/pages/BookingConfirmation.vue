@@ -351,7 +351,7 @@ const amounts = computed(() => {
                         <div class="space-y-3">
                             <a
                                 :href="reservationsIndex(currentTenant.slug).url"
-                                class="block w-full rounded-lg bg-black px-6 py-3 text-center font-medium text-white transition-colors duration-200 hover:bg-gray-800"
+                                class="block w-full rounded-lg bg-primary px-6 py-3 text-center font-medium text-primary-foreground transition-colors duration-200 hover:bg-primary/90"
                             >
                                 {{ t('booking_confirmation.view_bookings') }}
                             </a>

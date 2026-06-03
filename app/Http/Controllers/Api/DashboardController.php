@@ -85,9 +85,20 @@ class DashboardController extends Controller
             ->orderBy('end_date')
             ->latest('id');
 
-        $totalClients = User::query()
-            ->whereHas('roles', fn ($q) => $q->where('name', 'client'))
-            ->count();
+        $totalClientsQuery = User::query()
+            ->where('role', UserRole::CLIENT);
+
+        if ($this->branchAccess->canAccessAllBranches($user)) {
+            if ($branchId) {
+                $totalClientsQuery->where('branch_id', $branchId);
+            }
+        } elseif (!empty($user?->branch_id)) {
+            $totalClientsQuery->where('branch_id', (int) $user->branch_id);
+        } else {
+            $totalClientsQuery->whereRaw('1 = 0');
+        }
+
+        $totalClients = $totalClientsQuery->count();
 
         $cards = [
             $this->reservationCard(

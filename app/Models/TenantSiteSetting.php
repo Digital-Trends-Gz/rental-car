@@ -17,6 +17,7 @@ class TenantSiteSetting extends Model
         'tenant_id',
         'site_name',
         'logo_url',
+        'favicon_url',
         'primary_color',
         'secondary_color',
         'tax_percentage',
@@ -69,6 +70,7 @@ class TenantSiteSetting extends Model
         return [
             'site_name' => null,
             'logo_url' => null,
+            'favicon_url' => null,
             'primary_color' => '#f97316',
             'secondary_color' => '#ea580c',
             'tax_percentage' => 7.0,
@@ -491,6 +493,7 @@ class TenantSiteSetting extends Model
         $defaults = self::defaults();
         $data = $settings?->toArray() ?? [];
         $logoUrl = null;
+        $faviconUrl = null;
 
         if ($settings) {
             $file = $settings->relationLoaded('files')
@@ -500,11 +503,20 @@ class TenantSiteSetting extends Model
             if ($file && $file->path) {
                 $logoUrl = self::publicUrlFromPath($file->path);
             }
+
+            $faviconFile = $settings->relationLoaded('files')
+                ? $settings->files->firstWhere('collection', 'favicon')
+                : $settings->files()->where('collection', 'favicon')->first();
+
+            if ($faviconFile && $faviconFile->path) {
+                $faviconUrl = self::publicUrlFromPath($faviconFile->path);
+            }
         }
 
         return [
             'site_name' => self::nullableString($data['site_name'] ?? $defaults['site_name']),
             'logo_url' => self::nullableString($logoUrl ?: ($data['logo_url'] ?? $defaults['logo_url'])),
+            'favicon_url' => self::nullableString($faviconUrl ?: ($data['favicon_url'] ?? $defaults['favicon_url'])),
             'primary_color' => self::normalizeHexColor($data['primary_color'] ?? $defaults['primary_color'], $defaults['primary_color']),
             'secondary_color' => self::normalizeHexColor($data['secondary_color'] ?? $defaults['secondary_color'], $defaults['secondary_color']),
             'tax_percentage' => self::normalizePercentage($data['tax_percentage'] ?? $defaults['tax_percentage'], 7.0),

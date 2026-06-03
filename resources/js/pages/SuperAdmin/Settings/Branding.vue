@@ -13,10 +13,12 @@ const props = defineProps<{
     settings: {
         app_name: string;
         logo_url: string | null;
+        favicon_url: string | null;
         primary_color: string;
         secondary_color: string;
     };
     logoFiles: Array<{ id: number; url: string }>;
+    faviconFiles: Array<{ id: number; url: string }>;
     actions: {
         update: string;
     };
@@ -28,20 +30,35 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 const form = useForm({
     app_name: props.settings.app_name ?? '',
     logo_url: props.settings.logo_url ?? '',
+    favicon_url: props.settings.favicon_url ?? '',
     primary_color: props.settings.primary_color ?? '#3b82f6',
     secondary_color: props.settings.secondary_color ?? '#6d28d9',
     logo_temp_folders: [] as string[],
     logo_removed_files: [] as number[],
+    favicon_temp_folders: [] as string[],
+    favicon_removed_files: [] as number[],
 });
 
 const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
 const logoTempFolders = ref<string[]>([]);
 const logoRemovedFileIds = ref<number[]>([]);
 
+const faviconUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
+const faviconTempFolders = ref<string[]>([]);
+const faviconRemovedFileIds = ref<number[]>([]);
+
 watch(
     logoTempFolders,
     (value) => {
         form.logo_temp_folders = [...value];
+    },
+    { deep: true },
+);
+
+watch(
+    faviconTempFolders,
+    (value) => {
+        form.favicon_temp_folders = [...value];
     },
     { deep: true },
 );
@@ -60,12 +77,19 @@ const handleLogoFileRemoved = (data: { type: string; fileId?: number }) => {
     }
 };
 
+const handleFaviconFileRemoved = (data: { type: string; fileId?: number }) => {
+    if (data.type === 'existing' && data.fileId) {
+        faviconRemovedFileIds.value.push(data.fileId);
+        form.favicon_removed_files = [...new Set(faviconRemovedFileIds.value)];
+    }
+};
+
 const submit = () => {
     form
-        .transform((data) => ({
-            ...data,
-            _method: 'put',
-        }))
+         .transform((data) => ({
+             ...data,
+             _method: 'put',
+         }))
         .post(props.actions.update, {
             preserveScroll: true,
             forceFormData: true,
@@ -75,6 +99,12 @@ const submit = () => {
                 form.logo_removed_files = [];
                 logoRemovedFileIds.value = [];
                 fileUploadRef.value?.resetFiles();
+
+                faviconTempFolders.value = [];
+                form.favicon_temp_folders = [];
+                form.favicon_removed_files = [];
+                faviconRemovedFileIds.value = [];
+                faviconUploadRef.value?.resetFiles();
             },
         });
 };
@@ -140,6 +170,36 @@ const submit = () => {
                             </p>
                             <p v-if="form.errors.logo_url" class="text-sm text-red-600">
                                 {{ form.errors.logo_url }}
+                            </p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label>{{ localize('Favicon Upload', 'رفع الأيقونة المفضلة (Favicon)') }}</Label>
+                            <FileUpload
+                                ref="faviconUploadRef"
+                                v-model="faviconTempFolders"
+                                :initial-files="faviconFiles || []"
+                                :allow-multiple="false"
+                                :max-files="1"
+                                :allowed-file-types="['image/x-icon', 'image/vnd.microsoft.icon', 'image/png', 'image/jpeg', 'image/svg+xml']"
+                                collection="favicon"
+                                theme="light"
+                                width="100%"
+                                @file-removed="handleFaviconFileRemoved"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                {{ localize('Upload the SaaS favicon here (standard sizes: 16x16, 32x32, or 48x48). Recommended formats: .ico or .png.', 'ارفع أيقونة الموقع المفضلة هنا (المقاسات القياسية: 16x16 أو 32x32 أو 48x48). التنسيقات الموصى بها: .ico أو .png.') }}
+                            </p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="favicon_url">{{ localize('Fallback Favicon URL', 'رابط الأيقونة المفضلة الاحتياطي') }}</Label>
+                            <Input id="favicon_url" v-model="form.favicon_url" placeholder="https://example.com/favicon.ico" />
+                            <p class="text-xs text-muted-foreground">
+                                {{ localize('Optional fallback used only when there is no uploaded favicon file.', 'خيار احتياطي يُستخدم فقط عند عدم وجود أيقونة مرفوعة.') }}
+                            </p>
+                            <p v-if="form.errors.favicon_url" class="text-sm text-red-600">
+                                {{ form.errors.favicon_url }}
                             </p>
                         </div>
 

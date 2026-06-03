@@ -143,7 +143,7 @@ function selectZone(zone: ZoneView) {
                 class="rounded-full px-3 py-1.5 text-sm transition"
                 :class="
                     currentView === view.value
-                        ? 'bg-slate-900 text-white'
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 "
                 @click="emit('update:currentView', view.value)"

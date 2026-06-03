@@ -213,7 +213,7 @@ const statusStyle = computed(() => {
             :href="link.url || ''"
             :class="[
               'rounded px-3 py-1 text-sm',
-              link.active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700',
+              link.active ? 'bg-primary text-primary-foreground' : 'bg-gray-100 text-gray-700',
               !link.url && 'pointer-events-none opacity-50',
             ]"
           >
@@ -260,7 +260,7 @@ const statusStyle = computed(() => {
             :href="link.url || ''"
             :class="[
               'rounded px-3 py-1 text-sm',
-              link.active ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700',
+              link.active ? 'bg-primary text-primary-foreground' : 'bg-gray-100 text-gray-700',
               !link.url && 'pointer-events-none opacity-50',
             ]"
           >

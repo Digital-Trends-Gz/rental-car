@@ -154,7 +154,7 @@ function goToCreateTicket() {
                             :href="link.url"
                             class="rounded-md px-3 py-1 text-sm"
                             :class="{
-                                'bg-gray-900 text-white': link.active,
+                                'bg-primary text-primary-foreground': link.active,
                                 'bg-gray-100 text-gray-700 hover:bg-gray-200':
                                     !link.active,
                             }"

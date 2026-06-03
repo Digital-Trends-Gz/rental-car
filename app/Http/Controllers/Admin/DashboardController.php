@@ -6,6 +6,7 @@ use App\Enums\CarStatus;
 use App\Enums\CarViolationStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Models\CarDocument;
@@ -14,7 +15,6 @@ use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\User;
-use App\Services\Notifications\OperationalNotificationsService;
 use App\Support\BranchAccess;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -25,7 +25,6 @@ class DashboardController extends Controller
 {
     public function __construct(
         private BranchAccess $branchAccess,
-        private OperationalNotificationsService $operationalNotifications,
     )
     {
     }
@@ -45,6 +44,7 @@ class DashboardController extends Controller
         $branchId = ($requestedBranchId && in_array($requestedBranchId, $allowedBranchIds, true))
             ? $requestedBranchId
             : null;
+        $today = Carbon::today();
 
         // ── KPI Stats ────────────────────────────────────────────────
         $carsQuery = Car::query();
@@ -69,9 +69,45 @@ class DashboardController extends Controller
         $this->applyPaymentBranchScope($paymentsQuery, $user, $branchId);
         $totalRevenue = (clone $paymentsQuery)->sum('amount');
 
-        $totalClients = User::query()
-            ->whereHas('roles', fn ($q) => $q->where('name', 'client'))
-            ->count();
+        $totalClientsQuery = User::query()
+            ->where('role', UserRole::CLIENT);
+
+        if ($canAccessAllBranches) {
+            if ($branchId) {
+                $totalClientsQuery->where('branch_id', $branchId);
+            }
+        } elseif (!empty($user?->branch_id)) {
+            $totalClientsQuery->where('branch_id', (int) $user->branch_id);
+        } else {
+            $totalClientsQuery->whereRaw('1 = 0');
+        }
+
+        $totalClients = $totalClientsQuery->count();
+
+        $todayPickupsQuery = (clone $reservationsQuery)
+            ->whereDate('start_date', $today)
+            ->whereIn('status', [
+                ReservationStatus::CONFIRMED->value,
+                ReservationStatus::ACTIVE->value,
+                ReservationStatus::COMPLETED_WAIT_CONTRACT->value,
+            ]);
+        $todayPickupsCount = (clone $todayPickupsQuery)->count();
+
+        $todayReturnsQuery = Contract::query()
+            ->withoutGlobalScope('tenant')
+            ->where('status', 'active')
+            ->whereNotNull('reservation_id')
+            ->whereDate('end_date', $today);
+        $this->applyContractBranchScope($todayReturnsQuery, $user, $branchId);
+        $todayReturnsCount = (clone $todayReturnsQuery)->count();
+
+        $overdueContractsQuery = Contract::query()
+            ->withoutGlobalScope('tenant')
+            ->where('status', 'active')
+            ->whereNotNull('reservation_id')
+            ->whereDate('end_date', '<', $today);
+        $this->applyContractBranchScope($overdueContractsQuery, $user, $branchId);
+        $overdueCarsCount = (clone $overdueContractsQuery)->count();
 
         // ── Reservations by Status ────────────────────────────────────
         $reservationsByStatus = collect(ReservationStatus::cases())->map(function ($status) use ($reservationsQuery) {
@@ -153,7 +189,6 @@ class DashboardController extends Controller
                 'completed_count'=> $car->completed_count,
             ]);
 
-        $today = Carbon::today();
         $expiringDocumentsQuery = CarDocument::query()
             ->with(['car:id,branch_id,year,make,model,license_plate'])
             ->where('is_active', true)
@@ -331,9 +366,6 @@ class DashboardController extends Controller
             })
             ->values();
 
-        $operationalNotifications = $this->operationalNotifications
-            ->forUser($user, $branchId, 6, (string) app()->getLocale());
-
         return Inertia::render('Admin/Dashboard', [
             'stats' => [
                 'total_cars'           => $totalCars,
@@ -344,6 +376,9 @@ class DashboardController extends Controller
                 'total_reservations'   => $totalReservations,
                 'total_revenue'        => (float) $totalRevenue,
                 'total_clients'        => $totalClients,
+                'cars_to_deliver_today' => $todayPickupsCount,
+                'cars_to_receive_today' => $todayReturnsCount,
+                'overdue_cars'         => $overdueCarsCount,
             ],
             'reservationsByStatus' => $reservationsByStatus,
             'fleetStatus'          => $fleetStatus,
@@ -354,13 +389,9 @@ class DashboardController extends Controller
             'expiringContracts'    => $expiringContracts,
             'recentForcedExtensions' => $recentForcedExtensions,
             'recentPendingViolations' => $recentPendingViolations,
-            'operationalNotifications' => $operationalNotifications,
             'branches'             => $branchOptions,
             'filters'              => ['branch_id' => $branchId],
             'canAccessAllBranches' => $canAccessAllBranches,
-            'policeNoticeSettingsUrl' => route('admin.settings.police-notice.edit', [
-                'subdomain' => $request->route('subdomain'),
-            ]),
         ]);
     }
 

@@ -302,19 +302,19 @@ const additionalArchiveDocumentTypeOptions = computed(() => [
 ]);
 
 const reservationStatusOptions = [
-  { value: 'pending', label: localize('Pending', 'ط¸â€ڑط¸ظ¹ط·آ¯ ط·آ§ط¸â€‍ط·آ§ط¸â€ ط·ع¾ط·آ¸ط·آ§ط·آ±') },
-  { value: 'confirmed', label: localize('Confirmed', 'ط¸â€¦ط·آ¤ط¸ئ’ط·آ¯') },
-  { value: 'active', label: localize('Active', 'ط¸â€ ط·آ´ط·آ·') },
-  { value: 'cancelled', label: localize('Cancelled', 'ط¸â€¦ط¸â€‍ط·ط›ط¸ظ¹') },
+  { value: 'pending', label: localize('Pending', 'قيد الانتظار') },
+  { value: 'confirmed', label: localize('Confirmed', 'مؤكد') },
+  { value: 'active', label: localize('Active', 'نشط') },
+  { value: 'cancelled', label: localize('Cancelled', 'ط¸â€¦ط¸â€‍ط·ط›ي') },
 ];
 
 const fuelLevelOptions = [
-  { value: '', label: localize('Select fuel level', 'ط·آ§ط·آ®ط·ع¾ط·آ± ط¸â€¦ط·آ³ط·ع¾ط¸ث†ط¸â€° ط·آ§ط¸â€‍ط¸ث†ط¸â€ڑط¸ث†ط·آ¯') },
+  { value: '', label: localize('Select fuel level', 'اختر مستوى الوقود') },
   { value: 'empty', label: localize('Empty', 'ط¸ظ¾ط·آ§ط·آ±ط·ط›') },
-  { value: 'quarter', label: localize('1/4 Tank', 'ط·آ±ط·آ¨ط·آ¹ ط·ع¾ط·آ§ط¸â€ ط¸ئ’ط¸ظ¹') },
-  { value: 'half', label: localize('1/2 Tank', 'ط¸â€ ط·آµط¸ظ¾ ط·ع¾ط·آ§ط¸â€ ط¸ئ’ط¸ظ¹') },
-  { value: 'three_quarters', label: localize('3/4 Tank', 'ط·آ«ط¸â€‍ط·آ§ط·آ«ط·آ© ط·آ£ط·آ±ط·آ¨ط·آ§ط·آ¹ ط·آ§ط¸â€‍ط·ع¾ط·آ§ط¸â€ ط¸ئ’ط¸ظ¹') },
-  { value: 'full', label: localize('Full', 'ط¸ظ¾ط¸â€‍') },
+  { value: 'quarter', label: localize('1/4 Tank', 'ربع تانكي') },
+  { value: 'half', label: localize('1/2 Tank', 'نصف تانكي') },
+  { value: 'three_quarters', label: localize('3/4 Tank', 'ثلاثة أرباع التانكي') },
+  { value: 'full', label: localize('Full', 'فل') },
 ];
 
 const returnFuelLevelOptions = [
@@ -774,14 +774,14 @@ function handoverPhotoValueLabel(value: unknown) {
 
 const additionalArchiveOwnerOptions = computed(() => {
   const options = [
-    { value: '', label: localize('No specific driver', 'ط·آ¨ط·آ¯ط¸ث†ط¸â€  ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط¸â€¦ط·آ­ط·آ¯ط·آ¯') },
-    { value: 'primary', label: form.primary_driver.full_name ? localize(`Primary Driver - ${form.primary_driver.full_name}`, `ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍ط·آ£ط·آ³ط·آ§ط·آ³ط¸ظ¹ - ${form.primary_driver.full_name}`) : localize('Primary Driver', 'ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍ط·آ£ط·آ³ط·آ§ط·آ³ط¸ظ¹') },
+    { value: '', label: localize('No specific driver', 'بدون سائق محدد') },
+    { value: 'primary', label: form.primary_driver.full_name ? localize(`Primary Driver - ${form.primary_driver.full_name}`, `ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍أساسي - ${form.primary_driver.full_name}`) : localize('Primary Driver', 'ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍أساسي') },
   ];
 
   form.additional_drivers.forEach((driver: any, index: number) => {
     options.push({
       value: `additional_${index}`,
-      label: driver.full_name ? localize(`Additional Driver ${index + 1} - ${driver.full_name}`, `ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط¸ظ¹ ${index + 1} - ${driver.full_name}`) : localize(`Additional Driver ${index + 1}`, `ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط¸ظ¹ ${index + 1}`),
+      label: driver.full_name ? localize(`Additional Driver ${index + 1} - ${driver.full_name}`, `ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍إضافي ${index + 1} - ${driver.full_name}`) : localize(`Additional Driver ${index + 1}`, `ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍إضافي ${index + 1}`),
     });
   });
 
@@ -1045,18 +1045,18 @@ async function extractDriver(driver: any, role: 'primary' | 'additional', index:
   driver.extract_success = '';
 
   if (!props.actions.extractDriver) {
-    driver.extract_error = localize('Driver extraction endpoint is not configured.', 'ط¸â€‍ط¸â€¦ ط¸ظ¹ط·ع¾ط¸â€¦ ط·آ¥ط·آ¹ط·آ¯ط·آ§ط·آ¯ ط¸â€¦ط·آ³ط·آ§ط·آ± ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ.');
+    driver.extract_error = localize('Driver extraction endpoint is not configured.', 'لم يتم إعداد مسار استخراج بيانات السائق.');
     return;
   }
 
   if (!driver.document_type) {
-    driver.extract_error = localize('Select a document type first.', 'ط·آ§ط·آ®ط·ع¾ط·آ± ط¸â€ ط¸ث†ط·آ¹ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ ط·آ£ط¸ث†ط¸â€‍ط¸â€¹ط·آ§.');
+    driver.extract_error = localize('Select a document type first.', 'اختر نوع المستند أولًا.');
     return;
   }
 
   const tempFolders = driverTempFolders(driver);
   if (tempFolders.length === 0) {
-    driver.extract_error = localize('Upload at least one document image before extraction.', 'ط·آ§ط·آ±ط¸ظ¾ط·آ¹ ط·آµط¸ث†ط·آ±ط·آ© ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ ط¸ث†ط·آ§ط·آ­ط·آ¯ط·آ© ط·آ¹ط¸â€‍ط¸â€° ط·آ§ط¸â€‍ط·آ£ط¸â€ڑط¸â€‍ ط¸â€ڑط·آ¨ط¸â€‍ ط·آ§ط¸â€‍ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬.');
+    driver.extract_error = localize('Upload at least one document image before extraction.', 'ط·آ§ط·آ±ط¸ظ¾ط·آ¹ ط·آµط¸ث†ط·آ±ط·آ© ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ ط¸ث†ط·آ§ط·آ­ط·آ¯ط·آ© ط·آ¹ط¸â€‍ط¸â€° ط·آ§ط¸â€‍ط·آ£ط¸â€ڑط¸â€‍ ط¸â€ڑط·آ¨ط¸â€‍ ط·آ§ط¸â€‍استخراج.');
     return;
   }
 
@@ -1082,7 +1082,7 @@ async function extractDriver(driver: any, role: 'primary' | 'additional', index:
     const payload = await response.json();
 
     if (!response.ok) {
-      driver.extract_error = payload.message || localize('Driver extraction failed.', 'ط¸ظ¾ط·آ´ط¸â€‍ ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ.');
+      driver.extract_error = payload.message || localize('Driver extraction failed.', 'فشل استخراج بيانات السائق.');
       driver.extraction_status = 'failed';
       return;
     }
@@ -1095,9 +1095,9 @@ async function extractDriver(driver: any, role: 'primary' | 'additional', index:
     driver.extraction_status = payload.status || 'extracted';
     driver.ai_reviewed = false;
     driver.ai_review_required = true;
-    driver.extract_success = payload.message || localize('Document extraction completed.', 'ط·ع¾ط¸â€¦ ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ ط·آ¨ط¸â€ ط·آ¬ط·آ§ط·آ­.');
+    driver.extract_success = payload.message || localize('Document extraction completed.', 'تم استخراج بيانات المستند بنجاح.');
   } catch (error) {
-    driver.extract_error = error instanceof Error ? error.message : localize('Driver extraction failed.', 'ط¸ظ¾ط·آ´ط¸â€‍ ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ.');
+    driver.extract_error = error instanceof Error ? error.message : localize('Driver extraction failed.', 'فشل استخراج بيانات السائق.');
     driver.extraction_status = 'failed';
   } finally {
     driver.extracting = false;
@@ -1109,12 +1109,12 @@ async function extractCustomerPhoto(driver: any) {
   driver.photo_extract_success = '';
 
   if (!props.actions.extractCustomerPhoto) {
-    driver.photo_extract_error = localize('Customer photo extraction endpoint is not configured.', 'ط¸â€‍ط¸â€¦ ط¸ظ¹ط·ع¾ط¸â€¦ ط·آ¥ط·آ¹ط·آ¯ط·آ§ط·آ¯ ط¸â€¦ط·آ³ط·آ§ط·آ± ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آµط¸ث†ط·آ±ط·آ© ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍.');
+    driver.photo_extract_error = localize('Customer photo extraction endpoint is not configured.', 'لم يتم إعداد مسار استخراج صورة العميل.');
     return;
   }
 
   if (!driver.document_type) {
-    driver.photo_extract_error = localize('Select a document type first.', 'ط·آ§ط·آ®ط·ع¾ط·آ± ط¸â€ ط¸ث†ط·آ¹ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ ط·آ£ط¸ث†ط¸â€‍ط¸â€¹ط·آ§.');
+    driver.photo_extract_error = localize('Select a document type first.', 'اختر نوع المستند أولًا.');
     return;
   }
 
@@ -1123,7 +1123,7 @@ async function extractCustomerPhoto(driver: any) {
     : [];
 
   if (tempFolders.length === 0) {
-    driver.photo_extract_error = localize('Upload a front or single document image before extracting the customer photo.', 'ط·آ§ط·آ±ط¸ظ¾ط·آ¹ ط·آµط¸ث†ط·آ±ط·آ© ط·آ§ط¸â€‍ط¸ث†ط·آ§ط·آ¬ط¸â€،ط·آ© ط·آ£ط¸ث† ط·آ§ط¸â€‍ط·آµط¸ث†ط·آ±ط·آ© ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¾ط·آ±ط·آ¯ط·آ© ط¸â€ڑط·آ¨ط¸â€‍ ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آµط¸ث†ط·آ±ط·آ© ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍.');
+    driver.photo_extract_error = localize('Upload a front or single document image before extracting the customer photo.', 'ارفع صورة الواجهة أو الصورة المفردة قبل استخراج صورة العميل.');
     return;
   }
 
@@ -1265,12 +1265,12 @@ function submit() {
 </script>
 
 <template>
-  <Head :title="mode === 'create' ? localize('Create Contract', 'ط·آ¥ط¸â€ ط·آ´ط·آ§ط·طŒ ط·آ¹ط¸â€ڑط·آ¯') : localize('Edit Contract', 'ط·ع¾ط·آ¹ط·آ¯ط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯')" />
+  <Head :title="mode === 'create' ? localize('Create Contract', 'إنشاء عقد') : localize('Edit Contract', 'تعديل العقد')" />
   <AdminLayout>
     <main class="flex-1 space-y-6 p-8">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-semibold">{{ mode === 'create' ? localize('Create Contract', 'ط·آ¥ط¸â€ ط·آ´ط·آ§ط·طŒ ط·آ¹ط¸â€ڑط·آ¯') : localize('Edit Contract', 'ط·ع¾ط·آ¹ط·آ¯ط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</h1>
+          <h1 class="text-2xl font-semibold">{{ mode === 'create' ? localize('Create Contract', 'إنشاء عقد') : localize('Edit Contract', 'تعديل العقد') }}</h1>
           <p class="text-sm text-muted-foreground">{{ localize('Primary driver, additional drivers, car data, rental data, and archive.', 'السائق الأساسي، والسائقون الإضافيون، وبيانات السيارة، وبيانات الإيجار، والأرشيف.') }}</p>
         </div>
         <Link :href="actions.index"><Button variant="outline">{{ localize('Back', 'رجوع') }}</Button></Link>
@@ -1283,11 +1283,11 @@ function submit() {
       <form class="space-y-6" @submit.prevent="submit">
         <section class="space-y-4 rounded-lg border bg-white p-5 shadow-sm">
           <div>
-            <h2 class="text-lg font-semibold">{{ localize('Customer Data', 'ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍') }}</h2>
-            <p class="text-sm text-muted-foreground">{{ localize('Primary driver details and document uploads.', 'ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍ط·آ£ط·آ³ط·آ§ط·آ³ط¸ظ¹ ط¸ث†ط¸â€¦ط¸â€‍ط¸ظ¾ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ±ط¸ظ¾ط¸ث†ط·آ¹ط·آ©.') }}</p>
+            <h2 class="text-lg font-semibold">{{ localize('Customer Data', 'بيانات العميل') }}</h2>
+            <p class="text-sm text-muted-foreground">{{ localize('Primary driver details and document uploads.', 'بيانات السائق الأساسي وملفات المستندات المرفوعة.') }}</p>
           </div>
           <div v-if="hasAiExtractedData(form.primary_driver)" class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            {{ localize('Review the extracted AI data carefully before saving this contract.', 'ط·آ±ط·آ§ط·آ¬ط·آ¹ ط·آ§ط¸â€‍ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ¬ط·آ© ط·آ¨ط·آ§ط¸â€‍ط·آ°ط¸ئ’ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ§ط·آµط·آ·ط¸â€ ط·آ§ط·آ¹ط¸ظ¹ ط·آ¨ط·آ¹ط¸â€ ط·آ§ط¸ظ¹ط·آ© ط¸â€ڑط·آ¨ط¸â€‍ ط·آ­ط¸ظ¾ط·آ¸ ط¸â€،ط·آ°ط·آ§ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯.') }}
+            {{ localize('Review the extracted AI data carefully before saving this contract.', 'راجع البيانات المستخرجة بالذكاء الاصطناعي بعناية قبل حفظ هذا العقد.') }}
           </div>
           <div v-if="hasExtractedVehicleReadings" class="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -1318,15 +1318,15 @@ function submit() {
           </div>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div>
-              <Label for="primary-document-type">{{ localize('Document Type', 'ط¸â€ ط¸ث†ط·آ¹ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯') }}</Label>
+              <Label for="primary-document-type">{{ localize('Document Type', 'نوع المستند') }}</Label>
               <select id="primary-document-type" v-model="form.primary_driver.document_type" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" @change="syncDocumentType(form.primary_driver)">
                 <option v-for="option in documentTypeOptions" :key="option.value || 'empty'" :value="option.value">{{ option.label }}</option>
               </select>
               <InputError :message="form.errors['primary_driver.document_type']" class="mt-1" />
             </div>
-            <div><Label for="primary-full-name">{{ localize('Full Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ§ط¸â€‍ط¸ئ’ط·آ§ط¸â€¦ط¸â€‍') }}</Label><Input id="primary-full-name" v-model="form.primary_driver.full_name" maxlength="255" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.full_name']" class="mt-1" /></div>
-            <div><Label for="primary-full-name-ar">{{ localize('Arabic Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ¨ط·آ§ط¸â€‍ط·آ¹ط·آ±ط·آ¨ط¸ظ¹ط·آ©') }}</Label><Input id="primary-full-name-ar" v-model="form.primary_driver.full_name_ar" dir="rtl" maxlength="255" /><InputError :message="form.errors['primary_driver.full_name_ar']" class="mt-1" /></div>
-            <div><Label for="primary-phone">{{ localize('Phone', 'ط·آ§ط¸â€‍ط¸â€،ط·آ§ط·ع¾ط¸ظ¾') }}</Label><Input id="primary-phone" v-model="form.primary_driver.phone" inputmode="tel" maxlength="100" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.phone']" class="mt-1" /></div>
+            <div><Label for="primary-full-name">{{ localize('Full Name', 'الاسم الكامل') }}</Label><Input id="primary-full-name" v-model="form.primary_driver.full_name" maxlength="255" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.full_name']" class="mt-1" /></div>
+            <div><Label for="primary-full-name-ar">{{ localize('Arabic Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ¨ط·آ§ط¸â€‍عربية') }}</Label><Input id="primary-full-name-ar" v-model="form.primary_driver.full_name_ar" dir="rtl" maxlength="255" /><InputError :message="form.errors['primary_driver.full_name_ar']" class="mt-1" /></div>
+            <div><Label for="primary-phone">{{ localize('Phone', 'الهاتف') }}</Label><Input id="primary-phone" v-model="form.primary_driver.phone" inputmode="tel" maxlength="100" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.phone']" class="mt-1" /></div>
             <div>
               <Label for="primary-nationality">{{ localize('Nationality', 'الجنسية') }}</Label>
               <SearchableSelect
@@ -1351,12 +1351,12 @@ function submit() {
               />
               <InputError :message="form.errors['primary_driver.place_of_issue']" class="mt-1" />
             </div>
-            <div><Label for="primary-birth-date">{{ localize('Date Of Birth', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¹ط¸â€‍ط·آ§ط·آ¯') }}</Label><Input id="primary-birth-date" v-model="form.primary_driver.date_of_birth" type="date" :max="contractDateMin" /><InputError :message="form.errors['primary_driver.date_of_birth']" class="mt-1" /></div>
-            <div><Label for="primary-identity-number">{{ localize('Identity Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ©') }}</Label><Input id="primary-identity-number" v-model="form.primary_driver.identity_number" maxlength="255" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.identity_number']" class="mt-1" /></div>
-            <div><Label for="primary-residency-number">{{ localize('Residency Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط·آ¥ط¸â€ڑط·آ§ط¸â€¦ط·آ©') }}</Label><Input id="primary-residency-number" v-model="form.primary_driver.residency_number" maxlength="255" /><InputError :message="form.errors['primary_driver.residency_number']" class="mt-1" /></div>
-            <div><Label for="primary-license-number">{{ localize('License Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط·آ±ط·آ®ط·آµط·آ©') }}</Label><Input id="primary-license-number" v-model="form.primary_driver.license_number" maxlength="255" /><InputError :message="form.errors['primary_driver.license_number']" class="mt-1" /></div>
-            <div><Label for="primary-identity-expiry">{{ localize('Identity Expiry Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ©') }}</Label><Input id="primary-identity-expiry" v-model="form.primary_driver.identity_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors['primary_driver.identity_expiry_date']" class="mt-1" /></div>
-            <div><Label for="primary-license-expiry">{{ localize('License Expiry Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ±ط·آ®ط·آµط·آ©') }}</Label><Input id="primary-license-expiry" v-model="form.primary_driver.license_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors['primary_driver.license_expiry_date']" class="mt-1" /></div>
+            <div><Label for="primary-birth-date">{{ localize('Date Of Birth', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¹ط¸â€‍اد') }}</Label><Input id="primary-birth-date" v-model="form.primary_driver.date_of_birth" type="date" :max="contractDateMin" /><InputError :message="form.errors['primary_driver.date_of_birth']" class="mt-1" /></div>
+            <div><Label for="primary-identity-number">{{ localize('Identity Number', 'رقم الهوية') }}</Label><Input id="primary-identity-number" v-model="form.primary_driver.identity_number" maxlength="255" :required="mode === 'create'" /><InputError :message="form.errors['primary_driver.identity_number']" class="mt-1" /></div>
+            <div><Label for="primary-residency-number">{{ localize('Residency Number', 'رقم الإقامة') }}</Label><Input id="primary-residency-number" v-model="form.primary_driver.residency_number" maxlength="255" /><InputError :message="form.errors['primary_driver.residency_number']" class="mt-1" /></div>
+            <div><Label for="primary-license-number">{{ localize('License Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍رخصة') }}</Label><Input id="primary-license-number" v-model="form.primary_driver.license_number" maxlength="255" /><InputError :message="form.errors['primary_driver.license_number']" class="mt-1" /></div>
+            <div><Label for="primary-identity-expiry">{{ localize('Identity Expiry Date', 'تاريخ انتهاء الهوية') }}</Label><Input id="primary-identity-expiry" v-model="form.primary_driver.identity_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors['primary_driver.identity_expiry_date']" class="mt-1" /></div>
+            <div><Label for="primary-license-expiry">{{ localize('License Expiry Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍رخصة') }}</Label><Input id="primary-license-expiry" v-model="form.primary_driver.license_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors['primary_driver.license_expiry_date']" class="mt-1" /></div>
           </div>
           <div v-if="saveError" class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {{ saveError }}
@@ -1372,28 +1372,28 @@ function submit() {
           </div>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <Label class="mb-2 block">{{ localize('Document Front / Single', 'ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ ط·آ§ط¸â€‍ط·آ£ط¸â€¦ط·آ§ط¸â€¦ط¸ظ¹ / ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¾ط·آ±ط·آ¯') }}</Label>
+              <Label class="mb-2 block">{{ localize('Document Front / Single', 'المستند الأمامي / المفرد') }}</Label>
               <FileUpload v-model="form.primary_driver.documents[0].temp_folders" :initial-files="form.primary_driver.documents[0].existing_files" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_driver_front" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(form.primary_driver, 0, data)" />
               <InputError :message="form.errors['primary_driver.documents.0.temp_folders']" class="mt-1" />
             </div>
             <div>
-              <Label class="mb-2 block">{{ localize('Document Back', 'ط·آ®ط¸â€‍ط¸ظ¾ط¸ظ¹ط·آ© ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯') }}</Label>
+              <Label class="mb-2 block">{{ localize('Document Back', 'خلفية المستند') }}</Label>
               <FileUpload v-model="form.primary_driver.documents[1].temp_folders" :initial-files="form.primary_driver.documents[1].existing_files" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_driver_back" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(form.primary_driver, 1, data)" />
               <InputError :message="form.errors['primary_driver.documents.1.temp_folders']" class="mt-1" />
             </div>
           </div>
           <div class="space-y-3 rounded-md border bg-slate-50 p-4">
             <div>
-              <Label class="mb-2 block">{{ localize('Customer Photo', 'ط·آµط¸ث†ط·آ±ط·آ© ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍') }}</Label>
+              <Label class="mb-2 block">{{ localize('Customer Photo', 'صورة العميل') }}</Label>
               <FileUpload v-model="form.primary_driver.customer_photo_temp_folders" :initial-files="form.primary_driver.customer_photo_existing_files" :allowed-file-types="photoAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_customer_photo" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverCustomerPhotoRemoved(form.primary_driver, data)" />
               <InputError :message="form.errors['primary_driver.customer_photo_temp_folders']" class="mt-1" />
             </div>
             <div v-if="form.primary_driver.customer_photo_preview_url" class="max-w-[220px] overflow-hidden rounded-md border bg-white p-2">
-              <img :src="form.primary_driver.customer_photo_preview_url" :alt="localize('Customer photo preview', 'ط¸â€¦ط·آ¹ط·آ§ط¸ظ¹ط¸â€ ط·آ© ط·آµط¸ث†ط·آ±ط·آ© ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍')" class="h-auto w-full rounded object-cover" />
+              <img :src="form.primary_driver.customer_photo_preview_url" :alt="localize('Customer photo preview', 'معاينة صورة العميل')" class="h-auto w-full rounded object-cover" />
             </div>
             <div class="flex flex-wrap items-center gap-3">
               <Button type="button" variant="outline" :disabled="form.primary_driver.photo_extracting" @click="extractCustomerPhoto(form.primary_driver)">
-                {{ form.primary_driver.photo_extracting ? localize('Extracting Photo...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آ§ط¸â€‍ط·آµط¸ث†ط·آ±ط·آ©...') : localize('Extract Photo From Document', 'ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آ§ط¸â€‍ط·آµط¸ث†ط·آ±ط·آ© ط¸â€¦ط¸â€  ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯') }}
+                {{ form.primary_driver.photo_extracting ? localize('Extracting Photo...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط·آ§ط¸â€‍صورة...') : localize('Extract Photo From Document', 'استخراج الصورة من المستند') }}
               </Button>
               <p v-if="form.primary_driver.photo_extract_success" class="text-sm text-emerald-600">{{ form.primary_driver.photo_extract_success }}</p>
               <p v-if="form.primary_driver.photo_extract_error" class="text-sm text-red-600">{{ form.primary_driver.photo_extract_error }}</p>
@@ -1401,16 +1401,16 @@ function submit() {
           </div>
           <div class="flex flex-wrap items-center gap-3">
             <Button type="button" variant="outline" :disabled="form.primary_driver.extracting" @click="extractDriver(form.primary_driver, 'primary')">
-              {{ form.primary_driver.extracting ? localize('Extracting...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬...') : localize('Extract From Document', 'ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط¸â€¦ط¸â€  ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯') }}
+              {{ form.primary_driver.extracting ? localize('Extracting...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍استخراج...') : localize('Extract From Document', 'استخراج من المستند') }}
             </Button>
             <p v-if="form.primary_driver.extract_success" class="text-sm text-emerald-600">{{ form.primary_driver.extract_success }}</p>
             <p v-if="form.primary_driver.extract_error" class="text-sm text-red-600">{{ form.primary_driver.extract_error }}</p>
-            <p v-if="form.primary_driver.confidence !== null" class="text-sm text-muted-foreground">{{ localize('Confidence', 'ط·آ§ط¸â€‍ط·آ«ط¸â€ڑط·آ©') }}: {{ Number(form.primary_driver.confidence).toFixed(2) }}</p>
+            <p v-if="form.primary_driver.confidence !== null" class="text-sm text-muted-foreground">{{ localize('Confidence', 'الثقة') }}: {{ Number(form.primary_driver.confidence).toFixed(2) }}</p>
           </div>
           <div v-if="form.primary_driver.ai_review_required" class="space-y-1">
             <label class="flex items-center gap-2 text-sm font-medium text-foreground">
               <input v-model="form.primary_driver.ai_reviewed" type="checkbox" class="h-4 w-4 rounded border-gray-300" />
-              {{ localize('I reviewed the AI extracted data and confirm it is correct.', 'ط¸â€‍ط¸â€ڑط·آ¯ ط·آ±ط·آ§ط·آ¬ط·آ¹ط·ع¾ ط·آ§ط¸â€‍ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ¬ط·آ© ط·آ¨ط·آ§ط¸â€‍ط·آ°ط¸ئ’ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ§ط·آµط·آ·ط¸â€ ط·آ§ط·آ¹ط¸ظ¹ ط¸ث†ط·آ£ط·آ¤ط¸ئ’ط·آ¯ ط·آµط·آ­ط·ع¾ط¸â€،ط·آ§.') }}
+              {{ localize('I reviewed the AI extracted data and confirm it is correct.', 'لقد راجعت البيانات المستخرجة بالذكاء الاصطناعي وأؤكد صحتها.') }}
             </label>
             <InputError :message="form.errors['primary_driver.ai_reviewed']" class="mt-1" />
           </div>
@@ -1419,33 +1419,33 @@ function submit() {
         <section class="space-y-4 rounded-lg border bg-white p-5 shadow-sm">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-lg font-semibold">{{ localize('Additional Drivers', 'ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑط¸ث†ط¸â€  ط·آ§ط¸â€‍ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط¸ظ¹ط¸ث†ط¸â€ ') }}</h2>
-              <p class="text-sm text-muted-foreground">{{ localize('Independent drivers inside this contract.', 'ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑط¸ث†ط¸â€  ط·آ§ط¸â€‍ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط¸ظ¹ط¸ث†ط¸â€  ط·آ¶ط¸â€¦ط¸â€  ط¸â€،ط·آ°ط·آ§ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯.') }}</p>
+              <h2 class="text-lg font-semibold">{{ localize('Additional Drivers', 'السائقون الإضافيون') }}</h2>
+              <p class="text-sm text-muted-foreground">{{ localize('Independent drivers inside this contract.', 'السائقون الإضافيون ضمن هذا العقد.') }}</p>
             </div>
-            <Button type="button" variant="outline" @click="addAdditionalDriver">{{ localize('Add Driver', 'ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط·آ© ط·آ³ط·آ§ط·آ¦ط¸â€ڑ') }}</Button>
+            <Button type="button" variant="outline" @click="addAdditionalDriver">{{ localize('Add Driver', 'إضافة سائق') }}</Button>
           </div>
-          <div v-if="form.additional_drivers.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">{{ localize('No additional drivers added.', 'ط¸â€‍ط¸â€¦ ط·ع¾ط·ع¾ط¸â€¦ ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط·آ© ط·آ³ط·آ§ط·آ¦ط¸â€ڑط¸ظ¹ط¸â€  ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط¸ظ¹ط¸ظ¹ط¸â€ .') }}</div>
+          <div v-if="form.additional_drivers.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">{{ localize('No additional drivers added.', 'لم تتم إضافة سائقين إضافيين.') }}</div>
           <div v-for="(driver, index) in form.additional_drivers" :key="driver.id ?? `driver-${index}`" class="space-y-4 rounded-md border p-4">
             <div class="flex items-center justify-between gap-3">
               <div>
-                <h3 class="font-semibold">{{ localize(`Additional Driver ${index + 1}`, `ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط¸ظ¹ ${index + 1}`) }}</h3>
-                <p class="text-sm text-muted-foreground">{{ localize('Upload ID or license and review manually.', 'ط·آ§ط·آ±ط¸ظ¾ط·آ¹ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ© ط·آ£ط¸ث† ط·آ§ط¸â€‍ط·آ±ط·آ®ط·آµط·آ© ط·آ«ط¸â€¦ ط·آ±ط·آ§ط·آ¬ط·آ¹ ط·آ§ط¸â€‍ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط¸ظ¹ط·آ¯ط¸ث†ط¸ظ¹ط¸â€¹ط·آ§.') }}</p>
+                <h3 class="font-semibold">{{ localize(`Additional Driver ${index + 1}`, `ط·آ§ط¸â€‍ط·آ³ط·آ§ط·آ¦ط¸â€ڑ ط·آ§ط¸â€‍إضافي ${index + 1}`) }}</h3>
+                <p class="text-sm text-muted-foreground">{{ localize('Upload ID or license and review manually.', 'ارفع الهوية أو الرخصة ثم راجع البيانات يدويًا.') }}</p>
               </div>
-              <Button type="button" variant="ghost" @click="removeAdditionalDriver(index)">{{ localize('Remove', 'ط·آ­ط·آ°ط¸ظ¾') }}</Button>
+              <Button type="button" variant="ghost" @click="removeAdditionalDriver(index)">{{ localize('Remove', 'حذف') }}</Button>
             </div>
             <div v-if="hasAiExtractedData(driver)" class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              {{ localize('Review the extracted AI data carefully before saving this contract.', 'ط·آ±ط·آ§ط·آ¬ط·آ¹ ط·آ§ط¸â€‍ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ¬ط·آ© ط·آ¨ط·آ§ط¸â€‍ط·آ°ط¸ئ’ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ§ط·آµط·آ·ط¸â€ ط·آ§ط·آ¹ط¸ظ¹ ط·آ¨ط·آ¹ط¸â€ ط·آ§ط¸ظ¹ط·آ© ط¸â€ڑط·آ¨ط¸â€‍ ط·آ­ط¸ظ¾ط·آ¸ ط¸â€،ط·آ°ط·آ§ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯.') }}
+              {{ localize('Review the extracted AI data carefully before saving this contract.', 'راجع البيانات المستخرجة بالذكاء الاصطناعي بعناية قبل حفظ هذا العقد.') }}
             </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               <div>
-                <Label :for="`driver-document-type-${index}`">{{ localize('Document Type', 'ط¸â€ ط¸ث†ط·آ¹ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯') }}</Label>
+                <Label :for="`driver-document-type-${index}`">{{ localize('Document Type', 'نوع المستند') }}</Label>
                 <select :id="`driver-document-type-${index}`" v-model="driver.document_type" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" @change="syncDocumentType(driver)">
                   <option v-for="option in documentTypeOptions" :key="`${index}-${option.value || 'empty'}`" :value="option.value">{{ option.label }}</option>
                 </select>
               </div>
-              <div><Label :for="`driver-full-name-${index}`">{{ localize('Full Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ§ط¸â€‍ط¸ئ’ط·آ§ط¸â€¦ط¸â€‍') }}</Label><Input :id="`driver-full-name-${index}`" v-model="driver.full_name" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.full_name`]" class="mt-1" /></div>
-              <div><Label :for="`driver-full-name-ar-${index}`">{{ localize('Arabic Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ¨ط·آ§ط¸â€‍ط·آ¹ط·آ±ط·آ¨ط¸ظ¹ط·آ©') }}</Label><Input :id="`driver-full-name-ar-${index}`" v-model="driver.full_name_ar" dir="rtl" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.full_name_ar`]" class="mt-1" /></div>
-              <div><Label :for="`driver-phone-${index}`">{{ localize('Phone', 'ط·آ§ط¸â€‍ط¸â€،ط·آ§ط·ع¾ط¸ظ¾') }}</Label><Input :id="`driver-phone-${index}`" v-model="driver.phone" inputmode="tel" maxlength="100" /><InputError :message="form.errors[`additional_drivers.${index}.phone`]" class="mt-1" /></div>
+              <div><Label :for="`driver-full-name-${index}`">{{ localize('Full Name', 'الاسم الكامل') }}</Label><Input :id="`driver-full-name-${index}`" v-model="driver.full_name" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.full_name`]" class="mt-1" /></div>
+              <div><Label :for="`driver-full-name-ar-${index}`">{{ localize('Arabic Name', 'ط·آ§ط¸â€‍ط·آ§ط·آ³ط¸â€¦ ط·آ¨ط·آ§ط¸â€‍عربية') }}</Label><Input :id="`driver-full-name-ar-${index}`" v-model="driver.full_name_ar" dir="rtl" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.full_name_ar`]" class="mt-1" /></div>
+              <div><Label :for="`driver-phone-${index}`">{{ localize('Phone', 'الهاتف') }}</Label><Input :id="`driver-phone-${index}`" v-model="driver.phone" inputmode="tel" maxlength="100" /><InputError :message="form.errors[`additional_drivers.${index}.phone`]" class="mt-1" /></div>
               <div>
                 <Label :for="`driver-nationality-${index}`">{{ localize('Nationality', 'الجنسية') }}</Label>
                 <SearchableSelect
@@ -1470,12 +1470,12 @@ function submit() {
                 />
                 <InputError :message="form.errors[`additional_drivers.${index}.place_of_issue`]" class="mt-1" />
               </div>
-              <div><Label :for="`driver-birth-date-${index}`">{{ localize('Date Of Birth', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¹ط¸â€‍ط·آ§ط·آ¯') }}</Label><Input :id="`driver-birth-date-${index}`" v-model="driver.date_of_birth" type="date" :max="contractDateMin" /><InputError :message="form.errors[`additional_drivers.${index}.date_of_birth`]" class="mt-1" /></div>
-              <div><Label :for="`driver-identity-number-${index}`">{{ localize('Identity Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ©') }}</Label><Input :id="`driver-identity-number-${index}`" v-model="driver.identity_number" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.identity_number`]" class="mt-1" /></div>
-              <div><Label :for="`driver-residency-number-${index}`">{{ localize('Residency Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط·آ¥ط¸â€ڑط·آ§ط¸â€¦ط·آ©') }}</Label><Input :id="`driver-residency-number-${index}`" v-model="driver.residency_number" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.residency_number`]" class="mt-1" /></div>
-              <div><Label :for="`driver-license-number-${index}`">{{ localize('License Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط·آ±ط·آ®ط·آµط·آ©') }}</Label><Input :id="`driver-license-number-${index}`" v-model="driver.license_number" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.license_number`]" class="mt-1" /></div>
-              <div><Label :for="`driver-identity-expiry-${index}`">{{ localize('Identity Expiry Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ©') }}</Label><Input :id="`driver-identity-expiry-${index}`" v-model="driver.identity_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors[`additional_drivers.${index}.identity_expiry_date`]" class="mt-1" /></div>
-              <div><Label :for="`driver-license-expiry-${index}`">{{ localize('License Expiry Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ±ط·آ®ط·آµط·آ©') }}</Label><Input :id="`driver-license-expiry-${index}`" v-model="driver.license_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors[`additional_drivers.${index}.license_expiry_date`]" class="mt-1" /></div>
+              <div><Label :for="`driver-birth-date-${index}`">{{ localize('Date Of Birth', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¹ط¸â€‍اد') }}</Label><Input :id="`driver-birth-date-${index}`" v-model="driver.date_of_birth" type="date" :max="contractDateMin" /><InputError :message="form.errors[`additional_drivers.${index}.date_of_birth`]" class="mt-1" /></div>
+              <div><Label :for="`driver-identity-number-${index}`">{{ localize('Identity Number', 'رقم الهوية') }}</Label><Input :id="`driver-identity-number-${index}`" v-model="driver.identity_number" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.identity_number`]" class="mt-1" /></div>
+              <div><Label :for="`driver-residency-number-${index}`">{{ localize('Residency Number', 'رقم الإقامة') }}</Label><Input :id="`driver-residency-number-${index}`" v-model="driver.residency_number" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.residency_number`]" class="mt-1" /></div>
+              <div><Label :for="`driver-license-number-${index}`">{{ localize('License Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍رخصة') }}</Label><Input :id="`driver-license-number-${index}`" v-model="driver.license_number" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.license_number`]" class="mt-1" /></div>
+              <div><Label :for="`driver-identity-expiry-${index}`">{{ localize('Identity Expiry Date', 'تاريخ انتهاء الهوية') }}</Label><Input :id="`driver-identity-expiry-${index}`" v-model="driver.identity_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors[`additional_drivers.${index}.identity_expiry_date`]" class="mt-1" /></div>
+              <div><Label :for="`driver-license-expiry-${index}`">{{ localize('License Expiry Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍رخصة') }}</Label><Input :id="`driver-license-expiry-${index}`" v-model="driver.license_expiry_date" type="date" :min="contractDateMin" /><InputError :message="form.errors[`additional_drivers.${index}.license_expiry_date`]" class="mt-1" /></div>
             </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div><Label :for="`driver-visa-number-${index}`">{{ localize('Visa Number', 'رقم التأشيرة') }}</Label><Input :id="`driver-visa-number-${index}`" v-model="driver.visa_number" maxlength="255" /><InputError :message="form.errors[`additional_drivers.${index}.visa_number`]" class="mt-1" /></div>
@@ -1483,28 +1483,28 @@ function submit() {
             </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <Label class="mb-2 block">{{ localize('Document Front / Single', 'ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ ط·آ§ط¸â€‍ط·آ£ط¸â€¦ط·آ§ط¸â€¦ط¸ظ¹ / ط·آ§ط¸â€‍ط¸â€¦ط¸ظ¾ط·آ±ط·آ¯') }}</Label>
+                <Label class="mb-2 block">{{ localize('Document Front / Single', 'المستند الأمامي / المفرد') }}</Label>
                 <FileUpload v-model="driver.documents[0].temp_folders" :initial-files="driver.documents[0].existing_files" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_additional_driver_front" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(driver, 0, data)" />
                 <InputError :message="form.errors[`additional_drivers.${index}.documents.0.temp_folders`]" class="mt-1" />
               </div>
               <div>
-                <Label class="mb-2 block">{{ localize('Document Back', 'ط·آ®ط¸â€‍ط¸ظ¾ط¸ظ¹ط·آ© ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯') }}</Label>
+                <Label class="mb-2 block">{{ localize('Document Back', 'خلفية المستند') }}</Label>
                 <FileUpload v-model="driver.documents[1].temp_folders" :initial-files="driver.documents[1].existing_files" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_additional_driver_back" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onDriverFileRemoved(driver, 1, data)" />
                 <InputError :message="form.errors[`additional_drivers.${index}.documents.1.temp_folders`]" class="mt-1" />
               </div>
             </div>
           <div class="flex flex-wrap items-center gap-3">
               <Button type="button" variant="outline" :disabled="driver.extracting" @click="extractDriver(driver, 'additional', index)">
-                {{ driver.extracting ? localize('Extracting...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬...') : localize('Extract From Document', 'ط·آ§ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ§ط·آ¬ ط¸â€¦ط¸â€  ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯') }}
+                {{ driver.extracting ? localize('Extracting...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍استخراج...') : localize('Extract From Document', 'استخراج من المستند') }}
               </Button>
               <p v-if="driver.extract_success" class="text-sm text-emerald-600">{{ driver.extract_success }}</p>
               <p v-if="driver.extract_error" class="text-sm text-red-600">{{ driver.extract_error }}</p>
-              <p v-if="driver.confidence !== null" class="text-sm text-muted-foreground">{{ localize('Confidence', 'ط·آ§ط¸â€‍ط·آ«ط¸â€ڑط·آ©') }}: {{ Number(driver.confidence).toFixed(2) }}</p>
+              <p v-if="driver.confidence !== null" class="text-sm text-muted-foreground">{{ localize('Confidence', 'الثقة') }}: {{ Number(driver.confidence).toFixed(2) }}</p>
             </div>
             <div v-if="driver.ai_review_required" class="space-y-1">
               <label class="flex items-center gap-2 text-sm font-medium text-foreground">
                 <input v-model="driver.ai_reviewed" type="checkbox" class="h-4 w-4 rounded border-gray-300" />
-                {{ localize('I reviewed the AI extracted data and confirm it is correct.', 'ط¸â€‍ط¸â€ڑط·آ¯ ط·آ±ط·آ§ط·آ¬ط·آ¹ط·ع¾ ط·آ§ط¸â€‍ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط·آ®ط·آ±ط·آ¬ط·آ© ط·آ¨ط·آ§ط¸â€‍ط·آ°ط¸ئ’ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ§ط·آµط·آ·ط¸â€ ط·آ§ط·آ¹ط¸ظ¹ ط¸ث†ط·آ£ط·آ¤ط¸ئ’ط·آ¯ ط·آµط·آ­ط·ع¾ط¸â€،ط·آ§.') }}
+                {{ localize('I reviewed the AI extracted data and confirm it is correct.', 'لقد راجعت البيانات المستخرجة بالذكاء الاصطناعي وأؤكد صحتها.') }}
               </label>
               <InputError :message="form.errors[`additional_drivers.${index}.ai_reviewed`]" class="mt-1" />
             </div>
@@ -1514,51 +1514,51 @@ function submit() {
         <section class="space-y-4 rounded-lg border bg-white p-5 shadow-sm">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-lg font-semibold">{{ localize('Additional Archive', 'ط·آ§ط¸â€‍ط·آ£ط·آ±ط·آ´ط¸ظ¹ط¸ظ¾ ط·آ§ط¸â€‍ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط¸ظ¹') }}</h2>
-              <p class="text-sm text-muted-foreground">{{ localize('Store extra customer documents here. Files already used in the main identity/license section above cannot be added again.', 'ط·آ®ط·آ²ط¸â€کط¸â€  ط¸â€،ط¸â€ ط·آ§ ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط¸ظ¹ط·آ©. ط¸â€‍ط·آ§ ط¸ظ¹ط¸â€¦ط¸ئ’ط¸â€  ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط·آ© ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍ط¸ظ¾ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط·آ®ط·آ¯ط¸â€¦ط·آ© ط·آ³ط·آ§ط·آ¨ط¸â€ڑط¸â€¹ط·آ§ ط¸ظ¾ط¸ظ¹ ط¸â€ڑط·آ³ط¸â€¦ ط·آ§ط¸â€‍ط¸â€،ط¸ث†ط¸ظ¹ط·آ© ط·آ£ط¸ث† ط·آ§ط¸â€‍ط·آ±ط·آ®ط·آµط·آ© ط·آ§ط¸â€‍ط·آ±ط·آ¦ط¸ظ¹ط·آ³ط¸ظ¹ ط¸â€¦ط·آ±ط·آ© ط·آ£ط·آ®ط·آ±ط¸â€°.') }}</p>
+              <h2 class="text-lg font-semibold">{{ localize('Additional Archive', 'ط·آ§ط¸â€‍ط·آ£ط·آ±ط·آ´ط¸ظ¹ط¸ظ¾ ط·آ§ط¸â€‍إضافي') }}</h2>
+              <p class="text-sm text-muted-foreground">{{ localize('Store extra customer documents here. Files already used in the main identity/license section above cannot be added again.', 'خزّن هنا مستندات العميل الإضافية. لا يمكن إضافة الملفات المستخدمة سابقًا في قسم الهوية أو الرخصة الرئيسي مرة أخرى.') }}</p>
             </div>
-            <Button type="button" variant="outline" @click="addAdditionalArchiveItem">{{ localize('Add Archive File', 'ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط·آ© ط¸â€¦ط¸â€‍ط¸ظ¾ ط¸â€‍ط¸â€‍ط·آ£ط·آ±ط·آ´ط¸ظ¹ط¸ظ¾') }}</Button>
+            <Button type="button" variant="outline" @click="addAdditionalArchiveItem">{{ localize('Add Archive File', 'ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط·آ© ط¸â€¦ط¸â€‍ط¸ظ¾ ط¸â€‍ط¸â€‍أرشيف') }}</Button>
           </div>
           <div class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            {{ localize('Files already used in the main customer document section above cannot be added to this archive.', 'ط¸â€‍ط·آ§ ط¸ظ¹ط¸â€¦ط¸ئ’ط¸â€  ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط·آ© ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍ط¸ظ¾ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط·آ®ط·آ¯ط¸â€¦ط·آ© ط¸ظ¾ط¸ظ¹ ط¸â€ڑط·آ³ط¸â€¦ ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آ±ط·آ¦ط¸ظ¹ط·آ³ط¸ظ¹ ط·آ£ط·آ¹ط¸â€‍ط·آ§ط¸â€، ط·آ¥ط¸â€‍ط¸â€° ط¸â€،ط·آ°ط·آ§ ط·آ§ط¸â€‍ط·آ£ط·آ±ط·آ´ط¸ظ¹ط¸ظ¾.') }}
+            {{ localize('Files already used in the main customer document section above cannot be added to this archive.', 'ط¸â€‍ط·آ§ ط¸ظ¹ط¸â€¦ط¸ئ’ط¸â€  ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط·آ© ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍ط¸ظ¾ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط·آ®ط·آ¯ط¸â€¦ط·آ© ط¸ظ¾ط¸ظ¹ ط¸â€ڑط·آ³ط¸â€¦ ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آ±ط·آ¦ط¸ظ¹ط·آ³ط¸ظ¹ ط·آ£ط·آ¹ط¸â€‍ط·آ§ط¸â€، ط·آ¥ط¸â€‍ط¸â€° ط¸â€،ط·آ°ط·آ§ ط·آ§ط¸â€‍أرشيف.') }}
           </div>
-          <div v-if="form.additional_archive.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">{{ localize('No additional archive files added.', 'ط¸â€‍ط¸â€¦ ط·ع¾ط·ع¾ط¸â€¦ ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط·آ© ط¸â€¦ط¸â€‍ط¸ظ¾ط·آ§ط·ع¾ ط·آ£ط·آ±ط·آ´ط¸ظ¹ط¸ظ¾ط¸ظ¹ط·آ© ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط¸ظ¹ط·آ©.') }}</div>
+          <div v-if="form.additional_archive.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">{{ localize('No additional archive files added.', 'ط¸â€‍ط¸â€¦ ط·ع¾ط·ع¾ط¸â€¦ ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط·آ© ط¸â€¦ط¸â€‍فات أرشيفية إضافية.') }}</div>
           <div v-for="(item, index) in form.additional_archive" :key="item.id ?? `archive-${index}`" class="space-y-4 rounded-md border p-4">
             <div class="flex items-center justify-between gap-3">
               <div>
-                <h3 class="font-semibold">{{ localize(`Archive File ${index + 1}`, `ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ§ط¸â€‍ط·آ£ط·آ±ط·آ´ط¸ظ¹ط¸ظ¾ ${index + 1}`) }}</h3>
-                <p class="text-sm text-muted-foreground">{{ localize('Upload one additional customer document for archive only.', 'ط·آ§ط·آ±ط¸ظ¾ط·آ¹ ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯ط¸â€¹ط·آ§ ط·آ¥ط·آ¶ط·آ§ط¸ظ¾ط¸ظ¹ط¸â€¹ط·آ§ ط¸ث†ط·آ§ط·آ­ط·آ¯ط¸â€¹ط·آ§ ط¸â€‍ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍ ط¸â€‍ط¸â€‍ط·آ£ط·آ±ط·آ´ط¸ظ¾ط·آ© ط¸ظ¾ط¸â€ڑط·آ·.') }}</p>
+                <h3 class="font-semibold">{{ localize(`Archive File ${index + 1}`, `ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ§ط¸â€‍أرشيف ${index + 1}`) }}</h3>
+                <p class="text-sm text-muted-foreground">{{ localize('Upload one additional customer document for archive only.', 'ارفع مستندًا إضافيًا واحدًا للعميل للأرشفة فقط.') }}</p>
               </div>
-              <Button type="button" variant="ghost" @click="removeAdditionalArchiveItem(index)">{{ localize('Remove', 'ط·آ¥ط·آ²ط·آ§ط¸â€‍ط·آ©') }}</Button>
+              <Button type="button" variant="ghost" @click="removeAdditionalArchiveItem(index)">{{ localize('Remove', 'ط·آ¥ط·آ²ط·آ§ط¸â€‍ة') }}</Button>
             </div>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div>
-                <Label :for="`archive-document-type-${index}`">{{ localize('Document Type', 'ط¸â€ ط¸ث†ط·آ¹ ط·آ§ط¸â€‍ط¸â€¦ط·آ³ط·ع¾ط¸â€ ط·آ¯') }}</Label>
+                <Label :for="`archive-document-type-${index}`">{{ localize('Document Type', 'نوع المستند') }}</Label>
                 <select :id="`archive-document-type-${index}`" v-model="item.document_type" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                   <option v-for="option in additionalArchiveDocumentTypeOptions" :key="`${index}-${option.value || 'empty'}`" :value="option.value">{{ option.label }}</option>
                 </select>
                 <InputError :message="form.errors[`additional_archive.${index}.document_type`]" class="mt-1" />
               </div>
               <div>
-                <Label :for="`archive-owner-${index}`">{{ localize('Belongs To', 'ط¸ظ¹ط·ع¾ط·آ¨ط·آ¹ ط·آ¥ط¸â€‍ط¸â€°') }}</Label>
+                <Label :for="`archive-owner-${index}`">{{ localize('Belongs To', 'يتبع إلى') }}</Label>
                 <select :id="`archive-owner-${index}`" v-model="item.owner_key" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                   <option v-for="option in additionalArchiveOwnerOptions" :key="`${index}-${option.value || 'none'}`" :value="option.value">{{ option.label }}</option>
                 </select>
                 <InputError :message="form.errors[`additional_archive.${index}.owner_key`]" class="mt-1" />
               </div>
               <div>
-                <Label :for="`archive-title-${index}`">{{ localize('Title', 'ط·آ§ط¸â€‍ط·آ¹ط¸â€ ط¸ث†ط·آ§ط¸â€ ') }}</Label>
+                <Label :for="`archive-title-${index}`">{{ localize('Title', 'العنوان') }}</Label>
                 <Input :id="`archive-title-${index}`" v-model="item.title" />
                 <InputError :message="form.errors[`additional_archive.${index}.title`]" class="mt-1" />
               </div>
               <div>
-                <Label :for="`archive-notes-${index}`">{{ localize('Notes', 'ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍ط·آ§ط·آ­ط·آ¸ط·آ§ط·ع¾') }}</Label>
+                <Label :for="`archive-notes-${index}`">{{ localize('Notes', 'ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍احظات') }}</Label>
                 <Input :id="`archive-notes-${index}`" v-model="item.notes" />
                 <InputError :message="form.errors[`additional_archive.${index}.notes`]" class="mt-1" />
               </div>
             </div>
             <div>
-              <Label class="mb-2 block">{{ localize('Archive File', 'ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ§ط¸â€‍ط·آ£ط·آ±ط·آ´ط¸ظ¹ط¸ظ¾') }}</Label>
+              <Label class="mb-2 block">{{ localize('Archive File', 'ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ§ط¸â€‍أرشيف') }}</Label>
               <FileUpload v-model="item.temp_folders" :initial-files="item.existing_files || []" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="contract_additional_archive" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onAdditionalArchiveFileRemoved(index, data)" />
               <InputError :message="form.errors[`additional_archive.${index}.temp_folders`]" class="mt-1" />
             </div>
@@ -1567,18 +1567,18 @@ function submit() {
 
         <section class="space-y-4 rounded-lg border bg-white p-5 shadow-sm">
           <div>
-            <h2 class="text-lg font-semibold">{{ localize('Car Data', 'ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ©') }}</h2>
-            <p class="text-sm text-muted-foreground">{{ localize('Reservation and vehicle details for this contract.', 'ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ­ط·آ¬ط·آ² ط¸ث†ط·آ§ط¸â€‍ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ© ط·آ§ط¸â€‍ط·آ®ط·آ§ط·آµط·آ© ط·آ¨ط¸â€،ط·آ°ط·آ§ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯.') }}</p>
+            <h2 class="text-lg font-semibold">{{ localize('Car Data', 'ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍سيارة') }}</h2>
+            <p class="text-sm text-muted-foreground">{{ localize('Reservation and vehicle details for this contract.', 'بيانات الحجز والسيارة الخاصة بهذا العقد.') }}</p>
           </div>
           <div v-if="hasLinkedReservation" class="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-            {{ localize('Car details are linked to the selected reservation and cannot be edited here.', 'ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ© ط¸â€¦ط·آ±ط·ع¾ط·آ¨ط·آ·ط·آ© ط·آ¨ط·آ§ط¸â€‍ط·آ­ط·آ¬ط·آ² ط·آ§ط¸â€‍ط¸â€¦ط·آ­ط·آ¯ط·آ¯ ط¸ث†ط¸â€‍ط·آ§ ط¸ظ¹ط¸â€¦ط¸ئ’ط¸â€  ط·ع¾ط·آ¹ط·آ¯ط¸ظ¹ط¸â€‍ط¸â€،ط·آ§ ط¸â€،ط¸â€ ط·آ§.') }}
+            {{ localize('Car details are linked to the selected reservation and cannot be edited here.', 'بيانات السيارة مرتبطة بالحجز المحدد ولا يمكن تعديلها هنا.') }}
           </div>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div><Label for="car-details">{{ localize('Car Details', 'ط·ع¾ط¸ظ¾ط·آ§ط·آµط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ©') }}</Label><Input id="car-details" v-model="form.car_data.car_details" :disabled="hasLinkedReservation" /><InputError :message="form.errors['car_data.car_details']" class="mt-1" /></div>
-            <div><Label for="plate-number">{{ localize('Plate Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط¸â€‍ط¸ث†ط·آ­ط·آ©') }}</Label><Input id="plate-number" v-model="form.car_data.plate_number" :disabled="hasLinkedReservation" /><InputError :message="form.errors['car_data.plate_number']" class="mt-1" /></div>
-            <div><Label for="vehicle-odometer">{{ localize('Vehicle Odometer', 'ط¹ط¯ط§ط¯ ط§ظ„ط³ظٹط§ط±ط©') }}</Label><Input id="vehicle-odometer" v-model="form.car_data.vehicle_odometer" type="number" min="0" /><InputError :message="form.errors['car_data.vehicle_odometer'] || form.errors.vehicle_odometer" class="mt-1" /></div>
+            <div><Label for="car-details">{{ localize('Car Details', 'ط·ع¾ط¸ظ¾ط·آ§ط·آµط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍سيارة') }}</Label><Input id="car-details" v-model="form.car_data.car_details" :disabled="hasLinkedReservation" /><InputError :message="form.errors['car_data.car_details']" class="mt-1" /></div>
+            <div><Label for="plate-number">{{ localize('Plate Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط¸â€‍وحة') }}</Label><Input id="plate-number" v-model="form.car_data.plate_number" :disabled="hasLinkedReservation" /><InputError :message="form.errors['car_data.plate_number']" class="mt-1" /></div>
+            <div><Label for="vehicle-odometer">{{ localize('Vehicle Odometer', 'عداد السيارة') }}</Label><Input id="vehicle-odometer" v-model="form.car_data.vehicle_odometer" type="number" min="0" /><InputError :message="form.errors['car_data.vehicle_odometer'] || form.errors.vehicle_odometer" class="mt-1" /></div>
             <div>
-              <Label for="vehicle-fuel-level">{{ localize('Fuel In Vehicle', 'ط§ظ„ط¨ظ†ط²ظٹظ† ط§ظ„ظ…ظˆط¬ظˆط¯ ظپظٹ ط§ظ„ط³ظٹط§ط±ط©') }}</Label>
+              <Label for="vehicle-fuel-level">{{ localize('Fuel In Vehicle', 'الوقود الموجود في السيارة') }}</Label>
               <select id="vehicle-fuel-level" v-model="form.car_data.vehicle_fuel_level" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                 <option v-for="option in returnFuelLevelOptions" :key="option.value || 'fuel-empty'" :value="option.value">{{ option.label }}</option>
               </select>
@@ -1586,16 +1586,16 @@ function submit() {
             </div>
           </div>
           <div v-if="selectedCarDamages.length" class="rounded-md border p-4">
-            <div class="mb-2 text-sm font-medium">{{ localize('Current Car Damages', 'ط·آ£ط·آ¶ط·آ±ط·آ§ط·آ± ط·آ§ط¸â€‍ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ© ط·آ§ط¸â€‍ط·آ­ط·آ§ط¸â€‍ط¸ظ¹ط·آ©') }}</div>
+            <div class="mb-2 text-sm font-medium">{{ localize('Current Car Damages', 'ط·آ£ط·آ¶ط·آ±ط·آ§ط·آ± ط·آ§ط¸â€‍ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ© ط·آ§ط¸â€‍ط·آ­ط·آ§ط¸â€‍ية') }}</div>
             <div class="overflow-x-auto">
               <table class="min-w-full text-sm">
                 <thead>
                   <tr class="border-b text-left text-muted-foreground">
-                    <th class="px-2 py-2">{{ localize('Zone', 'ط·آ§ط¸â€‍ط¸â€¦ط¸â€ ط·آ·ط¸â€ڑط·آ©') }}</th>
-                    <th class="px-2 py-2">{{ localize('View', 'ط·آ§ط¸â€‍ط·آ¬ط¸â€،ط·آ©') }}</th>
-                    <th class="px-2 py-2">{{ localize('Type', 'ط·آ§ط¸â€‍ط¸â€ ط¸ث†ط·آ¹') }}</th>
-                    <th class="px-2 py-2">{{ localize('Severity', 'ط·آ§ط¸â€‍ط·آ´ط·آ¯ط¸â€کط·آ©') }}</th>
-                    <th class="px-2 py-2">{{ localize('Qty', 'ط·آ§ط¸â€‍ط¸ئ’ط¸â€¦ط¸ظ¹ط·آ©') }}</th>
+                    <th class="px-2 py-2">{{ localize('Zone', 'المنطقة') }}</th>
+                    <th class="px-2 py-2">{{ localize('View', 'الجهة') }}</th>
+                    <th class="px-2 py-2">{{ localize('Type', 'النوع') }}</th>
+                    <th class="px-2 py-2">{{ localize('Severity', 'الشدّة') }}</th>
+                    <th class="px-2 py-2">{{ localize('Qty', 'الكمية') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1614,18 +1614,18 @@ function submit() {
 
         <section class="space-y-4 rounded-lg border bg-white p-5 shadow-sm">
           <div>
-            <h2 class="text-lg font-semibold">{{ localize('Rental Data', 'ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</h2>
-            <p class="text-sm text-muted-foreground">{{ localize('Contract lifecycle, rental period, amount, and notes.', 'ط·آ¯ط¸ث†ط·آ±ط·آ© ط·آ­ط¸ظ¹ط·آ§ط·آ© ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯ ط¸ث†ط¸ظ¾ط·ع¾ط·آ±ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ± ط¸ث†ط·آ§ط¸â€‍ط¸â€¦ط·آ¨ط¸â€‍ط·ط› ط¸ث†ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍ط·آ§ط·آ­ط·آ¸ط·آ§ط·ع¾.') }}</p>
+            <h2 class="text-lg font-semibold">{{ localize('Rental Data', 'ط·آ¨ط¸ظ¹ط·آ§ط¸â€ ط·آ§ط·ع¾ ط·آ§ط¸â€‍تأجير') }}</h2>
+            <p class="text-sm text-muted-foreground">{{ localize('Contract lifecycle, rental period, amount, and notes.', 'ط·آ¯ط¸ث†ط·آ±ط·آ© ط·آ­ط¸ظ¹ط·آ§ط·آ© ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯ ط¸ث†ط¸ظ¾ط·ع¾ط·آ±ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ± ط¸ث†ط·آ§ط¸â€‍ط¸â€¦ط·آ¨ط¸â€‍ط·ط› ط¸ث†ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍احظات.') }}</p>
           </div>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div class="xl:col-span-2">
-              <Label for="reservation_id">{{ localize('Linked Reservation', 'ط·آ§ط¸â€‍ط·آ­ط·آ¬ط·آ² ط·آ§ط¸â€‍ط¸â€¦ط·آ±ط·ع¾ط·آ¨ط·آ·') }}</Label>
+              <Label for="reservation_id">{{ localize('Linked Reservation', 'الحجز المرتبط') }}</Label>
               <div class="mt-1 flex gap-2">
                 <div class="relative flex-1">
                   <Input
                     id="reservation_id"
                     v-model="reservationSearch"
-                    :placeholder="localize('Search reservation...', 'ط·آ§ط·آ¨ط·آ­ط·آ« ط·آ¹ط¸â€  ط·آ§ط¸â€‍ط·آ­ط·آ¬ط·آ²...')"
+                    :placeholder="localize('Search reservation...', 'ط·آ§ط·آ¨ط·آ­ط·آ« ط·آ¹ط¸â€  ط·آ§ط¸â€‍حجز...')"
                     autocomplete="off"
                     :required="mode === 'create'"
                     @focus="reservationMenuOpen = true"
@@ -1643,7 +1643,7 @@ function submit() {
                     @mousedown.prevent
                     @click="clearReservation"
                   >
-                    {{ localize('Clear', 'ط¸â€¦ط·آ³ط·آ­') }}
+                    {{ localize('Clear', 'مسح') }}
                   </button>
 
                   <div
@@ -1655,7 +1655,7 @@ function submit() {
                       type="button"
                       @mousedown.prevent="clearReservation"
                     >
-                      {{ localize('No linked reservation', 'ط¸â€‍ط·آ§ ط¸ظ¹ط¸ث†ط·آ¬ط·آ¯ ط·آ­ط·آ¬ط·آ² ط¸â€¦ط·آ±ط·ع¾ط·آ¨ط·آ·') }}
+                      {{ localize('No linked reservation', 'لا يوجد حجز مرتبط') }}
                     </button>
 
                     <button
@@ -1669,12 +1669,12 @@ function submit() {
                       <span class="font-medium">
                         {{ reservation.label }}
                         <span v-if="reservation.has_contract && Number(reservation.id) !== Number(form.reservation_id)">
-                          {{ localize(' (has contract)', ' (ط¸â€‍ط·آ¯ط¸ظ¹ط¸â€، ط·آ¹ط¸â€ڑط·آ¯)') }}
+                          {{ localize(' (has contract)', ' (لديه عقد)') }}
                         </span>
                       </span>
                       <span v-if="reservation.car_details || reservation.plate_number" class="text-xs text-muted-foreground">
-                        {{ reservation.car_details || localize('No car details', 'ط¸â€‍ط·آ§ ط·ع¾ط¸ث†ط·آ¬ط·آ¯ ط·ع¾ط¸ظ¾ط·آ§ط·آµط¸ظ¹ط¸â€‍ ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ©') }}
-                        <span v-if="reservation.plate_number"> أ¢â‚¬آ¢ {{ reservation.plate_number }}</span>
+                        {{ reservation.car_details || localize('No car details', 'ط¸â€‍ط·آ§ ط·ع¾ط¸ث†ط·آ¬ط·آ¯ ط·ع¾ط¸ظ¾ط·آ§ط·آµط¸ظ¹ط¸â€‍ سيارة') }}
+                        <span v-if="reservation.plate_number"> • {{ reservation.plate_number }}</span>
                       </span>
                     </button>
 
@@ -1682,19 +1682,19 @@ function submit() {
                       v-if="filteredReservationsBySearch.length === 0"
                       class="px-3 py-2 text-sm text-muted-foreground"
                     >
-                      {{ localize('No reservations found.', 'ط¸â€‍ط·آ§ ط·ع¾ط¸ث†ط·آ¬ط·آ¯ ط·آ­ط·آ¬ط¸ث†ط·آ²ط·آ§ط·ع¾ ط¸â€¦ط·آ·ط·آ§ط·آ¨ط¸â€ڑط·آ©.') }}
+                      {{ localize('No reservations found.', 'لا توجد حجوزات مطابقة.') }}
                     </div>
                   </div>
                 </div>
-                <Button type="button" variant="outline" @click="showReservationModal = true">{{ localize('New Reservation', 'ط·آ­ط·آ¬ط·آ² ط·آ¬ط·آ¯ط¸ظ¹ط·آ¯') }}</Button>
+                <Button type="button" variant="outline" @click="showReservationModal = true">{{ localize('New Reservation', 'حجز جديد') }}</Button>
               </div>
               <InputError :message="form.errors.reservation_id" class="mt-1" />
               <div v-if="selectedReservation" class="mt-3 rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-                <div><span class="font-medium text-foreground">{{ localize('Reservation', 'ط·آ§ط¸â€‍ط·آ­ط·آ¬ط·آ²') }}:</span> {{ selectedReservation.reservation_number }}</div>
-                <div><span class="font-medium text-foreground">{{ localize('Client', 'ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍') }}:</span> {{ selectedReservation.user_name || localize('N/A', 'ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط·ع¾ط¸ث†ط¸ظ¾ط·آ±') }}</div>
-                <div><span class="font-medium text-foreground">{{ localize('Car', 'ط·آ§ط¸â€‍ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ©') }}:</span> {{ selectedReservation.car_details || selectedReservation.car || localize('N/A', 'ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط·ع¾ط¸ث†ط¸ظ¾ط·آ±') }}</div>
+                <div><span class="font-medium text-foreground">{{ localize('Reservation', 'ط·آ§ط¸â€‍حجز') }}:</span> {{ selectedReservation.reservation_number }}</div>
+                <div><span class="font-medium text-foreground">{{ localize('Client', 'العميل') }}:</span> {{ selectedReservation.user_name || localize('N/A', 'ط·ط›ير متوفر') }}</div>
+                <div><span class="font-medium text-foreground">{{ localize('Car', 'ط·آ§ط¸â€‍سيارة') }}:</span> {{ selectedReservation.car_details || selectedReservation.car || localize('N/A', 'ط·ط›ير متوفر') }}</div>
                 <div>
-                  <span class="font-medium text-foreground">{{ localize('Status', 'ط·آ§ط¸â€‍ط·آ­ط·آ§ط¸â€‍ط·آ©') }}:</span>
+                  <span class="font-medium text-foreground">{{ localize('Status', 'ط·آ§ط¸â€‍ط·آ­ط·آ§ط¸â€‍ة') }}:</span>
                   <span
                     class="ml-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                     :class="{
@@ -1720,30 +1720,30 @@ function submit() {
                 </div>
               </div>
             </div>
-            <div><Label for="contract_number">{{ localize('Contract Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Label><Input id="contract_number" v-model="form.contract_number" readonly /><InputError :message="form.errors.contract_number" class="mt-1" /></div>
+            <div><Label for="contract_number">{{ localize('Contract Number', 'رقم العقد') }}</Label><Input id="contract_number" v-model="form.contract_number" readonly /><InputError :message="form.errors.contract_number" class="mt-1" /></div>
             <div>
-              <Label for="status">{{ localize('Status', 'ط·آ§ط¸â€‍ط·آ­ط·آ§ط¸â€‍ط·آ©') }}</Label>
+              <Label for="status">{{ localize('Status', 'ط·آ§ط¸â€‍ط·آ­ط·آ§ط¸â€‍ة') }}</Label>
               <select id="status" v-model="form.status" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                 <option value="draft">{{ localize('Draft', 'مسودة') }}</option>
                 <option value="pending">{{ localize('Pending', 'في انتظار') }}</option>
-                <option value="active">{{ localize('Active', 'ط¸â€ ط·آ´ط·آ·') }}</option>
-                <option value="completed">{{ localize('Completed', 'ط¸â€¦ط¸ئ’ط·ع¾ط¸â€¦ط¸â€‍') }}</option>
-                <option value="cancelled">{{ localize('Cancelled', 'ط¸â€¦ط¸â€‍ط·ط›ط¸ظ¹') }}</option>
+                <option value="active">{{ localize('Active', 'نشط') }}</option>
+                <option value="completed">{{ localize('Completed', 'مكتمل') }}</option>
+                <option value="cancelled">{{ localize('Cancelled', 'ط¸â€¦ط¸â€‍ط·ط›ي') }}</option>
               </select>
               <InputError :message="form.errors.status" class="mt-1" />
             </div>
-            <div><Label for="contract_date">{{ localize('Contract Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Label><Input id="contract_date" v-model="form.contract_date" type="date" :min="contractDateMin" :required="mode === 'create'" /><InputError :message="form.errors.contract_date" class="mt-1" /></div>
-            <div><Label for="start_date">{{ localize('Rental Start Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ¨ط·آ¯ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="start_date" v-model="form.start_date" type="date" :min="contractStartDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.start_date" class="mt-1" /></div>
-            <div><Label for="end_date">{{ localize('Rental End Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label><Input id="end_date" v-model="form.end_date" type="date" :min="contractRentalEndDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.end_date" class="mt-1" /></div>
-            <div><Label for="total_amount">{{ localize('Total Amount', 'ط·آ§ط¸â€‍ط¸â€¦ط·آ¨ط¸â€‍ط·ط› ط·آ§ط¸â€‍ط·آ¥ط·آ¬ط¸â€¦ط·آ§ط¸â€‍ط¸ظ¹') }}</Label><Input id="total_amount" v-model="form.total_amount" type="number" min="0" step="0.01" :disabled="hasLinkedReservation" /><InputError :message="form.errors.total_amount" class="mt-1" /></div>
+            <div><Label for="contract_date">{{ localize('Contract Date', 'تاريخ العقد') }}</Label><Input id="contract_date" v-model="form.contract_date" type="date" :min="contractDateMin" :required="mode === 'create'" /><InputError :message="form.errors.contract_date" class="mt-1" /></div>
+            <div><Label for="start_date">{{ localize('Rental Start Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ¨ط·آ¯ط·طŒ ط·آ§ط¸â€‍تأجير') }}</Label><Input id="start_date" v-model="form.start_date" type="date" :min="contractStartDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.start_date" class="mt-1" /></div>
+            <div><Label for="end_date">{{ localize('Rental End Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ ط·آ§ط¸â€‍تأجير') }}</Label><Input id="end_date" v-model="form.end_date" type="date" :min="contractRentalEndDateMin" :disabled="hasLinkedReservation" :required="mode === 'create'" /><InputError :message="form.errors.end_date" class="mt-1" /></div>
+            <div><Label for="total_amount">{{ localize('Total Amount', 'ط·آ§ط¸â€‍ط¸â€¦ط·آ¨ط¸â€‍ط·ط› ط·آ§ط¸â€‍ط·آ¥ط·آ¬ط¸â€¦ط·آ§ط¸â€‍ي') }}</Label><Input id="total_amount" v-model="form.total_amount" type="number" min="0" step="0.01" :disabled="hasLinkedReservation" /><InputError :message="form.errors.total_amount" class="mt-1" /></div>
             <div>
-              <Label for="currency">{{ localize('Currency', 'ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸â€‍ط·آ©') }}</Label>
+              <Label for="currency">{{ localize('Currency', 'ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸â€‍ة') }}</Label>
               <select
                 id="currency"
                 v-model="form.currency"
                 class="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30"
               >
-                <option value="" disabled>{{ localize('Select currency', 'ط§ط®طھط± ط§ظ„ط¹ظ…ظ„ط©') }}</option>
+                <option value="" disabled>{{ localize('Select currency', 'اختر العملة') }}</option>
                 <option v-for="option in currencyOptions" :key="option.code" :value="option.code">
                   {{ option.label }}
                 </option>
@@ -1774,7 +1774,7 @@ function submit() {
               <InputError :message="form.errors.vehicle_condition_after" class="mt-1" />
             </div>
             <div class="md:col-span-2 xl:col-span-3">
-              <Label for="notes">{{ localize('Notes', 'ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍ط·آ§ط·آ­ط·آ¸ط·آ§ط·ع¾') }}</Label>
+              <Label for="notes">{{ localize('Notes', 'ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍احظات') }}</Label>
               <textarea id="notes" v-model="form.notes" rows="3" class="w-full rounded-md border border-input bg-transparent px-3 py-2" />
               <InputError :message="form.errors.notes" class="mt-1" />
             </div>
@@ -1783,17 +1783,17 @@ function submit() {
 
         <section class="space-y-4 rounded-lg border bg-white p-5 shadow-sm">
           <div>
-            <h2 class="text-lg font-semibold">{{ localize('Contract Archive', 'ط·آ£ط·آ±ط·آ´ط¸ظ¹ط¸ظ¾ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</h2>
-            <p class="text-sm text-muted-foreground">{{ localize('Keep contract scans and supporting files here as archive attachments.', 'ط·آ§ط·آ­ط·ع¾ط¸ظ¾ط¸ع¯ط·آ¸ ط¸â€،ط¸â€ ط·آ§ ط·آ¨ط¸â€ ط·آ³ط·آ® ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯ ط¸ث†ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍ط¸ظ¾ط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ¯ط·آ§ط·آ¹ط¸â€¦ط·آ© ط¸ئ’ط¸â€¦ط·آ±ط¸ظ¾ط¸â€ڑط·آ§ط·ع¾ ط·آ£ط·آ±ط·آ´ط¸ظ¹ط¸ظ¾ط¸ظ¹ط·آ©.') }}</p>
+            <h2 class="text-lg font-semibold">{{ localize('Contract Archive', 'أرشيف العقد') }}</h2>
+            <p class="text-sm text-muted-foreground">{{ localize('Keep contract scans and supporting files here as archive attachments.', 'احتفِظ هنا بنسخ العقد والملفات الداعمة كمرفقات أرشيفية.') }}</p>
           </div>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <Label class="mb-2 block">{{ localize('Start Rental Contract File', 'ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ¹ط¸â€ڑط·آ¯ ط·آ¨ط·آ¯ط·آ§ط¸ظ¹ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label>
+              <Label class="mb-2 block">{{ localize('Start Rental Contract File', 'ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ¹ط¸â€ڑط·آ¯ ط·آ¨ط·آ¯ط·آ§ط¸ظ¹ط·آ© ط·آ§ط¸â€‍تأجير') }}</Label>
               <FileUpload v-model="form.start_contract_temp_folders" :initial-files="startContractFiles || []" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="start_contract" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onArchiveFileRemoved('start', data)" />
               <InputError :message="form.errors.start_contract_temp_folders" class="mt-1" />
             </div>
             <div>
-              <Label class="mb-2 block">{{ localize('End Rental Contract File', 'ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ¹ط¸â€ڑط·آ¯ ط¸â€ ط¸â€،ط·آ§ط¸ظ¹ط·آ© ط·آ§ط¸â€‍ط·ع¾ط·آ£ط·آ¬ط¸ظ¹ط·آ±') }}</Label>
+              <Label class="mb-2 block">{{ localize('End Rental Contract File', 'ط¸â€¦ط¸â€‍ط¸ظ¾ ط·آ¹ط¸â€ڑط·آ¯ ط¸â€ ط¸â€،ط·آ§ط¸ظ¹ط·آ© ط·آ§ط¸â€‍تأجير') }}</Label>
               <FileUpload v-model="form.end_contract_temp_folders" :initial-files="endContractFiles || []" :allowed-file-types="documentAllowedFileTypes" :allow-multiple="false" :max-files="1" collection="end_contract" theme="light" width="100%" @file-removed="(data: { type: string; fileId?: number }) => onArchiveFileRemoved('end', data)" />
               <InputError :message="form.errors.end_contract_temp_folders" class="mt-1" />
             </div>
@@ -1801,88 +1801,88 @@ function submit() {
         </section>
 
         <div class="flex gap-3">
-          <Button type="submit" :disabled="form.processing || isLocked">{{ form.processing ? localize('Saving...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍ط·آ­ط¸ظ¾ط·آ¸...') : localize('Save Contract', 'ط·آ­ط¸ظ¾ط·آ¸ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯') }}</Button>
-          <Link :href="actions.index"><Button type="button" variant="outline">{{ localize('Cancel', 'ط·آ¥ط¸â€‍ط·ط›ط·آ§ط·طŒ') }}</Button></Link>
+          <Button type="submit" :disabled="form.processing || isLocked">{{ form.processing ? localize('Saving...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍حفظ...') : localize('Save Contract', 'حفظ العقد') }}</Button>
+          <Link :href="actions.index"><Button type="button" variant="outline">{{ localize('Cancel', 'ط·آ¥ط¸â€‍ط·ط›اء') }}</Button></Link>
         </div>
       </form>
 
       <Dialog v-model:open="showReservationModal">
         <DialogContent class="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{{ localize('Create Reservation', 'ط·آ¥ط¸â€ ط·آ´ط·آ§ط·طŒ ط·آ­ط·آ¬ط·آ²') }}</DialogTitle>
-            <DialogDescription>{{ localize('Create a reservation here, then link it directly to this contract.', 'ط·آ£ط¸â€ ط·آ´ط·آ¦ ط·آ§ط¸â€‍ط·آ­ط·آ¬ط·آ² ط¸â€،ط¸â€ ط·آ§ ط·آ«ط¸â€¦ ط·آ§ط·آ±ط·آ¨ط·آ·ط¸â€، ط¸â€¦ط·آ¨ط·آ§ط·آ´ط·آ±ط·آ© ط·آ¨ط¸â€،ط·آ°ط·آ§ ط·آ§ط¸â€‍ط·آ¹ط¸â€ڑط·آ¯.') }}</DialogDescription>
+            <DialogTitle>{{ localize('Create Reservation', 'إنشاء حجز') }}</DialogTitle>
+            <DialogDescription>{{ localize('Create a reservation here, then link it directly to this contract.', 'أنشئ الحجز هنا ثم اربطه مباشرة بهذا العقد.') }}</DialogDescription>
           </DialogHeader>
 
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <Label for="reservation-user-id">{{ localize('Client', 'ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍') }}</Label>
+              <Label for="reservation-user-id">{{ localize('Client', 'العميل') }}</Label>
               <select id="reservation-user-id" v-model="reservationForm.user_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                <option value="" disabled>{{ localize('Select client', 'ط·آ§ط·آ®ط·ع¾ط·آ± ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸ظ¹ط¸â€‍') }}</option>
+                <option value="" disabled>{{ localize('Select client', 'اختر العميل') }}</option>
                 <option v-for="client in reservationClients" :key="client.id" :value="client.id">{{ client.name }} ({{ client.email }})</option>
               </select>
               <InputError :message="reservationForm.errors.user_id" class="mt-1" />
             </div>
             <div>
-              <Label for="reservation-car-id">{{ localize('Car', 'ط·آ§ط¸â€‍ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ©') }}</Label>
+              <Label for="reservation-car-id">{{ localize('Car', 'ط·آ§ط¸â€‍سيارة') }}</Label>
               <select id="reservation-car-id" v-model="reservationForm.car_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                <option value="" disabled>{{ localize('Select car', 'ط·آ§ط·آ®ط·ع¾ط·آ± ط·آ§ط¸â€‍ط·آ³ط¸ظ¹ط·آ§ط·آ±ط·آ©') }}</option>
+                <option value="" disabled>{{ localize('Select car', 'ط·آ§ط·آ®ط·ع¾ط·آ± ط·آ§ط¸â€‍سيارة') }}</option>
                 <option v-for="car in reservationCars" :key="car.id" :value="car.id">{{ car.label }} | {{ car.license_plate }}{{ car.branch_name ? ` | ${car.branch_name}` : '' }}</option>
               </select>
               <InputError :message="reservationForm.errors.car_id" class="mt-1" />
             </div>
             <div>
-              <Label for="reservation-start-date">{{ localize('Start Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط·آ¨ط·آ¯ط·طŒ') }}</Label>
+              <Label for="reservation-start-date">{{ localize('Start Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍بدء') }}</Label>
               <Input id="reservation-start-date" v-model="reservationForm.start_date" type="date" />
               <InputError :message="reservationForm.errors.start_date" class="mt-1" />
             </div>
             <div>
-              <Label for="reservation-end-date">{{ localize('End Date', 'ط·ع¾ط·آ§ط·آ±ط¸ظ¹ط·آ® ط·آ§ط¸â€‍ط·آ§ط¸â€ ط·ع¾ط¸â€،ط·آ§ط·طŒ') }}</Label>
+              <Label for="reservation-end-date">{{ localize('End Date', 'تاريخ الانتهاء') }}</Label>
               <Input id="reservation-end-date" v-model="reservationForm.end_date" type="date" />
               <InputError :message="reservationForm.errors.end_date" class="mt-1" />
             </div>
             <div>
-              <Label for="reservation-pickup-time">{{ localize('Pickup Time', 'ط¸ث†ط¸â€ڑط·ع¾ ط·آ§ط¸â€‍ط·آ§ط·آ³ط·ع¾ط¸â€‍ط·آ§ط¸â€¦') }}</Label>
+              <Label for="reservation-pickup-time">{{ localize('Pickup Time', 'وقت الاستلام') }}</Label>
               <Input id="reservation-pickup-time" v-model="reservationForm.pickup_time" type="time" />
               <InputError :message="reservationForm.errors.pickup_time" class="mt-1" />
             </div>
             <div>
-              <Label for="reservation-return-time">{{ localize('Return Time', 'ط¸ث†ط¸â€ڑط·ع¾ ط·آ§ط¸â€‍ط·آ¥ط·آ±ط·آ¬ط·آ§ط·آ¹') }}</Label>
+              <Label for="reservation-return-time">{{ localize('Return Time', 'ط¸ث†ط¸â€ڑط·ع¾ ط·آ§ط¸â€‍إرجاع') }}</Label>
               <Input id="reservation-return-time" v-model="reservationForm.return_time" type="time" />
               <InputError :message="reservationForm.errors.return_time" class="mt-1" />
             </div>
             <div>
-              <Label for="reservation-pickup-location">{{ localize('Pickup Location', 'ط¸â€¦ط¸ئ’ط·آ§ط¸â€  ط·آ§ط¸â€‍ط·آ§ط·آ³ط·ع¾ط¸â€‍ط·آ§ط¸â€¦') }}</Label>
+              <Label for="reservation-pickup-location">{{ localize('Pickup Location', 'مكان الاستلام') }}</Label>
               <Input id="reservation-pickup-location" v-model="reservationForm.pickup_location" />
               <InputError :message="reservationForm.errors.pickup_location" class="mt-1" />
             </div>
             <div>
-              <Label for="reservation-return-location">{{ localize('Return Location', 'ط¸â€¦ط¸ئ’ط·آ§ط¸â€  ط·آ§ط¸â€‍ط·آ¥ط·آ±ط·آ¬ط·آ§ط·آ¹') }}</Label>
+              <Label for="reservation-return-location">{{ localize('Return Location', 'ط¸â€¦ط¸ئ’ط·آ§ط¸â€  ط·آ§ط¸â€‍إرجاع') }}</Label>
               <Input id="reservation-return-location" v-model="reservationForm.return_location" />
               <InputError :message="reservationForm.errors.return_location" class="mt-1" />
             </div>
             <div>
-              <Label for="reservation-discount-amount">{{ localize('Discount', 'ط·آ§ط¸â€‍ط·آ®ط·آµط¸â€¦') }}</Label>
+              <Label for="reservation-discount-amount">{{ localize('Discount', 'الخصم') }}</Label>
               <Input id="reservation-discount-amount" v-model="reservationForm.discount_amount" type="number" min="0" step="0.01" />
               <InputError :message="reservationForm.errors.discount_amount" class="mt-1" />
             </div>
             <div>
-              <Label for="reservation-status">{{ localize('Status', 'ط·آ§ط¸â€‍ط·آ­ط·آ§ط¸â€‍ط·آ©') }}</Label>
+              <Label for="reservation-status">{{ localize('Status', 'ط·آ§ط¸â€‍ط·آ­ط·آ§ط¸â€‍ة') }}</Label>
               <select id="reservation-status" v-model="reservationForm.status" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                 <option v-for="status in reservationStatusOptions" :key="status.value" :value="status.value">{{ status.label }}</option>
               </select>
               <InputError :message="reservationForm.errors.status" class="mt-1" />
             </div>
             <div class="md:col-span-2">
-              <Label for="reservation-notes">{{ localize('Notes', 'ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍ط·آ§ط·آ­ط·آ¸ط·آ§ط·ع¾') }}</Label>
+              <Label for="reservation-notes">{{ localize('Notes', 'ط·آ§ط¸â€‍ط¸â€¦ط¸â€‍احظات') }}</Label>
               <textarea id="reservation-notes" v-model="reservationForm.notes" rows="3" class="w-full rounded-md border border-input bg-transparent px-3 py-2" />
               <InputError :message="reservationForm.errors.notes" class="mt-1" />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" @click="showReservationModal = false">{{ localize('Cancel', 'ط·آ¥ط¸â€‍ط·ط›ط·آ§ط·طŒ') }}</Button>
+            <Button type="button" variant="outline" @click="showReservationModal = false">{{ localize('Cancel', 'ط·آ¥ط¸â€‍ط·ط›اء') }}</Button>
             <Button type="button" :disabled="reservationSubmitting" @click="submitReservationFromModal">
-              {{ reservationSubmitting ? localize('Creating...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍ط·آ¥ط¸â€ ط·آ´ط·آ§ط·طŒ...') : localize('Create Reservation', 'ط·آ¥ط¸â€ ط·آ´ط·آ§ط·طŒ ط·آ­ط·آ¬ط·آ²') }}
+              {{ reservationSubmitting ? localize('Creating...', 'جارٍ الإنشاء...') : localize('Create Reservation', 'إنشاء حجز') }}
             </Button>
           </DialogFooter>
         </DialogContent>

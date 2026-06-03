@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
 import { Button } from '@/components/ui/button';
+import { useTrans } from '@/composables/useTrans';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -17,6 +19,8 @@ interface PlanOption {
     one_time_price: number | string | null;
     one_time_price_id: string | null;
 }
+
+const { t } = useTrans();
 
 const props = defineProps<{
     plans: PlanOption[];
@@ -81,37 +85,41 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Choose Plan" />
+    <Head :title="t('plans_page.choose_plan')" />
 
-    <main class="min-h-screen bg-slate-50 py-10">
+    <main class="relative min-h-screen bg-slate-50 py-10">
+        <div class="absolute top-4 ltr:right-4 rtl:left-4 z-50">
+            <AuthLanguageSwitcher />
+        </div>
+
         <div class="mx-auto max-w-6xl px-4">
             <div class="mb-6">
                 <Link :href="urls.register" class="text-sm font-medium text-slate-700 hover:underline">
-                    Back to registration
+                    {{ t('plans_page.back_to_registration') }}
                 </Link>
             </div>
 
             <div class="mb-8">
-                <p class="text-sm font-semibold text-blue-700">Step 2 of 3</p>
-                <h1 class="mt-2 text-3xl font-bold text-slate-900">Choose your plan</h1>
-                <p class="mt-2 text-slate-600">Select a plan before payment and tenant activation.</p>
+                <p class="text-sm font-semibold text-blue-700">{{ t('plans_page.step_2_of_3') }}</p>
+                <h1 class="mt-2 text-3xl font-bold text-slate-900">{{ t('plans_page.choose_your_plan') }}</h1>
+                <p class="mt-2 text-slate-600">{{ t('plans_page.select_plan_subtitle') }}</p>
             </div>
 
             <form @submit.prevent="submit">
                 <div class="mb-8 rounded-2xl border bg-white p-5">
-                    <p class="mb-3 text-sm font-semibold text-slate-800">Billing cycle</p>
+                    <p class="mb-3 text-sm font-semibold text-slate-800">{{ t('plans_page.billing_cycle') }}</p>
                     <div class="flex flex-wrap gap-3">
                         <label class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm">
                             <input v-model="form.billing_cycle" type="radio" value="monthly">
-                            Monthly
+                            {{ t('plans_page.monthly') }}
                         </label>
                         <label class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm">
                             <input v-model="form.billing_cycle" type="radio" value="yearly">
-                            Yearly
+                            {{ t('plans_page.yearly') }}
                         </label>
                         <label class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm">
                             <input v-model="form.billing_cycle" type="radio" value="one_time">
-                            One time
+                            {{ t('plans_page.one_time') }}
                         </label>
                     </div>
                     <p v-if="form.errors.billing_cycle" class="mt-2 text-sm text-red-600">{{ form.errors.billing_cycle }}</p>
@@ -135,7 +143,7 @@ const submit = () => {
                                 v-if="form.plan_id === plan.id"
                                 class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700"
                             >
-                                Selected
+                                {{ t('plans_page.selected') }}
                             </span>
                         </div>
                         <p class="mb-4 min-h-10 text-sm text-slate-600">{{ plan.description }}</p>
@@ -149,7 +157,7 @@ const submit = () => {
                             v-if="!supportsCycle(plan, form.billing_cycle)"
                             class="mt-4 text-xs font-medium text-amber-700"
                         >
-                            This billing cycle is not available for this plan.
+                            {{ t('plans_page.not_available') }}
                         </p>
                     </button>
                 </div>
@@ -158,9 +166,11 @@ const submit = () => {
 
                 <div class="mt-8 flex items-center gap-3">
                     <Button type="submit" :disabled="form.processing || !selectedPlan">
-                        {{ form.processing ? 'Saving...' : 'Continue to payment' }}
+                        {{ form.processing ? t('plans_page.saving') : t('plans_page.continue_to_payment') }}
                     </Button>
-                    <Link :href="urls.register" class="text-sm font-medium text-slate-700 hover:underline">Edit account details</Link>
+                    <Link :href="urls.register" class="text-sm font-medium text-slate-700 hover:underline">
+                        {{ t('plans_page.edit_details') }}
+                    </Link>
                 </div>
             </form>
         </div>

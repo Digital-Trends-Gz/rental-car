@@ -62,6 +62,11 @@ class WebsiteSettingsController extends Controller
             'logo_temp_folders.*' => ['string'],
             'logo_removed_files' => ['array'],
             'logo_removed_files.*' => ['integer'],
+            'favicon_url' => ['nullable', 'string', 'max:1000'],
+            'favicon_temp_folders' => ['array'],
+            'favicon_temp_folders.*' => ['string'],
+            'favicon_removed_files' => ['array'],
+            'favicon_removed_files.*' => ['integer'],
             'primary_color' => ['required', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
             'secondary_color' => ['required', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
             'tax_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -228,6 +233,7 @@ class WebsiteSettingsController extends Controller
             [
                 'site_name' => $this->nullableString($validated['site_name'] ?? null),
                 'logo_url' => $this->nullableString($validated['logo_url'] ?? null),
+                'favicon_url' => $this->nullableString($validated['favicon_url'] ?? null),
                 'primary_color' => strtolower((string) $validated['primary_color']),
                 'secondary_color' => strtolower((string) $validated['secondary_color']),
                 'tax_percentage' => max(0, min(100, $taxPercentage)),
@@ -484,6 +490,21 @@ class WebsiteSettingsController extends Controller
                 );
             }
         }
+
+        $faviconTempFolders = $request->input('favicon_temp_folders', []);
+        $faviconRemovedIds = $request->input('favicon_removed_files', []);
+
+        if (!empty($faviconTempFolders)) {
+            $existingFaviconIds = $siteSetting->files()->where('collection', 'favicon')->pluck('id')->all();
+            $faviconRemovedIds = array_values(array_unique(array_merge($faviconRemovedIds, $existingFaviconIds)));
+        }
+
+        $this->filePondService->handleFileUpdates(
+            $siteSetting,
+            is_array($faviconTempFolders) ? $faviconTempFolders : [],
+            is_array($faviconRemovedIds) ? $faviconRemovedIds : [],
+            'favicon'
+        );
 
         $this->syncSeoOgImageUpload($request, $siteSetting);
 
@@ -1157,6 +1178,20 @@ class WebsiteSettingsController extends Controller
                 ->all()
             : [];
 
+        $faviconFiles = $tenant->siteSetting
+            ? $tenant->siteSetting->files()
+                ->where('collection', 'favicon')
+                ->get()
+                ->map(function ($file) {
+                    return [
+                        'id' => $file->id,
+                        'url' => TenantSiteSetting::publicUrlFromPath($file->path),
+                    ];
+                })
+                ->values()
+                ->all()
+            : [];
+
         return [
             'tenant' => [
                 'id' => $tenant->id,
@@ -1166,6 +1201,7 @@ class WebsiteSettingsController extends Controller
             'settings' => TenantSiteSetting::forTenant($tenant),
             'pdfTemplateOptions' => TenantPdfTemplateRegistry::contractTemplateOptions(),
             'logoFiles' => $logoFiles,
+            'faviconFiles' => $faviconFiles,
             'seoOgImageFiles' => $seoOgImageFiles,
             'actions' => [
                 'update' => route('admin.settings.website.update'),

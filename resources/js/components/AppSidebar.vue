@@ -32,12 +32,14 @@ import {
     CalendarDays,
     Car,
     CreditCard,
+    DollarSign,
     FileText,
     LayoutDashboard,
     LifeBuoy,
     MapPin,
     Percent,
     Search,
+    Settings,
     Shield,
     ShieldAlert,
     Siren,
@@ -48,6 +50,11 @@ import {
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
+
+interface SidebarNavItem extends NavItem {
+    key: string;
+    children?: SidebarNavItem[];
+}
 
 const page = usePage<any>();
 const { t } = useTrans();
@@ -72,6 +79,12 @@ const isSuperAdmin = computed(() =>
     stripLocalePrefix(String(page.url || '/')).startsWith('/superadmin'),
 );
 const currentTenant = computed(() => page.props.current_tenant);
+const tenantSiteSettings = computed(() => page.props.tenant_site_settings ?? null);
+const sidebarSiteName = computed(
+    () => tenantSiteSettings.value?.site_name || currentTenant.value?.name || page.props.name || 'Website',
+);
+const sidebarLogoUrl = computed(() => tenantSiteSettings.value?.logo_url || null);
+const sidebarInitial = computed(() => sidebarSiteName.value.trim().charAt(0).toUpperCase() || 'W');
 const tenantFeatureFlags = computed<Record<string, boolean>>(
     () => currentTenant.value?.subscription_plan?.feature_flags || {},
 );
@@ -98,11 +111,39 @@ const authPermissions = computed<string[]>(() =>
 const hasTenantFeature = (feature?: string) =>
     !feature || !hasFeatureFlags.value || Boolean(tenantFeatureFlags.value[feature]);
 
-const mainNavItems = computed<NavItem[]>(() => {
+const filterNavItems = (items: SidebarNavItem[]): SidebarNavItem[] =>
+    items
+        .map((item) => {
+            const children = item.children?.length
+                ? filterNavItems(item.children)
+                : undefined;
+
+            return {
+                ...item,
+                children,
+            };
+        })
+        .filter((item) => {
+            if (item.permission && !authPermissions.value.includes(item.permission)) {
+                return false;
+            }
+
+            if (!hasTenantFeature(item.feature)) {
+                return false;
+            }
+
+            if (item.children) {
+                return item.children.length > 0;
+            }
+
+            return true;
+        });
+
+const mainNavItems = computed<SidebarNavItem[]>(() => {
     const slug = currentTenant.value?.slug;
     if (!slug) return [];
 
-    return [
+    return filterNavItems([
         {
             title: t('dashboard.sidebar.admin.dashboard') || 'Dashboard',
             href: adminHref('/dashboard'),
@@ -121,57 +162,69 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-reservations',
         },
         {
-            title: t('dashboard.sidebar.admin.maintenance_types'),
-            href: adminHref('/maintenance-types'),
+            title: t('dashboard.sidebar.admin_groups.maintenance_and_damage'),
             icon: Wrench,
-            permission: 'tenant-manage-cars',
-            feature: 'maintenance_module',
+            children: [
+                {
+                    title: t('dashboard.sidebar.admin.damage_reports'),
+                    href: adminHref('/car-damage-reports'),
+                    icon: ShieldAlert,
+                    permission: 'tenant-manage-cars',
+                    feature: 'damage_reports',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.damage_repairs'),
+                    href: adminHref('/damage-repairs'),
+                    icon: Wrench,
+                    permission: 'tenant-manage-cars',
+                    feature: 'damage_reports',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.maintenance_types'),
+                    href: adminHref('/maintenance-types'),
+                    icon: Wrench,
+                    permission: 'tenant-manage-cars',
+                    feature: 'maintenance_module',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.maintenance_records'),
+                    href: adminHref('/maintenance-records'),
+                    icon: Wrench,
+                    permission: 'tenant-manage-cars',
+                    feature: 'maintenance_module',
+                },
+            ],
         },
         {
-            title: t('dashboard.sidebar.admin.maintenance_records'),
-            href: adminHref('/maintenance-records'),
-            icon: Wrench,
-            permission: 'tenant-manage-cars',
-            feature: 'maintenance_module',
-        },
-        {
-            title: t('dashboard.sidebar.admin.violation_types'),
-            href: adminHref('/violation-types'),
+            title: t('dashboard.sidebar.admin_groups.violation_and_accident'),
             icon: AlertTriangle,
-            permission: 'tenant-manage-cars',
-            feature: 'violations_module',
-        },
-        {
-            title: t('dashboard.sidebar.admin.car_violations'),
-            href: adminHref('/car-violations'),
-            icon: AlertTriangle,
-            permission: 'tenant-manage-cars',
-            feature: 'violations_module',
-        },
-        {
-            title: t('dashboard.sidebar.admin.damage_reports'),
-            href: adminHref('/car-damage-reports'),
-            icon: ShieldAlert,
-            permission: 'tenant-manage-cars',
-            feature: 'damage_reports',
-        },
-        {
-            title: t('dashboard.sidebar.admin.damage_repairs'),
-            href: adminHref('/damage-repairs'),
-            icon: Wrench,
-            permission: 'tenant-manage-cars',
-            feature: 'damage_reports',
+            children: [
+                {
+                    title: t('dashboard.sidebar.admin.violation_types'),
+                    href: adminHref('/violation-types'),
+                    icon: AlertTriangle,
+                    permission: 'tenant-manage-cars',
+                    feature: 'violations_module',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.car_violations'),
+                    href: adminHref('/car-violations'),
+                    icon: AlertTriangle,
+                    permission: 'tenant-manage-cars',
+                    feature: 'violations_module',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.accident_reports'),
+                    href: adminHref('/accident-reports'),
+                    icon: Siren,
+                    permission: 'tenant-manage-reservations',
+                },
+            ],
         },
         {
             title: t('dashboard.sidebar.admin.contracts'),
             href: contractsIndex(slug).url,
             icon: FileText,
-            permission: 'tenant-manage-reservations',
-        },
-        {
-            title: page.props.locale === 'ar' ? 'بلاغات الحوادث' : 'Accident Reports',
-            href: adminHref('/accident-reports'),
-            icon: Siren,
             permission: 'tenant-manage-reservations',
         },
         {
@@ -181,30 +234,36 @@ const mainNavItems = computed<NavItem[]>(() => {
             permission: 'tenant-manage-clients',
         },
         {
-            title: t('dashboard.sidebar.admin.payments'),
-            href: paymentsIndex(slug).url,
-            icon: CreditCard,
-            permission: 'tenant-manage-payments',
-        },
-        {
-            title: page.props.locale === 'ar' ? 'المديونين' : 'Debtors',
-            href: adminHref('/payments/debtors'),
-            icon: CreditCard,
-            permission: 'tenant-manage-payments',
-        },
-        {
-            title: t('dashboard.sidebar.admin.coupons'),
-            href: adminHref('/coupons'),
-            icon: Tag,
-            permission: 'tenant-manage-payments',
-            feature: 'coupon_system',
-        },
-        {
-            title: t('dashboard.sidebar.admin.auto_discounts'),
-            href: adminHref('/car-discounts'),
-            icon: Percent,
-            permission: 'tenant-manage-payments',
-            feature: 'auto_discounts',
+            title: t('dashboard.sidebar.admin_groups.finance'),
+            icon: DollarSign,
+            children: [
+                {
+                    title: t('dashboard.sidebar.admin.payments'),
+                    href: paymentsIndex(slug).url,
+                    icon: CreditCard,
+                    permission: 'tenant-manage-payments',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.debtors'),
+                    href: adminHref('/payments/debtors'),
+                    icon: CreditCard,
+                    permission: 'tenant-manage-payments',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.auto_discounts'),
+                    href: adminHref('/car-discounts'),
+                    icon: Percent,
+                    permission: 'tenant-manage-payments',
+                    feature: 'auto_discounts',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.coupons'),
+                    href: adminHref('/coupons'),
+                    icon: Tag,
+                    permission: 'tenant-manage-payments',
+                    feature: 'coupon_system',
+                },
+            ],
         },
         {
             title: t('dashboard.sidebar.admin.reports'),
@@ -214,89 +273,103 @@ const mainNavItems = computed<NavItem[]>(() => {
             feature: 'reports_module',
         },
         {
-            title: t('dashboard.sidebar.admin.support'),
-            href: supportIndex(slug).url,
+            title: t('dashboard.sidebar.admin_groups.support'),
             icon: LifeBuoy,
-            permission: 'tenant-manage-support',
+            children: [
+                {
+                    title: t('dashboard.sidebar.admin.support'),
+                    href: supportIndex(slug).url,
+                    icon: LifeBuoy,
+                    permission: 'tenant-manage-support',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.platform_support'),
+                    href: adminHref('/support/platform'),
+                    icon: LifeBuoy,
+                    permission: 'tenant-manage-support',
+                },
+            ],
         },
         {
-            title: t('dashboard.sidebar.admin.platform_support'),
-            href: adminHref('/support/platform'),
-            icon: LifeBuoy,
-            permission: 'tenant-manage-support',
-        },
-        {
-            title: t('dashboard.sidebar.admin.branches'),
-            href: branchesIndex(slug).url,
-            icon: MapPin,
-            permission: 'tenant-manage-branches',
-        },
-        {
-            title: t('dashboard.sidebar.admin.employees'),
-            href: employeesIndex(slug).url,
+            title: t('dashboard.sidebar.admin_groups.user_management'),
             icon: Users,
-            permission: 'tenant-manage-employees',
+            children: [
+                {
+                    title: t('dashboard.sidebar.admin.branches'),
+                    href: branchesIndex(slug).url,
+                    icon: MapPin,
+                    permission: 'tenant-manage-branches',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.employees'),
+                    href: employeesIndex(slug).url,
+                    icon: Users,
+                    permission: 'tenant-manage-employees',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.roles'),
+                    href: rolesIndex(slug).url,
+                    icon: Shield,
+                    permission: 'tenant-manage-employees',
+                },
+            ],
         },
         {
-            title: t('dashboard.sidebar.admin.roles'),
-            href: rolesIndex(slug).url,
-            icon: Shield,
-            permission: 'tenant-manage-employees',
+            title: t('dashboard.sidebar.admin_groups.settings'),
+            icon: Settings,
+            children: [
+                {
+                    title: t('dashboard.sidebar.admin.payment_providers'),
+                    href: adminHref('/settings/payment-providers'),
+                    icon: CreditCard,
+                    permission: 'tenant-manage-settings',
+                    feature: 'stripe_connect',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.website_settings'),
+                    href: adminHref('/settings/website'),
+                    icon: Settings,
+                    permission: 'tenant-manage-settings',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.contract_pdf') || 'Contract PDF',
+                    href: adminHref('/settings/contract-pdf'),
+                    icon: FileText,
+                    permission: 'tenant-manage-settings',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.seo_settings'),
+                    href: adminHref('/settings/seo'),
+                    icon: Search,
+                    permission: 'tenant-manage-settings',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.seo_audit'),
+                    href: adminHref('/settings/seo-audit'),
+                    icon: FileText,
+                    permission: 'tenant-manage-settings',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.translations'),
+                    href: adminHref('/settings/translations'),
+                    icon: Settings,
+                    permission: 'tenant-manage-settings',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.plate_formats'),
+                    href: adminHref('/settings/plate-formats'),
+                    icon: Tag,
+                    permission: 'tenant-manage-settings',
+                },
+                {
+                    title: t('dashboard.sidebar.admin.reservation_settings'),
+                    href: adminHref('/settings/reservation-settings'),
+                    icon: CalendarDays,
+                    permission: 'tenant-manage-settings',
+                },
+            ],
         },
-        {
-            title: t('dashboard.sidebar.admin.payment_providers'),
-            href: adminHref('/settings/payment-providers'),
-            icon: CreditCard,
-            permission: 'tenant-manage-settings',
-            feature: 'stripe_connect',
-        },
-        {
-            title: t('dashboard.sidebar.admin.website_settings'),
-            href: adminHref('/settings/website'),
-            icon: Shield,
-            permission: 'tenant-manage-settings',
-        },
-        {
-            title: t('dashboard.sidebar.admin.contract_pdf') || 'Contract PDF',
-            href: adminHref('/settings/contract-pdf'),
-            icon: FileText,
-            permission: 'tenant-manage-settings',
-        },
-        {
-            title: t('dashboard.sidebar.admin.seo_settings'),
-            href: adminHref('/settings/seo'),
-            icon: Search,
-            permission: 'tenant-manage-settings',
-        },
-        {
-            title: t('dashboard.sidebar.admin.seo_audit'),
-            href: adminHref('/settings/seo-audit'),
-            icon: FileText,
-            permission: 'tenant-manage-settings',
-        },
-        {
-            title: t('dashboard.sidebar.admin.translations'),
-            href: adminHref('/settings/translations'),
-            icon: Shield,
-            permission: 'tenant-manage-settings',
-        },
-        {
-            title: t('dashboard.sidebar.admin.plate_formats'),
-            href: adminHref('/settings/plate-formats'),
-            icon: Tag,
-            permission: 'tenant-manage-settings',
-        },
-        {
-            title: t('dashboard.sidebar.admin.reservation_settings'),
-            href: adminHref('/settings/reservation-settings'),
-            icon: CalendarDays,
-            permission: 'tenant-manage-settings',
-        },
-    ].filter(
-        (item) =>
-            (!item.permission || authPermissions.value.includes(item.permission)) &&
-            hasTenantFeature(item.feature),
-    );
+    ]);
 });
 </script>
 
@@ -319,18 +392,22 @@ const mainNavItems = computed<NavItem[]>(() => {
                                       : '/'
                             "
                         >
-                            <div
-                                v-if="currentTenant && currentTenant.name"
-                                class="flex items-center gap-2"
-                            >
+                            <div v-if="currentTenant" class="flex w-full items-center justify-between gap-2">
+                                <span class="min-w-0 truncate font-semibold">
+                                    {{ sidebarSiteName }}
+                                </span>
+                                <img
+                                    v-if="sidebarLogoUrl"
+                                    :src="sidebarLogoUrl"
+                                    :alt="sidebarSiteName"
+                                    class="h-8 w-8 shrink-0 rounded-md object-contain"
+                                />
                                 <div
-                                    class="flex h-8 w-8 items-center justify-center rounded-md bg-primary p-1 text-xl font-bold text-primary-foreground"
+                                    v-else
+                                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary p-1 text-xl font-bold text-primary-foreground"
                                 >
-                                    {{ currentTenant.name.charAt(0) }}
+                                    {{ sidebarInitial }}
                                 </div>
-                                <span class="truncate font-semibold">{{
-                                    currentTenant.name
-                                }}</span>
                             </div>
                             <AppLogo v-else />
                         </Link>

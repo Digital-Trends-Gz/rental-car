@@ -996,7 +996,7 @@ watch(
                                         />
                                         <button
                                             type="button"
-                                            class="rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:opacity-60"
+                                            class="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
                                             :disabled="couponApplying"
                                             @click="applyCoupon"
                                         >

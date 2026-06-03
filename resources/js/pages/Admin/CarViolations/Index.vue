@@ -332,7 +332,7 @@ function deleteViolation(url: string, numberText: string | null) {
                     :class="[
                         'rounded px-3 py-1 text-sm',
                         link.active
-                            ? 'bg-gray-900 text-white'
+                            ? 'bg-primary text-primary-foreground'
                             : 'bg-gray-100 text-gray-700',
                         !link.url && 'pointer-events-none opacity-50',
                     ]"

@@ -282,10 +282,9 @@ const restartWizard = (): void => {
 
     <div class="flex min-h-screen bg-white">
         <div class="relative hidden overflow-hidden lg:flex lg:w-1/2">
-            <div class="absolute inset-0 z-10 bg-gradient-to-br from-blue-700/80 to-blue-500/70" />
             <img
                 :src="authHero"
-                alt="Professional workspace"
+                alt="Car4U background"
                 class="absolute inset-0 h-full w-full object-cover"
             />
         </div>

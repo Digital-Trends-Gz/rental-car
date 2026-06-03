@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import authHero from '@/assets/auth-hero.jpg';
 import InputError from '@/components/InputError.vue';
+import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
+import { useTrans } from '@/composables/useTrans';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +15,8 @@ import { request as tenantPasswordRequest } from '@/routes/tenant/password';
 import { store as tenantTenantLoginStore } from '@/routes/tenant/tenant-login';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+
+const { t } = useTrans();
 
 defineProps<{
     status?: string;
@@ -45,30 +49,36 @@ const landingUrl = computed(() => {
 </script>
 
 <template>
-    <Head title="Tenant Login" />
+    <Head :title="t('auth.tenant_login_seo_title')">
+        <meta
+            name="description"
+            :content="t('auth.tenant_login_seo_description')"
+        />
+    </Head>
 
     <div class="flex min-h-screen bg-white">
         <div class="relative hidden overflow-hidden lg:flex lg:w-1/2">
-            <div
-                class="absolute inset-0 z-10 bg-gradient-to-br from-blue-700/80 to-blue-500/70"
-            />
             <img
                 :src="authHero"
-                alt="Professional workspace"
+                alt="Car4U background"
                 class="absolute inset-0 h-full w-full object-cover"
             />
         </div>
 
         <div
-            class="flex w-full items-center justify-center p-6 sm:p-8 lg:w-1/2"
+            class="relative flex w-full items-center justify-center p-6 sm:p-8 lg:w-1/2"
         >
+            <div class="absolute top-4 ltr:right-4 rtl:left-4 z-50">
+                <AuthLanguageSwitcher />
+            </div>
+
             <div class="w-full max-w-md space-y-6">
                 <div class="space-y-2">
                     <h1 class="text-3xl font-bold text-gray-900">
-                        Tenant Sign In
+                        {{ t('auth.tenant_sign_in') }}
                     </h1>
                     <p class="text-gray-500">
-                        Welcome back! Please enter your details.
+                        {{ t('auth.tenant_welcome') }}
                     </p>
                 </div>
 
@@ -89,13 +99,13 @@ const landingUrl = computed(() => {
                         <Label
                             for="email"
                             class="text-sm font-semibold text-gray-800"
-                            >Email</Label
+                            >{{ t('auth.email') }}</Label
                         >
                         <Input
                             id="email"
                             name="email"
                             type="email"
-                            placeholder="Email address..."
+                            :placeholder="t('auth.placeholder_email')"
                             required
                             autofocus
                             autocomplete="email"
@@ -109,14 +119,14 @@ const landingUrl = computed(() => {
                             <Label
                                 for="password"
                                 class="text-sm font-semibold text-gray-800"
-                                >Password</Label
+                                >{{ t('auth.password') }}</Label
                             >
                             <Link
                                 v-if="canResetPassword"
                                 :href="forgotPasswordUrl"
                                 class="text-sm font-medium text-blue-700 hover:underline"
                             >
-                                Forgot password?
+                                {{ t('auth.forgot_password') }}
                             </Link>
                         </div>
 
@@ -124,7 +134,7 @@ const landingUrl = computed(() => {
                             id="password"
                             name="password"
                             type="password"
-                            placeholder="**********"
+                            :placeholder="t('auth.placeholder_password')"
                             required
                             autocomplete="current-password"
                             class="h-11 border-gray-300"
@@ -135,7 +145,7 @@ const landingUrl = computed(() => {
                     <div class="flex items-center gap-2">
                         <Checkbox id="remember" name="remember" />
                         <label for="remember" class="text-sm text-gray-600"
-                            >Remember me</label
+                            >{{ t('auth.remember_me_short') }}</label
                         >
                     </div>
 
@@ -144,17 +154,17 @@ const landingUrl = computed(() => {
                         class="h-12 w-full rounded-full bg-gradient-to-r from-blue-700 to-blue-500 font-semibold text-white shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
                         :disabled="processing"
                     >
-                        {{ processing ? 'Signing In...' : 'Sign In' }}
+                        {{ processing ? t('auth.signing_in') : t('auth.sign_in') }}
                     </button>
                 </Form>
 
                 <p class="text-center text-sm text-gray-600">
-                    Don't have an account?
+                    {{ t('auth.dont_have_account') }}
                     <Link
                         :href="registerUrl"
                         class="ml-1 font-semibold text-blue-700 hover:underline"
                     >
-                        Sign Up ->
+                        {{ t('auth.create_one') }}
                     </Link>
                 </p>
 
@@ -163,7 +173,7 @@ const landingUrl = computed(() => {
                         :href="landingUrl"
                         class="font-medium text-gray-600 hover:underline"
                     >
-                        Back to auth landing
+                        {{ t('auth.back_to_landing') }}
                     </Link>
                 </p>
             </div>

@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import authHero from '@/assets/auth-hero.jpg';
 import InputError from '@/components/InputError.vue';
+import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
+import { useTrans } from '@/composables/useTrans';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { store as mainRegisterStore } from '@/routes/register';
 import { store as tenantRegisterStore } from '@/routes/tenant/register';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+
+const { t } = useTrans();
 
 const page = usePage<any>();
 const currentTenant = computed(() => page.props.current_tenant);
@@ -96,32 +100,28 @@ watch(
 
     <div class="flex min-h-screen bg-white">
         <div class="relative hidden overflow-hidden lg:flex lg:w-1/2">
-            <div
-                class="absolute inset-0 z-10 bg-gradient-to-br from-orange-600/80 to-orange-400/70"
-                v-if="currentTenant"
-            />
-            <div
-                class="absolute inset-0 z-10 bg-gradient-to-br from-blue-700/80 to-blue-500/70"
-                v-else
-            />
             <img
                 :src="authHero"
-                alt="Professional workspace"
+                alt="Car4U background"
                 class="absolute inset-0 h-full w-full object-cover"
             />
         </div>
 
         <div
-            class="flex w-full items-center justify-center p-6 sm:p-8 lg:w-1/2"
+            class="relative flex w-full items-center justify-center p-6 sm:p-8 lg:w-1/2"
         >
+            <div class="absolute top-4 ltr:right-4 rtl:left-4 z-50">
+                <AuthLanguageSwitcher />
+            </div>
+
             <div class="w-full max-w-md space-y-6">
 
                 <!-- ===================== TENANT: Client Registration ===================== -->
                 <template v-if="currentTenant">
                     <div class="space-y-2">
-                        <h1 class="text-3xl font-bold text-gray-900">Create Account</h1>
+                        <h1 class="text-3xl font-bold text-gray-900">{{ t('auth.create_account') }}</h1>
                         <p class="text-gray-500">
-                            Join {{ currentTenant.name }} and start your car rental journey.
+                            {{ t('auth.create_account_tenant_desc') }}
                         </p>
                     </div>
 
@@ -134,13 +134,13 @@ watch(
                         <!-- Full Name -->
                         <div class="space-y-2">
                             <Label for="name" class="text-sm font-semibold text-gray-800">
-                                Full Name
+                                {{ t('auth.full_name') }}
                             </Label>
                             <Input
                                 id="name"
                                 name="name"
                                 type="text"
-                                placeholder="Enter your full name"
+                                :placeholder="t('auth.placeholder_full_name')"
                                 :default-value="initial.name"
                                 required
                                 autofocus
@@ -153,13 +153,13 @@ watch(
                         <!-- Email -->
                         <div class="space-y-2">
                             <Label for="email" class="text-sm font-semibold text-gray-800">
-                                Email Address
+                                {{ t('auth.email') }}
                             </Label>
                             <Input
                                 id="email"
                                 name="email"
                                 type="email"
-                                placeholder="Enter your email address"
+                                :placeholder="t('auth.placeholder_email')"
                                 :default-value="initial.email"
                                 required
                                 autocomplete="email"
@@ -171,13 +171,13 @@ watch(
                         <!-- Civil Number -->
                         <div class="space-y-2">
                             <Label for="civil_number" class="text-sm font-semibold text-gray-800">
-                                Civil Number
+                                {{ t('auth.civil_number') }}
                             </Label>
                             <Input
                                 id="civil_number"
                                 name="civil_number"
                                 type="text"
-                                placeholder="Enter your civil number"
+                                :placeholder="t('auth.civil_number')"
                                 :default-value="initial.civil_number"
                                 required
                                 autocomplete="off"
@@ -189,13 +189,13 @@ watch(
                         <!-- Password -->
                         <div class="space-y-2">
                             <Label for="password" class="text-sm font-semibold text-gray-800">
-                                Password
+                                {{ t('auth.password') }}
                             </Label>
                             <Input
                                 id="password"
                                 name="password"
                                 type="password"
-                                placeholder="Create a password"
+                                :placeholder="t('auth.placeholder_password')"
                                 required
                                 autocomplete="new-password"
                                 class="h-11 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
@@ -206,13 +206,13 @@ watch(
                         <!-- Confirm Password -->
                         <div class="space-y-2">
                             <Label for="password_confirmation" class="text-sm font-semibold text-gray-800">
-                                Confirm Password
+                                {{ t('auth.confirm_password') }}
                             </Label>
                             <Input
                                 id="password_confirmation"
                                 name="password_confirmation"
                                 type="password"
-                                placeholder="Confirm your password"
+                                :placeholder="t('auth.confirm_password')"
                                 required
                                 autocomplete="new-password"
                                 class="h-11 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
@@ -226,13 +226,15 @@ watch(
                             class="h-12 w-full rounded-lg bg-orange-500 font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="processing"
                         >
-                            {{ processing ? 'Creating Account...' : 'Create Account' }}
+                            {{ processing ? t('auth.authenticating') : t('auth.create_account') }}
                         </button>
                     </Form>
 
                     <div class="relative flex items-center py-2">
                         <div class="flex-grow border-t border-gray-200"></div>
-                        <span class="flex-shrink-0 px-4 text-xs font-medium text-gray-500 uppercase">Or continue with</span>
+                        <span class="flex-shrink-0 px-4 text-xs font-medium text-gray-500 uppercase">
+                            {{ page.props.locale === 'ar' ? 'أو المتابعة باستخدام' : 'Or continue with' }}
+                        </span>
                         <div class="flex-grow border-t border-gray-200"></div>
                     </div>
 
@@ -251,7 +253,7 @@ watch(
                         </a>
                         <a
                             :href="buildUrl(page.props.app_url_base, `/auth/apple/redirect?tenant=${currentTenant.slug}`)"
-                            class="flex h-11 items-center justify-center rounded-lg border border-gray-300 bg-black font-semibold text-white shadow-sm transition hover:bg-gray-800"
+                            class="flex h-11 items-center justify-center rounded-lg border border-primary bg-primary font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
                         >
                             <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M16.365 21.492c-1.373.91-2.073.932-3.418.932-1.36 0-2.457-.145-3.358-.888-4.706-3.896-7.143-12.001-2.924-17.159C8.381 2.27 10.64 1 12.87 1c1.372 0 2.515.548 3.518.548 1.033 0 2.455-.662 4.098-.598 2.053.082 3.868.868 4.908 2.39-4.226 2.593-3.483 8.653.861 10.4-1.127 3.238-3.085 6.425-5.61 8.8-1.026.969-2.19 1.496-3.235 1.496a7.41 7.41 0 0 1-1.045-.544zM16.124 6.78c-.2-2.14 1.5-4.04 3.79-4.38.38 2.39-1.9 4.31-3.79 4.38z" />
@@ -262,12 +264,12 @@ watch(
 
                     <!-- Sign in link -->
                     <p class="text-center text-sm text-gray-600">
-                        Already have an account?
+                        {{ t('auth.already_have_account_short') }}
                         <Link
                             :href="loginUrl"
                             class="ml-1 font-semibold text-orange-500 hover:text-orange-600 hover:underline"
                         >
-                            Sign in here
+                            {{ t('auth.sign_in_here_short') }}
                         </Link>
                     </p>
                 </template>
@@ -275,9 +277,9 @@ watch(
                 <!-- ===================== MAIN DOMAIN: SaaS Registration ===================== -->
                 <template v-else>
                     <div class="space-y-2">
-                        <h1 class="text-3xl font-bold text-gray-900">Sign Up</h1>
+                        <h1 class="text-3xl font-bold text-gray-900">{{ t('auth.sign_up') }}</h1>
                         <p class="text-gray-500">
-                            Create your account to get started.
+                            {{ t('auth.create_account_desc') }}
                         </p>
                     </div>
 
@@ -291,13 +293,13 @@ watch(
                             <Label
                                 for="name"
                                 class="text-sm font-semibold text-gray-800"
-                                >Company Name</Label
+                                >{{ t('auth.company_name') }}</Label
                             >
                             <Input
                                 id="name"
                                 name="name"
                                 type="text"
-                                placeholder="Your company..."
+                                :placeholder="t('auth.company_name')"
                                 :default-value="initial.name"
                                 required
                                 autofocus
@@ -310,24 +312,24 @@ watch(
                         <div class="space-y-4 rounded-2xl border border-gray-200 bg-gray-50/60 p-4">
                             <div class="space-y-1">
                                 <h3 class="text-base font-semibold text-gray-900">
-                                    {{ text('Company Registration Details', 'بيانات السجل التجاري') }}
+                                    {{ t('auth.company_registration_details') }}
                                 </h3>
                                 <p class="text-xs text-gray-500">
-                                    {{ text('These company details are shared for the registration and can be updated later from tenant management.', 'هذه البيانات تخص الشركة نفسها ويمكن تحديثها لاحقًا من إدارة المستأجر.') }}
+                                    {{ t('auth.company_registration_help') }}
                                 </p>
                             </div>
 
                             <div class="grid gap-4 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label for="commercial_registration_number" class="text-sm font-semibold text-gray-800">
-                                        {{ text('Commercial Registration No.', 'رقم السجل التجاري') }}
+                                        {{ t('auth.commercial_registration_no') }}
                                     </Label>
                                     <Input
                                         id="commercial_registration_number"
                                         name="commercial_registration_number"
                                         type="text"
                                         :default-value="initial.commercial_registration_number"
-                                        :placeholder="text('Commercial registration number', 'رقم السجل التجاري')"
+                                        :placeholder="t('auth.commercial_registration_no')"
                                         required
                                         class="h-11 border-gray-300"
                                     />
@@ -336,14 +338,14 @@ watch(
 
                                 <div class="space-y-2">
                                     <Label for="tax_number" class="text-sm font-semibold text-gray-800">
-                                        {{ text('Tax No.', 'الرقم الضريبي') }}
+                                        {{ t('auth.tax_no') }}
                                     </Label>
                                     <Input
                                         id="tax_number"
                                         name="tax_number"
                                         type="text"
                                         :default-value="initial.tax_number"
-                                        :placeholder="text('Tax number', 'الرقم الضريبي')"
+                                        :placeholder="t('auth.tax_no')"
                                         required
                                         class="h-11 border-gray-300"
                                     />
@@ -352,14 +354,14 @@ watch(
 
                                 <div class="space-y-2 md:col-span-2">
                                     <Label for="civil_number" class="text-sm font-semibold text-gray-800">
-                                        {{ text('Civil No.', 'الرقم المدني') }}
+                                        {{ t('auth.civil_number') }}
                                     </Label>
                                     <Input
                                         id="civil_number"
                                         name="civil_number"
                                         type="text"
                                         :default-value="initial.civil_number"
-                                        :placeholder="text('Civil number', 'الرقم المدني')"
+                                        :placeholder="t('auth.civil_number')"
                                         required
                                         class="h-11 border-gray-300"
                                     />
@@ -372,13 +374,13 @@ watch(
                             <Label
                                 for="email"
                                 class="text-sm font-semibold text-gray-800"
-                                >Email</Label
+                                >{{ t('auth.email') }}</Label
                             >
                             <Input
                                 id="email"
                                 name="email"
                                 type="email"
-                                placeholder="Email address..."
+                                :placeholder="t('auth.placeholder_email')"
                                 :default-value="initial.email"
                                 required
                                 autocomplete="email"
@@ -392,9 +394,9 @@ watch(
                                 for="custom_domain"
                                 class="text-sm font-semibold text-gray-800"
                             >
-                                Custom Domain
+                                {{ t('auth.custom_domain') }}
                                 <span class="font-normal text-gray-500"
-                                    >(optional)</span
+                                    >({{ t('auth.optional') }})</span
                                 >
                             </Label>
                             <Input
@@ -413,7 +415,7 @@ watch(
                                 for="country_iso2"
                                 class="text-sm font-semibold text-gray-800"
                             >
-                                Country
+                                {{ t('auth.country') }}
                             </Label>
                             <select
                                 id="country_iso2"
@@ -421,13 +423,13 @@ watch(
                                 v-model="selectedCountryIso2"
                                 class="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
                             >
-                                <option value="">Select country</option>
+                                <option value="">{{ t('auth.choose_country') }}</option>
                                 <option
                                     v-for="country in (props.countries || [])"
                                     :key="country.iso2"
                                     :value="country.iso2"
                                 >
-                                    {{ country.name_en }} ({{ country.dial_code }})
+                                    {{ isArabic ? country.name_ar : country.name_en }} ({{ country.dial_code }})
                                 </option>
                             </select>
                             <InputError :message="errors.country_iso2" />
@@ -438,7 +440,7 @@ watch(
                                 for="phone_national"
                                 class="text-sm font-semibold text-gray-800"
                             >
-                                Phone Number
+                                {{ t('auth.phone_number') }}
                             </Label>
                             <div class="flex gap-2">
                                 <Input
@@ -458,7 +460,7 @@ watch(
                                 />
                             </div>
                             <p class="text-xs text-gray-500">
-                                Enter the phone number without the country code.
+                                {{ t('auth.phone_help') }}
                             </p>
                             <InputError :message="errors.phone_national || errors.phone" />
                         </div>
@@ -467,13 +469,13 @@ watch(
                             <Label
                                 for="password"
                                 class="text-sm font-semibold text-gray-800"
-                                >Password</Label
+                                >{{ t('auth.password') }}</Label
                             >
                             <Input
                                 id="password"
                                 name="password"
                                 type="password"
-                                placeholder="**********"
+                                :placeholder="t('auth.placeholder_password')"
                                 required
                                 autocomplete="new-password"
                                 class="h-11 border-gray-300"
@@ -486,13 +488,13 @@ watch(
                                 for="password_confirmation"
                                 class="text-sm font-semibold text-gray-800"
                             >
-                                Repeat Password
+                                {{ t('auth.repeat_password') }}
                             </Label>
                             <Input
                                 id="password_confirmation"
                                 name="password_confirmation"
                                 type="password"
-                                placeholder="**********"
+                                :placeholder="t('auth.placeholder_password')"
                                 required
                                 autocomplete="new-password"
                                 class="h-11 border-gray-300"
@@ -510,11 +512,11 @@ watch(
                                 required
                                 class="h-4 w-4 rounded border-gray-300 text-blue-700 focus:ring-blue-600"
                             />
-                            I agree to the
+                            {{ t('auth.agree_to_terms') }}
                             <a
                                 href="#"
                                 class="font-medium text-blue-700 hover:underline"
-                                >Terms of Use</a
+                                >{{ t('auth.terms_of_use') }}</a
                             >
                         </label>
 
@@ -523,17 +525,17 @@ watch(
                             class="h-12 w-full rounded-full bg-gradient-to-r from-blue-700 to-blue-500 font-semibold text-white shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="processing"
                         >
-                            {{ processing ? 'Creating Account...' : 'Sign Up' }}
+                            {{ processing ? t('auth.authenticating') : t('auth.sign_up') }}
                         </button>
                     </Form>
 
                     <p class="text-center text-sm text-gray-600">
-                        Already have an account?
+                        {{ t('auth.already_have_account_short') }}
                         <Link
                             :href="loginUrl"
                             class="ml-1 font-semibold text-blue-700 hover:underline"
                         >
-                            Sign In ->
+                            {{ t('auth.sign_in') }} ->
                         </Link>
                     </p>
                 </template>

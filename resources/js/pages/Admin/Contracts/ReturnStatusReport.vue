@@ -375,15 +375,15 @@ const cleaningFeeDescription = computed(() => {
     const afterLabel = options.vehicleConditions.find(c => c.value === after)?.label ?? after;
     
     if (before === 'clean' && after === 'not_clean') {
-        return localize('Car was clean at delivery, returned dirty - cleaning fee applies', 'ط§ظ„ط³ظٹط§ط±ط© ظƒط§ظ†طھ ظ†ط¸ظٹظپط© ط¹ظ†ط¯ ط§ظ„طھط³ظ„ظٹظ… ظˆط¹ط§ط¯طھ ظ…طھط³ط®ط© - طھظ†ط·ط¨ظ‚ ط±ط³ظˆظ… ط§ظ„طھظ†ط¸ظٹظپ');
+        return localize('Car was clean at delivery, returned dirty - cleaning fee applies', 'السيارة كانت نظيفة عند التسليم وعادت متسخة - تنطبق رسوم التنظيف');
     }
     
     if (before === 'not_clean' && after === 'not_clean') {
-        return localize('Car was already not clean at delivery - no cleaning fee', 'ط§ظ„ط³ظٹط§ط±ط© ظƒط§ظ†طھ ط؛ظٹط± ظ†ط¸ظٹظپط© ط¨ط§ظ„ظپط¹ظ„ ط¹ظ†ط¯ ط§ظ„طھط³ظ„ظٹظ… - ظ„ط§ طھظˆط¬ط¯ ط±ط³ظˆظ… طھظ†ط¸ظٹظپ');
+        return localize('Car was already not clean at delivery - no cleaning fee', 'السيارة كانت غير نظيفة بالفعل عند التسليم - لا توجد رسوم تنظيف');
     }
     
     if (before === 'clean' && after === 'clean') {
-        return localize('Car was clean at delivery and return - no cleaning fee', 'ط§ظ„ط³ظٹط§ط±ط© ظƒط§ظ†طھ ظ†ط¸ظٹظپط© ط¹ظ†ط¯ ط§ظ„طھط³ظ„ظٹظ… ظˆط§ظ„ط¥ط±ط¬ط§ط¹ - ظ„ط§ طھظˆط¬ط¯ ط±ط³ظˆظ… طھظ†ط¸ظٹظپ');
+        return localize('Car was clean at delivery and return - no cleaning fee', 'السيارة كانت نظيفة عند التسليم والإرجاع - لا توجد رسوم تنظيف');
     }
     
     return `${localize('Delivery', 'التسليم')}: ${beforeLabel} -> ${localize('Return', 'الإرجاع')}: ${afterLabel}`;
@@ -863,19 +863,19 @@ function submit() {
 </script>
 
 <template>
-    <Head :title="localize('Return Status Report', 'طھظ‚ط±ظٹط± ط­ط§ظ„ط© ط§ظ„ط¥ط±ط¬ط§ط¹')" />
+    <Head :title="localize('Return Status Report', 'تقرير حالة الإرجاع')" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">{{ localize('Return Status Report', 'طھظ‚ط±ظٹط± ط­ط§ظ„ط© ط§ظ„ط¥ط±ط¬ط§ط¹') }}</h1>
+                    <h1 class="text-2xl font-semibold">{{ localize('Return Status Report', 'تقرير حالة الإرجاع') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        {{ localize('Record the car return, extra charges, and linked damage report in one place.', 'ط³ط¬ظ„ ط¥ط±ط¬ط§ط¹ ط§ظ„ط³ظٹط§ط±ط© ظˆط§ظ„ظ…طµط§ط±ظٹظپ ط§ظ„ط¥ط¶ط§ظپظٹط© ظˆطھظ‚ط§ط±ظٹط± ط§ظ„ط¶ط±ط± ط§ظ„ظ…ط±طھط¨ط·ط© ظپظٹ ظ…ظƒط§ظ† ظˆط§ط­ط¯.') }}
+                        {{ localize('Record the car return, extra charges, and linked damage report in one place.', 'سجل إرجاع السيارة والمصاريف الإضافية وتقارير الضرر المرتبطة في مكان واحد.') }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <a v-if="actions.print" :href="actions.print" target="_blank" rel="noopener">
-                        <Button variant="outline" type="button">{{ localize('Print Invoice', 'ط·ط¨ط§ط¹ط© ط§ظ„ظپط§طھظˆط±ط©') }}</Button>
+                        <Button variant="outline" type="button">{{ localize('Print Invoice', 'طباعة الفاتورة') }}</Button>
                     </a>
                     <Link :href="actions.index">
                         <Button variant="outline">{{ localize('Back', 'رجوع') }}</Button>
@@ -885,32 +885,32 @@ function submit() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>{{ localize('Contract Summary', 'ظ…ظ„ط®طµ ط§ظ„ط¹ظ‚ط¯') }}</CardTitle>
-                    <CardDescription>{{ localize('The return report is linked to this contract and reservation.', 'ظ‡ط°ط§ ط§ظ„طھظ‚ط±ظٹط± ظ…ط±طھط¨ط· ط¨ظ‡ط°ط§ ط§ظ„ط¹ظ‚ط¯ ظˆط§ظ„ط­ط¬ط².') }}</CardDescription>
+                    <CardTitle>{{ localize('Contract Summary', 'ملخص العقد') }}</CardTitle>
+                    <CardDescription>{{ localize('The return report is linked to this contract and reservation.', 'هذا التقرير مرتبط بهذا العقد والحجز.') }}</CardDescription>
                 </CardHeader>
                 <CardContent class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <div>
-                        <div class="text-sm text-muted-foreground">{{ localize('Contract No.', 'ط±ظ‚ظ… ط§ظ„ط¹ظ‚ط¯') }}</div>
+                        <div class="text-sm text-muted-foreground">{{ localize('Contract No.', 'رقم العقد') }}</div>
                         <div class="font-semibold">{{ contract.contract_number }}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-muted-foreground">{{ localize('Reservation', 'ط§ظ„ط­ط¬ط²') }}</div>
+                        <div class="text-sm text-muted-foreground">{{ localize('Reservation', 'الحجز') }}</div>
                         <div class="font-semibold">{{ contract.reservation?.reservation_number ?? '-' }}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-muted-foreground">{{ localize('Client', 'ط§ظ„ط¹ظ…ظٹظ„') }}</div>
+                        <div class="text-sm text-muted-foreground">{{ localize('Client', 'العميل') }}</div>
                         <div class="font-semibold">{{ contract.reservation?.user_name ?? contract.renter_name ?? '-' }}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-muted-foreground">{{ localize('Car', 'ط§ظ„ط³ظٹط§ط±ط©') }}</div>
+                        <div class="text-sm text-muted-foreground">{{ localize('Car', 'السيارة') }}</div>
                         <div class="font-semibold">{{ contract.reservation?.car ?? contract.car_details ?? '-' }}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-muted-foreground">{{ localize('Branch', 'ط§ظ„ظپط±ط¹') }}</div>
+                        <div class="text-sm text-muted-foreground">{{ localize('Branch', 'الفرع') }}</div>
                         <div class="font-semibold">{{ contract.branch_name ?? '-' }}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-muted-foreground">{{ localize('Reservation Status', 'ط­ط§ظ„ط© ط§ظ„ط­ط¬ط²') }}</div>
+                        <div class="text-sm text-muted-foreground">{{ localize('Reservation Status', 'حالة الحجز') }}</div>
                         <div class="font-semibold">
                             <span
                                 class="inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold"
@@ -921,11 +921,11 @@ function submit() {
                         </div>
                     </div>
                     <div>
-                        <div class="text-sm text-muted-foreground">{{ localize('Contract Start', 'ط¨ط¯ط§ظٹط© ط§ظ„ط¹ظ‚ط¯') }}</div>
+                        <div class="text-sm text-muted-foreground">{{ localize('Contract Start', 'بداية العقد') }}</div>
                         <div class="font-semibold">{{ contract.start_date ?? '-' }}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-muted-foreground">{{ localize('Contract End', 'ظ†ظ‡ط§ظٹط© ط§ظ„ط¹ظ‚ط¯') }}</div>
+                        <div class="text-sm text-muted-foreground">{{ localize('Contract End', 'نهاية العقد') }}</div>
                         <div class="font-semibold">{{ contract.end_date ?? '-' }}</div>
                     </div>
                 </CardContent>
@@ -941,43 +941,43 @@ function submit() {
                 <fieldset :disabled="!canEditReturnReport" class="space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>{{ localize('Return Details', 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¥ط±ط¬ط§ط¹') }}</CardTitle>
-                        <CardDescription>{{ localize('Record the actual return state for this contract.', 'ط³ط¬ظ„ ط­ط§ظ„ط© ط§ظ„ط¥ط±ط¬ط§ط¹ ط§ظ„ظپط¹ظ„ظٹط© ظ„ظ‡ط°ط§ ط§ظ„ط¹ظ‚ط¯.') }}</CardDescription>
+                        <CardTitle>{{ localize('Return Details', 'بيانات الإرجاع') }}</CardTitle>
+                        <CardDescription>{{ localize('Record the actual return state for this contract.', 'سجل حالة الإرجاع الفعلية لهذا العقد.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <div>
-                            <Label for="actual_return_time">{{ localize('Actual Return Time', 'ظˆظ‚طھ ط§ظ„ط¥ط±ط¬ط§ط¹ ط§ظ„ظپط¹ظ„ظٹ') }}</Label>
+                            <Label for="actual_return_time">{{ localize('Actual Return Time', 'وقت الإرجاع الفعلي') }}</Label>
                             <Input id="actual_return_time" v-model="form.actual_return_time" type="datetime-local" class="mt-1" />
                             <InputError :message="form.errors.actual_return_time" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="return_location">{{ localize('Return Location', 'ظ…ظƒط§ظ† ط§ظ„ط¥ط±ط¬ط§ط¹') }}</Label>
+                            <Label for="return_location">{{ localize('Return Location', 'مكان الإرجاع') }}</Label>
                             <select id="return_location" v-model="form.return_location" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                                <option value="">{{ localize('Select return location', 'ط§ط®طھط± ظ…ظƒط§ظ† ط§ظ„ط¥ط±ط¬ط§ط¹') }}</option>
+                                <option value="">{{ localize('Select return location', 'اختر مكان الإرجاع') }}</option>
                                 <option v-for="location in settings.pickup_return_locations" :key="location.name" :value="location.name">
                                     {{ location.name }}
                                 </option>
                             </select>
                             <p v-if="selectedReturnLocation" class="mt-1 text-xs text-muted-foreground">
-                                {{ localize('Default return fee:', 'ط±ط³ظˆظ… ط§ظ„ط¥ط±ط¬ط§ط¹ ط§ظ„ط§ظپطھط±ط§ط¶ظٹط©:') }} {{ selectedReturnLocation.return_free ? localize('Free', 'ظ…ط¬ط§ظ†ظٹ') : `$${Number(selectedReturnLocation.return_fee ?? 0).toFixed(2)}` }}
+                                {{ localize('Default return fee:', 'رسوم الإرجاع الافتراضية:') }} {{ selectedReturnLocation.return_free ? localize('Free', 'مجاني') : `$${Number(selectedReturnLocation.return_fee ?? 0).toFixed(2)}` }}
                             </p>
                             <InputError :message="form.errors.return_location" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="return_odometer">{{ localize('Return Odometer', 'ط¹ط¯ط§ط¯ ط§ظ„ط¹ظˆط¯ط©') }}</Label>
+                            <Label for="return_odometer">{{ localize('Return Odometer', 'عداد العودة') }}</Label>
                             <Input id="return_odometer" v-model="form.return_odometer" type="number" :min="props.contract.vehicle_odometer ?? 0" class="mt-1" />
                             <InputError :message="form.errors.return_odometer" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="return_fuel_level">{{ localize('Return Fuel Level', 'ظƒظ…ظٹط© ط§ظ„ط¨ظ†ط²ظٹظ† ط§ظ„ظ…ط±ط¬ط¹ط©') }}</Label>
+                            <Label for="return_fuel_level">{{ localize('Return Fuel Level', 'كمية البنزين المرجعة') }}</Label>
                             <select id="return_fuel_level" v-model="form.return_fuel_level" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                                <option value="">{{ localize('Select fuel level', 'ط§ط®طھط± ظƒظ…ظٹط© ط§ظ„ط¨ظ†ط²ظٹظ†') }}</option>
+                                <option value="">{{ localize('Select fuel level', 'اختر كمية البنزين') }}</option>
                                 <option v-for="fuelLevel in options.fuelLevels" :key="fuelLevel.value" :value="fuelLevel.value">{{ fuelLevel.label }}</option>
                             </select>
                             <InputError :message="form.errors.return_fuel_level" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="vehicle_condition_after">{{ localize('Vehicle Condition After Return', 'ط­ط§ظ„ط© ط§ظ„ط³ظٹط§ط±ط© ط¨ط¹ط¯ ط§ظ„ط¥ط±ط¬ط§ط¹') }}</Label>
+                            <Label for="vehicle_condition_after">{{ localize('Vehicle Condition After Return', 'حالة السيارة بعد الإرجاع') }}</Label>
                             <select id="vehicle_condition_after" v-model="form.vehicle_condition_after" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                                 <option v-for="condition in options.vehicleConditions" :key="condition.value" :value="condition.value">{{ condition.label }}</option>
                             </select>
@@ -996,11 +996,11 @@ function submit() {
                             <InputError :message="form.errors.has_damage" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="damage_report_id">{{ localize('Linked Damage Report', 'طھظ‚ط§ط±ظٹط± ط§ظ„ط¶ط±ط± ط§ظ„ظ…ط±طھط¨ط·ط©') }}</Label>
+                            <Label for="damage_report_id">{{ localize('Linked Damage Report', 'تقارير الضرر المرتبطة') }}</Label>
                             <select id="damage_report_id" v-model="form.damage_report_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" :disabled="!form.has_damage">
-                                <option value="">{{ localize('None', 'ط¨ط¯ظˆظ†') }}</option>
+                                <option value="">{{ localize('None', 'بدون') }}</option>
                                 <option v-for="damageReport in afterReturnDamageReports" :key="damageReport.id" :value="damageReport.id">
-                                    {{ damageReport.report_number }} - {{ damageReport.items_count }} {{ localize('items', 'ط¹ظ†طµط±') }} - ${{ Number(damageReport.total_estimated_cost).toFixed(2) }}
+                                    {{ damageReport.report_number }} - {{ damageReport.items_count }} {{ localize('items', 'عنصر') }} - ${{ Number(damageReport.total_estimated_cost).toFixed(2) }}
                                 </option>
                             </select>
                             <p v-if="!form.has_damage" class="mt-1 text-xs text-muted-foreground">
@@ -1024,35 +1024,35 @@ function submit() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{{ localize('Contract vs Return', 'ظ…ظ‚ط§ط±ظ†ط© ط§ظ„ط¹ظ‚ط¯ ظ…ط¹ ط§ظ„ط¥ط±ط¬ط§ط¹') }}</CardTitle>
-                        <CardDescription>{{ localize('Use this section to compare the original contract values with the actual return values.', 'ط§ط³طھط®ط¯ظ… ظ‡ط°ط§ ط§ظ„ظ‚ط³ظ… ظ„ظ…ظ‚ط§ط±ظ†ط© ظ‚ظٹظ… ط§ظ„ط¹ظ‚ط¯ ط§ظ„ط£طµظ„ظٹط© ظ…ط¹ ظ‚ظٹظ… ط§ظ„ط¥ط±ط¬ط§ط¹ ط§ظ„ظپط¹ظ„ظٹط©.') }}</CardDescription>
+                        <CardTitle>{{ localize('Contract vs Return', 'مقارنة العقد مع الإرجاع') }}</CardTitle>
+                        <CardDescription>{{ localize('Use this section to compare the original contract values with the actual return values.', 'استخدم هذا القسم لمقارنة قيم العقد الأصلية مع قيم الإرجاع الفعلية.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <div class="md:col-span-2 xl:col-span-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                            <div class="font-medium text-slate-900">{{ localize('Compare the contract odometer and expected return time against the actual return values.', 'ظ‚ط§ط±ظ† ط¹ط¯ط§ط¯ ط§ظ„ط¹ظ‚ط¯ ظˆظˆظ‚طھ ط§ظ„ط¥ط±ط¬ط§ط¹ ط§ظ„ظ…طھظˆظ‚ط¹ ظ…ط¹ ط§ظ„ظ‚ظٹظ… ط§ظ„ظپط¹ظ„ظٹط© ط¹ظ†ط¯ ط§ظ„ط¥ط±ط¬ط§ط¹.') }}</div>
+                            <div class="font-medium text-slate-900">{{ localize('Compare the contract odometer and expected return time against the actual return values.', 'قارن عداد العقد ووقت الإرجاع المتوقع مع القيم الفعلية عند الإرجاع.') }}</div>
                             <div class="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                                 <div>
-                                    <div class="text-xs text-muted-foreground">{{ localize('Contract Odometer', 'ط¹ط¯ط§ط¯ ط§ظ„ط¹ظ‚ط¯') }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ localize('Contract Odometer', 'عداد العقد') }}</div>
                                     <div class="mt-1 text-base font-semibold">{{ contract.vehicle_odometer !== undefined && contract.vehicle_odometer !== null ? contract.vehicle_odometer : '-' }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-muted-foreground">{{ localize('Return Odometer', 'ط¹ط¯ط§ط¯ ط§ظ„ط¥ط±ط¬ط§ط¹') }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ localize('Return Odometer', 'عداد الإرجاع') }}</div>
                                     <div class="mt-1 text-base font-semibold">{{ form.return_odometer !== undefined && form.return_odometer !== null && form.return_odometer !== '' ? form.return_odometer : '-' }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-muted-foreground">{{ localize('Expected Return Time', 'ظˆظ‚طھ ط§ظ„ط¥ط±ط¬ط§ط¹ ط§ظ„ظ…طھظˆظ‚ط¹') }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ localize('Expected Return Time', 'وقت الإرجاع المتوقع') }}</div>
                                     <div class="mt-1 text-base font-semibold">{{ expectedReturnTimeLabel || '-' }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-muted-foreground">{{ localize('Actual Return Time', 'ظˆظ‚طھ ط§ظ„ط¥ط±ط¬ط§ط¹ ط§ظ„ظپط¹ظ„ظٹ') }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ localize('Actual Return Time', 'وقت الإرجاع الفعلي') }}</div>
                                     <div class="mt-1 text-base font-semibold">{{ form.actual_return_time || '-' }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-muted-foreground">{{ localize('Extra Kilometers', 'ط§ظ„ظƒظٹظ„ظˆظ…طھط±ط§طھ ط§ظ„ط²ط§ط¦ط¯ط©') }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ localize('Extra Kilometers', 'الكيلومترات الزائدة') }}</div>
                                     <div class="mt-1 text-base font-semibold">{{ typeof computedExtraKilometers === 'number' && !isNaN(computedExtraKilometers) ? computedExtraKilometers.toFixed(2) : '-' }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-muted-foreground">{{ localize('Late Hours', 'ط³ط§ط¹ط§طھ ط§ظ„طھط£ط®ظٹط±') }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ localize('Late Hours', 'ساعات التأخير') }}</div>
                                     <div class="mt-1 text-base font-semibold">{{ typeof lateHours === 'number' && !isNaN(lateHours) ? lateHours.toFixed(2) : '-' }}</div>
                                 </div>
                             </div>
@@ -1062,22 +1062,22 @@ function submit() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{{ localize('Extra Charges', 'ط§ظ„ظ…طµط§ط±ظٹظپ ط§ظ„ط¥ط¶ط§ظپظٹط©') }}</CardTitle>
-                        <CardDescription>{{ localize('These charges are auto-calculated from the tenant reservation settings and the actual return data.', 'ظ‡ط°ظ‡ ط§ظ„ظ…طµط§ط±ظٹظپ ظٹطھظ… ط­ط³ط§ط¨ظ‡ط§ طھظ„ظ‚ط§ط¦ظٹظ‹ط§ ظ…ظ† ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط­ط¬ط² ط§ظ„ط®ط§طµط© ط¨ط§ظ„ظ…ط³طھط£ط¬ط± ظˆظ…ظ† ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¥ط±ط¬ط§ط¹ ط§ظ„ظپط¹ظ„ظٹط©.') }}</CardDescription>
+                        <CardTitle>{{ localize('Extra Charges', 'المصاريف الإضافية') }}</CardTitle>
+                        <CardDescription>{{ localize('These charges are auto-calculated from the tenant reservation settings and the actual return data.', 'هذه المصاريف يتم حسابها تلقائيًا من إعدادات الحجز الخاصة بالمستأجر ومن بيانات الإرجاع الفعلية.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <div>
-                            <Label for="extra_kilometers">{{ localize('Extra Kilometers', 'ط§ظ„ظƒظٹظ„ظˆظ…طھط±ط§طھ ط§ظ„ط¥ط¶ط§ظپظٹط©') }}</Label>
+                            <Label for="extra_kilometers">{{ localize('Extra Kilometers', 'الكيلومترات الإضافية') }}</Label>
                             <Input id="extra_kilometers" v-model="form.extra_kilometers" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.extra_kilometers" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="kilometer_rate">{{ localize('Kilometer Rate', 'ط³ط¹ط± ط§ظ„ظƒظٹظ„ظˆظ…طھط±') }}</Label>
+                            <Label for="kilometer_rate">{{ localize('Kilometer Rate', 'سعر الكيلومتر') }}</Label>
                             <Input id="kilometer_rate" v-model="form.kilometer_rate" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.kilometer_rate" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="cleaning_fee">{{ localize('Cleaning Fee', 'ط±ط³ظˆظ… ط§ظ„طھظ†ط¸ظٹظپ') }}</Label>
+                            <Label for="cleaning_fee">{{ localize('Cleaning Fee', 'رسوم التنظيف') }}</Label>
                             <Input id="cleaning_fee" v-model="form.cleaning_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <p v-if="cleaningFeeDescription" class="mt-1 text-xs text-muted-foreground">
                                 {{ cleaningFeeDescription }}
@@ -1085,7 +1085,7 @@ function submit() {
                             <InputError :message="form.errors.cleaning_fee" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="fuel_fee">{{ localize('Fuel Fee', 'ط±ط³ظˆظ… ط§ظ„ظˆظ‚ظˆط¯') }}</Label>
+                            <Label for="fuel_fee">{{ localize('Fuel Fee', 'رسوم الوقود') }}</Label>
                             <Input id="fuel_fee" v-model="form.fuel_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <p v-if="fuelComparisonSummary" class="mt-1 text-xs text-muted-foreground">
                                 {{ fuelComparisonSummary }}
@@ -1104,33 +1104,33 @@ function submit() {
                             <InputError :message="form.errors.fuel_credit" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="late_hours">{{ localize('Late Hours', 'ط³ط§ط¹ط§طھ ط§ظ„طھط£ط®ظٹط±') }}</Label>
+                            <Label for="late_hours">{{ localize('Late Hours', 'ساعات التأخير') }}</Label>
                             <Input id="late_hours" v-model="form.late_hours" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.late_hours" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="late_hour_rate">{{ localize('Late Hour Rate', 'ط³ط¹ط± ط³ط§ط¹ط© ط§ظ„طھط£ط®ظٹط±') }}</Label>
+                            <Label for="late_hour_rate">{{ localize('Late Hour Rate', 'سعر ساعة التأخير') }}</Label>
                             <Input id="late_hour_rate" v-model="form.late_hour_rate" type="number" min="0" step="0.01" class="mt-1" />
                             <p class="mt-1 text-xs text-muted-foreground">
-                                {{ localize('Default from tenant reservation settings.', 'ط§ظ„ظ‚ظٹظ…ط© ط§ظ„ط§ظپطھط±ط§ط¶ظٹط© ظ…ظ† ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط­ط¬ط² ط§ظ„ط®ط§طµط© ط¨ط§ظ„ظ…ط³طھط£ط¬ط±.') }}
+                                {{ localize('Default from tenant reservation settings.', 'القيمة الافتراضية من إعدادات الحجز الخاصة بالمستأجر.') }}
                             </p>
                             <InputError :message="form.errors.late_hour_rate" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="damage_fee">{{ localize('Damage Fee', 'ط±ط³ظˆظ… ط§ظ„ط¶ط±ط±') }}</Label>
+                            <Label for="damage_fee">{{ localize('Damage Fee', 'رسوم الضرر') }}</Label>
                             <Input id="damage_fee" v-model="form.damage_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <p v-if="selectedDamageReport && (selectedDamageReport.after_return_total_estimated_cost !== undefined || selectedDamageReport.total_estimated_cost !== undefined)" class="mt-1 text-xs text-muted-foreground">
-                                {{ localize('Selected after-return damage total:', 'ط¥ط¬ظ…ط§ظ„ظٹ ط¶ط±ط± ط¨ط¹ط¯ ط§ظ„طھط³ظ„ظٹظ… ط§ظ„ظ…ط­ط¯ط¯:') }} ${{ Number(selectedDamageReport.after_return_total_estimated_cost ?? selectedDamageReport.total_estimated_cost ?? 0).toFixed(2) }}
+                                {{ localize('Selected after-return damage total:', 'إجمالي ضرر بعد التسليم المحدد:') }} ${{ Number(selectedDamageReport.after_return_total_estimated_cost ?? selectedDamageReport.total_estimated_cost ?? 0).toFixed(2) }}
                             </p>
                             <InputError :message="form.errors.damage_fee" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="maintenance_fee">{{ localize('Maintenance Fee', 'ط±ط³ظˆظ… ط§ظ„طµظٹط§ظ†ط©') }}</Label>
+                            <Label for="maintenance_fee">{{ localize('Maintenance Fee', 'رسوم الصيانة') }}</Label>
                             <Input id="maintenance_fee" v-model="form.maintenance_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.maintenance_fee" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="other_fee">{{ localize('Other Fee', 'ط±ط³ظˆظ… ط£ط®ط±ظ‰') }}</Label>
+                            <Label for="other_fee">{{ localize('Other Fee', 'رسوم أخرى') }}</Label>
                             <Input id="other_fee" v-model="form.other_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <InputError :message="form.errors.other_fee" class="mt-1" />
                         </div>
@@ -1147,12 +1147,12 @@ function submit() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{{ localize('After-Return Damage Reports', 'طھظ‚ط§ط±ظٹط± ط§ظ„ط¶ط±ط± ط¨ط¹ط¯ ط§ظ„طھط³ظ„ظٹظ…') }}</CardTitle>
-                        <CardDescription>{{ localize('Only damage reports created after delivery are used for return charges.', 'ظٹطھظ… ط§ط³طھط®ط¯ط§ظ… طھظ‚ط§ط±ظٹط± ط§ظ„ط¶ط±ط± ط§ظ„طھظٹ طھظ… ط¥ظ†ط´ط§ط¤ظ‡ط§ ط¨ط¹ط¯ ط§ظ„طھط³ظ„ظٹظ… ظپظ‚ط· ظ„ط±ط³ظˆظ… ط§ظ„ط¥ط±ط¬ط§ط¹.') }}</CardDescription>
+                        <CardTitle>{{ localize('After-Return Damage Reports', 'تقارير الضرر بعد التسليم') }}</CardTitle>
+                        <CardDescription>{{ localize('Only damage reports created after delivery are used for return charges.', 'يتم استخدام تقارير الضرر التي تم إنشاؤها بعد التسليم فقط لرسوم الإرجاع.') }}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div v-if="afterReturnDamageReports.length === 0" class="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                            {{ localize('No after-return damage reports have been created yet for this contract.', 'ظ„ظ… ظٹطھظ… ط¥ظ†ط´ط§ط، ط£ظٹ طھظ‚ط±ظٹط± ط¶ط±ط± ط¨ط¹ط¯ ط§ظ„طھط³ظ„ظٹظ… ظ„ظ‡ط°ط§ ط§ظ„ط¹ظ‚ط¯ ط¨ط¹ط¯.') }}
+                            {{ localize('No after-return damage reports have been created yet for this contract.', 'لم يتم إنشاء أي تقرير ضرر بعد التسليم لهذا العقد بعد.') }}
                         </div>
                         <div v-else class="overflow-x-auto">
                             <table class="w-full min-w-[760px] border-collapse text-sm">
@@ -1218,8 +1218,8 @@ function submit() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{{ localize('Final Summary', 'ط§ظ„ظ…ظ„ط®طµ ط§ظ„ظ†ظ‡ط§ط¦ظٹ') }}</CardTitle>
-                        <CardDescription>{{ localize('The report total will be used for the extra cash payment.', 'ط³ظٹظڈط³طھط®ط¯ظ… ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„طھظ‚ط±ظٹط± ظƒط¯ظپط¹ط© ظ†ظ‚ط¯ظٹط© ط¥ط¶ط§ظپظٹط©.') }}</CardDescription>
+                        <CardTitle>{{ localize('Final Summary', 'الملخص النهائي') }}</CardTitle>
+                        <CardDescription>{{ localize('The report total will be used for the extra cash payment.', 'سيُستخدم إجمالي التقرير كدفعة نقدية إضافية.') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <div class="rounded-md border bg-muted/20 p-4">
@@ -1306,7 +1306,7 @@ function submit() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{{ localize('Notes', 'ظ…ظ„ط§ط­ط¸ط§طھ') }}</CardTitle>
+                        <CardTitle>{{ localize('Notes', 'ملاحظات') }}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Textarea v-model="form.notes" rows="4" />
@@ -1317,7 +1317,7 @@ function submit() {
                 </fieldset>
                 <div class="flex items-center gap-3">
                     <Button type="submit" :disabled="form.processing || !canEditReturnReport">
-                        {{ form.processing ? localize('Saving...', 'ط¬ط§ط±ظٹ ط§ظ„ط­ظپط¸...') : localize('Save Return Report', 'ط­ظپط¸ طھظ‚ط±ظٹط± ط§ظ„ط¥ط±ط¬ط§ط¹') }}
+                        {{ form.processing ? localize('Saving...', 'جاري الحفظ...') : localize('Save Return Report', 'حفظ تقرير الإرجاع') }}
                     </Button>
                     <Link :href="actions.index">
                         <Button variant="outline" type="button">{{ localize('Cancel', 'إلغاء') }}</Button>

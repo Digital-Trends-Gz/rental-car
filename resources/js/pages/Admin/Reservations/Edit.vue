@@ -538,7 +538,7 @@ function submit() {
                         {{
                             reservation.car
                                 ? `${reservation.car.year} ${reservation.car.make} ${reservation.car.model}`
-                                : 'â€”'
+                                : '—'
                         }}
                     </div>
                 </div>

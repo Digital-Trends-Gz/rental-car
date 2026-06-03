@@ -2,6 +2,7 @@
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useTrans } from '@/composables/useTrans';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Car,
@@ -15,9 +16,16 @@ import {
     RefreshCcw,
     TrendingUp,
     Layers,
-    Bell,
+    LifeBuoy,
 } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
+import { create as createCar, index as carsIndex } from '@/routes/admin/cars';
+import { create as createClient } from '@/routes/admin/clients';
+import { create as createContract, index as contractsIndex } from '@/routes/admin/contracts';
+import { create as createReservation, index as reservationsIndex } from '@/routes/admin/reservations';
+import { debtors as paymentsDebtors, index as paymentsIndex } from '@/routes/admin/payments';
+import { index as carViolationsIndex } from '@/routes/admin/car-violations';
+import { index as supportIndex } from '@/routes/admin/support';
 
 const props = defineProps<{
     stats: {
@@ -29,6 +37,9 @@ const props = defineProps<{
         total_reservations: number;
         total_revenue: number;
         total_clients: number;
+        cars_to_deliver_today: number;
+        cars_to_receive_today: number;
+        overdue_cars: number;
     };
     reservationsByStatus: Array<{
         status: string;
@@ -116,24 +127,9 @@ const props = defineProps<{
         amount: number;
         edit_url: string;
     }>;
-    operationalNotifications: Array<{
-        id: string;
-        type: string;
-        priority: string;
-        label: string;
-        title: string;
-        message: string;
-        occurred_at: string | null;
-        data: Record<string, any>;
-        ui: {
-            badge_background: string;
-            badge_color: string;
-        };
-    }>;
     branches: Array<{ id: number; name: string }>;
     filters: { branch_id: number | null };
     canAccessAllBranches: boolean;
-    policeNoticeSettingsUrl: string;
 }>();
 
 const { locale, direction } = useTrans();
@@ -141,6 +137,7 @@ const isRtl = computed(() => direction.value === 'rtl');
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const page = usePage<any>();
+const subdomain = computed(() => page.props.current_tenant?.slug ?? '');
 const currency = computed(() => page.props.currency_symbol ?? '$');
 const numberLocale = computed(() => (locale.value === 'ar' ? 'ar' : 'en-US'));
 
@@ -153,22 +150,6 @@ const fmtDate = (d: string | null) =>
     d
         ? new Date(d).toLocaleDateString(numberLocale.value, { month: 'short', day: 'numeric', year: 'numeric' })
         : localize('N/A', 'غير متوفر');
-
-const notificationHref = (notification: { type: string; data: Record<string, any> }) => {
-    if (notification.type === 'new_damage' && notification.data.damage_report_id) {
-        return `/admin/car-damage-reports/${notification.data.damage_report_id}/edit`;
-    }
-
-    if (notification.data.contract_id) {
-        return `/admin/contracts/${notification.data.contract_id}`;
-    }
-
-    if (notification.data.reservation_id) {
-        return `/admin/reservations/${notification.data.reservation_id}`;
-    }
-
-    return '/admin/dashboard';
-};
 
 const documentTypeLabel = (type: string) =>
     type === 'license'
@@ -317,6 +298,120 @@ const statusBarWidths = computed(() =>
     })),
 );
 
+const quickActions = computed(() => {
+    const slug = subdomain.value;
+    if (!slug) return [];
+
+    return [
+        {
+            title: localize('New Reservation', 'حجز جديد'),
+            description: localize('Start a new booking flow.', 'ابدأ عملية حجز جديدة.'),
+            href: createReservation(slug).url,
+            icon: Calendar,
+            accent: '#F59E0B',
+            bg: 'rgba(245,158,11,0.10)',
+        },
+        {
+            title: localize('New Contract', 'عقد جديد'),
+            description: localize('Convert a reservation into a contract.', 'حوّل الحجز إلى عقد.'),
+            href: createContract(slug).url,
+            icon: FileText,
+            accent: '#8B5CF6',
+            bg: 'rgba(139,92,246,0.10)',
+        },
+        {
+            title: localize('Add Car', 'إضافة سيارة'),
+            description: localize('Register a new vehicle.', 'تسجيل سيارة جديدة.'),
+            href: createCar(slug).url,
+            icon: Car,
+            accent: '#3B82F6',
+            bg: 'rgba(59,130,246,0.10)',
+        },
+        {
+            title: localize('Add Client', 'إضافة عميل'),
+            description: localize('Create a customer profile.', 'إنشاء ملف عميل.'),
+            href: createClient(slug).url,
+            icon: Users,
+            accent: '#EC4899',
+            bg: 'rgba(236,72,153,0.10)',
+        },
+        {
+            title: localize('Payments', 'المدفوعات'),
+            description: localize('Review payment records.', 'مراجعة سجلات المدفوعات.'),
+            href: paymentsIndex(slug).url,
+            icon: DollarSign,
+            accent: '#10B981',
+            bg: 'rgba(16,185,129,0.10)',
+        },
+    {
+        title: localize('Debtors', 'المدينون'),
+        description: localize('See balances that still need collection.', 'عرض الأرصدة التي تحتاج تحصيلًا.'),
+        href: paymentsDebtors(slug).url,
+        icon: Clock,
+        accent: '#EF4444',
+        bg: 'rgba(239,68,68,0.10)',
+    },
+    {
+        title: localize('Support', 'الدعم'),
+        description: localize('Open the support inbox.', 'افتح صندوق الدعم.'),
+        href: supportIndex(slug).url,
+        icon: LifeBuoy,
+        accent: '#14B8A6',
+        bg: 'rgba(20,184,166,0.10)',
+    },
+];
+});
+
+const operationalHighlights = computed(() => {
+    const slug = subdomain.value;
+    if (!slug) return [];
+
+    return [
+        {
+            title: localize('Deliver today', 'التسليم اليوم'),
+            description: localize('Reservations scheduled to start today.', 'الحجوزات المجدولة لليوم.'),
+            count: props.stats.cars_to_deliver_today,
+            href: reservationsIndex(slug).url,
+            accent: '#F59E0B',
+        },
+        {
+            title: localize('Receive today', 'الاستلام اليوم'),
+            description: localize('Contracts ending today.', 'العقود التي تنتهي اليوم.'),
+            count: props.stats.cars_to_receive_today,
+            href: contractsIndex(slug).url,
+            accent: '#06B6D4',
+        },
+        {
+            title: localize('Overdue cars', 'السيارات المتأخرة'),
+            description: localize('Active contracts past the due date.', 'عقود نشطة تجاوزت تاريخ الاستحقاق.'),
+            count: props.stats.overdue_cars,
+            href: contractsIndex(slug).url,
+            accent: '#EF4444',
+        },
+        {
+            title: localize('Pending violations', 'المخالفات المعلقة'),
+            description: localize('Need review or payment.', 'تحتاج مراجعة أو سداد.'),
+            count: props.stats.pending_violations,
+            href: carViolationsIndex(slug).url,
+            accent: '#8B5CF6',
+        },
+        {
+            title: localize('Expiring documents', 'وثائق تنتهي قريبًا'),
+            description: localize('Due within the next 10 days.', 'تنتهي خلال 10 أيام.'),
+            count: props.expiringCarDocuments.length,
+            href: carsIndex(slug).url,
+            accent: '#3B82F6',
+        },
+        {
+            title: localize('Ending contracts', 'عقود تنتهي قريبًا'),
+            description: localize('Due within the next 7 days.', 'تنتهي خلال 7 أيام.'),
+            count: props.expiringContracts.length,
+            href: contractsIndex(slug).url,
+            accent: '#10B981',
+        },
+    ];
+});
+
 const kpiCards = computed(() => [
     {
         title: localize('Total Cars', 'إجمالي السيارات'),
@@ -327,12 +422,12 @@ const kpiCards = computed(() => [
         bg: 'rgba(59,130,246,0.1)',
     },
     {
-        title: localize('Total Revenue', 'إجمالي الإيرادات'),
-        value: fmtCurrency(props.stats.total_revenue),
-        sub: localize('All completed payments', 'جميع المدفوعات المكتملة'),
-        icon: DollarSign,
-        accent: '#10B981',
-        bg: 'rgba(16,185,129,0.1)',
+        title: localize('Available Cars', 'السيارات المتاحة'),
+        value: props.stats.available_cars,
+        sub: localize(`of ${props.stats.total_cars} total`, `من أصل ${props.stats.total_cars}`),
+        icon: TrendingUp,
+        accent: '#06B6D4',
+        bg: 'rgba(6,182,212,0.1)',
     },
     {
         title: localize('Active Reservations', 'الحجوزات النشطة'),
@@ -351,6 +446,30 @@ const kpiCards = computed(() => [
         bg: 'rgba(139,92,246,0.1)',
     },
     {
+        title: localize('Cars to Deliver Today', 'السيارات المراد تسليمها اليوم'),
+        value: props.stats.cars_to_deliver_today,
+        sub: localize('Pickups scheduled for today', 'حجوزات الاستلام اليوم'),
+        icon: Calendar,
+        accent: '#F59E0B',
+        bg: 'rgba(245,158,11,0.1)',
+    },
+    {
+        title: localize('Cars to Receive Today', 'السيارات التي سيتم استلامها اليوم'),
+        value: props.stats.cars_to_receive_today,
+        sub: localize('Returns due today', 'سيارات يجب استلامها اليوم'),
+        icon: RefreshCcw,
+        accent: '#06B6D4',
+        bg: 'rgba(6,182,212,0.1)',
+    },
+    {
+        title: localize('Overdue Cars', 'السيارات المتأخرة'),
+        value: props.stats.overdue_cars,
+        sub: localize('Active contracts past due date', 'عقود نشطة متأخرة'),
+        icon: Clock,
+        accent: '#EF4444',
+        bg: 'rgba(239,68,68,0.1)',
+    },
+    {
         title: localize('Pending Violations', 'المخالفات المعلقة'),
         value: props.stats.pending_violations,
         sub: localize('Need review or payment', 'تحتاج مراجعة أو سداد'),
@@ -359,20 +478,20 @@ const kpiCards = computed(() => [
         bg: 'rgba(239,68,68,0.1)',
     },
     {
+        title: localize('Total Revenue', 'إجمالي الإيرادات'),
+        value: fmtCurrency(props.stats.total_revenue),
+        sub: localize('All completed payments', 'جميع المدفوعات المكتملة'),
+        icon: DollarSign,
+        accent: '#10B981',
+        bg: 'rgba(16,185,129,0.1)',
+    },
+    {
         title: localize('Total Clients', 'إجمالي العملاء'),
         value: props.stats.total_clients,
         sub: localize('Registered clients', 'العملاء المسجلون'),
         icon: Users,
         accent: '#EC4899',
         bg: 'rgba(236,72,153,0.1)',
-    },
-    {
-        title: localize('Available Cars', 'السيارات المتاحة'),
-        value: props.stats.available_cars,
-        sub: localize(`of ${props.stats.total_cars} total`, `من أصل ${props.stats.total_cars}`),
-        icon: TrendingUp,
-        accent: '#06B6D4',
-        bg: 'rgba(6,182,212,0.1)',
     },
 ]);
 </script>
@@ -407,65 +526,74 @@ const kpiCards = computed(() => [
                 </div>
             </div>
 
-            <div class="flex" :class="isRtl ? 'justify-start' : 'justify-end'">
-                <Link
-                    :href="policeNoticeSettingsUrl"
-                    class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
-                >
-                    <FileText class="h-4 w-4" />
-                    {{ localize('Police Notice Profile', 'ملف إشعار الشرطة') }}
-                </Link>
-            </div>
-
-            <Card class="border-0 shadow-sm">
-                <CardHeader>
-                    <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
-                        <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
-                            <Bell class="h-4 w-4 text-primary" />
-                            <CardTitle class="text-base">{{ localize('Operational Notifications', 'التنبيهات التشغيلية') }}</CardTitle>
+            <div class="grid gap-4 xl:grid-cols-3">
+                <Card class="border-0 shadow-sm xl:col-span-2">
+                    <CardHeader class="pb-3">
+                        <div class="flex items-center justify-between gap-3" :class="isRtl ? 'flex-row-reverse' : ''">
+                            <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
+                                <Layers class="h-4 w-4 text-primary" />
+                                <CardTitle class="text-base">{{ localize('Quick Actions', 'إجراءات سريعة') }}</CardTitle>
+                            </div>
+                            <p class="text-xs text-muted-foreground">{{ localize('Jump straight to the most common tasks.', 'انتقل مباشرة إلى أكثر المهام استخدامًا.') }}</p>
                         </div>
-                        <span class="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold">
-                            {{ operationalNotifications.length }}
-                        </span>
-                    </div>
-                    <p class="text-xs text-muted-foreground">
-                        {{ localize('The same alerts used by the mobile app.', 'نفس التنبيهات المستخدمة في تطبيق الموبايل.') }}
-                    </p>
-                </CardHeader>
-                <CardContent>
-                    <div v-if="operationalNotifications.length === 0" class="py-4 text-center text-sm text-muted-foreground">
-                        {{ localize('No operational notifications right now.', 'لا توجد تنبيهات تشغيلية حاليًا.') }}
-                    </div>
-                    <div v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    </CardHeader>
+                    <CardContent>
+                        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            <Button
+                                v-for="action in quickActions"
+                                :key="action.title"
+                                as-child
+                                variant="outline"
+                                class="h-auto justify-start border-muted/60 p-4 text-left transition-colors hover:border-primary/30 hover:bg-primary/5"
+                            >
+                                <Link :href="action.href" class="flex w-full items-start gap-3">
+                                    <div class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" :style="{ background: action.bg }">
+                                        <component :is="action.icon" class="h-5 w-5" :style="{ color: action.accent }" />
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="font-semibold">{{ action.title }}</div>
+                                        <p class="text-xs text-muted-foreground">{{ action.description }}</p>
+                                    </div>
+                                </Link>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card class="border-0 shadow-sm">
+                    <CardHeader class="pb-3">
+                        <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
+                            <Clock class="h-4 w-4 text-primary" />
+                            <CardTitle class="text-base">{{ localize('Attention Required', 'يحتاج إجراء') }}</CardTitle>
+                        </div>
+                        <p class="text-xs text-muted-foreground">{{ localize('The items above need the most immediate action.', 'هذه العناصر هي الأكثر حاجة لإجراء سريع.') }}</p>
+                    </CardHeader>
+                    <CardContent class="space-y-3">
                         <Link
-                            v-for="notification in operationalNotifications"
-                            :key="notification.id"
-                            :href="notificationHref(notification)"
-                            class="rounded-xl border bg-background p-4 transition-colors hover:bg-muted/50"
+                            v-for="item in operationalHighlights"
+                            :key="item.title"
+                            :href="item.href"
+                            class="flex items-center justify-between gap-3 rounded-xl border border-muted/60 px-3 py-2.5 transition-colors hover:border-primary/30 hover:bg-muted/40"
                         >
-                            <div class="flex items-start justify-between gap-3" :class="isRtl ? 'flex-row-reverse' : ''">
-                                <div class="min-w-0" :class="isRtl ? 'text-right' : ''">
-                                    <div class="font-semibold">{{ notification.title }}</div>
-                                    <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                                        {{ notification.message }}
-                                    </p>
-                                </div>
+                            <div class="min-w-0">
+                                <div class="font-medium">{{ item.title }}</div>
+                                <p class="text-xs text-muted-foreground">{{ item.description }}</p>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-2">
                                 <span
-                                    class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
-                                    :style="{
-                                        backgroundColor: notification.ui.badge_background,
-                                        color: notification.ui.badge_color,
-                                    }"
+                                    class="inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-bold"
+                                    :style="{ background: `${item.accent}20`, color: item.accent }"
                                 >
-                                    {{ notification.label }}
+                                    {{ item.count }}
                                 </span>
+                                <span class="text-xs text-muted-foreground">{{ localize('Open', 'فتح') }} →</span>
                             </div>
                         </Link>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            </div>
 
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-7">
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
                 <Card
                     v-for="card in kpiCards"
                     :key="card.title"
@@ -494,7 +622,7 @@ const kpiCards = computed(() => [
                             <Clock class="h-4 w-4 text-primary" />
                             <CardTitle class="text-base">{{ localize('Expiring Car Documents', 'وثائق السيارات القريبة من الانتهاء') }}</CardTitle>
                         </div>
-                        <Link href="/admin/cars" class="text-xs text-primary hover:underline">
+                        <Link href="/admin/cars" class="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
                             {{ localize('Review cars', 'مراجعة السيارات') }} →
                         </Link>
                     </div>
@@ -532,7 +660,7 @@ const kpiCards = computed(() => [
                                     </span>
                                 </td>
                                 <td class="px-4 py-3" :class="isRtl ? 'text-left' : 'text-right'">
-                                    <Link :href="document.edit_url" class="text-xs text-primary hover:underline">
+                                    <Link :href="document.edit_url" class="inline-flex items-center rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
                                         {{ localize('Open', 'فتح') }}
                                     </Link>
                                 </td>
@@ -549,8 +677,8 @@ const kpiCards = computed(() => [
                             <Calendar class="h-4 w-4 text-primary" />
                             <CardTitle class="text-base">{{ localize('Contracts Ending Soon', 'العقود المنتهية قريباً') }}</CardTitle>
                         </div>
-                        <Link href="/admin/contracts" class="text-xs text-primary hover:underline">
-                            {{ localize('View all', 'ط¹ط±ط¶ ط§ظ„ظƒظ„') }} →
+                        <Link href="/admin/contracts" class="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
+                            {{ localize('View all', 'عرض الكل') }} →
                         </Link>
                     </div>
                     <p class="text-xs text-muted-foreground">{{ localize('Active contracts ending within the next 7 days.', 'العقود النشطة التي ستنتهي خلال الأيام السبعة القادمة.') }}</p>
@@ -562,12 +690,12 @@ const kpiCards = computed(() => [
                     <table v-else class="w-full text-sm">
                         <thead>
                             <tr class="border-b">
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Contract', 'ط§ظ„ط¹ظ‚ط¯') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Car', 'ط§ظ„ط³ظٹط§ط±ط©') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Client', 'ط§ظ„ط¹ظ…ظٹظ„') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('End Date', 'طھط§ط±ظٹط® ط§ظ„ظ†ظ‡ط§ظٹط©') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Remaining', 'ط§ظ„ظ…طھط¨ظ‚ظٹ') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Action', 'ط§ظ„ط¥ط¬ط±ط§ط،') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Contract', 'العقد') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Car', 'السيارة') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Client', 'العميل') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('End Date', 'تاريخ النهاية') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Remaining', 'المتبقي') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Action', 'الإجراء') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -579,16 +707,16 @@ const kpiCards = computed(() => [
                                 <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
                                     <div class="font-medium">{{ contract.contract_number }}</div>
                                     <div v-if="contract.reservation_number" class="text-xs text-muted-foreground">
-                                        {{ localize('Reservation', 'ط§ظ„ط­ط¬ط²') }} {{ contract.reservation_number }}
+                                        {{ localize('Reservation', 'الحجز') }} {{ contract.reservation_number }}
                                     </div>
                                 </td>
                                 <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
-                                    <div class="font-medium">{{ contract.car_name || localize('Unknown car', 'ط³ظٹط§ط±ط© ط؛ظٹط± ظ…ط¹ط±ظˆظپط©') }}</div>
+                                    <div class="font-medium">{{ contract.car_name || localize('Unknown car', 'سيارة غير معروفة') }}</div>
                                     <div v-if="contract.license_plate" class="text-xs text-muted-foreground">{{ contract.license_plate }}</div>
                                     <div v-if="contract.branch_name" class="text-xs text-muted-foreground">{{ contract.branch_name }}</div>
                                 </td>
                                 <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
-                                    <div class="font-medium">{{ contract.client_name || localize('Unknown client', 'ط¹ظ…ظٹظ„ ط؛ظٹط± ظ…ط¹ط±ظˆظپ') }}</div>
+                                    <div class="font-medium">{{ contract.client_name || localize('Unknown client', 'عميل غير معروف') }}</div>
                                     <div v-if="contract.client_email" class="text-xs text-muted-foreground">{{ contract.client_email }}</div>
                                 </td>
                                 <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(contract.end_date) }}</td>
@@ -598,8 +726,8 @@ const kpiCards = computed(() => [
                                     </span>
                                 </td>
                                 <td class="px-4 py-3" :class="isRtl ? 'text-left' : 'text-right'">
-                                    <Link :href="contract.show_url" class="text-xs text-primary hover:underline">
-                                        {{ localize('Open', 'ظپطھط­') }}
+                                    <Link :href="contract.show_url" class="inline-flex items-center rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
+                                        {{ localize('Open', 'فتح') }}
                                     </Link>
                                 </td>
                             </tr>
@@ -613,28 +741,28 @@ const kpiCards = computed(() => [
                     <div class="flex items-center justify-between" :class="isRtl ? 'flex-row-reverse' : ''">
                         <div class="flex items-center gap-2" :class="isRtl ? 'flex-row-reverse' : ''">
                             <RefreshCcw class="h-4 w-4 text-primary" />
-                            <CardTitle class="text-base">{{ localize('Forced Extensions', 'ط§ظ„طھظ…ط¯ظٹط¯ ط§ظ„ط¥ط¬ط¨ط§ط±ظٹ') }}</CardTitle>
+                            <CardTitle class="text-base">{{ localize('Forced Extensions', 'التمديد الإجباري') }}</CardTitle>
                         </div>
-                        <Link href="/admin/contracts" class="text-xs text-primary hover:underline">
+                        <Link href="/admin/contracts" class="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
                             {{ localize('View all', 'عرض الكل') }} →
                         </Link>
                     </div>
-                    <p class="text-xs text-muted-foreground">{{ localize('Recent office-driven rental extensions and their recorded payments.', 'ط£ط®ط± طھظ…ط¯ظٹط¯ط§طھ ط§ظ„ط¥ظٹط¬ط§ط± ط§ظ„طھظٹ ط£ط¯ط§طھظ‡ط§ ط§ظ„ظ…ظƒطھط¨ ظ…ط¹ طھط³ط¬ظٹظ„ ط§ظ„ط¯ظپط¹ط§طھ.') }}</p>
+                    <p class="text-xs text-muted-foreground">{{ localize('Recent office-driven rental extensions and their recorded payments.', 'آخر تمديدات الإيجار التي أجراها المكتب مع تسجيل الدفعات.') }}</p>
                 </CardHeader>
                 <CardContent class="p-0">
                     <div v-if="recentForcedExtensions.length === 0" class="py-8 text-center text-sm text-muted-foreground">
-                        {{ localize('No forced extensions yet.', 'ظ„ط§ طھظˆط¬ط¯ طھظ…ط¯ظٹط¯ط§طھ ط¥ط¬ط¨ط§ط±ظٹط© ط­طھظ‰ ط§ظ„ط¢ظ†.') }}
+                        {{ localize('No forced extensions yet.', 'لا توجد تمديدات إجبارية حتى الآن.') }}
                     </div>
                     <table v-else class="w-full text-sm">
                         <thead>
                             <tr class="border-b">
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Payment', 'ط§ظ„ط¯ظپط¹ط©') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Contract', 'ط§ظ„ط¹ظ‚ط¯') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Client', 'ط§ظ„ط¹ظ…ظٹظ„') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Car', 'ط§ظ„ط³ظٹط§ط±ط©') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Extra Amount', 'ط§ظ„ظ…ط¨ظ„ط؛ ط§ظ„ط¥ط¶ط§ظپظٹ') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Processed', 'طھظ… طھط³ط¬ظٹظ„ظ‡ط§') }}</th>
-                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Action', 'ط§ظ„ط¥ط¬ط±ط§ط،') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Payment', 'الدفعة') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Contract', 'العقد') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Client', 'العميل') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Car', 'السيارة') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Extra Amount', 'المبلغ الإضافي') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Processed', 'تم تسجيلها') }}</th>
+                                <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Action', 'الإجراء') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -645,20 +773,20 @@ const kpiCards = computed(() => [
                             >
                                 <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
                                     <div class="font-medium">{{ item.payment_number }}</div>
-                                    <div class="text-xs text-muted-foreground">{{ item.branch_name || localize('No branch', 'ظ„ط§ ط§ظ„ظپط±ط¹') }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ item.branch_name || localize('No branch', 'لا يوجد فرع') }}</div>
                                 </td>
                                 <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
-                                    <div class="font-medium">{{ item.contract_number || localize('N/A', 'طºظٹط± ظ…طھظˆظپط±') }}</div>
+                                    <div class="font-medium">{{ item.contract_number || localize('N/A', 'غير متوفر') }}</div>
                                     <div v-if="item.reservation_number" class="text-xs text-muted-foreground">
-                                        {{ localize('Reservation', 'ط§ظ„ط­ط¬ط²') }} {{ item.reservation_number }}
+                                        {{ localize('Reservation', 'الحجز') }} {{ item.reservation_number }}
                                     </div>
                                 </td>
                                 <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
-                                    <div class="font-medium">{{ item.client_name || localize('Unknown client', 'ط¹ظ…ظٹظ„ طºظٹط± ظ…ط¹ط±ظˆظپ') }}</div>
+                                    <div class="font-medium">{{ item.client_name || localize('Unknown client', 'عميل غير معروف') }}</div>
                                     <div v-if="item.client_email" class="text-xs text-muted-foreground">{{ item.client_email }}</div>
                                 </td>
                                 <td class="px-4 py-3" :class="isRtl ? 'text-right' : ''">
-                                    <div class="font-medium">{{ item.car_name || localize('Unknown car', 'ط³ظٹط§ط±ط© طºظٹط± ظ…ط¹ط±ظˆظپط©') }}</div>
+                                    <div class="font-medium">{{ item.car_name || localize('Unknown car', 'سيارة غير معروفة') }}</div>
                                     <div v-if="item.license_plate" class="text-xs text-muted-foreground">{{ item.license_plate }}</div>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap font-semibold">
@@ -668,8 +796,8 @@ const kpiCards = computed(() => [
                                     {{ fmtDate(item.processed_at) }}
                                 </td>
                                 <td class="px-4 py-3" :class="isRtl ? 'text-left' : 'text-right'">
-                                    <Link :href="item.show_url" class="text-xs text-primary hover:underline">
-                                        {{ localize('Open', 'ظپطھط­') }}
+                                    <Link :href="item.show_url" class="inline-flex items-center rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
+                                        {{ localize('Open', 'فتح') }}
                                     </Link>
                                 </td>
                             </tr>
@@ -685,7 +813,7 @@ const kpiCards = computed(() => [
                             <Clock class="h-4 w-4 text-primary" />
                             <CardTitle class="text-base">{{ localize('Pending Violations', 'المخالفات المعلقة') }}</CardTitle>
                         </div>
-                        <Link href="/admin/car-violations" class="text-xs text-primary hover:underline">
+                        <Link href="/admin/car-violations" class="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
                             {{ localize('View all', 'عرض الكل') }} →
                         </Link>
                     </div>
@@ -732,7 +860,7 @@ const kpiCards = computed(() => [
                                     {{ fmtCurrency(violation.amount) }}
                                 </td>
                                 <td class="px-4 py-3" :class="isRtl ? 'text-left' : 'text-right'">
-                                    <Link :href="violation.edit_url" class="text-xs text-primary hover:underline">
+                                    <Link :href="violation.edit_url" class="inline-flex items-center rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
                                         {{ localize('Open', 'فتح') }}
                                     </Link>
                                 </td>
@@ -848,7 +976,7 @@ const kpiCards = computed(() => [
                                 <Clock class="h-4 w-4 text-primary" />
                                 <CardTitle class="text-base">{{ taskTypeMeta.title }} ({{ taskCount }})</CardTitle>
                             </div>
-                            <Link href="/admin/reservations" class="text-xs text-primary hover:underline">
+                            <Link href="/admin/reservations" class="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
                                 {{ localize('View all', 'عرض الكل') }} →
                             </Link>
                         </div>
@@ -860,7 +988,7 @@ const kpiCards = computed(() => [
                                 class="rounded-full border px-4 py-1.5 text-xs font-medium transition-colors"
                                 :class="tab.key === taskType
                                     ? 'border-primary bg-primary text-primary-foreground'
-                                    : 'border-muted-foreground/20 bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground'"
+                                    : 'border-primary/20 bg-primary/10 text-primary hover:border-primary/50 hover:bg-primary/15'"
                                 @click="taskType = tab.key"
                             >
                                 {{ tab.label }}
@@ -937,7 +1065,7 @@ const kpiCards = computed(() => [
                                 <Car class="h-4 w-4 text-primary" />
                                 <CardTitle class="text-base">{{ localize('Top Performing Cars', 'أفضل السيارات أداءً') }}</CardTitle>
                             </div>
-                            <Link href="/admin/cars" class="text-xs text-primary hover:underline">
+                            <Link href="/admin/cars" class="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
                                 {{ localize('View all', 'عرض الكل') }} →
                             </Link>
                         </div>

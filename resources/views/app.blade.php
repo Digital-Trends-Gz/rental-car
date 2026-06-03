@@ -37,7 +37,21 @@
 
         <title inertia>{{ \App\Core\AppBrandingSettings::load()['app_name'] ?? config('app.name', 'Laravel') }}</title>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
+        @php
+            $faviconUrl = null;
+            $tenant = \App\Core\TenantContext::get();
+            if ($tenant) {
+                $tenant->loadMissing('siteSetting.files');
+                $faviconUrl = \App\Models\TenantSiteSetting::normalize($tenant->siteSetting)['favicon_url'] ?? null;
+            }
+            if (!$faviconUrl) {
+                $faviconUrl = \App\Core\AppBrandingSettings::load()['favicon_url'] ?? null;
+            }
+            if (!$faviconUrl) {
+                $faviconUrl = '/favicon.ico';
+            }
+        @endphp
+        <link rel="icon" href="{{ $faviconUrl }}" sizes="any">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />

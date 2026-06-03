@@ -13,6 +13,7 @@ class AppBrandingSettings
         return [
             'app_name' => config('app.name', 'Real Rent Car'),
             'logo_url' => null,
+            'favicon_url' => null,
             'primary_color' => '#3b82f6',
             'secondary_color' => '#6d28d9',
         ];
@@ -33,6 +34,7 @@ class AppBrandingSettings
         $defaults = self::defaults();
         $data = $source instanceof SiteSetting ? ($source->value ?? []) : $source;
         $logoUrl = null;
+        $faviconUrl = null;
 
         if ($source instanceof SiteSetting) {
             $file = $source->relationLoaded('files')
@@ -42,11 +44,20 @@ class AppBrandingSettings
             if ($file && $file->path) {
                 $logoUrl = SiteSetting::publicUrlFromPath($file->path);
             }
+
+            $faviconFile = $source->relationLoaded('files')
+                ? $source->files->firstWhere('collection', 'favicon')
+                : $source->files()->where('collection', 'favicon')->first();
+
+            if ($faviconFile && $faviconFile->path) {
+                $faviconUrl = SiteSetting::publicUrlFromPath($faviconFile->path);
+            }
         }
 
         return [
             'app_name' => trim((string) ($data['app_name'] ?? $defaults['app_name'])) ?: $defaults['app_name'],
             'logo_url' => self::nullableString($logoUrl ?: ($data['logo_url'] ?? $defaults['logo_url'])),
+            'favicon_url' => self::nullableString($faviconUrl ?: ($data['favicon_url'] ?? $defaults['favicon_url'])),
             'primary_color' => self::normalizeHexColor($data['primary_color'] ?? $defaults['primary_color'], $defaults['primary_color']),
             'secondary_color' => self::normalizeHexColor($data['secondary_color'] ?? $defaults['secondary_color'], $defaults['secondary_color']),
         ];

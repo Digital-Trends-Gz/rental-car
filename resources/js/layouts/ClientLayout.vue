@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useBrandTheme } from '@/composables/useBrandTheme';
 import AppHeaderLayout from '@/layouts/app/AppHeaderLayout.vue';
 import type { BreadcrumbItemType } from '@/types';
 
@@ -9,10 +10,14 @@ interface Props {
 withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
 });
+
+const { themeVars } = useBrandTheme();
 </script>
 
 <template>
-    <AppHeaderLayout :breadcrumbs="breadcrumbs">
-        <slot />
-    </AppHeaderLayout>
+    <div :style="themeVars">
+        <AppHeaderLayout :breadcrumbs="breadcrumbs">
+            <slot />
+        </AppHeaderLayout>
+    </div>
 </template>

@@ -324,7 +324,7 @@ function goToTicket(id: number) {
                             :href="link.url"
                             class="px-3 py-1 rounded-md text-sm"
                             :class="{
-                                'bg-gray-900 text-white': link.active,
+                                'bg-primary text-primary-foreground': link.active,
                                 'bg-gray-100 text-gray-700 hover:bg-gray-200': !link.active,
                             }"
                             v-html="link.label"

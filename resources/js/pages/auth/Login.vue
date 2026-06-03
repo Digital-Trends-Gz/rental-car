@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -54,12 +55,16 @@ const isDemoOpen = ref(false);
 </script>
 
 <template>
-    <HomeLayout>
+    <HomeLayout :show-locale-switcher="false">
         <Head :title="t('auth.login_title')" />
 
         <div
-            class="flex min-h-[90vh] items-center justify-center px-4 sm:px-6 lg:px-8"
+            class="relative flex min-h-[90vh] items-center justify-center px-4 sm:px-6 lg:px-8"
         >
+            <div class="absolute top-4 ltr:right-4 rtl:left-4 z-50">
+                <AuthLanguageSwitcher />
+            </div>
+
             <div class="w-full max-w-md space-y-8">
                 <!-- Header -->
                 <div class="text-center">
@@ -322,7 +327,7 @@ const isDemoOpen = ref(false);
                     <template v-if="currentTenant">
                         <div class="relative flex items-center py-6">
                             <div class="flex-grow border-t border-gray-200"></div>
-                            <span class="flex-shrink-0 px-4 text-xs font-medium text-gray-500 uppercase">Or continue with</span>
+                            <span class="flex-shrink-0 px-4 text-xs font-medium text-gray-500 uppercase">{{ t('auth.or_continue_with') }}</span>
                             <div class="flex-grow border-t border-gray-200"></div>
                         </div>
 
@@ -337,16 +342,16 @@ const isDemoOpen = ref(false);
                                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                                 </svg>
-                                Google
+                                {{ t('auth.google') }}
                             </a>
                             <a
                                 :href="buildUrl(page.props.app_url_base, `/auth/apple/redirect?tenant=${currentTenant.slug}`)"
-                                class="flex h-11 items-center justify-center rounded-lg border border-gray-300 bg-black font-semibold text-white shadow-sm transition hover:bg-gray-800"
+                                class="flex h-11 items-center justify-center rounded-lg border border-primary bg-primary font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
                             >
                                 <svg class="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M16.365 21.492c-1.373.91-2.073.932-3.418.932-1.36 0-2.457-.145-3.358-.888-4.706-3.896-7.143-12.001-2.924-17.159C8.381 2.27 10.64 1 12.87 1c1.372 0 2.515.548 3.518.548 1.033 0 2.455-.662 4.098-.598 2.053.082 3.868.868 4.908 2.39-4.226 2.593-3.483 8.653.861 10.4-1.127 3.238-3.085 6.425-5.61 8.8-1.026.969-2.19 1.496-3.235 1.496a7.41 7.41 0 0 1-1.045-.544zM16.124 6.78c-.2-2.14 1.5-4.04 3.79-4.38.38 2.39-1.9 4.31-3.79 4.38z" />
                                 </svg>
-                                Apple
+                                {{ t('auth.apple') }}
                             </a>
                         </div>
                     </template>
