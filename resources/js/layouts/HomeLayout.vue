@@ -72,7 +72,7 @@ const getUrl = (helper: any) => {
 };
 
 const tenantBranding = computed(() => tenantSiteSettings.value ?? null);
-const appName = computed(() => $page.props.name || 'Real Rent Car');
+const appName = computed(() => $page.props.name || 'Car4u');
 const siteName = computed(() => tenantBranding.value?.site_name || currentTenant.value?.name || appName.value);
 const siteLogoUrl = computed(() => tenantBranding.value?.logo_url || null);
 const { primaryColor, secondaryColor, themeVars: globalThemeVars } = useBrandTheme();

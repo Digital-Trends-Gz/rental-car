@@ -63,6 +63,7 @@ class CarsController extends Controller
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
 
         $status = $request->input('status');
+        $scope = $request->string('scope')->toString();
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
 
         $branchOptions = $this->branchAccess
@@ -93,6 +94,16 @@ class CarsController extends Controller
         $this->branchAccess->applyToQuery($carsQuery, $user, $branchId);
 
         $cars = $carsQuery
+            ->when($scope === 'expiring_documents', function ($query) {
+                $today = Carbon::today();
+
+                $query->whereHas('documents', function ($documentQuery) use ($today) {
+                    $documentQuery
+                        ->where('is_active', true)
+                        ->whereDate('expiry_date', '>=', $today)
+                        ->whereDate('expiry_date', '<=', $today->copy()->addDays(10));
+                });
+            })
             ->when($request->string('search')->toString(), function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('make', 'like', "%{$search}%")
@@ -146,6 +157,7 @@ class CarsController extends Controller
             'filters' => [
                 'search' => $request->string('search')->toString(),
                 'status' => $status,
+                'scope' => $scope,
                 'branch_id' => $branchId,
             ],
             'statuses' => $statuses,

@@ -17,7 +17,7 @@ class TenantAwareVerifyEmailNotification extends VerifyEmail
     {
         $tenantName = $this->tenantName($notifiable);
         $tenantSlug = $this->tenantSlug($notifiable);
-        $appName = AppBrandingSettings::load()['app_name'] ?? config('app.name', 'Real Rent Car');
+        $appName = AppBrandingSettings::load()['app_name'] ?? config('app.name', 'Car4u');
         $verificationUrl = $this->verificationUrl($notifiable);
         $expireMinutes = (int) config('auth.verification.expire', 60);
         $template = EmailTemplateSettings::load()['verify_email_after_payment'];

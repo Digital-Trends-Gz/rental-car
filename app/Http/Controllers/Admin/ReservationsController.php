@@ -40,6 +40,7 @@ class ReservationsController extends Controller
         $user = $request->user();
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
         $status = $request->input('status');
+        $scope = $request->string('scope')->toString();
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
 
         $branchOptions = $this->branchAccess
@@ -73,6 +74,15 @@ class ReservationsController extends Controller
         $this->applyReservationBranchScope($reservationsQuery, $user, $branchId);
 
         $reservations = $reservationsQuery
+            ->when($scope === 'today_delivery', function ($query) {
+                $query
+                    ->whereDate('start_date', Carbon::today())
+                    ->whereIn('status', [
+                        ReservationStatus::CONFIRMED->value,
+                        ReservationStatus::ACTIVE->value,
+                        ReservationStatus::COMPLETED_WAIT_CONTRACT->value,
+                    ]);
+            })
             ->when($request->string('search')->toString(), function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('reservation_number', 'like', "%{$search}%")
@@ -139,6 +149,7 @@ class ReservationsController extends Controller
             'filters' => [
                 'search' => $request->string('search')->toString(),
                 'status' => $status,
+                'scope' => $scope,
                 'branch_id' => $branchId,
             ],
             'statuses' => $statuses,

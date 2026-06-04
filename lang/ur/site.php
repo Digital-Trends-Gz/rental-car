@@ -33,8 +33,8 @@ return [
         'rights' => 'All rights reserved.',
     ],
     'welcome' => [
-        'title' => 'Real Rent Car - Premium Car Rental Service',
-        'meta_description' => 'Real Rent Car is a premium car rental platform providing reliable transportation solutions.',
+        'title' => 'Car4u - Premium Car Rental Service',
+        'meta_description' => 'Car4u is a premium car rental platform providing reliable transportation solutions.',
         'badge' => 'Premium Car Rental Experience',
         'hero_title_start' => 'Drive Your',
         'hero_title_highlight' => 'Dreams',
@@ -50,7 +50,7 @@ return [
         'fleet_desc' => 'Each vehicle in our collection is meticulously maintained and equipped with premium features to ensure your journey is exceptional.',
         'view_complete_fleet' => 'View Complete Fleet',
         'why_choose_start' => 'Why Choose',
-        'why_choose_highlight' => 'RealRent',
+        'why_choose_highlight' => 'Car4u',
         'why_choose_desc' => 'We provide an unparalleled car rental experience with premium service at every touchpoint.',
         'feature_quality_title' => 'Premium Quality',
         'feature_quality_desc' => 'Every vehicle is inspected and maintained for safety, comfort, and peace of mind.',
@@ -90,10 +90,10 @@ return [
         'results' => 'results',
     ],
     'about' => [
-        'title' => 'About Real Rent Car',
+        'title' => 'About Car4u',
         'subtitle' => 'Your trusted partner in premium car rental services, providing reliable transportation solutions since 2015.',
         'story_title' => 'Our Story',
-        'story_p1' => 'Founded in 2015, Real Rent Car began with a simple mission: to provide reliable, affordable, and convenient car rental services to travelers and locals alike. What started as a small fleet of 10 vehicles has grown into a comprehensive rental service with over 200 premium vehicles.',
+        'story_p1' => 'Founded in 2015, Car4u began with a simple mission: to provide reliable, affordable, and convenient car rental services to travelers and locals alike. What started as a small fleet of 10 vehicles has grown into a comprehensive rental service with over 200 premium vehicles.',
         'story_p2' => 'We understand that every journey is important, whether it is a business trip, family vacation, or daily commute. That is why we have built our reputation on trust, quality, and exceptional customer service.',
         'stats' => [
             'vehicles' => 'Vehicles',
@@ -117,7 +117,7 @@ return [
                 'desc' => 'We continuously strive to exceed expectations through superior service, quality vehicles, and innovative solutions.',
             ],
         ],
-        'why_choose_title' => 'Why Choose Real Rent Car?',
+        'why_choose_title' => 'Why Choose Car4u?',
         'why_choose' => [
             'premium_fleet' => [
                 'title' => 'Premium Fleet',
@@ -166,7 +166,7 @@ return [
             ],
         ],
         'cta_title' => 'Ready to Get Started?',
-        'cta_subtitle' => 'Experience the Real Rent Car difference today. Browse our fleet and book your perfect vehicle in just a few clicks.',
+        'cta_subtitle' => 'Experience the Car4u difference today. Browse our fleet and book your perfect vehicle in just a few clicks.',
         'cta_browse' => 'Browse Our Fleet',
         'cta_contact' => 'Contact Us',
     ],
@@ -516,6 +516,14 @@ return [
         'sidebar' => [
             'platform' => 'Platform',
             'super_admin_section' => 'Super Admin',
+            'admin_groups' => [
+                'fleet_management' => 'Fleet Management',
+                'bookings_and_contracts' => 'Bookings & Contracts',
+                'people_and_branches' => 'People & Branches',
+                'payments_and_offers' => 'Payments & Offers',
+                'reports_and_growth' => 'Reports & Growth',
+                'support_and_settings' => 'Support & Settings',
+            ],
             'admin' => [
                 'cars' => 'Cars',
                 'reservations' => 'Reservations',
@@ -526,8 +534,10 @@ return [
                 'branches' => 'Branches',
                 'employees' => 'Employees',
                 'roles' => 'Roles',
+                'roles_permissions' => 'Roles & Permissions',
                 'payment_providers' => 'Payment Providers',
                 'website_settings' => 'Website Settings',
+                'contract_pdf' => 'Contract PDF Template',
                 'seo_settings' => 'SEO Settings',
                 'seo_audit' => 'SEO Audit',
                 'translations' => 'Translations',

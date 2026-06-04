@@ -35,7 +35,7 @@
             }
         </style>
 
-        <title inertia>{{ \App\Core\AppBrandingSettings::load()['app_name'] ?? config('app.name', 'Laravel') }}</title>
+        <title inertia>{{ \App\Core\AppBrandingSettings::load()['app_name'] ?? config('app.name', 'Car4u') }}</title>
 
         @php
             $faviconUrl = null;

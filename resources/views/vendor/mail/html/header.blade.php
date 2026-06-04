@@ -2,7 +2,7 @@
 
 @php
     $branding = \App\Core\AppBrandingSettings::load();
-    $brandName = $branding['app_name'] ?? config('app.name', 'Laravel');
+    $brandName = $branding['app_name'] ?? config('app.name', 'Car4u');
     $brandLogo = $branding['logo_url'] ?? null;
 
     if (is_string($brandLogo) && $brandLogo !== '' && str_starts_with($brandLogo, '/')) {

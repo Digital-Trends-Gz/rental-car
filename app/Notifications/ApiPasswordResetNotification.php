@@ -27,7 +27,7 @@ class ApiPasswordResetNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $user = $notifiable instanceof User ? $notifiable : null;
-        $appName = AppBrandingSettings::load()['app_name'] ?? config('app.name', 'Real Rent Car');
+        $appName = AppBrandingSettings::load()['app_name'] ?? config('app.name', 'Car4u');
         $resetUrl = $this->resetUrl($user);
         $tenantName = $this->tenantName($user);
         $expireMinutes = (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);

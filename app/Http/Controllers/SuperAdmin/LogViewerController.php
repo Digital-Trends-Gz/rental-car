@@ -10,7 +10,7 @@ class LogViewerController extends Controller
 {
     public function index(): Response
     {
-        $path = storage_path('logs/laravel.log');
+        $path = storage_path('logs/car4u.log');
         
         if (!File::exists($path)) {
             return response('Log file does not exist.', 404);

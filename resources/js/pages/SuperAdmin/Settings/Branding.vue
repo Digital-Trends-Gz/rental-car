@@ -63,7 +63,7 @@ watch(
     { deep: true },
 );
 
-const previewName = computed(() => form.app_name || 'Real Rent Car');
+const previewName = computed(() => form.app_name || 'Car4u');
 const uploadedLogoUrl = computed(() => props.logoFiles?.[0]?.url || null);
 const previewLogo = computed(() => uploadedLogoUrl.value || form.logo_url || '/logo/logo.png');
 const previewGradient = computed(
@@ -138,7 +138,7 @@ const submit = () => {
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
                             <Label for="app_name">{{ localize('SaaS Application Name', 'اسم تطبيق الـ SaaS') }}</Label>
-                            <Input id="app_name" v-model="form.app_name" placeholder="Real Rent Car" />
+                            <Input id="app_name" v-model="form.app_name" placeholder="Car4u" />
                             <p v-if="form.errors.app_name" class="text-sm text-red-600">
                                 {{ form.errors.app_name }}
                             </p>

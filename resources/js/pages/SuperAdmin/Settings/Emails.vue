@@ -42,7 +42,7 @@ const selectedTemplate = ref<TemplateKey>('verify_email_after_payment');
 const currentTemplate = computed(() => form.templates[selectedTemplate.value]);
 
 const previewTokens = computed<Record<string, string>>(() => ({
-    '{app_name}': 'Real Rent Car',
+    '{app_name}': 'Car4u',
     '{name}': 'John Doe',
     '{email}': 'john@example.com',
     '{tenant_name}': 'Acme Rentals',

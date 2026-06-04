@@ -1,6 +1,6 @@
 @php
     $branding = \App\Core\AppBrandingSettings::load();
-    $brandName = $branding['app_name'] ?? config('app.name', 'Laravel');
+    $brandName = $branding['app_name'] ?? config('app.name', 'Car4u');
 @endphp
 
 <x-mail::layout>

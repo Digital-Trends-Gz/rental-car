@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
     SidebarGroup,
-    SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
@@ -10,7 +9,6 @@ import {
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useTrans } from '@/composables/useTrans';
 import { urlIsActive } from '@/lib/utils';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
@@ -27,7 +25,6 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
-const { t } = useTrans();
 const openState = reactive<Record<string, boolean>>({});
 const getItemKey = (item: SidebarNavItem) => item.key || String(item.href || item.title);
 
@@ -57,14 +54,17 @@ watch(
 
 <template>
     <SidebarGroup class="px-2 py-0">
-        <SidebarGroupLabel>{{ t('dashboard.sidebar.platform') }}</SidebarGroupLabel>
-        <SidebarMenu>
-        <template v-for="item in items" :key="getItemKey(item)">
+        <SidebarMenu class="space-y-2">
+            <template v-for="item in items" :key="getItemKey(item)">
                 <SidebarMenuItem v-if="!item.children?.length">
                     <SidebarMenuButton
                         as-child
                         :is-active="urlIsActive(item.href, page.url)"
+                        :size="item.key === 'dashboard' ? 'lg' : 'default'"
                         :tooltip="item.title"
+                        :class="item.key === 'dashboard'
+                            ? 'rounded-2xl data-[active=true]:!bg-gradient-to-r data-[active=true]:from-sky-500 data-[active=true]:to-cyan-500 data-[active=true]:!text-white data-[active=true]:shadow-lg'
+                            : ''"
                     >
                         <Link :href="item.href">
                             <component :is="item.icon" />
@@ -75,7 +75,7 @@ watch(
 
                 <SidebarMenuItem v-else>
                     <Collapsible
-                        :open="openState[getItemKey(item)] ?? isGroupActive(item)"
+                        :open="openState[getItemKey(item)] ?? true"
                         class="group/collapsible"
                         @update:open="(value) => (openState[getItemKey(item)] = value)"
                     >
@@ -95,8 +95,8 @@ watch(
                         <CollapsibleContent>
                             <SidebarMenuSub>
                                 <SidebarMenuSubItem
-                                v-for="child in item.children"
-                                :key="getItemKey(child)"
+                                    v-for="child in item.children"
+                                    :key="getItemKey(child)"
                                 >
                                     <SidebarMenuSubButton
                                         v-if="child.href"

@@ -29,7 +29,7 @@ class TenantAdminInvitationNotification extends Notification
         $user = $notifiable instanceof User ? $notifiable : null;
         $token = $user ? Password::broker()->createToken($user) : null;
         $activationUrl = $this->activationUrl($user, $token);
-        $appName = AppBrandingSettings::load()['app_name'] ?? config('app.name', 'Real Rent Car');
+        $appName = AppBrandingSettings::load()['app_name'] ?? config('app.name', 'Car4u');
         $template = EmailTemplateSettings::load()['tenant_admin_invitation'];
         $tokens = [
             '{app_name}' => $appName,

@@ -15,7 +15,7 @@ class SettingsController extends Controller
     public function general(): JsonResponse
     {
         $branding = AppBrandingSettings::load();
-        $siteName = $this->nullableString($branding['app_name'] ?? null) ?? config('app.name', 'Real Rent Car');
+        $siteName = $this->nullableString($branding['app_name'] ?? null) ?? config('app.name', 'Car4u');
 
         return response()->json([
             'source' => 'super_admin',

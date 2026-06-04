@@ -116,7 +116,7 @@ const props = defineProps<{
 
 const page = usePage<any>();
 const { t } = useTrans();
-const appName = computed(() => page.props.name || 'Real Rent Car');
+const appName = computed(() => page.props.name || 'Car4u');
 const locale = computed(() => String(page.props.locale || 'en'));
 const availableLocales = computed<string[]>(() =>
     Array.isArray(page.props?.available_locales) && page.props.available_locales.length

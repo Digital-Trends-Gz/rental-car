@@ -11,7 +11,7 @@ class AppBrandingSettings
     public static function defaults(): array
     {
         return [
-            'app_name' => config('app.name', 'Real Rent Car'),
+            'app_name' => config('app.name', 'Car4u'),
             'logo_url' => null,
             'favicon_url' => null,
             'primary_color' => '#3b82f6',

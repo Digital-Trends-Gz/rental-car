@@ -75,6 +75,7 @@ class ContractsController extends Controller
         $user = $request->user();
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
+        $scope = $request->string('scope')->toString();
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
 
@@ -108,6 +109,27 @@ class ContractsController extends Controller
         $this->applyContractBranchScope($contractsQuery, $user, $branchId);
 
         $contracts = $contractsQuery
+            ->when($scope === 'today_return', function ($query) {
+                $query
+                    ->where('status', 'active')
+                    ->whereNotNull('reservation_id')
+                    ->whereDate('end_date', CarbonImmutable::today());
+            })
+            ->when($scope === 'overdue', function ($query) {
+                $query
+                    ->where('status', 'active')
+                    ->whereNotNull('reservation_id')
+                    ->whereDate('end_date', '<', CarbonImmutable::today());
+            })
+            ->when($scope === 'ending_soon', function ($query) {
+                $today = CarbonImmutable::today();
+
+                $query
+                    ->where('status', 'active')
+                    ->whereNotNull('reservation_id')
+                    ->whereDate('end_date', '>=', $today)
+                    ->whereDate('end_date', '<=', $today->addDays(7));
+            })
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('contract_number', 'like', "%{$search}%")
@@ -150,6 +172,7 @@ class ContractsController extends Controller
             'filters' => [
                 'search' => $search,
                 'status' => $status === '' ? 'all' : $status,
+                'scope' => $scope,
                 'branch_id' => $branchId,
             ],
             'branches' => $branchOptions,
@@ -2971,7 +2994,6 @@ class ContractsController extends Controller
         ];
     }
 }
-
 
 
 

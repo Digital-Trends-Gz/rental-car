@@ -8,12 +8,12 @@ import { initializeTheme } from './composables/useAppearance';
 
 import { setUrlDefaults } from './wayfinder';
 
-let appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+let appName = import.meta.env.VITE_APP_NAME || 'Car4u';
 
 const syncDocumentLocale = (props: any) => {
     const locale = props?.locale || 'en';
     const direction = props?.direction || 'ltr';
-    const currentAppName = props?.name || import.meta.env.VITE_APP_NAME || 'Laravel';
+    const currentAppName = props?.name || import.meta.env.VITE_APP_NAME || 'Car4u';
 
     document.documentElement.lang = locale;
     document.documentElement.dir = direction;
