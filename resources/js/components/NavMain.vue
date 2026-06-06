@@ -13,7 +13,7 @@ import { urlIsActive } from '@/lib/utils';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { ChevronDown } from 'lucide-vue-next';
-import { reactive, watch } from 'vue';
+import { reactive } from 'vue';
 
 interface SidebarNavItem extends NavItem {
     key?: string;
@@ -25,31 +25,15 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
-const openState = reactive<Record<string, boolean>>({});
+const openState = reactive<Record<string, boolean>>({
+    'bookings-and-contracts': true,
+});
 const getItemKey = (item: SidebarNavItem) => item.key || String(item.href || item.title);
 
 const isGroupActive = (item: SidebarNavItem) =>
     Boolean(
         item.children?.some((child) => child.href && urlIsActive(child.href, page.url)),
     );
-
-const syncOpenState = () => {
-    for (const item of props.items) {
-        if (!item.children?.length) continue;
-
-        if (isGroupActive(item)) {
-            openState[getItemKey(item)] = true;
-        }
-    }
-};
-
-watch(
-    () => page.url,
-    () => {
-        syncOpenState();
-    },
-    { immediate: true },
-);
 </script>
 
 <template>
@@ -75,7 +59,7 @@ watch(
 
                 <SidebarMenuItem v-else>
                     <Collapsible
-                        :open="openState[getItemKey(item)] ?? true"
+                        :open="openState[getItemKey(item)] ?? false"
                         class="group/collapsible"
                         @update:open="(value) => (openState[getItemKey(item)] = value)"
                     >

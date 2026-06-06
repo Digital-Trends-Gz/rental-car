@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import NavMain from '@/components/NavMain.vue';
-import NavUser from '@/components/NavUser.vue';
 import SuperAdminNav from '@/components/SuperAdminNav.vue';
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
@@ -151,6 +149,41 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
             icon: LayoutDashboard,
         },
         {
+            key: 'bookings-and-contracts',
+            title: t('dashboard.sidebar.admin_groups.bookings_and_contracts') || 'Bookings & Contracts',
+            icon: CalendarDays,
+            children: [
+                {
+                    key: 'reservations',
+                    title: t('dashboard.sidebar.admin.reservations'),
+                    href: reservationsIndex(slug).url,
+                    icon: Calendar,
+                    permission: 'tenant-manage-reservations',
+                },
+                {
+                    key: 'contracts',
+                    title: t('dashboard.sidebar.admin.contracts'),
+                    href: contractsIndex(slug).url,
+                    icon: FileText,
+                    permission: 'tenant-manage-reservations',
+                },
+                {
+                    key: 'reservation-settings',
+                    title: t('dashboard.sidebar.admin.reservation_settings'),
+                    href: adminHref('/settings/reservation-settings'),
+                    icon: CalendarDays,
+                    permission: 'tenant-manage-settings',
+                },
+                {
+                    key: 'contract-pdf-template',
+                    title: t('dashboard.sidebar.admin.contract_pdf') || 'Contract PDF Template',
+                    href: adminHref('/settings/contract-pdf'),
+                    icon: FileText,
+                    permission: 'tenant-manage-settings',
+                },
+            ],
+        },
+        {
             key: 'fleet-management',
             title: t('dashboard.sidebar.admin_groups.fleet_management') || 'Fleet Management',
             icon: Car,
@@ -216,41 +249,6 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     href: adminHref('/accident-reports'),
                     icon: Siren,
                     permission: 'tenant-manage-reservations',
-                },
-            ],
-        },
-        {
-            key: 'bookings-and-contracts',
-            title: t('dashboard.sidebar.admin_groups.bookings_and_contracts') || 'Bookings & Contracts',
-            icon: CalendarDays,
-            children: [
-                {
-                    key: 'reservations',
-                    title: t('dashboard.sidebar.admin.reservations'),
-                    href: reservationsIndex(slug).url,
-                    icon: Calendar,
-                    permission: 'tenant-manage-reservations',
-                },
-                {
-                    key: 'contracts',
-                    title: t('dashboard.sidebar.admin.contracts'),
-                    href: contractsIndex(slug).url,
-                    icon: FileText,
-                    permission: 'tenant-manage-reservations',
-                },
-                {
-                    key: 'reservation-settings',
-                    title: t('dashboard.sidebar.admin.reservation_settings'),
-                    href: adminHref('/settings/reservation-settings'),
-                    icon: CalendarDays,
-                    permission: 'tenant-manage-settings',
-                },
-                {
-                    key: 'contract-pdf-template',
-                    title: t('dashboard.sidebar.admin.contract_pdf') || 'Contract PDF Template',
-                    href: adminHref('/settings/contract-pdf'),
-                    icon: FileText,
-                    permission: 'tenant-manage-settings',
                 },
             ],
         },
@@ -428,22 +426,22 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                                       : '/'
                             "
                         >
-                            <div v-if="currentTenant" class="flex w-full items-center justify-between gap-2">
-                                <span class="min-w-0 truncate font-semibold">
-                                    {{ sidebarSiteName }}
-                                </span>
+                            <div v-if="currentTenant" class="flex w-full flex-row items-center gap-3">
                                 <img
                                     v-if="sidebarLogoUrl"
                                     :src="sidebarLogoUrl"
                                     :alt="sidebarSiteName"
-                                    class="h-8 w-8 shrink-0 rounded-md object-contain"
+                                    class="h-12 w-24 shrink-0 object-contain"
                                 />
                                 <div
                                     v-else
-                                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary p-1 text-xl font-bold text-primary-foreground"
+                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary p-1 text-xl font-bold text-primary-foreground"
                                 >
                                     {{ sidebarInitial }}
                                 </div>
+                                <span class="min-w-0 truncate text-left font-semibold">
+                                    {{ sidebarSiteName }}
+                                </span>
                             </div>
                             <AppLogo v-else />
                         </Link>
@@ -457,9 +455,6 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
             <NavMain v-else :items="mainNavItems" />
         </SidebarContent>
 
-        <SidebarFooter>
-            <NavUser />
-        </SidebarFooter>
     </Sidebar>
     <slot />
 </template>

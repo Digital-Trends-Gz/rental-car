@@ -285,7 +285,7 @@ const restartWizard = (): void => {
             <img
                 :src="authHero"
                 alt="Car4U background"
-                class="absolute inset-0 h-full w-full object-cover"
+                class="absolute inset-0 h-full w-full object-cover object-center"
             />
         </div>
 

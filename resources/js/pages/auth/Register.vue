@@ -58,7 +58,6 @@ const loginUrl = computed(() => {
 });
 
 const isArabic = computed(() => page.props.locale === 'ar');
-const text = (en: string, ar: string) => (isArabic.value ? ar : en);
 
 const initial = computed(() => ({
     name: props.prefill?.name ?? '',
@@ -103,7 +102,7 @@ watch(
             <img
                 :src="authHero"
                 alt="Car4U background"
-                class="absolute inset-0 h-full w-full object-cover"
+                class="absolute inset-0 h-full w-full object-cover object-center"
             />
         </div>
 

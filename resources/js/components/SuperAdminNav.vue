@@ -192,7 +192,7 @@ const filteredNav = computed(() => {
                 </SidebarMenuItem>
                 <!-- Group with children -->
                 <SidebarMenuItem v-else-if="item.children?.length">
-                    <Collapsible default-open class="group/collapsible">
+                    <Collapsible class="group/collapsible">
                         <CollapsibleTrigger as-child>
                             <SidebarMenuButton
                                 :is-active="item.children.some((c) => c.href && urlIsActive(c.href, page.url))"
