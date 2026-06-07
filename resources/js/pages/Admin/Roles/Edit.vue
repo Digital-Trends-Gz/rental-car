@@ -19,6 +19,66 @@ const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
 
 const isEdit = computed(() => !!props.role);
+const permissionsByName = computed<Record<string, number>>(() =>
+    props.permissions.reduce((acc, permission) => {
+        acc[permission.name] = permission.id;
+        return acc;
+    }, {} as Record<string, number>),
+);
+
+const rolePresets = [
+    {
+        key: 'manager',
+        label: 'Manager',
+        description: 'Broad access to operations, payments, debtors, and reports.',
+        display_name: 'Manager',
+        slug: 'manager',
+        permissionNames: [
+            'tenant-manage-cars',
+            'tenant-manage-reservations',
+            'tenant-manage-clients',
+            'tenant-manage-payments',
+            'tenant-view-debtors',
+            'tenant-view-financials',
+            'tenant-view-reports',
+        ],
+    },
+    {
+        key: 'accountant',
+        label: 'Accountant',
+        description: 'Payment handling and financial visibility without operational access.',
+        display_name: 'Accountant',
+        slug: 'accountant',
+        permissionNames: [
+            'tenant-manage-payments',
+            'tenant-view-debtors',
+            'tenant-view-financials',
+            'tenant-view-reports',
+        ],
+    },
+    {
+        key: 'collector',
+        label: 'Collector',
+        description: 'Debtor follow-up and collection work.',
+        display_name: 'Collector',
+        slug: 'collector',
+        permissionNames: [
+            'tenant-view-debtors',
+            'tenant-collect-debtors',
+            'tenant-view-financials',
+        ],
+    },
+    {
+        key: 'cashier',
+        label: 'Cashier',
+        description: 'Register payments with minimal access.',
+        display_name: 'Cashier',
+        slug: 'cashier',
+        permissionNames: [
+            'tenant-manage-payments',
+        ],
+    },
+] as const;
 
 // Initialize form with default values
 const form = useForm({
@@ -34,6 +94,14 @@ function togglePermission(id: number) {
     } else {
         form.permission_ids.push(id);
     }
+}
+
+function applyPreset(preset: (typeof rolePresets)[number]) {
+    form.display_name = preset.display_name;
+    form.description = preset.description;
+    form.permission_ids = preset.permissionNames
+        .map((name) => permissionsByName.value[name])
+        .filter((id): id is number => typeof id === 'number');
 }
 
 function submit() {
@@ -69,6 +137,25 @@ function submit() {
             <div class="max-w-4xl">
                 <form class="space-y-8" @submit.prevent="submit">
                     <div class="grid grid-cols-1 gap-6 bg-white p-6 rounded-lg border shadow-sm">
+                        <div>
+                            <Label class="mb-2 block">{{ t('dashboard.admin.roles.form.presets') || 'Role presets' }}</Label>
+                            <div class="grid gap-3 md:grid-cols-2">
+                                <button
+                                    v-for="preset in rolePresets"
+                                    :key="preset.key"
+                                    type="button"
+                                    class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-left transition hover:border-indigo-200 hover:bg-indigo-50"
+                                    @click="applyPreset(preset)"
+                                >
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="font-semibold">{{ preset.label }}</div>
+                                        <span class="rounded-full bg-white px-2 py-0.5 text-xs text-gray-500">{{ preset.slug }}</span>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-600">{{ preset.description }}</p>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Display Name -->
                         <div>
                             <Label for="display_name">{{ t('dashboard.admin.roles.form.display_name') }}</Label>

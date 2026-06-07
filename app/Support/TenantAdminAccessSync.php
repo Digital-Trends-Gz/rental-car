@@ -17,6 +17,15 @@ class TenantAdminAccessSync
         }
 
         $tenantId = (int) $tenant->id;
+        $ownerUserId = User::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('role', UserRole::ADMIN)
+            ->orderBy('id')
+            ->value('id');
+
+        if (!$ownerUserId || (int) $user->id !== (int) $ownerUserId) {
+            return false;
+        }
 
         $role = Role::withoutGlobalScope('tenant')->firstOrCreate(
             [

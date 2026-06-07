@@ -28,6 +28,7 @@ const props = defineProps<{
     filters: { search?: string; status?: string; branch_id?: number | null };
     branches: Array<{ id: number; name: string }>;
     canAccessAllBranches: boolean;
+    canViewFinancials: boolean;
     currency: { symbol: string; code: string };
 }>();
 const { t, locale } = useTrans();
@@ -37,6 +38,11 @@ const search = ref(props.filters?.search || '');
 const statusFilter = ref(props.filters?.status || 'all');
 const branchFilter = ref(props.filters?.branch_id ? String(props.filters.branch_id) : 'all');
 const isArabic = computed(() => page.props.locale === 'ar');
+const authPermissions = computed<string[]>(() =>
+    Array.isArray(page.props?.auth?.permissions) ? page.props.auth.permissions : [],
+);
+const hasFinancialAccess = computed(() => !!props.canViewFinancials);
+const hasDebtorsAccess = computed(() => authPermissions.value.includes('tenant-view-debtors'));
 const localize = (en: string, ar: string) => (isArabic.value ? ar : en);
 
 function adminUrl(path: string) {
@@ -60,6 +66,10 @@ function doSearch() {
 }
 
 function fmtMoney(n?: number | string) {
+    if (!hasFinancialAccess.value) {
+        return '*******';
+    }
+
     const v = Number(n ?? 0);
     return `${props.currency.symbol}${v.toFixed(2)}`;
 }
@@ -103,7 +113,7 @@ const getStatusColor = (status: string) => {
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.payments.index.title') }}</h1>
-                <Link :href="adminUrl('/payments/debtors')">
+                <Link v-if="hasDebtorsAccess" :href="adminUrl('/payments/debtors')">
                     <Button variant="outline">{{ localize('Debtors', 'المديونين') }}</Button>
                 </Link>
             </div>

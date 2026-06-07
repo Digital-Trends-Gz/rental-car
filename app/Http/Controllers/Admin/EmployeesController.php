@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Plans\PlanUsageLimits;
 use App\Rules\DigitsOnly;
@@ -82,7 +83,7 @@ class EmployeesController extends Controller
     public function create(): Response
     {
         $branches = $this->branchAccess->availableBranchesForUser(request()->user());
-        $roles = Role::orderBy('display_name')->get(['id', 'display_name']);
+        $roles = $this->assignableRoles();
         $permissions = Permission::withoutGlobalScope('tenant')
             ->whereNull('tenant_id')
             ->where('name', 'like', 'tenant-%')
@@ -135,6 +136,10 @@ class EmployeesController extends Controller
             $request->user(),
             $this->branchAccess->normalizeRequestedBranchId($validated['branch_id'] ?? null)
         );
+        $roleIds = $this->normalizeAssignableRoleIds(
+            $validated['role_ids'] ?? [],
+            (string) $validated['email']
+        );
 
         $employee = User::create([
             'name' => $validated['name'],
@@ -148,9 +153,7 @@ class EmployeesController extends Controller
             'email_verified_at' => now(),
         ]);
 
-        if (!empty($validated['role_ids'])) {
-            $employee->syncRoles($validated['role_ids']);
-        }
+        $employee->syncRoles($roleIds);
 
         if (!empty($validated['permission_ids'])) {
             $employee->permissions()->sync(
@@ -173,7 +176,7 @@ class EmployeesController extends Controller
         abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $employee->branch_id ? (int) $employee->branch_id : null), 403);
 
         $branches = $this->branchAccess->availableBranchesForUser(request()->user());
-        $roles = Role::orderBy('display_name')->get(['id', 'display_name']);
+        $roles = $this->assignableRoles($employee);
         $permissions = Permission::withoutGlobalScope('tenant')
             ->whereNull('tenant_id')
             ->where('name', 'like', 'tenant-%')
@@ -234,6 +237,11 @@ class EmployeesController extends Controller
             $request->user(),
             $this->branchAccess->normalizeRequestedBranchId($validated['branch_id'] ?? null)
         );
+        $roleIds = $this->normalizeAssignableRoleIds(
+            $validated['role_ids'] ?? [],
+            (string) $validated['email'],
+            $employee
+        );
 
         $employee->update([
             'name' => $validated['name'],
@@ -247,7 +255,7 @@ class EmployeesController extends Controller
             $employee->update(['password' => Hash::make($validated['password'])]);
         }
 
-        $employee->syncRoles($validated['role_ids'] ?? []);
+        $employee->syncRoles($roleIds);
         $employee->permissions()->sync(
             collect($validated['permission_ids'] ?? [])
                 ->map(fn ($id) => (int) $id)
@@ -286,6 +294,99 @@ class EmployeesController extends Controller
     private function tenantId(): int
     {
         return (int) (TenantContext::id() ?? auth()->user()?->tenant_id ?? 0);
+    }
+
+    /**
+     * Keep the tenant-owner role only for the tenant's primary account email.
+     *
+     * @param  array<int, int|string>  $roleIds
+     * @return array<int, int>
+     */
+    private function normalizeAssignableRoleIds(array $roleIds, string $email, ?User $employee = null): array
+    {
+        $normalizedRoleIds = collect($roleIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $tenantOwnerRoleId = $this->tenantOwnerRoleId();
+
+        if (!$tenantOwnerRoleId) {
+            return $normalizedRoleIds->all();
+        }
+
+        if ($this->isPrimaryTenantEmail($email, $employee)) {
+            if (!$normalizedRoleIds->contains($tenantOwnerRoleId)) {
+                $normalizedRoleIds->push($tenantOwnerRoleId);
+            }
+
+            return $normalizedRoleIds->unique()->values()->all();
+        }
+
+        return $normalizedRoleIds
+            ->reject(fn (int $roleId) => $roleId === $tenantOwnerRoleId)
+            ->values()
+            ->all();
+    }
+
+    private function tenantOwnerRoleId(): ?int
+    {
+        $tenantId = $this->tenantId();
+
+        if ($tenantId <= 0) {
+            return null;
+        }
+
+        $roleId = Role::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('name', 'tenant-owner')
+            ->value('id');
+
+        return $roleId ? (int) $roleId : null;
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, array{id:int, name?:string, display_name:string}>
+     */
+    private function assignableRoles(?User $employee = null)
+    {
+        $roles = Role::orderBy('display_name')->get(['id', 'name', 'display_name']);
+
+        if ($employee && $this->isPrimaryTenantEmail((string) $employee->email, $employee)) {
+            return $roles->values();
+        }
+
+        return $roles
+            ->reject(fn (Role $role) => $role->name === 'tenant-owner')
+            ->values();
+    }
+
+    private function isPrimaryTenantEmail(string $email, ?User $employee = null): bool
+    {
+        $tenantId = $this->tenantId();
+
+        if ($tenantId <= 0) {
+            return false;
+        }
+
+        $tenantEmail = Tenant::query()
+            ->whereKey($tenantId)
+            ->value('email');
+
+        if (!$tenantEmail) {
+            return false;
+        }
+
+        if (strcasecmp(trim($email), trim((string) $tenantEmail)) !== 0) {
+            return false;
+        }
+
+        if ($employee && !empty($employee->exists) && strcasecmp(trim((string) $employee->email), trim((string) $tenantEmail)) !== 0) {
+            return false;
+        }
+
+        return true;
     }
 
     private function isAdminEmployee(User $employee): bool

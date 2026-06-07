@@ -32,6 +32,7 @@ const props = defineProps<{
         reports_count: number;
         total_outstanding: number | string;
     };
+    canViewFinancials: boolean;
     currency: { symbol: string; code: string };
 }>();
 
@@ -40,6 +41,11 @@ const page = usePage<any>();
 const search = ref(props.filters?.search || '');
 const branchFilter = ref(props.filters?.branch_id ? String(props.filters.branch_id) : 'all');
 const isArabic = computed(() => page.props.locale === 'ar');
+const authPermissions = computed<string[]>(() =>
+    Array.isArray(page.props?.auth?.permissions) ? page.props.auth.permissions : [],
+);
+const hasFinancialAccess = computed(() => !!props.canViewFinancials);
+const hasPaymentsAccess = computed(() => authPermissions.value.includes('tenant-manage-payments'));
 
 const localize = (en: string, ar: string) => (isArabic.value ? ar : en);
 
@@ -67,6 +73,10 @@ function doSearch() {
 }
 
 function fmtMoney(n?: number | string, currencyCode?: string) {
+    if (!hasFinancialAccess.value) {
+        return '*******';
+    }
+
     const v = Number(n ?? 0);
     const currency = currencyCode || props.currency?.code || '';
 
@@ -86,7 +96,7 @@ function fmtMoney(n?: number | string, currencyCode?: string) {
                     </p>
                 </div>
 
-                <Link :href="adminUrl('/payments')">
+                <Link v-if="hasPaymentsAccess" :href="adminUrl('/payments')">
                     <Button variant="outline">{{ localize('All Payments', 'كل الدفعات') }}</Button>
                 </Link>
             </div>

@@ -189,7 +189,7 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
 
         // Payments
         Route::get('payments/debtors', [PaymentsController::class, 'debtors'])
-            ->middleware('permission:tenant-manage-payments')
+            ->middleware('permission:tenant-view-debtors')
             ->name('payments.debtors');
         Route::resource('payments', PaymentsController::class)
             ->only(['index'])

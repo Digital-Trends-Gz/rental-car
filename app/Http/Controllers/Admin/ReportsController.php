@@ -12,6 +12,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
 use App\Support\BranchAccess;
+use App\Support\FinancialVisibility;
 use App\Models\Branch;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ class ReportsController extends Controller
     {
         $user = $request->user();
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
         $period = $request->get('period', 'this_month');
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
         $branchOptions = $this->branchAccess->availableBranchesForUser($user)
@@ -40,15 +42,16 @@ class ReportsController extends Controller
         $dateRange = $this->getDateRange($period);
 
         $data = [
-            'kpis' => $this->getHighLevelKPIs($dateRange, $user, $branchId),
+            'kpis' => $this->getHighLevelKPIs($dateRange, $user, $branchId, $canViewFinancialAmounts),
             'carsState' => $this->getCarsState($user, $branchId),
             'reservationsChart' => $this->getReservationsChart($dateRange, $user, $branchId),
-            'carsPerformance' => $this->getCarsPerformance($dateRange, $user, $branchId),
+            'carsPerformance' => $this->getCarsPerformance($dateRange, $user, $branchId, $canViewFinancialAmounts),
             'currentPeriod' => $period,
             'periodOptions' => $this->getPeriodOptions(),
             'branches' => $branchOptions,
             'canAccessAllBranches' => $canAccessAllBranches,
             'selectedBranchId' => $branchId,
+            'canViewFinancials' => $canViewFinancialAmounts,
         ];
 
         return inertia('Admin/Reports/Index', $data);
@@ -122,13 +125,13 @@ class ReportsController extends Controller
     }
 
 
-    private function getHighLevelKPIs(array $dateRange, $user, ?int $branchId): array
+    private function getHighLevelKPIs(array $dateRange, $user, ?int $branchId, bool $canViewFinancialAmounts): array
     {
         // Total Revenue from completed payments in the period
         $totalRevenueQuery = Payment::completed()
             ->whereBetween('processed_at', [$dateRange['start'], $dateRange['end']]);
         $this->applyPaymentBranchScope($totalRevenueQuery, $user, $branchId);
-        $totalRevenue = $totalRevenueQuery->sum('amount');
+        $totalRevenue = FinancialVisibility::numericAmount($totalRevenueQuery->sum('amount'), $canViewFinancialAmounts);
 
         
         $platformVisits = $this->getPlatformVisits($dateRange);
@@ -150,7 +153,9 @@ class ReportsController extends Controller
         return [
             'totalRevenue' => [
                 'value' => $totalRevenue,
-                'formatted' => config('app.currency_symbol') . number_format($totalRevenue, 2),
+                'formatted' => $canViewFinancialAmounts
+                    ? config('app.currency_symbol') . number_format($totalRevenue, 2)
+                    : '*******',
                 'label' => 'Total Revenue'
             ],
             'platformVisits' => [
@@ -296,7 +301,7 @@ class ReportsController extends Controller
         ];
     }
 
-    private function getCarsPerformance(array $dateRange, $user, ?int $branchId)
+    private function getCarsPerformance(array $dateRange, $user, ?int $branchId, bool $canViewFinancialAmounts)
     {
         $carsQuery = Car::query();
         $this->branchAccess->applyToQuery($carsQuery, $user, $branchId);
@@ -309,7 +314,7 @@ class ReportsController extends Controller
                     ->with('payments');
             }])
             ->get()
-            ->map(function ($car) {
+            ->map(function ($car) use ($canViewFinancialAmounts) {
                 $totalRevenue = $car->reservations->flatMap->payments
                     ->where('status', PaymentStatus::COMPLETED)
                     ->sum('amount');
@@ -326,12 +331,15 @@ class ReportsController extends Controller
                     'status' => $car->status->label(),
                     'status_color' => $car->status->color(),
                     'total_reservations' => $car->total_reservations,
-                    'total_revenue' => $totalRevenue,
-                    'formatted_revenue' => config('app.currency_symbol') . number_format($totalRevenue, 2),
+                    'total_revenue' => FinancialVisibility::numericAmount($totalRevenue, $canViewFinancialAmounts),
+                    'formatted_revenue' => $canViewFinancialAmounts
+                        ? config('app.currency_symbol') . number_format($totalRevenue, 2)
+                        : '*******',
                     'total_days' => $totalDays,
                     'utilization_rate' => round($utilizationRate, 1),
-                    'average_per_reservation' => $car->total_reservations > 0 ?
-                        round($totalRevenue / $car->total_reservations, 2) : 0,
+                    'average_per_reservation' => $car->total_reservations > 0 && $canViewFinancialAmounts
+                        ? round($totalRevenue / $car->total_reservations, 2)
+                        : 0,
                 ];
             })
             ->sortByDesc('total_revenue')

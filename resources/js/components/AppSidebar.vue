@@ -304,7 +304,7 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     title: t('dashboard.sidebar.admin.debtors'),
                     href: adminHref('/payments/debtors'),
                     icon: CreditCard,
-                    permission: 'tenant-manage-payments',
+                    permission: 'tenant-view-debtors',
                 },
                 {
                     key: 'payment-providers',

@@ -79,6 +79,7 @@ interface PageProps {
     branches: Array<{ id: number; name: string }>;
     canAccessAllBranches: boolean;
     selectedBranchId: number | null;
+    canViewFinancials: boolean;
 }
 
 const page = usePage<PageProps>();
@@ -123,6 +124,7 @@ const selectedBranchId = ref<number | null>(page.props.selectedBranchId ?? null)
 const subdomain = computed(() => rawPage.props.current_tenant?.slug);
 const reservationChart = ref<Chart | null>(null);
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
+const hasFinancialAccess = computed(() => !!page.props.canViewFinancials);
 
 // Table sorting
 const sortField = ref<keyof CarPerformance>('total_revenue');
@@ -147,6 +149,9 @@ const localizedChartDatasets = computed(() =>
         label: translateLabel(dataset.label),
     })),
 );
+
+const displayMoney = (value: number) =>
+    hasFinancialAccess.value ? `$${value.toFixed(2)}` : '*******';
 
 // Sorted and limited cars performance
 const sortedCarsPerformance = computed(() => {
@@ -1042,11 +1047,7 @@ onMounted(() => {
                                     <td
                                         class="px-6 py-4 text-sm whitespace-nowrap text-gray-900"
                                     >
-                                        {{
-                                            car.average_per_reservation > 0
-                                                ? `$${car.average_per_reservation.toFixed(2)}`
-                                                : t('dashboard.admin.reports.zero_amount')
-                                        }}
+                                        {{ displayMoney(car.average_per_reservation) }}
                                     </td>
                                 </tr>
                             </tbody>

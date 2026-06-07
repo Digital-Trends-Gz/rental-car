@@ -42,7 +42,7 @@ const props = withDefaults(defineProps<{ prefill?: RegisterPrefill; countries?: 
 
 const registerAction = computed(() => {
     const slug = currentTenant.value?.slug;
-    return (slug ? tenantRegisterStore(slug) : mainRegisterStore()) as any;
+    return (slug ? tenantRegisterStore(slug).form() : mainRegisterStore().form()) as any;
 });
 const baseProtocol = computed(() =>
     typeof window !== 'undefined' ? window.location.protocol : 'https:',

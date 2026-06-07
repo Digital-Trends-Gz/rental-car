@@ -18,6 +18,7 @@ import { useTrans } from '@/composables/useTrans';
 import { getCurrencyOptions } from '@/lib/currencies';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+import { Image as ImageIcon } from 'lucide-vue-next';
 
 const props = defineProps<{
   mode: 'create' | 'edit';
@@ -660,6 +661,63 @@ const handoverPhotoGroups = computed(() => {
   };
 });
 const handoverPhotoCount = computed(() => handoverPhotoGroups.value.delivery.length + handoverPhotoGroups.value.return.length);
+type HandoverPhase = 'delivery' | 'return';
+type ReadingPhotoType = 'odometer' | 'fuel';
+
+function photoHasExtractedValue(photo: Record<string, any> | null | undefined) {
+  return photo?.extracted_value !== null && photo?.extracted_value !== undefined && photo?.extracted_value !== '';
+}
+
+function findReadingPhoto(phase: HandoverPhase, photoType: ReadingPhotoType) {
+  const photos = handoverPhotoGroups.value[phase] || [];
+
+  return [...photos]
+    .reverse()
+    .find((photo) => String(photo?.photo_type || '').toLowerCase() === photoType && (photoHasExtractedValue(photo) || photo?.url))
+    ?? null;
+}
+
+const deliveryOdometerPhoto = computed(() => findReadingPhoto('delivery', 'odometer'));
+const deliveryFuelPhoto = computed(() => findReadingPhoto('delivery', 'fuel'));
+const returnOdometerPhoto = computed(() => findReadingPhoto('return', 'odometer'));
+const returnFuelPhoto = computed(() => findReadingPhoto('return', 'fuel'));
+
+function readingPhotoTooltip(photo: Record<string, any> | null, fallback: string) {
+  if (!photo) {
+    return fallback;
+  }
+
+  const value = photoHasExtractedValue(photo)
+    ? handoverPhotoValueLabel(photo.extracted_value)
+    : localize('No extracted value', 'لا توجد قيمة مستخرجة');
+
+  return `${fallback}: ${value}`;
+}
+
+function applyReadingPhotoValue(photo: Record<string, any> | null, target: 'delivery_odometer' | 'delivery_fuel' | 'return_odometer' | 'return_fuel') {
+  if (!photo) {
+    return;
+  }
+
+  if (photoHasExtractedValue(photo)) {
+    const value = String(photo.extracted_value ?? '').trim();
+
+    if (target === 'delivery_odometer') {
+      form.car_data.vehicle_odometer = value;
+    } else if (target === 'delivery_fuel') {
+      form.car_data.vehicle_fuel_level = fuelLevelStorageValue(value);
+    } else if (target === 'return_odometer') {
+      form.return_odometer = value;
+    } else {
+      form.return_fuel_level = returnFuelLevelStorageValue(value);
+    }
+  }
+
+  if (photo.url) {
+    window.open(String(photo.url), '_blank', 'noopener,noreferrer');
+  }
+}
+
 const hasExtractedVehicleReadings = computed(() => Boolean(
   extractedVehicleReadings.value
   && (
@@ -954,18 +1012,26 @@ function fuelLevelStorageValue(value: string | null | undefined) {
     '0/4': 'empty',
     '0%': 'empty',
     'empty tank': 'empty',
+    'فارغ': 'empty',
+    'فاضي': 'empty',
     quarter: 'quarter',
     '1/4': 'quarter',
     '1-4': 'quarter',
     '1 4': 'quarter',
     '1/4 tank': 'quarter',
     'quarter tank': 'quarter',
+    'ربع': 'quarter',
+    'ربع الخزان': 'quarter',
+    'ربع تانكي': 'quarter',
     half: 'half',
     '1/2': 'half',
     '1-2': 'half',
     '1 2': 'half',
     '1/2 tank': 'half',
     'half tank': 'half',
+    'نصف': 'half',
+    'نصف الخزان': 'half',
+    'نصف تانكي': 'half',
     three_quarters: 'three_quarters',
     '3/4': 'three_quarters',
     '3-4': 'three_quarters',
@@ -973,11 +1039,16 @@ function fuelLevelStorageValue(value: string | null | undefined) {
     '3/4 tank': 'three_quarters',
     'three-quarters': 'three_quarters',
     'three quarters': 'three_quarters',
+    'ثلاثة ارباع': 'three_quarters',
+    'ثلاثة أرباع': 'three_quarters',
+    'ثلاثة أرباع الخزان': 'three_quarters',
     full: 'full',
     '1': 'full',
     '100': 'full',
     '100%': 'full',
     'full tank': 'full',
+    'ممتلئ': 'full',
+    'فل': 'full',
   };
 
   return map[normalized] ?? normalized;
@@ -992,18 +1063,26 @@ function returnFuelLevelStorageValue(value: string | null | undefined) {
     '0/4': 'empty',
     '0%': 'empty',
     'empty tank': 'empty',
+    'فارغ': 'empty',
+    'فاضي': 'empty',
     quarter: '1/4',
     '1/4': '1/4',
     '1-4': '1/4',
     '1 4': '1/4',
     '1/4 tank': '1/4',
     'quarter tank': '1/4',
+    'ربع': '1/4',
+    'ربع الخزان': '1/4',
+    'ربع تانكي': '1/4',
     half: '1/2',
     '1/2': '1/2',
     '1-2': '1/2',
     '1 2': '1/2',
     '1/2 tank': '1/2',
     'half tank': '1/2',
+    'نصف': '1/2',
+    'نصف الخزان': '1/2',
+    'نصف تانكي': '1/2',
     three_quarters: '3/4',
     '3/4': '3/4',
     '3-4': '3/4',
@@ -1011,11 +1090,16 @@ function returnFuelLevelStorageValue(value: string | null | undefined) {
     '3/4 tank': '3/4',
     'three-quarters': '3/4',
     'three quarters': '3/4',
+    'ثلاثة ارباع': '3/4',
+    'ثلاثة أرباع': '3/4',
+    'ثلاثة أرباع الخزان': '3/4',
     full: 'full',
     '1': 'full',
     '100': 'full',
     '100%': 'full',
     'full tank': 'full',
+    'ممتلئ': 'full',
+    'فل': 'full',
   };
 
   return map[normalized] ?? normalized;
@@ -1576,12 +1660,44 @@ function submit() {
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div><Label for="car-details">{{ localize('Car Details', 'ط·ع¾ط¸ظ¾ط·آ§ط·آµط¸ظ¹ط¸â€‍ ط·آ§ط¸â€‍سيارة') }}</Label><Input id="car-details" v-model="form.car_data.car_details" :disabled="hasLinkedReservation" /><InputError :message="form.errors['car_data.car_details']" class="mt-1" /></div>
             <div><Label for="plate-number">{{ localize('Plate Number', 'ط·آ±ط¸â€ڑط¸â€¦ ط·آ§ط¸â€‍ط¸â€‍وحة') }}</Label><Input id="plate-number" v-model="form.car_data.plate_number" :disabled="hasLinkedReservation" /><InputError :message="form.errors['car_data.plate_number']" class="mt-1" /></div>
-            <div><Label for="vehicle-odometer">{{ localize('Vehicle Odometer', 'عداد السيارة') }}</Label><Input id="vehicle-odometer" v-model="form.car_data.vehicle_odometer" type="number" min="0" /><InputError :message="form.errors['car_data.vehicle_odometer'] || form.errors.vehicle_odometer" class="mt-1" /></div>
+            <div>
+              <Label for="vehicle-odometer">{{ localize('Vehicle Odometer', 'عداد السيارة') }}</Label>
+              <div class="mt-1 flex gap-2">
+                <Input id="vehicle-odometer" v-model="form.car_data.vehicle_odometer" type="number" min="0" />
+                <Button
+                  v-if="deliveryOdometerPhoto"
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  class="shrink-0"
+                  :disabled="!photoHasExtractedValue(deliveryOdometerPhoto) && !deliveryOdometerPhoto?.url"
+                  :title="readingPhotoTooltip(deliveryOdometerPhoto, localize('Use odometer image value', 'استخدام قيمة صورة العداد'))"
+                  @click="applyReadingPhotoValue(deliveryOdometerPhoto, 'delivery_odometer')"
+                >
+                  <ImageIcon class="h-4 w-4" />
+                </Button>
+              </div>
+              <InputError :message="form.errors['car_data.vehicle_odometer'] || form.errors.vehicle_odometer" class="mt-1" />
+            </div>
             <div>
               <Label for="vehicle-fuel-level">{{ localize('Fuel In Vehicle', 'الوقود الموجود في السيارة') }}</Label>
-              <select id="vehicle-fuel-level" v-model="form.car_data.vehicle_fuel_level" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                <option v-for="option in returnFuelLevelOptions" :key="option.value || 'fuel-empty'" :value="option.value">{{ option.label }}</option>
-              </select>
+              <div class="mt-1 flex gap-2">
+                <select id="vehicle-fuel-level" v-model="form.car_data.vehicle_fuel_level" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
+                  <option v-for="option in fuelLevelOptions" :key="option.value || 'fuel-empty'" :value="option.value">{{ option.label }}</option>
+                </select>
+                <Button
+                  v-if="deliveryFuelPhoto"
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  class="shrink-0"
+                  :disabled="!photoHasExtractedValue(deliveryFuelPhoto) && !deliveryFuelPhoto?.url"
+                  :title="readingPhotoTooltip(deliveryFuelPhoto, localize('Use fuel image value', 'استخدام قيمة صورة الوقود'))"
+                  @click="applyReadingPhotoValue(deliveryFuelPhoto, 'delivery_fuel')"
+                >
+                  <ImageIcon class="h-4 w-4" />
+                </Button>
+              </div>
               <InputError :message="form.errors['car_data.vehicle_fuel_level'] || form.errors.vehicle_fuel_level" class="mt-1" />
             </div>
           </div>
@@ -1750,12 +1866,44 @@ function submit() {
               </select>
               <InputError :message="form.errors.currency" class="mt-1" />
             </div>
-            <div><Label for="return-odometer">{{ localize('Return Mileage', 'عداد العودة') }}</Label><Input id="return-odometer" v-model="form.return_odometer" type="number" min="0" /><InputError :message="form.errors.return_odometer" class="mt-1" /></div>
+            <div>
+              <Label for="return-odometer">{{ localize('Return Mileage', 'عداد العودة') }}</Label>
+              <div class="mt-1 flex gap-2">
+                <Input id="return-odometer" v-model="form.return_odometer" type="number" min="0" />
+                <Button
+                  v-if="returnOdometerPhoto"
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  class="shrink-0"
+                  :disabled="!photoHasExtractedValue(returnOdometerPhoto) && !returnOdometerPhoto?.url"
+                  :title="readingPhotoTooltip(returnOdometerPhoto, localize('Use return odometer image value', 'استخدام قيمة صورة عداد الرجوع'))"
+                  @click="applyReadingPhotoValue(returnOdometerPhoto, 'return_odometer')"
+                >
+                  <ImageIcon class="h-4 w-4" />
+                </Button>
+              </div>
+              <InputError :message="form.errors.return_odometer" class="mt-1" />
+            </div>
             <div>
               <Label for="return-fuel-level">{{ localize('Return Fuel', 'الوقود عند العودة') }}</Label>
-              <select id="return-fuel-level" v-model="form.return_fuel_level" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                <option v-for="option in returnFuelLevelOptions" :key="`return-${option.value || 'fuel-empty'}`" :value="option.value">{{ option.label }}</option>
-              </select>
+              <div class="mt-1 flex gap-2">
+                <select id="return-fuel-level" v-model="form.return_fuel_level" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
+                  <option v-for="option in returnFuelLevelOptions" :key="`return-${option.value || 'fuel-empty'}`" :value="option.value">{{ option.label }}</option>
+                </select>
+                <Button
+                  v-if="returnFuelPhoto"
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  class="shrink-0"
+                  :disabled="!photoHasExtractedValue(returnFuelPhoto) && !returnFuelPhoto?.url"
+                  :title="readingPhotoTooltip(returnFuelPhoto, localize('Use return fuel image value', 'استخدام قيمة صورة وقود الرجوع'))"
+                  @click="applyReadingPhotoValue(returnFuelPhoto, 'return_fuel')"
+                >
+                  <ImageIcon class="h-4 w-4" />
+                </Button>
+              </div>
               <InputError :message="form.errors.return_fuel_level" class="mt-1" />
             </div>
             <div><Label for="actual-return-time">{{ localize('Return Date / Actual Return Time', 'تاريخ ووقت العودة الفعلي') }}</Label><Input id="actual-return-time" v-model="form.actual_return_time" type="datetime-local" /><InputError :message="form.errors.actual_return_time" class="mt-1" /></div>
@@ -1985,11 +2133,6 @@ function submit() {
     </main>
   </AdminLayout>
 </template>
-
-
-
-
-
 
 
 

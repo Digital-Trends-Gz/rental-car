@@ -36,7 +36,7 @@ const buildUrl = (host: string, path: string) =>
 
 const loginAction = computed(() => {
     const slug = currentTenant.value?.slug;
-    return (slug ? tenantLoginStore(slug) : mainLoginStore()) as any;
+    return (slug ? tenantLoginStore(slug).form() : mainLoginStore().form()) as any;
 });
 const registerUrl = computed(() => {
     const slug = currentTenant.value?.slug;

@@ -39,6 +39,21 @@ class TenantPermissionsSeeder extends Seeder
                 'description' => 'View and handle reservation payments.',
             ],
             [
+                'name' => 'tenant-view-debtors',
+                'display_name' => 'View Debtors',
+                'description' => 'Access debtor lists and unpaid balances.',
+            ],
+            [
+                'name' => 'tenant-collect-debtors',
+                'display_name' => 'Collect Debtors',
+                'description' => 'Record collections and follow up debtor payments.',
+            ],
+            [
+                'name' => 'tenant-view-financials',
+                'display_name' => 'View Financials',
+                'description' => 'View revenue and monetary values across the dashboard and reports.',
+            ],
+            [
                 'name' => 'tenant-manage-support',
                 'display_name' => 'Manage Support',
                 'description' => 'View and manage support tickets and replies.',

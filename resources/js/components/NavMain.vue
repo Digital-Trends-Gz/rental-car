@@ -46,9 +46,7 @@ const isGroupActive = (item: SidebarNavItem) =>
                         :is-active="urlIsActive(item.href, page.url)"
                         :size="item.key === 'dashboard' ? 'lg' : 'default'"
                         :tooltip="item.title"
-                        :class="item.key === 'dashboard'
-                            ? 'rounded-2xl data-[active=true]:!bg-gradient-to-r data-[active=true]:from-sky-500 data-[active=true]:to-cyan-500 data-[active=true]:!text-white data-[active=true]:shadow-lg'
-                            : ''"
+                        :class="item.key === 'dashboard' ? 'rounded-2xl' : ''"
                     >
                         <Link :href="item.href">
                             <component :is="item.icon" />

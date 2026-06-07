@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/composables/useTrans';
+import { Image as ImageIcon } from 'lucide-vue-next';
 
 type DamageReport = {
     id: number;
@@ -60,6 +61,10 @@ const props = defineProps<{
         } | null;
         branch_name?: string | null;
         damage_reports: DamageReport[];
+        handover_photos?: {
+            delivery?: Array<Record<string, any>>;
+            return?: Array<Record<string, any>>;
+        };
     };
     report: {
         id: number | null;
@@ -133,6 +138,10 @@ const props = defineProps<{
         index: string;
         store: string;
         print?: string | null;
+    };
+    handoverPhotos?: {
+        delivery?: Array<Record<string, any>>;
+        return?: Array<Record<string, any>>;
     };
     permissions?: {
         can_edit_return_report?: boolean;
@@ -261,18 +270,26 @@ function fuelLevelStorageValue(value: string | null | undefined) {
         '0/4': 'empty',
         '0%': 'empty',
         'empty tank': 'empty',
+        'فارغ': 'empty',
+        'فاضي': 'empty',
         quarter: 'quarter',
         '1/4': 'quarter',
         '1-4': 'quarter',
         '1 4': 'quarter',
         '1/4 tank': 'quarter',
         'quarter tank': 'quarter',
+        'ربع': 'quarter',
+        'ربع الخزان': 'quarter',
+        'ربع تانكي': 'quarter',
         half: 'half',
         '1/2': 'half',
         '1-2': 'half',
         '1 2': 'half',
         '1/2 tank': 'half',
         'half tank': 'half',
+        'نصف': 'half',
+        'نصف الخزان': 'half',
+        'نصف تانكي': 'half',
         three_quarters: 'three_quarters',
         '3/4': 'three_quarters',
         '3-4': 'three_quarters',
@@ -280,11 +297,16 @@ function fuelLevelStorageValue(value: string | null | undefined) {
         '3/4 tank': 'three_quarters',
         'three-quarters': 'three_quarters',
         'three quarters': 'three_quarters',
+        'ثلاثة ارباع': 'three_quarters',
+        'ثلاثة أرباع': 'three_quarters',
+        'ثلاثة أرباع الخزان': 'three_quarters',
         full: 'full',
         '1': 'full',
         '100': 'full',
         '100%': 'full',
         'full tank': 'full',
+        'ممتلئ': 'full',
+        'فل': 'full',
     };
 
     return map[normalized] ?? normalized;
@@ -315,6 +337,74 @@ const form = useForm({
 
 const isLocked = computed(() => props.report.id !== null && (props.report.payment_status ?? 'not_paid') === 'paid');
 const canEditReturnReport = computed(() => Boolean(props.permissions?.can_edit_return_report) && !isLocked.value);
+
+function handoverPhotoValueLabel(value: unknown) {
+    if (value === null || value === undefined || value === '') {
+        return localize('N/A', 'غير متوفر');
+    }
+
+    const normalized = fuelLevelStorageValue(String(value));
+    const fuelOption = options.fuelLevels.find((item) => item.value === normalized);
+
+    return fuelOption?.label ?? String(value);
+}
+
+function photoHasExtractedValue(photo: Record<string, any> | null | undefined) {
+    return photo?.extracted_value !== null && photo?.extracted_value !== undefined && photo?.extracted_value !== '';
+}
+
+const handoverPhotoGroups = computed(() => {
+    const source = props.handoverPhotos
+        ?? props.contract.handover_photos
+        ?? {};
+
+    return {
+        delivery: Array.isArray((source as Record<string, any>).delivery) ? (source as Record<string, any>).delivery : [],
+        return: Array.isArray((source as Record<string, any>).return) ? (source as Record<string, any>).return : [],
+    };
+});
+
+function findReturnReadingPhoto(photoType: 'odometer' | 'fuel') {
+    return [...handoverPhotoGroups.value.return]
+        .reverse()
+        .find((photo) => String(photo?.photo_type || '').toLowerCase() === photoType && (photoHasExtractedValue(photo) || photo?.url))
+        ?? null;
+}
+
+const returnOdometerPhoto = computed(() => findReturnReadingPhoto('odometer'));
+const returnFuelPhoto = computed(() => findReturnReadingPhoto('fuel'));
+
+function readingPhotoTooltip(photo: Record<string, any> | null, fallback: string) {
+    if (!photo) {
+        return fallback;
+    }
+
+    const value = photoHasExtractedValue(photo)
+        ? handoverPhotoValueLabel(photo.extracted_value)
+        : localize('No extracted value', 'لا توجد قيمة مستخرجة');
+
+    return `${fallback}: ${value}`;
+}
+
+function applyReturnReadingPhotoValue(photo: Record<string, any> | null, target: 'odometer' | 'fuel') {
+    if (!photo) {
+        return;
+    }
+
+    if (photoHasExtractedValue(photo) && canEditReturnReport.value) {
+        const value = String(photo.extracted_value ?? '').trim();
+
+        if (target === 'odometer') {
+            form.return_odometer = value;
+        } else {
+            form.return_fuel_level = fuelLevelStorageValue(value);
+        }
+    }
+
+    if (photo.url) {
+        window.open(String(photo.url), '_blank', 'noopener,noreferrer');
+    }
+}
 
 const selectedDamageReport = computed<DamageReport | null>(() => {
     if (!form.has_damage) {
@@ -965,15 +1055,43 @@ function submit() {
                         </div>
                         <div>
                             <Label for="return_odometer">{{ localize('Return Odometer', 'عداد العودة') }}</Label>
-                            <Input id="return_odometer" v-model="form.return_odometer" type="number" :min="props.contract.vehicle_odometer ?? 0" class="mt-1" />
+                            <div class="mt-1 flex gap-2">
+                                <Input id="return_odometer" v-model="form.return_odometer" type="number" :min="props.contract.vehicle_odometer ?? 0" />
+                                <Button
+                                    v-if="returnOdometerPhoto"
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    class="shrink-0"
+                                    :disabled="!photoHasExtractedValue(returnOdometerPhoto) && !returnOdometerPhoto?.url"
+                                    :title="readingPhotoTooltip(returnOdometerPhoto, localize('Use return odometer image value', 'استخدام قيمة صورة عداد الرجوع'))"
+                                    @click="applyReturnReadingPhotoValue(returnOdometerPhoto, 'odometer')"
+                                >
+                                    <ImageIcon class="h-4 w-4" />
+                                </Button>
+                            </div>
                             <InputError :message="form.errors.return_odometer" class="mt-1" />
                         </div>
                         <div>
                             <Label for="return_fuel_level">{{ localize('Return Fuel Level', 'كمية البنزين المرجعة') }}</Label>
-                            <select id="return_fuel_level" v-model="form.return_fuel_level" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                                <option value="">{{ localize('Select fuel level', 'اختر كمية البنزين') }}</option>
-                                <option v-for="fuelLevel in options.fuelLevels" :key="fuelLevel.value" :value="fuelLevel.value">{{ fuelLevel.label }}</option>
-                            </select>
+                            <div class="mt-1 flex gap-2">
+                                <select id="return_fuel_level" v-model="form.return_fuel_level" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
+                                    <option value="">{{ localize('Select fuel level', 'اختر كمية البنزين') }}</option>
+                                    <option v-for="fuelLevel in options.fuelLevels" :key="fuelLevel.value" :value="fuelLevel.value">{{ fuelLevel.label }}</option>
+                                </select>
+                                <Button
+                                    v-if="returnFuelPhoto"
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    class="shrink-0"
+                                    :disabled="!photoHasExtractedValue(returnFuelPhoto) && !returnFuelPhoto?.url"
+                                    :title="readingPhotoTooltip(returnFuelPhoto, localize('Use return fuel image value', 'استخدام قيمة صورة وقود الرجوع'))"
+                                    @click="applyReturnReadingPhotoValue(returnFuelPhoto, 'fuel')"
+                                >
+                                    <ImageIcon class="h-4 w-4" />
+                                </Button>
+                            </div>
                             <InputError :message="form.errors.return_fuel_level" class="mt-1" />
                         </div>
                         <div>

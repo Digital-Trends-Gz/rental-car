@@ -16,6 +16,7 @@ use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Support\BranchAccess;
+use App\Support\FinancialVisibility;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,6 +34,7 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
 
         $branchOptions = $this->branchAccess
             ->availableBranchesForUser($user)
@@ -67,7 +69,7 @@ class DashboardController extends Controller
 
         $paymentsQuery = Payment::query()->where('status', PaymentStatus::COMPLETED);
         $this->applyPaymentBranchScope($paymentsQuery, $user, $branchId);
-        $totalRevenue = (clone $paymentsQuery)->sum('amount');
+        $totalRevenue = FinancialVisibility::numericAmount((clone $paymentsQuery)->sum('amount'), $canViewFinancialAmounts);
 
         $totalClientsQuery = User::query()
             ->where('role', UserRole::CLIENT);
@@ -143,7 +145,7 @@ class DashboardController extends Controller
 
             $monthlyRevenue[] = [
                 'month'   => $month->format('M Y'),
-                'revenue' => (float) $q->sum('amount'),
+                'revenue' => FinancialVisibility::numericAmount($q->sum('amount'), $canViewFinancialAmounts),
             ];
         }
 
@@ -237,7 +239,7 @@ class DashboardController extends Controller
             ->latest('id')
             ->limit(5)
             ->get()
-            ->map(function (CarViolation $violation) {
+            ->map(function (CarViolation $violation) use ($canViewFinancialAmounts) {
                 $car = $violation->car;
 
                 return [
@@ -254,7 +256,7 @@ class DashboardController extends Controller
                     'branch_name' => (string) ($violation->branch?->name ?? ''),
                     'violation_date' => optional($violation->violation_date)?->toDateString(),
                     'due_date' => optional($violation->due_date)?->toDateString(),
-                    'amount' => (float) $violation->amount,
+                    'amount' => FinancialVisibility::numericAmount($violation->amount, $canViewFinancialAmounts),
                     'edit_url' => route('admin.car-violations.edit', $violation),
                 ];
             })
@@ -334,7 +336,7 @@ class DashboardController extends Controller
             ->latest('id')
             ->limit(5)
             ->get()
-            ->map(function (Payment $payment) use ($subdomain) {
+            ->map(function (Payment $payment) use ($subdomain, $canViewFinancialAmounts) {
                 $reservation = $payment->reservation;
                 $contract = $reservation?->contract;
                 $car = $reservation?->car;
@@ -355,7 +357,7 @@ class DashboardController extends Controller
                     'client_name' => $client?->name,
                     'client_email' => $client?->email,
                     'branch_name' => $contract?->branch?->name ?? $car?->branch?->name,
-                    'amount' => (float) $payment->amount,
+                    'amount' => FinancialVisibility::numericAmount($payment->amount, $canViewFinancialAmounts),
                     'processed_at' => optional($payment->processed_at)?->toDateTimeString(),
                     'note' => (string) $payment->notes,
                     'show_url' => $contract ? route('admin.contracts.show', [
@@ -392,6 +394,7 @@ class DashboardController extends Controller
             'branches'             => $branchOptions,
             'filters'              => ['branch_id' => $branchId],
             'canAccessAllBranches' => $canAccessAllBranches,
+            'canViewFinancials'    => $canViewFinancialAmounts,
         ]);
     }
 

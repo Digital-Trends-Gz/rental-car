@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use Illuminate\Http\Request;
 use App\Models\ContractReturnReport;
 use App\Models\Payment;
+use App\Support\FinancialVisibility;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
@@ -22,6 +23,7 @@ class PaymentsController extends Controller
     {
         $user = $request->user();
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
@@ -52,11 +54,11 @@ class PaymentsController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $payments->getCollection()->transform(function ($payment) {
+        $payments->getCollection()->transform(function ($payment) use ($canViewFinancialAmounts) {
             return [
                 'id' => $payment->id,
                 'payment_number' => $payment->payment_number,
-                'amount' => $payment->amount,
+                'amount' => FinancialVisibility::numericAmount($payment->amount, $canViewFinancialAmounts),
                 'currency' => $payment->currency,
                 'payment_method' => $payment->payment_method instanceof \BackedEnum ? $payment->payment_method->value : (string) $payment->payment_method,
                 'status' => $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status,
@@ -104,6 +106,7 @@ class PaymentsController extends Controller
             ],
             'branches' => $branchOptions,
             'canAccessAllBranches' => $canAccessAllBranches,
+            'canViewFinancials' => $canViewFinancialAmounts,
         ]);
     }
 
@@ -111,6 +114,7 @@ class PaymentsController extends Controller
     {
         $user = $request->user();
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
         $search = $request->string('search')->toString();
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
         $branchOptions = $this->branchAccess->availableBranchesForUser($user)
@@ -148,7 +152,7 @@ class PaymentsController extends Controller
         });
 
         $statsQuery = clone $debtQuery;
-        $totalOutstanding = (float) (clone $statsQuery)->sum('total_extra_charges');
+        $totalOutstanding = FinancialVisibility::numericAmount((clone $statsQuery)->sum('total_extra_charges'), $canViewFinancialAmounts);
         $clientCount = (clone $statsQuery)
             ->get(['id', 'reservation_id'])
             ->load('reservation:id,user_id')
@@ -162,11 +166,11 @@ class PaymentsController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $reports->getCollection()->transform(function (ContractReturnReport $report) {
+        $reports->getCollection()->transform(function (ContractReturnReport $report) use ($canViewFinancialAmounts) {
             return [
                 'id' => $report->id,
                 'report_number' => $report->report_number,
-                'amount' => $report->total_extra_charges,
+                'amount' => FinancialVisibility::numericAmount($report->total_extra_charges, $canViewFinancialAmounts),
                 'currency' => $report->payment?->currency ?: strtoupper((string) config('app.currency_code', 'USD')),
                 'created_at' => optional($report->created_at)->toDateTimeString(),
                 'return_report_url' => url('/admin/contracts/'.$report->contract_id.'/return-status-report'),
@@ -205,6 +209,7 @@ class PaymentsController extends Controller
             ],
             'branches' => $branchOptions,
             'canAccessAllBranches' => $canAccessAllBranches,
+            'canViewFinancials' => $canViewFinancialAmounts,
             'summary' => [
                 'clients_count' => $clientCount,
                 'reports_count' => $reports->total(),

@@ -133,6 +133,7 @@ const props = defineProps<{
     branches: Array<{ id: number; name: string }>;
     filters: { branch_id: number | null };
     canAccessAllBranches: boolean;
+    canViewFinancials: boolean;
 }>();
 
 const { locale, direction } = useTrans();
@@ -141,13 +142,18 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug ?? '');
-const currency = computed(() => page.props.currency_symbol ?? '$');
+const currency = computed(() => page.props.currency?.symbol ?? '$');
 const numberLocale = computed(() => (locale.value === 'ar' ? 'ar' : 'en-US'));
+const authPermissions = computed<string[]>(() =>
+    Array.isArray(page.props?.auth?.permissions) ? page.props.auth.permissions : [],
+);
+const hasFinancialAccess = computed(() => !!page.props.canViewFinancials);
 
 const fmt = (n: number) =>
     new Intl.NumberFormat(numberLocale.value, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
-const fmtCurrency = (n: number) => `${currency.value}${fmt(n)}`;
+const fmtCurrency = (n: number) => (hasFinancialAccess.value ? `${currency.value}${fmt(n)}` : '*******');
+const hasPermission = (permission?: string) => !permission || authPermissions.value.includes(permission);
 
 const fmtDate = (d: string | null) =>
     d
@@ -291,7 +297,8 @@ const applyBranchFilter = () => {
 };
 
 const maxRevenue = computed(() => Math.max(...props.monthlyRevenue.map((m) => m.revenue), 1));
-const barHeight = (revenue: number) => Math.max(4, Math.round((revenue / maxRevenue.value) * 160));
+const barHeight = (revenue: number) =>
+    hasFinancialAccess.value ? Math.max(4, Math.round((revenue / maxRevenue.value) * 160)) : 0;
 
 const totalResCount = computed(() => props.reservationsByStatus.reduce((sum, s) => sum + s.count, 0));
 const statusBarWidths = computed(() =>
@@ -345,6 +352,7 @@ const quickActions = computed(() => {
             icon: DollarSign,
             accent: '#10B981',
             bg: 'rgba(16,185,129,0.10)',
+            permission: 'tenant-manage-payments',
         },
         {
             title: localize('Debtors', 'المدينون'),
@@ -353,6 +361,7 @@ const quickActions = computed(() => {
             icon: Clock,
             accent: '#EF4444',
             bg: 'rgba(239,68,68,0.10)',
+            permission: 'tenant-view-debtors',
         },
         {
             title: localize('Accidents', 'الحوادث'),
@@ -378,7 +387,7 @@ const quickActions = computed(() => {
             accent: '#14B8A6',
             bg: 'rgba(20,184,166,0.10)',
         },
-    ];
+    ].filter((item) => hasPermission(item.permission));
 });
 
 const operationalHighlights = computed(() => {

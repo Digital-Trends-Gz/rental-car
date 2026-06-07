@@ -17,6 +17,10 @@ class BranchAccess
             return false;
         }
 
+        if ($user->role === UserRole::ADMIN && $this->tenantHasNoBranches($user)) {
+            return true;
+        }
+
         if ($user->role === UserRole::SUPER_ADMIN) {
             return true;
         }
@@ -120,6 +124,15 @@ class BranchAccess
         }
 
         return !empty($user->branch_id) ? (int) $user->branch_id : null;
+    }
+
+    private function tenantHasNoBranches(User $user): bool
+    {
+        if (empty($user->tenant_id)) {
+            return false;
+        }
+
+        return !Branch::query()->exists();
     }
 
     private function isPrimaryTenantAccount(User $user): bool

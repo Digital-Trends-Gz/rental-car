@@ -29,7 +29,7 @@ const currentTenant = computed(() => page.props.current_tenant);
 const loginAction = computed(() => {
     const slug = currentTenant.value?.slug;
     return (
-        slug ? tenantTenantLoginStore(slug) : mainTenantLoginStore()
+        slug ? tenantTenantLoginStore(slug).form() : mainTenantLoginStore().form()
     ) as any;
 });
 
