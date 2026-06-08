@@ -186,6 +186,8 @@ class ReservationsController extends Controller
             'pickup_location' => ['nullable', 'string', 'max:255'],
             'return_location' => ['nullable', 'string', 'max:255'],
             'return_location_fee' => ['nullable', 'numeric', 'min:0'],
+            'discount_type' => ['nullable', 'string', Rule::in(['fixed', 'percentage'])],
+            'discount_value' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'deposit_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
@@ -223,7 +225,6 @@ class ReservationsController extends Controller
         $end = Carbon::parse($validated['end_date']);
         $this->ensureNoReservationConflict($car->id, $start, $end);
 
-        $discountAmount = (float) ($validated['discount_amount'] ?? 0);
         $depositAmount = (float) ($validated['deposit_amount'] ?? 0);
         $returnLocationFee = $this->resolveReservationReturnLocationFee(
             $user?->tenant_id,
@@ -233,6 +234,9 @@ class ReservationsController extends Controller
         $totalDays = $start->diffInDays($end) + 1;
         $subtotal = (float) $car->price_per_day * $totalDays;
         $taxAmount = round($subtotal * 0.21, 2);
+        $discountType = $validated['discount_type'] ?? 'fixed';
+        $discountValue = $validated['discount_value'] ?? ($validated['discount_amount'] ?? 0);
+        $discountAmount = $this->calculateReservationDiscountAmount($discountType, $discountValue, $subtotal);
         $reservationStatus = $this->normalizeReservationStatusForPersistence($validated['status']);
 
         $reservation = null;
@@ -268,6 +272,8 @@ class ReservationsController extends Controller
                 'daily_rate' => $car->price_per_day,
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
+                'discount_type' => $discountType,
+                'discount_value' => $discountValue,
                 'discount_amount' => $discountAmount,
                 'total_amount' => max(0, $subtotal + $taxAmount + $returnLocationFee - $discountAmount),
                 'status' => $reservationStatus,
@@ -389,6 +395,8 @@ class ReservationsController extends Controller
             'pickup_location' => ['nullable', 'string', 'max:255'],
             'return_location' => ['nullable', 'string', 'max:255'],
             'return_location_fee' => ['nullable', 'numeric', 'min:0'],
+            'discount_type' => ['nullable', 'string', Rule::in(['fixed', 'percentage'])],
+            'discount_value' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(ReservationStatus::manualValues($reservation->status instanceof ReservationStatus ? $reservation->status->value : (string) $reservation->status))],
@@ -420,6 +428,13 @@ class ReservationsController extends Controller
         $reservation->subtotal = $reservation->daily_rate * $totalDays;
         $reservation->tax_amount = round($reservation->subtotal * 0.21, 2);
         $reservation->return_location_fee = $returnLocationFee;
+        $reservation->discount_type = $validated['discount_type'] ?? $reservation->discount_type ?? 'fixed';
+        $reservation->discount_value = $validated['discount_value'] ?? $validated['discount_amount'] ?? $reservation->discount_value ?? 0;
+        $reservation->discount_amount = $this->calculateReservationDiscountAmount(
+            $reservation->discount_type,
+            $reservation->discount_value,
+            (float) $reservation->subtotal
+        );
         $reservation->total_amount = max(0, $reservation->subtotal + $reservation->tax_amount + $returnLocationFee - (float) ($reservation->discount_amount ?? 0));
 
         // Maintain cancellation metadata
@@ -448,6 +463,21 @@ class ReservationsController extends Controller
         }
 
         return $requestedStatus;
+    }
+
+    private function calculateReservationDiscountAmount(?string $type, mixed $value, float $subtotal): float
+    {
+        $discountType = in_array($type, ['fixed', 'percentage'], true) ? $type : 'fixed';
+        $discountValue = max(0, (float) ($value ?? 0));
+
+        if ($discountType === 'percentage') {
+            $discountValue = min($discountValue, 100);
+            $amount = $subtotal * ($discountValue / 100);
+        } else {
+            $amount = $discountValue;
+        }
+
+        return round(max(0, min($amount, $subtotal)), 2);
     }
 
     public function collectCashPayment(Request $request)

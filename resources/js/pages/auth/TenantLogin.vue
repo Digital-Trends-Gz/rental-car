@@ -2,6 +2,7 @@
 import authHero from '@/assets/auth-hero.jpg';
 import InputError from '@/components/InputError.vue';
 import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
+import { useBrandTheme } from '@/composables/useBrandTheme';
 import { useTrans } from '@/composables/useTrans';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const { t } = useTrans();
+const { themeVars } = useBrandTheme();
 
 defineProps<{
     status?: string;
@@ -29,7 +31,7 @@ const currentTenant = computed(() => page.props.current_tenant);
 const loginAction = computed(() => {
     const slug = currentTenant.value?.slug;
     return (
-        slug ? tenantTenantLoginStore(slug).form() : mainTenantLoginStore().form()
+        slug ? tenantTenantLoginStore.form(slug) : mainTenantLoginStore.form()
     ) as any;
 });
 
@@ -56,7 +58,7 @@ const landingUrl = computed(() => {
         />
     </Head>
 
-    <div class="flex min-h-screen bg-white">
+    <div class="flex min-h-screen bg-white" :style="themeVars">
         <div class="relative hidden overflow-hidden lg:flex lg:w-1/2">
             <img
                 :src="authHero"
@@ -124,7 +126,7 @@ const landingUrl = computed(() => {
                             <Link
                                 v-if="canResetPassword"
                                 :href="forgotPasswordUrl"
-                                class="text-sm font-medium text-blue-700 hover:underline"
+                                class="text-sm font-medium text-primary hover:underline"
                             >
                                 {{ t('auth.forgot_password') }}
                             </Link>
@@ -151,7 +153,7 @@ const landingUrl = computed(() => {
 
                     <button
                         type="submit"
-                        class="h-12 w-full rounded-full bg-gradient-to-r from-blue-700 to-blue-500 font-semibold text-white shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                        class="h-12 w-full rounded-full bg-primary font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                         :disabled="processing"
                     >
                         {{ processing ? t('auth.signing_in') : t('auth.sign_in') }}
@@ -162,7 +164,7 @@ const landingUrl = computed(() => {
                     {{ t('auth.dont_have_account') }}
                     <Link
                         :href="registerUrl"
-                        class="ml-1 font-semibold text-blue-700 hover:underline"
+                        class="ml-1 font-semibold text-primary hover:underline"
                     >
                         {{ t('auth.create_one') }}
                     </Link>

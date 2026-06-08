@@ -551,6 +551,8 @@ class ReservationsController extends Controller
             'daily_rate' => (float) ($reservation->daily_rate ?? 0),
             'subtotal' => (float) ($reservation->subtotal ?? 0),
             'tax_amount' => (float) ($reservation->tax_amount ?? 0),
+            'discount_type' => $reservation->discount_type ?: 'fixed',
+            'discount_value' => (float) ($reservation->discount_value ?? $reservation->discount_amount ?? 0),
             'discount_amount' => (float) ($reservation->discount_amount ?? 0),
             'notes' => $reservation->notes,
             'cancellation_reason' => $reservation->cancellation_reason,

@@ -2,15 +2,18 @@
 import authHero from '@/assets/auth-hero.jpg';
 import InputError from '@/components/InputError.vue';
 import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
+import { useBrandTheme } from '@/composables/useBrandTheme';
 import { useTrans } from '@/composables/useTrans';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { store as mainRegisterStore } from '@/routes/register';
 import { store as tenantRegisterStore } from '@/routes/tenant/register';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
+import { Home } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 const { t } = useTrans();
+const { themeVars } = useBrandTheme();
 
 const page = usePage<any>();
 const currentTenant = computed(() => page.props.current_tenant);
@@ -42,7 +45,7 @@ const props = withDefaults(defineProps<{ prefill?: RegisterPrefill; countries?: 
 
 const registerAction = computed(() => {
     const slug = currentTenant.value?.slug;
-    return (slug ? tenantRegisterStore(slug).form() : mainRegisterStore().form()) as any;
+    return (slug ? tenantRegisterStore.form(slug) : mainRegisterStore.form()) as any;
 });
 const baseProtocol = computed(() =>
     typeof window !== 'undefined' ? window.location.protocol : 'https:',
@@ -56,6 +59,9 @@ const loginUrl = computed(() => {
         ? buildUrl(`${slug}.${page.props.app_url_base}`, '/tenant/login')
         : buildUrl(page.props.app_url_base, '/tenant/login');
 });
+const homeUrl = computed(() =>
+    '/',
+);
 
 const isArabic = computed(() => page.props.locale === 'ar');
 
@@ -97,7 +103,7 @@ watch(
 <template>
     <Head title="Sign Up" />
 
-    <div class="flex min-h-screen bg-white">
+    <div class="flex min-h-screen bg-white" :style="themeVars">
         <div class="relative hidden overflow-hidden lg:flex lg:w-1/2">
             <img
                 :src="authHero"
@@ -109,6 +115,17 @@ watch(
         <div
             class="relative flex w-full items-center justify-center p-6 sm:p-8 lg:w-1/2"
         >
+            <div class="absolute top-4 z-50 ltr:left-4 rtl:right-4">
+                <Link
+                    :href="homeUrl"
+                    class="flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary shadow-sm transition hover:bg-primary hover:text-primary-foreground"
+                    :aria-label="page.props.locale === 'ar' ? 'العودة للرئيسية' : 'Back to home'"
+                    :title="page.props.locale === 'ar' ? 'العودة للرئيسية' : 'Back to home'"
+                >
+                    <Home class="h-5 w-5" />
+                </Link>
+            </div>
+
             <div class="absolute top-4 ltr:right-4 rtl:left-4 z-50">
                 <AuthLanguageSwitcher />
             </div>
@@ -144,7 +161,7 @@ watch(
                                 required
                                 autofocus
                                 autocomplete="name"
-                                class="h-11 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                class="h-11 border-gray-300 focus:border-primary focus:ring-primary"
                             />
                             <InputError :message="errors.name" />
                         </div>
@@ -162,7 +179,7 @@ watch(
                                 :default-value="initial.email"
                                 required
                                 autocomplete="email"
-                                class="h-11 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                class="h-11 border-gray-300 focus:border-primary focus:ring-primary"
                             />
                             <InputError :message="errors.email" />
                         </div>
@@ -180,7 +197,7 @@ watch(
                                 :default-value="initial.civil_number"
                                 required
                                 autocomplete="off"
-                                class="h-11 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                class="h-11 border-gray-300 focus:border-primary focus:ring-primary"
                             />
                             <InputError :message="errors.civil_number" />
                         </div>
@@ -197,7 +214,7 @@ watch(
                                 :placeholder="t('auth.placeholder_password')"
                                 required
                                 autocomplete="new-password"
-                                class="h-11 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                class="h-11 border-gray-300 focus:border-primary focus:ring-primary"
                             />
                             <InputError :message="errors.password" />
                         </div>
@@ -214,7 +231,7 @@ watch(
                                 :placeholder="t('auth.confirm_password')"
                                 required
                                 autocomplete="new-password"
-                                class="h-11 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
+                                class="h-11 border-gray-300 focus:border-primary focus:ring-primary"
                             />
                             <InputError :message="errors.password_confirmation" />
                         </div>
@@ -222,7 +239,7 @@ watch(
                         <!-- Submit -->
                         <button
                             type="submit"
-                            class="h-12 w-full rounded-lg bg-orange-500 font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                            class="h-12 w-full rounded-lg bg-primary font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="processing"
                         >
                             {{ processing ? t('auth.authenticating') : t('auth.create_account') }}
@@ -266,7 +283,7 @@ watch(
                         {{ t('auth.already_have_account_short') }}
                         <Link
                             :href="loginUrl"
-                            class="ml-1 font-semibold text-orange-500 hover:text-orange-600 hover:underline"
+                            class="ml-1 font-semibold text-primary hover:text-primary/80 hover:underline"
                         >
                             {{ t('auth.sign_in_here_short') }}
                         </Link>
@@ -521,7 +538,7 @@ watch(
 
                         <button
                             type="submit"
-                            class="h-12 w-full rounded-full bg-gradient-to-r from-blue-700 to-blue-500 font-semibold text-white shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+                            class="h-12 w-full rounded-full bg-primary font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="processing"
                         >
                             {{ processing ? t('auth.authenticating') : t('auth.sign_up') }}
@@ -532,7 +549,7 @@ watch(
                         {{ t('auth.already_have_account_short') }}
                         <Link
                             :href="loginUrl"
-                            class="ml-1 font-semibold text-blue-700 hover:underline"
+                            class="ml-1 font-semibold text-primary hover:underline"
                         >
                             {{ t('auth.sign_in') }} ->
                         </Link>

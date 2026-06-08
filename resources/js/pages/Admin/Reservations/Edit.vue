@@ -99,6 +99,22 @@ const formatMoney = (value: number): string => {
     return Math.max(0, value).toFixed(2);
 };
 
+const toNumber = (value: unknown): number => {
+    const parsed = Number(value ?? 0);
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const calculateDiscountAmount = (type: string, value: unknown, subtotal: number): number => {
+    const discountValue = Math.max(0, toNumber(value));
+    const cappedSubtotal = Math.max(0, subtotal);
+
+    if (type === 'percentage') {
+        return Math.min(cappedSubtotal, cappedSubtotal * (Math.min(discountValue, 100) / 100));
+    }
+
+    return Math.min(cappedSubtotal, discountValue);
+};
+
 const resolveReturnLocationFee = (location: string): string => {
     const selected = (reservationSettings.value?.pickup_return_locations ?? []).find((item: any) => {
         const name = String(item?.name ?? '').trim().toLowerCase();
@@ -191,6 +207,8 @@ const form = useForm({
             : props.reservation?.return_location
                 ? resolveReturnLocationFee(props.reservation.return_location)
                 : '',
+    discount_type: props.reservation?.discount_type || 'fixed',
+    discount_value: props.reservation?.discount_value ?? props.reservation?.discount_amount ?? 0,
     discount_amount: props.reservation?.discount_amount || 0,
     deposit_amount: 0,
     notes: props.reservation?.notes || '',
@@ -202,6 +220,35 @@ const selectedCar = computed(() => {
     const selectedCarId = Number(form.car_id || props.reservation?.car?.id || 0);
     return props.cars.find((car) => Number(car.id) === selectedCarId) ?? props.reservation?.car ?? null;
 });
+
+const reservationDurationDays = computed(() => {
+    if (!form.start_date || !form.end_date) {
+        return 0;
+    }
+
+    const start = parseDate(form.start_date);
+    const end = parseDate(form.end_date);
+    const diff = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+
+    return diff > 0 ? diff : 0;
+});
+
+const reservationSubtotalPreview = computed(() => {
+    const dailyRate = toNumber(selectedCar.value?.price_per_day ?? props.reservation?.daily_rate ?? 0);
+    return dailyRate * reservationDurationDays.value;
+});
+
+const discountAmountPreview = computed(() =>
+    calculateDiscountAmount(String(form.discount_type || 'fixed'), form.discount_value, reservationSubtotalPreview.value),
+);
+
+watch(
+    discountAmountPreview,
+    (amount) => {
+        form.discount_amount = Number(amount.toFixed(2));
+    },
+    { immediate: true },
+);
 
 const resolvedReturnTime = computed(() => {
     const mode = String(returnTimePolicy.value?.mode ?? 'fixed_time');
@@ -793,8 +840,40 @@ function submit() {
                     </div>
 
                     <div>
-                        <Label for="discount_amount">{{ localize('Discount', 'الخصم') }}</Label>
-                        <Input id="discount_amount" v-model="form.discount_amount" type="number" step="0.01" min="0" />
+                        <Label for="discount_type">{{ localize('Discount Type', 'نوع الخصم') }}</Label>
+                        <select
+                            id="discount_type"
+                            v-model="form.discount_type"
+                            class="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-all duration-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            :class="{ 'border-red-500 focus:border-red-500 focus:ring-red-500': form.errors.discount_type }"
+                        >
+                            <option value="fixed">{{ localize('Fixed Amount', 'مبلغ ثابت') }}</option>
+                            <option value="percentage">{{ localize('Percentage', 'نسبة مئوية') }}</option>
+                        </select>
+                        <InputError :message="form.errors.discount_type" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="discount_value">
+                            {{ form.discount_type === 'percentage' ? localize('Discount Percentage', 'نسبة الخصم') : localize('Discount Amount', 'مبلغ الخصم') }}
+                        </Label>
+                        <Input
+                            id="discount_value"
+                            v-model="form.discount_value"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            :max="form.discount_type === 'percentage' ? 100 : undefined"
+                        />
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            {{
+                                localize(
+                                    `Calculated discount: ${formatMoney(discountAmountPreview)}`,
+                                    `الخصم المحسوب: ${formatMoney(discountAmountPreview)}`,
+                                )
+                            }}
+                        </p>
+                        <InputError :message="form.errors.discount_value" class="mt-1" />
                         <InputError :message="form.errors.discount_amount" class="mt-1" />
                     </div>
 
@@ -954,5 +1033,3 @@ function submit() {
         </main>
     </AdminLayout>
 </template>
-
-

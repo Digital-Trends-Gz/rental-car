@@ -36,7 +36,7 @@ const buildUrl = (host: string, path: string) =>
 
 const loginAction = computed(() => {
     const slug = currentTenant.value?.slug;
-    return (slug ? tenantLoginStore(slug).form() : mainLoginStore().form()) as any;
+    return (slug ? tenantLoginStore.form(slug) : mainLoginStore.form()) as any;
 });
 const registerUrl = computed(() => {
     const slug = currentTenant.value?.slug;
@@ -108,7 +108,7 @@ const forgotPasswordUrl = computed(() => {
                                 :tabindex="1"
                                 autocomplete="email"
                                 :placeholder="t('auth.placeholder_email')"
-                                class="w-full rounded-lg border border-gray-300 px-4 py-3 transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
+                                class="w-full rounded-lg border border-gray-300 px-4 py-3 transition-colors focus:border-primary focus:ring-2 focus:ring-primary"
                             />
                             <InputError :message="errors.email" class="mt-1" />
                         </div>
@@ -125,7 +125,7 @@ const forgotPasswordUrl = computed(() => {
                                 <TextLink
                                     v-if="canResetPassword"
                                     :href="forgotPasswordUrl"
-                                    class="text-sm font-medium text-orange-600 hover:text-orange-700"
+                                    class="text-sm font-medium text-primary hover:text-primary/80"
                                     :tabindex="5"
                                 >
                                     {{ t('auth.forgot_password') }}
@@ -139,7 +139,7 @@ const forgotPasswordUrl = computed(() => {
                                 :tabindex="2"
                                 autocomplete="current-password"
                                 :placeholder="t('auth.placeholder_password')"
-                                class="w-full rounded-lg border border-gray-300 px-4 py-3 transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
+                                class="w-full rounded-lg border border-gray-300 px-4 py-3 transition-colors focus:border-primary focus:ring-2 focus:ring-primary"
                             />
                             <InputError
                                 :message="errors.password"
@@ -157,7 +157,7 @@ const forgotPasswordUrl = computed(() => {
                                     id="remember"
                                     name="remember"
                                     :tabindex="3"
-                                    class="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                    class="rounded border-gray-300 text-primary focus:ring-primary"
                                 />
                                 <span class="text-sm text-gray-700">{{
                                     t('auth.remember_me')
@@ -168,7 +168,7 @@ const forgotPasswordUrl = computed(() => {
                         <!-- Submit Button -->
                         <Button
                             type="submit"
-                            class="flex w-full items-center justify-center rounded-lg bg-orange-600 px-4 py-3 font-semibold text-white transition-colors duration-200 hover:bg-orange-700"
+                            class="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 font-semibold text-primary-foreground transition-colors duration-200 hover:bg-primary/90"
                             :tabindex="4"
                             :disabled="processing"
                             data-test="login-button"
@@ -191,7 +191,7 @@ const forgotPasswordUrl = computed(() => {
                                 <TextLink
                                     :href="registerUrl"
                                     :tabindex="5"
-                                    class="ml-1 font-semibold text-orange-600 hover:text-orange-700"
+                                    class="ml-1 font-semibold text-primary hover:text-primary/80"
                                 >
                                     {{ t('auth.create_one') }}
                                 </TextLink>
