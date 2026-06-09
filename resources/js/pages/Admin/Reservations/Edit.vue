@@ -24,7 +24,15 @@ const props = defineProps<{
     reservation: any | null;
     is_locked?: boolean;
     clients: Array<{ id: number; name: string; email: string }>;
-    cars: Array<{ id: number; label: string; license_plate: string; branch_name?: string | null; price_per_day: number }>;
+    cars: Array<{
+        id: number;
+        label: string;
+        license_plate: string;
+        branch_name?: string | null;
+        price_per_day: number;
+        price_per_week?: number | null;
+        price_per_month?: number | null;
+    }>;
     carDamagesByCar: Record<number, Array<{
         id: number;
         zone_label: string;
@@ -113,6 +121,32 @@ const calculateDiscountAmount = (type: string, value: unknown, subtotal: number)
     }
 
     return Math.min(cappedSubtotal, discountValue);
+};
+
+const calculateTieredRentalSubtotal = (car: any, days: number): number => {
+    let remainingDays = Math.max(1, days);
+    const dailyRate = Math.max(0, toNumber(car?.price_per_day ?? props.reservation?.daily_rate ?? 0));
+    const weeklyRate = Math.max(0, toNumber(car?.price_per_week));
+    const monthlyRate = Math.max(0, toNumber(car?.price_per_month));
+    let subtotal = 0;
+
+    const months = Math.floor(remainingDays / 30);
+    if (months > 0) {
+        subtotal += months * (monthlyRate > 0 ? monthlyRate : dailyRate * 30);
+        remainingDays -= months * 30;
+    }
+
+    const weeks = Math.floor(remainingDays / 7);
+    if (weeks > 0) {
+        subtotal += weeks * (weeklyRate > 0 ? weeklyRate : dailyRate * 7);
+        remainingDays -= weeks * 7;
+    }
+
+    if (remainingDays > 0) {
+        subtotal += remainingDays * dailyRate;
+    }
+
+    return subtotal;
 };
 
 const resolveReturnLocationFee = (location: string): string => {
@@ -234,8 +268,7 @@ const reservationDurationDays = computed(() => {
 });
 
 const reservationSubtotalPreview = computed(() => {
-    const dailyRate = toNumber(selectedCar.value?.price_per_day ?? props.reservation?.daily_rate ?? 0);
-    return dailyRate * reservationDurationDays.value;
+    return calculateTieredRentalSubtotal(selectedCar.value, reservationDurationDays.value);
 });
 
 const discountAmountPreview = computed(() =>

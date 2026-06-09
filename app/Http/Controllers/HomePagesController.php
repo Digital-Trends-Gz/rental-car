@@ -206,7 +206,10 @@ class HomePagesController extends Controller
 
     public function fleet(Request $request)
     {
+        $tenantId = TenantContext::id();
+
         $query = Car::withoutTenantScope()->whereIn('status', $this->publicFleetStatuses())
+            ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->with([
                 'tenant.siteSetting',
                 'branch:id,tenant_id,name,address',
@@ -224,7 +227,7 @@ class HomePagesController extends Controller
             });
         }
 
-        if ($request->filled('tenant_id')) {
+        if (!$tenantId && $request->filled('tenant_id')) {
             $query->where('tenant_id', $request->integer('tenant_id'));
         }
 
@@ -267,23 +270,30 @@ class HomePagesController extends Controller
             ->withQueryString();
 
         // Get filter options
-        $makes = Car::whereIn('status', $this->publicFleetStatuses())
+        $makes = Car::withoutTenantScope()
+            ->whereIn('status', $this->publicFleetStatuses())
+            ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('make')
             ->toArray();
 
-        $fuelTypes = Car::whereIn('status', $this->publicFleetStatuses())
+        $fuelTypes = Car::withoutTenantScope()
+            ->whereIn('status', $this->publicFleetStatuses())
+            ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('fuel_type')
             ->toArray();
 
-        $years = Car::whereIn('status', $this->publicFleetStatuses())
+        $years = Car::withoutTenantScope()
+            ->whereIn('status', $this->publicFleetStatuses())
+            ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('year')
             ->toArray();
 
         $publicTenantIds = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
+            ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('tenant_id');
 
@@ -301,6 +311,7 @@ class HomePagesController extends Controller
 
         $publicBranchIds = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
+            ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->whereNotNull('branch_id')
             ->distinct()
             ->pluck('branch_id');
@@ -322,6 +333,14 @@ class HomePagesController extends Controller
         $seo = TenantSeoResolver::forPage(TenantContext::get(), 'fleet');
 
         return inertia('Fleet', compact('cars', 'makes', 'fuelTypes', 'years', 'filters', 'tenants', 'branches', 'seo'));
+    }
+
+    private function applyTenantFleetScope($query, int $tenantId)
+    {
+        return $query->where(function ($query) use ($tenantId) {
+            $query->where('tenant_id', $tenantId)
+                ->orWhereNull('tenant_id');
+        });
     }
 
     /**

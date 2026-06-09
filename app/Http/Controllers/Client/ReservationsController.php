@@ -10,12 +10,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\RentalExtensionRequest;
 use App\Models\Reservation;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\TenantSiteSetting;
+use App\Support\PdfRuntime;
+use Barryvdh\DomPDF\Facade\Pdf as DomPdf;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Spatie\Browsershot\Browsershot;
+use Spatie\LaravelPdf\Enums\Format;
+use Spatie\LaravelPdf\Facades\Pdf as SpatiePdf;
+use Throwable;
 
 class ReservationsController extends Controller
 {
@@ -92,16 +98,119 @@ class ReservationsController extends Controller
     public function print($id)
     {
         $reservation = Reservation::where('user_id', auth()->id())->findOrFail($id);
-        $reservation->load(['user', 'car', 'payments']);
+        $reservation->load(['user', 'car.branch', 'payments', 'tenant.siteSetting.files']);
+        $siteSettings = $reservation->tenant?->siteSetting ? TenantSiteSetting::forTenant($reservation->tenant) : [];
+        $branding = $this->pdfBranding($reservation->tenant);
 
-        $pdf = Pdf::loadView('admin.reservations.print', [
+        $viewData = [
             'reservation' => $reservation,
             'statusMeta' => ReservationStatus::getMeta(),
             'paymentStatusMeta' => PaymentStatus::getMeta(),
             'currency' => config('app.currency_symbol'),
-        ])->setPaper('a4', 'portrait');
+            'companyLogo' => $branding['logo'],
+            'companyName' => $branding['name'],
+            'siteSettings' => $siteSettings,
+        ];
+        $fileName = $reservation->reservation_number . '.pdf';
 
-        return $pdf->download($reservation->reservation_number . '.pdf');
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                return SpatiePdf::view('admin.reservations.print', $viewData)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    })
+                    ->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $pdf = DomPdf::loadView('admin.reservations.print', $viewData)
+            ->setOption('defaultFont', 'DejaVu Sans')
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
+            ->setOption('isRemoteEnabled', true)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download($fileName);
+    }
+
+    private function pdfBranding($tenant): array
+    {
+        $tenant = $tenant?->loadMissing('siteSetting.files');
+        $settings = $tenant ? TenantSiteSetting::forTenant($tenant) : [];
+        $name = trim((string) ($settings['site_name'] ?? $tenant?->name ?? config('app.name')));
+
+        return [
+            'name' => $name !== '' ? $name : (string) config('app.name'),
+            'logo' => $this->pdfImageSource($settings['logo_url'] ?? null),
+        ];
+    }
+
+    private function pdfImageSource(?string $url): ?string
+    {
+        $url = trim((string) ($url ?? ''));
+        if ($url === '') {
+            return null;
+        }
+
+        if (str_starts_with($url, 'data:') || preg_match('/^https?:\/\//i', $url) === 1) {
+            return $url;
+        }
+
+        $path = null;
+
+        if (str_starts_with($url, '/storage/')) {
+            $path = public_path(ltrim($url, '/'));
+        } elseif (str_starts_with($url, 'storage/')) {
+            $path = public_path($url);
+        } elseif (str_starts_with($url, '/')) {
+            $path = public_path(ltrim($url, '/'));
+        }
+
+        if (!$path || !is_file($path)) {
+            return $url;
+        }
+
+        $contents = file_get_contents($path);
+        if (!is_string($contents) || $contents === '') {
+            return null;
+        }
+
+        $mime = mime_content_type($path) ?: 'application/octet-stream';
+
+        return 'data:'.$mime.';base64,'.base64_encode($contents);
     }
 
     public function approveExtensionRequest(Request $request): RedirectResponse

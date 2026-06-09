@@ -578,7 +578,7 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                 </Link>
             </div>
 
-            <form class="space-y-6" @submit.prevent="submit">
+            <form class="space-y-6" @submit.prevent="submit(false)">
                 <div class="flex flex-col gap-6 md:flex-row md:gap-8">
                     <div class="w-full md:w-1/2">
                         <Label>{{ localize('Main Cover Image', 'الصورة الرئيسية') }}</Label>
@@ -832,7 +832,7 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
 
                     <div>
                         <Label for="mileage">{{ localize('Mileage (km)', 'المسافة المقطوعة (كم)') }}</Label>
-                        <Input id="mileage" v-model="form.mileage" type="number" min="0" step="1000" :placeholder="localize('e.g., 15000', 'مثال: 15000')" />
+                        <Input id="mileage" v-model="form.mileage" type="text" :placeholder="localize('e.g., 15000', 'مثال: 15000')" />
                         <InputError :message="form.errors.mileage" class="mt-1" />
                     </div>
 

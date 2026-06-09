@@ -183,8 +183,8 @@ function collectFinalCash() {
           <div class="border-b px-4 py-3 font-medium">Amounts</div>
           <div class="p-4 space-y-2">
             <div class="flex items-center justify-between">
-              <div class="text-sm">Daily Rate</div>
-              <div class="font-medium">{{ fmtMoney(reservation.daily_rate) }}</div>
+              <div class="text-sm">{{ reservation.pricing_label || 'Daily Rate' }}</div>
+              <div class="font-medium">{{ fmtMoney(reservation.pricing_rate ?? reservation.daily_rate) }}</div>
             </div>
             <div class="flex items-center justify-between">
               <div class="text-sm">Subtotal</div>

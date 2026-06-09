@@ -1177,8 +1177,9 @@ class BookingController extends Controller
     ): array
     {
         $days = max(1, $startDate->diffInDays($endDate));
-        $dailyRate = abs((float) $car->price_per_day);
-        $subtotal = $dailyRate * $days;
+        $pricing = $this->calculateTieredRentalPricing($car, $days);
+        $dailyRate = $pricing['daily_rate'];
+        $subtotal = $pricing['subtotal'];
         $taxPercentage = $this->resolveBookingTaxPercentage($tenant);
         $taxAmount = $subtotal * ($taxPercentage / 100);
         $returnLocationFee = $this->resolveBookingReturnLocationFee($tenant, $returnLocation);
@@ -1207,6 +1208,40 @@ class BookingController extends Controller
         );
 
         return ReservationSettings::resolveLocationFee($settings, $returnLocation, 'return');
+    }
+
+    /**
+     * @return array{daily_rate:float,subtotal:float}
+     */
+    private function calculateTieredRentalPricing(Car $car, int $days): array
+    {
+        $days = max(1, $days);
+        $dailyRate = max(0, abs((float) $car->price_per_day));
+        $weeklyRate = max(0, abs((float) ($car->price_per_week ?? 0)));
+        $monthlyRate = max(0, abs((float) ($car->price_per_month ?? 0)));
+        $remainingDays = $days;
+        $subtotal = 0.0;
+
+        $months = intdiv($remainingDays, 30);
+        if ($months > 0) {
+            $subtotal += $months * ($monthlyRate > 0 ? $monthlyRate : $dailyRate * 30);
+            $remainingDays -= $months * 30;
+        }
+
+        $weeks = intdiv($remainingDays, 7);
+        if ($weeks > 0) {
+            $subtotal += $weeks * ($weeklyRate > 0 ? $weeklyRate : $dailyRate * 7);
+            $remainingDays -= $weeks * 7;
+        }
+
+        if ($remainingDays > 0) {
+            $subtotal += $remainingDays * $dailyRate;
+        }
+
+        return [
+            'daily_rate' => round($dailyRate, 2),
+            'subtotal' => round($subtotal, 2),
+        ];
     }
 
     private function resolveBookingTaxPercentage(?Tenant $tenant): float

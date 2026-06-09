@@ -13,6 +13,7 @@ use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Support\ClientReturnDebt;
 use App\Support\PaidReturnReportLock;
+use App\Support\PdfRuntime;
 use App\Enums\ReservationStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
@@ -21,10 +22,14 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\Facade\Pdf as DomPdf;
 use Carbon\Carbon;
 use App\Support\BranchAccess;
 use App\Services\Rentals\RentalStatusSyncService;
+use Spatie\Browsershot\Browsershot;
+use Spatie\LaravelPdf\Enums\Format;
+use Spatie\LaravelPdf\Facades\Pdf as SpatiePdf;
+use Throwable;
 
 class ReservationsController extends Controller
 {
@@ -232,7 +237,8 @@ class ReservationsController extends Controller
             $validated['return_location_fee'] ?? null
         );
         $totalDays = $start->diffInDays($end) + 1;
-        $subtotal = (float) $car->price_per_day * $totalDays;
+        $pricing = $this->calculateReservationPricing($car, $totalDays);
+        $subtotal = $pricing['subtotal'];
         $taxAmount = round($subtotal * 0.21, 2);
         $discountType = $validated['discount_type'] ?? 'fixed';
         $discountValue = $validated['discount_value'] ?? ($validated['discount_amount'] ?? 0);
@@ -250,9 +256,12 @@ class ReservationsController extends Controller
             $car,
             $validated,
             $totalDays,
+            $pricing,
             $subtotal,
             $taxAmount,
             $returnLocationFee,
+            $discountType,
+            $discountValue,
             $discountAmount,
             $depositAmount,
             $reservationStatus
@@ -269,7 +278,7 @@ class ReservationsController extends Controller
                 'return_location' => $validated['return_location'] ?? null,
                 'return_location_fee' => $returnLocationFee,
                 'total_days' => $totalDays,
-                'daily_rate' => $car->price_per_day,
+                'daily_rate' => $pricing['daily_rate'],
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
                 'discount_type' => $discountType,
@@ -329,6 +338,7 @@ class ReservationsController extends Controller
     {
         abort_unless($this->canAccessReservation($reservation, request()->user()), 403);
         $reservation->load(['user', 'car', 'payments', 'contract']);
+        $this->syncReservationAmounts($reservation);
         $reservation->setAttribute('is_locked', PaidReturnReportLock::reservation($reservation));
         $completedPaymentsTotal = (float) $reservation->payments()
             ->completed()
@@ -343,6 +353,9 @@ class ReservationsController extends Controller
             ReservationStatus::CANCELLED->value,
             ReservationStatus::COMPLETED->value,
         ], true));
+        $pricingSummary = $this->reservationPricingSummary($reservation);
+        $reservation->setAttribute('pricing_label', $pricingSummary['label']);
+        $reservation->setAttribute('pricing_rate', $pricingSummary['rate']);
 
         return Inertia::render('Admin/Reservations/Show', [
             'reservation' => $reservation,
@@ -364,7 +377,7 @@ class ReservationsController extends Controller
 
         $reservation = Reservation::query()->withoutGlobalScopes()->findOrFail($reservationId);
         abort_unless($this->canAccessReservation($reservation, request()->user()), 403);
-        $reservation->load(['user:id,name,email', 'car:id,make,model,year,license_plate']);
+        $reservation->load(['user:id,name,email', 'car:id,make,model,year,license_plate,price_per_day,price_per_week,price_per_month']);
         $reservation->setAttribute('is_locked', PaidReturnReportLock::reservation($reservation));
 
         return Inertia::render('Admin/Reservations/Edit', [
@@ -410,6 +423,7 @@ class ReservationsController extends Controller
         }
 
         $reservation->fill($validated);
+        $reservation->loadMissing('car');
         $reservation->status = $this->normalizeReservationStatusForPersistence(
             $validated['status'],
             $reservation->relationLoaded('contract') ? (bool) $reservation->contract : $reservation->contract()->exists()
@@ -424,8 +438,16 @@ class ReservationsController extends Controller
             $validated['return_location'] ?? null,
             $validated['return_location_fee'] ?? null
         );
+        $pricing = $reservation->car
+            ? $this->calculateReservationPricing($reservation->car, $totalDays)
+            : [
+                'daily_rate' => (float) ($reservation->daily_rate ?? 0),
+                'subtotal' => (float) ($reservation->daily_rate ?? 0) * $totalDays,
+            ];
+
         $reservation->total_days = $totalDays;
-        $reservation->subtotal = $reservation->daily_rate * $totalDays;
+        $reservation->daily_rate = $pricing['daily_rate'];
+        $reservation->subtotal = $pricing['subtotal'];
         $reservation->tax_amount = round($reservation->subtotal * 0.21, 2);
         $reservation->return_location_fee = $returnLocationFee;
         $reservation->discount_type = $validated['discount_type'] ?? $reservation->discount_type ?? 'fixed';
@@ -456,6 +478,59 @@ class ReservationsController extends Controller
             ->with('success', 'Reservation updated successfully.');
     }
 
+    private function syncReservationAmounts(Reservation $reservation): void
+    {
+        if (!$reservation->car || !$reservation->start_date || !$reservation->end_date) {
+            return;
+        }
+
+        $start = Carbon::parse($reservation->start_date);
+        $end = Carbon::parse($reservation->end_date);
+        $totalDays = max(1, $start->diffInDays($end) + 1);
+        $pricing = $this->calculateReservationPricing($reservation->car, $totalDays);
+        $subtotal = $pricing['subtotal'];
+        $taxAmount = round($subtotal * 0.21, 2);
+        $returnLocationFee = (float) ($reservation->return_location_fee ?? 0);
+        $discountType = $reservation->discount_type ?: 'fixed';
+        $discountValue = $reservation->discount_value ?? $reservation->discount_amount ?? 0;
+        $discountAmount = $this->calculateReservationDiscountAmount($discountType, $discountValue, $subtotal);
+        $totalAmount = max(0, $subtotal + $taxAmount + $returnLocationFee - $discountAmount);
+
+        $changes = [
+            'total_days' => $totalDays,
+            'daily_rate' => $pricing['daily_rate'],
+            'subtotal' => $subtotal,
+            'tax_amount' => $taxAmount,
+            'discount_type' => $discountType,
+            'discount_value' => $discountValue,
+            'discount_amount' => $discountAmount,
+            'total_amount' => $totalAmount,
+        ];
+
+        $dirty = false;
+        foreach ($changes as $key => $value) {
+            $current = $reservation->{$key};
+            if (is_numeric($value)) {
+                if (abs((float) ($current ?? 0) - (float) $value) > 0.009) {
+                    $dirty = true;
+                    break;
+                }
+                continue;
+            }
+
+            if ($current !== $value) {
+                $dirty = true;
+                break;
+            }
+        }
+
+        if (!$dirty) {
+            return;
+        }
+
+        $reservation->forceFill($changes)->save();
+    }
+
     private function normalizeReservationStatusForPersistence(string $requestedStatus, bool $hasContract = false): string
     {
         if ($requestedStatus === ReservationStatus::COMPLETED->value && !$hasContract) {
@@ -478,6 +553,71 @@ class ReservationsController extends Controller
         }
 
         return round(max(0, min($amount, $subtotal)), 2);
+    }
+
+    /**
+     * Calculate reservation subtotal using monthly, weekly, then daily pricing.
+     *
+     * @return array{daily_rate:float,subtotal:float}
+     */
+    private function calculateReservationPricing(Car $car, int $days): array
+    {
+        $days = max(1, $days);
+        $dailyRate = max(0, (float) $car->price_per_day);
+        $weeklyRate = max(0, (float) ($car->price_per_week ?? 0));
+        $monthlyRate = max(0, (float) ($car->price_per_month ?? 0));
+
+        $remainingDays = $days;
+        $subtotal = 0.0;
+
+        $months = intdiv($remainingDays, 30);
+        if ($months > 0) {
+            $subtotal += $months * ($monthlyRate > 0 ? $monthlyRate : $dailyRate * 30);
+            $remainingDays -= $months * 30;
+        }
+
+        $weeks = intdiv($remainingDays, 7);
+        if ($weeks > 0) {
+            $subtotal += $weeks * ($weeklyRate > 0 ? $weeklyRate : $dailyRate * 7);
+            $remainingDays -= $weeks * 7;
+        }
+
+        if ($remainingDays > 0) {
+            $subtotal += $remainingDays * $dailyRate;
+        }
+
+        return [
+            'daily_rate' => round($dailyRate, 2),
+            'subtotal' => round($subtotal, 2),
+        ];
+    }
+
+    /**
+     * @return array{label:string,rate:float}
+     */
+    private function reservationPricingSummary(Reservation $reservation): array
+    {
+        $days = max(1, (int) ($reservation->total_days ?? 1));
+        $car = $reservation->car;
+
+        if ($car && $days >= 30 && (float) ($car->price_per_month ?? 0) > 0) {
+            return [
+                'label' => 'Monthly Rate',
+                'rate' => (float) $car->price_per_month,
+            ];
+        }
+
+        if ($car && $days >= 7 && (float) ($car->price_per_week ?? 0) > 0) {
+            return [
+                'label' => 'Weekly Rate',
+                'rate' => (float) $car->price_per_week,
+            ];
+        }
+
+        return [
+            'label' => 'Daily Rate',
+            'rate' => (float) ($reservation->daily_rate ?? $car?->price_per_day ?? 0),
+        ];
     }
 
     public function collectCashPayment(Request $request)
@@ -574,16 +714,72 @@ class ReservationsController extends Controller
     public function print(Reservation $reservation)
     {
         abort_unless($this->canAccessReservation($reservation, request()->user()), 403);
-        $reservation->load(['user', 'car', 'payments']);
+        $reservation->load(['user', 'car.branch', 'payments', 'tenant.siteSetting.files']);
+        $siteSettings = $reservation->tenant?->siteSetting ? TenantSiteSetting::forTenant($reservation->tenant) : [];
+        $branding = $this->pdfBranding($reservation->tenant);
 
-        $pdf = Pdf::loadView('admin.reservations.print', [
+        $viewData = [
             'reservation' => $reservation,
             'statusMeta' => ReservationStatus::getMeta(),
             'paymentStatusMeta' => PaymentStatus::getMeta(),
             'currency' => config('app.currency_symbol'),
-        ])->setPaper('a4', 'portrait');
+            'companyLogo' => $branding['logo'],
+            'companyName' => $branding['name'],
+            'siteSettings' => $siteSettings,
+        ];
+        $fileName = $reservation->reservation_number . '.pdf';
 
-        return $pdf->download($reservation->reservation_number . '.pdf');
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                return SpatiePdf::view('admin.reservations.print', $viewData)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    })
+                    ->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $pdf = DomPdf::loadView('admin.reservations.print', $viewData)
+            ->setOption('defaultFont', 'DejaVu Sans')
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
+            ->setOption('isRemoteEnabled', true)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download($fileName);
     }
 
     private function applyReservationBranchScope($query, $user, ?int $branchId): void
@@ -639,13 +835,15 @@ class ReservationsController extends Controller
 
         $this->applyReservationBranchScopeToCars($query, $request->user());
 
-        return $query->get(['id', 'branch_id', 'make', 'model', 'year', 'license_plate', 'price_per_day'])
+        return $query->get(['id', 'branch_id', 'make', 'model', 'year', 'license_plate', 'price_per_day', 'price_per_week', 'price_per_month'])
             ->map(fn (Car $car) => [
                 'id' => $car->id,
                 'label' => sprintf('%s %s %s', $car->year, $car->make, $car->model),
                 'license_plate' => $car->license_plate,
                 'branch_name' => $car->branch?->name,
                 'price_per_day' => (float) $car->price_per_day,
+                'price_per_week' => (float) ($car->price_per_week ?? 0),
+                'price_per_month' => (float) ($car->price_per_month ?? 0),
             ])
             ->values();
     }
@@ -732,6 +930,53 @@ class ReservationsController extends Controller
         );
 
         return ReservationSettings::resolveLocationFee($settings, $location, 'return');
+    }
+
+    private function pdfBranding($tenant): array
+    {
+        $tenant = $tenant?->loadMissing('siteSetting.files');
+        $settings = $tenant ? TenantSiteSetting::forTenant($tenant) : [];
+        $name = trim((string) ($settings['site_name'] ?? $tenant?->name ?? config('app.name')));
+
+        return [
+            'name' => $name !== '' ? $name : (string) config('app.name'),
+            'logo' => $this->pdfImageSource($settings['logo_url'] ?? null),
+        ];
+    }
+
+    private function pdfImageSource(?string $url): ?string
+    {
+        $url = trim((string) ($url ?? ''));
+        if ($url === '') {
+            return null;
+        }
+
+        if (str_starts_with($url, 'data:') || preg_match('/^https?:\/\//i', $url) === 1) {
+            return $url;
+        }
+
+        $path = null;
+
+        if (str_starts_with($url, '/storage/')) {
+            $path = public_path(ltrim($url, '/'));
+        } elseif (str_starts_with($url, 'storage/')) {
+            $path = public_path($url);
+        } elseif (str_starts_with($url, '/')) {
+            $path = public_path(ltrim($url, '/'));
+        }
+
+        if (!$path || !is_file($path)) {
+            return $url;
+        }
+
+        $contents = file_get_contents($path);
+        if (!is_string($contents) || $contents === '') {
+            return null;
+        }
+
+        $mime = mime_content_type($path) ?: 'application/octet-stream';
+
+        return 'data:'.$mime.';base64,'.base64_encode($contents);
     }
 
     private function abortIfReservationLocked(Reservation $reservation): void

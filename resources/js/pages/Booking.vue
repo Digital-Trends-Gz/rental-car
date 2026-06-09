@@ -21,6 +21,8 @@ interface Car {
     make: string;
     model: string;
     price_per_day: string;
+    price_per_week?: string | number | null;
+    price_per_month?: string | number | null;
     image_url: string;
     images: { url: string; alt: string }[];
     fuel_type: string;
@@ -78,6 +80,10 @@ const fallbackLocationOptions = [
 
 const normalizeLocationName = (value: string | null | undefined): string => String(value ?? '').trim();
 const formatMoney = (value: number): string => (Number.isFinite(value) ? Math.max(0, value).toFixed(2) : '0.00');
+const toMoneyNumber = (value: unknown): number => {
+    const parsed = Number(value ?? 0);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+};
 
 const locationOptions = computed(() => {
     const configured = (reservationSettings.value?.pickup_return_locations ?? []) as ReservationLocationSetting[];
@@ -245,7 +251,50 @@ const rentalDays = computed(() => {
 });
 
 const subtotal = computed(() => {
-    return rentalDays.value * parseFloat(car.value.price_per_day);
+    let remainingDays = rentalDays.value;
+    if (remainingDays <= 0) {
+        return 0;
+    }
+
+    const dailyRate = toMoneyNumber(car.value.price_per_day);
+    const weeklyRate = toMoneyNumber(car.value.price_per_week);
+    const monthlyRate = toMoneyNumber(car.value.price_per_month);
+    let amount = 0;
+
+    const months = Math.floor(remainingDays / 30);
+    if (months > 0) {
+        amount += months * (monthlyRate > 0 ? monthlyRate : dailyRate * 30);
+        remainingDays -= months * 30;
+    }
+
+    const weeks = Math.floor(remainingDays / 7);
+    if (weeks > 0) {
+        amount += weeks * (weeklyRate > 0 ? weeklyRate : dailyRate * 7);
+        remainingDays -= weeks * 7;
+    }
+
+    if (remainingDays > 0) {
+        amount += remainingDays * dailyRate;
+    }
+
+    return amount;
+});
+
+const rateSummary = computed(() => {
+    const days = rentalDays.value;
+    const dailyRate = toMoneyNumber(car.value.price_per_day);
+    const weeklyRate = toMoneyNumber(car.value.price_per_week);
+    const monthlyRate = toMoneyNumber(car.value.price_per_month);
+
+    if (days >= 30 && monthlyRate > 0) {
+        return { label: 'Monthly Rate', amount: monthlyRate };
+    }
+
+    if (days >= 7 && weeklyRate > 0) {
+        return { label: 'Weekly Rate', amount: weeklyRate };
+    }
+
+    return { label: t('booking.daily_rate'), amount: dailyRate };
 });
 
 const taxPercentage = computed(() => {
@@ -1076,10 +1125,10 @@ watch(
                                         class="flex items-center justify-between"
                                     >
                                         <span class="font-medium text-gray-600"
-                                            >{{ t('booking.daily_rate') }}</span
+                                            >{{ rateSummary.label }}</span
                                         >
                                         <span class="font-bold text-gray-900"
-                                            >${{ car.price_per_day }}</span
+                                            >${{ formatMoney(rateSummary.amount) }}</span
                                         >
                                     </div>
                                 </div>
