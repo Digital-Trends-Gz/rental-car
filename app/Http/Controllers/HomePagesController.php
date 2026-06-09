@@ -209,6 +209,7 @@ class HomePagesController extends Controller
         $tenantId = TenantContext::id();
 
         $query = Car::withoutTenantScope()->whereIn('status', $this->publicFleetStatuses())
+           ->whereNotNull('tenant_id')
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->with([
                 'tenant.siteSetting',
@@ -216,7 +217,6 @@ class HomePagesController extends Controller
                 'files',
             ])
             ->select('id', 'tenant_id', 'branch_id', 'make', 'model', 'year', 'price_per_day', 'description', 'fuel_type', 'status');
-
         // Search functionality
         if ($request->filled('search')) {
             $searchTerm = $request->search;
