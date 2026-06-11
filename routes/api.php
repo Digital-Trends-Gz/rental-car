@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ContractsController;
 use App\Http\Controllers\Api\ReservationsController;
 use App\Http\Controllers\Api\NotificationsController;
 use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\StaticPageContentController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -62,4 +63,11 @@ Route::middleware('auth:sanctum')->get('accident-reports/{accidentReport}', [Acc
 Route::prefix('settings')->group(function () {
     Route::get('general', [SettingsController::class, 'general'])->name('api.settings.general');
     Route::middleware('auth:sanctum')->get('tenant', [SettingsController::class, 'tenant'])->name('api.settings.tenant');
+});
+
+Route::prefix('static-pages')->group(function () {
+    Route::get('/', [StaticPageContentController::class, 'index'])->name('api.static-pages.index');
+    Route::get('support', [StaticPageContentController::class, 'support'])->name('api.static-pages.support');
+    Route::get('privacy-policy', [StaticPageContentController::class, 'privacyPolicy'])->name('api.static-pages.privacy-policy');
+    Route::get('terms-conditions', [StaticPageContentController::class, 'termsConditions'])->name('api.static-pages.terms-conditions');
 });

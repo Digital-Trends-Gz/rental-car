@@ -35,6 +35,7 @@ import {
     Mail,
     ShieldAlert,
     Languages,
+    FileText,
 } from 'lucide-vue-next';
 
 import { type NavItem } from '@/types';
@@ -140,6 +141,7 @@ const superAdminNav = computed<NavItem[]>(() => [
             { title: 'Emails', href: '/superadmin/settings/emails', icon: Mail },
             { title: 'Security Access', href: '/superadmin/settings/security-access', icon: ShieldAlert },
             { title: 'SEO Settings', href: '/superadmin/settings/seo', icon: Cog },
+            { title: 'Static Pages Content', href: '/superadmin/settings/static-pages-content', icon: FileText },
         ],
     },
 ]);
