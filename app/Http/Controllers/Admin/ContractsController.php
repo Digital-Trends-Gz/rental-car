@@ -130,6 +130,31 @@ class ContractsController extends Controller
                     ->whereDate('end_date', '>=', $today)
                     ->whereDate('end_date', '<=', $today->addDays(7));
             })
+            ->when($scope === 'ending_24h', function ($query) {
+                $query
+                    ->where('status', 'active')
+                    ->whereBetween('end_date', [CarbonImmutable::today()->toDateString(), CarbonImmutable::today()->addDay()->toDateString()]);
+            })
+            ->when($scope === 'missing_documents', function ($query) {
+                $query
+                    ->whereIn('status', ['pending', 'active'])
+                    ->whereDoesntHave('primaryDriver.documents');
+            })
+            ->when($scope === 'without_signature', function ($query) {
+                $query
+                    ->whereIn('status', ['pending', 'active'])
+                    ->where(function ($q): void {
+                        $q->whereNull('handover_state')
+                            ->orWhereRaw("JSON_EXTRACT(handover_state, '$.delivery.steps[4].payload.accepted_terms') IS NULL")
+                            ->orWhereRaw("JSON_EXTRACT(handover_state, '$.delivery.steps[4].payload.accepted_terms') = false");
+                    });
+            })
+            ->when($scope === 'unpaid_return', function ($query) {
+                $query->whereHas('returnStatusReport', function ($q) {
+                    $q->where('payment_status', '!=', 'paid')
+                      ->where('total_extra_charges', '>', 0);
+                });
+            })
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('contract_number', 'like', "%{$search}%")

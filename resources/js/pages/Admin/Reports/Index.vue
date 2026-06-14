@@ -1,10 +1,20 @@
 <script setup lang="ts">
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { router, usePage, Link } from '@inertiajs/vue3';
 import { Chart, registerables } from 'chart.js';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useTrans } from '@/composables/useTrans';
 import { index as reportsIndex } from '@/routes/admin/reports';
+
+const activeAlertDetails = ref<any>(null);
+const isModalOpen = ref(false);
+
+const openAlertDetails = (alert: any) => {
+    if (alert.value > 0 && alert.items && alert.items.length > 0) {
+        activeAlertDetails.value = alert;
+        isModalOpen.value = true;
+    }
+};
 
 Chart.register(...registerables);
 
@@ -59,6 +69,47 @@ interface PeriodOption {
     label: string;
 }
 
+interface ReportMetric {
+    label: string;
+    value: number;
+    formatted: string;
+    color: string;
+}
+
+interface ReportAlert {
+    key: string;
+    label: string;
+    label_ar?: string;
+    description: string;
+    description_ar?: string;
+    value: number;
+    severity: 'danger' | 'warning' | 'info' | 'success';
+    formatted_amount?: string;
+    href?: string;
+    items?: any[];
+}
+
+interface ExecutiveReport {
+    financial: ReportMetric[];
+    operations: ReportMetric[];
+    alerts: ReportAlert[];
+    exports?: {
+        pdf?: string | false;
+        excel?: string | false;
+    };
+}
+
+interface FinancialReportSection {
+    title: {
+        en: string;
+        ar: string;
+    };
+    items: Array<{
+        en: string;
+        ar: string;
+    }>;
+}
+
 interface PageProps {
     kpis: {
         totalRevenue: KPI;
@@ -74,6 +125,13 @@ interface PageProps {
     };
     reservationsChart: ChartData;
     carsPerformance: CarPerformance[];
+    financialSummary: ReportMetric[];
+    financialReportSections: FinancialReportSection[];
+    financialAlerts: ReportAlert[];
+    operationsSummary: ReportMetric[];
+    fleetInsights: ReportMetric[];
+    actionAlerts: ReportAlert[];
+    executiveReport?: ExecutiveReport;
     currentPeriod: string;
     periodOptions: PeriodOption[];
     branches: Array<{ id: number; name: string }>;
@@ -149,6 +207,148 @@ const localizedChartDatasets = computed(() =>
         label: translateLabel(dataset.label),
     })),
 );
+const financialSummary = computed(() => page.props.financialSummary ?? []);
+const financialReportSections = computed(() => page.props.financialReportSections ?? []);
+const financialAlerts = computed(() => page.props.financialAlerts ?? []);
+const operationsSummary = computed(() => page.props.operationsSummary ?? []);
+const fleetInsights = computed(() => page.props.fleetInsights ?? []);
+const actionAlerts = computed(() => page.props.actionAlerts ?? []);
+const executiveReport = computed<ExecutiveReport>(() => page.props.executiveReport ?? {
+    financial: financialSummary.value,
+    operations: operationsSummary.value,
+    alerts: actionAlerts.value,
+    exports: { pdf: false, excel: false },
+});
+
+const reportLabel = (label: string) => {
+    const normalized = label.trim().toLowerCase();
+    const executiveLabels: Record<string, string> = {
+        'executive report': localize('Executive Report', 'التقرير التنفيذي', 'ایگزیکٹو رپورٹ'),
+        'most important': localize('Most important', 'الأهم', 'سب سے اہم'),
+        'total revenue': localize('Total revenue', 'إجمالي الإيرادات', 'کل آمدنی'),
+        'uncollected amounts': localize('Uncollected amounts', 'المبالغ غير المحصلة', 'غیر وصول شدہ رقوم'),
+        'outstanding debts': localize('Outstanding debts', 'الديون المستحقة', 'واجب الادا قرض'),
+        'late fees': localize('Late fees', 'رسوم التأخير', 'تاخیر فیس'),
+        'cleaning fees': localize('Cleaning fees', 'رسوم التنظيف', 'صفائی فیس'),
+        'net revenue': localize('Net revenue', 'صافي الإيرادات', 'خالص آمدنی'),
+        'delivered cars': localize('Delivered cars', 'السيارات المسلمة', 'حوالہ کی گئی گاڑیاں'),
+        'returned cars': localize('Returned cars', 'السيارات المستلمة', 'واپس لی گئی گاڑیاں'),
+        'cars out of service': localize('Cars out of service', 'السيارات خارج الخدمة', 'سروس سے باہر گاڑیاں'),
+        'contracts ending within 24 hours': localize('Contracts ending within 24 hours', 'عقود تنتهي خلال 24 ساعة', '24 گھنٹوں میں ختم ہونے والے معاہدے'),
+        'missing payments': localize('Missing payments', 'مدفوعات ناقصة', 'نامکمل ادائیگیاں'),
+        'missing documents': localize('Missing documents', 'وثائق ناقصة', 'نامکمل دستاویزات'),
+        'contracts without signature': localize('Contracts without signature', 'عقود بدون توقيع', 'بغیر دستخط معاہدے'),
+    };
+
+    if (executiveLabels[normalized]) {
+        return executiveLabels[normalized];
+    }
+
+    const labels: Record<string, string> = {
+        'financial summary': localize('Financial Summary', 'الملخص المالي', 'مالی خلاصہ'),
+        'operations summary': localize('Operations Summary', 'ملخص العمليات', 'آپریشنز خلاصہ'),
+        'fleet insights': localize('Fleet Insights', 'تحليل الأسطول', 'فلیٹ تجزیہ'),
+        'action alerts': localize('Action Alerts', 'تنبيهات تحتاج إجراء', 'عملی انتباہات'),
+        'paid revenue': localize('Paid revenue', 'الإيرادات المدفوعة', 'ادا شدہ آمدنی'),
+        'pending payments': localize('Pending payments', 'مدفوعات معلقة', 'زیر التواء ادائیگیاں'),
+        'return extra charges': localize('Return extra charges', 'رسوم الرجوع الإضافية', 'واپسی اضافی چارجز'),
+        'damage fees': localize('Damage fees', 'رسوم الأضرار', 'نقصان فیس'),
+        'fuel fees': localize('Fuel fees', 'رسوم الوقود', 'ایندھن فیس'),
+        discounts: localize('Discounts', 'الخصومات', 'رعایتیں'),
+        'active contracts': localize('Active contracts', 'العقود النشطة', 'فعال معاہدے'),
+        'pending contracts': localize('Pending contracts', 'عقود بانتظار التسليم', 'زیر التواء معاہدے'),
+        'completed contracts': localize('Completed contracts', 'العقود المكتملة', 'مکمل معاہدے'),
+        'overdue contracts': localize('Overdue contracts', 'العقود المتأخرة', 'تاخیر شدہ معاہدے'),
+        'new reservations': localize('New reservations', 'الحجوزات الجديدة', 'نئی بکنگز'),
+        'cancelled reservations': localize('Cancelled reservations', 'الحجوزات الملغاة', 'منسوخ بکنگز'),
+        'fleet utilization': localize('Fleet utilization', 'نسبة تشغيل الأسطول', 'فلیٹ استعمال'),
+        'revenue per car': localize('Revenue per car', 'الإيراد لكل سيارة', 'فی گاڑی آمدنی'),
+        'damage reports': localize('Damage reports', 'تقارير الأضرار', 'نقصان رپورٹس'),
+        'damage items': localize('Damage items', 'بنود الأضرار', 'نقصان آئٹمز'),
+        'estimated damage cost': localize('Estimated damage cost', 'تكلفة الأضرار التقديرية', 'متوقع نقصان لاگت'),
+        'accident reports': localize('Accident reports', 'بلاغات الحوادث', 'حادثہ رپورٹس'),
+        'overdue cars': localize('Overdue cars', 'سيارات متأخرة', 'تاخیر شدہ گاڑیاں'),
+        'returns due today': localize('Returns due today', 'مرتجعات اليوم', 'آج واپسی'),
+        'pending violations': localize('Pending violations', 'مخالفات معلقة', 'زیر التواء خلاف ورزیاں'),
+        'unpaid return reports': localize('Unpaid return reports', 'تقارير رجوع غير مدفوعة', 'غیر ادا شدہ واپسی رپورٹس'),
+        'draft damage reports': localize('Draft damage reports', 'تقارير أضرار مسودة', 'ڈرافٹ نقصان رپورٹس'),
+        'outstanding return charges': localize('Outstanding return charges', 'رسوم الرجوع غير المسددة', 'غیر ادا شدہ واپسی چارجز'),
+        'discounts applied': localize('Discounts applied', 'الخصومات المطبقة', 'لاگو کردہ رعایتیں'),
+    };
+
+    return labels[normalized] ?? label;
+};
+
+const reportDescription = (description: string) => {
+    const normalized = description.trim().toLowerCase();
+    const executiveDescriptions: Record<string, string> = {
+        'active contracts that need return follow-up soon.': localize(
+            'Active contracts that need return follow-up soon.',
+            'عقود نشطة تحتاج متابعة الرجوع قريباً.',
+            'فعال معاہدے جن کی واپسی جلد فالو اپ چاہیے۔',
+        ),
+        'payments or return charges that still need collection.': localize(
+            'Payments or return charges that still need collection.',
+            'مدفوعات أو رسوم رجوع ما زالت بحاجة إلى تحصيل.',
+            'ادائیگیاں یا واپسی چارجز جن کی وصولی باقی ہے۔',
+        ),
+        'active or pending contracts without primary driver documents.': localize(
+            'Active or pending contracts without primary driver documents.',
+            'عقود نشطة أو معلقة بدون وثائق السائق الأساسي.',
+            'فعال یا زیر التوا معاہدے جن میں مرکزی ڈرائیور کی دستاویزات نہیں۔',
+        ),
+        'contracts that still need mobile terms confirmation.': localize(
+            'Contracts that still need mobile terms confirmation.',
+            'عقود ما زالت تحتاج تأكيد الشروط من الموبايل.',
+            'معاہدے جنہیں موبائل شرائط کی تصدیق ابھی چاہیے۔',
+        ),
+    };
+
+    if (executiveDescriptions[normalized]) {
+        return executiveDescriptions[normalized];
+    }
+
+    const descriptions: Record<string, string> = {
+        'active contracts past their return date.': localize(
+            'Active contracts past their return date.',
+            'عقود نشطة تجاوزت تاريخ الرجوع.',
+            'فعال معاہدے جن کی واپسی کی تاریخ گزر گئی۔',
+        ),
+        'active contracts scheduled to return today.': localize(
+            'Active contracts scheduled to return today.',
+            'عقود نشطة موعد رجوعها اليوم.',
+            'فعال معاہدے جو آج واپس ہونے ہیں۔',
+        ),
+        'violations that still need review or payment.': localize(
+            'Violations that still need review or payment.',
+            'مخالفات تحتاج مراجعة أو دفع.',
+            'خلاف ورزیاں جنہیں جائزہ یا ادائیگی درکار ہے۔',
+        ),
+        'return reports with outstanding extra charges.': localize(
+            'Return reports with outstanding extra charges.',
+            'تقارير رجوع عليها رسوم إضافية غير مدفوعة.',
+            'واپسی رپورٹس جن پر اضافی چارجز باقی ہیں۔',
+        ),
+        'damage reports waiting for review or completion.': localize(
+            'Damage reports waiting for review or completion.',
+            'تقارير أضرار بانتظار المراجعة أو الإكمال.',
+            'نقصان رپورٹس جو جائزہ یا تکمیل کی منتظر ہیں۔',
+        ),
+    };
+
+    return descriptions[normalized] ?? description;
+};
+
+const severityClasses = (severity: ReportAlert['severity']) => {
+    const classes = {
+        danger: 'border-red-200 bg-red-50 text-red-700',
+        warning: 'border-amber-200 bg-amber-50 text-amber-700',
+        info: 'border-blue-200 bg-blue-50 text-blue-700',
+        success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    };
+
+    return classes[severity] ?? classes.info;
+};
 
 const displayMoney = (value: number) =>
     hasFinancialAccess.value ? `$${value.toFixed(2)}` : '*******';
@@ -188,6 +388,11 @@ const handlePeriodChange = () => {
                 'carsState',
                 'reservationsChart',
                 'carsPerformance',
+                'financialSummary',
+                'operationsSummary',
+                'fleetInsights',
+                'actionAlerts',
+                'executiveReport',
                 'currentPeriod',
                 'selectedBranchId',
             ],
@@ -757,6 +962,441 @@ onMounted(() => {
                 </div>
             </div>
 
+            <!-- Executive Report -->
+            <section class="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow">
+                <div class="border-b border-blue-100 bg-gradient-to-r from-blue-50 to-white px-6 py-5">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-800">
+                                {{ reportLabel('Most important') }}
+                            </span>
+                            <h2 class="text-2xl font-bold text-blue-900">
+                                1. {{ reportLabel('Executive Report') }}
+                            </h2>
+                        </div>
+                        <p class="max-w-2xl text-sm leading-6 text-gray-600">
+                            {{
+                                localize(
+                                    'A daily or weekly owner-level report that summarizes money, operations, and urgent follow-up items.',
+                                    'تقرير يومي أو أسبوعي لصاحب المكتب يلخص المال والتشغيل والتنبيهات التي تحتاج متابعة.',
+                                    'مالک کے لیے روزانہ یا ہفتہ وار رپورٹ جو مالیات، آپریشنز اور فوری فالو اپ کو خلاصہ کرتی ہے۔',
+                                )
+                            }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="px-6 pt-6">
+                    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50" dir="rtl">
+                        <div class="border-b border-slate-200 bg-white px-6 py-5">
+                            <div class="flex flex-col gap-2 text-right">
+                                <div class="text-sm font-bold uppercase tracking-[0.22em] text-blue-700">
+                                    2.
+                                </div>
+                                <h3 class="text-2xl font-bold text-slate-900">
+                                    {{ localize('Financial Report', 'التقرير المالي', 'مالی رپورٹ') }}
+                                </h3>
+                                <p class="max-w-3xl text-sm leading-6 text-slate-600">
+                                    {{
+                                        localize(
+                                            'An overview of the main financial sections covered in this report.',
+                                            'نظرة عامة على الأقسام المالية الرئيسية التي يغطيها هذا التقرير.',
+                                            'اس رپورٹ میں شامل اہم مالی حصوں کا خلاصہ۔',
+                                        )
+                                    }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 p-6 lg:grid-cols-2">
+                            <!-- Static description cards -->
+                            <div
+                                v-for="section in financialReportSections"
+                                :key="section.title.ar"
+                                class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                            >
+                                <h4 class="text-lg font-bold text-slate-900 text-right">
+                                    {{ section.title.ar }}
+                                    <span class="text-blue-700">/ {{ section.title.en }}</span>
+                                </h4>
+
+                                <ul class="mt-4 space-y-3 text-right text-sm leading-6 text-slate-700">
+                                    <li
+                                        v-for="item in section.items"
+                                        :key="item.ar"
+                                        class="flex items-start justify-end gap-3"
+                                    >
+                                        <div class="flex-1">
+                                            <div class="font-medium text-slate-900">
+                                                {{ item.ar }}
+                                            </div>
+                                            <div class="text-xs text-slate-500">
+                                                {{ item.en }}
+                                            </div>
+                                        </div>
+                                        <span class="mt-1 text-slate-400">•</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Financial Alerts – clickable cards showing real data -->
+                        <div class="grid gap-4 px-6 pb-6 sm:grid-cols-2 xl:grid-cols-4" dir="rtl">
+                            <button
+                                v-for="alert in financialAlerts"
+                                :key="alert.key"
+                                type="button"
+                                @click="openAlertDetails(alert)"
+                                class="group relative flex flex-col rounded-xl border p-5 text-right shadow-sm transition-all duration-200"
+                                :class="[
+                                    alert.severity === 'success' ? 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100' :
+                                    alert.severity === 'warning' ? 'border-amber-200 bg-amber-50 hover:bg-amber-100' :
+                                    alert.severity === 'danger'  ? 'border-red-200 bg-red-50 hover:bg-red-100' :
+                                    'border-blue-200 bg-blue-50 hover:bg-blue-100',
+                                    alert.value > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] transform' : 'cursor-default opacity-80'
+                                ]"
+                            >
+                                <!-- Top row: count badge + arrow -->
+                                <div class="mb-3 flex items-center justify-between">
+                                    <span
+                                        class="rounded-full px-2.5 py-0.5 text-xs font-bold"
+                                        :class="[
+                                            alert.severity === 'success' ? 'bg-emerald-200 text-emerald-800' :
+                                            alert.severity === 'warning' ? 'bg-amber-200 text-amber-800' :
+                                            alert.severity === 'danger'  ? 'bg-red-200 text-red-800' :
+                                            'bg-blue-200 text-blue-800'
+                                        ]"
+                                    >
+                                        {{ alert.value }}
+                                    </span>
+                                    <svg
+                                        v-if="alert.value > 0"
+                                        class="h-4 w-4 opacity-40 transition-transform duration-200 group-hover:-translate-x-0.5"
+                                        :class="[
+                                            alert.severity === 'success' ? 'text-emerald-600' :
+                                            alert.severity === 'warning' ? 'text-amber-600' :
+                                            alert.severity === 'danger'  ? 'text-red-600' :
+                                            'text-blue-600'
+                                        ]"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                    >
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </div>
+
+                                <!-- Label -->
+                                <p
+                                    class="text-base font-bold leading-tight"
+                                    :class="[
+                                        alert.severity === 'success' ? 'text-emerald-800' :
+                                        alert.severity === 'warning' ? 'text-amber-800' :
+                                        alert.severity === 'danger'  ? 'text-red-800' :
+                                        'text-blue-800'
+                                    ]"
+                                >
+                                    {{ locale === 'ar' && alert.label_ar ? alert.label_ar : reportLabel(alert.label) }}
+                                </p>
+
+                                <!-- Description -->
+                                <p
+                                    class="mt-1 text-xs leading-5 opacity-70"
+                                    :class="[
+                                        alert.severity === 'success' ? 'text-emerald-700' :
+                                        alert.severity === 'warning' ? 'text-amber-700' :
+                                        alert.severity === 'danger'  ? 'text-red-700' :
+                                        'text-blue-700'
+                                    ]"
+                                >
+                                    {{ locale === 'ar' && alert.description_ar ? alert.description_ar : alert.description }}
+                                </p>
+
+                                <!-- Amount -->
+                                <p
+                                    v-if="alert.formatted_amount"
+                                    class="mt-3 text-xl font-extrabold tracking-tight"
+                                    :class="[
+                                        alert.severity === 'success' ? 'text-emerald-900' :
+                                        alert.severity === 'warning' ? 'text-amber-900' :
+                                        alert.severity === 'danger'  ? 'text-red-900' :
+                                        'text-blue-900'
+                                    ]"
+                                >
+                                    {{ alert.formatted_amount }}
+                                </p>
+
+                                <!-- Click hint -->
+                                <p
+                                    v-if="alert.value > 0 && alert.items && alert.items.length > 0"
+                                    class="mt-2 text-xs font-semibold opacity-60"
+                                    :class="[
+                                        alert.severity === 'success' ? 'text-emerald-700' :
+                                        alert.severity === 'warning' ? 'text-amber-700' :
+                                        alert.severity === 'danger'  ? 'text-red-700' :
+                                        'text-blue-700'
+                                    ]"
+                                >
+                                    {{ localize('Click to view details', 'انقر لعرض التفاصيل', 'تفصیلات دیکھنے کے لیے کلک کریں') }}
+                                </p>
+                            </button>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6 border-t border-slate-200 bg-slate-50 p-6 xl:grid-cols-[1.4fr_1fr_1fr]">
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            {{ reportLabel('Financial Summary') }}
+                        </h3>
+                        <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div
+                                v-for="metric in executiveReport.financial"
+                                :key="metric.label"
+                                class="rounded-lg border border-white bg-white p-4 shadow-sm"
+                            >
+                                <div class="mb-3 h-1.5 rounded-full" :style="{ backgroundColor: metric.color }"></div>
+                                <p class="text-sm font-semibold text-gray-500">
+                                    {{ reportLabel(metric.label) }}
+                                </p>
+                                <p class="mt-2 text-2xl font-bold text-gray-950">
+                                    {{ metric.formatted }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            {{ reportLabel('Operations Summary') }}
+                        </h3>
+                        <div class="mt-5 space-y-3">
+                            <div
+                                v-for="metric in executiveReport.operations"
+                                :key="metric.label"
+                                class="flex items-center justify-between gap-4 rounded-lg border border-gray-100 px-4 py-3"
+                            >
+                                <div class="flex items-center gap-3">
+                                    <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: metric.color }"></span>
+                                    <span class="text-sm font-semibold text-gray-600">
+                                        {{ reportLabel(metric.label) }}
+                                    </span>
+                                </div>
+                                <span class="text-lg font-bold text-gray-950">
+                                    {{ metric.formatted }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            {{ reportLabel('Action Alerts') }}
+                        </h3>
+                        <div class="mt-5 space-y-3">
+                            <a
+                                v-for="alert in executiveReport.alerts"
+                                :key="alert.key"
+                                :href="alert.href || '#'"
+                                @click.prevent="openAlertDetails(alert)"
+                                class="block rounded-lg border p-4 transition-all duration-200"
+                                :class="[severityClasses(alert.severity), alert.value > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.01] transform' : 'cursor-default opacity-80']"
+                            >
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p class="font-bold">
+                                            {{ reportLabel(alert.label) }}
+                                        </p>
+                                        <p class="mt-1 text-sm opacity-80">
+                                            {{ reportDescription(alert.description) }}
+                                        </p>
+                                        <p
+                                            v-if="alert.formatted_amount"
+                                            class="mt-2 text-sm font-semibold"
+                                        >
+                                            {{ alert.formatted_amount }}
+                                        </p>
+                                    </div>
+                                    <span class="rounded-full bg-white/70 px-3 py-1 text-sm font-bold">
+                                        {{ alert.value }}
+                                    </span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mx-6 mb-6 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
+                    <p class="text-sm font-semibold text-blue-900">
+                        {{
+                            localize(
+                                'Download the executive report using the same period and branch filters.',
+                                'نزّل التقرير التنفيذي بنفس فلتر الفترة والفرع الحالي.',
+                                'ایگزیکٹو رپورٹ اسی مدت اور برانچ فلٹر کے ساتھ ڈاؤن لوڈ کریں۔',
+                            )
+                        }}
+                    </p>
+                    <div class="flex gap-2">
+                        <a
+                            v-if="executiveReport.exports?.pdf"
+                            :href="executiveReport.exports.pdf"
+                            class="rounded-lg bg-blue-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800"
+                        >
+                            PDF
+                        </a>
+                        <a
+                            v-if="executiveReport.exports?.excel"
+                            :href="executiveReport.exports.excel"
+                            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700"
+                        >
+                            Excel
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Financial Summary -->
+            <div v-if="false" class="rounded-xl bg-white p-6 shadow">
+                <div class="mb-5 flex items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            {{ reportLabel('Financial Summary') }}
+                        </h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            {{
+                                localize(
+                                    'Revenue, payments, return charges, and discounts for the selected period.',
+                                    'الإيرادات والمدفوعات ورسوم الرجوع والخصومات للفترة المحددة.',
+                                    'منتخب مدت کے لیے آمدنی، ادائیگیاں، واپسی چارجز اور رعایتیں۔',
+                                )
+                            }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+                    <div
+                        v-for="metric in financialSummary"
+                        :key="metric.label"
+                        class="rounded-lg border border-gray-100 bg-gray-50 p-4"
+                    >
+                        <div class="mb-3 h-1.5 rounded-full" :style="{ backgroundColor: metric.color }"></div>
+                        <p class="text-sm font-medium text-gray-500">
+                            {{ reportLabel(metric.label) }}
+                        </p>
+                        <p class="mt-2 text-xl font-bold text-gray-900">
+                            {{ metric.formatted }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Operations, Fleet, Alerts -->
+            <div v-if="false" class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                <div class="rounded-xl bg-white p-6 shadow">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        {{ reportLabel('Operations Summary') }}
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        {{
+                            localize(
+                                'Contracts and reservation activity in the selected period.',
+                                'حركة العقود والحجوزات خلال الفترة المحددة.',
+                                'منتخب مدت میں معاہدوں اور بکنگز کی سرگرمی۔',
+                            )
+                        }}
+                    </p>
+                    <div class="mt-5 space-y-3">
+                        <div
+                            v-for="metric in operationsSummary"
+                            :key="metric.label"
+                            class="flex items-center justify-between rounded-lg border border-gray-100 px-4 py-3"
+                        >
+                            <div class="flex items-center gap-3">
+                                <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: metric.color }"></span>
+                                <span class="text-sm font-medium text-gray-600">{{ reportLabel(metric.label) }}</span>
+                            </div>
+                            <span class="text-lg font-bold text-gray-900">{{ metric.formatted }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-xl bg-white p-6 shadow">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        {{ reportLabel('Fleet Insights') }}
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        {{
+                            localize(
+                                'Utilization, damage activity, and accident tracking.',
+                                'نسبة التشغيل ونشاط الأضرار والحوادث.',
+                                'استعمال، نقصان کی سرگرمی، اور حادثات کی نگرانی۔',
+                            )
+                        }}
+                    </p>
+                    <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                        <div
+                            v-for="metric in fleetInsights"
+                            :key="metric.label"
+                            class="rounded-lg border border-gray-100 p-4"
+                        >
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-sm font-medium text-gray-500">
+                                    {{ reportLabel(metric.label) }}
+                                </p>
+                                <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: metric.color }"></span>
+                            </div>
+                            <p class="mt-2 text-xl font-bold text-gray-900">
+                                {{ metric.formatted }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-xl bg-white p-6 shadow">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        {{ reportLabel('Action Alerts') }}
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        {{
+                            localize(
+                                'Items that need review, follow-up, or payment.',
+                                'عناصر تحتاج مراجعة أو متابعة أو دفع.',
+                                'وہ آئٹمز جنہیں جائزہ، فالو اپ یا ادائیگی درکار ہے۔',
+                            )
+                        }}
+                    </p>
+                    <div class="mt-5 space-y-3">
+                        <a
+                            v-for="alert in actionAlerts"
+                            :key="alert.key"
+                            :href="alert.href || '#'"
+                            @click.prevent="openAlertDetails(alert)"
+                            class="block rounded-lg border p-4 transition-all duration-200"
+                            :class="[severityClasses(alert.severity), alert.value > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.01] transform' : 'cursor-default opacity-80']"
+                        >
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="font-semibold">
+                                        {{ reportLabel(alert.label) }}
+                                    </p>
+                                    <p class="mt-1 text-sm opacity-80">
+                                        {{ reportDescription(alert.description) }}
+                                    </p>
+                                    <p
+                                        v-if="alert.formatted_amount"
+                                        class="mt-2 text-sm font-semibold"
+                                    >
+                                        {{ alert.formatted_amount }}
+                                    </p>
+                                </div>
+                                <span class="rounded-full bg-white/70 px-3 py-1 text-sm font-bold">
+                                    {{ alert.value }}
+                                </span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- Reservations Chart -->
             <div class="rounded-lg bg-white shadow">
                 <div class="p-6">
@@ -1056,5 +1696,314 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-    </AdminLayout>
-</template>
+
+        <!-- Alert Details Modal -->
+            <Transition
+                enter-active-class="transition duration-300 ease-out"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition duration-200 ease-in"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div
+                    v-if="isModalOpen && activeAlertDetails"
+                    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                    @click.self="isModalOpen = false"
+                >
+                    <div
+                        class="w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col max-h-[85vh] overflow-hidden"
+                        dir="rtl"
+                    >
+                        <!-- Modal Header -->
+                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <div class="flex items-center gap-3">
+                                <span
+                                    class="rounded-full px-3 py-1 text-sm font-bold"
+                                    :class="severityClasses(activeAlertDetails.severity)"
+                                >
+                                    {{ activeAlertDetails.value }}
+                                </span>
+                                <h3 class="text-xl font-bold text-slate-800">
+                                    {{ reportLabel(activeAlertDetails.label) }}
+                                </h3>
+                            </div>
+                            <button
+                                @click="isModalOpen = false"
+                                class="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Modal Body / Content -->
+                        <div class="p-6 overflow-y-auto flex-1">
+                            <!-- Table for Contracts -->
+                            <div
+                                v-if="['contracts_ending_24h', 'overdue_cars', 'overdue_contracts', 'returns_due_today', 'missing_documents', 'contracts_without_signature'].includes(activeAlertDetails.key)"
+                                class="overflow-x-auto rounded-lg border border-slate-200"
+                            >
+                                <table class="min-w-full divide-y divide-slate-200 text-right">
+                                    <thead class="bg-slate-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">رقم العقد</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">المستأجر</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">السيارة</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">الفرع</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">تاريخ البدء</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">تاريخ الانتهاء</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">القيمة الإجمالية</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 bg-white">
+                                        <tr v-for="item in activeAlertDetails.items" :key="item.id" class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="px-6 py-4 text-sm font-medium text-slate-900">{{ item.contract_number }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.renter_name }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">
+                                                <div v-if="item.car">
+                                                    <div class="font-medium text-slate-800">{{ item.car.make }} {{ item.car.model }}</div>
+                                                    <div class="text-xs text-slate-500">{{ item.car.license_plate }}</div>
+                                                </div>
+                                                <span v-else>-</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.branch_name }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.start_date }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.end_date }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-900 font-semibold">{{ item.total_amount }} {{ item.currency }}</td>
+                                            <td class="px-6 py-4 text-sm">
+                                                <Link
+                                                    :href="`/admin/contracts/${item.id}`"
+                                                    class="inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-colors"
+                                                >
+                                                    عرض العقد
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Table for Payments / Return Charges (including financial alerts) -->
+                            <div
+                                v-else-if="['missing_payments', 'unpaid_return_reports', 'paid_revenue', 'pending_payments', 'outstanding_return_charges'].includes(activeAlertDetails.key)"
+                                class="overflow-x-auto rounded-lg border border-slate-200"
+                            >
+                                <table class="min-w-full divide-y divide-slate-200 text-right">
+                                    <thead class="bg-slate-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">المرجع</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">نوع المطالبة</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">المستأجر / العميل</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">السيارة</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">التاريخ</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">المبلغ</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">الحالة</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 bg-white">
+                                        <tr v-for="item in activeAlertDetails.items" :key="item.id" class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="px-6 py-4 text-sm font-medium text-slate-900">{{ item.reference }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">
+                                                <span v-if="item.type === 'payment' && item.status === 'completed'" class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-700">دفعة مكتملة</span>
+                                                <span v-else-if="item.type === 'payment'" class="inline-flex rounded-full bg-amber-50 px-2 py-1 text-xs text-amber-700">دفعة معلقة</span>
+                                                <span v-else class="inline-flex rounded-full bg-red-50 px-2 py-1 text-xs text-red-700">رسوم تسليم إضافية</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.renter_name }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">
+                                                <div v-if="item.car">
+                                                    <div class="font-medium text-slate-800">{{ item.car.make }} {{ item.car.model }}</div>
+                                                    <div class="text-xs text-slate-500">{{ item.car.license_plate }}</div>
+                                                </div>
+                                                <span v-else>-</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.date }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-900 font-semibold">{{ item.amount }} {{ item.currency }}</td>
+                                            <td class="px-6 py-4 text-sm">
+                                                <span
+                                                    class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                                                    :style="{
+                                                        color: item.status === 'completed' ? '#10B981' : '#EF4444',
+                                                        backgroundColor: item.status === 'completed' ? '#10B9811f' : '#EF44441f',
+                                                    }"
+                                                >
+                                                    {{ item.status }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm">
+                                                <Link
+                                                    v-if="item.type === 'payment'"
+                                                    :href="`/admin/payments`"
+                                                    class="inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-colors"
+                                                >
+                                                    الذهاب للمدفوعات
+                                                </Link>
+                                                <Link
+                                                    v-else
+                                                    :href="`/admin/contracts/${item.contract_id}/return-status-report`"
+                                                    class="inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-colors"
+                                                >
+                                                    تقرير الرجوع
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Table for Discounts -->
+                            <div
+                                v-else-if="activeAlertDetails.key === 'discounts_applied'"
+                                class="overflow-x-auto rounded-lg border border-slate-200"
+                            >
+                                <table class="min-w-full divide-y divide-slate-200 text-right">
+                                    <thead class="bg-slate-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">المرجع</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">العميل</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">السيارة</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">التاريخ</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">مبلغ الخصم</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 bg-white">
+                                        <tr v-for="item in activeAlertDetails.items" :key="item.id" class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="px-6 py-4 text-sm font-medium text-slate-900">{{ item.reference }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.renter_name || '-' }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">
+                                                <div v-if="item.car">
+                                                    <div class="font-medium text-slate-800">{{ item.car.make }} {{ item.car.model }}</div>
+                                                    <div class="text-xs text-slate-500">{{ item.car.license_plate }}</div>
+                                                </div>
+                                                <span v-else>-</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.date }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-900 font-semibold">
+                                                <span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
+                                                    - {{ item.amount }} {{ item.currency }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm">
+                                                <Link
+                                                    :href="`/admin/reservations/${item.id}`"
+                                                    class="inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-colors"
+                                                >
+                                                    عرض الحجز
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Table for Violations -->
+                            <div
+                                v-else-if="activeAlertDetails.key === 'pending_violations'"
+                                class="overflow-x-auto rounded-lg border border-slate-200"
+                            >
+                                <table class="min-w-full divide-y divide-slate-200 text-right">
+                                    <thead class="bg-slate-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">رقم المخالفة</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">السيارة</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">نوع المخالفة</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">التاريخ</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">المبلغ</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">المدين</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 bg-white">
+                                        <tr v-for="item in activeAlertDetails.items" :key="item.id" class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="px-6 py-4 text-sm font-medium text-slate-900">{{ item.violation_number || '-' }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">
+                                                <div v-if="item.car">
+                                                    <div class="font-medium text-slate-800">{{ item.car.make }} {{ item.car.model }}</div>
+                                                    <div class="text-xs text-slate-500">{{ item.car.license_plate }}</div>
+                                                </div>
+                                                <span v-else>-</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.type }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.date }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-900 font-semibold">{{ item.amount }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.issued_to }}</td>
+                                            <td class="px-6 py-4 text-sm">
+                                                <Link
+                                                    :href="`/admin/car-violations`"
+                                                    class="inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-colors"
+                                                >
+                                                    عرض المخالفات
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Table for Damage Reports -->
+                            <div
+                                v-else-if="activeAlertDetails.key === 'draft_damage_reports'"
+                                class="overflow-x-auto rounded-lg border border-slate-200"
+                            >
+                                <table class="min-w-full divide-y divide-slate-200 text-right">
+                                    <thead class="bg-slate-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">رقم التقرير</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">السيارة</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">نوع الفحص</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">التاريخ</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">العقد المرتبط</th>
+                                            <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 bg-white">
+                                        <tr v-for="item in activeAlertDetails.items" :key="item.id" class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="px-6 py-4 text-sm font-medium text-slate-900">{{ item.report_number }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">
+                                                <div v-if="item.car">
+                                                    <div class="font-medium text-slate-800">{{ item.car.make }} {{ item.car.model }}</div>
+                                                    <div class="text-xs text-slate-500">{{ item.car.license_plate }}</div>
+                                                </div>
+                                                <span v-else>-</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.report_type }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.date }}</td>
+                                            <td class="px-6 py-4 text-sm text-slate-600">{{ item.contract_number || '-' }}</td>
+                                            <td class="px-6 py-4 text-sm">
+                                                <Link
+                                                    :href="`/admin/car-damage-reports/${item.id}/edit`"
+                                                    class="inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-colors"
+                                                >
+                                                    تعديل التقرير
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Modal Footer -->
+                        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <Link
+                                :href="activeAlertDetails.href"
+                                class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-blue-700 transition-colors"
+                            >
+                                عرض الصفحة الكاملة المصدر
+                            </Link>
+                            <button
+                                @click="isModalOpen = false"
+                                class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                            >
+                                إغلاق
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </AdminLayout>
+    </template>

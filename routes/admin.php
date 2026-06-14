@@ -205,6 +205,12 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->middleware(['permission:tenant-manage-payments', 'tenant.feature:auto_discounts']);
 
         // Reports
+        Route::get('reports/executive/pdf', [ReportsController::class, 'exportExecutivePdf'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.executive.pdf');
+        Route::get('reports/executive/excel', [ReportsController::class, 'exportExecutiveExcel'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.executive.excel');
         Route::resource('reports', ReportsController::class)
             ->except(['show'])
             ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module']);

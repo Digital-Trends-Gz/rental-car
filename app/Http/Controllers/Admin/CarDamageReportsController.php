@@ -32,6 +32,7 @@ class CarDamageReportsController extends Controller
         $user = $request->user();
         $search = $request->string('search')->toString();
         $reportType = $request->string('report_type')->toString();
+        $status = $request->string('status')->toString();
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
         $carId = $this->branchAccess->normalizeRequestedBranchId($request->input('car_id'));
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
@@ -97,6 +98,10 @@ class CarDamageReportsController extends Controller
             $query->where('report_type', $reportType);
         }
 
+        if ($status !== '' && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
         $reports = $query
             ->latest('inspected_at')
             ->latest('id')
@@ -139,6 +144,7 @@ class CarDamageReportsController extends Controller
                 'report_type' => $reportType === '' ? 'all' : $reportType,
                 'branch_id' => $branchId,
                 'car_id' => $carId,
+                'status' => $status === '' ? 'all' : $status,
             ],
             'indexUrl' => url('/admin/car-damage-reports'),
             'contractsIndexUrl' => url('/admin/contracts'),
