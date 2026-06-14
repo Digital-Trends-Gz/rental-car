@@ -986,27 +986,144 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div class="px-6 pt-6">
-                    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50" dir="rtl">
-                        <div class="border-b border-slate-200 bg-white px-6 py-5">
-                            <div class="flex flex-col gap-2 text-right">
-                                <div class="text-sm font-bold uppercase tracking-[0.22em] text-blue-700">
-                                    2.
+              
+
+                <div class="grid grid-cols-1 gap-6 border-t border-slate-200 bg-slate-50 p-6 xl:grid-cols-[1.4fr_1fr_1fr]">
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            {{ reportLabel('Financial Summary') }}
+                        </h3>
+                        <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div
+                                v-for="metric in executiveReport.financial"
+                                :key="metric.label"
+                                class="rounded-lg border border-white bg-white p-4 shadow-sm"
+                            >
+                                <div class="mb-3 h-1.5 rounded-full" :style="{ backgroundColor: metric.color }"></div>
+                                <p class="text-sm font-semibold text-gray-500">
+                                    {{ reportLabel(metric.label) }}
+                                </p>
+                                <p class="mt-2 text-2xl font-bold text-gray-950">
+                                    {{ metric.formatted }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            {{ reportLabel('Operations Summary') }}
+                        </h3>
+                        <div class="mt-5 space-y-3">
+                            <div
+                                v-for="metric in executiveReport.operations"
+                                :key="metric.label"
+                                class="flex items-center justify-between gap-4 rounded-lg border border-gray-100 px-4 py-3"
+                            >
+                                <div class="flex items-center gap-3">
+                                    <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: metric.color }"></span>
+                                    <span class="text-sm font-semibold text-gray-600">
+                                        {{ reportLabel(metric.label) }}
+                                    </span>
                                 </div>
-                                <h3 class="text-2xl font-bold text-slate-900">
-                                    {{ localize('Financial Report', 'التقرير المالي', 'مالی رپورٹ') }}
-                                </h3>
-                                <p class="max-w-3xl text-sm leading-6 text-slate-600">
-                                    {{
+                                <span class="text-lg font-bold text-gray-950">
+                                    {{ metric.formatted }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            {{ reportLabel('Action Alerts') }}
+                        </h3>
+                        <div class="mt-5 space-y-3">
+                            <a
+                                v-for="alert in executiveReport.alerts"
+                                :key="alert.key"
+                                :href="alert.href || '#'"
+                                @click.prevent="openAlertDetails(alert)"
+                                class="block rounded-lg border p-4 transition-all duration-200"
+                                :class="[severityClasses(alert.severity), alert.value > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.01] transform' : 'cursor-default opacity-80']"
+                            >
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p class="font-bold">
+                                            {{ reportLabel(alert.label) }}
+                                        </p>
+                                        <p class="mt-1 text-sm opacity-80">
+                                            {{ reportDescription(alert.description) }}
+                                        </p>
+                                        <p
+                                            v-if="alert.formatted_amount"
+                                            class="mt-2 text-sm font-semibold"
+                                        >
+                                            {{ alert.formatted_amount }}
+                                        </p>
+                                    </div>
+                                    <span class="rounded-full bg-white/70 px-3 py-1 text-sm font-bold">
+                                        {{ alert.value }}
+                                    </span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mx-6 mb-6 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
+                    <p class="text-sm font-semibold text-blue-900">
+                        {{
+                            localize(
+                                'Download the executive report using the same period and branch filters.',
+                                'نزّل التقرير التنفيذي بنفس فلتر الفترة والفرع الحالي.',
+                                'ایگزیکٹو رپورٹ اسی مدت اور برانچ فلٹر کے ساتھ ڈاؤن لوڈ کریں۔',
+                            )
+                        }}
+                    </p>
+                    <div class="flex gap-2">
+                        <a
+                            v-if="executiveReport.exports?.pdf"
+                            :href="executiveReport.exports.pdf"
+                            class="rounded-lg bg-blue-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800"
+                        >
+                            PDF
+                        </a>
+                        <a
+                            v-if="executiveReport.exports?.excel"
+                            :href="executiveReport.exports.excel"
+                            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700"
+                        >
+                            Excel
+                        </a>
+                    </div>
+                </div>
+            </section>
+                  <section class="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow">
+                <div class="border-b border-blue-100 bg-gradient-to-r from-blue-50 to-white px-6 py-5">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-800">
+                                {{ reportLabel('Most important') }}
+                            </span>
+                            <h2 class="text-2xl font-bold text-blue-900">
+                                2.  {{ localize('Financial Report', 'التقرير المالي', 'مالی رپورٹ') }}
+                            </h2>
+                        </div>
+                        <p class="max-w-2xl text-sm leading-6 text-gray-600">
+                            {{
                                         localize(
                                             'An overview of the main financial sections covered in this report.',
                                             'نظرة عامة على الأقسام المالية الرئيسية التي يغطيها هذا التقرير.',
                                             'اس رپورٹ میں شامل اہم مالی حصوں کا خلاصہ۔',
                                         )
                                     }}
-                                </p>
-                            </div>
-                        </div>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="px-6 pt-6">
+                    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50" dir="rtl">
+                
 
                         <div class="grid gap-4 p-6 lg:grid-cols-2">
                             <!-- Static description cards -->
@@ -1142,115 +1259,7 @@ onMounted(() => {
                     </section>
                 </div>
 
-                <div class="grid grid-cols-1 gap-6 border-t border-slate-200 bg-slate-50 p-6 xl:grid-cols-[1.4fr_1fr_1fr]">
-                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <h3 class="text-xl font-bold text-gray-900">
-                            {{ reportLabel('Financial Summary') }}
-                        </h3>
-                        <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div
-                                v-for="metric in executiveReport.financial"
-                                :key="metric.label"
-                                class="rounded-lg border border-white bg-white p-4 shadow-sm"
-                            >
-                                <div class="mb-3 h-1.5 rounded-full" :style="{ backgroundColor: metric.color }"></div>
-                                <p class="text-sm font-semibold text-gray-500">
-                                    {{ reportLabel(metric.label) }}
-                                </p>
-                                <p class="mt-2 text-2xl font-bold text-gray-950">
-                                    {{ metric.formatted }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <h3 class="text-xl font-bold text-gray-900">
-                            {{ reportLabel('Operations Summary') }}
-                        </h3>
-                        <div class="mt-5 space-y-3">
-                            <div
-                                v-for="metric in executiveReport.operations"
-                                :key="metric.label"
-                                class="flex items-center justify-between gap-4 rounded-lg border border-gray-100 px-4 py-3"
-                            >
-                                <div class="flex items-center gap-3">
-                                    <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: metric.color }"></span>
-                                    <span class="text-sm font-semibold text-gray-600">
-                                        {{ reportLabel(metric.label) }}
-                                    </span>
-                                </div>
-                                <span class="text-lg font-bold text-gray-950">
-                                    {{ metric.formatted }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <h3 class="text-xl font-bold text-gray-900">
-                            {{ reportLabel('Action Alerts') }}
-                        </h3>
-                        <div class="mt-5 space-y-3">
-                            <a
-                                v-for="alert in executiveReport.alerts"
-                                :key="alert.key"
-                                :href="alert.href || '#'"
-                                @click.prevent="openAlertDetails(alert)"
-                                class="block rounded-lg border p-4 transition-all duration-200"
-                                :class="[severityClasses(alert.severity), alert.value > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.01] transform' : 'cursor-default opacity-80']"
-                            >
-                                <div class="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p class="font-bold">
-                                            {{ reportLabel(alert.label) }}
-                                        </p>
-                                        <p class="mt-1 text-sm opacity-80">
-                                            {{ reportDescription(alert.description) }}
-                                        </p>
-                                        <p
-                                            v-if="alert.formatted_amount"
-                                            class="mt-2 text-sm font-semibold"
-                                        >
-                                            {{ alert.formatted_amount }}
-                                        </p>
-                                    </div>
-                                    <span class="rounded-full bg-white/70 px-3 py-1 text-sm font-bold">
-                                        {{ alert.value }}
-                                    </span>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mx-6 mb-6 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
-                    <p class="text-sm font-semibold text-blue-900">
-                        {{
-                            localize(
-                                'Download the executive report using the same period and branch filters.',
-                                'نزّل التقرير التنفيذي بنفس فلتر الفترة والفرع الحالي.',
-                                'ایگزیکٹو رپورٹ اسی مدت اور برانچ فلٹر کے ساتھ ڈاؤن لوڈ کریں۔',
-                            )
-                        }}
-                    </p>
-                    <div class="flex gap-2">
-                        <a
-                            v-if="executiveReport.exports?.pdf"
-                            :href="executiveReport.exports.pdf"
-                            class="rounded-lg bg-blue-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800"
-                        >
-                            PDF
-                        </a>
-                        <a
-                            v-if="executiveReport.exports?.excel"
-                            :href="executiveReport.exports.excel"
-                            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700"
-                        >
-                            Excel
-                        </a>
-                    </div>
-                </div>
+                
             </section>
 
             <!-- Financial Summary -->
