@@ -130,6 +130,8 @@ interface PageProps {
     financialAlerts: ReportAlert[];
     operationsSummary: ReportMetric[];
     fleetInsights: ReportMetric[];
+    reservationsReport?: any;
+    reservationsReportExports?: ReportExportUrls;
     actionAlerts: ReportAlert[];
     executiveReport?: ExecutiveReport;
     currentPeriod: string;
@@ -210,9 +212,18 @@ const localizedChartDatasets = computed(() =>
 const financialSummary = computed(() => page.props.financialSummary ?? []);
 const financialReportSections = computed(() => page.props.financialReportSections ?? []);
 const financialAlerts = computed(() => page.props.financialAlerts ?? []);
+const financialReportExports = computed(() => page.props.financialReportExports);
+const reservationsReport = computed(() => page.props.reservationsReport);
+const reservationsReportExports = computed(() => page.props.reservationsReportExports);
+const formatFinancialAmount = (value?: number | null): string => {
+    return value ? value.toLocaleString() : '0';
+};
 const operationsSummary = computed(() => page.props.operationsSummary ?? []);
 const fleetInsights = computed(() => page.props.fleetInsights ?? []);
 const actionAlerts = computed(() => page.props.actionAlerts ?? []);
+const fleetReport = computed(() => page.props.fleetReport);
+const fleetReportExports = computed(() => page.props.fleetReportExports);
+const showCarRankingsModal = ref(false);
 const executiveReport = computed<ExecutiveReport>(() => page.props.executiveReport ?? {
     financial: financialSummary.value,
     operations: operationsSummary.value,
@@ -389,6 +400,11 @@ const handlePeriodChange = () => {
                 'reservationsChart',
                 'carsPerformance',
                 'financialSummary',
+                'financialReportSections',
+                'financialReportExports',
+                'financialAlerts',
+                'reservationsReport',
+                'reservationsReportExports',
                 'operationsSummary',
                 'fleetInsights',
                 'actionAlerts',
@@ -1109,15 +1125,29 @@ onMounted(() => {
                                 2.  {{ localize('Financial Report', 'التقرير المالي', 'مالی رپورٹ') }}
                             </h2>
                         </div>
-                        <p class="max-w-2xl text-sm leading-6 text-gray-600">
-                            {{
-                                        localize(
-                                            'An overview of the main financial sections covered in this report.',
-                                            'نظرة عامة على الأقسام المالية الرئيسية التي يغطيها هذا التقرير.',
-                                            'اس رپورٹ میں شامل اہم مالی حصوں کا خلاصہ۔',
-                                        )
-                                    }}
-                        </p>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <a
+                                v-if="financialReportExports?.pdf"
+                                :href="financialReportExports.pdf"
+                                target="_blank"
+                                class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                            >
+                                <svg class="h-5 w-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                {{ localize('Export PDF', 'تصدير PDF', 'پی ڈی ایف ایکسپورٹ') }}
+                            </a>
+                            <a
+                                v-if="financialReportExports?.excel"
+                                :href="financialReportExports.excel"
+                                class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                            >
+                                <svg class="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                {{ localize('Export Excel', 'تصدير Excel', 'ایکسل ایکسپورٹ') }}
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -1260,6 +1290,236 @@ onMounted(() => {
                 </div>
 
                 
+            </section>
+
+            <!-- 3. Reservations Report -->
+            <section v-if="reservationsReport" class="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow mt-8">
+                <div class="border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-white px-6 py-5">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-indigo-100 px-4 py-2 text-sm font-bold text-indigo-800">
+                                {{ reportLabel('Most important') }}
+                            </span>
+                            <h2 class="text-2xl font-bold text-indigo-900">
+                                3. {{ localize('Reservations Report', 'تقرير الحجوزات', 'بکنگز رپورٹ') }}
+                            </h2>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <a
+                                v-if="reservationsReportExports?.pdf"
+                                :href="reservationsReportExports.pdf"
+                                target="_blank"
+                                class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                            >
+                                <svg class="h-5 w-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                {{ localize('Export PDF', 'تصدير PDF', 'پی ڈی ایف ایکسپورٹ') }}
+                            </a>
+                            <a
+                                v-if="reservationsReportExports?.excel"
+                                :href="reservationsReportExports.excel"
+                                class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                            >
+                                <svg class="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                {{ localize('Export Excel', 'تصدير Excel', 'ایکسل ایکسپورٹ') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <!-- Summary Metrics (يحتوي على) -->
+                    <div class="mb-8 grid grid-cols-2 gap-4 md:grid-cols-5">
+                        <!-- Total -->
+                        <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-center">
+                            <p class="text-sm font-medium text-indigo-600">{{ localize('Total Reservations', 'عدد الحجوزات', 'کل بکنگز') }}</p>
+                            <p class="mt-2 text-2xl font-bold text-indigo-900">{{ reservationsReport.summary.total }}</p>
+                        </div>
+                        <!-- Confirmed -->
+                        <div class="rounded-xl border border-blue-100 bg-blue-50 p-4 text-center">
+                            <p class="text-sm font-medium text-blue-600">{{ localize('Confirmed', 'الحجوزات المؤكدة', 'تصدیق شدہ') }}</p>
+                            <p class="mt-2 text-2xl font-bold text-blue-900">{{ reservationsReport.summary.confirmed }}</p>
+                        </div>
+                        <!-- Canceled -->
+                        <div class="rounded-xl border border-red-100 bg-red-50 p-4 text-center">
+                            <p class="text-sm font-medium text-red-600">{{ localize('Canceled', 'الحجوزات الملغاة', 'منسوخ') }}</p>
+                            <p class="mt-2 text-2xl font-bold text-red-900">{{ reservationsReport.summary.canceled }}</p>
+                        </div>
+                        <!-- No Show -->
+                        <div class="rounded-xl border border-amber-100 bg-amber-50 p-4 text-center">
+                            <p class="text-sm font-medium text-amber-600">{{ localize('No Show', 'No Show', 'حاضر نہیں ہوا') }}</p>
+                            <p class="mt-2 text-2xl font-bold text-amber-900">{{ reservationsReport.summary.no_show }}</p>
+                        </div>
+                        <!-- Completed -->
+                        <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-center">
+                            <p class="text-sm font-medium text-emerald-600">{{ localize('Completed', 'الحجوزات المكتملة', 'مکمل') }}</p>
+                            <p class="mt-2 text-2xl font-bold text-emerald-900">{{ reservationsReport.summary.completed }}</p>
+                        </div>
+                    </div>
+
+                    <!-- KPIs -->
+                    <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div class="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <div class="rounded-full bg-indigo-100 p-3">
+                                <svg class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">{{ localize('Average Value', 'متوسط قيمة الحجز', 'اوسط مالیت') }}</p>
+                                <p class="text-lg font-bold text-gray-900">{{ reservationsReport.kpis.average_value.formatted }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <div class="rounded-full bg-red-100 p-3">
+                                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">{{ localize('Cancellation Rate', 'نسبة الإلغاء', 'منسوخی کی شرح') }}</p>
+                                <p class="text-lg font-bold text-gray-900">{{ reservationsReport.kpis.cancellation_rate.formatted }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <div class="rounded-full bg-amber-100 p-3">
+                                <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">{{ localize('No-Show Rate', 'نسبة No Show', 'No Show کی شرح') }}</p>
+                                <p class="text-lg font-bold text-gray-900">{{ reservationsReport.kpis.no_show_rate.formatted }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. Fleet Report -->
+            <section v-if="fleetReport" class="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow mt-8">
+                <div class="border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-white px-6 py-5">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-indigo-100 px-4 py-2 text-sm font-bold text-indigo-800">
+                                {{ reportLabel('Most important') }}
+                            </span>
+                            <h2 class="text-2xl font-bold text-indigo-900">
+                                4. {{ localize('Fleet Report', 'تقرير الأسطول', 'فلیٹ رپورٹ') }}
+                            </h2>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <a
+                                v-if="fleetReportExports?.pdf"
+                                :href="fleetReportExports.pdf"
+                                target="_blank"
+                                class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                            >
+                                <svg class="h-5 w-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                {{ localize('Export PDF', 'تصدير PDF', 'پی ڈی ایف ایکسپورٹ') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <!-- Utilization -->
+                        <div class="rounded-xl border border-gray-100 bg-white shadow-sm">
+                            <div class="border-b border-gray-100 bg-gray-50 px-5 py-3">
+                                <h3 class="font-bold text-gray-900">{{ localize('Utilization', 'الاستخدام', 'استعمال') }}</h3>
+                            </div>
+                            <div class="divide-y divide-gray-100 p-5">
+                                <div class="flex justify-between py-2">
+                                    <span class="text-gray-600">{{ localize('Fleet utilization', 'نسبة تشغيل الأسطول', 'فلیٹ کا استعمال') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.utilization.utilization_rate }}%</span>
+                                </div>
+                                <div class="flex justify-between py-2">
+                                    <span class="text-gray-600">{{ localize('Rented days per car', 'عدد الأيام المؤجرة لكل سيارة', 'کرائے کے دن فی گاڑی') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.utilization.rented_days_per_car }}</span>
+                                </div>
+                                <div class="flex justify-between py-2">
+                                    <span class="text-gray-600">{{ localize('Idle days', 'عدد الأيام المتوقفة', 'فارغ دن') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.utilization.idle_days }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Top Cars -->
+                        <div class="rounded-xl border border-gray-100 bg-white shadow-sm relative">
+                            <div class="border-b border-gray-100 bg-gray-50 px-5 py-3 flex justify-between items-center">
+                                <h3 class="font-bold text-gray-900">{{ localize('Top Cars', 'أفضل السيارات', 'بہترین گاڑیاں') }}</h3>
+                                <button @click="showCarRankingsModal = true" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                                    {{ localize('View All', 'عرض الكل', 'سب دیکھیں') }}
+                                </button>
+                            </div>
+                            <div class="divide-y divide-gray-100 p-5">
+                                <div class="flex justify-between py-2" v-if="fleetReport.top_cars.revenue">
+                                    <span class="text-gray-600">{{ localize('Highest revenue', 'أعلى إيراد', 'سب سے زیادہ آمدنی') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.top_cars.revenue.name }} ({{ fleetReport.top_cars.revenue.value }})</span>
+                                </div>
+                                <div class="flex justify-between py-2" v-if="fleetReport.top_cars.utilization">
+                                    <span class="text-gray-600">{{ localize('Highest utilization', 'أعلى استخدام', 'سب سے زیادہ استعمال') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.top_cars.utilization.name }} ({{ fleetReport.top_cars.utilization.value }})</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Worst Cars -->
+                        <div class="rounded-xl border border-gray-100 bg-white shadow-sm relative">
+                            <div class="border-b border-gray-100 bg-gray-50 px-5 py-3 flex justify-between items-center">
+                                <h3 class="font-bold text-gray-900">{{ localize('Worst Cars', 'أسوأ السيارات', 'بدترین گاڑیاں') }}</h3>
+                                <button @click="showCarRankingsModal = true" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                                    {{ localize('View All', 'عرض الكل', 'سب دیکھیں') }}
+                                </button>
+                            </div>
+                            <div class="divide-y divide-gray-100 p-5">
+                                <div class="flex justify-between py-2" v-if="fleetReport.worst_cars.utilization">
+                                    <span class="text-gray-600">{{ localize('Lowest utilization', 'أقل استخدام', 'سب سے کم استعمال') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.worst_cars.utilization.name }} ({{ fleetReport.worst_cars.utilization.value }})</span>
+                                </div>
+                                <div class="flex justify-between py-2" v-if="fleetReport.worst_cars.revenue">
+                                    <span class="text-gray-600">{{ localize('Lowest revenue', 'أقل إيراد', 'سب سے کم آمدنی') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.worst_cars.revenue.name }} ({{ fleetReport.worst_cars.revenue.value }})</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fleet Status -->
+                        <div class="rounded-xl border border-gray-100 bg-white shadow-sm">
+                            <div class="border-b border-gray-100 bg-gray-50 px-5 py-3">
+                                <h3 class="font-bold text-gray-900">{{ localize('Fleet Status', 'حالة الأسطول', 'فلیٹ کی حیثیت') }}</h3>
+                            </div>
+                            <div class="divide-y divide-gray-100 p-5">
+                                <div class="flex justify-between py-1">
+                                    <span class="text-gray-600">{{ localize('Available', 'متاحة', 'دستیاب') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.status_counts.available }}</span>
+                                </div>
+                                <div class="flex justify-between py-1">
+                                    <span class="text-gray-600">{{ localize('Rented', 'مؤجرة', 'کرائے پر') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.status_counts.rented }}</span>
+                                </div>
+                                <div class="flex justify-between py-1">
+                                    <span class="text-gray-600">{{ localize('Reserved', 'محجوزة', 'مختص') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.status_counts.reserved }}</span>
+                                </div>
+                                <div class="flex justify-between py-1">
+                                    <span class="text-gray-600">{{ localize('Maintenance', 'صيانة', 'مرمت') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.status_counts.maintenance }}</span>
+                                </div>
+                                <div class="flex justify-between py-1">
+                                    <span class="text-gray-600">{{ localize('Out of service', 'خارج الخدمة', 'سروس سے باہر') }}</span>
+                                    <span class="font-bold text-gray-900">{{ fleetReport.status_counts.out_of_service }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Financial Summary -->
@@ -2011,6 +2271,89 @@ onMounted(() => {
                                 إغلاق
                             </button>
                         </div>
+                    </div>
+                </div>
+            </Transition>
+
+            <!-- Car Rankings Modal -->
+            <Transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="opacity-0 scale-95"
+                enter-to-class="opacity-100 scale-100"
+                leave-active-class="transition duration-150 ease-in"
+                leave-from-class="opacity-100 scale-100"
+                leave-to-class="opacity-0 scale-95"
+            >
+                <div v-if="showCarRankingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div class="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden">
+                        
+                        <!-- Modal Header -->
+                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                {{ localize('Car Rankings', 'ترتيب السيارات', 'گاڑیوں کی درجہ بندی') }}
+                            </h3>
+                            <button @click="showCarRankingsModal = false" class="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        
+                        <!-- Modal Body -->
+                        <div class="p-6 overflow-y-auto flex-1">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                
+                                <!-- Revenue Rankings -->
+                                <div>
+                                    <h4 class="font-bold text-gray-900 mb-4 border-b pb-2 flex justify-between">
+                                        <span>{{ localize('By Revenue', 'حسب الإيراد', 'آمدنی کے لحاظ سے') }}</span>
+                                    </h4>
+                                    <div class="overflow-x-auto rounded-xl border border-gray-100">
+                                        <table class="min-w-full divide-y divide-gray-100">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">#</th>
+                                                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{{ localize('Car', 'السيارة', 'گاڑی') }}</th>
+                                                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{{ localize('Revenue', 'الإيراد', 'آمدنی') }}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-100 bg-white">
+                                                <tr v-for="(car, index) in fleetReport?.rankings.revenue" :key="car.id" class="hover:bg-gray-50">
+                                                    <td class="px-4 py-3 text-sm text-gray-500">{{ index + 1 }}</td>
+                                                    <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ car.car_name }}</td>
+                                                    <td class="px-4 py-3 text-sm font-bold text-green-600">{{ car.formatted_revenue }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <!-- Utilization Rankings -->
+                                <div>
+                                    <h4 class="font-bold text-gray-900 mb-4 border-b pb-2 flex justify-between">
+                                        <span>{{ localize('By Utilization', 'حسب الاستخدام (الأيام)', 'استعمال کے لحاظ سے') }}</span>
+                                    </h4>
+                                    <div class="overflow-x-auto rounded-xl border border-gray-100">
+                                        <table class="min-w-full divide-y divide-gray-100">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">#</th>
+                                                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{{ localize('Car', 'السيارة', 'گاڑی') }}</th>
+                                                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{{ localize('Days', 'الأيام المؤجرة', 'دن') }}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-100 bg-white">
+                                                <tr v-for="(car, index) in fleetReport?.rankings.utilization" :key="car.id" class="hover:bg-gray-50">
+                                                    <td class="px-4 py-3 text-sm text-gray-500">{{ index + 1 }}</td>
+                                                    <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ car.car_name }}</td>
+                                                    <td class="px-4 py-3 text-sm font-bold text-blue-600">{{ car.total_days }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </Transition>

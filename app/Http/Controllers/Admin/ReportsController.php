@@ -6,6 +6,7 @@ use App\Core\TenantContext;
 use App\Enums\CarStatus;
 use App\Enums\CarViolationStatus;
 use App\Enums\ContractStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
@@ -60,17 +61,37 @@ class ReportsController extends Controller
             $branchId,
             $request->route('subdomain')
         );
+        $financialReportExports = $this->financialExportUrls(
+            $period,
+            $branchId,
+            $request->route('subdomain')
+        );
+        $reservationsReportExports = $this->reservationsExportUrls(
+            $period,
+            $branchId,
+            $request->route('subdomain')
+        );
+        $fleetReportExports = $this->fleetExportUrls(
+            $period,
+            $branchId,
+            $request->route('subdomain')
+        );
 
         $data = [
             'kpis' => $this->getHighLevelKPIs($dateRange, $user, $branchId, $canViewFinancialAmounts),
             'carsState' => $this->getCarsState($user, $branchId),
             'reservationsChart' => $this->getReservationsChart($dateRange, $user, $branchId),
+            'reservationsReport' => $this->getReservationsReportSummary($dateRange, $user, $branchId, $canViewFinancialAmounts),
+            'reservationsReportExports' => $reservationsReportExports,
             'carsPerformance' => $this->getCarsPerformance($dateRange, $user, $branchId, $canViewFinancialAmounts),
             'financialSummary' => $this->getFinancialSummary($dateRange, $user, $branchId, $canViewFinancialAmounts),
-            'financialReportSections' => $this->financialReportSections(),
+            'financialReportSections' => $this->financialReportSections($dateRange, $user, $branchId, $canViewFinancialAmounts),
+            'financialReportExports' => $financialReportExports,
             'financialAlerts' => $this->getFinancialAlerts($dateRange, $user, $branchId, $canViewFinancialAmounts),
             'operationsSummary' => $this->getOperationsSummary($dateRange, $user, $branchId),
             'fleetInsights' => $this->getFleetInsights($dateRange, $user, $branchId, $canViewFinancialAmounts),
+            'fleetReport' => $this->getFleetReportData($dateRange, $user, $branchId, $canViewFinancialAmounts),
+            'fleetReportExports' => $fleetReportExports,
             'actionAlerts' => $this->getActionAlerts($user, $branchId, $canViewFinancialAmounts),
             'executiveReport' => $executiveReport,
             'currentPeriod' => $period,
@@ -154,6 +175,232 @@ class ReportsController extends Controller
             ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
     }
 
+    private function buildFleetExportPayload(Request $request): array
+    {
+        $user = $request->user();
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
+        $period = $request->get('period', 'this_month');
+        $branchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
+        $dateRange = $this->getDateRange($period);
+        $tenant = TenantContext::get();
+        $tenant = $tenant?->loadMissing('siteSetting.files');
+        $siteSettings = $tenant ? TenantSiteSetting::forTenant($tenant) : [];
+
+        $fleetReport = $this->getFleetReportData($dateRange, $user, $branchId, $canViewFinancialAmounts);
+
+        return [
+            'periodLabel' => collect($this->getPeriodOptions())->firstWhere('value', $period)['label'] ?? $period,
+            'tenant' => $tenant,
+            'siteSettings' => $siteSettings,
+            'companyName' => $this->reportCompanyName($tenant, $siteSettings),
+            'companyLogo' => $this->pdfImageSource($siteSettings['logo_url'] ?? null),
+            'pdfHeader' => data_get($siteSettings, 'pdf_header', []),
+            'reportNumber' => 'FLT-'.now()->format('Ymd-Hi'),
+            'fleetReport' => $fleetReport,
+            'canViewFinancialAmounts' => $canViewFinancialAmounts,
+            'dateRange' => $dateRange,
+        ];
+    }
+
+    public function exportFleetPdf(Request $request)
+    {
+        $payload = $this->buildFleetExportPayload($request);
+        $fileName = 'fleet-report-'.now()->format('Y-m-d_H-i').'.pdf';
+
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                $pdf = Pdf::view('admin.reports.fleet-pdf', $payload)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    });
+
+                return $pdf->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $pdf = DomPdf::loadView('admin.reports.fleet-pdf', $payload)
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
+            ->setOption('defaultFont', 'DejaVu Sans');
+
+        return $pdf->download($fileName);
+    }
+
+    public function exportFinancialPdf(Request $request)
+    {
+        $payload = $this->buildFinancialExportPayload($request);
+        $fileName = $this->financialExportFileName('pdf');
+
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                $pdf = Pdf::view('admin.reports.financial-pdf', $payload)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    });
+
+                return $pdf->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $pdf = DomPdf::loadView('admin.reports.financial-pdf', $payload)
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
+            ->setOption('defaultFont', 'DejaVu Sans');
+
+        return $pdf->download($fileName);
+    }
+
+    public function exportFinancialExcel(Request $request)
+    {
+        $payload = $this->buildFinancialExportPayload($request);
+        $fileName = $this->financialExportFileName('xls');
+
+        return response()
+            ->view('admin.reports.financial-excel', $payload)
+            ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
+    }
+
+    public function exportReservationsPdf(Request $request)
+    {
+        $payload = $this->buildReservationsExportPayload($request);
+        $fileName = $this->reservationsExportFileName('pdf');
+
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                $pdf = Pdf::view('admin.reports.reservations-pdf', $payload)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    });
+
+                return $pdf->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $pdf = DomPdf::loadView('admin.reports.reservations-pdf', $payload)
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
+            ->setOption('defaultFont', 'DejaVu Sans');
+
+        return $pdf->download($fileName);
+    }
+
+    public function exportReservationsExcel(Request $request)
+    {
+        $payload = $this->buildReservationsExportPayload($request);
+        $fileName = $this->reservationsExportFileName('xls');
+
+        return response()
+            ->view('admin.reports.reservations-excel', $payload)
+            ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
+    }
+
     private function buildExecutiveExportPayload(Request $request): array
     {
         $user = $request->user();
@@ -175,7 +422,7 @@ class ReportsController extends Controller
 
         return [
             'report' => $report,
-            'financialReportSections' => $this->financialReportSections(),
+            'financialReportSections' => $this->financialReportSections($dateRange, $user, $branchId, $canViewFinancialAmounts),
             'period' => $period,
             'periodLabel' => collect($this->getPeriodOptions())->firstWhere('value', $period)['label'] ?? $period,
             'branchName' => $branchId
@@ -191,6 +438,37 @@ class ReportsController extends Controller
             'siteSettings' => $siteSettings,
             'pdfHeader' => data_get($siteSettings, 'pdf_header', []),
         ];
+    }
+
+    private function buildFinancialExportPayload(Request $request): array
+    {
+        $payload = $this->buildExecutiveExportPayload($request);
+        $payload['reportNumber'] = 'FNR-'.now()->format('Ymd-Hi');
+
+        return $payload;
+    }
+
+    private function buildReservationsExportPayload(Request $request): array
+    {
+        $payload = $this->buildExecutiveExportPayload($request);
+        $payload['reportNumber'] = 'RES-'.now()->format('Ymd-Hi');
+        
+        $user = $request->user();
+        $period = $request->get('period', 'this_month');
+        $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
+        $branchOptions = $this->branchAccess->availableBranchesForUser($user)
+            ->map(fn ($branch) => ['id' => $branch->id, 'name' => $branch->name])
+            ->values();
+        $allowedBranchIds = $branchOptions->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $branchId = ($requestedBranchId && in_array($requestedBranchId, $allowedBranchIds, true))
+            ? $requestedBranchId
+            : null;
+        $dateRange = $this->getDateRange($period);
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
+
+        $payload['reservationsReport'] = $this->getReservationsReportSummary($dateRange, $user, $branchId, $canViewFinancialAmounts);
+
+        return $payload;
     }
 
     private function reportCompanyName($tenant, array $siteSettings): string
@@ -253,14 +531,200 @@ class ReportsController extends Controller
         ];
     }
 
+    private function financialExportUrls(string $period, ?int $branchId, ?string $subdomain): array
+    {
+        $query = ['period' => $period];
+
+        if ($subdomain) {
+            $query['subdomain'] = $subdomain;
+        }
+
+        if ($branchId) {
+            $query['branch_id'] = $branchId;
+        }
+
+        return [
+            'pdf' => route('admin.reports.financial.pdf', $query),
+            'excel' => route('admin.reports.financial.excel', $query),
+        ];
+    }
+
+    private function reservationsExportUrls(string $period, ?int $branchId, ?string $subdomain): array
+    {
+        $query = ['period' => $period];
+
+        if ($subdomain) {
+            $query['subdomain'] = $subdomain;
+        }
+
+        if ($branchId) {
+            $query['branch_id'] = $branchId;
+        }
+
+        return [
+            'pdf' => route('admin.reports.reservations.pdf', $query),
+            'excel' => route('admin.reports.reservations.excel', $query),
+        ];
+    }
+
+    private function fleetExportUrls(string $period, ?int $branchId, ?string $subdomain): array
+    {
+        $query = ['period' => $period];
+
+        if ($subdomain) {
+            $query['subdomain'] = $subdomain;
+        }
+
+        if ($branchId) {
+            $query['branch_id'] = $branchId;
+        }
+
+        return [
+            'pdf' => route('admin.reports.fleet.pdf', $query),
+            // 'excel' => route('admin.reports.fleet.excel', $query), // Implement later if needed
+        ];
+    }
+
     private function executiveExportFileName(string $extension): string
     {
         return 'executive-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
     }
 
-    private function financialReportSections(): array
+    private function financialExportFileName(string $extension): string
     {
-        return $this->localizedFinancialReportSections();
+        return 'financial-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
+    }
+
+    private function reservationsExportFileName(string $extension): string
+    {
+        return 'reservations-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
+    }
+
+    private function financialReportSections(?array $dateRange = null, $user = null, ?int $branchId = null, bool $canViewFinancialAmounts = true): array
+    {
+        if (! $dateRange || ! $user) {
+            return $this->localizedFinancialReportSections();
+        }
+
+        $currencySymbol = (string) config('app.currency_symbol', '$');
+        $formatMoney = fn (float $value): string => $canViewFinancialAmounts
+            ? $currencySymbol.number_format($value, 2)
+            : '*******';
+        $moneyItem = function (string $en, string $ar, float $amount, int $count = 0) use ($formatMoney, $canViewFinancialAmounts): array {
+            return [
+                'en' => $en,
+                'ar' => $ar,
+                'value' => $canViewFinancialAmounts ? round($amount, 2) : null,
+                'formatted' => $formatMoney($amount),
+                'count' => $count,
+            ];
+        };
+
+        $completedPaymentsQuery = Payment::completed()
+            ->whereBetween('processed_at', [$dateRange['start'], $dateRange['end']]);
+        $this->applyPaymentBranchScope($completedPaymentsQuery, $user, $branchId);
+
+        $returnReportsQuery = ContractReturnReport::query()
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+        $this->branchAccess->applyToQuery($returnReportsQuery, $user, $branchId);
+
+        $reservationDiscountsQuery = Reservation::query()
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+        $this->applyReservationBranchScope($reservationDiscountsQuery, $user, $branchId);
+
+        $pendingPaymentsQuery = Payment::query()
+            ->where('status', '!=', PaymentStatus::COMPLETED)
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+        $this->applyPaymentBranchScope($pendingPaymentsQuery, $user, $branchId);
+
+        $unpaidReturnReportsQuery = ContractReturnReport::query()
+            ->where('payment_status', '!=', 'paid')
+            ->where('total_extra_charges', '>', 0);
+        $this->branchAccess->applyToQuery($unpaidReturnReportsQuery, $user, $branchId);
+
+        $paidRevenue = (float) (clone $completedPaymentsQuery)->sum('amount');
+        $paidPaymentsCount = (clone $completedPaymentsQuery)->count();
+        $cashQuery = (clone $completedPaymentsQuery)->where('payment_method', PaymentMethod::CASH->value);
+        $cardQuery = (clone $completedPaymentsQuery)->whereIn('payment_method', [
+            PaymentMethod::CREDIT_CARD->value,
+            PaymentMethod::DEBIT_CARD->value,
+        ]);
+        $bankTransferQuery = (clone $completedPaymentsQuery)->where('payment_method', PaymentMethod::BANK_TRANSFER->value);
+        $onlineQuery = (clone $completedPaymentsQuery)->whereIn('payment_method', [
+            PaymentMethod::STRIPE->value,
+            PaymentMethod::MYFATOORAH->value,
+            PaymentMethod::PAYPAL->value,
+        ]);
+
+        $lateFees = (float) (clone $returnReportsQuery)->selectRaw('COALESCE(SUM(late_hours * late_hour_rate), 0) as total')->value('total');
+        $damageFees = (float) (clone $returnReportsQuery)->sum('damage_fee');
+        $fuelFees = (float) (clone $returnReportsQuery)->sum('fuel_fee');
+        $cleaningFees = (float) (clone $returnReportsQuery)->sum('cleaning_fee');
+        $additionalServices = (float) (clone $returnReportsQuery)->selectRaw('COALESCE(SUM(maintenance_fee + other_fee), 0) as total')->value('total');
+        $pendingPayments = (float) (clone $pendingPaymentsQuery)->sum('amount');
+        $unpaidReturnCharges = (float) (clone $unpaidReturnReportsQuery)->sum('total_extra_charges');
+        $returnDiscounts = (float) (clone $returnReportsQuery)->sum('discount');
+        $couponDiscounts = (float) (clone $reservationDiscountsQuery)->whereNotNull('coupon_id')->sum('discount_amount');
+        $manualReservationDiscounts = (float) (clone $reservationDiscountsQuery)
+            ->where(function ($query): void {
+                $query->whereNull('coupon_id')->orWhere('coupon_id', 0);
+            })
+            ->sum('discount_amount');
+        $manualDiscounts = $manualReservationDiscounts + $returnDiscounts;
+
+        return [
+            [
+                'title' => [
+                    'en' => 'Revenue',
+                    'ar' => "\u{0627}\u{0644}\u{0625}\u{064A}\u{0631}\u{0627}\u{062F}\u{0627}\u{062A}",
+                ],
+                'items' => [
+                    $moneyItem('Rental income', "\u{0625}\u{064A}\u{0631}\u{0627}\u{062F}\u{0627}\u{062A} \u{0627}\u{0644}\u{0625}\u{064A}\u{062C}\u{0627}\u{0631}\u{0627}\u{062A}", $paidRevenue, $paidPaymentsCount),
+                    $moneyItem('Late fees', "\u{0625}\u{064A}\u{0631}\u{0627}\u{062F}\u{0627}\u{062A} \u{0627}\u{0644}\u{062A}\u{0623}\u{062E}\u{064A}\u{0631}", $lateFees, (clone $returnReportsQuery)->where('late_hours', '>', 0)->count()),
+                    $moneyItem('Damage fees', "\u{0625}\u{064A}\u{0631}\u{0627}\u{062F}\u{0627}\u{062A} \u{0627}\u{0644}\u{0623}\u{0636}\u{0631}\u{0627}\u{0631}", $damageFees, (clone $returnReportsQuery)->where('damage_fee', '>', 0)->count()),
+                    $moneyItem('Fuel fees', "\u{0625}\u{064A}\u{0631}\u{0627}\u{062F}\u{0627}\u{062A} \u{0627}\u{0644}\u{0648}\u{0642}\u{0648}\u{062F}", $fuelFees, (clone $returnReportsQuery)->where('fuel_fee', '>', 0)->count()),
+                    $moneyItem('Cleaning fees', "\u{0625}\u{064A}\u{0631}\u{0627}\u{062F}\u{0627}\u{062A} \u{0627}\u{0644}\u{062A}\u{0646}\u{0638}\u{064A}\u{0641}", $cleaningFees, (clone $returnReportsQuery)->where('cleaning_fee', '>', 0)->count()),
+                    $moneyItem('Additional services revenue', "\u{0625}\u{064A}\u{0631}\u{0627}\u{062F}\u{0627}\u{062A} \u{0627}\u{0644}\u{062E}\u{062F}\u{0645}\u{0627}\u{062A} \u{0627}\u{0644}\u{0625}\u{0636}\u{0627}\u{0641}\u{064A}\u{0629}", $additionalServices, (clone $returnReportsQuery)->where(function ($query): void {
+                        $query->where('maintenance_fee', '>', 0)->orWhere('other_fee', '>', 0);
+                    })->count()),
+                ],
+            ],
+            [
+                'title' => [
+                    'en' => 'Payments',
+                    'ar' => "\u{0627}\u{0644}\u{0645}\u{062F}\u{0641}\u{0648}\u{0639}\u{0627}\u{062A}",
+                ],
+                'items' => [
+                    $moneyItem('Cash', "\u{0646}\u{0642}\u{062F}\u{064A}", (float) (clone $cashQuery)->sum('amount'), (clone $cashQuery)->count()),
+                    $moneyItem('Card', "\u{0628}\u{0637}\u{0627}\u{0642}\u{0629}", (float) (clone $cardQuery)->sum('amount'), (clone $cardQuery)->count()),
+                    $moneyItem('Bank transfer', "\u{062A}\u{062D}\u{0648}\u{064A}\u{0644} \u{0628}\u{0646}\u{0643}\u{064A}", (float) (clone $bankTransferQuery)->sum('amount'), (clone $bankTransferQuery)->count()),
+                    $moneyItem('Online', "\u{0623}\u{0648}\u{0646}\u{0644}\u{0627}\u{064A}\u{0646}", (float) (clone $onlineQuery)->sum('amount'), (clone $onlineQuery)->count()),
+                ],
+            ],
+            [
+                'title' => [
+                    'en' => 'Receivables',
+                    'ar' => "\u{0627}\u{0644}\u{0630}\u{0645}\u{0645} \u{0627}\u{0644}\u{0645}\u{062F}\u{064A}\u{0646}\u{0629}",
+                ],
+                'items' => [
+                    $moneyItem('Debtors', "\u{0627}\u{0644}\u{0639}\u{0645}\u{0644}\u{0627}\u{0621} \u{0627}\u{0644}\u{0645}\u{062F}\u{064A}\u{0646}\u{0648}\u{0646}", $pendingPayments + $unpaidReturnCharges, (clone $pendingPaymentsQuery)->distinct('user_id')->count('user_id')),
+                    $moneyItem('Outstanding amounts', "\u{0627}\u{0644}\u{0645}\u{0628}\u{0627}\u{0644}\u{063A} \u{0627}\u{0644}\u{0645}\u{0633}\u{062A}\u{062D}\u{0642}\u{0629}", $pendingPayments + $unpaidReturnCharges, (clone $pendingPaymentsQuery)->count() + (clone $unpaidReturnReportsQuery)->count()),
+                    $moneyItem('Overdue balances', "\u{0627}\u{0644}\u{0645}\u{062A}\u{0623}\u{062E}\u{0631}\u{0627}\u{062A}", $unpaidReturnCharges, (clone $unpaidReturnReportsQuery)->count()),
+                ],
+            ],
+            [
+                'title' => [
+                    'en' => 'Discounts',
+                    'ar' => "\u{0627}\u{0644}\u{062E}\u{0635}\u{0648}\u{0645}\u{0627}\u{062A}",
+                ],
+                'items' => [
+                    $moneyItem('Coupons', "\u{0643}\u{0648}\u{0628}\u{0648}\u{0646}\u{0627}\u{062A}", $couponDiscounts, (clone $reservationDiscountsQuery)->whereNotNull('coupon_id')->where('discount_amount', '>', 0)->count()),
+                    $moneyItem('Manual discounts', "\u{062E}\u{0635}\u{0648}\u{0645}\u{0627}\u{062A} \u{064A}\u{062F}\u{0648}\u{064A}\u{0629}", $manualDiscounts, (clone $reservationDiscountsQuery)->where(function ($query): void {
+                        $query->whereNull('coupon_id')->orWhere('coupon_id', 0);
+                    })->where('discount_amount', '>', 0)->count() + (clone $returnReportsQuery)->where('discount', '>', 0)->count()),
+                ],
+            ],
+        ];
 
         return [
             [
@@ -533,6 +997,83 @@ class ReportsController extends Controller
                 'formatted' => number_format($unavailableCars),
                 'label' => 'Unavailable Cars',
                 'color' => '#6B7280' // Gray
+            ]
+        ];
+    }
+
+    private function getReservationsReportSummary(array $dateRange, $user, ?int $branchId, bool $canViewFinancialAmounts): array
+    {
+        $baseQuery = Reservation::whereBetween('reservations.created_at', [$dateRange['start'], $dateRange['end']]);
+        $this->applyReservationBranchScope($baseQuery, $user, $branchId);
+
+        $totalReservations = (clone $baseQuery)->count();
+        $confirmedReservations = (clone $baseQuery)->where('reservations.status', ReservationStatus::CONFIRMED)->count();
+        $canceledReservations = (clone $baseQuery)->where('reservations.status', ReservationStatus::CANCELLED)->count();
+        $noShowReservations = (clone $baseQuery)->where('reservations.status', ReservationStatus::NO_SHOW)->count();
+        $completedReservations = (clone $baseQuery)->where('reservations.status', ReservationStatus::COMPLETED)->count();
+
+        $totalValue = (clone $baseQuery)->whereNotIn('reservations.status', [ReservationStatus::CANCELLED, ReservationStatus::NO_SHOW])->sum('reservations.total_amount');
+        $validReservationsCount = (clone $baseQuery)->whereNotIn('reservations.status', [ReservationStatus::CANCELLED, ReservationStatus::NO_SHOW])->count();
+        
+        $averageValue = $validReservationsCount > 0 ? $totalValue / $validReservationsCount : 0;
+        $averageValue = FinancialVisibility::numericAmount($averageValue, $canViewFinancialAmounts);
+        
+        $cancellationRate = $totalReservations > 0 ? ($canceledReservations / $totalReservations) * 100 : 0;
+        $noShowRate = $totalReservations > 0 ? ($noShowReservations / $totalReservations) * 100 : 0;
+
+        $highestDayData = (clone $baseQuery)
+            ->selectRaw('DATE(reservations.created_at) as date, COUNT(*) as count')
+            ->groupBy('date')
+            ->orderByDesc('count')
+            ->first();
+
+        $highestDay = $highestDayData ? $highestDayData->date : null;
+        $highestDayCount = $highestDayData ? $highestDayData->count : 0;
+
+        // Reservations by branch
+        $byBranch = [];
+        if ($this->branchAccess->canAccessAllBranches($user)) {
+            $branchData = (clone $baseQuery)
+                ->join('cars', 'reservations.car_id', '=', 'cars.id')
+                ->join('branches', 'cars.branch_id', '=', 'branches.id')
+                ->selectRaw('branches.name as branch_name, COUNT(reservations.id) as count')
+                ->groupBy('branches.id', 'branches.name')
+                ->get();
+
+            $byBranch = [
+                'labels' => $branchData->pluck('branch_name')->toArray(),
+                'data' => $branchData->pluck('count')->toArray(),
+            ];
+        }
+
+        return [
+            'summary' => [
+                'total' => $totalReservations,
+                'confirmed' => $confirmedReservations,
+                'canceled' => $canceledReservations,
+                'no_show' => $noShowReservations,
+                'completed' => $completedReservations,
+            ],
+            'kpis' => [
+                'average_value' => [
+                    'value' => $averageValue,
+                    'formatted' => $canViewFinancialAmounts ? config('app.currency_symbol') . number_format($averageValue, 2) : '*******',
+                ],
+                'highest_day' => [
+                    'date' => $highestDay,
+                    'count' => $highestDayCount,
+                ],
+                'cancellation_rate' => [
+                    'value' => $cancellationRate,
+                    'formatted' => number_format($cancellationRate, 1) . '%',
+                ],
+                'no_show_rate' => [
+                    'value' => $noShowRate,
+                    'formatted' => number_format($noShowRate, 1) . '%',
+                ],
+            ],
+            'charts' => [
+                'by_branch' => $byBranch,
             ]
         ];
     }
@@ -923,6 +1464,68 @@ class ReportsController extends Controller
             $this->numberMetric('Damage items', (int) $damageItemQuery->sum('car_damage_items.quantity'), '#F97316'),
             $this->moneyMetric('Estimated damage cost', (float) $damageItemQuery->sum('car_damage_items.estimated_cost'), $canViewFinancialAmounts, '#DC2626'),
             $this->numberMetric('Accident reports', $accidentsQuery->count(), '#7C3AED'),
+        ];
+    }
+
+    private function getFleetReportData(array $dateRange, $user, ?int $branchId, bool $canViewFinancialAmounts): array
+    {
+        $carsPerformance = $this->getCarsPerformance($dateRange, $user, $branchId, $canViewFinancialAmounts);
+
+        // Best Cars
+        $topRevenue = $carsPerformance->sortByDesc('total_revenue')->first();
+        $topUtilization = $carsPerformance->sortByDesc('total_days')->first();
+
+        // Worst Cars
+        $worstRevenue = $carsPerformance->sortBy('total_revenue')->first();
+        $worstUtilization = $carsPerformance->sortBy('total_days')->first();
+
+        // Cars Status Counts
+        $statusCountsQuery = Car::query();
+        $this->branchAccess->applyToQuery($statusCountsQuery, $user, $branchId);
+        $statusCounts = $statusCountsQuery->select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        // Calculate Utilization (Total rented days, idle days)
+        $totalCarsQuery = Car::query();
+        $this->branchAccess->applyToQuery($totalCarsQuery, $user, $branchId);
+        $totalCarsCount = $totalCarsQuery->count();
+        
+        $totalDaysInPeriod = Carbon::parse($dateRange['start'])->diffInDays(Carbon::parse($dateRange['end'])) + 1;
+        $totalPossibleDays = $totalCarsCount * $totalDaysInPeriod;
+        
+        $totalRentedDays = $carsPerformance->sum('total_days');
+        $idleDays = max(0, $totalPossibleDays - $totalRentedDays);
+
+        $carsState = $this->getCarsState($user, $branchId);
+        $utilizationRate = $totalCarsCount > 0 ? round(($carsState['rentedCars']['value'] / $totalCarsCount) * 100, 1) : 0.0;
+
+        return [
+            'utilization' => [
+                'utilization_rate' => $utilizationRate,
+                'rented_days_per_car' => $totalCarsCount > 0 ? round($totalRentedDays / $totalCarsCount, 1) : 0,
+                'idle_days' => $idleDays,
+            ],
+            'top_cars' => [
+                'revenue' => $topRevenue ? ['name' => $topRevenue['car_name'], 'value' => $topRevenue['formatted_revenue']] : null,
+                'utilization' => $topUtilization ? ['name' => $topUtilization['car_name'], 'value' => $topUtilization['total_days'] . ' Days'] : null,
+            ],
+            'worst_cars' => [
+                'utilization' => $worstUtilization ? ['name' => $worstUtilization['car_name'], 'value' => $worstUtilization['total_days'] . ' Days'] : null,
+                'revenue' => $worstRevenue ? ['name' => $worstRevenue['car_name'], 'value' => $worstRevenue['formatted_revenue']] : null,
+            ],
+            'status_counts' => [
+                'available' => $statusCounts[CarStatus::AVAILABLE->value] ?? 0,
+                'rented' => $statusCounts[CarStatus::RENTED->value] ?? 0,
+                'reserved' => $statusCounts[CarStatus::RESERVED->value] ?? 0,
+                'maintenance' => $statusCounts[CarStatus::MAINTENANCE->value] ?? 0,
+                'out_of_service' => ($statusCounts[CarStatus::UNAVAILABLE->value] ?? 0) + ($statusCounts[CarStatus::RETIRED->value] ?? 0),
+            ],
+            'rankings' => [
+                'revenue' => $carsPerformance->sortByDesc('total_revenue')->values()->toArray(),
+                'utilization' => $carsPerformance->sortByDesc('total_days')->values()->toArray(),
+            ]
         ];
     }
 

@@ -211,6 +211,21 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::get('reports/executive/excel', [ReportsController::class, 'exportExecutiveExcel'])
             ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
             ->name('reports.executive.excel');
+        Route::get('reports/financial/pdf', [ReportsController::class, 'exportFinancialPdf'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.financial.pdf');
+        Route::get('reports/financial/excel', [ReportsController::class, 'exportFinancialExcel'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.financial.excel');
+        Route::get('reports/reservations/pdf', [ReportsController::class, 'exportReservationsPdf'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.reservations.pdf');
+        Route::get('reports/reservations/excel', [ReportsController::class, 'exportReservationsExcel'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.reservations.excel');
+        Route::get('reports/fleet/pdf', [ReportsController::class, 'exportFleetPdf'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.fleet.pdf');
         Route::resource('reports', ReportsController::class)
             ->except(['show'])
             ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module']);

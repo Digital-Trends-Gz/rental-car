@@ -270,12 +270,12 @@
     <table class="report-top">
         <tr>
             <td>
-                <div class="report-title">Executive Report</div>
+                <div class="report-title">Fleet Report</div>
                 <div class="badge">{{ $periodLabel }}</div>
             </td>
             <td class="meta-box">
-                <div><strong>Generated:</strong> {{ $generatedAt->format('Y-m-d H:i') }}</div>
-                <div><strong>Branch:</strong> {{ $branchName }}</div>
+                <div><strong>Generated:</strong> {{ \Carbon\Carbon::now()->format('Y-m-d H:i') }}</div>
+                <div><strong>Branch:</strong> {{ $branchName ?? 'All Branches' }}</div>
                 <div>
                     <strong>Date Range:</strong>
                     {{ $dateRange['start']->format('Y-m-d') }} to {{ $dateRange['end']->format('Y-m-d') }}
@@ -284,46 +284,65 @@
         </tr>
     </table>
 
-    <div class="section" style="display: none;">
-        <div class="section-title">Financial Report <span class="ar">التقرير المالي</span></div>
-        <table class="data-table">
-            <tbody>
-                @foreach([] as $section)
-                    <tr>
-                        <td colspan="2" style="background:#f8fafc;font-weight:bold;">
-                            {{ $section['title']['ar'] }} <span class="ar">/ {{ $section['title']['en'] }}</span>
-                        </td>
-                    </tr>
-                    @foreach($section['items'] as $item)
-                        <tr>
-                            <td style="padding-left:18px;">&bull; {{ $item['ar'] }}</td>
-                            <td>{{ $item['en'] }}</td>
-                        </tr>
-                    @endforeach
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-
     <table style="width: 100%; border-collapse: collapse; margin-top: 4px;">
         <tr>
             <td style="width: 49%; vertical-align: top; padding: 0;">
                 <div class="section" style="margin-top: 0;">
-                    <div class="section-title">Financial Summary <span class="ar">الملخص المالي</span></div>
+                    <div class="section-title">Utilization <span class="ar">الاستخدام</span></div>
                     <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Metric</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
                         <tbody>
-                            @foreach($report['financial'] as $metric)
-                                <tr>
-                                    <td>{{ $metric['label'] }}</td>
-                                    <td class="metric-value">{{ $metric['formatted'] }}</td>
-                                </tr>
-                            @endforeach
+                            <tr>
+                                <td>Fleet utilization <br><span class="ar">نسبة تشغيل الأسطول</span></td>
+                                <td class="metric-value">{{ $fleetReport['utilization']['utilization_rate'] }}%</td>
+                            </tr>
+                            <tr>
+                                <td>Rented days per car <br><span class="ar">عدد الأيام المؤجرة لكل سيارة</span></td>
+                                <td class="metric-value">{{ $fleetReport['utilization']['rented_days_per_car'] }}</td>
+                            </tr>
+                            <tr>
+                                <td>Idle days <br><span class="ar">عدد الأيام المتوقفة</span></td>
+                                <td class="metric-value">{{ $fleetReport['utilization']['idle_days'] }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">Top Cars <span class="ar">أفضل السيارات</span></div>
+                    <table class="data-table">
+                        <tbody>
+                            @if(!empty($fleetReport['top_cars']['revenue']))
+                            <tr>
+                                <td>Highest revenue <br><span class="ar">أعلى إيراد</span></td>
+                                <td class="metric-value">{{ $fleetReport['top_cars']['revenue']['name'] }} ({{ $fleetReport['top_cars']['revenue']['value'] }})</td>
+                            </tr>
+                            @endif
+                            @if(!empty($fleetReport['top_cars']['utilization']))
+                            <tr>
+                                <td>Highest utilization <br><span class="ar">أعلى استخدام</span></td>
+                                <td class="metric-value">{{ $fleetReport['top_cars']['utilization']['name'] }} ({{ $fleetReport['top_cars']['utilization']['value'] }})</td>
+                            </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">Worst Cars <span class="ar">أسوأ السيارات</span></div>
+                    <table class="data-table">
+                        <tbody>
+                            @if(!empty($fleetReport['worst_cars']['utilization']))
+                            <tr>
+                                <td>Lowest utilization <br><span class="ar">أقل استخدام</span></td>
+                                <td class="metric-value">{{ $fleetReport['worst_cars']['utilization']['name'] }} ({{ $fleetReport['worst_cars']['utilization']['value'] }})</td>
+                            </tr>
+                            @endif
+                            @if(!empty($fleetReport['worst_cars']['revenue']))
+                            <tr>
+                                <td>Lowest revenue <br><span class="ar">أقل إيراد</span></td>
+                                <td class="metric-value">{{ $fleetReport['worst_cars']['revenue']['name'] }} ({{ $fleetReport['worst_cars']['revenue']['value'] }})</td>
+                            </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -331,19 +350,49 @@
             <td style="width: 2%;"></td>
             <td style="width: 49%; vertical-align: top; padding: 0;">
                 <div class="section" style="margin-top: 0;">
-                    <div class="section-title">Operations Summary <span class="ar">مؤشرات التشغيل</span></div>
+                    <div class="section-title">Fleet Status <span class="ar">حالة الأسطول</span></div>
+                    <table class="data-table">
+                        <tbody>
+                            <tr>
+                                <td>Available <br><span class="ar">متاحة</span></td>
+                                <td class="metric-value">{{ $fleetReport['status_counts']['available'] }}</td>
+                            </tr>
+                            <tr>
+                                <td>Rented <br><span class="ar">مؤجرة</span></td>
+                                <td class="metric-value">{{ $fleetReport['status_counts']['rented'] }}</td>
+                            </tr>
+                            <tr>
+                                <td>Reserved <br><span class="ar">محجوزة</span></td>
+                                <td class="metric-value">{{ $fleetReport['status_counts']['reserved'] }}</td>
+                            </tr>
+                            <tr>
+                                <td>Maintenance <br><span class="ar">صيانة</span></td>
+                                <td class="metric-value">{{ $fleetReport['status_counts']['maintenance'] }}</td>
+                            </tr>
+                            <tr>
+                                <td>Out of service <br><span class="ar">خارج الخدمة</span></td>
+                                <td class="metric-value">{{ $fleetReport['status_counts']['out_of_service'] }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="section" style="margin-top: 10px;">
+                    <div class="section-title">Top 10 Cars by Revenue <span class="ar">أفضل 10 سيارات بالإيراد</span></div>
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Metric</th>
-                                <th>Value</th>
+                                <th>#</th>
+                                <th>Car / السيارة</th>
+                                <th>Revenue / الإيراد</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($report['operations'] as $metric)
+                            @foreach(array_slice($fleetReport['rankings']['revenue'], 0, 10) as $index => $car)
                                 <tr>
-                                    <td>{{ $metric['label'] }}</td>
-                                    <td class="metric-value">{{ $metric['formatted'] }}</td>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $car['car_name'] }}</td>
+                                    <td class="metric-value">{{ $car['formatted_revenue'] }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -352,34 +401,6 @@
             </td>
         </tr>
     </table>
-
-    <div class="section">
-        <div class="section-title">Action Alerts <span class="ar">التنبيهات</span></div>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Alert</th>
-                    <th>Description</th>
-                    <th>Count</th>
-                    <th>Severity</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($report['alerts'] as $alert)
-                    <tr>
-                        <td>{{ $alert['label'] }}</td>
-                        <td>{{ $alert['description'] }}</td>
-                        <td class="metric-value">{{ number_format($alert['value']) }}</td>
-                        <td>
-                            <span class="alert-pill {{ $alert['severity'] }}">
-                                {{ ucfirst($alert['severity']) }}
-                            </span>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
 
     <div class="footer">
         Generated by {{ config('app.name') }}.
