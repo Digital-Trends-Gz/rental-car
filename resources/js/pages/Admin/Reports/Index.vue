@@ -1167,21 +1167,30 @@ onMounted(() => {
                                     <span class="text-blue-700">/ {{ section.title.en }}</span>
                                 </h4>
 
-                                <ul class="mt-4 space-y-3 text-right text-sm leading-6 text-slate-700">
+                                <ul class="mt-4 space-y-4">
                                     <li
                                         v-for="item in section.items"
                                         :key="item.ar"
-                                        class="flex items-start justify-end gap-3"
+                                        class="flex items-center justify-between"
                                     >
-                                        <div class="flex-1">
-                                            <div class="font-medium text-slate-900">
-                                                {{ item.ar }}
-                                            </div>
-                                            <div class="text-xs text-slate-500">
-                                                {{ item.en }}
+                                        <!-- Right side (First child in RTL): Labels and dot -->
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                                            <div class="flex flex-col text-right">
+                                                <span class="font-bold text-slate-800">{{ item.ar }}</span>
+                                                <span class="text-xs text-slate-400 mt-0.5">{{ item.en }}</span>
                                             </div>
                                         </div>
-                                        <span class="mt-1 text-slate-400">•</span>
+
+                                        <!-- Left side (Last child in RTL): Amount and count -->
+                                        <div class="text-left">
+                                            <div class="font-bold text-slate-900 text-base font-mono tracking-tight">
+                                                {{ item.formatted }}
+                                            </div>
+                                            <div class="text-[11px] text-slate-400 mt-0.5" v-if="item.count !== undefined">
+                                                records {{ item.count }}
+                                            </div>
+                                        </div>
                                     </li>
                                 </ul>
                             </div>
