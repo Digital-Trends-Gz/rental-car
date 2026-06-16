@@ -35,6 +35,7 @@ use MohamedGaldi\ViltFilepond\Services\FilePondService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Lang;
@@ -53,6 +54,54 @@ class ContractsController extends Controller
         private readonly ContractDamagePhotoExtractor $contractDamagePhotoExtractor,
         private readonly FilePondService $filePondService
     ) {
+    }
+
+    public function activeToday(Request $request): JsonResponse
+    {
+        $user = $this->authorizeAdminApiUser($request);
+        $today = Carbon::today();
+        $branchId = $this->branchAccess->normalizeRequestedBranchId($request->query('branch_id'));
+        $perPage = $this->resolvePerPage($request);
+
+        $query = Contract::query()
+            ->with([
+                'reservation.user:id,name,email',
+                'reservation.car:id,branch_id,year,make,model,license_plate',
+                'branch:id,name',
+            ])
+            ->where('status', ContractStatus::ACTIVE->value)
+            ->orderBy('end_date')
+            ->orderBy('id');
+
+        if ($this->branchAccess->canAccessAllBranches($user)) {
+            if ($branchId) {
+                $query->where(function ($branchQuery) use ($branchId): void {
+                    $branchQuery
+                        ->where('branch_id', $branchId)
+                        ->orWhereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
+                });
+            }
+        } elseif (! empty($user->branch_id)) {
+            $userBranchId = (int) $user->branch_id;
+            $query->where(function ($branchQuery) use ($userBranchId): void {
+                $branchQuery
+                    ->where('branch_id', $userBranchId)
+                    ->orWhereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $userBranchId));
+            });
+        }
+
+        $paginator = $query->paginate($perPage);
+
+        return response()->json([
+            'date' => $today->toDateString(),
+            'branch_id' => $branchId,
+            'count' => $paginator->total(),
+            'pagination' => $this->paginationPayload($paginator),
+            'contracts' => $paginator->getCollection()
+                ->map(fn (Contract $contract): array => $this->activeTodayContractPayload($contract))
+                ->values()
+                ->all(),
+        ]);
     }
 
     public function damageOptions(Request $request): JsonResponse
@@ -202,6 +251,101 @@ class ContractsController extends Controller
             'damage_report_id' => $damageReport?->id,
             'damage_report_number' => $damageReport?->report_number,
             'damage_report_type' => $damageReport?->report_type,
+        ]);
+    }
+
+    public function storeDamageItem(Request $request, Contract $contract): JsonResponse
+    {
+        $user = $this->authorizeAdminApiUser($request);
+        abort_unless($this->canAccessContract($contract, $user), 403);
+
+        [$phase, $reportType] = $this->resolveDamageItemReportContext($request);
+        $validated = $this->validateDamageItemPayload($request, false, $reportType);
+        $damageReport = $this->resolveOrCreateDraftDamageReportForHandover($contract, $request, $phase, $reportType);
+        $this->linkReturnReportToDamageReportIfNeeded($contract, $damageReport);
+
+        $item = $damageReport->items()->create([
+            'tenant_id' => $damageReport->tenant_id,
+            'zone_code' => $validated['zone_code'],
+            'view_side' => $validated['view_side'],
+            'damage_type' => $validated['damage_type'],
+            'severity' => $validated['severity'],
+            'damage_timing' => $validated['damage_timing'] ?? ($reportType === 'after_return' ? 'after_return' : 'before_pickup'),
+            'quantity' => (int) $validated['quantity'],
+            'marker_x' => $validated['marker_x'] ?? null,
+            'marker_y' => $validated['marker_y'] ?? null,
+            'estimated_cost' => $validated['estimated_cost'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'sort_order' => ((int) $damageReport->items()->max('sort_order')) + 1,
+        ]);
+
+        return response()->json([
+            'message' => 'Damage item created successfully.',
+            'phase' => $phase,
+            'damage_report_id' => $damageReport->id,
+            'item' => $this->damageReportItemPayload($item->refresh()),
+            'damage_report' => $this->damageReportPayload($damageReport->fresh(['files', 'items'])),
+        ], 201);
+    }
+
+    public function updateDamageItem(Request $request, Contract $contract, CarDamageItem $damageItem): JsonResponse
+    {
+        $user = $this->authorizeAdminApiUser($request);
+        abort_unless($this->canAccessContract($contract, $user), 403);
+
+        $damageReport = $this->resolveContractDamageReportForItem($contract, $damageItem);
+        [, $reportType] = $this->resolveDamageItemReportContext($request, $damageReport->report_type);
+        abort_unless($reportType === $damageReport->report_type, 422, 'The selected damage report type does not match this item.');
+
+        $validated = $this->validateDamageItemPayload($request, true, $damageReport->report_type);
+
+        $attributes = [];
+        foreach ([
+            'zone_code',
+            'view_side',
+            'damage_type',
+            'severity',
+            'damage_timing',
+            'quantity',
+            'marker_x',
+            'marker_y',
+            'estimated_cost',
+            'notes',
+            'sort_order',
+        ] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $attributes[$field] = $field === 'quantity' || $field === 'sort_order'
+                    ? (int) $validated[$field]
+                    : $validated[$field];
+            }
+        }
+
+        if ($attributes !== []) {
+            $damageItem->forceFill($attributes)->save();
+        }
+
+        return response()->json([
+            'message' => 'Damage item updated successfully.',
+            'damage_report_id' => $damageReport->id,
+            'item' => $this->damageReportItemPayload($damageItem->refresh()),
+            'damage_report' => $this->damageReportPayload($damageReport->fresh(['files', 'items'])),
+        ]);
+    }
+
+    public function deleteDamageItem(Request $request, Contract $contract, CarDamageItem $damageItem): JsonResponse
+    {
+        $user = $this->authorizeAdminApiUser($request);
+        abort_unless($this->canAccessContract($contract, $user), 403);
+
+        $damageReport = $this->resolveContractDamageReportForItem($contract, $damageItem);
+        $deletedItemId = $damageItem->id;
+        $damageItem->delete();
+
+        return response()->json([
+            'message' => 'Damage item deleted successfully.',
+            'deleted_item_id' => $deletedItemId,
+            'damage_report_id' => $damageReport->id,
+            'damage_report' => $this->damageReportPayload($damageReport->fresh(['files', 'items'])),
         ]);
     }
 
@@ -1445,6 +1589,123 @@ class ContractsController extends Controller
             : ($contract->reservation?->car?->branch_id ? (int) $contract->reservation->car->branch_id : null);
 
         return $this->branchAccess->canAccessBranchId($user, $branchId);
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function resolveDamageItemReportContext(Request $request, ?string $defaultReportType = null): array
+    {
+        $phase = $this->normalizeHandoverPhase($request->input('phase', $request->query('phase', 'return')));
+        $requestedReportType = $request->input('report_type', $request->query('report_type', $defaultReportType));
+        $requestedReportType = is_string($requestedReportType)
+            ? str_replace('-', '_', strtolower(trim($requestedReportType)))
+            : null;
+        $reportType = $requestedReportType ?: ($phase === 'return' ? 'after_return' : 'before_delivery');
+
+        abort_unless(in_array($reportType, ['before_delivery', 'after_return'], true), 422, 'The selected damage report type is invalid.');
+
+        return [$phase, $reportType];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validateDamageItemPayload(Request $request, bool $partial, string $reportType): array
+    {
+        $required = $partial ? 'sometimes' : 'required';
+
+        return $request->validate([
+            'zone_code' => [$required, 'string', Rule::in(CarDamageCatalog::zoneCodes())],
+            'view_side' => [$required, 'string', Rule::in(array_column(CarDamageCatalog::viewSides(), 'value'))],
+            'damage_type' => [$required, 'string', Rule::in(array_column(CarDamageCatalog::damageTypes(), 'value'))],
+            'severity' => [$required, 'string', Rule::in(array_column(CarDamageCatalog::severityLevels(), 'value'))],
+            'damage_timing' => ['sometimes', 'nullable', 'string', Rule::in(array_column(CarDamageCatalog::damageTimings(), 'value'))],
+            'quantity' => [$required, 'integer', 'min:1', 'max:999'],
+            'marker_x' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'marker_y' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'estimated_cost' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
+        ]);
+    }
+
+    private function resolveContractDamageReportForItem(Contract $contract, CarDamageItem $damageItem): CarDamageReport
+    {
+        $damageItem->loadMissing('report');
+        $damageReport = $damageItem->report;
+
+        abort_unless($damageReport, 404, 'Damage report not found for this item.');
+        abort_unless((int) $damageReport->contract_id === (int) $contract->id, 404, 'Damage item not found for this contract.');
+        abort_unless((int) $damageReport->tenant_id === (int) $contract->tenant_id, 404, 'Damage item not found for this tenant.');
+
+        return $damageReport;
+    }
+
+    private function linkReturnReportToDamageReportIfNeeded(Contract $contract, CarDamageReport $damageReport): void
+    {
+        if ($damageReport->report_type !== 'after_return') {
+            return;
+        }
+
+        $contract->loadMissing('returnStatusReport');
+        $returnReport = $contract->returnStatusReport;
+
+        if (!$returnReport) {
+            return;
+        }
+
+        if ((int) ($returnReport->damage_report_id ?? 0) === (int) $damageReport->id && $returnReport->has_damage === true) {
+            return;
+        }
+
+        $returnReport->forceFill([
+            'has_damage' => true,
+            'damage_report_id' => $damageReport->id,
+        ])->save();
+    }
+
+    private function activeTodayContractPayload(Contract $contract): array
+    {
+        $car = $contract->reservation?->car;
+        $client = $contract->reservation?->user;
+
+        return [
+            'id' => $contract->id,
+            'contract_id' => $contract->id,
+            'contract_number' => $contract->contract_number,
+            'status' => $this->contractStatusValue($contract->status),
+            'status_label' => $this->contractStatusLabel($contract->status),
+            'status_color' => $this->contractStatusColor($contract->status),
+            'start_date' => optional($contract->start_date)->toDateString(),
+            'end_date' => optional($contract->end_date)->toDateString(),
+            'car_name' => $car
+                ? trim(sprintf('%s %s %s', (string) $car->year, (string) $car->make, (string) $car->model))
+                : (string) $contract->car_details,
+            'client_name' => (string) ($client?->name ?? $contract->renter_name ?? ''),
+        ];
+    }
+
+    private function resolvePerPage(Request $request): int
+    {
+        $perPage = (int) $request->integer('per_page', 15);
+
+        return max(1, min(100, $perPage));
+    }
+
+    private function paginationPayload(LengthAwarePaginator $paginator): array
+    {
+        $total = $paginator->total();
+
+        return [
+            'current_page' => $paginator->currentPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $total,
+            'last_page' => $paginator->lastPage(),
+            'from' => $total > 0 ? $paginator->firstItem() : null,
+            'to' => $total > 0 ? $paginator->lastItem() : null,
+            'has_more_pages' => $paginator->hasMorePages(),
+        ];
     }
 
     private function damageOptionsPayload(string $locale): array

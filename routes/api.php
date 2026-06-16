@@ -46,12 +46,16 @@ Route::middleware('auth:sanctum')->prefix('reservations')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
+    Route::get('active-today', [ContractsController::class, 'activeToday'])->name('api.contracts.active-today');
     Route::get('damage-options', [ContractsController::class, 'damageOptions'])->name('api.contracts.damage-options');
     Route::get('damage-options/{group}', [ContractsController::class, 'damageOptionGroup'])->name('api.contracts.damage-options.group');
     Route::get('{contract}/documents', [ContractsController::class, 'documents'])->name('api.contracts.documents');
     Route::get('{contract}/accident-reports', [AccidentReportsController::class, 'index'])->name('api.contracts.accident-reports.index');
     Route::post('{contract}/accident-reports', [AccidentReportsController::class, 'store'])->name('api.contracts.accident-reports.store');
     Route::get('{contract}/damage-report-status', [ContractsController::class, 'damageReportStatus'])->name('api.contracts.damage-report-status');
+    Route::post('{contract}/damage-items', [ContractsController::class, 'storeDamageItem'])->name('api.contracts.damage-items.store');
+    Route::match(['post', 'put', 'patch'], '{contract}/damage-items/{damageItem}', [ContractsController::class, 'updateDamageItem'])->name('api.contracts.damage-items.update');
+    Route::delete('{contract}/damage-items/{damageItem}', [ContractsController::class, 'deleteDamageItem'])->name('api.contracts.damage-items.delete');
     Route::get('{contract}/pdf', [\App\Http\Controllers\Admin\ContractsController::class, 'pdf'])->name('api.contracts.pdf');
     Route::get('{contract}/return-status-report/pdf', [\App\Http\Controllers\Admin\ContractReturnReportsController::class, 'pdf'])->name('api.contracts.return-report.pdf');
     Route::match(['post', 'patch'], '{contract}/handover', [ContractsController::class, 'updateHandover'])->name('api.contracts.handover');
