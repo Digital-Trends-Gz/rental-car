@@ -29,6 +29,7 @@ use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
+use App\Services\Clients\ClientStatusService;
 use App\Services\Contracts\ContractDamagePhotoExtractor;
 use App\Services\Contracts\ContractDriverDocumentExtractor;
 use MohamedGaldi\ViltFilepond\Services\FilePondService;
@@ -52,7 +53,8 @@ class ContractsController extends Controller
         private readonly BranchAccess $branchAccess,
         private readonly ContractDriverDocumentExtractor $contractDriverDocumentExtractor,
         private readonly ContractDamagePhotoExtractor $contractDamagePhotoExtractor,
-        private readonly FilePondService $filePondService
+        private readonly FilePondService $filePondService,
+        private readonly ClientStatusService $clientStatusService
     ) {
     }
 
@@ -356,12 +358,12 @@ class ContractsController extends Controller
         $phase = $this->normalizeHandoverPhase($request->input('phase', $request->query('phase', 'delivery')));
 
         $reservation->loadMissing([
-            'user:id,name,email,is_active',
+            'user:id,name,email,is_active,branch_id,tenant_id,role',
             'car:id,branch_id,year,make,model,license_plate,status,mileage',
             'car.branch:id,name',
             'contract.branch:id,name',
             'contract.handoverPhotos',
-            'contract.reservation.user:id,name,email,is_active',
+            'contract.reservation.user:id,name,email,is_active,branch_id,tenant_id,role',
             'contract.reservation.car:id,branch_id,year,make,model,license_plate,status,mileage',
             'contract.reservation.car.branch:id,name',
         ]);
@@ -381,9 +383,9 @@ class ContractsController extends Controller
         $contract->refresh();
 
         return response()->json([
-            'reservation' => $this->reservationPayload($reservation),
+            'reservation' => $this->reservationPayload($reservation, $locale),
             'contract' => $this->contractPayload($contract->loadMissing([
-                'reservation.user:id,name,email,is_active',
+                'reservation.user:id,name,email,is_active,branch_id,tenant_id,role',
                 'reservation.car:id,branch_id,year,make,model,license_plate,status,mileage',
                 'reservation.car.branch:id,name',
                 'branch:id,name',
@@ -467,7 +469,7 @@ class ContractsController extends Controller
             if ($phase === 'return') {
                 $payload = match ($page) {
                     1 => [
-                        'reviewed' => $request->input('reviewed'),
+                        'reviewed' => $request->has('reviewed') ? $request->boolean('reviewed') : null,
                         'note' => $request->input('note'),
                         'notes' => $request->input('notes'),
                     ],
@@ -495,12 +497,10 @@ class ContractsController extends Controller
                         'notes' => $request->input('notes'),
                     ],
                     4 => [
-                        'damage_report_id' => $request->input('damage_report_id'),
+                        'reviewed' => $request->has('reviewed') ? $request->boolean('reviewed') : null,
                         'summary' => $request->input('summary'),
+                        'vehicle_condition_after' => $request->input('vehicle_condition_after'),
                         'has_damage' => $request->boolean('has_damage', true),
-                        'discount' => $request->input('discount'),
-                        'items' => $request->has('items') ? $request->input('items') : null,
-                        'deleted_item_ids' => $request->has('deleted_item_ids') ? $request->input('deleted_item_ids') : null,
                         'note' => $request->input('note'),
                         'notes' => $request->input('notes'),
                     ],
@@ -770,88 +770,46 @@ class ContractsController extends Controller
                 'mobile_signature_text' => $this->mobileSignatureTextForContract($contract),
             ]);
         } elseif ($page === 6) {
+            $reviewed = array_key_exists('reviewed', $stepPayload)
+                ? filter_var($stepPayload['reviewed'], FILTER_VALIDATE_BOOLEAN)
+                : true;
+
             $hasDamage = array_key_exists('has_damage', $stepPayload) && $stepPayload['has_damage'] !== null
                 ? filter_var($stepPayload['has_damage'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
                 : null;
-            $hasDamage = $hasDamage ?? true;
-
-            $damageReport = null;
-            if ($hasDamage) {
-                $damageReport = $this->resolveOrCreateDraftDamageReportForHandover($contract, $request, 'delivery', 'before_delivery');
-            } else {
-                $this->deleteDraftDamageReportForHandover($contract, 'before_delivery');
-            }
-
             $summary = array_key_exists('summary', $stepPayload)
                 ? $this->nullableString($stepPayload['summary'] ?? null)
-                : ($damageReport?->summary);
-
-            $normalizedItems = null;
-            if ($hasDamage && array_key_exists('items', $stepPayload) && is_array($stepPayload['items'])) {
-                $normalizedItems = [];
-
-                foreach (array_values($stepPayload['items']) as $index => $item) {
-                    if (!is_array($item)) {
-                        continue;
-                    }
-
-                    $normalizedItems[] = [
-                        'id' => isset($item['id']) && is_numeric($item['id']) ? (int) $item['id'] : null,
-                        'zone_code' => (string) ($item['zone_code'] ?? ''),
-                        'view_side' => (string) ($item['view_side'] ?? 'front'),
-                        'damage_type' => (string) ($item['damage_type'] ?? 'scratch'),
-                        'severity' => (string) ($item['severity'] ?? 'minor'),
-                        'damage_timing' => (string) ($item['damage_timing'] ?? 'before_pickup'),
-                        'quantity' => (int) ($item['quantity'] ?? 1),
-                        'marker_x' => $item['marker_x'] ?? null,
-                        'marker_y' => $item['marker_y'] ?? null,
-                        'estimated_cost' => $item['estimated_cost'] ?? null,
-                        'notes' => $item['notes'] ?? null,
-                        'sort_order' => $index,
-                    ];
-                }
-            }
-
-            $deletedItemIds = array_values(array_unique(array_filter(array_map(
-                static fn ($value): int => is_numeric($value) ? (int) $value : 0,
-                (array) ($stepPayload['deleted_item_ids'] ?? [])
-            ))));
-
-            DB::transaction(function () use ($contract, $damageReport, $summary, $normalizedItems, $deletedItemIds, $request): void {
-                if ($damageReport) {
-                    $damageReport->forceFill([
-                        'status' => 'draft',
-                        'summary' => $summary,
-                    ])->saveQuietly();
-
-                    if (is_array($normalizedItems)) {
-                        $this->syncItems($damageReport, $normalizedItems, $deletedItemIds);
-
-                        if ($contract->reservation?->car && $contract->reservation) {
-                            $this->syncDamageCases(
-                                $damageReport,
-                                $normalizedItems,
-                                $contract->reservation->car,
-                                $contract,
-                                $contract->reservation,
-                                $request->user()?->id
-                            );
-                        }
-                    }
-                }
-            });
-
-            $damageReport = $hasDamage && $damageReport
-                ? $damageReport->fresh(['files', 'items'])
                 : null;
 
+            $existingDamageReport = CarDamageReport::query()
+                ->where('tenant_id', $contract->tenant_id)
+                ->where('contract_id', $contract->id)
+                ->where('report_type', 'before_delivery')
+                ->latest('id')
+                ->first();
+
+            $hasDamage = $hasDamage ?? ($existingDamageReport !== null);
+            $damageReport = $hasDamage
+                ? ($existingDamageReport ?: $this->resolveOrCreateDraftDamageReportForHandover($contract, $request, 'delivery', 'before_delivery'))
+                : $existingDamageReport;
+
+            if ($damageReport && $hasDamage && array_key_exists('summary', $stepPayload)) {
+                $damageReport->forceFill([
+                    'summary' => $summary,
+                ])->saveQuietly();
+            }
+
+            $damageReport = $damageReport?->fresh(['files', 'items']);
+
             $stepPayload = array_merge($stepPayload, [
+                'reviewed' => $reviewed,
                 'has_damage' => $hasDamage,
-                'damage_report_id' => $damageReport?->id,
-                'damage_report_number' => $damageReport?->report_number,
+                'summary' => $summary,
+                'damage_report_id' => $hasDamage ? $damageReport?->id : null,
+                'damage_report_number' => $hasDamage ? $damageReport?->report_number : null,
                 'damage_report_status' => $hasDamage ? ($damageReport?->status ?? 'pending') : 'skipped',
                 'damage_report_type' => $hasDamage ? $damageReport?->report_type : null,
-                'damage_report' => $damageReport ? $this->damageReportPayload($damageReport) : null,
+                'damage_report' => $hasDamage && $damageReport ? $this->damageReportPayload($damageReport) : null,
                 'contract_inputs' => $this->contractInputsPayload($contract),
                 'vehicle_readings' => $this->vehicleReadingsPayload($contract),
                 'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
@@ -1159,6 +1117,9 @@ class ContractsController extends Controller
                 ],
             ];
         } elseif ($page === 4) {
+            $reviewed = array_key_exists('reviewed', $stepPayload)
+                ? filter_var($stepPayload['reviewed'], FILTER_VALIDATE_BOOLEAN)
+                : true;
             $vehicleConditionAfter = $this->nullableString($stepPayload['vehicle_condition_after'] ?? $contract->vehicle_condition_after ?? null);
             $hasDamage = array_key_exists('has_damage', $stepPayload)
                 ? filter_var($stepPayload['has_damage'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
@@ -1176,55 +1137,16 @@ class ContractsController extends Controller
                 ? $this->nullableString($stepPayload['summary'] ?? null)
                 : ($damageReport?->summary);
 
-            $normalizedItems = null;
-            if ($hasDamage && array_key_exists('items', $stepPayload) && is_array($stepPayload['items'])) {
-                $normalizedItems = [];
+            DB::transaction(function () use ($contract, $damageReport, $summary, $vehicleConditionAfter): void {
+                $contract->forceFill([
+                    'vehicle_condition_after' => $vehicleConditionAfter,
+                ])->saveQuietly();
 
-                foreach (array_values($stepPayload['items']) as $index => $item) {
-                    if (!is_array($item)) {
-                        continue;
-                    }
-
-                    $normalizedItems[] = [
-                        'id' => isset($item['id']) && is_numeric($item['id']) ? (int) $item['id'] : null,
-                        'zone_code' => (string) ($item['zone_code'] ?? ''),
-                        'view_side' => (string) ($item['view_side'] ?? 'front'),
-                        'damage_type' => (string) ($item['damage_type'] ?? 'scratch'),
-                        'severity' => (string) ($item['severity'] ?? 'minor'),
-                        'damage_timing' => 'after_return',
-                        'quantity' => (int) ($item['quantity'] ?? 1),
-                        'marker_x' => $item['marker_x'] ?? null,
-                        'marker_y' => $item['marker_y'] ?? null,
-                        'estimated_cost' => $item['estimated_cost'] ?? null,
-                        'notes' => $item['notes'] ?? null,
-                        'sort_order' => $index,
-                    ];
-                }
-            }
-
-            $deletedItemIds = array_values(array_unique(array_filter(array_map(
-                static fn ($value): int => is_numeric($value) ? (int) $value : 0,
-                (array) ($stepPayload['deleted_item_ids'] ?? [])
-            ))));
-
-            DB::transaction(function () use ($contract, $damageReport, $summary, $normalizedItems, $deletedItemIds, $request): void {
                 if ($damageReport) {
                     $damageReport->forceFill([
                         'status' => 'draft',
                         'summary' => $summary,
                     ])->saveQuietly();
-
-                    if (is_array($normalizedItems)) {
-                        $this->syncItems($damageReport, $normalizedItems, $deletedItemIds);
-                        $this->syncDamageCases(
-                            $damageReport,
-                            $normalizedItems,
-                            $contract->reservation?->car,
-                            $contract,
-                            $contract->reservation,
-                            $request->user()?->id
-                        );
-                    }
                 }
             });
 
@@ -1282,14 +1204,16 @@ class ContractsController extends Controller
             $summaryPayload = $this->returnStatusReportSummaryPayload($contract->fresh(['reservation', 'damageReports.items']), $returnReport, $damageReport);
 
             $stepPayload = array_merge($stepPayload, [
+                'reviewed' => $reviewed,
                 'has_damage' => $hasDamage,
+                'vehicle_condition_after' => $vehicleConditionAfter,
                 'damage_report_id' => $damageReport?->id,
                 'damage_report_number' => $damageReport?->report_number,
                 'damage_report_status' => $hasDamage ? $damageReport?->status : 'skipped',
                 'damage_report_type' => $hasDamage ? $damageReport?->report_type : null,
                 'summary' => $summary,
                 'items' => $hasDamage && $damageReport
-                    ? ($normalizedItems ?? $damageReport->items->map(fn ($item) => [
+                    ? $damageReport->items->map(fn ($item) => [
                         'id' => $item->id,
                         'zone_code' => $item->zone_code,
                         'view_side' => $item->view_side,
@@ -1301,7 +1225,7 @@ class ContractsController extends Controller
                         'marker_y' => $item->marker_y !== null ? (float) $item->marker_y : null,
                         'estimated_cost' => $item->estimated_cost !== null ? (float) $item->estimated_cost : null,
                         'notes' => $item->notes,
-                    ])->values()->all())
+                    ])->values()->all()
                     : [],
                 'damage_report' => $hasDamage && $damageReport ? $this->damageReportPayload($damageReport->fresh(['files', 'items'])) : null,
                 'final_summary' => $summaryPayload,
@@ -1774,8 +1698,14 @@ class ContractsController extends Controller
         ];
     }
 
-    private function reservationPayload(Reservation $reservation): array
+    private function reservationPayload(Reservation $reservation, ?string $locale = null): array
     {
+        $clientStatus = $reservation->user
+            ? $this->clientStatusService->build($reservation->user, $locale ?? 'en')
+            : null;
+        $accountStatus = $reservation->user ? ($reservation->user->is_active ? 'active' : 'suspended') : null;
+        $accountStatusLabel = $reservation->user ? ($reservation->user->is_active ? 'Active' : 'Suspended') : null;
+
         return [
             'id' => $reservation->id,
             'reservation_number' => $reservation->reservation_number,
@@ -1784,16 +1714,10 @@ class ContractsController extends Controller
                 : (string) $reservation->status,
             'client_name' => $reservation->user?->name,
             'client_email' => $reservation->user?->email,
-            'client_status' => $reservation->user ? ($reservation->user->is_active ? 'active' : 'suspended') : null,
-            'client_status_label' => $reservation->user ? ($reservation->user->is_active ? 'Active' : 'Suspended') : null,
-            'client' => $reservation->user ? [
-                'id' => $reservation->user->id,
-                'name' => $reservation->user->name,
-                'email' => $reservation->user->email,
-                'is_active' => (bool) $reservation->user->is_active,
-                'status' => $reservation->user->is_active ? 'active' : 'suspended',
-                'status_label' => $reservation->user->is_active ? 'Active' : 'Suspended',
-            ] : null,
+            'client_status' => $clientStatus['overall_status'] ?? $accountStatus,
+            'client_status_label' => $clientStatus['overall_label'] ?? $accountStatusLabel,
+            'client_status_details' => $clientStatus,
+            'client' => $reservation->user ? $this->clientPayload($reservation->user, $locale) : null,
             'car' => $reservation->car ? [
                 'id' => $reservation->car->id,
                 'name' => trim(sprintf(
@@ -1811,6 +1735,25 @@ class ContractsController extends Controller
         ];
     }
 
+    private function clientPayload(User $client, ?string $locale = null): array
+    {
+        $clientStatus = $this->clientStatusService->build($client, $locale ?? 'en');
+        $accountStatus = $client->is_active ? 'active' : 'suspended';
+        $accountStatusLabel = $client->is_active ? 'Active' : 'Suspended';
+
+        return [
+            'id' => $client->id,
+            'name' => $client->name,
+            'email' => $client->email,
+            'is_active' => (bool) $client->is_active,
+            'account_status' => $accountStatus,
+            'account_status_label' => $accountStatusLabel,
+            'status' => $clientStatus['overall_status'] ?? $accountStatus,
+            'status_label' => $clientStatus['overall_label'] ?? $accountStatusLabel,
+            'status_details' => $clientStatus,
+        ];
+    }
+
     private function handoverPayload(Contract $contract, ?string $locale = null): array
     {
         $state = $this->normalizeHandoverState($contract->handover_state);
@@ -1824,15 +1767,10 @@ class ContractsController extends Controller
                     $payload = $step['payload'];
                     if ($step['page'] === 1) {
                         $payload = array_merge([
-                            'reservation' => $this->reservationPayload($contract->reservation),
-                            'client' => $contract->reservation?->user ? [
-                                'id' => $contract->reservation->user->id,
-                                'name' => $contract->reservation->user->name,
-                                'email' => $contract->reservation->user->email,
-                                'is_active' => (bool) $contract->reservation->user->is_active,
-                                'status' => $contract->reservation->user->is_active ? 'active' : 'suspended',
-                                'status_label' => $contract->reservation->user->is_active ? 'Active' : 'Suspended',
-                            ] : null,
+                            'reservation' => $this->reservationPayload($contract->reservation, $locale),
+                            'client' => $contract->reservation?->user
+                                ? $this->clientPayload($contract->reservation->user, $locale)
+                                : null,
                         ], $payload);
                     }
 
@@ -1879,7 +1817,7 @@ class ContractsController extends Controller
                             ->first();
 
                         $payload = array_merge([
-                            'reservation' => $this->reservationPayload($contract->reservation),
+                            'reservation' => $this->reservationPayload($contract->reservation, $locale),
                             'contract_inputs' => $this->contractInputsPayload($contract),
                             'vehicle_readings' => $this->vehicleReadingsPayload($contract),
                             'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
@@ -1895,7 +1833,7 @@ class ContractsController extends Controller
 
                     if ($step['page'] === 7) {
                         $payload = array_merge([
-                            'reservation' => $this->reservationPayload($contract->reservation),
+                            'reservation' => $this->reservationPayload($contract->reservation, $locale),
                             'contract_inputs' => $this->contractInputsPayload($contract),
                             'vehicle_readings' => $this->vehicleReadingsPayload($contract),
                             'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
@@ -1939,15 +1877,10 @@ class ContractsController extends Controller
 
                     if ($step['page'] === 1) {
                         $payload = array_merge([
-                            'reservation' => $this->reservationPayload($contract->reservation),
-                            'client' => $contract->reservation?->user ? [
-                                'id' => $contract->reservation->user->id,
-                                'name' => $contract->reservation->user->name,
-                                'email' => $contract->reservation->user->email,
-                                'is_active' => (bool) $contract->reservation->user->is_active,
-                                'status' => $contract->reservation->user->is_active ? 'active' : 'suspended',
-                                'status_label' => $contract->reservation->user->is_active ? 'Active' : 'Suspended',
-                            ] : null,
+                            'reservation' => $this->reservationPayload($contract->reservation, $locale),
+                            'client' => $contract->reservation?->user
+                                ? $this->clientPayload($contract->reservation->user, $locale)
+                                : null,
                         ], $payload);
                     }
 
@@ -2242,24 +2175,10 @@ class ContractsController extends Controller
                 'notes' => ['nullable', 'string', 'max:5000'],
             ])->validate(),
             4 => Validator::make($payload, [
-                  'damage_report_id' => ['nullable', 'integer', 'min:1'],
+                  'reviewed' => ['nullable', 'boolean'],
                   'summary' => ['nullable', 'string', 'max:5000'],
                   'vehicle_condition_after' => ['nullable', Rule::in(['clean', 'not_clean'])],
                   'has_damage' => ['nullable', 'boolean'],
-                  'discount' => ['nullable', 'numeric', 'min:0'],
-                  'items' => ['nullable', 'array'],
-                  'items.*.id' => ['nullable', 'integer', 'min:1'],
-                  'items.*.zone_code' => ['required', 'string', Rule::in(CarDamageCatalog::zoneCodes())],
-                  'items.*.view_side' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::viewSides(), 'value'))],
-                  'items.*.damage_type' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::damageTypes(), 'value'))],
-                  'items.*.severity' => ['required', 'string', Rule::in(array_column(CarDamageCatalog::severityLevels(), 'value'))],
-                  'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
-                  'items.*.marker_x' => ['nullable', 'numeric', 'min:0'],
-                  'items.*.marker_y' => ['nullable', 'numeric', 'min:0'],
-                  'items.*.estimated_cost' => ['nullable', 'numeric', 'min:0'],
-                  'items.*.notes' => ['nullable', 'string', 'max:2000'],
-                  'deleted_item_ids' => ['nullable', 'array'],
-                  'deleted_item_ids.*' => ['integer', 'min:1'],
                   'note' => ['nullable', 'string', 'max:5000'],
                   'notes' => ['nullable', 'string', 'max:5000'],
               ])->validate(),
