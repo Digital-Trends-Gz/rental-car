@@ -23,7 +23,7 @@ import { computed, ref, watch } from 'vue';
 const props = defineProps<{
     reservation: any | null;
     is_locked?: boolean;
-    clients: Array<{ id: number; name: string; email: string }>;
+    clients: Array<{ id: number; name: string; email: string; outstanding_return_debt?: number }>;
     cars: Array<{
         id: number;
         label: string;
@@ -249,6 +249,36 @@ const form = useForm({
     status: props.reservation?.status || 'confirmed',
     cancellation_reason: props.reservation?.cancellation_reason || '',
 });
+
+const selectedClient = computed(() => {
+    const selectedClientId = Number(form.user_id || 0);
+    if (!selectedClientId) {
+        return null;
+    }
+
+    return clients.value.find((client) => Number(client.id) === selectedClientId) ?? null;
+});
+
+const selectedClientOutstandingDebt = computed(() => {
+    const debt = Number(selectedClient.value?.outstanding_return_debt ?? 0);
+    return Number.isFinite(debt) && debt > 0 ? debt : 0;
+});
+
+const selectedClientDebtMessage = computed(() => {
+    if (selectedClientOutstandingDebt.value <= 0) {
+        return '';
+    }
+
+    return localize(
+        `This client has unpaid return charges (${formatMoney(selectedClientOutstandingDebt.value)}). You can continue after manager confirmation.`,
+        `هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة ${formatMoney(selectedClientOutstandingDebt.value)}. يمكنك المتابعة بعد تأكيد المدير.`,
+    );
+});
+
+const debtAcknowledged = ref(false);
+const debtDialogMode = ref<'select' | 'submit'>('submit');
+const isRevertingDebtClient = ref(false);
+const showDebtConfirmDialog = ref(false);
 
 const selectedCar = computed(() => {
     const selectedCarId = Number(form.car_id || props.reservation?.car?.id || 0);
@@ -542,6 +572,7 @@ async function submitCreateClient() {
             id: Number(data.client.id),
             name: String(data.client.name || ''),
             email: String(data.client.email || ''),
+            outstanding_return_debt: 0,
         };
 
         if (!clients.value.some((client) => Number(client.id) === newClient.id)) {
@@ -576,6 +607,55 @@ watch(
     { immediate: true },
 );
 
+watch(
+    () => form.user_id,
+    () => {
+        if (isRevertingDebtClient.value) {
+            isRevertingDebtClient.value = false;
+            return;
+        }
+
+        const clientId = Number(form.user_id || 0);
+        if (clientId <= 0) {
+            debtAcknowledged.value = false;
+            return;
+        }
+
+        const client = clients.value.find((item) => Number(item.id) === clientId);
+        const debt = Number(client?.outstanding_return_debt ?? 0);
+
+        if (Number.isFinite(debt) && debt > 0) {
+            debtAcknowledged.value = false;
+            debtDialogMode.value = 'select';
+            showDebtConfirmDialog.value = true;
+            return;
+        }
+
+        debtAcknowledged.value = false;
+    },
+);
+
+watch(showDebtConfirmDialog, (open, wasOpen) => {
+    if (wasOpen && !open && !debtAcknowledged.value && debtDialogMode.value === 'select' && form.user_id) {
+        isRevertingDebtClient.value = true;
+        form.user_id = '';
+    }
+});
+
+function postReservation() {
+    form
+        .transform((data) => ({
+            ...data,
+            confirm_client_debt:
+                debtAcknowledged.value && selectedClientOutstandingDebt.value > 0 ? 1 : 0,
+        }))
+        .post('/admin/reservations', {
+            onFinish: () => {
+                debtAcknowledged.value = false;
+            },
+        });
+}
+
 function submit() {
     if (!subdomain.value) return;
     if (isLocked.value) return;
@@ -584,7 +664,31 @@ function submit() {
         return;
     }
 
-    form.post('/admin/reservations');
+    if (selectedClientOutstandingDebt.value > 0 && !debtAcknowledged.value) {
+        debtDialogMode.value = 'submit';
+        showDebtConfirmDialog.value = true;
+        return;
+    }
+
+    postReservation();
+}
+
+function confirmDebtAction() {
+    debtAcknowledged.value = true;
+    showDebtConfirmDialog.value = false;
+
+    if (debtDialogMode.value === 'submit') {
+        postReservation();
+    }
+}
+
+function cancelDebtAction() {
+    showDebtConfirmDialog.value = false;
+
+    if (debtDialogMode.value === 'select' && form.user_id) {
+        isRevertingDebtClient.value = true;
+        form.user_id = '';
+    }
 }
 </script>
 
@@ -739,6 +843,12 @@ function submit() {
                             :search-placeholder="localize('Search client...', 'ابحث عن العميل...')"
                             :empty-text="localize('No clients found.', 'لا يوجد عملاء.')"
                         />
+                        <p
+                            v-if="selectedClientOutstandingDebt > 0"
+                            class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                        >
+                            {{ selectedClientDebtMessage }}
+                        </p>
                         <InputError :message="form.errors.user_id" class="mt-1" />
                     </div>
 
@@ -1061,6 +1171,46 @@ function submit() {
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog v-model:open="showDebtConfirmDialog">
+                <DialogContent class="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>{{ localize('Client Has Outstanding Debt', 'العميل مديون') }}</DialogTitle>
+                        <DialogDescription>
+                            {{
+                                debtDialogMode === 'submit'
+                                    ? localize(
+                                          `This client has unpaid return charges totaling ${formatMoney(selectedClientOutstandingDebt)}. Do you want to create the reservation anyway?`,
+                                          `هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة ${formatMoney(selectedClientOutstandingDebt)}. هل تريد إنشاء الحجز له رغم ذلك؟`,
+                                      )
+                                    : localize(
+                                          `This client has unpaid return charges totaling ${formatMoney(selectedClientOutstandingDebt)}. Do you want to continue with this client?`,
+                                          `هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة ${formatMoney(selectedClientOutstandingDebt)}. هل تريد المتابعة مع هذا العميل؟`,
+                                      )
+                            }}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter class="gap-2">
+                        <Button type="button" :disabled="form.processing" @click="confirmDebtAction">
+                            {{
+                                form.processing
+                                    ? localize('Saving...', 'جاري الحفظ...')
+                                    : debtDialogMode === 'submit'
+                                      ? localize('Yes, Create Reservation', 'نعم، إنشاء الحجز')
+                                      : localize('Yes, Continue', 'نعم، المتابعة')
+                            }}
+                        </Button>
+                        <Button type="button" variant="outline" @click="cancelDebtAction">
+                            {{
+                                debtDialogMode === 'submit'
+                                    ? localize('No, Cancel', 'لا، إلغاء')
+                                    : localize('No, Choose Another Client', 'لا، اختر عميلاً آخر')
+                            }}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </main>

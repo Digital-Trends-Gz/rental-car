@@ -18,6 +18,7 @@ use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Support\BranchAccess;
+use App\Support\CarDamageCatalog;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -156,7 +157,7 @@ class ReservationsController extends Controller
                 [
                     'key' => 'total',
                     'value' => $pickupCount + $returnCount + $overdueCount,
-                    'label' => $this->apiLocale === 'ar' ? 'الكل' : 'All',
+                    'label' => $this->localizedLabel('task_types', 'total'),
                 ],
             ],
         ]);
@@ -267,7 +268,7 @@ class ReservationsController extends Controller
                 ],
                 [
                     'key' => 'all',
-                    'label' => 'All',
+                    'label' => $this->localizedLabel('task_types', 'all'),
                 ],
             ],
             // 'pickup' => [
@@ -409,6 +410,7 @@ class ReservationsController extends Controller
         ], true));
 
         return response()->json([
+            'locale' => $this->apiLocale,
             'reservation' => $this->reservationDetailPayload($reservation, $completedPaymentsTotal, $balanceDue),
             'contract' => $reservation->contract ? $this->contractDetailPayload($reservation->contract) : null,
             'payments' => $reservation->payments->map(fn (Payment $payment) => $this->paymentPayload($payment))->values()->all(),
@@ -574,7 +576,7 @@ class ReservationsController extends Controller
                 'branch_id' => $car->branch_id,
                 'branch_name' => (string) ($car->branch?->name ?? ''),
                 'status' => $car->status instanceof CarStatus ? $car->status->value : (string) $car->status,
-                'status_label' => $car->status instanceof CarStatus ? $car->status->label() : Str::title(str_replace('_', ' ', (string) $car->status)),
+                'status_label' => $this->carStatusLabel($car->status),
             ] : null,
         ];
     }
@@ -623,8 +625,9 @@ class ReservationsController extends Controller
             'source' => $source,
             'report_number' => $report->report_number,
             'report_type' => $report->report_type,
-            'report_type_label' => Str::title(str_replace('_', ' ', (string) $report->report_type)),
+            'report_type_label' => $this->damageCatalogLabel('report_types', (string) $report->report_type),
             'status' => $report->status,
+            'status_label' => $this->damageCatalogLabel('statuses', (string) $report->status),
             'inspected_at' => optional($report->inspected_at)?->format('Y-m-d H:i'),
             'summary' => $report->summary,
             'items_count' => $report->relationLoaded('items') ? $report->items->count() : null,
@@ -633,10 +636,15 @@ class ReservationsController extends Controller
             'items' => $report->relationLoaded('items') ? $report->items->map(fn ($item) => [
                 'id' => $item->id,
                 'zone_code' => $item->zone_code,
+                'zone_label' => $this->damageCatalogLabel('zones', (string) $item->zone_code),
                 'view_side' => $item->view_side,
+                'view_side_label' => $this->damageCatalogLabel('view_sides', (string) $item->view_side),
                 'damage_type' => $item->damage_type,
+                'damage_type_label' => $this->damageCatalogLabel('damage_types', (string) $item->damage_type),
                 'severity' => $item->severity,
+                'severity_label' => $this->damageCatalogLabel('severity_levels', (string) $item->severity),
                 'damage_timing' => $item->damage_timing,
+                'damage_timing_label' => $this->damageCatalogLabel('damage_timings', (string) $item->damage_timing),
                 'quantity' => (int) ($item->quantity ?? 0),
                 'marker_x' => $item->marker_x,
                 'marker_y' => $item->marker_y,
@@ -653,16 +661,22 @@ class ReservationsController extends Controller
             'id' => $case->id,
             'source' => $source,
             'zone_code' => $case->zone_code,
+            'zone_label' => $this->damageCatalogLabel('zones', (string) $case->zone_code),
             'view_side' => $case->view_side,
+            'view_side_label' => $this->damageCatalogLabel('view_sides', (string) $case->view_side),
             'damage_type' => $case->damage_type,
+            'damage_type_label' => $this->damageCatalogLabel('damage_types', (string) $case->damage_type),
             'severity' => $case->severity,
+            'severity_label' => $this->damageCatalogLabel('severity_levels', (string) $case->severity),
             'damage_timing' => $case->damage_timing,
+            'damage_timing_label' => $this->damageCatalogLabel('damage_timings', (string) $case->damage_timing),
             'quantity' => (int) ($case->quantity ?? 0),
             'marker_x' => $case->marker_x,
             'marker_y' => $case->marker_y,
             'estimated_cost' => (float) ($case->estimated_cost ?? 0),
             'notes' => $case->notes,
             'status' => $case->status,
+            'status_label' => $this->damageCaseStatusLabel((string) $case->status),
             'first_detected_at' => optional($case->first_detected_at)->toIso8601String(),
             'last_detected_at' => optional($case->last_detected_at)->toIso8601String(),
             'repaired_at' => optional($case->repaired_at)->toIso8601String(),
@@ -670,7 +684,9 @@ class ReservationsController extends Controller
                 'id' => $case->lastReport->id,
                 'report_number' => $case->lastReport->report_number,
                 'report_type' => $case->lastReport->report_type,
+                'report_type_label' => $this->damageCatalogLabel('report_types', (string) $case->lastReport->report_type),
                 'status' => $case->lastReport->status,
+                'status_label' => $this->damageCatalogLabel('statuses', (string) $case->lastReport->status),
                 'inspected_at' => optional($case->lastReport->inspected_at)?->format('Y-m-d H:i'),
             ] : null,
         ];
@@ -689,7 +705,7 @@ class ReservationsController extends Controller
             'type' => $violation->type,
             'amount' => (float) ($violation->amount ?? 0),
             'status' => $status?->value ?? (string) $violation->status,
-            'status_label' => $status?->label() ?? Str::title(str_replace('_', ' ', (string) $violation->status)),
+            'status_label' => $this->carViolationStatusLabel($status?->value ?? (string) $violation->status),
             'status_color' => $status?->color() ?? '#6B7280',
             'due_date' => optional($violation->due_date)->toDateString(),
             'paid_at' => optional($violation->paid_at)->toIso8601String(),
@@ -711,7 +727,7 @@ class ReservationsController extends Controller
             'amount' => (float) $payment->amount,
             'currency' => $payment->currency,
             'payment_method' => $payment->payment_method instanceof \App\Enums\PaymentMethod ? $payment->payment_method->value : (string) $payment->payment_method,
-            'payment_method_label' => Str::title(str_replace('_', ' ', $payment->payment_method instanceof \App\Enums\PaymentMethod ? $payment->payment_method->value : (string) $payment->payment_method)),
+            'payment_method_label' => $this->paymentMethodLabel($payment->payment_method instanceof \App\Enums\PaymentMethod ? $payment->payment_method->value : (string) $payment->payment_method),
             'status' => $this->paymentStatusValue($payment->status),
             'status_label' => $this->paymentStatusLabel($payment->status),
             'processed_at' => optional($payment->processed_at)->toIso8601String(),
@@ -726,12 +742,16 @@ class ReservationsController extends Controller
             'id' => $report->id,
             'report_number' => $report->report_number,
             'status' => $report->status,
+            'status_label' => $this->damageCatalogLabel('statuses', (string) $report->status),
             'actual_return_time' => optional($report->actual_return_time)->format('Y-m-d\TH:i'),
             'return_location' => $report->return_location,
             'return_odometer' => $report->return_odometer,
             'return_fuel_level' => $report->return_fuel_level,
+            'return_fuel_level_label' => $this->localizedLabel('fuel_levels', (string) $report->return_fuel_level),
             'vehicle_condition_after' => $report->vehicle_condition_after,
+            'vehicle_condition_after_label' => $this->localizedLabel('vehicle_conditions', (string) $report->vehicle_condition_after),
             'payment_status' => $report->payment_status ?? ($report->payment ? 'paid' : 'not_paid'),
+            'payment_status_label' => $this->localizedLabel('return_payment_statuses', (string) ($report->payment_status ?? ($report->payment ? 'paid' : 'not_paid'))),
             'damage_report_id' => $report->damage_report_id,
             'extra_kilometers' => $report->extra_kilometers,
             'kilometer_rate' => $report->kilometer_rate,
@@ -758,9 +778,7 @@ class ReservationsController extends Controller
 
     private function reservationStatusLabel(mixed $status): string
     {
-        $enum = $status instanceof ReservationStatus ? $status : ReservationStatus::tryFrom((string) $status);
-
-        return $enum?->label() ?? Str::title(str_replace('_', ' ', (string) $status));
+        return $this->localizedLabel('reservation_statuses', $this->reservationStatusValue($status));
     }
 
     private function reservationStatusColor(mixed $status): string
@@ -777,9 +795,7 @@ class ReservationsController extends Controller
 
     private function contractStatusLabel(mixed $status): string
     {
-        $enum = $status instanceof ContractStatus ? $status : ContractStatus::tryFrom((string) $status);
-
-        return $enum?->label() ?? Str::title(str_replace('_', ' ', (string) $status));
+        return $this->localizedLabel('contract_statuses', $this->contractStatusValue($status));
     }
 
     private function contractStatusColor(mixed $status): string
@@ -804,9 +820,184 @@ class ReservationsController extends Controller
 
     private function paymentStatusLabel(mixed $status): string
     {
-        $enum = $status instanceof PaymentStatus ? $status : PaymentStatus::tryFrom((string) $status);
+        return $this->localizedLabel('payment_statuses', $this->paymentStatusValue($status));
+    }
 
-        return $enum?->label() ?? Str::title(str_replace('_', ' ', (string) $status));
+    private function carStatusLabel(mixed $status): string
+    {
+        $value = $status instanceof CarStatus ? $status->value : (string) $status;
+
+        return $this->localizedLabel('car_statuses', $value);
+    }
+
+    private function carViolationStatusLabel(mixed $status): string
+    {
+        $value = $status instanceof CarViolationStatus ? $status->value : (string) $status;
+
+        return $this->localizedLabel('violation_statuses', $value);
+    }
+
+    private function paymentMethodLabel(mixed $method): string
+    {
+        $value = $method instanceof \App\Enums\PaymentMethod ? $method->value : (string) $method;
+
+        return $this->localizedLabel('payment_methods', $value);
+    }
+
+    private function damageCaseStatusLabel(string $status): string
+    {
+        return $this->localizedLabel('damage_case_statuses', $status);
+    }
+
+    private function damageCatalogLabel(string $group, ?string $value): string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        $previousLocale = app()->getLocale();
+        app()->setLocale($this->apiLocale);
+
+        try {
+            $items = match ($group) {
+                'report_types' => CarDamageCatalog::reportTypes(),
+                'statuses' => CarDamageCatalog::statuses(),
+                'damage_types' => CarDamageCatalog::damageTypes(),
+                'severity_levels' => CarDamageCatalog::severityLevels(),
+                'damage_timings' => CarDamageCatalog::damageTimings(),
+                'view_sides' => CarDamageCatalog::viewSides(),
+                'zones' => CarDamageCatalog::zoneDefinitions(),
+                default => [],
+            };
+
+            foreach ($items as $item) {
+                $itemValue = (string) ($item['value'] ?? $item['code'] ?? '');
+
+                if ($itemValue === $value) {
+                    return (string) ($item['label'] ?? $this->fallbackLabel($value));
+                }
+            }
+        } finally {
+            app()->setLocale($previousLocale);
+        }
+
+        return $this->fallbackLabel($value);
+    }
+
+    private function localizedLabel(string $group, ?string $value): string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        $labels = [
+            'reservation_statuses' => [
+                'pending' => ['en' => 'Pending', 'ar' => 'قيد الانتظار', 'ur' => 'زیر التواء'],
+                'confirmed' => ['en' => 'Confirmed', 'ar' => 'مؤكد', 'ur' => 'تصدیق شدہ'],
+                'active' => ['en' => 'Active', 'ar' => 'نشط', 'ur' => 'فعال'],
+                'completed_wait_contract' => ['en' => 'Completed - Waiting for Contract', 'ar' => 'مكتمل - بانتظار العقد', 'ur' => 'مکمل - معاہدے کا انتظار'],
+                'completed' => ['en' => 'Completed', 'ar' => 'مكتمل', 'ur' => 'مکمل'],
+                'cancelled' => ['en' => 'Cancelled', 'ar' => 'ملغي', 'ur' => 'منسوخ'],
+                'no_show' => ['en' => 'No Show', 'ar' => 'لم يحضر', 'ur' => 'حاضر نہیں ہوا'],
+            ],
+            'contract_statuses' => [
+                'draft' => ['en' => 'Draft', 'ar' => 'مسودة', 'ur' => 'مسودہ'],
+                'pending' => ['en' => 'Pending', 'ar' => 'قيد الانتظار', 'ur' => 'زیر التواء'],
+                'active' => ['en' => 'Active', 'ar' => 'نشط', 'ur' => 'فعال'],
+                'completed' => ['en' => 'Completed', 'ar' => 'مكتمل', 'ur' => 'مکمل'],
+                'cancelled' => ['en' => 'Cancelled', 'ar' => 'ملغي', 'ur' => 'منسوخ'],
+            ],
+            'payment_statuses' => [
+                'pending' => ['en' => 'Pending', 'ar' => 'قيد الانتظار', 'ur' => 'زیر التواء'],
+                'completed' => ['en' => 'Completed', 'ar' => 'مكتمل', 'ur' => 'مکمل'],
+                'failed' => ['en' => 'Failed', 'ar' => 'فشل', 'ur' => 'ناکام'],
+                'cancelled' => ['en' => 'Cancelled', 'ar' => 'ملغي', 'ur' => 'منسوخ'],
+                'refunded' => ['en' => 'Refunded', 'ar' => 'مسترد', 'ur' => 'واپس کیا گیا'],
+                'partially_refunded' => ['en' => 'Partially Refunded', 'ar' => 'مسترد جزئياً', 'ur' => 'جزوی واپس کیا گیا'],
+            ],
+            'payment_methods' => [
+                'credit_card' => ['en' => 'Credit Card', 'ar' => 'بطاقة ائتمان', 'ur' => 'کریڈٹ کارڈ'],
+                'debit_card' => ['en' => 'Debit Card', 'ar' => 'بطاقة خصم', 'ur' => 'ڈیبٹ کارڈ'],
+                'paypal' => ['en' => 'PayPal', 'ar' => 'باي بال', 'ur' => 'PayPal'],
+                'stripe' => ['en' => 'Stripe', 'ar' => 'سترايب', 'ur' => 'Stripe'],
+                'myfatoorah' => ['en' => 'MyFatoorah', 'ar' => 'ماي فاتورة', 'ur' => 'MyFatoorah'],
+                'bank_transfer' => ['en' => 'Bank Transfer', 'ar' => 'تحويل بنكي', 'ur' => 'بینک ٹرانسفر'],
+                'cash' => ['en' => 'Cash', 'ar' => 'نقدي', 'ur' => 'نقد'],
+            ],
+            'car_statuses' => [
+                'draft' => ['en' => 'Draft', 'ar' => 'مسودة', 'ur' => 'مسودہ'],
+                'available' => ['en' => 'Available', 'ar' => 'متاحة', 'ur' => 'دستیاب'],
+                'reserved' => ['en' => 'Reserved', 'ar' => 'محجوزة', 'ur' => 'محفوظ'],
+                'rented' => ['en' => 'Rented', 'ar' => 'مؤجرة', 'ur' => 'کرایہ پر'],
+                'maintenance' => ['en' => 'Maintenance', 'ar' => 'صيانة', 'ur' => 'مرمت'],
+                'cleaning' => ['en' => 'Cleaning', 'ar' => 'تنظيف', 'ur' => 'صفائی'],
+                'unavailable' => ['en' => 'Unavailable', 'ar' => 'غير متاحة', 'ur' => 'دستیاب نہیں'],
+                'retired' => ['en' => 'Retired', 'ar' => 'خارج الخدمة', 'ur' => 'ریٹائرڈ'],
+            ],
+            'violation_statuses' => [
+                'pending' => ['en' => 'Pending', 'ar' => 'قيد الانتظار', 'ur' => 'زیر التواء'],
+                'paid' => ['en' => 'Paid', 'ar' => 'مدفوعة', 'ur' => 'ادا شدہ'],
+                'disputed' => ['en' => 'Disputed', 'ar' => 'متنازع عليها', 'ur' => 'متنازع'],
+                'cancelled' => ['en' => 'Cancelled', 'ar' => 'ملغاة', 'ur' => 'منسوخ'],
+            ],
+            'finance_status' => [
+                'no_charge' => ['en' => 'No Charge', 'ar' => 'لا توجد رسوم', 'ur' => 'کوئی چارج نہیں'],
+                'paid' => ['en' => 'Paid', 'ar' => 'مدفوع', 'ur' => 'ادا شدہ'],
+                'partial' => ['en' => 'Partially Paid', 'ar' => 'مدفوع جزئياً', 'ur' => 'جزوی ادائیگی'],
+                'unpaid' => ['en' => 'Unpaid', 'ar' => 'غير مدفوع', 'ur' => 'غیر ادا شدہ'],
+                'partial_with_return_debt' => ['en' => 'Partial + Return Debt', 'ar' => 'جزئي + مديونية رجوع', 'ur' => 'جزوی + واپسی قرض'],
+                'return_debt' => ['en' => 'Return Debt', 'ar' => 'مديونية رجوع', 'ur' => 'واپسی قرض'],
+            ],
+            'fuel_levels' => [
+                'empty' => ['en' => 'Empty', 'ar' => 'فارغ', 'ur' => 'خالی'],
+                'quarter' => ['en' => '1/4 Tank', 'ar' => 'ربع الخزان', 'ur' => '1/4 ٹینک'],
+                '1/4' => ['en' => '1/4 Tank', 'ar' => 'ربع الخزان', 'ur' => '1/4 ٹینک'],
+                'half' => ['en' => '1/2 Tank', 'ar' => 'نصف الخزان', 'ur' => '1/2 ٹینک'],
+                '1/2' => ['en' => '1/2 Tank', 'ar' => 'نصف الخزان', 'ur' => '1/2 ٹینک'],
+                'three_quarters' => ['en' => '3/4 Tank', 'ar' => 'ثلاثة أرباع الخزان', 'ur' => '3/4 ٹینک'],
+                '3/4' => ['en' => '3/4 Tank', 'ar' => 'ثلاثة أرباع الخزان', 'ur' => '3/4 ٹینک'],
+                'full' => ['en' => 'Full Tank', 'ar' => 'ممتلئ', 'ur' => 'مکمل ٹینک'],
+            ],
+            'vehicle_conditions' => [
+                'clean' => ['en' => 'Clean', 'ar' => 'نظيفة', 'ur' => 'صاف'],
+                'dirty' => ['en' => 'Dirty', 'ar' => 'متسخة', 'ur' => 'گندی'],
+                'damaged' => ['en' => 'Damaged', 'ar' => 'متضررة', 'ur' => 'خراب'],
+                'good' => ['en' => 'Good', 'ar' => 'جيدة', 'ur' => 'اچھی'],
+                'fair' => ['en' => 'Fair', 'ar' => 'متوسطة', 'ur' => 'مناسب'],
+                'poor' => ['en' => 'Poor', 'ar' => 'سيئة', 'ur' => 'خراب حالت'],
+            ],
+            'return_payment_statuses' => [
+                'paid' => ['en' => 'Paid', 'ar' => 'مدفوع', 'ur' => 'ادا شدہ'],
+                'not_paid' => ['en' => 'Not Paid', 'ar' => 'غير مدفوع', 'ur' => 'غیر ادا شدہ'],
+                'pending' => ['en' => 'Pending', 'ar' => 'قيد الانتظار', 'ur' => 'زیر التواء'],
+                'partial' => ['en' => 'Partial', 'ar' => 'جزئي', 'ur' => 'جزوی'],
+            ],
+            'damage_case_statuses' => [
+                'open' => ['en' => 'Open', 'ar' => 'مفتوح', 'ur' => 'کھلا'],
+                'repaired' => ['en' => 'Repaired', 'ar' => 'تم الإصلاح', 'ur' => 'مرمت شدہ'],
+                'closed' => ['en' => 'Closed', 'ar' => 'مغلق', 'ur' => 'بند'],
+            ],
+            'task_types' => [
+                'pickup' => ['en' => 'Pickup', 'ar' => 'تسليم', 'ur' => 'حوالگی'],
+                'return' => ['en' => 'Return', 'ar' => 'استلام', 'ur' => 'واپسی'],
+                'overdue' => ['en' => 'Overdue', 'ar' => 'متأخر', 'ur' => 'تاخیر شدہ'],
+                'total' => ['en' => 'All', 'ar' => 'الكل', 'ur' => 'سب'],
+                'all' => ['en' => 'All', 'ar' => 'الكل', 'ur' => 'سب'],
+            ],
+        ];
+
+        return $labels[$group][$value][$this->apiLocale]
+            ?? $labels[$group][$value]['en']
+            ?? $this->fallbackLabel($value);
+    }
+
+    private function fallbackLabel(string $value): string
+    {
+        return Str::title(str_replace('_', ' ', $value));
     }
 
     private function isCompletedPayment(Payment $payment): bool
@@ -835,31 +1026,26 @@ class ReservationsController extends Controller
 
         if ($totalDue <= 0) {
             $value = 'no_charge';
-            $label = 'No Charge';
             $color = '#6B7280';
         } elseif ($balance <= 0) {
             $value = 'paid';
-            $label = 'Paid';
             $color = '#10B981';
         } elseif ($completedPayments > 0) {
             $value = 'partial';
-            $label = 'Partially Paid';
             $color = '#F59E0B';
         } else {
             $value = 'unpaid';
-            $label = 'Unpaid';
             $color = '#EF4444';
         }
 
         if (($contract->returnStatusReport?->payment_status ?? null) === 'not_paid' && $returnReportTotal > 0 && $balance > 0) {
             $value = $completedPayments > 0 ? 'partial_with_return_debt' : 'return_debt';
-            $label = $completedPayments > 0 ? 'Partial + Return Debt' : 'Return Debt';
             $color = '#DC2626';
         }
 
         return [
             'value' => $value,
-            'label' => $label,
+            'label' => $this->localizedLabel('finance_status', $value),
             'color' => $color,
             'total_due' => round($totalDue, 2),
             'paid_amount' => round($completedPayments, 2),
@@ -921,19 +1107,15 @@ class ReservationsController extends Controller
 
     private function taskTypeLabel(string $type): string
     {
-        $isArabic = $this->apiLocale === 'ar';
-
-        return match ($type) {
-            'pickup' => $isArabic ? 'استلام' : 'Pickup',
-            'return' => $isArabic ? 'تسليم' : 'Return',
-            'overdue' => $isArabic ? 'متأخر' : 'Overdue',
-            default => Str::title($type),
-        };
+        return $this->localizedLabel('task_types', $type);
     }
 
     private function setApiLocale(Request $request): void
     {
-        $this->apiLocale = $request->getPreferredLanguage(['ar', 'en']) ?? app()->getLocale() ?? 'en';
+        $locales = array_values(array_filter((array) config('app.available_locales', ['en', 'ar', 'ur'])));
+        $fallback = in_array(app()->getLocale(), $locales, true) ? app()->getLocale() : 'en';
+
+        $this->apiLocale = $request->getPreferredLanguage($locales) ?: $fallback;
     }
 
     private function resolvePerPage(Request $request): int

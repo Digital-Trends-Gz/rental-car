@@ -13,6 +13,7 @@ use App\Support\BranchAccess;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
 class OperationalNotificationsService
@@ -51,9 +52,9 @@ class OperationalNotificationsService
     public function forUser(User $user, ?int $branchId = null, int $limit = 20, string $locale = 'en', ?string $type = null): Collection
     {
         $type = trim((string) $type);
-        $limit = max(1, min(100, $limit));
+        $limit = max(1, min(500, $limit));
 
-        return collect()
+        $items = collect()
             ->merge($type === '' || $type === 'overdue_return' ? $this->overdueReturnNotifications($user, $branchId, $locale) : [])
             ->merge($type === '' || $type === 'missing_documents' ? $this->missingDocumentNotifications($user, $branchId, $locale) : [])
             ->merge($type === '' || $type === 'new_damage' ? $this->newDamageNotifications($user, $branchId, $locale) : [])
@@ -65,6 +66,74 @@ class OperationalNotificationsService
             ->take($limit)
             ->map(function (array $item): array {
                 unset($item['priority_rank'], $item['occurred_at_sort']);
+
+                return $item;
+            })
+            ->values();
+
+        return $this->attachReadState($user, $items);
+    }
+
+    public function unreadForUser(User $user, ?int $branchId = null, int $limit = 500, string $locale = 'en', ?string $type = null): Collection
+    {
+        return $this->forUser($user, $branchId, $limit, $locale, $type)
+            ->filter(fn (array $item): bool => empty($item['read_at']))
+            ->values();
+    }
+
+    public function markCurrentAsRead(User $user, ?int $branchId = null, string $locale = 'en', ?string $type = null): int
+    {
+        $items = $this->unreadForUser($user, $branchId, 500, $locale, $type);
+        if ($items->isEmpty()) {
+            return 0;
+        }
+
+        $now = now();
+        $rows = $items
+            ->pluck('id')
+            ->filter()
+            ->unique()
+            ->map(fn (string $id): array => [
+                'tenant_id' => $user->tenant_id,
+                'user_id' => $user->id,
+                'notification_key' => $id,
+                'read_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])
+            ->values()
+            ->all();
+
+        DB::table('operational_notification_reads')->upsert(
+            $rows,
+            ['user_id', 'notification_key'],
+            ['read_at', 'updated_at']
+        );
+
+        return count($rows);
+    }
+
+    private function attachReadState(User $user, Collection $items): Collection
+    {
+        if ($items->isEmpty()) {
+            return $items;
+        }
+
+        $keys = $items
+            ->pluck('id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $readAtByKey = DB::table('operational_notification_reads')
+            ->where('user_id', $user->id)
+            ->whereIn('notification_key', $keys)
+            ->pluck('read_at', 'notification_key');
+
+        return $items
+            ->map(function (array $item) use ($readAtByKey): array {
+                $item['read_at'] = $readAtByKey[$item['id']] ?? null;
 
                 return $item;
             })

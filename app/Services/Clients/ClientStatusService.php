@@ -103,6 +103,17 @@ class ClientStatusService
     {
         $flags = [];
 
+        if (! (bool) $client->is_active) {
+            $flags[] = [
+                'type' => 'blocked',
+                'severity' => 'danger',
+                'label' => $this->label('type.blocked', $locale),
+                'description' => $this->label('description.blocked', $locale),
+                'source' => 'automatic',
+                'blocks_booking' => true,
+            ];
+        }
+
         $debt = $this->clientDebt($client);
         if ($debt['total'] > 0) {
             $flags[] = [

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useTrans } from '@/composables/useTrans';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
@@ -130,6 +130,54 @@ const props = defineProps<{
         amount: number;
         edit_url: string;
     }>;
+    dailyTasks: {
+        date: string;
+        branch_id: number | null;
+        type: string;
+        progress: {
+            total: number;
+            completed: number;
+            in_progress: number;
+            pending: number;
+            late: number;
+            percentage: number;
+        };
+        tasks: Array<{
+            id: string;
+            task_type: string;
+            task_type_label: string;
+            source_type: string;
+            source_id: number;
+            reference: string | null;
+            title: string;
+            description: string;
+            scheduled_at: string;
+            scheduled_date: string;
+            scheduled_time: string;
+            location: string | null;
+            status: string;
+            status_label: string;
+            computed_status: string;
+            computed_status_label: string;
+            is_late: boolean;
+            remaining_minutes: number;
+            started_at: string | null;
+            completed_at: string | null;
+            car: {
+                id: number;
+                name: string;
+                license_plate: string;
+                branch_id: number | null;
+                branch_name: string;
+                image_url: string | null;
+            } | null;
+            client: {
+                id: number;
+                name: string;
+                email: string;
+            } | null;
+        }>;
+    };
     branches: Array<{ id: number; name: string }>;
     filters: { branch_id: number | null };
     canAccessAllBranches: boolean;
@@ -204,6 +252,7 @@ const taskItems = ref<TaskItem[]>([]);
 const taskCount = ref(0);
 const taskLoading = ref(false);
 const taskError = ref('');
+const dailyTaskActionKey = ref('');
 
 const taskTypeMeta = computed(() => {
     const meta = {
@@ -294,6 +343,57 @@ onMounted(() => {
 const selectedBranch = ref<number | null>(props.filters.branch_id ?? null);
 const applyBranchFilter = () => {
     router.get(window.location.pathname, { branch_id: selectedBranch.value ?? undefined }, { preserveState: true });
+};
+
+const flash = (tone: 'success' | 'error', message: string) => {
+    window.dispatchEvent(new CustomEvent('flash-toast', { detail: { tone, message } }));
+};
+
+const csrfToken = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+
+const updateDailyTaskStatus = async (task: {
+    id: string;
+    task_type: string;
+    source_type: string;
+    source_id: number;
+}, action: 'start' | 'complete') => {
+    dailyTaskActionKey.value = `${action}:${task.id}`;
+
+    try {
+        const response = await fetch(`/api/tasks/${action}`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+            },
+            body: JSON.stringify({
+                task_type: task.task_type,
+                source_type: task.source_type,
+                source_id: task.source_id,
+            }),
+        });
+
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok) {
+            throw new Error(payload?.message ?? localize('Unable to update task.', 'تعذر تحديث المهمة.'));
+        }
+
+        flash(
+            'success',
+            action === 'start'
+                ? localize('Task started.', 'تم بدء المهمة.')
+                : localize('Task completed.', 'تم إنجاز المهمة.'),
+        );
+
+        router.reload({ only: ['dailyTasks'], preserveScroll: true });
+    } catch (error) {
+        flash('error', error instanceof Error ? error.message : localize('Unable to update task.', 'تعذر تحديث المهمة.'));
+    } finally {
+        dailyTaskActionKey.value = '';
+    }
 };
 
 const maxRevenue = computed(() => Math.max(...props.monthlyRevenue.map((m) => m.revenue), 1));
@@ -522,6 +622,31 @@ const kpiCards = computed(() => [
         bg: 'rgba(236,72,153,0.1)',
     },
 ]);
+
+const dailyTaskPreview = computed(() => props.dailyTasks?.tasks?.slice(0, 8) ?? []);
+
+const dailyTaskAccent = (task: { computed_status: string; task_type: string }) => {
+    if (task.computed_status === 'late') return '#EF4444';
+    if (task.computed_status === 'completed') return '#10B981';
+    if (task.computed_status === 'in_progress') return '#2563EB';
+    if (task.task_type === 'pickup') return '#0F766E';
+    if (task.task_type === 'return') return '#F97316';
+
+    return '#6366F1';
+};
+
+const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
+    const abs = Math.abs(Math.round(minutes));
+    const hours = Math.floor(abs / 60);
+    const mins = abs % 60;
+    const value = hours > 0
+        ? localize(`${hours}h ${mins}m`, `${hours}س ${mins}د`)
+        : localize(`${mins}m`, `${mins}د`);
+
+    return isLate
+        ? localize(`${value} late`, `متأخرة ${value}`)
+        : localize(`${value} remaining`, `متبقي ${value}`);
+};
 </script>
 
 <template>
@@ -551,6 +676,127 @@ const kpiCards = computed(() => [
                 </div>
             </div>
 
+            <Card class="overflow-hidden border-0 shadow-sm">
+                <CardHeader class="border-b bg-muted/20">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <Clock class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <CardTitle class="text-lg">{{ localize('Today Tasks', 'مهام اليوم') }}</CardTitle>
+                                <p class="text-sm text-muted-foreground">
+                                    {{ localize('Pickups, returns, and maintenance ordered by time.', 'تسليم واستلام وصيانة مرتبة حسب الوقت.') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 text-center sm:min-w-[360px]">
+                            <div class="rounded-xl bg-muted/50 px-3 py-2">
+                                <div class="text-lg font-bold">{{ dailyTasks.progress.total }}</div>
+                                <div class="text-[11px] text-muted-foreground">{{ localize('Total', 'الكل') }}</div>
+                            </div>
+                            <div class="rounded-xl bg-blue-50 px-3 py-2 text-blue-700">
+                                <div class="text-lg font-bold">{{ dailyTasks.progress.in_progress }}</div>
+                                <div class="text-[11px]">{{ localize('Working', 'قيد العمل') }}</div>
+                            </div>
+                            <div class="rounded-xl bg-green-50 px-3 py-2 text-green-700">
+                                <div class="text-lg font-bold">{{ dailyTasks.progress.completed }}</div>
+                                <div class="text-[11px]">{{ localize('Done', 'منجزة') }}</div>
+                            </div>
+                            <div class="rounded-xl bg-red-50 px-3 py-2 text-red-700">
+                                <div class="text-lg font-bold">{{ dailyTasks.progress.late }}</div>
+                                <div class="text-[11px]">{{ localize('Late', 'متأخرة') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent class="space-y-4 pt-5">
+                    <div class="rounded-2xl border bg-background p-4">
+                        <div class="mb-2 flex items-center justify-between text-sm">
+                            <span class="font-medium">{{ localize('Daily progress', 'تقدم المهام اليومية') }}</span>
+                            <span class="font-bold text-primary">{{ dailyTasks.progress.percentage }}%</span>
+                        </div>
+                        <div class="h-2 overflow-hidden rounded-full bg-muted">
+                            <div
+                                class="h-full rounded-full bg-primary transition-all"
+                                :style="{ width: `${Math.min(100, Math.max(0, dailyTasks.progress.percentage))}%` }"
+                            />
+                        </div>
+                    </div>
+
+                    <div v-if="dailyTaskPreview.length === 0" class="rounded-2xl border border-dashed py-8 text-center text-sm text-muted-foreground">
+                        {{ localize('No operational tasks for today.', 'لا توجد مهام تشغيلية لهذا اليوم.') }}
+                    </div>
+
+                    <div v-else class="grid gap-3 lg:grid-cols-2">
+                        <div
+                            v-for="task in dailyTaskPreview"
+                            :key="task.id"
+                            class="rounded-2xl border bg-background p-4 shadow-sm"
+                            :style="{ borderInlineStart: `4px solid ${dailyTaskAccent(task)}` }"
+                        >
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0" :class="isRtl ? 'text-right' : ''">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span
+                                            class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                                            :style="{ background: `${dailyTaskAccent(task)}1A`, color: dailyTaskAccent(task) }"
+                                        >
+                                            {{ task.task_type_label }}
+                                        </span>
+                                        <span class="text-xs text-muted-foreground">{{ task.scheduled_time }}</span>
+                                        <span v-if="task.is_late" class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+                                            {{ task.computed_status_label }}
+                                        </span>
+                                    </div>
+                                    <div class="mt-2 font-semibold">{{ task.car?.name || task.title }}</div>
+                                    <div class="text-sm text-muted-foreground">
+                                        {{ task.client?.name || task.reference || task.description }}
+                                    </div>
+                                    <div class="mt-1 text-xs text-muted-foreground">
+                                        {{ task.location || task.car?.branch_name || localize('No location', 'لا يوجد موقع') }}
+                                    </div>
+                                </div>
+                                <div class="shrink-0 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">
+                                    <div class="font-semibold" :style="{ color: dailyTaskAccent(task) }">{{ task.status_label }}</div>
+                                    <div v-if="task.status !== 'completed'">{{ dailyTaskRemainingLabel(task.remaining_minutes, task.is_late) }}</div>
+                                    <div v-else>{{ localize('Finished', 'تم الإنجاز') }}</div>
+                                </div>
+                            </div>
+                            <div v-if="task.status !== 'completed'" class="mt-4 flex" :class="isRtl ? 'justify-start' : 'justify-end'">
+                                <Button
+                                    v-if="task.status === 'in_progress'"
+                                    size="sm"
+                                    class="bg-primary text-primary-foreground hover:bg-primary/90"
+                                    :disabled="dailyTaskActionKey === `complete:${task.id}`"
+                                    @click="updateDailyTaskStatus(task, 'complete')"
+                                >
+                                    {{
+                                        dailyTaskActionKey === `complete:${task.id}`
+                                            ? localize('Saving...', 'جاري الحفظ...')
+                                            : localize('Complete task', 'إنهاء المهمة')
+                                    }}
+                                </Button>
+                                <Button
+                                    v-else
+                                    size="sm"
+                                    variant="outline"
+                                    :disabled="dailyTaskActionKey === `start:${task.id}`"
+                                    @click="updateDailyTaskStatus(task, 'start')"
+                                >
+                                    {{
+                                        dailyTaskActionKey === `start:${task.id}`
+                                            ? localize('Saving...', 'جاري الحفظ...')
+                                            : localize('Start task', 'بدء المهمة')
+                                    }}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             <div class="grid gap-4 xl:grid-cols-3">
                 <Card class="border-0 shadow-sm xl:col-span-2">
                     <CardHeader class="pb-3">
@@ -577,7 +823,6 @@ const kpiCards = computed(() => [
                                 <Link
                                     :href="action.href"
                                     class="flex w-full min-w-0 items-center gap-4"
-                                    :class="isRtl ? 'flex-row-reverse' : 'flex-row'"
                                 >
                                     <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl" :style="{ background: action.bg }">
                                         <component :is="action.icon" class="h-5 w-5" :style="{ color: action.accent }" />
@@ -1028,7 +1273,7 @@ const kpiCards = computed(() => [
                                 {{ localize('View all', 'عرض الكل') }} →
                             </Link>
                         </div>
-                        <div class="mt-4 flex flex-wrap gap-2" :class="isRtl ? 'flex-row-reverse justify-end' : ''">
+                        <div class="mt-4 flex flex-wrap gap-2">
                             <button
                                 v-for="tab in taskTabs"
                                 :key="tab.key"

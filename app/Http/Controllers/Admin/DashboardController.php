@@ -15,6 +15,7 @@ use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\Tasks\DailyTasksService;
 use App\Support\BranchAccess;
 use App\Support\FinancialVisibility;
 use Carbon\Carbon;
@@ -26,6 +27,7 @@ class DashboardController extends Controller
 {
     public function __construct(
         private BranchAccess $branchAccess,
+        private DailyTasksService $dailyTasks,
     )
     {
     }
@@ -368,6 +370,14 @@ class DashboardController extends Controller
             })
             ->values();
 
+        $dailyTasks = $this->dailyTasks->timeline(
+            user: $user,
+            date: $today,
+            branchId: $branchId,
+            type: null,
+            locale: app()->getLocale(),
+        );
+
         return Inertia::render('Admin/Dashboard', [
             'stats' => [
                 'total_cars'           => $totalCars,
@@ -391,6 +401,7 @@ class DashboardController extends Controller
             'expiringContracts'    => $expiringContracts,
             'recentForcedExtensions' => $recentForcedExtensions,
             'recentPendingViolations' => $recentPendingViolations,
+            'dailyTasks'           => $dailyTasks,
             'branches'             => $branchOptions,
             'filters'              => ['branch_id' => $branchId],
             'canAccessAllBranches' => $canAccessAllBranches,

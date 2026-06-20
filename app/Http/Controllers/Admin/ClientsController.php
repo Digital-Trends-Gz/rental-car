@@ -12,6 +12,7 @@ use App\Models\ClientDocument;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\ClientDocuments\LocalClientDocumentExtractor;
+use App\Services\Clients\ClientStatusService;
 use App\Rules\DigitsOnly;
 use App\Rules\LettersOnly;
 use App\Support\BranchAccess;
@@ -32,7 +33,8 @@ class ClientsController extends Controller
     public function __construct(
         private BranchAccess $branchAccess,
         private FilePondService $filePondService,
-        private LocalClientDocumentExtractor $localClientDocumentExtractor
+        private LocalClientDocumentExtractor $localClientDocumentExtractor,
+        private ClientStatusService $clientStatusService
     )
     {
     }
@@ -77,6 +79,21 @@ class ClientsController extends Controller
             ->orderBy('name');
 
         $clients = $query->paginate(10)->withQueryString();
+        $locale = $this->dashboardLocale($request);
+
+        $clients->getCollection()->transform(function (User $client) use ($locale): User {
+            $status = $this->clientStatusService->build($client, $locale);
+
+            $client->setAttribute('client_status', [
+                'status' => $status['overall_status'],
+                'label' => $status['overall_label'],
+                'can_book' => $status['can_book'],
+                'flags_count' => $status['flags_count'],
+                'blocking_flags' => $status['blocking_flags'],
+            ]);
+
+            return $client;
+        });
 
         $statusCountsQuery = User::query()
             ->where('role', UserRole::CLIENT);
@@ -187,9 +204,10 @@ class ClientsController extends Controller
             ->with('success', 'Client created successfully.');
     }
 
-    public function show(User $client): Response
+    public function show(Request $request, User $client): Response
     {
-        $this->ensureClientAccessible($client, request()->user());
+        $this->ensureClientAccessible($client, $request->user());
+        $clientStatus = $this->clientStatusService->build($client, $this->dashboardLocale($request));
 
         $totalSpent = Payment::where('user_id', $client->id)
             ->where('status', PaymentStatus::COMPLETED)
@@ -207,6 +225,21 @@ class ClientsController extends Controller
             ->paginate(10, ['*'], 'payments_page')
             ->withQueryString();
 
+        $notes = $client->clientNotes()
+            ->with('creator:id,name')
+            ->latest('id')
+            ->limit(20)
+            ->get()
+            ->map(fn ($note) => [
+                'id' => $note->id,
+                'note' => $note->note,
+                'created_at' => $note->created_at?->toIso8601String(),
+                'creator' => $note->creator ? [
+                    'id' => $note->creator->id,
+                    'name' => $note->creator->name,
+                ] : null,
+            ]);
+
         return Inertia::render('Admin/Clients/Show', [
             'client' => [
                 'id' => $client->id,
@@ -214,7 +247,10 @@ class ClientsController extends Controller
                 'email' => $client->email,
                 'is_active' => (bool) $client->is_active,
                 'created_at' => $client->created_at,
+                'status' => $clientStatus['overall_status'],
+                'status_label' => $clientStatus['overall_label'],
             ],
+            'clientStatus' => $clientStatus,
             'stats' => [
                 'total_reservations' => $client->reservations()->count(),
                 'total_payments' => $client->payments()->count(),
@@ -223,13 +259,37 @@ class ClientsController extends Controller
             ],
             'reservations' => $reservations,
             'payments' => $payments,
+            'notes' => $notes,
             'actions' => [
                 'documents' => route('admin.clients.documents', [
                     'subdomain' => request()->route('subdomain'),
                     'client' => $client->id,
                 ]),
+                'store_note' => route('admin.clients.notes.store', [
+                    'subdomain' => request()->route('subdomain'),
+                    'client' => $client->id,
+                ]),
             ],
         ]);
+    }
+
+    public function storeNote(Request $request, User $client): RedirectResponse
+    {
+        $this->ensureClientAccessible($client, $request->user());
+
+        $validated = $request->validate([
+            'note' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $client->clientNotes()->create([
+            'tenant_id' => $this->tenantId(),
+            'note' => trim((string) $validated['note']),
+            'created_by' => $request->user()?->id,
+        ]);
+
+        return redirect()
+            ->back()
+            ->with('success', 'Client note added successfully.');
     }
 
     public function documents(Request $request, User $client): Response
@@ -431,6 +491,14 @@ class ClientsController extends Controller
     {
         abort_unless($client->role === UserRole::CLIENT, 404);
         abort_unless($this->branchAccess->canAccessBranchId($actor, $client->branch_id ? (int) $client->branch_id : null), 403);
+    }
+
+    private function dashboardLocale(Request $request): string
+    {
+        $locale = $request->route('locale') ?: app()->getLocale();
+        $locale = strtolower(substr((string) $locale, 0, 2));
+
+        return in_array($locale, ['ar', 'en'], true) ? $locale : 'en';
     }
 
     /**

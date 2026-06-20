@@ -49,6 +49,8 @@ return Application::configure(basePath: dirname(__DIR__))
             return route('login');
         });
 
+        $middleware->statefulApi();
+
         $middleware->web(prepend: [
             \App\Http\Middleware\IdentifyTenant::class,
             \App\Http\Middleware\EnforceSecurityAccess::class,

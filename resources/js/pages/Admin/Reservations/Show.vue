@@ -25,6 +25,8 @@ const hasFeature = (feature: string) => {
 }
 const reservation = computed(() => props.reservation)
 const isLocked = computed(() => Boolean(reservation.value?.is_locked))
+const canCreateContract = computed(() => Boolean(reservation.value?.can_create_contract))
+const contractBlockMessage = computed(() => reservation.value?.contract_block_message || '')
 const canCollectFinalCash = computed(
   () => hasFeature('cash_payments') && Boolean(reservation.value?.can_collect_final_cash) && !isLocked.value,
 )
@@ -78,9 +80,10 @@ function collectFinalCash() {
           <Link v-if="reservation.contract?.id" :href="`/admin/contracts/${reservation.contract.id}`">
             <Button variant="outline">Show Contract</Button>
           </Link>
-          <Link v-else :href="`/admin/contracts/create?reservation_id=${reservation.id}`">
+          <Link v-else-if="canCreateContract" :href="`/admin/contracts/create?reservation_id=${reservation.id}`">
             <Button variant="outline">Create Contract</Button>
           </Link>
+          <Button v-else variant="outline" disabled>Create Contract</Button>
           <Link v-if="subdomain" :href="index(subdomain).url">
             <Button variant="outline">Back</Button>
           </Link>
@@ -95,6 +98,10 @@ function collectFinalCash() {
 
       <div v-if="isLocked" class="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
         This reservation is locked because its return report is marked paid.
+      </div>
+
+      <div v-if="!reservation.contract?.id && contractBlockMessage" class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        {{ contractBlockMessage }}
       </div>
 
       <!-- Header ribbon -->

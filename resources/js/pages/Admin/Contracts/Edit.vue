@@ -735,6 +735,11 @@ const selectedReservationUsesAnotherContract = computed(() => {
   if (!selectedReservation.value) return false;
   return Boolean(selectedReservation.value.has_contract) && !selectedReservationIsCurrentContract.value;
 });
+const selectedReservationBlockedByDebt = computed(() => Boolean(selectedReservation.value?.client_blocked_by_debt));
+const selectedReservationCannotCreateContract = computed(() => {
+  if (!selectedReservation.value) return false;
+  return selectedReservationUsesAnotherContract.value;
+});
 const selectedReservationNotice = computed(() => {
   if (!selectedReservation.value) {
     return null;
@@ -749,6 +754,17 @@ const selectedReservationNotice = computed(() => {
       message: localize(
         'This reservation already has a contract and cannot be used for a new contract.',
         'هذا الحجز مرتبط بعقد آخر ولا يمكن استخدامه لإنشاء عقد جديد.',
+      ),
+    };
+  }
+
+  if (selectedReservationBlockedByDebt.value) {
+    return {
+      tone: 'warning',
+      title: localize('Client has outstanding balance', 'العميل عليه مديونية'),
+      message: selectedReservation.value.contract_block_message || localize(
+        'This client has outstanding balance. Admin can continue creating the contract if approved.',
+        'العميل عليه مديونية. يمكن للإدارة المتابعة بإنشاء العقد عند الموافقة.',
       ),
     };
   }
@@ -1325,6 +1341,7 @@ function submit() {
   }
 
   saveError.value = '';
+
   form.renter_name = String(form.primary_driver.full_name || form.renter_name || '').trim();
   form.renter_id_number = String(form.primary_driver.identity_number || form.renter_id_number || '').trim();
   form.renter_phone = String(form.primary_driver.phone || form.renter_phone || '').trim();
@@ -1787,10 +1804,16 @@ function submit() {
                         <span v-if="reservation.has_contract && Number(reservation.id) !== Number(form.reservation_id)">
                           {{ localize(' (has contract)', ' (لديه عقد)') }}
                         </span>
+                        <span v-if="reservation.client_blocked_by_debt">
+                          {{ localize(' (client debt)', ' (مديون)') }}
+                        </span>
                       </span>
                       <span v-if="reservation.car_details || reservation.plate_number" class="text-xs text-muted-foreground">
                         {{ reservation.car_details || localize('No car details', 'ط¸â€‍ط·آ§ ط·ع¾ط¸ث†ط·آ¬ط·آ¯ ط·ع¾ط¸ظ¾ط·آ§ط·آµط¸ظ¹ط¸â€‍ سيارة') }}
                         <span v-if="reservation.plate_number"> • {{ reservation.plate_number }}</span>
+                      </span>
+                      <span v-if="reservation.client_blocked_by_debt && reservation.contract_block_message" class="mt-1 text-xs text-amber-700">
+                        {{ reservation.contract_block_message }}
                       </span>
                     </button>
 
@@ -1949,7 +1972,7 @@ function submit() {
         </section>
 
         <div class="flex gap-3">
-          <Button type="submit" :disabled="form.processing || isLocked">{{ form.processing ? localize('Saving...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍حفظ...') : localize('Save Contract', 'حفظ العقد') }}</Button>
+          <Button type="submit" :disabled="form.processing || isLocked || (mode === 'create' && selectedReservationCannotCreateContract)">{{ form.processing ? localize('Saving...', 'ط·آ¬ط·آ§ط·آ±ط¸ع† ط·آ§ط¸â€‍حفظ...') : localize('Save Contract', 'حفظ العقد') }}</Button>
           <Link :href="actions.index"><Button type="button" variant="outline">{{ localize('Cancel', 'ط·آ¥ط¸â€‍ط·ط›اء') }}</Button></Link>
         </div>
       </form>
@@ -2133,12 +2156,6 @@ function submit() {
     </main>
   </AdminLayout>
 </template>
-
-
-
-
-
-
 
 
 

@@ -180,6 +180,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::post('clients/{client}/documents/save', [ClientsController::class, 'saveDocument'])
             ->middleware('permission:tenant-manage-clients')
             ->name('clients.documents.save');
+        Route::post('clients/{client}/notes', [ClientsController::class, 'storeNote'])
+            ->middleware('permission:tenant-manage-clients')
+            ->name('clients.notes.store');
         Route::patch('clients/{client}/suspend', [ClientsController::class, 'suspend'])
             ->middleware('permission:tenant-manage-clients')
             ->name('clients.suspend');

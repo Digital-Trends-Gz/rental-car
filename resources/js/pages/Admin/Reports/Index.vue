@@ -107,6 +107,8 @@ interface FinancialReportSection {
     items: Array<{
         en: string;
         ar: string;
+        formatted?: string;
+        count?: number;
     }>;
 }
 
@@ -213,6 +215,14 @@ const financialSummary = computed(() => page.props.financialSummary ?? []);
 const financialReportSections = computed(() => page.props.financialReportSections ?? []);
 const financialAlerts = computed(() => page.props.financialAlerts ?? []);
 const financialReportExports = computed(() => page.props.financialReportExports);
+const isArabic = computed(() => locale.value === 'ar');
+const financialSectionTitle = (section: FinancialReportSection): string => isArabic.value ? section.title.ar : section.title.en;
+const financialItemTitle = (item: FinancialReportSection['items'][number]): string => isArabic.value ? item.ar : item.en;
+const financialRecordLabel = (count?: number): string => {
+    const safeCount = Number(count ?? 0);
+
+    return isArabic.value ? `${safeCount} سجلات` : `${safeCount} records`;
+};
 const reservationsReport = computed(() => page.props.reservationsReport);
 const reservationsReportExports = computed(() => page.props.reservationsReportExports);
 const formatFinancialAmount = (value?: number | null): string => {
@@ -1152,44 +1162,54 @@ onMounted(() => {
                 </div>
 
                 <div class="px-6 pt-6">
-                    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50" dir="rtl">
-                
-
-                        <div class="grid gap-4 p-6 lg:grid-cols-2">
-                            <!-- Static description cards -->
+                    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50/40">
+                        <div class="grid gap-5 p-6 lg:grid-cols-2">
                             <div
                                 v-for="section in financialReportSections"
-                                :key="section.title.ar"
-                                class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                                :key="section.title.en"
+                                class="group rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-sm ring-1 ring-transparent transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:ring-blue-100"
+                                :dir="isArabic ? 'rtl' : 'ltr'"
                             >
-                                <h4 class="text-lg font-bold text-slate-900 text-right">
-                                    {{ section.title.ar }}
-                                    <span class="text-blue-700">/ {{ section.title.en }}</span>
-                                </h4>
+                                <div class="mb-5 flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 ring-1 ring-blue-100 transition group-hover:bg-blue-600 group-hover:text-white">
+                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 10v-1m8-4a8 8 0 11-16 0 8 8 0 0116 0z" />
+                                            </svg>
+                                        </span>
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                                                {{ localize('Financial section', 'قسم مالي', 'Financial section') }}
+                                            </p>
+                                            <h4 class="text-xl font-extrabold text-slate-950">
+                                                {{ financialSectionTitle(section) }}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <ul class="mt-4 space-y-4">
                                     <li
                                         v-for="item in section.items"
-                                        :key="item.ar"
-                                        class="flex items-center justify-between"
+                                        :key="item.en"
+                                        class="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-blue-100 hover:bg-blue-50/60"
                                     >
-                                        <!-- Right side (First child in RTL): Labels and dot -->
-                                        <div class="flex items-center gap-3">
-                                            <span class="flex h-1.5 w-1.5 rounded-full bg-blue-500"></span>
-                                            <div class="flex flex-col text-right">
-                                                <span class="font-bold text-slate-800">{{ item.ar }}</span>
-                                                <span class="text-xs text-slate-400 mt-0.5">{{ item.en }}</span>
+                                        <div class="flex min-w-0 items-center gap-3">
+                                            <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500 shadow-[0_0_0_4px_rgba(59,130,246,0.12)]"></span>
+                                            <div class="min-w-0">
+                                                <span class="block truncate text-base font-bold text-slate-900">
+                                                    {{ financialItemTitle(item) }}
+                                                </span>
+                                                <span class="mt-0.5 block text-xs font-medium text-slate-500">
+                                                    {{ financialRecordLabel(item.count) }}
+                                                </span>
                                             </div>
                                         </div>
 
-                                        <!-- Left side (Last child in RTL): Amount and count -->
-                                        <div class="text-left">
-                                            <div class="font-bold text-slate-900 text-base font-mono tracking-tight">
-                                                {{ item.formatted }}
-                                            </div>
-                                            <div class="text-[11px] text-slate-400 mt-0.5" v-if="item.count !== undefined">
-                                                records {{ item.count }}
-                                            </div>
+                                        <div class="shrink-0 rounded-xl bg-white px-3 py-2 text-end shadow-sm ring-1 ring-slate-100">
+                                            <p class="font-mono text-lg font-black tracking-tight text-blue-900">
+                                                {{ item.formatted ?? '$0.00' }}
+                                            </p>
                                         </div>
                                     </li>
                                 </ul>

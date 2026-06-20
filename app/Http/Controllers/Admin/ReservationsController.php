@@ -26,6 +26,7 @@ use Barryvdh\DomPDF\Facade\Pdf as DomPdf;
 use Carbon\Carbon;
 use App\Support\BranchAccess;
 use App\Services\Rentals\RentalStatusSyncService;
+use App\Services\Clients\ClientStatusService;
 use Spatie\Browsershot\Browsershot;
 use Spatie\LaravelPdf\Enums\Format;
 use Spatie\LaravelPdf\Facades\Pdf as SpatiePdf;
@@ -33,7 +34,10 @@ use Throwable;
 
 class ReservationsController extends Controller
 {
-    public function __construct(private BranchAccess $branchAccess)
+    public function __construct(
+        private BranchAccess $branchAccess,
+        private ClientStatusService $clientStatusService
+    )
     {
     }
 
@@ -198,6 +202,7 @@ class ReservationsController extends Controller
             'notes' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(ReservationStatus::manualValues())],
             'cancellation_reason' => ['nullable', 'string'],
+            'confirm_client_debt' => ['nullable', 'boolean'],
         ]);
 
         if (config('app.demo_mode')) {
@@ -213,9 +218,9 @@ class ReservationsController extends Controller
             ->findOrFail((int) $validated['user_id']);
 
         $outstandingReturnDebt = ClientReturnDebt::outstandingTotal((int) ($user?->tenant_id ?? 0), (int) $client->id);
-        if ($outstandingReturnDebt > 0) {
+        if ($outstandingReturnDebt > 0 && ! $this->requestConfirmedClientDebt($request)) {
             throw ValidationException::withMessages([
-                'user_id' => ClientReturnDebt::blockingMessage($outstandingReturnDebt),
+                'user_id' => ClientReturnDebt::blockingMessage($outstandingReturnDebt, app()->getLocale()),
             ]);
         }
 
@@ -356,12 +361,66 @@ class ReservationsController extends Controller
         $pricingSummary = $this->reservationPricingSummary($reservation);
         $reservation->setAttribute('pricing_label', $pricingSummary['label']);
         $reservation->setAttribute('pricing_rate', $pricingSummary['rate']);
+        $contractBlock = $this->clientContractBlockPayload($reservation->user);
+        $reservation->setAttribute('client_debt_amount', $contractBlock['debt_amount']);
+        $reservation->setAttribute('contract_block_reason', $contractBlock['blocked'] ? 'client_debt' : null);
+        $reservation->setAttribute('contract_block_message', $contractBlock['message']);
+        $reservation->setAttribute(
+            'can_create_contract',
+            ! $reservation->contract
+        );
 
         return Inertia::render('Admin/Reservations/Show', [
             'reservation' => $reservation,
             'statusMeta' => ReservationStatus::getMeta(),
             'paymentStatusMeta' => PaymentStatus::getMeta(),
         ]);
+    }
+
+    /**
+     * @return array{blocked: bool, debt_amount: float, message: string|null}
+     */
+    private function clientContractBlockPayload(?User $client): array
+    {
+        if (!$client) {
+            return [
+                'blocked' => false,
+                'debt_amount' => 0.0,
+                'message' => null,
+            ];
+        }
+
+        $status = $this->clientStatusService->build($client, app()->getLocale());
+        $debtFlag = collect($status['flags'] ?? [])
+            ->first(fn (array $flag): bool => ($flag['type'] ?? null) === 'debt');
+
+        $debtAmount = round((float) data_get($debtFlag, 'meta.total', 0), 2);
+        if ($debtAmount <= 0) {
+            return [
+                'blocked' => false,
+                'debt_amount' => 0.0,
+                'message' => null,
+            ];
+        }
+
+        $message = app()->getLocale() === 'ar'
+            ? 'العميل عليه مديونية (:amount). يجب تسوية المديونية قبل إنشاء عقد.'
+            : 'Client has outstanding balance (:amount). Admin can continue creating the contract if approved.';
+
+        return [
+            'blocked' => true,
+            'debt_amount' => $debtAmount,
+            'message' => str_replace(':amount', number_format($debtAmount, 2), $message),
+        ];
+    }
+
+    private function requestConfirmedClientDebt(Request $request): bool
+    {
+        if (! $request->has('confirm_client_debt')) {
+            return false;
+        }
+
+        return filter_var($request->input('confirm_client_debt'), FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -812,15 +871,24 @@ class ReservationsController extends Controller
 
     private function clientOptions(Request $request)
     {
-        return User::query()
-            ->where('tenant_id', $request->user()?->tenant_id)
+        $tenantId = (int) ($request->user()?->tenant_id ?? 0);
+        $clients = User::query()
+            ->where('tenant_id', $tenantId)
             ->where('role', 'client')
             ->orderBy('name')
-            ->get(['id', 'name', 'email'])
+            ->get(['id', 'name', 'email']);
+
+        $outstandingDebts = ClientReturnDebt::outstandingTotalsByClientIds(
+            $tenantId,
+            $clients->pluck('id')->map(fn ($id) => (int) $id)->all()
+        );
+
+        return $clients
             ->map(fn (User $client) => [
                 'id' => $client->id,
                 'name' => $client->name,
                 'email' => $client->email,
+                'outstanding_return_debt' => $outstandingDebts[(int) $client->id] ?? 0.0,
             ])
             ->values();
     }

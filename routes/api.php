@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AccidentReportsController;
 use App\Http\Controllers\Api\ClientsController;
 use App\Http\Controllers\Api\ContractsController;
+use App\Http\Controllers\Api\DailyTasksController;
 use App\Http\Controllers\Api\ReservationsController;
 use App\Http\Controllers\Api\NotificationsController;
 use App\Http\Controllers\Api\SettingsController;
@@ -32,8 +33,17 @@ Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
     Route::get('summary', [DashboardController::class, 'summary'])->name('api.dashboard.summary');
 });
 
-Route::middleware('auth:sanctum')->get('notifications', [NotificationsController::class, 'index'])
-    ->name('api.notifications.index');
+Route::middleware('auth:sanctum')->prefix('tasks')->group(function () {
+    Route::get('today', [DailyTasksController::class, 'today'])->name('api.tasks.today');
+    Route::post('start', [DailyTasksController::class, 'start'])->name('api.tasks.start');
+    Route::post('complete', [DailyTasksController::class, 'complete'])->name('api.tasks.complete');
+});
+
+Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
+    Route::get('/', [NotificationsController::class, 'index'])->name('api.notifications.index');
+    Route::get('count', [NotificationsController::class, 'count'])->name('api.notifications.count');
+    Route::post('read-all', [NotificationsController::class, 'readAll'])->name('api.notifications.read-all');
+});
 
 Route::middleware('auth:sanctum')->prefix('clients')->group(function () {
     Route::get('{client}/status', [ClientsController::class, 'status'])->name('api.clients.status');

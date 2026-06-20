@@ -18,6 +18,13 @@ const props = defineProps<{
       payments_count: number
       created_at?: string
       branch?: { id: number; name: string } | null
+      client_status?: {
+        status: 'good' | 'info' | 'warning' | 'danger'
+        label: string
+        can_book: boolean
+        flags_count: number
+        blocking_flags: string[]
+      }
     }>
     links: Array<{ url: string | null; label: string; active: boolean }>
   }
@@ -30,9 +37,10 @@ const props = defineProps<{
   branches: Array<{ id: number; name: string }>
   canAccessAllBranches: boolean
 }>()
-const { t } = useTrans();
+const { t, locale } = useTrans();
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
+const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const statusColors = computed(() => {
   const colors: Record<string, { bg: string; text: string; dot: string }> = {};
@@ -56,6 +64,17 @@ const getStatusColor = (status: string) => {
     text: '#6B7280',
     dot: '#6B7280',
   };
+};
+
+const clientStatusColor = (status?: string) => {
+  const colors: Record<string, { bg: string; text: string; dot: string }> = {
+    good: { bg: 'rgba(16, 185, 129, 0.12)', text: '#047857', dot: '#10B981' },
+    info: { bg: 'rgba(59, 130, 246, 0.12)', text: '#1D4ED8', dot: '#3B82F6' },
+    warning: { bg: 'rgba(245, 158, 11, 0.14)', text: '#B45309', dot: '#F59E0B' },
+    danger: { bg: 'rgba(239, 68, 68, 0.12)', text: '#B91C1C', dot: '#EF4444' },
+  };
+
+  return colors[status || ''] || { bg: 'rgba(107, 114, 128, 0.1)', text: '#6B7280', dot: '#6B7280' };
 };
 
 const search = ref(props.filters?.search || '');
@@ -162,6 +181,7 @@ const navigateToClient = (id: number) => {
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.payments') }}</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.branch') }}</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.status') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ localize('Client status', 'حالة العميل') }}</th>
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
@@ -191,6 +211,21 @@ const navigateToClient = (id: number) => {
                   {{ c.is_active ? t('dashboard.common.active') : t('dashboard.common.suspended') }}
                 </span>
               </td>
+              <td class="px-4 py-3">
+                <span
+                  class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium"
+                  :style="{
+                    backgroundColor: clientStatusColor(c.client_status?.status).bg,
+                    color: clientStatusColor(c.client_status?.status).text,
+                  }"
+                >
+                  <span class="size-2 rounded-full" :style="{ backgroundColor: clientStatusColor(c.client_status?.status).dot }" />
+                  {{ c.client_status?.label || localize('Good', 'جيد') }}
+                </span>
+                <div v-if="c.client_status?.flags_count" class="mt-1 text-xs text-muted-foreground">
+                  {{ c.client_status.flags_count }} {{ localize('note(s)', 'ملاحظة') }}
+                </div>
+              </td>
               <td class="px-4 py-3 text-right">
                 <Link v-if="subdomain" :href="show([subdomain, c.id]).url">
                                     <Button variant="outline" size="sm">{{ t('dashboard.common.view') }}</Button>
@@ -198,7 +233,7 @@ const navigateToClient = (id: number) => {
               </td>
             </tr>
             <tr v-if="props.clients.data.length === 0">
-              <td colspan="6" class="px-4 py-6 text-center text-gray-500">{{ t('dashboard.admin.clients.index.empty') }}</td>
+              <td colspan="7" class="px-4 py-6 text-center text-gray-500">{{ t('dashboard.admin.clients.index.empty') }}</td>
             </tr>
           </tbody>
         </table>

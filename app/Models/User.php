@@ -101,6 +101,11 @@ class User extends Authenticatable implements LaratrustUser, MustVerifyEmail
         return $this->hasMany(ClientFlag::class);
     }
 
+    public function clientNotes(): HasMany
+    {
+        return $this->hasMany(ClientNote::class);
+    }
+
     public function contractDrivers(): HasMany
     {
         return $this->hasMany(ContractDriver::class, 'client_id');

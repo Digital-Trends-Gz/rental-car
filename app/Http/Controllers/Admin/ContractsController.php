@@ -25,6 +25,7 @@ use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Notifications\ContractExtensionRequestedNotification;
 use App\Notifications\ContractForceExtendedNotification;
+use App\Services\Clients\ClientStatusService;
 use App\Services\Contracts\ContractAiExtractor;
 use App\Services\Contracts\ContractDriverDocumentExtractor;
 use App\Services\Plans\PlanUsageLimits;
@@ -66,6 +67,7 @@ class ContractsController extends Controller
         private ContractAiExtractor $contractAiExtractor,
         private ContractDriverDocumentExtractor $contractDriverDocumentExtractor,
         private ContractCustomerPhotoExtractor $contractCustomerPhotoExtractor,
+        private ClientStatusService $clientStatusService,
         private PlanUsageLimits $planUsageLimits
     ) {
     }
@@ -216,7 +218,7 @@ class ContractsController extends Controller
         $reservation = null;
         if ($request->filled('reservation_id')) {
             $reservation = Reservation::query()
-                ->with(['user:id,name,email', 'car:id,branch_id,make,model,year,license_plate'])
+                ->with(['user:id,name,email,tenant_id,branch_id,role,is_active', 'car:id,branch_id,make,model,year,license_plate'])
                 ->find($request->integer('reservation_id'));
             if ($reservation) {
                 $this->ensureReservationAccessible($reservation, $request->user(), null);
@@ -1436,6 +1438,60 @@ class ContractsController extends Controller
         return $reservation;
     }
 
+    /**
+     * @return array{blocked: bool, debt_amount: float, message: string|null}
+     */
+    private function clientContractBlockPayload(?User $client): array
+    {
+        if (!$client) {
+            return [
+                'blocked' => false,
+                'debt_amount' => 0.0,
+                'message' => null,
+            ];
+        }
+
+        $status = $this->clientStatusService->build($client, app()->getLocale());
+        $debtFlag = collect($status['flags'] ?? [])
+            ->first(fn (array $flag): bool => ($flag['type'] ?? null) === 'debt');
+
+        $debtAmount = round((float) data_get($debtFlag, 'meta.total', 0), 2);
+        if ($debtAmount <= 0) {
+            return [
+                'blocked' => false,
+                'debt_amount' => 0.0,
+                'message' => null,
+            ];
+        }
+
+        $message = app()->getLocale() === 'ar'
+            ? 'العميل عليه مديونية (:amount). يجب تسوية المديونية قبل إنشاء عقد.'
+            : 'Client has outstanding balance (:amount). Admin can continue creating the contract if approved.';
+
+        return [
+            'blocked' => true,
+            'debt_amount' => $debtAmount,
+            'message' => str_replace(':amount', number_format($debtAmount, 2), $message),
+        ];
+    }
+
+    private function ensureReservationClientCanCreateContract(?Reservation $reservation): void
+    {
+        if (!$reservation) {
+            return;
+        }
+
+        $reservation->loadMissing('user');
+        $block = $this->clientContractBlockPayload($reservation->user);
+        if (! $block['blocked']) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'reservation_id' => $block['message'] ?? (app()->getLocale() === 'ar' ? 'العميل عليه مديونية.' : 'Client has outstanding balance.'),
+        ]);
+    }
+
     private function reservationOptions(Request $request): array
     {
         $user = $request->user();
@@ -1457,6 +1513,7 @@ class ContractsController extends Controller
         return $query->get()
             ->map(function (Reservation $reservation) {
                 $hasContract = (bool) $reservation->contract;
+                $clientContractBlock = $this->clientContractBlockPayload($reservation->user);
                 $status = $reservation->status instanceof ReservationStatus
                     ? $reservation->status
                     : ReservationStatus::tryFrom((string) $reservation->status);
@@ -1485,6 +1542,11 @@ class ContractsController extends Controller
                     'status' => $status?->value ?? (string) $reservation->status,
                     'status_label' => $status?->label() ?? ucfirst(str_replace('_', ' ', (string) $reservation->status)),
                     'status_color' => $status?->color() ?? '#6B7280',
+                    'client_debt_amount' => $clientContractBlock['debt_amount'],
+                    'client_blocked_by_debt' => $clientContractBlock['blocked'],
+                    'contract_block_reason' => $clientContractBlock['blocked'] ? 'client_debt' : null,
+                    'contract_block_message' => $clientContractBlock['message'],
+                    'can_create_contract' => ! $hasContract,
                 ];
             })
             ->values()
@@ -3019,7 +3081,3 @@ class ContractsController extends Controller
         ];
     }
 }
-
-
-
-

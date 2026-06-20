@@ -23,6 +23,7 @@ use App\Models\ContractHandoverPhoto;
 use App\Models\ContractDriver;
 use App\Models\ContractDriverDocument;
 use App\Models\CarDamageReport;
+use App\Models\ClientNote;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\TenantSiteSetting;
@@ -1740,6 +1741,7 @@ class ContractsController extends Controller
         $clientStatus = $this->clientStatusService->build($client, $locale ?? 'en');
         $accountStatus = $client->is_active ? 'active' : 'suspended';
         $accountStatusLabel = $client->is_active ? 'Active' : 'Suspended';
+        $notes = $this->clientNotesPayload($client);
 
         return [
             'id' => $client->id,
@@ -1751,7 +1753,35 @@ class ContractsController extends Controller
             'status' => $clientStatus['overall_status'] ?? $accountStatus,
             'status_label' => $clientStatus['overall_label'] ?? $accountStatusLabel,
             'status_details' => $clientStatus,
+            'latest_note' => $notes[0] ?? null,
+            'notes' => $notes,
         ];
+    }
+
+    private function clientNotesPayload(User $client): array
+    {
+        $notes = $client->relationLoaded('clientNotes')
+            ? $client->clientNotes
+            : $client->clientNotes()
+                ->with('creator:id,name')
+                ->latest('id')
+                ->limit(10)
+                ->get();
+
+        return $notes
+            ->sortByDesc('id')
+            ->take(10)
+            ->values()
+            ->map(fn (ClientNote $note): array => [
+                'id' => $note->id,
+                'note' => $note->note,
+                'created_at' => $note->created_at?->toIso8601String(),
+                'creator' => $note->creator ? [
+                    'id' => $note->creator->id,
+                    'name' => $note->creator->name,
+                ] : null,
+            ])
+            ->all();
     }
 
     private function handoverPayload(Contract $contract, ?string $locale = null): array
