@@ -103,15 +103,82 @@ class DailyTasksService
     {
         $status = $this->setStatus($user, $taskType, $sourceType, $sourceId, self::STATUS_COMPLETED, $notes);
 
-        if ($sourceType === 'car') {
-            $car = Car::find($sourceId);
-            if ($car && in_array($car->status, [CarStatus::CLEANING->value, CarStatus::MAINTENANCE->value], true)) {
-                $car->status = CarStatus::AVAILABLE->value;
-                $car->save();
-            }
-        }
+        $this->completeSourceSideEffects($user, $taskType, $sourceType, $sourceId);
 
         return $status;
+    }
+
+    private function completeSourceSideEffects(User $user, string $taskType, string $sourceType, int $sourceId): void
+    {
+        $tenantId = (int) ($user->tenant_id ?? 0);
+
+        if ($sourceType === 'car' && in_array($taskType, ['cleaning', 'maintenance'], true)) {
+            $car = Car::query()
+                ->where('tenant_id', $tenantId)
+                ->find($sourceId);
+
+            if ($car) {
+                $this->releaseCarAfterOperationalTask($car);
+            }
+
+            return;
+        }
+
+        if ($sourceType !== 'maintenance' || $taskType !== 'maintenance') {
+            return;
+        }
+
+        $maintenance = CarMaintenance::query()
+            ->with('car')
+            ->where('tenant_id', $tenantId)
+            ->find($sourceId);
+
+        if (!$maintenance) {
+            return;
+        }
+
+        if ($this->enumValue($maintenance->status) !== MaintenanceRecordStatus::COMPLETED->value) {
+            $maintenance->forceFill([
+                'status' => MaintenanceRecordStatus::COMPLETED->value,
+                'completed_at' => $maintenance->completed_at ?? now(),
+            ])->save();
+        }
+
+        if ($maintenance->car) {
+            $this->releaseCarAfterOperationalTask($maintenance->car, (int) $maintenance->id);
+        }
+    }
+
+    private function releaseCarAfterOperationalTask(Car $car, ?int $completedMaintenanceId = null): void
+    {
+        $currentStatus = $this->enumValue($car->status);
+
+        if (!in_array($currentStatus, [CarStatus::CLEANING->value, CarStatus::MAINTENANCE->value], true)) {
+            return;
+        }
+
+        if ($currentStatus === CarStatus::MAINTENANCE->value && $this->hasOpenMaintenance($car, $completedMaintenanceId)) {
+            return;
+        }
+
+        $car->forceFill(['status' => CarStatus::AVAILABLE->value])->saveQuietly();
+    }
+
+    private function hasOpenMaintenance(Car $car, ?int $completedMaintenanceId = null): bool
+    {
+        return CarMaintenance::query()
+            ->where('car_id', $car->id)
+            ->when($completedMaintenanceId, fn (Builder $query) => $query->where('id', '!=', $completedMaintenanceId))
+            ->whereNotIn('status', [
+                MaintenanceRecordStatus::COMPLETED->value,
+                MaintenanceRecordStatus::CANCELLED->value,
+            ])
+            ->exists();
+    }
+
+    private function enumValue(mixed $value): string
+    {
+        return $value instanceof \BackedEnum ? (string) $value->value : (string) $value;
     }
 
     private function setStatus(User $user, string $taskType, string $sourceType, int $sourceId, string $status, ?string $notes = null): DailyTaskStatus
@@ -194,7 +261,7 @@ class DailyTasksService
             ->where('tenant_id', $tenantId)
             ->where('status', ContractStatus::ACTIVE->value)
             ->whereNotNull('reservation_id')
-            ->whereDate('end_date', '<=', $date);
+            ->whereDate('end_date', $date);
 
         $this->applyContractBranchScope($query, $user, $branchId);
 
@@ -308,7 +375,8 @@ class DailyTasksService
     private function applyStoredStatus(array $task, Collection $statusMap, string $locale): array
     {
         $stored = $statusMap->get($this->statusKey($task['task_type'], $task['source_type'], (int) $task['source_id']));
-        $status = $stored?->status ?? self::STATUS_PENDING;
+        $status = $this->storedStatusForTask($task, $stored);
+        $usesStoredLifecycle = $stored && $status === $stored->status;
         $isCompleted = $status === self::STATUS_COMPLETED;
         $scheduledAt = Carbon::parse($task['scheduled_at']);
         $isLate = !$isCompleted && $task['source_type'] !== 'car' && $scheduledAt->lt(now());
@@ -322,14 +390,34 @@ class DailyTasksService
                 : $this->statusLabel($status, $locale),
             'is_late' => $isLate,
             'remaining_minutes' => $isCompleted ? 0 : now()->diffInMinutes($scheduledAt, false),
-            'started_at' => $stored?->started_at?->toIso8601String(),
-            'completed_at' => $stored?->completed_at?->toIso8601String(),
-            'notes' => $stored?->notes,
+            'started_at' => $usesStoredLifecycle ? $stored?->started_at?->toIso8601String() : null,
+            'completed_at' => $usesStoredLifecycle ? $stored?->completed_at?->toIso8601String() : null,
+            'notes' => $usesStoredLifecycle ? $stored?->notes : null,
             'actions' => [
                 'can_start' => in_array($status, [self::STATUS_PENDING, self::STATUS_CANCELLED], true),
                 'can_complete' => $status === self::STATUS_IN_PROGRESS,
             ],
         ]);
+    }
+
+    private function storedStatusForTask(array $task, ?DailyTaskStatus $stored): string
+    {
+        if (!$stored) {
+            return self::STATUS_PENDING;
+        }
+
+        if (
+            $task['source_type'] === 'car'
+            && in_array($task['task_type'], ['cleaning', 'maintenance'], true)
+            && $stored->status === self::STATUS_COMPLETED
+            && in_array((string) ($task['source_status'] ?? ''), [CarStatus::CLEANING->value, CarStatus::MAINTENANCE->value], true)
+            && $stored->completed_at
+            && Carbon::parse($task['scheduled_at'])->gte($stored->completed_at)
+        ) {
+            return self::STATUS_PENDING;
+        }
+
+        return $stored->status;
     }
 
     private function statusMap(int $tenantId, Collection $tasks): Collection
@@ -492,7 +580,8 @@ class DailyTasksService
 
         // Add active cars
         foreach ($activeCars as $car) {
-            $taskType = $car->status === CarStatus::CLEANING->value ? 'cleaning' : 'maintenance';
+            $carStatus = $this->enumValue($car->status);
+            $taskType = $carStatus === CarStatus::CLEANING->value ? 'cleaning' : 'maintenance';
             
             // If it's maintenance, check if it's already covered by an active CarMaintenance record to avoid duplicate
             if ($taskType === 'maintenance') {
@@ -523,7 +612,7 @@ class DailyTasksService
                 client: null,
                 reference: $car->license_plate,
                 location: (string) ($car->branch?->name ?? ''),
-                sourceStatus: $car->status instanceof CarStatus ? $car->status->value : (string) $car->status,
+                sourceStatus: $carStatus,
                 description: trim(sprintf('%s - %s', $car->full_name ?? '', $taskType === 'cleaning' ? 'Cleaning' : 'Maintenance')),
             ));
         }
