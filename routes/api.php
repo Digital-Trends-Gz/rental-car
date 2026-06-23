@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AccidentReportsController;
 use App\Http\Controllers\Api\CarPhotoHistoryController;
+use App\Http\Controllers\Api\CarsController;
 use App\Http\Controllers\Api\ClientsController;
 use App\Http\Controllers\Api\ContractsController;
 use App\Http\Controllers\Api\DailyTasksController;
@@ -53,6 +54,8 @@ Route::middleware('auth:sanctum')->prefix('clients')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->prefix('cars')->group(function () {
+    Route::get('/', [CarsController::class, 'index'])->name('api.cars.index');
+    Route::get('status', [CarsController::class, 'status'])->name('api.cars.status');
     Route::get('photo-history/status', [CarPhotoHistoryController::class, 'status'])->name('api.cars.photo-history.status');
     Route::get('{car}/photo-histories', [CarPhotoHistoryController::class, 'index'])->name('api.cars.photo-histories.index');
     Route::post('{car}/photo-histories', [CarPhotoHistoryController::class, 'store'])->name('api.cars.photo-histories.store');

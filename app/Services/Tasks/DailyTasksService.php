@@ -12,6 +12,7 @@ use App\Models\Contract;
 use App\Models\DailyTaskStatus;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\Rentals\RentalStatusSyncService;
 use App\Support\BranchAccess;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
@@ -28,6 +29,7 @@ class DailyTasksService
 
     public function __construct(
         private readonly BranchAccess $branchAccess,
+        private readonly RentalStatusSyncService $rentalStatusSync,
     ) {
     }
 
@@ -195,7 +197,8 @@ class DailyTasksService
             return;
         }
 
-        $car->forceFill(['status' => CarStatus::AVAILABLE->value])->saveQuietly();
+        $targetStatus = $this->rentalStatusSync->targetStatusForCar((int) $car->id);
+        $car->forceFill(['status' => $targetStatus->value])->saveQuietly();
     }
 
     private function hasOpenMaintenance(Car $car, ?int $completedMaintenanceId = null): bool
@@ -718,7 +721,7 @@ class DailyTasksService
                 client: null,
                 reference: $car->license_plate,
                 location: (string) ($car->branch?->name ?? ''),
-                sourceStatus: 'available', // since it's completed, it's back to available
+                sourceStatus: $this->enumValue($car->status),
                 description: trim(sprintf('%s - %s', $car->full_name ?? '', $taskType === 'cleaning' ? 'Cleaning' : 'Maintenance')),
             ));
         }
