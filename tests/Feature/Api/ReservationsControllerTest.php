@@ -1461,7 +1461,8 @@ test('handover api creates a draft contract and continues the wizard', function 
           ->assertJsonPath('handover.steps.2.key', 'damage_photo_upload')
           ->assertJsonPath('handover.steps.2.payload.extraction_status', 'pending')
           ->assertJsonPath('extraction.status', 'processing')
-          ->assertJsonPath('extraction.damage_report.report_type', 'before_delivery');
+          ->assertJsonPath('extraction.damage_report.report_type', 'before_delivery')
+          ->assertJsonPath('extraction.damage_report.source_type', 'ai');
       $thirdStepResponse->assertJsonPath('handover.steps.2.payload.photos.0.photo_type', 'damage')
           ->assertJsonPath('handover.steps.2.payload.handover_photos.0.storage_target', 'handover_archive')
           ->assertJsonPath('handover.steps.3.key', 'vehicle_readings')
@@ -2472,6 +2473,284 @@ test('handover api accepts direct uploaded files for document extraction', funct
       expect($contract->archiveFiles->first()?->document_type)->toBe('id_card');
       expect($contract->additionalDrivers)->toHaveCount(0);
   });
+
+test('damage item updates mark ai damage items as employee sourced', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Damage Branch',
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::SUPER_ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $client = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::CLIENT,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $car = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Toyota',
+        'model' => 'Corolla',
+        'year' => 2024,
+        'license_plate' => 'DAMAGE-001',
+        'color' => CarColor::WHITE->value,
+        'price_per_day' => 90,
+        'mileage' => 700,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::AVAILABLE->value,
+    ]);
+
+    $reservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $car->id,
+        'reservation_number' => 'RES-DAMAGE-001',
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'pickup_time' => '09:00',
+        'return_time' => '18:00',
+        'pickup_location' => 'Main Office',
+        'return_location' => 'Main Office',
+        'total_days' => 2,
+        'daily_rate' => 90,
+        'subtotal' => 180,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 180,
+        'status' => ReservationStatus::CONFIRMED->value,
+    ]);
+
+    $contract = Contract::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'reservation_id' => $reservation->id,
+        'contract_number' => 'CTR-DAMAGE-001',
+        'status' => ContractStatus::DRAFT->value,
+        'contract_date' => today()->toDateString(),
+        'renter_name' => $client->name,
+        'renter_id_number' => '123456789',
+        'renter_phone' => '97000000000',
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'total_amount' => 180,
+        'currency' => 'USD',
+    ]);
+
+    $damageReport = CarDamageReport::create([
+        'tenant_id' => $tenant->id,
+        'car_id' => $car->id,
+        'branch_id' => $branch->id,
+        'contract_id' => $contract->id,
+        'reservation_id' => $reservation->id,
+        'created_by' => $admin->id,
+        'source_type' => CarDamageReport::SOURCE_TYPE_AI,
+        'report_number' => 'DR-AI-001',
+        'report_type' => 'before_delivery',
+        'status' => 'draft',
+        'inspected_at' => now(),
+        'odometer' => 700,
+        'summary' => 'AI generated draft.',
+    ]);
+
+    $damageItem = CarDamageItem::create([
+        'tenant_id' => $tenant->id,
+        'car_damage_report_id' => $damageReport->id,
+        'source_type' => CarDamageItem::SOURCE_TYPE_AI,
+        'zone_code' => 'hood',
+        'view_side' => 'front',
+        'damage_type' => 'scratch',
+        'severity' => 'minor',
+        'damage_timing' => 'before_pickup',
+        'quantity' => 1,
+        'estimated_cost' => 120,
+        'sort_order' => 1,
+        'notes' => 'Initial AI item.',
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $response = $this->patchJson(route('api.contracts.damage-items.update', [
+        'contract' => $contract->id,
+        'damageItem' => $damageItem->id,
+    ]), [
+        'zone_code' => 'hood',
+        'view_side' => 'front',
+        'damage_type' => 'scratch',
+        'severity' => 'major',
+        'damage_timing' => 'before_pickup',
+        'quantity' => 2,
+        'estimated_cost' => 300,
+        'notes' => 'Edited by employee.',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('item.source_type', 'employee')
+        ->assertJsonPath('item.severity', 'major')
+        ->assertJsonPath('item.quantity', 2);
+
+    $damageItem->refresh();
+    expect($damageItem->source_type)->toBe(CarDamageItem::SOURCE_TYPE_EMPLOYEE);
+});
+
+test('ai damage photo extraction creates ai sourced damage items', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'AI Branch',
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::SUPER_ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $client = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::CLIENT,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $car = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Toyota',
+        'model' => 'Corolla',
+        'year' => 2024,
+        'license_plate' => 'AI-001',
+        'color' => CarColor::WHITE->value,
+        'price_per_day' => 90,
+        'mileage' => 700,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::AVAILABLE->value,
+    ]);
+
+    $reservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $car->id,
+        'reservation_number' => 'RES-AI-001',
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'pickup_time' => '09:00',
+        'return_time' => '18:00',
+        'pickup_location' => 'Main Office',
+        'return_location' => 'Main Office',
+        'total_days' => 2,
+        'daily_rate' => 90,
+        'subtotal' => 180,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 180,
+        'status' => ReservationStatus::CONFIRMED->value,
+    ]);
+
+    $contract = Contract::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'reservation_id' => $reservation->id,
+        'contract_number' => 'CTR-AI-001',
+        'status' => ContractStatus::DRAFT->value,
+        'contract_date' => today()->toDateString(),
+        'renter_name' => $client->name,
+        'renter_id_number' => '123456789',
+        'renter_phone' => '97000000000',
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'total_amount' => 180,
+        'currency' => 'USD',
+    ]);
+
+    $damageReport = CarDamageReport::create([
+        'tenant_id' => $tenant->id,
+        'car_id' => $car->id,
+        'branch_id' => $branch->id,
+        'contract_id' => $contract->id,
+        'reservation_id' => $reservation->id,
+        'created_by' => $admin->id,
+        'source_type' => CarDamageReport::SOURCE_TYPE_AI,
+        'report_number' => 'DR-AI-002',
+        'report_type' => 'before_delivery',
+        'status' => 'draft',
+        'inspected_at' => now(),
+        'odometer' => 700,
+        'summary' => 'AI generated draft.',
+    ]);
+
+    ContractHandoverPhoto::create([
+        'tenant_id' => $tenant->id,
+        'contract_id' => $contract->id,
+        'damage_report_id' => $damageReport->id,
+        'phase' => 'delivery',
+        'photo_type' => 'damage',
+        'view_side' => 'front',
+        'title' => 'Damage Photo',
+        'notes' => 'AI photo upload',
+        'file_path' => 'storage/damage-photo.jpg',
+        'file_name' => 'damage-photo.jpg',
+        'mime_type' => 'image/jpeg',
+    ]);
+
+    app()->instance(\App\Services\Contracts\ContractDamagePhotoExtractor::class, new class extends \App\Services\Contracts\ContractDamagePhotoExtractor {
+        public function extractFromPhotoGroups(array $photoGroups, string $reportType = 'before_delivery'): array
+        {
+            return [
+                'items' => [
+                    [
+                        'zone_code' => 'hood',
+                        'view_side' => 'front',
+                        'damage_type' => 'scratch',
+                        'severity' => 'minor',
+                        'damage_timing' => 'before_pickup',
+                        'quantity' => 1,
+                        'estimated_cost' => 120,
+                        'notes' => 'Detected by AI.',
+                    ],
+                ],
+                'summary' => 'AI detected damage.',
+                'vehicle_readings' => [],
+                'raw_output' => ['stub' => true],
+                'raw_text' => 'stub',
+                'confidence' => 0.9,
+                'provider' => 'openai',
+                'engine' => 'gpt-4.1-mini',
+            ];
+        }
+    });
+
+    $job = new \App\Jobs\ProcessContractDamagePhotoExtraction($damageReport->id);
+    $job->handle(app(\App\Services\Contracts\ContractDamagePhotoExtractor::class));
+
+    $createdItems = CarDamageItem::withoutTenantScope()
+        ->where('car_damage_report_id', $damageReport->id)
+        ->get();
+
+    expect($createdItems)->toHaveCount(1);
+    expect($createdItems->first()?->source_type)->toBe(CarDamageItem::SOURCE_TYPE_AI);
+});
 
 test('api requests without a token return a token not found message', function () {
     $response = $this->get('/api/reservations/11');

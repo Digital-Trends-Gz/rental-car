@@ -1257,6 +1257,7 @@ return [
                         'timing' => 'Timing',
                         'qty' => 'Qty',
                         'cost' => 'Cost',
+                        'source' => 'Source',
                         'notes' => 'Notes',
                     ],
                 ],

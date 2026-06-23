@@ -99,6 +99,11 @@ interface ExecutiveReport {
     };
 }
 
+interface ReportExportUrls {
+    pdf?: string | false;
+    excel?: string | false;
+}
+
 interface FinancialReportSection {
     title: {
         en: string;
@@ -110,6 +115,41 @@ interface FinancialReportSection {
         formatted?: string;
         count?: number;
     }>;
+}
+
+interface VehicleProfitabilityRow {
+    car_id: number;
+    car_name: string;
+    license_plate: string;
+    status: string;
+    formatted_revenue: string;
+    formatted_damage_cost: string;
+    formatted_maintenance_cost: string;
+    formatted_violation_cost: string;
+    formatted_total_costs: string;
+    formatted_net_profit: string;
+    reservations_count: number;
+    rented_days: number;
+    utilization_rate: number;
+    formatted_average_revenue_per_reservation: string;
+    damage_items_count: number;
+    maintenance_count: number;
+    violations_count: number;
+    net_profit: number | null;
+}
+
+interface VehicleProfitabilityReport {
+    summary: {
+        formatted_total_revenue: string;
+        formatted_total_costs: string;
+        formatted_net_profit: string;
+        formatted_average_revenue_per_car: string;
+        profitable_cars: number;
+        loss_making_cars: number;
+    };
+    top_profitable: VehicleProfitabilityRow[];
+    least_profitable: VehicleProfitabilityRow[];
+    cars: VehicleProfitabilityRow[];
 }
 
 interface PageProps {
@@ -129,9 +169,14 @@ interface PageProps {
     carsPerformance: CarPerformance[];
     financialSummary: ReportMetric[];
     financialReportSections: FinancialReportSection[];
+    financialReportExports?: ReportExportUrls;
     financialAlerts: ReportAlert[];
     operationsSummary: ReportMetric[];
     fleetInsights: ReportMetric[];
+    fleetReport?: any;
+    fleetReportExports?: ReportExportUrls;
+    vehicleProfitabilityReport?: VehicleProfitabilityReport;
+    vehicleProfitabilityReportExports?: ReportExportUrls;
     reservationsReport?: any;
     reservationsReportExports?: ReportExportUrls;
     actionAlerts: ReportAlert[];
@@ -233,6 +278,8 @@ const fleetInsights = computed(() => page.props.fleetInsights ?? []);
 const actionAlerts = computed(() => page.props.actionAlerts ?? []);
 const fleetReport = computed(() => page.props.fleetReport);
 const fleetReportExports = computed(() => page.props.fleetReportExports);
+const vehicleProfitabilityReport = computed(() => page.props.vehicleProfitabilityReport);
+const vehicleProfitabilityReportExports = computed(() => page.props.vehicleProfitabilityReportExports);
 const showCarRankingsModal = ref(false);
 const executiveReport = computed<ExecutiveReport>(() => page.props.executiveReport ?? {
     financial: financialSummary.value,
@@ -417,6 +464,8 @@ const handlePeriodChange = () => {
                 'reservationsReportExports',
                 'operationsSummary',
                 'fleetInsights',
+                'vehicleProfitabilityReport',
+                'vehicleProfitabilityReportExports',
                 'actionAlerts',
                 'executiveReport',
                 'currentPeriod',
@@ -1547,6 +1596,225 @@ onMounted(() => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. Vehicle Profitability Report -->
+            <section
+                v-if="vehicleProfitabilityReport"
+                class="mt-8 overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow"
+            >
+                <div class="border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-white px-6 py-5">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-indigo-100 px-4 py-2 text-sm font-bold text-indigo-800">
+                                {{ reportLabel('Most important') }}
+                            </span>
+                            <h2 class="text-2xl font-bold text-indigo-900">
+                                5. {{ localize('Vehicle Profitability Report', 'تقرير ربحية السيارات', 'گاڑی منافع رپورٹ') }}
+                            </h2>
+                        </div>
+                        <p class="max-w-2xl text-sm text-gray-600" :class="{ 'text-right': isArabic }">
+                            {{
+                                localize(
+                                    'Profitability per vehicle based on paid revenue minus damage, maintenance, and violation costs.',
+                                    'ربحية كل سيارة حسب الإيرادات المدفوعة مطروحاً منها تكاليف الأضرار والصيانة والمخالفات.',
+                                    'ہر گاڑی کی آمدنی سے نقصان، مرمت، اور خلاف ورزی کے اخراجات کم کر کے منافع۔',
+                                )
+                            }}
+                        </p>
+                        <div class="flex flex-col gap-3 sm:flex-row">
+                            <a
+                                v-if="vehicleProfitabilityReportExports?.pdf"
+                                :href="vehicleProfitabilityReportExports.pdf"
+                                target="_blank"
+                                class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            >
+                                <svg class="h-5 w-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                {{ localize('Export PDF', 'PDF تصدير', 'Export PDF') }}
+                            </a>
+                            <a
+                                v-if="vehicleProfitabilityReportExports?.excel"
+                                :href="vehicleProfitabilityReportExports.excel"
+                                class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            >
+                                <svg class="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                {{ localize('Export Excel', 'Excel تصدير', 'Export Excel') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 p-6">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                            <p class="text-sm font-semibold text-emerald-700">
+                                {{ localize('Total revenue', 'إجمالي الإيرادات', 'کل آمدنی') }}
+                            </p>
+                            <p class="mt-3 text-2xl font-bold text-emerald-950">
+                                {{ vehicleProfitabilityReport.summary.formatted_total_revenue }}
+                            </p>
+                        </div>
+                        <div class="rounded-xl border border-red-100 bg-red-50 p-5">
+                            <p class="text-sm font-semibold text-red-700">
+                                {{ localize('Total costs', 'إجمالي التكاليف', 'کل لاگت') }}
+                            </p>
+                            <p class="mt-3 text-2xl font-bold text-red-950">
+                                {{ vehicleProfitabilityReport.summary.formatted_total_costs }}
+                            </p>
+                        </div>
+                        <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-5">
+                            <p class="text-sm font-semibold text-indigo-700">
+                                {{ localize('Net profit', 'صافي الربح', 'خالص منافع') }}
+                            </p>
+                            <p class="mt-3 text-2xl font-bold text-indigo-950">
+                                {{ vehicleProfitabilityReport.summary.formatted_net_profit }}
+                            </p>
+                        </div>
+                        <div class="rounded-xl border border-sky-100 bg-sky-50 p-5">
+                            <p class="text-sm font-semibold text-sky-700">
+                                {{ localize('Average revenue per car', 'متوسط الإيراد لكل سيارة', 'فی گاڑی اوسط آمدنی') }}
+                            </p>
+                            <p class="mt-3 text-2xl font-bold text-sky-950">
+                                {{ vehicleProfitabilityReport.summary.formatted_average_revenue_per_car }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                        <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-900">
+                                {{ localize('Most profitable cars', 'أكثر السيارات ربحاً', 'سب سے منافع بخش گاڑیاں') }}
+                            </h3>
+                            <div class="mt-4 space-y-3">
+                                <div
+                                    v-for="car in vehicleProfitabilityReport.top_profitable"
+                                    :key="`top-${car.car_id}`"
+                                    class="flex items-center justify-between rounded-lg bg-emerald-50 px-4 py-3"
+                                >
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ car.car_name }}</p>
+                                        <p class="text-sm text-gray-500">{{ car.license_plate }}</p>
+                                    </div>
+                                    <p class="font-bold text-emerald-700">{{ car.formatted_net_profit }}</p>
+                                </div>
+                                <p v-if="vehicleProfitabilityReport.top_profitable.length === 0" class="text-sm text-gray-500">
+                                    {{ localize('No cars found for this period.', 'لا توجد سيارات في هذه الفترة.', 'اس مدت میں کوئی گاڑی نہیں۔') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-900">
+                                {{ localize('Least profitable cars', 'أقل السيارات ربحاً', 'کم منافع والی گاڑیاں') }}
+                            </h3>
+                            <div class="mt-4 space-y-3">
+                                <div
+                                    v-for="car in vehicleProfitabilityReport.least_profitable"
+                                    :key="`least-${car.car_id}`"
+                                    class="flex items-center justify-between rounded-lg bg-amber-50 px-4 py-3"
+                                >
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ car.car_name }}</p>
+                                        <p class="text-sm text-gray-500">{{ car.license_plate }}</p>
+                                    </div>
+                                    <p
+                                        class="font-bold"
+                                        :class="(car.net_profit ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'"
+                                    >
+                                        {{ car.formatted_net_profit }}
+                                    </p>
+                                </div>
+                                <p v-if="vehicleProfitabilityReport.least_profitable.length === 0" class="text-sm text-gray-500">
+                                    {{ localize('No cars found for this period.', 'لا توجد سيارات في هذه الفترة.', 'اس مدت میں کوئی گاڑی نہیں۔') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200 bg-white">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                        {{ localize('Car', 'السيارة', 'گاڑی') }}
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                        {{ localize('Revenue', 'الإيرادات', 'آمدنی') }}
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                        {{ localize('Damage', 'الأضرار', 'نقصان') }}
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                        {{ localize('Maintenance', 'الصيانة', 'مرمت') }}
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                        {{ localize('Violations', 'المخالفات', 'خلاف ورزیاں') }}
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                        {{ localize('Utilization', 'التشغيل', 'استعمال') }}
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                        {{ localize('Profit', 'الربح', 'منافع') }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr
+                                    v-for="car in vehicleProfitabilityReport.cars"
+                                    :key="car.car_id"
+                                    class="hover:bg-gray-50"
+                                >
+                                    <td class="px-4 py-4">
+                                        <p class="font-semibold text-gray-900">{{ car.car_name }}</p>
+                                        <p class="text-sm text-gray-500">{{ car.license_plate }} · {{ car.status }}</p>
+                                    </td>
+                                    <td class="px-4 py-4 font-semibold text-gray-900">
+                                        {{ car.formatted_revenue }}
+                                        <p class="text-xs font-normal text-gray-500">
+                                            {{ car.reservations_count }} {{ localize('reservations', 'حجوزات', 'بکنگز') }}
+                                        </p>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        {{ car.formatted_damage_cost }}
+                                        <p class="text-xs text-gray-500">{{ car.damage_items_count }} {{ localize('items', 'بنود', 'آئٹمز') }}</p>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        {{ car.formatted_maintenance_cost }}
+                                        <p class="text-xs text-gray-500">{{ car.maintenance_count }} {{ localize('records', 'سجلات', 'ریکارڈز') }}</p>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        {{ car.formatted_violation_cost }}
+                                        <p class="text-xs text-gray-500">{{ car.violations_count }} {{ localize('violations', 'مخالفات', 'خلاف ورزیاں') }}</p>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <div class="h-2 w-28 rounded-full bg-gray-200">
+                                            <div
+                                                class="h-2 rounded-full bg-indigo-500"
+                                                :style="{ width: `${Math.min(100, car.utilization_rate)}%` }"
+                                            ></div>
+                                        </div>
+                                        <p class="mt-1 text-xs text-gray-500">{{ car.utilization_rate }}% · {{ car.rented_days }} {{ localize('days', 'أيام', 'دن') }}</p>
+                                    </td>
+                                    <td
+                                        class="px-4 py-4 font-bold"
+                                        :class="(car.net_profit ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'"
+                                    >
+                                        {{ car.formatted_net_profit }}
+                                    </td>
+                                </tr>
+                                <tr v-if="vehicleProfitabilityReport.cars.length === 0">
+                                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                        {{ localize('No profitability data found for this period.', 'لا توجد بيانات ربحية لهذه الفترة.', 'اس مدت کے لیے منافع کا ڈیٹا نہیں۔') }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>

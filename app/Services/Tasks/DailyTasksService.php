@@ -56,6 +56,14 @@ class DailyTasksService
             $tasks = $tasks->merge($this->carStatusTasks($user, $tenantId, $date, $branchId, $locale)->where('task_type', 'cleaning'));
         }
 
+        if ($type === null || in_array($type, ['pickup', 'return'], true)) {
+            $tasks = $tasks->merge($this->completedWorkflowTasks($user, $tenantId, $date, $branchId, $type, $locale));
+        }
+
+        $tasks = $tasks
+            ->unique(fn (array $task) => $this->statusKey($task['task_type'], $task['source_type'], (int) $task['source_id']))
+            ->values();
+
         $statusMap = $this->statusMap($tenantId, $tasks);
 
         $tasks = $tasks
@@ -106,6 +114,32 @@ class DailyTasksService
         $this->completeSourceSideEffects($user, $taskType, $sourceType, $sourceId);
 
         return $status;
+    }
+
+    public function schedule(User $user, string $taskType, string $sourceType, int $sourceId, CarbonInterface $scheduledAt, ?string $notes = null): DailyTaskStatus
+    {
+        if (!in_array($taskType, ['cleaning', 'maintenance'], true)) {
+            abort(422, 'Only cleaning and maintenance tasks can have a manual task time.');
+        }
+
+        if (!in_array($sourceType, ['car', 'maintenance'], true)) {
+            abort(422, 'Only car and maintenance task sources can have a manual task time.');
+        }
+
+        $tenantId = (int) ($user->tenant_id ?? 0);
+
+        return DailyTaskStatus::query()->updateOrCreate(
+            [
+                'tenant_id' => $tenantId,
+                'task_type' => $taskType,
+                'source_type' => $sourceType,
+                'source_id' => $sourceId,
+            ],
+            array_filter([
+                'scheduled_at' => Carbon::parse($scheduledAt),
+                'notes' => $notes,
+            ], static fn ($value) => $value !== null)
+        )->refresh();
     }
 
     private function completeSourceSideEffects(User $user, string $taskType, string $sourceType, int $sourceId): void
@@ -215,7 +249,12 @@ class DailyTasksService
     private function pickupTasks(User $user, int $tenantId, CarbonInterface $date, ?int $branchId, string $locale): Collection
     {
         $query = Reservation::query()
-            ->with(['user:id,name,email', 'car:id,tenant_id,branch_id,year,make,model,license_plate', 'car.branch:id,name'])
+            ->with([
+                'user:id,name,email',
+                'car:id,tenant_id,branch_id,year,make,model,license_plate',
+                'car.branch:id,name',
+                'contract:id,reservation_id,status',
+            ])
             ->where('tenant_id', $tenantId)
             ->whereDate('start_date', $date)
             ->whereIn('status', [
@@ -244,6 +283,11 @@ class DailyTasksService
                 location: (string) ($reservation->pickup_location ?? ''),
                 sourceStatus: $reservation->status instanceof ReservationStatus ? $reservation->status->value : (string) $reservation->status,
                 description: trim(sprintf('%s - %s', $car?->full_name ?? '', $reservation->user?->name ?? '')),
+                reservationId: (int) $reservation->id,
+                contractId: $reservation->contract ? (int) $reservation->contract->id : null,
+                actionUrl: $reservation->contract
+                    ? url('/admin/contracts/'.$reservation->contract->id.'/edit')
+                    : url('/admin/contracts/create?reservation_id='.$reservation->id),
             );
         });
     }
@@ -285,6 +329,9 @@ class DailyTasksService
                 location: (string) ($reservation?->return_location ?? ''),
                 sourceStatus: $contract->status instanceof ContractStatus ? $contract->status->value : (string) $contract->status,
                 description: trim(sprintf('%s - %s', $car?->full_name ?? $contract->car_details ?? '', $reservation?->user?->name ?? $contract->renter_name ?? '')),
+                reservationId: $reservation ? (int) $reservation->id : null,
+                contractId: (int) $contract->id,
+                actionUrl: url('/admin/contracts/'.$contract->id.'/return-status-report'),
             );
         });
     }
@@ -341,6 +388,9 @@ class DailyTasksService
         string $location,
         string $sourceStatus,
         string $description,
+        ?int $reservationId = null,
+        ?int $contractId = null,
+        ?string $actionUrl = null,
     ): array {
         return [
             'id' => $taskType.'-'.$sourceId,
@@ -348,6 +398,8 @@ class DailyTasksService
             'task_type_label' => $this->translate($locale, $titleEn, $titleAr),
             'source_type' => $sourceType,
             'source_id' => $sourceId,
+            'reservation_id' => $reservationId,
+            'contract_id' => $contractId,
             'reference' => $reference,
             'title' => $this->translate($locale, $titleEn, $titleAr),
             'description' => $description,
@@ -356,6 +408,7 @@ class DailyTasksService
             'scheduled_time' => $scheduledAt->format('H:i'),
             'location' => $location,
             'source_status' => $sourceStatus,
+            'action_url' => $actionUrl,
             'car' => $car ? [
                 'id' => $car->id,
                 'name' => trim((string) ($car->full_name ?? sprintf('%s %s %s', $car->year ?? '', $car->make ?? '', $car->model ?? ''))),
@@ -375,6 +428,7 @@ class DailyTasksService
     private function applyStoredStatus(array $task, Collection $statusMap, string $locale): array
     {
         $stored = $statusMap->get($this->statusKey($task['task_type'], $task['source_type'], (int) $task['source_id']));
+        $task = $this->applyStoredSchedule($task, $stored);
         $status = $this->storedStatusForTask($task, $stored);
         $usesStoredLifecycle = $stored && $status === $stored->status;
         $isCompleted = $status === self::STATUS_COMPLETED;
@@ -395,9 +449,29 @@ class DailyTasksService
             'notes' => $usesStoredLifecycle ? $stored?->notes : null,
             'actions' => [
                 'can_start' => in_array($status, [self::STATUS_PENDING, self::STATUS_CANCELLED], true),
-                'can_complete' => $status === self::STATUS_IN_PROGRESS,
+                'can_complete' => $status === self::STATUS_IN_PROGRESS
+                    && !in_array($task['task_type'], ['pickup', 'return'], true),
             ],
         ]);
+    }
+
+    private function applyStoredSchedule(array $task, ?DailyTaskStatus $stored): array
+    {
+        if (
+            !$stored?->scheduled_at
+            || !in_array($task['task_type'], ['cleaning', 'maintenance'], true)
+            || !in_array($task['source_type'], ['car', 'maintenance'], true)
+        ) {
+            return $task;
+        }
+
+        $scheduledAt = Carbon::parse($stored->scheduled_at);
+
+        $task['scheduled_at'] = $scheduledAt->toIso8601String();
+        $task['scheduled_date'] = $scheduledAt->toDateString();
+        $task['scheduled_time'] = $scheduledAt->format('H:i');
+
+        return $task;
     }
 
     private function storedStatusForTask(array $task, ?DailyTaskStatus $stored): string
@@ -647,6 +721,133 @@ class DailyTasksService
                 sourceStatus: 'available', // since it's completed, it's back to available
                 description: trim(sprintf('%s - %s', $car->full_name ?? '', $taskType === 'cleaning' ? 'Cleaning' : 'Maintenance')),
             ));
+        }
+
+        return $tasks;
+    }
+
+    private function completedWorkflowTasks(User $user, int $tenantId, CarbonInterface $date, ?int $branchId, ?string $type, string $locale): Collection
+    {
+        $query = DailyTaskStatus::query()
+            ->where('tenant_id', $tenantId)
+            ->where('status', self::STATUS_COMPLETED)
+            ->whereIn('task_type', $type ? [$type] : ['pickup', 'return'])
+            ->whereIn('source_type', ['reservation', 'contract'])
+            ->whereDate('completed_at', $date);
+
+        $statuses = $query->get();
+        if ($statuses->isEmpty()) {
+            return collect();
+        }
+
+        $tasks = collect();
+
+        $reservationIds = $statuses
+            ->where('task_type', 'pickup')
+            ->where('source_type', 'reservation')
+            ->pluck('source_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!empty($reservationIds)) {
+            $reservationsQuery = Reservation::query()
+                ->with([
+                    'user:id,name,email',
+                    'car:id,tenant_id,branch_id,year,make,model,license_plate',
+                    'car.branch:id,name',
+                    'contract:id,reservation_id,status',
+                ])
+                ->where('tenant_id', $tenantId)
+                ->whereIn('id', $reservationIds);
+
+            $this->applyReservationBranchScope($reservationsQuery, $user, $branchId);
+            $reservations = $reservationsQuery->get()->keyBy('id');
+
+            foreach ($statuses->where('task_type', 'pickup')->where('source_type', 'reservation') as $status) {
+                $reservation = $reservations->get($status->source_id);
+                if (!$reservation) {
+                    continue;
+                }
+
+                $scheduledAt = $status->completed_at ?? $status->started_at ?? $status->created_at ?? Carbon::parse($date);
+                $car = $reservation->car;
+
+                $tasks->push($this->baseTask(
+                    locale: $locale,
+                    taskType: 'pickup',
+                    sourceType: 'reservation',
+                    sourceId: (int) $reservation->id,
+                    titleEn: 'Car pickup',
+                    titleAr: 'طھط³ظ„ظٹظ… ط³ظٹط§ط±ط©',
+                    scheduledAt: Carbon::parse($scheduledAt),
+                    car: $car,
+                    client: $reservation->user,
+                    reference: $reservation->reservation_number,
+                    location: (string) ($reservation->pickup_location ?? ''),
+                    sourceStatus: $reservation->status instanceof ReservationStatus ? $reservation->status->value : (string) $reservation->status,
+                    description: trim(sprintf('%s - %s', $car?->full_name ?? '', $reservation->user?->name ?? '')),
+                    reservationId: (int) $reservation->id,
+                    contractId: $reservation->contract ? (int) $reservation->contract->id : null,
+                    actionUrl: $reservation->contract
+                        ? url('/admin/contracts/'.$reservation->contract->id.'/edit')
+                        : url('/admin/contracts/create?reservation_id='.$reservation->id),
+                ));
+            }
+        }
+
+        $contractIds = $statuses
+            ->where('task_type', 'return')
+            ->where('source_type', 'contract')
+            ->pluck('source_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!empty($contractIds)) {
+            $contractsQuery = Contract::query()
+                ->with([
+                    'reservation:id,tenant_id,reservation_number,user_id,car_id,return_time,return_location',
+                    'reservation.user:id,name,email',
+                    'reservation.car:id,tenant_id,branch_id,year,make,model,license_plate',
+                    'reservation.car.branch:id,name',
+                    'branch:id,name',
+                ])
+                ->where('tenant_id', $tenantId)
+                ->whereIn('id', $contractIds);
+
+            $this->applyContractBranchScope($contractsQuery, $user, $branchId);
+            $contracts = $contractsQuery->get()->keyBy('id');
+
+            foreach ($statuses->where('task_type', 'return')->where('source_type', 'contract') as $status) {
+                $contract = $contracts->get($status->source_id);
+                if (!$contract) {
+                    continue;
+                }
+
+                $reservation = $contract->reservation;
+                $car = $reservation?->car;
+                $scheduledAt = $status->completed_at ?? $status->started_at ?? $status->created_at ?? Carbon::parse($date);
+
+                $tasks->push($this->baseTask(
+                    locale: $locale,
+                    taskType: 'return',
+                    sourceType: 'contract',
+                    sourceId: (int) $contract->id,
+                    titleEn: 'Car return',
+                    titleAr: 'ط§ط³طھظ„ط§ظ… ط³ظٹط§ط±ط©',
+                    scheduledAt: Carbon::parse($scheduledAt),
+                    car: $car,
+                    client: $reservation?->user,
+                    reference: $contract->contract_number,
+                    location: (string) ($reservation?->return_location ?? ''),
+                    sourceStatus: $contract->status instanceof ContractStatus ? $contract->status->value : (string) $contract->status,
+                    description: trim(sprintf('%s - %s', $car?->full_name ?? $contract->car_details ?? '', $reservation?->user?->name ?? $contract->renter_name ?? '')),
+                    reservationId: $reservation ? (int) $reservation->id : null,
+                    contractId: (int) $contract->id,
+                    actionUrl: url('/admin/contracts/'.$contract->id.'/return-status-report'),
+                ));
+            }
         }
 
         return $tasks;

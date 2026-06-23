@@ -146,6 +146,8 @@ const props = defineProps<{
         maintenance_index_url: string;
         create_damage_repair_url: string;
         damage_repairs_index_url: string;
+        photo_histories_index_url: string;
+        create_photo_history_url: string;
     };
 }>();
 
@@ -269,6 +271,20 @@ function statusVariant(key: string) {
                 </div>
 
                 <div class="space-y-6">
+                    <Card>
+                        <CardHeader class="flex flex-row items-center justify-between gap-3">
+                            <CardTitle>{{ localize('Photo History', 'سجل الصور') }}</CardTitle>
+                            <div class="flex items-center gap-2">
+                                <Link :href="actions.photo_histories_index_url">
+                                    <Button size="sm" variant="outline">{{ localize('View All', 'عرض الكل') }}</Button>
+                                </Link>
+                                <Link :href="actions.create_photo_history_url">
+                                    <Button size="sm">{{ localize('New Record', 'سجل جديد') }}</Button>
+                                </Link>
+                            </div>
+                        </CardHeader>
+                    </Card>
+
                     <Card>
                         <CardHeader><CardTitle>{{ localize('Reservations', 'الحجوزات') }}</CardTitle></CardHeader>
                         <CardContent class="space-y-3">

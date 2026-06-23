@@ -35,6 +35,7 @@ interface Car {
     fuel_type: string;
     description: string;
     status: string;
+    status_task_time?: string | null;
 }
 
 interface ImageFile {
@@ -144,6 +145,7 @@ const fuelTypes = computed(() =>
 
 const statuses = computed(() => props.enums.statuses);
 const statusOptions = computed(() => statuses.value.map((status) => ({ value: status.value, label: status.label })));
+const requiresStatusTaskTime = computed(() => ['cleaning', 'maintenance'].includes(String(form.status)));
 const availableBranches = ref<Branch[]>(Array.isArray(props.branches) ? [...props.branches] : []);
 const branchOptions = computed(() => availableBranches.value.map((branch) => ({ value: String(branch.id), label: branch.name })));
 const plateFormatOptions = computed<PlateFormatOption[]>(() => Array.isArray(props.plateFormats) ? props.plateFormats : []);
@@ -269,6 +271,7 @@ const form = useForm({
     fuel_type: safeLower(props.car?.fuel_type, 'gasoline'),
     description: safeStr(props.car?.description),
     status: safeStr(props.car?.status, 'available'),
+    status_task_time: safeStr(props.car?.status_task_time),
     image: [] as string[],
     image_temp_folders: [] as string[],
     image_removed_files: [] as number[],
@@ -611,6 +614,20 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                                 :empty-text="localize('No statuses found.', 'لا توجد حالات.')"
                             />
                             <InputError :message="form.errors.status" class="mt-1" />
+                        </div>
+
+                        <div v-if="requiresStatusTaskTime">
+                            <Label for="status_task_time">{{ localize('Task Time', 'وقت المهمة') }}</Label>
+                            <Input
+                                id="status_task_time"
+                                v-model="form.status_task_time"
+                                type="time"
+                                dir="ltr"
+                            />
+                            <p class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('Used in today tasks timeline for cleaning or maintenance.', 'يستخدم في جدول مهام اليوم للتنظيف أو الصيانة.') }}
+                            </p>
+                            <InputError :message="form.errors.status_task_time" class="mt-1" />
                         </div>
 
                         <div>

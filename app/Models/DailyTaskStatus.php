@@ -16,6 +16,7 @@ class DailyTaskStatus extends Model
         'source_type',
         'source_id',
         'status',
+        'scheduled_at',
         'started_at',
         'completed_at',
         'started_by',
@@ -25,6 +26,7 @@ class DailyTaskStatus extends Model
 
     protected $casts = [
         'source_id' => 'integer',
+        'scheduled_at' => 'datetime',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
     ];

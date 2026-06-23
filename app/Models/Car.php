@@ -299,4 +299,9 @@ class Car extends Model
 
         return $query->count() === 0;
     }
+
+    public function photoHistories(): HasMany
+    {
+        return $this->hasMany(CarPhotoHistory::class);
+    }
 }

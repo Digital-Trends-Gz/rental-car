@@ -13,6 +13,9 @@ class CarDamageReport extends Model
     use BelongsToTenant;
     use HasFiles;
 
+    public const SOURCE_TYPE_AI = 'ai';
+    public const SOURCE_TYPE_EMPLOYEE = 'employee';
+
     protected $fillable = [
         'tenant_id',
         'car_id',
@@ -20,6 +23,7 @@ class CarDamageReport extends Model
         'contract_id',
         'reservation_id',
         'created_by',
+        'source_type',
         'report_number',
         'report_type',
         'status',
@@ -31,6 +35,10 @@ class CarDamageReport extends Model
     protected $casts = [
         'inspected_at' => 'datetime',
         'odometer' => 'integer',
+    ];
+
+    protected $attributes = [
+        'source_type' => self::SOURCE_TYPE_EMPLOYEE,
     ];
 
     protected static function booted(): void

@@ -13,6 +13,7 @@ use App\Models\Car;
 use App\Models\CarDamageReport;
 use App\Models\CarDiscount;
 use App\Models\CarDocument;
+use App\Models\DailyTaskStatus;
 use App\Models\DamageRepair;
 use App\Models\Contract;
 use App\Models\CarMaintenance;
@@ -455,6 +456,8 @@ class CarsController extends Controller
                 'maintenance_index_url' => route('admin.maintenance-records.index', ['car_id' => $car->id]),
                 'create_damage_repair_url' => route('admin.damage-repairs.create'),
                 'damage_repairs_index_url' => route('admin.damage-repairs.index', ['car_id' => $car->id]),
+                'photo_histories_index_url' => route('admin.cars.photo-histories.index', $car->id),
+                'create_photo_history_url' => route('admin.cars.photo-histories.create', $car->id),
             ],
         ]);
     }
@@ -497,6 +500,7 @@ class CarsController extends Controller
             'fuel_type' => [$requiredRule, 'string', Rule::enum(FuelType::class)],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::enum(CarStatus::class)],
+            'status_task_time' => ['nullable', 'date_format:H:i'],
             'image' => ['array'],
             'image.*' => ['string'],
             'additional_photos' => ['array'],
@@ -533,7 +537,13 @@ class CarsController extends Controller
             return redirect()->back()->with('error', $message);
         }
 
-        $car = Car::create(collect($this->normalizeCarPayload($validated, $isDraftSubmission))->except(['image', 'additional_photos'])->toArray());
+        $car = Car::create(collect($this->normalizeCarPayload($validated, $isDraftSubmission))->except([
+            'image',
+            'additional_photos',
+            'status_task_time',
+        ])->toArray());
+
+        $this->syncCarDailyTaskSchedule($request, $car);
 
         // Handle uploaded cover image if provided
         if ($request->filled('image')) {
@@ -600,6 +610,8 @@ class CarsController extends Controller
             })
             ->filter(fn (array $item) => !empty($item['files']))
             ->values();
+
+        $car->setAttribute('status_task_time', $this->currentCarDailyTaskTime($car));
 
         return Inertia::render('Admin/Cars/Edit', [
             'car' => $car,
@@ -807,6 +819,7 @@ class CarsController extends Controller
             'fuel_type' => [$requiredRule, 'string', Rule::enum(FuelType::class)],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::enum(CarStatus::class)],
+            'status_task_time' => ['nullable', 'date_format:H:i'],
             // File updates for the cover image
             'image_temp_folders' => ['array'],
             'image_temp_folders.*' => ['string'],
@@ -851,7 +864,10 @@ class CarsController extends Controller
             'image_removed_files',
             'additional_photos',
             'deleted_additional_photo_types',
+            'status_task_time',
         ])->toArray());
+
+        $this->syncCarDailyTaskSchedule($request, $car);
 
         $tempFolders = $request->input('image_temp_folders', []);
         $removedIds = $request->input('image_removed_files', []);
@@ -898,6 +914,57 @@ class CarsController extends Controller
         return redirect()
             ->route('admin.cars.index', ['subdomain' => $request->route('subdomain')])
             ->with('success', $isDraftSubmission ? 'Car draft saved successfully.' : 'Car updated successfully.');
+    }
+
+    private function currentCarDailyTaskTime(Car $car): ?string
+    {
+        $taskType = $this->dailyTaskTypeForCarStatus($car->status instanceof CarStatus ? $car->status->value : (string) $car->status);
+
+        if (!$taskType) {
+            return null;
+        }
+
+        $stored = DailyTaskStatus::query()
+            ->where('tenant_id', $car->tenant_id)
+            ->where('task_type', $taskType)
+            ->where('source_type', 'car')
+            ->where('source_id', $car->id)
+            ->first();
+
+        return $stored?->scheduled_at?->format('H:i');
+    }
+
+    private function syncCarDailyTaskSchedule(Request $request, Car $car): void
+    {
+        $taskType = $this->dailyTaskTypeForCarStatus($car->status instanceof CarStatus ? $car->status->value : (string) $car->status);
+        $time = trim((string) $request->input('status_task_time', ''));
+
+        if (!$taskType || $time === '') {
+            return;
+        }
+
+        [$hour, $minute] = array_pad(array_map('intval', explode(':', $time)), 2, 0);
+
+        DailyTaskStatus::query()->updateOrCreate(
+            [
+                'tenant_id' => $car->tenant_id,
+                'task_type' => $taskType,
+                'source_type' => 'car',
+                'source_id' => $car->id,
+            ],
+            [
+                'scheduled_at' => Carbon::today()->setTime($hour, $minute),
+            ]
+        );
+    }
+
+    private function dailyTaskTypeForCarStatus(string $status): ?string
+    {
+        return match ($status) {
+            CarStatus::CLEANING->value => 'cleaning',
+            CarStatus::MAINTENANCE->value => 'maintenance',
+            default => null,
+        };
     }
 
     /**

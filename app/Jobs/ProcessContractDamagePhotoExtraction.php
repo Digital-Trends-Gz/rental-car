@@ -180,6 +180,7 @@ class ProcessContractDamagePhotoExtraction implements ShouldQueue
 
             $damageReport->items()->create([
                 'tenant_id' => $damageReport->tenant_id,
+                'source_type' => \App\Models\CarDamageItem::SOURCE_TYPE_AI,
                 'zone_code' => (string) ($item['zone_code'] ?? ''),
                 'view_side' => (string) ($item['view_side'] ?? 'front'),
                 'damage_type' => (string) ($item['damage_type'] ?? 'other'),

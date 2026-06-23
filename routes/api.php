@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AccidentReportsController;
+use App\Http\Controllers\Api\CarPhotoHistoryController;
 use App\Http\Controllers\Api\ClientsController;
 use App\Http\Controllers\Api\ContractsController;
 use App\Http\Controllers\Api\DailyTasksController;
@@ -35,8 +36,10 @@ Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('tasks')->group(function () {
     Route::get('today', [DailyTasksController::class, 'today'])->name('api.tasks.today');
+    Route::get('status', [DailyTasksController::class, 'status'])->name('api.tasks.status');
     Route::post('start', [DailyTasksController::class, 'start'])->name('api.tasks.start');
     Route::post('complete', [DailyTasksController::class, 'complete'])->name('api.tasks.complete');
+    Route::post('schedule', [DailyTasksController::class, 'schedule'])->name('api.tasks.schedule');
 });
 
 Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
@@ -47,6 +50,13 @@ Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('clients')->group(function () {
     Route::get('{client}/status', [ClientsController::class, 'status'])->name('api.clients.status');
+});
+
+Route::middleware('auth:sanctum')->prefix('cars')->group(function () {
+    Route::get('photo-history/status', [CarPhotoHistoryController::class, 'status'])->name('api.cars.photo-history.status');
+    Route::get('{car}/photo-histories', [CarPhotoHistoryController::class, 'index'])->name('api.cars.photo-histories.index');
+    Route::post('{car}/photo-histories', [CarPhotoHistoryController::class, 'store'])->name('api.cars.photo-histories.store');
+    Route::delete('{car}/photo-histories/{photoHistory}', [CarPhotoHistoryController::class, 'destroy'])->name('api.cars.photo-histories.destroy');
 });
 
 Route::middleware('auth:sanctum')->prefix('reservations')->group(function () {

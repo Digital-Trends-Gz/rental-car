@@ -264,11 +264,18 @@ class ContractsController extends Controller
 
         [$phase, $reportType] = $this->resolveDamageItemReportContext($request);
         $validated = $this->validateDamageItemPayload($request, false, $reportType);
-        $damageReport = $this->resolveOrCreateDraftDamageReportForHandover($contract, $request, $phase, $reportType);
+        $damageReport = $this->resolveOrCreateDraftDamageReportForHandover(
+            $contract,
+            $request,
+            $phase,
+            $reportType,
+            CarDamageReport::SOURCE_TYPE_EMPLOYEE
+        );
         $this->linkReturnReportToDamageReportIfNeeded($contract, $damageReport);
 
         $item = $damageReport->items()->create([
             'tenant_id' => $damageReport->tenant_id,
+            'source_type' => \App\Models\CarDamageItem::SOURCE_TYPE_EMPLOYEE,
             'zone_code' => $validated['zone_code'],
             'view_side' => $validated['view_side'],
             'damage_type' => $validated['damage_type'],
@@ -281,6 +288,8 @@ class ContractsController extends Controller
             'notes' => $validated['notes'] ?? null,
             'sort_order' => ((int) $damageReport->items()->max('sort_order')) + 1,
         ]);
+
+        $this->markDamageReportAsEmployeeEdited($damageReport);
 
         return response()->json([
             'message' => 'Damage item created successfully.',
@@ -327,6 +336,8 @@ class ContractsController extends Controller
             $damageItem->forceFill($attributes)->save();
         }
 
+        $this->markDamageItemAsEmployeeEdited($damageItem);
+
         return response()->json([
             'message' => 'Damage item updated successfully.',
             'damage_report_id' => $damageReport->id,
@@ -343,6 +354,7 @@ class ContractsController extends Controller
         $damageReport = $this->resolveContractDamageReportForItem($contract, $damageItem);
         $deletedItemId = $damageItem->id;
         $damageItem->delete();
+        $this->markDamageReportAsEmployeeEdited($damageReport);
 
         return response()->json([
             'message' => 'Damage item deleted successfully.',
@@ -798,6 +810,7 @@ class ContractsController extends Controller
                 $damageReport->forceFill([
                     'summary' => $summary,
                 ])->saveQuietly();
+                $this->markDamageReportAsEmployeeEdited($damageReport);
             }
 
             $damageReport = $damageReport?->fresh(['files', 'items']);
@@ -1148,6 +1161,7 @@ class ContractsController extends Controller
                         'status' => 'draft',
                         'summary' => $summary,
                     ])->saveQuietly();
+                    $this->markDamageReportAsEmployeeEdited($damageReport);
                 }
             });
 
@@ -2502,6 +2516,7 @@ class ContractsController extends Controller
 
             $attributes = [
                 'tenant_id' => $report->tenant_id,
+                'source_type' => \App\Models\CarDamageItem::SOURCE_TYPE_EMPLOYEE,
                 'zone_code' => $item['zone_code'],
                 'view_side' => $item['view_side'],
                 'damage_type' => $item['damage_type'],
@@ -2523,6 +2538,23 @@ class ContractsController extends Controller
                     ->first();
 
                 if ($existingItem) {
+                    $incomingAttributes = [
+                        'zone_code' => (string) $attributes['zone_code'],
+                        'view_side' => (string) $attributes['view_side'],
+                        'damage_type' => (string) $attributes['damage_type'],
+                        'severity' => (string) $attributes['severity'],
+                        'damage_timing' => (string) $attributes['damage_timing'],
+                        'quantity' => (string) $attributes['quantity'],
+                        'marker_x' => $attributes['marker_x'] !== null ? (string) $attributes['marker_x'] : null,
+                        'marker_y' => $attributes['marker_y'] !== null ? (string) $attributes['marker_y'] : null,
+                        'estimated_cost' => $attributes['estimated_cost'] !== null ? (string) $attributes['estimated_cost'] : null,
+                        'notes' => $attributes['notes'],
+                    ];
+
+                    if ($this->damageItemAttributesMatch($existingItem, $incomingAttributes)) {
+                        $attributes['source_type'] = $existingItem->source_type ?? \App\Models\CarDamageItem::SOURCE_TYPE_EMPLOYEE;
+                    }
+
                     $existingItem->forceFill($attributes)->saveQuietly();
                     continue;
                 }
@@ -2530,6 +2562,45 @@ class ContractsController extends Controller
 
             $report->items()->create($attributes);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $incomingAttributes
+     */
+    private function damageItemAttributesMatch(CarDamageItem $existingItem, array $incomingAttributes): bool
+    {
+        $existingAttributes = [
+            'zone_code' => (string) $existingItem->zone_code,
+            'view_side' => (string) $existingItem->view_side,
+            'damage_type' => (string) $existingItem->damage_type,
+            'severity' => (string) $existingItem->severity,
+            'damage_timing' => (string) $existingItem->damage_timing,
+            'quantity' => (string) $existingItem->quantity,
+            'marker_x' => $existingItem->marker_x !== null ? (string) $existingItem->marker_x : null,
+            'marker_y' => $existingItem->marker_y !== null ? (string) $existingItem->marker_y : null,
+            'estimated_cost' => $existingItem->estimated_cost !== null ? (string) $existingItem->estimated_cost : null,
+            'notes' => $existingItem->notes,
+        ];
+
+        $normalize = static function (array $attributes): array {
+            foreach ($attributes as $key => $value) {
+                if ($value === null) {
+                    $attributes[$key] = null;
+                    continue;
+                }
+
+                if (in_array($key, ['marker_x', 'marker_y', 'estimated_cost'], true)) {
+                    $attributes[$key] = number_format((float) $value, 2, '.', '');
+                    continue;
+                }
+
+                $attributes[$key] = (string) $value;
+            }
+
+            return $attributes;
+        };
+
+        return $normalize($existingAttributes) === $normalize($incomingAttributes);
     }
 
     /**
@@ -3749,11 +3820,34 @@ class ContractsController extends Controller
         return $this->filePondService->moveTempFileToModel($damageReport, $folder, $collection, $order);
     }
 
+    private function markDamageReportAsEmployeeEdited(CarDamageReport $damageReport): void
+    {
+        if (($damageReport->source_type ?? CarDamageReport::SOURCE_TYPE_EMPLOYEE) === CarDamageReport::SOURCE_TYPE_EMPLOYEE) {
+            return;
+        }
+
+        $damageReport->forceFill([
+            'source_type' => CarDamageReport::SOURCE_TYPE_EMPLOYEE,
+        ])->saveQuietly();
+    }
+
+    private function markDamageItemAsEmployeeEdited(\App\Models\CarDamageItem $damageItem): void
+    {
+        if (($damageItem->source_type ?? \App\Models\CarDamageItem::SOURCE_TYPE_EMPLOYEE) === \App\Models\CarDamageItem::SOURCE_TYPE_EMPLOYEE) {
+            return;
+        }
+
+        $damageItem->forceFill([
+            'source_type' => \App\Models\CarDamageItem::SOURCE_TYPE_EMPLOYEE,
+        ])->saveQuietly();
+    }
+
     private function resolveOrCreateDraftDamageReportForHandover(
         Contract $contract,
         Request $request,
         string $phase = 'delivery',
-        string $reportType = 'before_delivery'
+        string $reportType = 'before_delivery',
+        string $sourceType = CarDamageReport::SOURCE_TYPE_AI
     ): CarDamageReport
     {
         $state = $phase === 'return'
@@ -3799,6 +3893,7 @@ class ContractsController extends Controller
             'contract_id' => $contract->id,
             'reservation_id' => $contract->reservation_id,
             'created_by' => $request->user()?->id,
+            'source_type' => $sourceType,
             'report_number' => $this->generateReportNumber(),
             'report_type' => $reportType,
             'status' => 'draft',
@@ -3917,6 +4012,7 @@ class ContractsController extends Controller
         return [
             'id' => $damageReport->id,
             'report_number' => $damageReport->report_number,
+            'source_type' => $damageReport->source_type ?? CarDamageReport::SOURCE_TYPE_EMPLOYEE,
             'report_type' => $damageReport->report_type,
             'status' => $damageReport->status,
             'summary' => $damageReport->summary,
@@ -3969,6 +4065,7 @@ class ContractsController extends Controller
     {
         return [
             'id' => $item->id,
+            'source_type' => $item->source_type ?? \App\Models\CarDamageItem::SOURCE_TYPE_EMPLOYEE,
             'zone_code' => $item->zone_code,
             'view_side' => $item->view_side,
             'damage_type' => $item->damage_type,

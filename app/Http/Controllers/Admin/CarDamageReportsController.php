@@ -6,6 +6,7 @@ use App\Core\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Models\CarDamageCase;
+use App\Models\CarDamageItem;
 use App\Models\CarDamageReport;
 use App\Models\Contract;
 use App\Models\Reservation;
@@ -115,6 +116,7 @@ class CarDamageReportsController extends Controller
             return [
                 'id' => $report->id,
                 'report_number' => $report->report_number,
+                'source_type' => $report->source_type ?? CarDamageReport::SOURCE_TYPE_EMPLOYEE,
                 'car' => $report->car
                     ? trim("{$report->car->year} {$report->car->make} {$report->car->model} ({$report->car->license_plate})")
                     : '-',
@@ -171,6 +173,7 @@ class CarDamageReportsController extends Controller
                 'car_id' => $prefilledCar?->id,
                 'contract_id' => $prefilledContract?->id,
                 'reservation_id' => $prefilledReservation?->id,
+                'source_type' => CarDamageReport::SOURCE_TYPE_EMPLOYEE,
                 'report_type' => 'before_delivery',
                 'status' => 'draft',
                 'inspected_at' => now()->format('Y-m-d\TH:i'),
@@ -207,6 +210,7 @@ class CarDamageReportsController extends Controller
                 'contract_id' => $contract->id,
                 'reservation_id' => $reservation->id,
                 'created_by' => $request->user()?->id,
+                'source_type' => CarDamageReport::SOURCE_TYPE_EMPLOYEE,
                 'report_number' => $validated['report_number'],
                 'report_type' => $validated['report_type'],
                 'status' => $validated['status'],
@@ -247,6 +251,7 @@ class CarDamageReportsController extends Controller
             'report' => [
                 'id' => $carDamageReport->id,
                 'report_number' => $carDamageReport->report_number,
+                'source_type' => $carDamageReport->source_type ?? CarDamageReport::SOURCE_TYPE_EMPLOYEE,
                 'car_id' => $carDamageReport->car_id,
                 'contract_id' => $carDamageReport->contract_id,
                 'reservation_id' => $carDamageReport->reservation_id,
@@ -258,6 +263,7 @@ class CarDamageReportsController extends Controller
                 'items' => $carDamageReport->items->map(function ($item) use ($carDamageReport) {
                     return [
                         'id' => $item->id,
+                        'source_type' => $item->source_type ?? CarDamageReport::SOURCE_TYPE_EMPLOYEE,
                         'zone_code' => $item->zone_code,
                         'view_side' => $item->view_side,
                         'damage_type' => $item->damage_type,
@@ -306,6 +312,7 @@ class CarDamageReportsController extends Controller
                 'inspected_at' => $validated['inspected_at'] ?? null,
                 'odometer' => $validated['odometer'] ?? null,
                 'summary' => $validated['summary'] ?? null,
+                'source_type' => CarDamageReport::SOURCE_TYPE_EMPLOYEE,
             ]);
 
             $this->syncItems($carDamageReport, $validated['items'] ?? []);
@@ -458,15 +465,21 @@ class CarDamageReportsController extends Controller
 
     private function syncItems(CarDamageReport $report, array $items): void
     {
-        $report->items()->delete();
+        $existingItems = CarDamageItem::query()
+            ->where('tenant_id', $report->tenant_id)
+            ->where('car_damage_report_id', $report->id)
+            ->get()
+            ->keyBy('id');
+        $retainedItemIds = [];
 
         foreach (array_values($items) as $index => $item) {
             if (!is_array($item)) {
                 continue;
             }
 
-            $report->items()->create([
+            $attributes = [
                 'tenant_id' => $report->tenant_id,
+                'source_type' => CarDamageItem::SOURCE_TYPE_EMPLOYEE,
                 'zone_code' => $item['zone_code'],
                 'view_side' => $item['view_side'],
                 'damage_type' => $item['damage_type'],
@@ -478,8 +491,80 @@ class CarDamageReportsController extends Controller
                 'estimated_cost' => $item['estimated_cost'] ?? null,
                 'notes' => $item['notes'] ?? null,
                 'sort_order' => $index,
-            ]);
+            ];
+
+            $itemId = isset($item['id']) && is_numeric($item['id']) ? (int) $item['id'] : null;
+            if ($itemId !== null && $existingItems->has($itemId)) {
+                $existingItem = $existingItems->get($itemId);
+                $retainedItemIds[] = $itemId;
+
+                $incomingAttributes = [
+                    'zone_code' => (string) $attributes['zone_code'],
+                    'view_side' => (string) $attributes['view_side'],
+                    'damage_type' => (string) $attributes['damage_type'],
+                    'severity' => (string) $attributes['severity'],
+                    'damage_timing' => (string) $attributes['damage_timing'],
+                    'quantity' => (string) $attributes['quantity'],
+                    'marker_x' => $attributes['marker_x'] !== null ? (string) $attributes['marker_x'] : null,
+                    'marker_y' => $attributes['marker_y'] !== null ? (string) $attributes['marker_y'] : null,
+                    'estimated_cost' => $attributes['estimated_cost'] !== null ? (string) $attributes['estimated_cost'] : null,
+                    'notes' => $attributes['notes'],
+                ];
+
+                if ($this->damageItemAttributesMatch($existingItem, $incomingAttributes)) {
+                    $attributes['source_type'] = $existingItem->source_type ?? CarDamageItem::SOURCE_TYPE_EMPLOYEE;
+                }
+
+                $existingItem->forceFill($attributes)->saveQuietly();
+                continue;
+            }
+
+            $createdItem = $report->items()->create($attributes);
+            $retainedItemIds[] = (int) $createdItem->id;
         }
+
+        $existingItems
+            ->except($retainedItemIds)
+            ->each->delete();
+    }
+
+    /**
+     * @param  array<string, mixed>  $incomingAttributes
+     */
+    private function damageItemAttributesMatch(CarDamageItem $existingItem, array $incomingAttributes): bool
+    {
+        $existingAttributes = [
+            'zone_code' => (string) $existingItem->zone_code,
+            'view_side' => (string) $existingItem->view_side,
+            'damage_type' => (string) $existingItem->damage_type,
+            'severity' => (string) $existingItem->severity,
+            'damage_timing' => (string) $existingItem->damage_timing,
+            'quantity' => (string) $existingItem->quantity,
+            'marker_x' => $existingItem->marker_x !== null ? (string) $existingItem->marker_x : null,
+            'marker_y' => $existingItem->marker_y !== null ? (string) $existingItem->marker_y : null,
+            'estimated_cost' => $existingItem->estimated_cost !== null ? (string) $existingItem->estimated_cost : null,
+            'notes' => $existingItem->notes,
+        ];
+
+        $normalize = static function (array $attributes): array {
+            foreach ($attributes as $key => $value) {
+                if ($value === null) {
+                    $attributes[$key] = null;
+                    continue;
+                }
+
+                if (in_array($key, ['marker_x', 'marker_y', 'estimated_cost'], true)) {
+                    $attributes[$key] = number_format((float) $value, 2, '.', '');
+                    continue;
+                }
+
+                $attributes[$key] = (string) $value;
+            }
+
+            return $attributes;
+        };
+
+        return $normalize($existingAttributes) === $normalize($incomingAttributes);
     }
 
     private function syncDamageCases(

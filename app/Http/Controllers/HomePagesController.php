@@ -31,6 +31,7 @@ class HomePagesController extends Controller
             CarStatus::AVAILABLE->value,
             CarStatus::RESERVED->value,
             CarStatus::RENTED->value,
+            CarStatus::CLEANING->value,
         ];
     }
 

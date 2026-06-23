@@ -55,6 +55,7 @@ class ReservationsController extends Controller
 
             $query = $this->reservationQuery($user, $branchId)
                 ->whereDate('start_date', $today)
+                ->whereDoesntHave('contract')
                 ->whereIn('status', $statuses)
                 ->orderBy('start_date')
                 ->orderBy('pickup_time')
@@ -69,7 +70,8 @@ class ReservationsController extends Controller
             $isOverdue = $taskType === 'overdue';
 
             $query = $this->contractQuery($user, $branchId)
-                ->where('status', ContractStatus::ACTIVE->value);
+                ->where('status', ContractStatus::ACTIVE->value)
+                ->whereDoesntHave('returnStatusReport');
 
             if ($isOverdue) {
                 $query->whereDate('end_date', '<', $today)
@@ -116,16 +118,19 @@ class ReservationsController extends Controller
 
         $pickupCount = $this->reservationQuery($user, $branchId)
             ->whereDate('start_date', $today)
+            ->whereDoesntHave('contract')
             ->whereIn('status', $pickupStatuses)
             ->count();
 
         $returnCount = $this->contractQuery($user, $branchId)
             ->where('status', ContractStatus::ACTIVE->value)
+            ->whereDoesntHave('returnStatusReport')
             ->whereDate('end_date', $today)
             ->count();
 
         $overdueCount = $this->contractQuery($user, $branchId)
             ->where('status', ContractStatus::ACTIVE->value)
+            ->whereDoesntHave('returnStatusReport')
             ->whereDate('end_date', '<', $today)
             ->count();
 
@@ -170,6 +175,7 @@ class ReservationsController extends Controller
         $pickupItems = $this->reservationItems(
             $this->reservationQuery($user, $branchId)
                 ->whereDate('start_date', $today)
+                ->whereDoesntHave('contract')
                 ->whereIn('status', $pickupStatuses)
                 ->orderBy('start_date')
                 ->orderBy('pickup_time')
@@ -180,6 +186,7 @@ class ReservationsController extends Controller
         $returnItems = $this->contractItems(
             $this->contractQuery($user, $branchId)
                 ->where('status', ContractStatus::ACTIVE->value)
+                ->whereDoesntHave('returnStatusReport')
                 ->whereDate('end_date', $today)
                 ->orderBy('end_date')
                 ->orderByDesc('id')
@@ -191,6 +198,7 @@ class ReservationsController extends Controller
         $overdueItems = $this->contractItems(
             $this->contractQuery($user, $branchId)
                 ->where('status', ContractStatus::ACTIVE->value)
+                ->whereDoesntHave('returnStatusReport')
                 ->whereDate('end_date', '<', $today)
                 ->orderBy('end_date')
                 ->orderByDesc('id')
@@ -315,7 +323,8 @@ class ReservationsController extends Controller
         $scope = $this->resolveReturnScope($request->input('scope'));
 
         $query = $this->contractQuery($user, $branchId)
-            ->where('status', ContractStatus::ACTIVE->value);
+            ->where('status', ContractStatus::ACTIVE->value)
+            ->whereDoesntHave('returnStatusReport');
 
         if ($scope === 'overdue') {
             $query->whereDate('end_date', '<', $today)
@@ -624,6 +633,7 @@ class ReservationsController extends Controller
             'id' => $report->id,
             'source' => $source,
             'report_number' => $report->report_number,
+            'source_type' => $report->source_type ?? \App\Models\CarDamageReport::SOURCE_TYPE_EMPLOYEE,
             'report_type' => $report->report_type,
             'report_type_label' => $this->damageCatalogLabel('report_types', (string) $report->report_type),
             'status' => $report->status,
@@ -635,6 +645,7 @@ class ReservationsController extends Controller
             'total_estimated_cost' => $report->relationLoaded('items') ? (float) $report->items->sum('estimated_cost') : null,
             'items' => $report->relationLoaded('items') ? $report->items->map(fn ($item) => [
                 'id' => $item->id,
+                'source_type' => $item->source_type ?? \App\Models\CarDamageItem::SOURCE_TYPE_EMPLOYEE,
                 'zone_code' => $item->zone_code,
                 'zone_label' => $this->damageCatalogLabel('zones', (string) $item->zone_code),
                 'view_side' => $item->view_side,

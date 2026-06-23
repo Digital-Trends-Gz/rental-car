@@ -16,6 +16,7 @@ use App\Support\BranchAccess;
 use App\Support\FinancialVisibility;
 use App\Models\Car;
 use App\Models\CarDamageReport;
+use App\Models\CarMaintenance;
 use App\Models\CarViolation;
 use App\Models\Contract;
 use App\Models\ContractReturnReport;
@@ -76,6 +77,11 @@ class ReportsController extends Controller
             $branchId,
             $request->route('subdomain')
         );
+        $vehicleProfitabilityReportExports = $this->vehicleProfitabilityExportUrls(
+            $period,
+            $branchId,
+            $request->route('subdomain')
+        );
 
         $data = [
             'kpis' => $this->getHighLevelKPIs($dateRange, $user, $branchId, $canViewFinancialAmounts),
@@ -92,6 +98,8 @@ class ReportsController extends Controller
             'fleetInsights' => $this->getFleetInsights($dateRange, $user, $branchId, $canViewFinancialAmounts),
             'fleetReport' => $this->getFleetReportData($dateRange, $user, $branchId, $canViewFinancialAmounts),
             'fleetReportExports' => $fleetReportExports,
+            'vehicleProfitabilityReport' => $this->getVehicleProfitabilityReport($dateRange, $user, $branchId, $canViewFinancialAmounts),
+            'vehicleProfitabilityReportExports' => $vehicleProfitabilityReportExports,
             'actionAlerts' => $this->getActionAlerts($user, $branchId, $canViewFinancialAmounts),
             'executiveReport' => $executiveReport,
             'currentPeriod' => $period,
@@ -261,6 +269,76 @@ class ReportsController extends Controller
         return $pdf->download($fileName);
     }
 
+    public function exportVehicleProfitabilityPdf(Request $request)
+    {
+        $payload = $this->buildVehicleProfitabilityExportPayload($request);
+        $fileName = $this->vehicleProfitabilityExportFileName('pdf');
+
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                $pdf = Pdf::view('admin.reports.vehicle-profitability-pdf', $payload)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    });
+
+                return $pdf->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $pdf = DomPdf::loadView('admin.reports.vehicle-profitability-pdf', $payload)
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
+            ->setOption('defaultFont', 'DejaVu Sans');
+
+        return $pdf->download($fileName);
+    }
+
+    public function exportVehicleProfitabilityExcel(Request $request)
+    {
+        $payload = $this->buildVehicleProfitabilityExportPayload($request);
+        $fileName = $this->vehicleProfitabilityExportFileName('xls');
+
+        return response()
+            ->view('admin.reports.vehicle-profitability-excel', $payload)
+            ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
+    }
+
     public function exportFinancialPdf(Request $request)
     {
         $payload = $this->buildFinancialExportPayload($request);
@@ -428,6 +506,7 @@ class ReportsController extends Controller
             'branchName' => $branchId
                 ? ($branchOptions->firstWhere('id', $branchId)['name'] ?? 'Selected branch')
                 : 'All branches',
+            'branchId' => $branchId,
             'dateRange' => $dateRange,
             'tenant' => $tenant,
             'generatedAt' => now(),
@@ -444,6 +523,24 @@ class ReportsController extends Controller
     {
         $payload = $this->buildExecutiveExportPayload($request);
         $payload['reportNumber'] = 'FNR-'.now()->format('Ymd-Hi');
+
+        return $payload;
+    }
+
+    private function buildVehicleProfitabilityExportPayload(Request $request): array
+    {
+        $payload = $this->buildExecutiveExportPayload($request);
+        $user = $request->user();
+        $branchId = $payload['branchId'] ?? null;
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
+
+        $payload['reportNumber'] = 'VPR-'.now()->format('Ymd-Hi');
+        $payload['vehicleProfitabilityReport'] = $this->getVehicleProfitabilityReport(
+            $payload['dateRange'],
+            $user,
+            $branchId,
+            $canViewFinancialAmounts
+        );
 
         return $payload;
     }
@@ -585,6 +682,24 @@ class ReportsController extends Controller
         ];
     }
 
+    private function vehicleProfitabilityExportUrls(string $period, ?int $branchId, ?string $subdomain): array
+    {
+        $query = ['period' => $period];
+
+        if ($subdomain) {
+            $query['subdomain'] = $subdomain;
+        }
+
+        if ($branchId) {
+            $query['branch_id'] = $branchId;
+        }
+
+        return [
+            'pdf' => route('admin.reports.vehicle-profitability.pdf', $query),
+            'excel' => route('admin.reports.vehicle-profitability.excel', $query),
+        ];
+    }
+
     private function executiveExportFileName(string $extension): string
     {
         return 'executive-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
@@ -598,6 +713,11 @@ class ReportsController extends Controller
     private function reservationsExportFileName(string $extension): string
     {
         return 'reservations-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
+    }
+
+    private function vehicleProfitabilityExportFileName(string $extension): string
+    {
+        return 'vehicle-profitability-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
     }
 
     private function financialReportSections(?array $dateRange = null, $user = null, ?int $branchId = null, bool $canViewFinancialAmounts = true): array
@@ -1526,6 +1646,185 @@ class ReportsController extends Controller
                 'revenue' => $carsPerformance->sortByDesc('total_revenue')->values()->toArray(),
                 'utilization' => $carsPerformance->sortByDesc('total_days')->values()->toArray(),
             ]
+        ];
+    }
+
+    private function getVehicleProfitabilityReport(array $dateRange, $user, ?int $branchId, bool $canViewFinancialAmounts): array
+    {
+        $currencySymbol = (string) config('app.currency_symbol', '$');
+        $formatMoney = fn (float $value): string => $canViewFinancialAmounts
+            ? $currencySymbol.number_format($value, 2)
+            : '*******';
+
+        $carsQuery = Car::query();
+        $this->branchAccess->applyToQuery($carsQuery, $user, $branchId);
+
+        $cars = $carsQuery
+            ->select(['id', 'make', 'model', 'year', 'license_plate', 'status'])
+            ->get();
+
+        $carIds = $cars->pluck('id')->map(fn ($id) => (int) $id)->values();
+
+        if ($carIds->isEmpty()) {
+            return [
+                'summary' => [
+                    'total_revenue' => 0,
+                    'total_costs' => 0,
+                    'net_profit' => 0,
+                    'average_revenue_per_car' => 0,
+                    'formatted_total_revenue' => $formatMoney(0),
+                    'formatted_total_costs' => $formatMoney(0),
+                    'formatted_net_profit' => $formatMoney(0),
+                    'formatted_average_revenue_per_car' => $formatMoney(0),
+                    'profitable_cars' => 0,
+                    'loss_making_cars' => 0,
+                ],
+                'top_profitable' => [],
+                'least_profitable' => [],
+                'cars' => [],
+            ];
+        }
+
+        $paidRevenueQuery = DB::table('payments')
+            ->join('reservations', 'payments.reservation_id', '=', 'reservations.id')
+            ->where('payments.status', PaymentStatus::COMPLETED->value)
+            ->whereBetween('payments.processed_at', [$dateRange['start'], $dateRange['end']])
+            ->whereIn('reservations.car_id', $carIds);
+        $this->applyTenantScopeToQueryBuilder($paidRevenueQuery, $user, 'payments');
+
+        $revenueByCar = (clone $paidRevenueQuery)
+            ->selectRaw('reservations.car_id, COALESCE(SUM(payments.amount), 0) as total_revenue, COUNT(DISTINCT payments.id) as payments_count')
+            ->groupBy('reservations.car_id')
+            ->get()
+            ->keyBy('car_id');
+
+        $reservationsByCar = Reservation::query()
+            ->whereIn('car_id', $carIds)
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+            ->selectRaw('car_id, COUNT(*) as reservations_count, COALESCE(SUM(total_days), 0) as rented_days')
+            ->groupBy('car_id')
+            ->get()
+            ->keyBy('car_id');
+
+        $damageCostQuery = DB::table('car_damage_items')
+            ->join('car_damage_reports', 'car_damage_items.car_damage_report_id', '=', 'car_damage_reports.id')
+            ->whereBetween('car_damage_reports.created_at', [$dateRange['start'], $dateRange['end']])
+            ->whereIn('car_damage_reports.car_id', $carIds);
+        $this->applyTenantScopeToQueryBuilder($damageCostQuery, $user, 'car_damage_reports');
+
+        $damageCostsByCar = (clone $damageCostQuery)
+            ->selectRaw('car_damage_reports.car_id, COALESCE(SUM(car_damage_items.estimated_cost * car_damage_items.quantity), 0) as damage_cost, COUNT(car_damage_items.id) as damage_items_count')
+            ->groupBy('car_damage_reports.car_id')
+            ->get()
+            ->keyBy('car_id');
+
+        $maintenanceCostsByCar = CarMaintenance::query()
+            ->whereIn('car_id', $carIds)
+            ->where(function ($query) use ($dateRange): void {
+                $query->whereBetween('completed_at', [$dateRange['start'], $dateRange['end']])
+                    ->orWhere(function ($nested) use ($dateRange): void {
+                        $nested->whereNull('completed_at')
+                            ->whereBetween('scheduled_date', [
+                                $dateRange['start']->toDateString(),
+                                $dateRange['end']->toDateString(),
+                            ]);
+                    });
+            })
+            ->selectRaw('car_id, COALESCE(SUM(cost), 0) as maintenance_cost, COUNT(*) as maintenance_count')
+            ->groupBy('car_id')
+            ->get()
+            ->keyBy('car_id');
+
+        $violationCostsByCar = CarViolation::query()
+            ->whereIn('car_id', $carIds)
+            ->whereBetween('violation_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->selectRaw('car_id, COALESCE(SUM(amount), 0) as violation_cost, COUNT(*) as violations_count')
+            ->groupBy('car_id')
+            ->get()
+            ->keyBy('car_id');
+
+        $periodDays = max(1, Carbon::parse($dateRange['start'])->diffInDays(Carbon::parse($dateRange['end'])) + 1);
+
+        $rows = $cars->map(function (Car $car) use (
+            $revenueByCar,
+            $reservationsByCar,
+            $damageCostsByCar,
+            $maintenanceCostsByCar,
+            $violationCostsByCar,
+            $periodDays,
+            $canViewFinancialAmounts,
+            $formatMoney
+        ): array {
+            $carId = (int) $car->id;
+            $revenueData = $revenueByCar->get($carId);
+            $reservationData = $reservationsByCar->get($carId);
+            $damageData = $damageCostsByCar->get($carId);
+            $maintenanceData = $maintenanceCostsByCar->get($carId);
+            $violationData = $violationCostsByCar->get($carId);
+
+            $revenue = (float) ($revenueData->total_revenue ?? 0);
+            $damageCost = (float) ($damageData->damage_cost ?? 0);
+            $maintenanceCost = (float) ($maintenanceData->maintenance_cost ?? 0);
+            $violationCost = (float) ($violationData->violation_cost ?? 0);
+            $totalCosts = $damageCost + $maintenanceCost + $violationCost;
+            $netProfit = $revenue - $totalCosts;
+            $reservationsCount = (int) ($reservationData->reservations_count ?? 0);
+            $rentedDays = (float) ($reservationData->rented_days ?? 0);
+
+            return [
+                'car_id' => $carId,
+                'car_name' => $car->full_name,
+                'license_plate' => $car->license_plate,
+                'status' => $car->status instanceof CarStatus ? $car->status->label() : (string) $car->status,
+                'revenue' => FinancialVisibility::numericAmount($revenue, $canViewFinancialAmounts),
+                'damage_cost' => FinancialVisibility::numericAmount($damageCost, $canViewFinancialAmounts),
+                'maintenance_cost' => FinancialVisibility::numericAmount($maintenanceCost, $canViewFinancialAmounts),
+                'violation_cost' => FinancialVisibility::numericAmount($violationCost, $canViewFinancialAmounts),
+                'total_costs' => FinancialVisibility::numericAmount($totalCosts, $canViewFinancialAmounts),
+                'net_profit' => FinancialVisibility::numericAmount($netProfit, $canViewFinancialAmounts),
+                'formatted_revenue' => $formatMoney($revenue),
+                'formatted_damage_cost' => $formatMoney($damageCost),
+                'formatted_maintenance_cost' => $formatMoney($maintenanceCost),
+                'formatted_violation_cost' => $formatMoney($violationCost),
+                'formatted_total_costs' => $formatMoney($totalCosts),
+                'formatted_net_profit' => $formatMoney($netProfit),
+                'reservations_count' => $reservationsCount,
+                'rented_days' => round($rentedDays, 1),
+                'utilization_rate' => round(min(100, ($rentedDays / $periodDays) * 100), 1),
+                'average_revenue_per_reservation' => $reservationsCount > 0
+                    ? FinancialVisibility::numericAmount($revenue / $reservationsCount, $canViewFinancialAmounts)
+                    : FinancialVisibility::numericAmount(0, $canViewFinancialAmounts),
+                'formatted_average_revenue_per_reservation' => $formatMoney($reservationsCount > 0 ? $revenue / $reservationsCount : 0),
+                'damage_items_count' => (int) ($damageData->damage_items_count ?? 0),
+                'maintenance_count' => (int) ($maintenanceData->maintenance_count ?? 0),
+                'violations_count' => (int) ($violationData->violations_count ?? 0),
+            ];
+        })->sortByDesc(fn (array $row) => (float) ($row['net_profit'] ?? 0))->values();
+
+        $totalRevenue = (float) $rows->sum(fn (array $row) => (float) ($row['revenue'] ?? 0));
+        $totalCosts = (float) $rows->sum(fn (array $row) => (float) ($row['total_costs'] ?? 0));
+        $netProfit = $totalRevenue - $totalCosts;
+        $carCount = max(1, $rows->count());
+
+        return [
+            'summary' => [
+                'total_revenue' => FinancialVisibility::numericAmount($totalRevenue, $canViewFinancialAmounts),
+                'total_costs' => FinancialVisibility::numericAmount($totalCosts, $canViewFinancialAmounts),
+                'net_profit' => FinancialVisibility::numericAmount($netProfit, $canViewFinancialAmounts),
+                'average_revenue_per_car' => FinancialVisibility::numericAmount($totalRevenue / $carCount, $canViewFinancialAmounts),
+                'formatted_total_revenue' => $formatMoney($totalRevenue),
+                'formatted_total_costs' => $formatMoney($totalCosts),
+                'formatted_net_profit' => $formatMoney($netProfit),
+                'formatted_average_revenue_per_car' => $formatMoney($totalRevenue / $carCount),
+                'profitable_cars' => $rows->filter(fn (array $row) => (float) ($row['net_profit'] ?? 0) > 0)->count(),
+                'loss_making_cars' => $rows->filter(fn (array $row) => (float) ($row['net_profit'] ?? 0) < 0)->count(),
+            ],
+            'top_profitable' => $rows->take(3)->values()->all(),
+            'least_profitable' => $rows->sortBy(fn (array $row) => (float) ($row['net_profit'] ?? 0))->take(3)->values()->all(),
+            'cars' => $rows->all(),
         ];
     }
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     'language' => [
@@ -1151,6 +1151,7 @@ return [
                         'timing' => 'Timing',
                         'qty' => 'Qty',
                         'cost' => 'Cost',
+                        'source' => 'ماخذ',
                         'notes' => 'Notes',
                     ],
                 ],

@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CarDamageReport;
 use App\Models\Contract;
 use App\Models\ContractReturnReport;
+use App\Models\DailyTaskStatus;
 use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
@@ -544,6 +545,20 @@ class ContractReturnReportsController extends Controller
                 'vehicle_condition_after' => $validated['vehicle_condition_after'] ?? $contract->vehicle_condition_after,
                 'status' => 'completed',
             ])->save();
+
+            DailyTaskStatus::query()->updateOrCreate(
+                [
+                    'tenant_id' => (int) $contract->tenant_id,
+                    'task_type' => 'return',
+                    'source_type' => 'contract',
+                    'source_id' => (int) $contract->id,
+                ],
+                [
+                    'status' => 'completed',
+                    'started_at' => now(),
+                    'completed_at' => now(),
+                ],
+            );
 
             if ($contract->reservation) {
                 $contract->reservation->update([

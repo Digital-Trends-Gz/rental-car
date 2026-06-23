@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\CarsController;
+use App\Http\Controllers\Admin\CarPhotoHistoryController;
 use App\Http\Controllers\Admin\ReservationsController;
 use App\Http\Controllers\Admin\ClientsController;
 use App\Http\Controllers\Admin\PaymentsController;
@@ -48,6 +49,10 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::get('cars/{car}/availability-calendar', [CarsController::class, 'availabilityCalendar'])
             ->middleware('permission:tenant-manage-cars')
             ->name('cars.availability-calendar');
+            
+        Route::resource('cars.photo-histories', CarPhotoHistoryController::class)
+            ->middleware('permission:tenant-manage-cars')
+            ->except(['show']);
         Route::middleware('tenant.feature:car_documents')->group(function () {
             Route::get('cars/{car}/documents', [CarDocumentsController::class, 'index'])
                 ->middleware('permission:tenant-manage-cars')
@@ -229,6 +234,12 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::get('reports/fleet/pdf', [ReportsController::class, 'exportFleetPdf'])
             ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
             ->name('reports.fleet.pdf');
+        Route::get('reports/vehicle-profitability/pdf', [ReportsController::class, 'exportVehicleProfitabilityPdf'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.vehicle-profitability.pdf');
+        Route::get('reports/vehicle-profitability/excel', [ReportsController::class, 'exportVehicleProfitabilityExcel'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.vehicle-profitability.excel');
         Route::resource('reports', ReportsController::class)
             ->except(['show'])
             ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module']);

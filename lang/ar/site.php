@@ -1412,6 +1412,7 @@ return array (
             'timing' => 'Timing',
             'qty' => 'Qty',
             'cost' => 'Cost',
+            'source' => 'المصدر',
             'notes' => 'Notes',
           ),
         ),

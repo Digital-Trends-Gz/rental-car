@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Support\ClientReturnDebt;
 use App\Support\PaidReturnReportLock;
 use App\Support\PdfRuntime;
+use App\Enums\CarStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
@@ -228,6 +229,12 @@ class ReservationsController extends Controller
             ->where('tenant_id', $user?->tenant_id)
             ->with('branch:id')
             ->findOrFail((int) $validated['car_id']);
+
+        if (in_array($car->status?->value ?? (string) $car->status, $this->nonBookableCarStatuses(), true)) {
+            throw ValidationException::withMessages([
+                'car_id' => __('This car is not available for reservation right now.'),
+            ]);
+        }
 
         abort_unless($this->branchAccess->canAccessBranchId($user, $car->branch_id), 403);
 
@@ -897,6 +904,7 @@ class ReservationsController extends Controller
     {
         $query = Car::query()
             ->where('tenant_id', $request->user()?->tenant_id)
+            ->whereNotIn('status', $this->nonBookableCarStatuses())
             ->with('branch:id,name')
             ->orderBy('make')
             ->orderBy('model');
@@ -914,6 +922,16 @@ class ReservationsController extends Controller
                 'price_per_month' => (float) ($car->price_per_month ?? 0),
             ])
             ->values();
+    }
+
+    private function nonBookableCarStatuses(): array
+    {
+        return [
+            CarStatus::DRAFT->value,
+            CarStatus::MAINTENANCE->value,
+            CarStatus::UNAVAILABLE->value,
+            CarStatus::RETIRED->value,
+        ];
     }
 
     private function applyReservationBranchScopeToCars($query, $user): void

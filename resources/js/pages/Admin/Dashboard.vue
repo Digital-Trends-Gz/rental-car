@@ -155,6 +155,7 @@ const props = defineProps<{
             scheduled_date: string;
             scheduled_time: string;
             location: string | null;
+            action_url: string | null;
             status: string;
             status_label: string;
             computed_status: string;
@@ -356,7 +357,8 @@ const updateDailyTaskStatus = async (task: {
     task_type: string;
     source_type: string;
     source_id: number;
-}, action: 'start' | 'complete') => {
+}, action: 'start' | 'complete', options: { reload?: boolean } = {}) => {
+    const shouldReload = options.reload ?? true;
     dailyTaskActionKey.value = `${action}:${task.id}`;
 
     try {
@@ -388,11 +390,33 @@ const updateDailyTaskStatus = async (task: {
                 : localize('Task completed.', 'تم إنجاز المهمة.'),
         );
 
-        router.reload({ only: ['dailyTasks'], preserveScroll: true });
+        if (shouldReload) {
+            router.reload({ only: ['dailyTasks'], preserveScroll: true });
+        }
+
+        return true;
     } catch (error) {
         flash('error', error instanceof Error ? error.message : localize('Unable to update task.', 'تعذر تحديث المهمة.'));
     } finally {
         dailyTaskActionKey.value = '';
+    }
+};
+
+const startDailyTask = async (task: {
+    id: string;
+    task_type: string;
+    source_type: string;
+    source_id: number;
+    action_url?: string | null;
+}) => {
+    if (!task.action_url) {
+        await updateDailyTaskStatus(task, 'start');
+        return;
+    }
+
+    const started = await updateDailyTaskStatus(task, 'start', { reload: false });
+    if (started) {
+        window.location.href = task.action_url;
     }
 };
 
@@ -783,7 +807,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                                     size="sm"
                                     variant="outline"
                                     :disabled="dailyTaskActionKey === `start:${task.id}`"
-                                    @click="updateDailyTaskStatus(task, 'start')"
+                                    @click="startDailyTask(task)"
                                 >
                                     {{
                                         dailyTaskActionKey === `start:${task.id}`

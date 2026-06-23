@@ -720,6 +720,15 @@ function submitRequestExtension() {
                                             )
                                         }}
                                     </th>
+                                    <th
+                                        class="px-3 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+                                    >
+                                        {{
+                                            t(
+                                                'dashboard.admin.contracts.show.table.source',
+                                            )
+                                        }}
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 bg-white">
@@ -741,6 +750,10 @@ function submitRequestExtension() {
                                     </td>
                                     <td class="px-3 py-2">
                                         {{ damage.quantity }}
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <span v-if="damage.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">AI</span>
+                                        <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Employee</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -881,6 +894,15 @@ function submitRequestExtension() {
                                             >
                                                 {{
                                                     t(
+                                                        'dashboard.admin.contracts.show.table.source',
+                                                    )
+                                                }}
+                                            </th>
+                                            <th
+                                                class="px-3 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+                                            >
+                                                {{
+                                                    t(
                                                         'dashboard.admin.contracts.show.table.notes',
                                                     )
                                                 }}
@@ -907,6 +929,10 @@ function submitRequestExtension() {
                                             </td>
                                             <td class="px-3 py-2">
                                                 {{ item.quantity }}
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                <span v-if="item.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">AI</span>
+                                                <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Employee</span>
                                             </td>
                                             <td class="px-3 py-2 text-gray-600">
                                                 {{ item.notes || '-' }}
