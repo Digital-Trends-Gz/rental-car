@@ -152,6 +152,78 @@ interface VehicleProfitabilityReport {
     cars: VehicleProfitabilityRow[];
 }
 
+interface CustomersReportRow {
+    customer_id: number;
+    name: string;
+    email: string;
+    formatted_revenue?: string;
+    formatted_contract_value?: string;
+    formatted_outstanding_amount?: string;
+    reservations_count?: number;
+    contracts_count?: number;
+    payments_count?: number;
+    return_reports_count?: number;
+    overdue_contracts_count?: number;
+}
+
+interface CustomersReport {
+    summary: {
+        new_customers: number;
+        active_customers: number;
+        repeat_customers: number;
+        repeat_rate: number;
+        debtors_count: number;
+        overdue_customers_count: number;
+        formatted_total_revenue: string;
+        formatted_total_outstanding: string;
+    };
+    top_by_revenue: CustomersReportRow[];
+    top_by_contracts: CustomersReportRow[];
+    debtors: CustomersReportRow[];
+    overdue_customers: CustomersReportRow[];
+}
+
+interface DamagesReportRow {
+    id?: number;
+    report_number?: string;
+    report_type?: string;
+    status?: string;
+    car_id?: number | null;
+    car_name?: string;
+    license_plate?: string;
+    employee_name?: string;
+    reports_count?: number;
+    items_count?: number;
+    photos_count?: number;
+    open_reports?: number;
+    closed_reports?: number;
+    formatted_total_cost?: string;
+    first_photo_url?: string | null;
+    created_at?: string | null;
+}
+
+interface DamagesReport {
+    summary: {
+        total_reports: number;
+        total_items: number;
+        open_reports: number;
+        closed_reports: number;
+        before_reports: number;
+        after_reports: number;
+        formatted_total_cost: string;
+    };
+    by_car: DamagesReportRow[];
+    employees: {
+        registered_by: DamagesReportRow[];
+        closed_by: DamagesReportRow[];
+    };
+    photos: {
+        before: DamagesReportRow[];
+        after: DamagesReportRow[];
+    };
+    recent_reports: DamagesReportRow[];
+}
+
 interface PageProps {
     kpis: {
         totalRevenue: KPI;
@@ -177,6 +249,10 @@ interface PageProps {
     fleetReportExports?: ReportExportUrls;
     vehicleProfitabilityReport?: VehicleProfitabilityReport;
     vehicleProfitabilityReportExports?: ReportExportUrls;
+    customersReport?: CustomersReport;
+    customersReportExports?: ReportExportUrls;
+    damagesReport?: DamagesReport;
+    damagesReportExports?: ReportExportUrls;
     reservationsReport?: any;
     reservationsReportExports?: ReportExportUrls;
     actionAlerts: ReportAlert[];
@@ -280,6 +356,10 @@ const fleetReport = computed(() => page.props.fleetReport);
 const fleetReportExports = computed(() => page.props.fleetReportExports);
 const vehicleProfitabilityReport = computed(() => page.props.vehicleProfitabilityReport);
 const vehicleProfitabilityReportExports = computed(() => page.props.vehicleProfitabilityReportExports);
+const customersReport = computed(() => page.props.customersReport);
+const customersReportExports = computed(() => page.props.customersReportExports);
+const damagesReport = computed(() => page.props.damagesReport);
+const damagesReportExports = computed(() => page.props.damagesReportExports);
 const showCarRankingsModal = ref(false);
 const executiveReport = computed<ExecutiveReport>(() => page.props.executiveReport ?? {
     financial: financialSummary.value,
@@ -466,6 +546,10 @@ const handlePeriodChange = () => {
                 'fleetInsights',
                 'vehicleProfitabilityReport',
                 'vehicleProfitabilityReportExports',
+                'customersReport',
+                'customersReportExports',
+                'damagesReport',
+                'damagesReportExports',
                 'actionAlerts',
                 'executiveReport',
                 'currentPeriod',
@@ -1815,6 +1899,389 @@ onMounted(() => {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. Customers Report -->
+            <section
+                v-if="customersReport"
+                class="mt-8 overflow-hidden rounded-2xl border border-sky-100 bg-white shadow"
+            >
+                <div class="border-b border-sky-100 bg-gradient-to-r from-sky-50 to-white px-6 py-5">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-sky-100 px-4 py-2 text-sm font-bold text-sky-800">
+                                {{ reportLabel('Most important') }}
+                            </span>
+                            <h2 class="text-2xl font-bold text-sky-950">
+                                6. {{ localize('Customers Report', 'تقرير العملاء', 'Customers Report') }}
+                            </h2>
+                        </div>
+                        <p class="max-w-2xl text-sm text-gray-600" :class="{ 'text-right': isArabic }">
+                            {{
+                                localize(
+                                    'Customer acquisition, repeat customers, top clients, debtors, and overdue customers for the selected period.',
+                                    'اكتساب العملاء، العملاء المتكررون، أفضل العملاء، المديونون، والعملاء المتأخرون خلال الفترة المحددة.',
+                                    'Customer acquisition, repeat customers, top clients, debtors, and overdue customers for the selected period.',
+                                )
+                            }}
+                        </p>
+                        <div class="flex flex-col gap-3 sm:flex-row">
+                            <a
+                                v-if="customersReportExports?.pdf"
+                                :href="customersReportExports.pdf"
+                                target="_blank"
+                                class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                            >
+                                PDF
+                            </a>
+                            <a
+                                v-if="customersReportExports?.excel"
+                                :href="customersReportExports.excel"
+                                class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                            >
+                                Excel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 p-6">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <div class="rounded-xl border border-blue-100 bg-blue-50 p-5">
+                            <p class="text-sm font-semibold text-blue-700">{{ localize('New customers', 'العملاء الجدد', 'New customers') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-blue-950">{{ customersReport.summary.new_customers }}</p>
+                        </div>
+                        <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                            <p class="text-sm font-semibold text-emerald-700">{{ localize('Repeat customers', 'العملاء المتكررون', 'Repeat customers') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-emerald-950">{{ customersReport.summary.repeat_customers }}</p>
+                            <p class="mt-1 text-sm text-emerald-700">{{ customersReport.summary.repeat_rate }}%</p>
+                        </div>
+                        <div class="rounded-xl border border-amber-100 bg-amber-50 p-5">
+                            <p class="text-sm font-semibold text-amber-700">{{ localize('Debtors', 'العملاء المديونون', 'Debtors') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-amber-950">{{ customersReport.summary.debtors_count }}</p>
+                            <p class="mt-1 text-sm text-amber-700">{{ customersReport.summary.formatted_total_outstanding }}</p>
+                        </div>
+                        <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-5">
+                            <p class="text-sm font-semibold text-indigo-700">{{ localize('Customer revenue', 'إيرادات العملاء', 'Customer revenue') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-indigo-950">{{ customersReport.summary.formatted_total_revenue }}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                        <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-900">
+                                {{ localize('Best customers by revenue', 'أفضل العملاء حسب الإيرادات', 'Best customers by revenue') }}
+                            </h3>
+                            <div class="mt-4 space-y-3">
+                                <div
+                                    v-for="customer in customersReport.top_by_revenue"
+                                    :key="`customer-revenue-${customer.customer_id}`"
+                                    class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3"
+                                >
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ customer.name }}</p>
+                                        <p class="text-sm text-gray-500">{{ customer.email }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-sky-800">{{ customer.formatted_revenue }}</p>
+                                        <p class="text-xs text-gray-500">{{ customer.reservations_count ?? 0 }} {{ localize('reservations', 'حجوزات', 'reservations') }}</p>
+                                    </div>
+                                </div>
+                                <p v-if="customersReport.top_by_revenue.length === 0" class="text-sm text-gray-500">
+                                    {{ localize('No customer revenue in this period.', 'لا توجد إيرادات عملاء في هذه الفترة.', 'No customer revenue in this period.') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-900">
+                                {{ localize('Best customers by contracts', 'أفضل العملاء حسب العقود', 'Best customers by contracts') }}
+                            </h3>
+                            <div class="mt-4 space-y-3">
+                                <div
+                                    v-for="customer in customersReport.top_by_contracts"
+                                    :key="`customer-contracts-${customer.customer_id}`"
+                                    class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3"
+                                >
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ customer.name }}</p>
+                                        <p class="text-sm text-gray-500">{{ customer.email }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-indigo-800">{{ customer.contracts_count ?? 0 }} {{ localize('contracts', 'عقود', 'contracts') }}</p>
+                                        <p class="text-xs text-gray-500">{{ customer.formatted_contract_value }}</p>
+                                    </div>
+                                </div>
+                                <p v-if="customersReport.top_by_contracts.length === 0" class="text-sm text-gray-500">
+                                    {{ localize('No contracts found for this period.', 'لا توجد عقود في هذه الفترة.', 'No contracts found for this period.') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                        <div class="rounded-xl border border-amber-100 bg-amber-50 p-5">
+                            <h3 class="text-lg font-bold text-amber-950">
+                                {{ localize('Customers with debts', 'العملاء المتعثرون', 'Customers with debts') }}
+                            </h3>
+                            <div class="mt-4 overflow-hidden rounded-lg border border-amber-100 bg-white">
+                                <table class="min-w-full divide-y divide-amber-100">
+                                    <tbody class="divide-y divide-amber-50">
+                                        <tr v-for="customer in customersReport.debtors" :key="`debtor-${customer.customer_id}`">
+                                            <td class="px-4 py-3">
+                                                <p class="font-semibold text-gray-900">{{ customer.name }}</p>
+                                                <p class="text-sm text-gray-500">{{ customer.email }}</p>
+                                            </td>
+                                            <td class="px-4 py-3 text-right font-bold text-amber-800">
+                                                {{ customer.formatted_outstanding_amount }}
+                                            </td>
+                                        </tr>
+                                        <tr v-if="customersReport.debtors.length === 0">
+                                            <td class="px-4 py-6 text-center text-sm text-gray-500">
+                                                {{ localize('No debtors in this period.', 'لا يوجد عملاء مديونون في هذه الفترة.', 'No debtors in this period.') }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-red-100 bg-red-50 p-5">
+                            <h3 class="text-lg font-bold text-red-950">
+                                {{ localize('Overdue customers', 'العملاء المتأخرون', 'Overdue customers') }}
+                            </h3>
+                            <div class="mt-4 overflow-hidden rounded-lg border border-red-100 bg-white">
+                                <table class="min-w-full divide-y divide-red-100">
+                                    <tbody class="divide-y divide-red-50">
+                                        <tr v-for="customer in customersReport.overdue_customers" :key="`overdue-customer-${customer.customer_id}`">
+                                            <td class="px-4 py-3">
+                                                <p class="font-semibold text-gray-900">{{ customer.name }}</p>
+                                                <p class="text-sm text-gray-500">{{ customer.email }}</p>
+                                            </td>
+                                            <td class="px-4 py-3 text-right font-bold text-red-800">
+                                                {{ customer.overdue_contracts_count ?? 0 }} {{ localize('overdue contracts', 'عقود متأخرة', 'overdue contracts') }}
+                                            </td>
+                                        </tr>
+                                        <tr v-if="customersReport.overdue_customers.length === 0">
+                                            <td class="px-4 py-6 text-center text-sm text-gray-500">
+                                                {{ localize('No overdue customers now.', 'لا يوجد عملاء متأخرون حالياً.', 'No overdue customers now.') }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. Damages Report -->
+            <section
+                v-if="damagesReport"
+                class="mt-8 overflow-hidden rounded-2xl border border-rose-100 bg-white shadow"
+            >
+                <div class="border-b border-rose-100 bg-gradient-to-r from-rose-50 to-white px-6 py-5">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-rose-100 px-4 py-2 text-sm font-bold text-rose-800">
+                                {{ reportLabel('Most important') }}
+                            </span>
+                            <h2 class="text-2xl font-bold text-rose-950">
+                                7. {{ localize('Damages Report', 'تقرير الأضرار', 'Damages Report') }}
+                            </h2>
+                        </div>
+                        <p class="max-w-2xl text-sm text-gray-600" :class="{ 'text-right': isArabic }">
+                            {{
+                                localize(
+                                    'Damage counts, costs, open and closed damage reports, vehicle impact, employee activity, and before/after photos.',
+                                    'عدد الأضرار، التكلفة، الأضرار المفتوحة والمغلقة، حسب السيارة والموظف، وصور قبل وبعد الضرر.',
+                                    'Damage counts, costs, open and closed damage reports, vehicle impact, employee activity, and before/after photos.',
+                                )
+                            }}
+                        </p>
+                        <div class="flex flex-col gap-3 sm:flex-row">
+                            <a
+                                v-if="damagesReportExports?.pdf"
+                                :href="damagesReportExports.pdf"
+                                target="_blank"
+                                class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                            >
+                                PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 p-6">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <div class="rounded-xl border border-rose-100 bg-rose-50 p-5">
+                            <p class="text-sm font-semibold text-rose-700">{{ localize('Damage reports', 'تقارير الأضرار', 'Damage reports') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-rose-950">{{ damagesReport.summary.total_reports }}</p>
+                        </div>
+                        <div class="rounded-xl border border-orange-100 bg-orange-50 p-5">
+                            <p class="text-sm font-semibold text-orange-700">{{ localize('Damage items', 'عدد الأضرار', 'Damage items') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-orange-950">{{ damagesReport.summary.total_items }}</p>
+                        </div>
+                        <div class="rounded-xl border border-amber-100 bg-amber-50 p-5">
+                            <p class="text-sm font-semibold text-amber-700">{{ localize('Damage cost', 'تكلفة الأضرار', 'Damage cost') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-amber-950">{{ damagesReport.summary.formatted_total_cost }}</p>
+                        </div>
+                        <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                            <p class="text-sm font-semibold text-emerald-700">{{ localize('Open / Closed', 'مفتوحة / مغلقة', 'Open / Closed') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-emerald-950">
+                                {{ damagesReport.summary.open_reports }} / {{ damagesReport.summary.closed_reports }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                        <h3 class="text-lg font-bold text-gray-900">
+                            {{ localize('By vehicle', 'حسب السيارة', 'By vehicle') }}
+                        </h3>
+                        <div class="mt-4 overflow-x-auto rounded-lg border border-gray-100">
+                            <table class="min-w-full divide-y divide-gray-100">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Car', 'السيارة', 'Car') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Reports', 'التقارير', 'Reports') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Items', 'الأضرار', 'Items') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Open', 'مفتوحة', 'Open') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Closed', 'مغلقة', 'Closed') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Cost', 'التكلفة', 'Cost') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white">
+                                    <tr v-for="car in damagesReport.by_car" :key="`damage-car-${car.car_id ?? car.car_name}`">
+                                        <td class="px-4 py-4">
+                                            <p class="font-semibold text-gray-900">{{ car.car_name }}</p>
+                                            <p class="text-sm text-gray-500">{{ car.license_plate }}</p>
+                                        </td>
+                                        <td class="px-4 py-4">{{ car.reports_count ?? 0 }}</td>
+                                        <td class="px-4 py-4">{{ car.items_count ?? 0 }}</td>
+                                        <td class="px-4 py-4">{{ car.open_reports ?? 0 }}</td>
+                                        <td class="px-4 py-4">{{ car.closed_reports ?? 0 }}</td>
+                                        <td class="px-4 py-4 font-bold text-rose-800">{{ car.formatted_total_cost }}</td>
+                                    </tr>
+                                    <tr v-if="damagesReport.by_car.length === 0">
+                                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                            {{ localize('No damage records in this period.', 'لا توجد أضرار في هذه الفترة.', 'No damage records in this period.') }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                        <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-900">
+                                {{ localize('Registered by employee', 'من سجل الضرر', 'Registered by employee') }}
+                            </h3>
+                            <div class="mt-4 space-y-3">
+                                <div
+                                    v-for="employee in damagesReport.employees.registered_by"
+                                    :key="`registered-${employee.employee_name}`"
+                                    class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3"
+                                >
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ employee.employee_name }}</p>
+                                        <p class="text-sm text-gray-500">{{ employee.items_count ?? 0 }} {{ localize('items', 'أضرار', 'items') }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-rose-800">{{ employee.reports_count ?? 0 }}</p>
+                                        <p class="text-xs text-gray-500">{{ employee.formatted_total_cost }}</p>
+                                    </div>
+                                </div>
+                                <p v-if="damagesReport.employees.registered_by.length === 0" class="text-sm text-gray-500">
+                                    {{ localize('No employee damage activity.', 'لا توجد نشاطات أضرار للموظفين.', 'No employee damage activity.') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-900">
+                                {{ localize('Closed by employee', 'من أغلق الضرر', 'Closed by employee') }}
+                            </h3>
+                            <div class="mt-4 space-y-3">
+                                <div
+                                    v-for="employee in damagesReport.employees.closed_by"
+                                    :key="`closed-${employee.employee_name}`"
+                                    class="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3"
+                                >
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ employee.employee_name }}</p>
+                                        <p class="text-sm text-gray-500">{{ employee.items_count ?? 0 }} {{ localize('items', 'أضرار', 'items') }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-emerald-800">{{ employee.reports_count ?? 0 }}</p>
+                                        <p class="text-xs text-gray-500">{{ employee.formatted_total_cost }}</p>
+                                    </div>
+                                </div>
+                                <p v-if="damagesReport.employees.closed_by.length === 0" class="text-sm text-gray-500">
+                                    {{ localize('No closed damage records.', 'لا توجد أضرار مغلقة.', 'No closed damage records.') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                        <div class="rounded-xl border border-blue-100 bg-blue-50 p-5">
+                            <h3 class="text-lg font-bold text-blue-950">
+                                {{ localize('Before delivery photos', 'صور قبل التسليم', 'Before delivery photos') }}
+                            </h3>
+                            <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div
+                                    v-for="row in damagesReport.photos.before"
+                                    :key="`before-${row.id}`"
+                                    class="rounded-lg bg-white p-3 shadow-sm"
+                                >
+                                    <img
+                                        v-if="row.first_photo_url"
+                                        :src="row.first_photo_url"
+                                        class="h-28 w-full rounded-md object-cover"
+                                        alt="Damage photo"
+                                    />
+                                    <div v-else class="flex h-28 items-center justify-center rounded-md bg-gray-100 text-sm text-gray-500">
+                                        {{ localize('No photo', 'لا توجد صورة', 'No photo') }}
+                                    </div>
+                                    <p class="mt-2 font-semibold text-gray-900">{{ row.report_number }}</p>
+                                    <p class="text-sm text-gray-500">{{ row.car_name }} - {{ row.items_count ?? 0 }} {{ localize('items', 'أضرار', 'items') }}</p>
+                                </div>
+                                <p v-if="damagesReport.photos.before.length === 0" class="text-sm text-blue-700">
+                                    {{ localize('No before-delivery photos.', 'لا توجد صور قبل التسليم.', 'No before-delivery photos.') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-purple-100 bg-purple-50 p-5">
+                            <h3 class="text-lg font-bold text-purple-950">
+                                {{ localize('After return photos', 'صور بعد الرجوع', 'After return photos') }}
+                            </h3>
+                            <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div
+                                    v-for="row in damagesReport.photos.after"
+                                    :key="`after-${row.id}`"
+                                    class="rounded-lg bg-white p-3 shadow-sm"
+                                >
+                                    <img
+                                        v-if="row.first_photo_url"
+                                        :src="row.first_photo_url"
+                                        class="h-28 w-full rounded-md object-cover"
+                                        alt="Damage photo"
+                                    />
+                                    <div v-else class="flex h-28 items-center justify-center rounded-md bg-gray-100 text-sm text-gray-500">
+                                        {{ localize('No photo', 'لا توجد صورة', 'No photo') }}
+                                    </div>
+                                    <p class="mt-2 font-semibold text-gray-900">{{ row.report_number }}</p>
+                                    <p class="text-sm text-gray-500">{{ row.car_name }} - {{ row.items_count ?? 0 }} {{ localize('items', 'أضرار', 'items') }}</p>
+                                </div>
+                                <p v-if="damagesReport.photos.after.length === 0" class="text-sm text-purple-700">
+                                    {{ localize('No after-return photos.', 'لا توجد صور بعد الرجوع.', 'No after-return photos.') }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

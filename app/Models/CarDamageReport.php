@@ -79,4 +79,9 @@ class CarDamageReport extends Model
     {
         return $this->hasMany(CarDamageItem::class)->orderBy('sort_order')->orderBy('id');
     }
+
+    public function handoverPhotos(): HasMany
+    {
+        return $this->hasMany(ContractHandoverPhoto::class, 'damage_report_id')->orderBy('id');
+    }
 }

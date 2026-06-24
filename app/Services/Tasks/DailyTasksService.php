@@ -70,10 +70,7 @@ class DailyTasksService
 
         $tasks = $tasks
             ->map(fn (array $task) => $this->applyStoredStatus($task, $statusMap, $locale))
-            ->sortBy([
-                ['scheduled_at', 'asc'],
-                ['source_id', 'asc'],
-            ])
+            ->sortBy(fn (array $task) => $this->taskTimeSortValue($task))
             ->values();
 
         $completed = $tasks->where('status', self::STATUS_COMPLETED)->count();
@@ -522,6 +519,23 @@ class DailyTasksService
     private function statusKey(string $taskType, string $sourceType, int $sourceId): string
     {
         return $taskType.'|'.$sourceType.'|'.$sourceId;
+    }
+
+    private function taskTimeSortValue(array $task): array
+    {
+        $scheduledAt = $task['scheduled_at'] ?? null;
+
+        try {
+            $timestamp = $scheduledAt ? Carbon::parse($scheduledAt)->timestamp : PHP_INT_MAX;
+        } catch (\Throwable) {
+            $timestamp = PHP_INT_MAX;
+        }
+
+        return [
+            $timestamp,
+            (string) ($task['task_type'] ?? ''),
+            (int) ($task['source_id'] ?? 0),
+        ];
     }
 
     private function scheduledAt(CarbonInterface $date, mixed $time, string $fallback): CarbonInterface

@@ -82,6 +82,16 @@ class ReportsController extends Controller
             $branchId,
             $request->route('subdomain')
         );
+        $customersReportExports = $this->customersExportUrls(
+            $period,
+            $branchId,
+            $request->route('subdomain')
+        );
+        $damagesReportExports = $this->damagesExportUrls(
+            $period,
+            $branchId,
+            $request->route('subdomain')
+        );
 
         $data = [
             'kpis' => $this->getHighLevelKPIs($dateRange, $user, $branchId, $canViewFinancialAmounts),
@@ -100,6 +110,10 @@ class ReportsController extends Controller
             'fleetReportExports' => $fleetReportExports,
             'vehicleProfitabilityReport' => $this->getVehicleProfitabilityReport($dateRange, $user, $branchId, $canViewFinancialAmounts),
             'vehicleProfitabilityReportExports' => $vehicleProfitabilityReportExports,
+            'customersReport' => $this->getCustomersReport($dateRange, $user, $branchId, $canViewFinancialAmounts),
+            'customersReportExports' => $customersReportExports,
+            'damagesReport' => $this->getDamagesReport($dateRange, $user, $branchId, $canViewFinancialAmounts),
+            'damagesReportExports' => $damagesReportExports,
             'actionAlerts' => $this->getActionAlerts($user, $branchId, $canViewFinancialAmounts),
             'executiveReport' => $executiveReport,
             'currentPeriod' => $period,
@@ -339,6 +353,135 @@ class ReportsController extends Controller
             ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
     }
 
+    public function exportCustomersPdf(Request $request)
+    {
+        $payload = $this->buildCustomersExportPayload($request);
+        $fileName = $this->customersExportFileName('pdf');
+
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                $pdf = Pdf::view('admin.reports.customers-pdf', $payload)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    });
+
+                return $pdf->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $pdf = DomPdf::loadView('admin.reports.customers-pdf', $payload)
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
+            ->setOption('defaultFont', 'DejaVu Sans');
+
+        return $pdf->download($fileName);
+    }
+
+    public function exportCustomersExcel(Request $request)
+    {
+        $payload = $this->buildCustomersExportPayload($request);
+        $fileName = $this->customersExportFileName('xls');
+
+        return response()
+            ->view('admin.reports.customers-excel', $payload)
+            ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
+    }
+
+    public function exportDamagesPdf(Request $request)
+    {
+        $payload = $this->buildDamagesExportPayload($request);
+        $fileName = $this->damagesExportFileName('pdf');
+
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                $pdf = Pdf::view('admin.reports.damages-pdf', $payload)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    });
+
+                return $pdf->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $pdf = DomPdf::loadView('admin.reports.damages-pdf', $payload)
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
+            ->setOption('defaultFont', 'DejaVu Sans');
+
+        return $pdf->download($fileName);
+    }
+
     public function exportFinancialPdf(Request $request)
     {
         $payload = $this->buildFinancialExportPayload($request);
@@ -545,6 +688,42 @@ class ReportsController extends Controller
         return $payload;
     }
 
+    private function buildCustomersExportPayload(Request $request): array
+    {
+        $payload = $this->buildExecutiveExportPayload($request);
+        $user = $request->user();
+        $branchId = $payload['branchId'] ?? null;
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
+
+        $payload['reportNumber'] = 'CUR-'.now()->format('Ymd-Hi');
+        $payload['customersReport'] = $this->getCustomersReport(
+            $payload['dateRange'],
+            $user,
+            $branchId,
+            $canViewFinancialAmounts
+        );
+
+        return $payload;
+    }
+
+    private function buildDamagesExportPayload(Request $request): array
+    {
+        $payload = $this->buildExecutiveExportPayload($request);
+        $user = $request->user();
+        $branchId = $payload['branchId'] ?? null;
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
+
+        $payload['reportNumber'] = 'DMR-'.now()->format('Ymd-Hi');
+        $payload['damagesReport'] = $this->getDamagesReport(
+            $payload['dateRange'],
+            $user,
+            $branchId,
+            $canViewFinancialAmounts
+        );
+
+        return $payload;
+    }
+
     private function buildReservationsExportPayload(Request $request): array
     {
         $payload = $this->buildExecutiveExportPayload($request);
@@ -608,6 +787,39 @@ class ReportsController extends Controller
         $mime = mime_content_type($path) ?: 'application/octet-stream';
 
         return 'data:'.$mime.';base64,'.base64_encode($contents);
+    }
+
+    private function damageReportPhotoUrl(CarDamageReport $report): ?string
+    {
+        $file = $report->files
+            ->sortBy([
+                ['order', 'asc'],
+                ['id', 'asc'],
+            ])
+            ->first();
+
+        if ($file && $file->path) {
+            $path = ltrim((string) preg_replace('/^storage\//', '', (string) $file->path), '/');
+
+            return asset('storage/'.$path);
+        }
+
+        $handoverPhotos = $report->handoverPhotos
+            ->sortBy('id')
+            ->values();
+
+        $handoverPhoto = $handoverPhotos
+            ->firstWhere('photo_type', 'damage')
+            ?? $handoverPhotos
+            ->first();
+
+        if (!$handoverPhoto || !$handoverPhoto->file_path) {
+            return null;
+        }
+
+        $path = ltrim((string) preg_replace('/^storage\//', '', (string) $handoverPhoto->file_path), '/');
+
+        return asset('storage/'.$path);
     }
 
     private function executiveExportUrls(string $period, ?int $branchId, ?string $subdomain): array
@@ -700,6 +912,41 @@ class ReportsController extends Controller
         ];
     }
 
+    private function customersExportUrls(string $period, ?int $branchId, ?string $subdomain): array
+    {
+        $query = ['period' => $period];
+
+        if ($subdomain) {
+            $query['subdomain'] = $subdomain;
+        }
+
+        if ($branchId) {
+            $query['branch_id'] = $branchId;
+        }
+
+        return [
+            'pdf' => route('admin.reports.customers.pdf', $query),
+            'excel' => route('admin.reports.customers.excel', $query),
+        ];
+    }
+
+    private function damagesExportUrls(string $period, ?int $branchId, ?string $subdomain): array
+    {
+        $query = ['period' => $period];
+
+        if ($subdomain) {
+            $query['subdomain'] = $subdomain;
+        }
+
+        if ($branchId) {
+            $query['branch_id'] = $branchId;
+        }
+
+        return [
+            'pdf' => route('admin.reports.damages.pdf', $query),
+        ];
+    }
+
     private function executiveExportFileName(string $extension): string
     {
         return 'executive-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
@@ -718,6 +965,16 @@ class ReportsController extends Controller
     private function vehicleProfitabilityExportFileName(string $extension): string
     {
         return 'vehicle-profitability-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
+    }
+
+    private function customersExportFileName(string $extension): string
+    {
+        return 'customers-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
+    }
+
+    private function damagesExportFileName(string $extension): string
+    {
+        return 'damages-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
     }
 
     private function financialReportSections(?array $dateRange = null, $user = null, ?int $branchId = null, bool $canViewFinancialAmounts = true): array
@@ -1825,6 +2082,347 @@ class ReportsController extends Controller
             'top_profitable' => $rows->take(3)->values()->all(),
             'least_profitable' => $rows->sortBy(fn (array $row) => (float) ($row['net_profit'] ?? 0))->take(3)->values()->all(),
             'cars' => $rows->all(),
+        ];
+    }
+
+    private function getDamagesReport(array $dateRange, $user, ?int $branchId, bool $canViewFinancialAmounts): array
+    {
+        $currencySymbol = (string) config('app.currency_symbol', '$');
+        $formatMoney = fn (float $value): string => $canViewFinancialAmounts
+            ? $currencySymbol.number_format($value, 2)
+            : '*******';
+
+        $carsQuery = Car::query();
+        $this->branchAccess->applyToQuery($carsQuery, $user, $branchId);
+        $carIds = $carsQuery->pluck('id')->map(fn ($id) => (int) $id)->values();
+
+        $reportsQuery = CarDamageReport::query()
+            ->with([
+                'car:id,make,model,year,license_plate,branch_id',
+                'creator:id,name',
+                'items:id,car_damage_report_id,zone_code,view_side,damage_type,severity,quantity,estimated_cost,notes',
+                'files',
+                'handoverPhotos:id,damage_report_id,file_path,photo_type',
+            ])
+            ->withCount(['files', 'handoverPhotos'])
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+
+        if ($carIds->isEmpty()) {
+            $reportsQuery->whereRaw('1 = 0');
+        } else {
+            $reportsQuery->whereIn('car_id', $carIds);
+        }
+
+        $reports = $reportsQuery->latest()->get();
+        $openStatuses = ['draft', 'open', 'pending', 'in_progress'];
+        $closedStatuses = ['finalized', 'closed', 'completed', 'resolved'];
+
+        $itemCost = fn ($item): float => (float) ($item->estimated_cost ?? 0) * max(1, (int) ($item->quantity ?? 1));
+        $reportCost = fn (CarDamageReport $report): float => (float) $report->items->sum($itemCost);
+        $totalCost = (float) $reports->sum($reportCost);
+        $totalItems = (int) $reports->sum(fn (CarDamageReport $report) => $report->items->count());
+
+        $reportRow = function (CarDamageReport $report) use ($reportCost, $formatMoney, $canViewFinancialAmounts): array {
+            $cost = $reportCost($report);
+
+            return [
+                'id' => (int) $report->id,
+                'report_number' => (string) $report->report_number,
+                'report_type' => (string) $report->report_type,
+                'status' => (string) $report->status,
+                'car_id' => $report->car_id ? (int) $report->car_id : null,
+                'car_name' => $report->car?->full_name ?? '-',
+                'license_plate' => $report->car?->license_plate ?? '-',
+                'employee_name' => $report->creator?->name ?? '-',
+                'items_count' => $report->items->count(),
+                'photos_count' => (int) ($report->files_count ?? $report->files->count())
+                    + (int) ($report->handover_photos_count ?? $report->handoverPhotos->count()),
+                'total_cost' => FinancialVisibility::numericAmount($cost, $canViewFinancialAmounts),
+                'formatted_total_cost' => $formatMoney($cost),
+                'first_photo_url' => $this->damageReportPhotoUrl($report),
+                'created_at' => optional($report->created_at)->format('Y-m-d H:i'),
+            ];
+        };
+
+        $byCar = $reports
+            ->groupBy(fn (CarDamageReport $report) => $report->car_id ?: 'none')
+            ->map(function ($group) use ($reportCost, $formatMoney, $canViewFinancialAmounts, $openStatuses, $closedStatuses): array {
+                $first = $group->first();
+                $cost = (float) $group->sum($reportCost);
+
+                return [
+                    'car_id' => $first?->car_id ? (int) $first->car_id : null,
+                    'car_name' => $first?->car?->full_name ?? '-',
+                    'license_plate' => $first?->car?->license_plate ?? '-',
+                    'reports_count' => $group->count(),
+                    'items_count' => (int) $group->sum(fn (CarDamageReport $report) => $report->items->count()),
+                    'open_reports' => $group->whereIn('status', $openStatuses)->count(),
+                    'closed_reports' => $group->whereIn('status', $closedStatuses)->count(),
+                    'total_cost' => FinancialVisibility::numericAmount($cost, $canViewFinancialAmounts),
+                    'formatted_total_cost' => $formatMoney($cost),
+                ];
+            })
+            ->sortByDesc('items_count')
+            ->values()
+            ->all();
+
+        $employeeRows = function ($collection) use ($reportCost, $formatMoney, $canViewFinancialAmounts): array {
+            return $collection
+                ->groupBy(fn (CarDamageReport $report) => $report->created_by ?: 'none')
+                ->map(function ($group) use ($reportCost, $formatMoney, $canViewFinancialAmounts): array {
+                    $first = $group->first();
+                    $cost = (float) $group->sum($reportCost);
+
+                    return [
+                        'employee_id' => $first?->created_by ? (int) $first->created_by : null,
+                        'employee_name' => $first?->creator?->name ?? '-',
+                        'reports_count' => $group->count(),
+                        'items_count' => (int) $group->sum(fn (CarDamageReport $report) => $report->items->count()),
+                        'total_cost' => FinancialVisibility::numericAmount($cost, $canViewFinancialAmounts),
+                        'formatted_total_cost' => $formatMoney($cost),
+                    ];
+                })
+                ->sortByDesc('reports_count')
+                ->values()
+                ->all();
+        };
+
+        $beforeReports = $reports->where('report_type', 'before_delivery')->values();
+        $afterReports = $reports->where('report_type', 'after_return')->values();
+
+        return [
+            'summary' => [
+                'total_reports' => $reports->count(),
+                'total_items' => $totalItems,
+                'open_reports' => $reports->whereIn('status', $openStatuses)->count(),
+                'closed_reports' => $reports->whereIn('status', $closedStatuses)->count(),
+                'before_reports' => $beforeReports->count(),
+                'after_reports' => $afterReports->count(),
+                'total_cost' => FinancialVisibility::numericAmount($totalCost, $canViewFinancialAmounts),
+                'formatted_total_cost' => $formatMoney($totalCost),
+            ],
+            'by_car' => $byCar,
+            'employees' => [
+                'registered_by' => $employeeRows($reports),
+                'closed_by' => $employeeRows($reports->whereIn('status', $closedStatuses)),
+            ],
+            'photos' => [
+                'before' => $beforeReports->map($reportRow)->values()->all(),
+                'after' => $afterReports->map($reportRow)->values()->all(),
+            ],
+            'recent_reports' => $reports->take(10)->map($reportRow)->values()->all(),
+        ];
+    }
+
+    private function getCustomersReport(array $dateRange, $user, ?int $branchId, bool $canViewFinancialAmounts): array
+    {
+        $currencySymbol = (string) config('app.currency_symbol', '$');
+        $formatMoney = fn (float $value): string => $canViewFinancialAmounts
+            ? $currencySymbol.number_format($value, 2)
+            : '*******';
+
+        $carsQuery = Car::query();
+        $this->branchAccess->applyToQuery($carsQuery, $user, $branchId);
+        $carIds = $carsQuery->pluck('id')->map(fn ($id) => (int) $id)->values();
+
+        $tenantId = TenantContext::id() ?: ($user?->tenant_id ?? null);
+        $clientsQuery = User::query()->where('role', UserRole::CLIENT->value);
+
+        if ($tenantId) {
+            $clientsQuery->where('tenant_id', $tenantId);
+        } elseif (! $user || $user->role !== UserRole::SUPER_ADMIN) {
+            $clientsQuery->whereRaw('1 = 0');
+        }
+
+        if ($branchId || ! $this->branchAccess->canAccessAllBranches($user)) {
+            if ($carIds->isEmpty()) {
+                $clientsQuery->whereRaw('1 = 0');
+            } else {
+                $clientsQuery->whereHas('reservations', fn ($query) => $query->whereIn('car_id', $carIds));
+            }
+        }
+
+        $applyCarScope = function ($query) use ($carIds): void {
+            if ($carIds->isEmpty()) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->whereIn('reservations.car_id', $carIds);
+        };
+
+        $newCustomers = (clone $clientsQuery)
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+            ->count();
+
+        $reservationBase = DB::table('reservations')
+            ->whereBetween('reservations.created_at', [$dateRange['start'], $dateRange['end']])
+            ->whereNotNull('reservations.user_id');
+        $this->applyTenantScopeToQueryBuilder($reservationBase, $user, 'reservations');
+        $applyCarScope($reservationBase);
+
+        $activeCustomers = (clone $reservationBase)
+            ->distinct('reservations.user_id')
+            ->count('reservations.user_id');
+
+        $repeatCustomers = (clone $reservationBase)
+            ->selectRaw('reservations.user_id, COUNT(*) as reservations_count')
+            ->groupBy('reservations.user_id')
+            ->havingRaw('COUNT(*) >= 2')
+            ->get()
+            ->count();
+
+        $paidRevenueQuery = DB::table('payments')
+            ->join('reservations', 'payments.reservation_id', '=', 'reservations.id')
+            ->join('users', 'reservations.user_id', '=', 'users.id')
+            ->where('payments.status', PaymentStatus::COMPLETED->value)
+            ->whereBetween('payments.processed_at', [$dateRange['start'], $dateRange['end']]);
+        $this->applyTenantScopeToQueryBuilder($paidRevenueQuery, $user, 'payments');
+        $applyCarScope($paidRevenueQuery);
+
+        $topByRevenue = (clone $paidRevenueQuery)
+            ->selectRaw('users.id as customer_id, users.name, users.email, COALESCE(SUM(payments.amount), 0) as revenue, COUNT(DISTINCT payments.id) as payments_count, COUNT(DISTINCT reservations.id) as reservations_count')
+            ->groupBy('users.id', 'users.name', 'users.email')
+            ->orderByDesc('revenue')
+            ->limit(10)
+            ->get();
+
+        $contractsQuery = DB::table('contracts')
+            ->join('reservations', 'contracts.reservation_id', '=', 'reservations.id')
+            ->join('users', 'reservations.user_id', '=', 'users.id')
+            ->whereBetween('contracts.created_at', [$dateRange['start'], $dateRange['end']]);
+        $this->applyTenantScopeToQueryBuilder($contractsQuery, $user, 'contracts');
+        $applyCarScope($contractsQuery);
+
+        $topByContracts = (clone $contractsQuery)
+            ->selectRaw('users.id as customer_id, users.name, users.email, COUNT(DISTINCT contracts.id) as contracts_count, COUNT(DISTINCT reservations.id) as reservations_count, COALESCE(SUM(contracts.total_amount), 0) as contract_value')
+            ->groupBy('users.id', 'users.name', 'users.email')
+            ->orderByDesc('contracts_count')
+            ->limit(10)
+            ->get();
+
+        $paidSubquery = DB::table('payments')
+            ->selectRaw('reservation_id, COALESCE(SUM(amount), 0) as paid_amount')
+            ->where('status', PaymentStatus::COMPLETED->value)
+            ->groupBy('reservation_id');
+
+        $reservationDebtQuery = DB::table('reservations')
+            ->leftJoinSub($paidSubquery, 'paid_totals', 'paid_totals.reservation_id', '=', 'reservations.id')
+            ->join('users', 'reservations.user_id', '=', 'users.id');
+        $this->applyTenantScopeToQueryBuilder($reservationDebtQuery, $user, 'reservations');
+        $applyCarScope($reservationDebtQuery);
+
+        $reservationDebts = (clone $reservationDebtQuery)
+            ->selectRaw('users.id as customer_id, users.name, users.email, COALESCE(SUM(GREATEST(reservations.total_amount - COALESCE(paid_totals.paid_amount, 0), 0)), 0) as outstanding_amount, COUNT(DISTINCT reservations.id) as reservations_count')
+            ->groupBy('users.id', 'users.name', 'users.email')
+            ->havingRaw('outstanding_amount > 0')
+            ->get();
+
+        $returnDebtQuery = DB::table('contract_return_reports')
+            ->join('contracts', 'contract_return_reports.contract_id', '=', 'contracts.id')
+            ->join('reservations', 'contracts.reservation_id', '=', 'reservations.id')
+            ->join('users', 'reservations.user_id', '=', 'users.id')
+            ->where('contract_return_reports.total_extra_charges', '>', 0)
+            ->where(function ($query): void {
+                $query->whereNull('contract_return_reports.payment_status')
+                    ->orWhere('contract_return_reports.payment_status', '!=', 'paid');
+            });
+        $this->applyTenantScopeToQueryBuilder($returnDebtQuery, $user, 'contract_return_reports');
+        $applyCarScope($returnDebtQuery);
+
+        $returnDebts = (clone $returnDebtQuery)
+            ->selectRaw('users.id as customer_id, users.name, users.email, COALESCE(SUM(contract_return_reports.total_extra_charges), 0) as outstanding_amount, COUNT(DISTINCT contract_return_reports.id) as return_reports_count')
+            ->groupBy('users.id', 'users.name', 'users.email')
+            ->havingRaw('outstanding_amount > 0')
+            ->get();
+
+        $debtRows = collect();
+        foreach ($reservationDebts as $row) {
+            $key = (int) $row->customer_id;
+            $debtRows[$key] = [
+                'customer_id' => $key,
+                'name' => $row->name,
+                'email' => $row->email,
+                'outstanding_amount' => (float) $row->outstanding_amount,
+                'reservations_count' => (int) $row->reservations_count,
+                'return_reports_count' => 0,
+            ];
+        }
+
+        foreach ($returnDebts as $row) {
+            $key = (int) $row->customer_id;
+            $current = $debtRows->get($key, [
+                'customer_id' => $key,
+                'name' => $row->name,
+                'email' => $row->email,
+                'outstanding_amount' => 0,
+                'reservations_count' => 0,
+                'return_reports_count' => 0,
+            ]);
+
+            $current['outstanding_amount'] += (float) $row->outstanding_amount;
+            $current['return_reports_count'] += (int) $row->return_reports_count;
+            $debtRows[$key] = $current;
+        }
+
+        $today = now()->toDateString();
+        $overdueQuery = DB::table('contracts')
+            ->join('reservations', 'contracts.reservation_id', '=', 'reservations.id')
+            ->join('users', 'reservations.user_id', '=', 'users.id')
+            ->where('contracts.status', ContractStatus::ACTIVE->value)
+            ->whereDate('contracts.end_date', '<', $today);
+        $this->applyTenantScopeToQueryBuilder($overdueQuery, $user, 'contracts');
+        $applyCarScope($overdueQuery);
+
+        $overdueCustomers = (clone $overdueQuery)
+            ->selectRaw('users.id as customer_id, users.name, users.email, COUNT(DISTINCT contracts.id) as overdue_contracts_count')
+            ->groupBy('users.id', 'users.name', 'users.email')
+            ->orderByDesc('overdue_contracts_count')
+            ->limit(10)
+            ->get();
+
+        $rowWithMoney = function ($row, string $amountKey, string $formattedKey) use ($formatMoney, $canViewFinancialAmounts): array {
+            $row = (array) $row;
+            $amount = (float) ($row[$amountKey] ?? 0);
+
+            $row[$amountKey] = FinancialVisibility::numericAmount($amount, $canViewFinancialAmounts);
+            $row[$formattedKey] = $formatMoney($amount);
+
+            return $row;
+        };
+
+        $debtors = $debtRows
+            ->sortByDesc('outstanding_amount')
+            ->take(10)
+            ->map(fn (array $row): array => $rowWithMoney($row, 'outstanding_amount', 'formatted_outstanding_amount'))
+            ->values();
+
+        $totalRevenue = (float) $topByRevenue->sum('revenue');
+        $totalOutstanding = (float) $debtRows->sum('outstanding_amount');
+
+        return [
+            'summary' => [
+                'new_customers' => $newCustomers,
+                'active_customers' => $activeCustomers,
+                'repeat_customers' => $repeatCustomers,
+                'repeat_rate' => $activeCustomers > 0 ? round(($repeatCustomers / $activeCustomers) * 100, 1) : 0,
+                'debtors_count' => $debtRows->count(),
+                'overdue_customers_count' => $overdueCustomers->count(),
+                'total_revenue' => FinancialVisibility::numericAmount($totalRevenue, $canViewFinancialAmounts),
+                'formatted_total_revenue' => $formatMoney($totalRevenue),
+                'total_outstanding' => FinancialVisibility::numericAmount($totalOutstanding, $canViewFinancialAmounts),
+                'formatted_total_outstanding' => $formatMoney($totalOutstanding),
+            ],
+            'top_by_revenue' => $topByRevenue
+                ->map(fn ($row): array => $rowWithMoney($row, 'revenue', 'formatted_revenue'))
+                ->values()
+                ->all(),
+            'top_by_contracts' => $topByContracts
+                ->map(fn ($row): array => $rowWithMoney($row, 'contract_value', 'formatted_contract_value'))
+                ->values()
+                ->all(),
+            'debtors' => $debtors->all(),
+            'overdue_customers' => $overdueCustomers->map(fn ($row): array => (array) $row)->values()->all(),
         ];
     }
 
