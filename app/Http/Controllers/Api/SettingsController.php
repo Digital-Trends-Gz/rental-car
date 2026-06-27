@@ -12,10 +12,18 @@ use Illuminate\Http\Request;
 
 class SettingsController extends Controller
 {
-    public function general(): JsonResponse
+    public function general(Request $request): JsonResponse
     {
         $branding = AppBrandingSettings::load();
         $siteName = $this->nullableString($branding['app_name'] ?? null) ?? config('app.name', 'Car4u');
+        $localization = LocalizationSettings::load();
+        $defaultLanguage = LocalizationSettings::defaultLocale($localization);
+        $availableLanguages = $this->availableLanguages($localization);
+        $enabledLanguageCodes = array_values(array_map(
+            static fn (array $language): string => (string) $language['code'],
+            $availableLanguages
+        ));
+        $activeLanguage = $this->resolveActiveLanguage($request, $defaultLanguage, $enabledLanguageCodes);
 
         return response()->json([
             'source' => 'super_admin',
@@ -24,6 +32,11 @@ class SettingsController extends Controller
             'logo_url' => $this->nullableString($branding['logo_url'] ?? null),
             'primary_color' => (string) ($branding['primary_color'] ?? '#3b82f6'),
             'secondary_color' => (string) ($branding['secondary_color'] ?? '#6d28d9'),
+            'language' => $activeLanguage,
+            'active_language' => $activeLanguage,
+            'default_language' => $defaultLanguage,
+            'enabled_language_codes' => $enabledLanguageCodes,
+            'available_languages' => $availableLanguages,
         ]);
     }
 
@@ -126,5 +139,63 @@ class SettingsController extends Controller
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<int, array{code: string, name: string, native: string, regional: string, script: string, direction: string}>
+     */
+    private function availableLanguages(array $localization): array
+    {
+        return collect($localization['locales'] ?? [])
+            ->filter(static fn (mixed $language): bool => is_array($language) && !empty($language['code']))
+            ->map(function (array $language): array {
+                $code = (string) $language['code'];
+
+                return [
+                    'code' => $code,
+                    'name' => trim((string) ($language['name'] ?? strtoupper($code))),
+                    'native' => trim((string) ($language['native'] ?? strtoupper($code))),
+                    'regional' => trim((string) ($language['regional'] ?? '')),
+                    'script' => trim((string) ($language['script'] ?? '')),
+                    'direction' => in_array(($language['direction'] ?? null), ['ltr', 'rtl'], true)
+                        ? (string) $language['direction']
+                        : (str_starts_with($code, 'ar') ? 'rtl' : 'ltr'),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, string>  $enabledLanguageCodes
+     */
+    private function resolveActiveLanguage(Request $request, string $defaultLanguage, array $enabledLanguageCodes): string
+    {
+        $candidates = [
+            $request->query('locale'),
+            $request->query('lang'),
+            $request->header('X-Locale'),
+            $request->header('X-Language'),
+            $request->getPreferredLanguage($enabledLanguageCodes),
+            app()->getLocale(),
+            $defaultLanguage,
+        ];
+
+        foreach ($candidates as $candidate) {
+            $language = $this->normalizeLanguageCode($candidate);
+
+            if ($language !== null && in_array($language, $enabledLanguageCodes, true)) {
+                return $language;
+            }
+        }
+
+        return $defaultLanguage;
+    }
+
+    private function normalizeLanguageCode(mixed $value): ?string
+    {
+        $value = trim(str_replace('_', '-', (string) ($value ?? '')));
+
+        return $value === '' ? null : $value;
     }
 }
