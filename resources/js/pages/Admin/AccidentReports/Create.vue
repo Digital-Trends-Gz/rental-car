@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { useTrans } from '@/composables/useTrans';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Building2, CarFront, UserRound } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
     contracts: Array<{
@@ -17,6 +18,11 @@ const props = defineProps<{
         renter_name: string | null;
         car: string;
     }>;
+    cars: Array<{ id: number; branch_id: number | null; label: string; branch_name: string | null }>;
+    branches: Array<{ id: number; name: string }>;
+    employees: Array<{ id: number; name: string; email: string; branch_id: number | null; branch_name: string | null }>;
+    responsibilities: Array<{ value: string; label: string }>;
+    locationTypes: Array<{ value: string; label: string }>;
     indexUrl: string;
     submitUrl: string;
 }>();
@@ -24,6 +30,9 @@ const props = defineProps<{
 const { locale } = useTrans();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
+type AccidentContext = 'contract' | 'employee' | 'branch';
+
+const accidentContext = ref<AccidentContext>('contract');
 const photoFiles = ref<File[]>([]);
 const photoTypes = ref<string[]>([]);
 const photoNotes = ref<string[]>([]);
@@ -44,7 +53,13 @@ const mapDragState = ref<{
 } | null>(null);
 
 const form = useForm({
+    accident_context: 'contract',
     contract_id: '',
+    car_id: '',
+    branch_id: '',
+    employee_id: '',
+    responsibility: 'customer',
+    location_type: 'road',
     accident_at: '',
     location: '',
     latitude: '',
@@ -63,6 +78,53 @@ const form = useForm({
 });
 
 const selectedContract = computed(() => props.contracts.find((contract) => String(contract.id) === form.contract_id) ?? null);
+const contextOptions = computed(() => [
+    {
+        key: 'contract' as const,
+        icon: UserRound,
+        title: localize('With customer', '\u0645\u0639 \u0627\u0644\u0639\u0645\u064a\u0644'),
+        description: localize(
+            'Use when the car is under an active rental contract.',
+            '\u0644\u0644\u062d\u0648\u0627\u062f\u062b \u0623\u062b\u0646\u0627\u0621 \u0641\u062a\u0631\u0629 \u0639\u0642\u062f \u0625\u064a\u062c\u0627\u0631 \u0646\u0634\u0637.',
+        ),
+        state: localize('Active workflow', '\u0645\u0633\u0627\u0631 \u0645\u0641\u0639\u0644'),
+    },
+    {
+        key: 'employee' as const,
+        icon: CarFront,
+        title: localize('With employee', '\u0645\u0639 \u0645\u0648\u0638\u0641'),
+        description: localize(
+            'For transfers, refueling, inspections, or staff custody.',
+            '\u0644\u0644\u0646\u0642\u0644 \u0628\u064a\u0646 \u0627\u0644\u0641\u0631\u0648\u0639\u060c \u0627\u0644\u062a\u0639\u0628\u0626\u0629\u060c \u0627\u0644\u0641\u062d\u0635\u060c \u0623\u0648 \u0639\u0647\u062f\u0629 \u0627\u0644\u0645\u0648\u0638\u0641.',
+        ),
+        state: localize('Active workflow', '\u0645\u0633\u0627\u0631 \u0645\u0641\u0639\u0644'),
+    },
+    {
+        key: 'branch' as const,
+        icon: Building2,
+        title: localize('At office or gate', '\u0639\u0646\u062f \u0627\u0644\u0645\u0643\u062a\u0628 \u0623\u0648 \u0627\u0644\u0628\u0648\u0627\u0628\u0629'),
+        description: localize(
+            'For parking, branch entrance, or handover-area incidents.',
+            '\u0644\u062d\u0648\u0627\u062f\u062b \u0627\u0644\u0645\u0648\u0627\u0642\u0641\u060c \u0645\u062f\u062e\u0644 \u0627\u0644\u0641\u0631\u0639\u060c \u0623\u0648 \u0645\u0646\u0637\u0642\u0629 \u0627\u0644\u062a\u0633\u0644\u064a\u0645.',
+        ),
+        state: localize('Active workflow', '\u0645\u0633\u0627\u0631 \u0645\u0641\u0639\u0644'),
+    },
+]);
+const selectedContext = computed(() => contextOptions.value.find((option) => option.key === accidentContext.value) ?? contextOptions.value[0]);
+const filteredCars = computed(() => {
+    if (!form.branch_id) return props.cars;
+
+    return props.cars.filter((car) => String(car.branch_id ?? '') === form.branch_id);
+});
+const filteredEmployees = computed(() => {
+    if (!form.branch_id) return props.employees;
+
+    return props.employees.filter((employee) => String(employee.branch_id ?? '') === form.branch_id);
+});
+const selectedCar = computed(() => props.cars.find((car) => String(car.id) === form.car_id) ?? null);
+const selectedBranch = computed(() => props.branches.find((branch) => String(branch.id) === form.branch_id) ?? null);
+const selectedEmployee = computed(() => props.employees.find((employee) => String(employee.id) === form.employee_id) ?? null);
+const canSubmit = computed(() => true);
 const locationQuery = computed(() => {
     const latitude = Number(form.latitude);
     const longitude = Number(form.longitude);
@@ -295,11 +357,43 @@ function worldPixelToLatLng(x: number, y: number, zoom: number) {
 }
 
 function submit() {
+    form.accident_context = accidentContext.value;
     form.photos = photoFiles.value;
     form.photo_types = photoTypes.value;
     form.photo_notes = photoNotes.value;
     form.post(props.submitUrl, { forceFormData: true });
 }
+
+watch(accidentContext, (context) => {
+    form.accident_context = context;
+
+    if (context === 'contract') {
+        form.car_id = '';
+        form.branch_id = '';
+        form.employee_id = '';
+        form.responsibility = 'customer';
+        form.location_type = 'road';
+        return;
+    }
+
+    form.contract_id = '';
+    form.responsibility = context === 'employee' ? 'employee' : 'unknown';
+    form.location_type = context === 'branch' ? 'branch_gate' : 'road';
+
+    if (context === 'branch') {
+        form.employee_id = '';
+    }
+});
+
+watch(() => form.branch_id, () => {
+    if (form.car_id && !filteredCars.value.some((car) => String(car.id) === form.car_id)) {
+        form.car_id = '';
+    }
+
+    if (form.employee_id && !filteredEmployees.value.some((employee) => String(employee.id) === form.employee_id)) {
+        form.employee_id = '';
+    }
+});
 </script>
 
 <template>
@@ -318,9 +412,57 @@ function submit() {
                 </Link>
             </div>
 
+            <section class="space-y-4 rounded-lg border bg-white p-5 shadow-sm">
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-semibold">{{ localize('Accident workflow', '\u0645\u0633\u0627\u0631 \u0627\u0644\u062d\u0627\u062f\u062b') }}</h2>
+                        <p class="text-sm text-muted-foreground">
+                            {{ localize('Choose who had custody of the car when the accident happened.', '\u062d\u062f\u062f \u0645\u0646 \u0643\u0627\u0646\u062a \u0627\u0644\u0633\u064a\u0627\u0631\u0629 \u0628\u0639\u0647\u062f\u062a\u0647 \u0648\u0642\u062a \u0627\u0644\u062d\u0627\u062f\u062b.') }}
+                        </p>
+                    </div>
+                    <span class="rounded-md border px-3 py-1 text-sm font-medium text-muted-foreground">
+                        {{ selectedContext.state }}
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                    <button
+                        v-for="option in contextOptions"
+                        :key="option.key"
+                        type="button"
+                        class="flex h-full min-h-32 gap-3 rounded-md border p-4 text-start transition hover:border-primary/60 hover:bg-muted/30"
+                        :class="{
+                            'border-primary bg-primary/5 ring-1 ring-primary/30': accidentContext === option.key,
+                        }"
+                        @click="accidentContext = option.key"
+                    >
+                        <component :is="option.icon" class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                        <span>
+                            <span class="block font-semibold">{{ option.title }}</span>
+                            <span class="mt-1 block text-sm leading-6 text-muted-foreground">{{ option.description }}</span>
+                        </span>
+                    </button>
+                </div>
+
+                <div class="rounded-md border bg-muted/20 p-4 text-sm">
+                    <template v-if="accidentContext === 'contract'">
+                        <strong>{{ localize('Current form:', '\u0627\u0644\u0646\u0645\u0648\u0630\u062c \u0627\u0644\u062d\u0627\u0644\u064a:') }}</strong>
+                        {{ localize('select a contract, then record the accident details, location, police report, third party, and photos.', '\u0627\u062e\u062a\u0631 \u0627\u0644\u0639\u0642\u062f\u060c \u062b\u0645 \u0633\u062c\u0644 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u062d\u0627\u062f\u062b \u0648\u0627\u0644\u0645\u0648\u0642\u0639 \u0648\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0634\u0631\u0637\u0629 \u0648\u0627\u0644\u0637\u0631\u0641 \u0627\u0644\u062b\u0627\u0644\u062b \u0648\u0627\u0644\u0635\u0648\u0631.') }}
+                    </template>
+                    <template v-else-if="accidentContext === 'employee'">
+                        <strong>{{ localize('Next workflow:', '\u0627\u0644\u0645\u0633\u0627\u0631 \u0627\u0644\u0642\u0627\u062f\u0645:') }}</strong>
+                        {{ localize('this will ask for car, branch, responsible employee, custody reason, responsibility, and accident evidence.', '\u0633\u064a\u0637\u0644\u0628 \u0627\u0644\u0633\u064a\u0627\u0631\u0629 \u0648\u0627\u0644\u0641\u0631\u0639 \u0648\u0627\u0644\u0645\u0648\u0638\u0641 \u0627\u0644\u0645\u0633\u0624\u0648\u0644 \u0648\u0633\u0628\u0628 \u0627\u0644\u0639\u0647\u062f\u0629 \u0648\u0627\u0644\u0645\u0633\u0624\u0648\u0644\u064a\u0629 \u0648\u0623\u062f\u0644\u0629 \u0627\u0644\u062d\u0627\u062f\u062b.') }}
+                    </template>
+                    <template v-else>
+                        <strong>{{ localize('Next workflow:', '\u0627\u0644\u0645\u0633\u0627\u0631 \u0627\u0644\u0642\u0627\u062f\u0645:') }}</strong>
+                        {{ localize('this will ask for car, branch area, office/gate location, third party details, responsibility, and accident evidence.', '\u0633\u064a\u0637\u0644\u0628 \u0627\u0644\u0633\u064a\u0627\u0631\u0629 \u0648\u0645\u0646\u0637\u0642\u0629 \u0627\u0644\u0641\u0631\u0639 \u0648\u0645\u0648\u0642\u0639 \u0627\u0644\u0645\u0643\u062a\u0628 \u0623\u0648 \u0627\u0644\u0628\u0648\u0627\u0628\u0629 \u0648\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0637\u0631\u0641 \u0627\u0644\u062b\u0627\u0644\u062b \u0648\u0627\u0644\u0645\u0633\u0624\u0648\u0644\u064a\u0629 \u0648\u0623\u062f\u0644\u0629 \u0627\u0644\u062d\u0627\u062f\u062b.') }}
+                    </template>
+                </div>
+            </section>
+
             <form class="space-y-6 rounded-lg border bg-white p-6 shadow-sm" @submit.prevent="submit">
                 <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div class="md:col-span-2">
+                    <div v-if="accidentContext === 'contract'" class="md:col-span-2">
                         <Label for="contract_id">{{ localize('Contract', 'العقد') }}</Label>
                         <select id="contract_id" v-model="form.contract_id" class="mt-1 block h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                             <option value="">{{ localize('Select contract', 'اختر العقد') }}</option>
@@ -331,12 +473,73 @@ function submit() {
                         <InputError :message="form.errors.contract_id" />
                     </div>
 
-                    <div v-if="selectedContract" class="md:col-span-2 rounded-md border bg-muted/30 p-4 text-sm">
+                    <div v-if="accidentContext === 'contract' && selectedContract" class="md:col-span-2 rounded-md border bg-muted/30 p-4 text-sm">
                         <div><strong>{{ localize('Contract:', 'العقد:') }}</strong> {{ selectedContract.contract_number || '-' }}</div>
                         <div><strong>{{ localize('Reservation:', 'الحجز:') }}</strong> {{ selectedContract.reservation_number || '-' }}</div>
                         <div><strong>{{ localize('Client:', 'العميل:') }}</strong> {{ selectedContract.renter_name || '-' }}</div>
                         <div><strong>{{ localize('Car:', 'السيارة:') }}</strong> {{ selectedContract.car }}</div>
                     </div>
+
+                    <section v-if="accidentContext !== 'contract'" class="md:col-span-2 grid grid-cols-1 gap-4 rounded-md border p-4 md:grid-cols-2">
+                        <div>
+                            <Label for="branch_id">{{ localize('Branch', '\u0627\u0644\u0641\u0631\u0639') }}</Label>
+                            <select id="branch_id" v-model="form.branch_id" class="mt-1 block h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                <option value="">{{ localize('Select branch', '\u0627\u062e\u062a\u0631 \u0627\u0644\u0641\u0631\u0639') }}</option>
+                                <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">
+                                    {{ branch.name }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.branch_id" />
+                        </div>
+
+                        <div>
+                            <Label for="car_id">{{ localize('Car', '\u0627\u0644\u0633\u064a\u0627\u0631\u0629') }}</Label>
+                            <select id="car_id" v-model="form.car_id" class="mt-1 block h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                <option value="">{{ localize('Select car', '\u0627\u062e\u062a\u0631 \u0627\u0644\u0633\u064a\u0627\u0631\u0629') }}</option>
+                                <option v-for="car in filteredCars" :key="car.id" :value="String(car.id)">
+                                    {{ car.label }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.car_id" />
+                        </div>
+
+                        <div v-if="accidentContext === 'employee'">
+                            <Label for="employee_id">{{ localize('Responsible employee', '\u0627\u0644\u0645\u0648\u0638\u0641 \u0627\u0644\u0645\u0633\u0624\u0648\u0644') }}</Label>
+                            <select id="employee_id" v-model="form.employee_id" class="mt-1 block h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                <option value="">{{ localize('Select employee', '\u0627\u062e\u062a\u0631 \u0627\u0644\u0645\u0648\u0638\u0641') }}</option>
+                                <option v-for="employee in filteredEmployees" :key="employee.id" :value="String(employee.id)">
+                                    {{ employee.name }} - {{ employee.email }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.employee_id" />
+                        </div>
+
+                        <div>
+                            <Label for="responsibility">{{ localize('Responsibility', '\u0627\u0644\u0645\u0633\u0624\u0648\u0644\u064a\u0629') }}</Label>
+                            <select id="responsibility" v-model="form.responsibility" class="mt-1 block h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                <option v-for="item in responsibilities" :key="item.value" :value="item.value">
+                                    {{ item.label }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.responsibility" />
+                        </div>
+
+                        <div>
+                            <Label for="location_type">{{ localize('Location type', '\u0646\u0648\u0639 \u0627\u0644\u0645\u0648\u0642\u0639') }}</Label>
+                            <select id="location_type" v-model="form.location_type" class="mt-1 block h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                <option v-for="item in locationTypes" :key="item.value" :value="item.value">
+                                    {{ item.label }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.location_type" />
+                        </div>
+
+                        <div class="rounded-md bg-muted/30 p-3 text-sm">
+                            <div><strong>{{ localize('Selected branch:', '\u0627\u0644\u0641\u0631\u0639 \u0627\u0644\u0645\u062d\u062f\u062f:') }}</strong> {{ selectedBranch?.name || '-' }}</div>
+                            <div><strong>{{ localize('Selected car:', '\u0627\u0644\u0633\u064a\u0627\u0631\u0629 \u0627\u0644\u0645\u062d\u062f\u062f\u0629:') }}</strong> {{ selectedCar?.label || '-' }}</div>
+                            <div v-if="accidentContext === 'employee'"><strong>{{ localize('Employee:', '\u0627\u0644\u0645\u0648\u0638\u0641:') }}</strong> {{ selectedEmployee?.name || '-' }}</div>
+                        </div>
+                    </section>
 
                     <div>
                         <Label for="accident_at">{{ localize('Accident date/time', 'وقت وتاريخ الحادث') }}</Label>
@@ -491,10 +694,13 @@ function submit() {
                     <InputError :message="form.errors.notes" />
                 </section>
 
-                <div class="flex items-center gap-3">
-                    <Button type="submit" :disabled="form.processing">
+                <div class="flex flex-wrap items-center gap-3">
+                    <Button type="submit" :disabled="form.processing || !canSubmit">
                         {{ form.processing ? localize('Saving...', 'جاري الحفظ...') : localize('Save Accident Report', 'حفظ بلاغ الحادث') }}
                     </Button>
+                    <span v-if="!canSubmit" class="text-sm text-muted-foreground">
+                        {{ localize('Saving this workflow needs the next backend step.', '\u062d\u0641\u0638 \u0647\u0630\u0627 \u0627\u0644\u0645\u0633\u0627\u0631 \u064a\u062d\u062a\u0627\u062c \u062e\u0637\u0648\u0629 \u0627\u0644\u0628\u0627\u0643\u0646\u062f \u0627\u0644\u0642\u0627\u062f\u0645\u0629.') }}
+                    </span>
                     <Link :href="indexUrl">
                         <Button type="button" variant="outline">{{ localize('Cancel', 'إلغاء') }}</Button>
                     </Link>

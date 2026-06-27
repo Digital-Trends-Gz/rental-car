@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -62,6 +63,8 @@ class AuthController extends Controller
 
     public function verifyOtp(Request $request): JsonResponse
     {
+        $this->setApiLocale($request);
+
         $request->validate([
             'email' => [
                 'required',
@@ -71,11 +74,11 @@ class AuthController extends Controller
             'code' => ['nullable', 'digits:6', 'required_without:otp'],
             'otp' => ['nullable', 'digits:6', 'required_without:code'],
         ], [
-            'email.exists' => 'We could not find an account with this email.',
-            'code.required_without' => 'The otp field is required.',
-            'otp.required_without' => 'The otp field is required.',
-            'code.digits' => 'The otp must be exactly 6 digits.',
-            'otp.digits' => 'The otp must be exactly 6 digits.',
+            'email.exists' => $this->authMessage('account_not_found'),
+            'code.required_without' => $this->authMessage('otp_required'),
+            'otp.required_without' => $this->authMessage('otp_required'),
+            'code.digits' => $this->authMessage('otp_digits'),
+            'otp.digits' => $this->authMessage('otp_digits'),
         ]);
 
         $email = trim((string) $request->input('email'));
@@ -83,14 +86,14 @@ class AuthController extends Controller
 
         if ($code === '') {
             return response()->json([
-                'message' => 'no same or not match',
+                'message' => $this->authMessage('otp_invalid'),
                 'verified' => false,
             ], 422);
         }
 
         if ($this->isOtpVerificationBlocked($email)) {
             return response()->json([
-                'message' => 'OTP verification is blocked for 2 minutes. Please try again later.',
+                'message' => $this->authMessage('otp_blocked'),
                 'verified' => false,
                 'blocked' => true,
             ], 429);
@@ -103,14 +106,14 @@ class AuthController extends Controller
                 $this->blockOtpVerification($email);
 
                 return response()->json([
-                    'message' => 'OTP verification is blocked for 2 minutes. Please try again later.',
+                    'message' => $this->authMessage('otp_blocked'),
                     'verified' => false,
                     'blocked' => true,
                 ], 429);
             }
 
             return response()->json([
-                'message' => 'no same or not match',
+                'message' => $this->authMessage('otp_invalid'),
                 'verified' => false,
                 'attempts_left' => max(0, self::OTP_VERIFY_MAX_FAILURES - $attempts),
             ], 422);
@@ -125,7 +128,7 @@ class AuthController extends Controller
         Cache::forget($this->otpCacheKey($email));
 
         return response()->json([
-            'message' => 'success',
+            'message' => $this->authMessage('success'),
             'verified' => true,
         ]);
     }
@@ -171,6 +174,8 @@ class AuthController extends Controller
 
     public function forgotPassword(Request $request): JsonResponse
     {
+        $this->setApiLocale($request);
+
         $request->validate([
             'email' => [
                 'required',
@@ -178,7 +183,7 @@ class AuthController extends Controller
                 Rule::exists((new User())->getTable(), 'email'),
             ],
         ], [
-            'email.exists' => 'We could not find an account with this email.',
+            'email.exists' => $this->authMessage('account_not_found'),
         ]);
 
         $email = trim((string) $request->input('email'));
@@ -204,13 +209,15 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'message' => 'If the account exists, we sent a password reset link and OTP to the registered email.',
+            'message' => $this->authMessage('password_reset_sent'),
             'test_otp' => $otp,
         ]);
     }
 
     public function resetPassword(Request $request): JsonResponse
     {
+        $this->setApiLocale($request);
+
         $request->validate([
             'email' => [
                 'required',
@@ -219,7 +226,7 @@ class AuthController extends Controller
             ],
             'password' => ['required', 'confirmed', PasswordRule::defaults()],
         ], [
-            'email.exists' => 'We could not find an account with this email.',
+            'email.exists' => $this->authMessage('account_not_found'),
         ]);
 
         $email = trim((string) $request->input('email'));
@@ -227,15 +234,50 @@ class AuthController extends Controller
 
         if (!$user || !Cache::pull($this->otpVerifiedCacheKey($email), false)) {
             throw ValidationException::withMessages([
-                'email' => ['Please verify the OTP first.'],
+                'email' => [$this->authMessage('otp_verify_first')],
             ]);
         }
 
         $this->completePasswordReset($user, (string) $request->input('password'));
 
         return response()->json([
-            'message' => 'Password reset successfully.',
+            'message' => $this->authMessage('password_reset_success'),
         ]);
+    }
+
+    private function setApiLocale(Request $request): void
+    {
+        $locales = array_values(array_filter(
+            (array) config('app.available_locales', ['en']),
+            static fn ($locale): bool => is_string($locale) && $locale !== ''
+        ));
+
+        $fallback = (string) config('app.fallback_locale', config('app.locale', 'en'));
+        $locale = $request->getPreferredLanguage($locales) ?: $fallback;
+
+        app()->setLocale($locale);
+    }
+
+    private function authMessage(string $key): string
+    {
+        $translationKey = "auth.api.{$key}";
+
+        if (Lang::has($translationKey)) {
+            return trans($translationKey);
+        }
+
+        return match ($key) {
+            'account_not_found' => 'We could not find an account with this email.',
+            'otp_required' => 'The otp field is required.',
+            'otp_digits' => 'The otp must be exactly 6 digits.',
+            'otp_invalid' => 'no same or not match',
+            'otp_blocked' => 'OTP verification is blocked for 2 minutes. Please try again later.',
+            'success' => 'success',
+            'password_reset_sent' => 'If the account exists, we sent a password reset link and OTP to the registered email.',
+            'otp_verify_first' => 'Please verify the OTP first.',
+            'password_reset_success' => 'Password reset successfully.',
+            default => $translationKey,
+        };
     }
 
     private function userPayload(User $user): array

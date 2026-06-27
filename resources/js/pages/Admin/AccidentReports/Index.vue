@@ -5,6 +5,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { computed, ref, watch } from 'vue';
+import { Building2, CarFront, UserRound } from 'lucide-vue-next';
 
 const props = defineProps<{
     reports: {
@@ -46,6 +47,32 @@ const status = ref(props.filters?.status || 'all');
 const branchId = ref(props.filters?.branch_id ? String(props.filters.branch_id) : '');
 
 const hasRows = computed(() => props.reports.data.length > 0);
+const workflowCards = computed(() => [
+    {
+        key: 'contract',
+        icon: UserRound,
+        title: localize('Customer accidents', '\u062d\u0648\u0627\u062f\u062b \u0627\u0644\u0639\u0645\u0644\u0627\u0621'),
+        description: localize('Linked to rental contracts and customer responsibility review.', '\u0645\u0631\u062a\u0628\u0637\u0629 \u0628\u0627\u0644\u0639\u0642\u0648\u062f \u0648\u0645\u0631\u0627\u062c\u0639\u0629 \u0645\u0633\u0624\u0648\u0644\u064a\u0629 \u0627\u0644\u0639\u0645\u064a\u0644.'),
+        value: props.reports.data.length,
+        state: localize('Active', '\u0645\u0641\u0639\u0644'),
+    },
+    {
+        key: 'employee',
+        icon: CarFront,
+        title: localize('Employee custody', '\u0639\u0647\u062f\u0629 \u0627\u0644\u0645\u0648\u0638\u0641'),
+        description: localize('For transfers, inspections, refueling, and internal movement.', '\u0644\u0644\u0646\u0642\u0644 \u0648\u0627\u0644\u0641\u062d\u0635 \u0648\u0627\u0644\u062a\u0639\u0628\u0626\u0629 \u0648\u0627\u0644\u062d\u0631\u0643\u0629 \u0627\u0644\u062f\u0627\u062e\u0644\u064a\u0629.'),
+        value: 0,
+        state: localize('Next', '\u0627\u0644\u062e\u0637\u0648\u0629 \u0627\u0644\u0642\u0627\u062f\u0645\u0629'),
+    },
+    {
+        key: 'branch',
+        icon: Building2,
+        title: localize('Office and gate', '\u0627\u0644\u0645\u0643\u062a\u0628 \u0648\u0627\u0644\u0628\u0648\u0627\u0628\u0629'),
+        description: localize('For parking, branch entrance, and handover-area incidents.', '\u0644\u0644\u0645\u0648\u0627\u0642\u0641 \u0648\u0645\u062f\u062e\u0644 \u0627\u0644\u0641\u0631\u0639 \u0648\u0645\u0646\u0637\u0642\u0629 \u0627\u0644\u062a\u0633\u0644\u064a\u0645.'),
+        value: 0,
+        state: localize('Next', '\u0627\u0644\u062e\u0637\u0648\u0629 \u0627\u0644\u0642\u0627\u062f\u0645\u0629'),
+    },
+]);
 
 function doSearch() {
     router.get(
@@ -87,6 +114,30 @@ watch(search, (newValue, oldValue) => {
                     <Button>{{ localize('New Accident Report', 'بلاغ حادث جديد') }}</Button>
                 </Link>
             </div>
+
+            <section class="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                <div
+                    v-for="card in workflowCards"
+                    :key="card.key"
+                    class="rounded-md border bg-white p-4 shadow-sm"
+                >
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                                <component :is="card.icon" class="h-5 w-5" />
+                            </span>
+                            <div>
+                                <h2 class="font-semibold">{{ card.title }}</h2>
+                                <p class="mt-1 text-sm leading-6 text-muted-foreground">{{ card.description }}</p>
+                            </div>
+                        </div>
+                        <span class="rounded-md border px-2 py-1 text-xs font-medium text-muted-foreground">
+                            {{ card.state }}
+                        </span>
+                    </div>
+                    <div class="mt-4 text-2xl font-semibold">{{ card.value }}</div>
+                </div>
+            </section>
 
             <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
                 <Input

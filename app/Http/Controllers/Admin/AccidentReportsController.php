@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Enums\UserRole;
 use App\Models\AccidentReport;
+use App\Models\Car;
 use App\Models\Contract;
+use App\Models\User;
 use App\Support\BranchAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,6 +56,7 @@ class AccidentReportsController extends Controller
                 'car:id,make,model,year,license_plate',
                 'branch:id,name',
                 'reporter:id,name',
+                'employee:id,name',
             ])
             ->withCount('photos');
 
@@ -92,9 +97,12 @@ class AccidentReportsController extends Controller
             'status' => $report->status,
             'status_label' => $this->statusLabel($report->status),
             'status_color' => $this->statusColor($report->status),
+            'accident_context' => $report->accident_context ?? 'contract',
+            'accident_context_label' => $this->contextLabel($report->accident_context ?? 'contract'),
             'contract_number' => $report->contract?->contract_number,
             'reservation_number' => $report->reservation?->reservation_number,
             'renter_name' => $report->contract?->renter_name,
+            'employee_name' => $report->employee?->name,
             'car' => $this->carLabel($report),
             'branch' => $report->branch?->name ?? '-',
             'location' => $report->location,
@@ -122,7 +130,12 @@ class AccidentReportsController extends Controller
     {
         return Inertia::render('Admin/AccidentReports/Create', [
             'contracts' => $this->contractOptions($request),
+            'cars' => $this->carOptions($request),
+            'branches' => $this->branchOptions($request),
+            'employees' => $this->employeeOptions($request),
             'statuses' => $this->statusOptions(),
+            'responsibilities' => $this->responsibilityOptions(),
+            'locationTypes' => $this->locationTypeOptions(),
             'indexUrl' => route('admin.accident-reports.index'),
             'submitUrl' => route('admin.accident-reports.store'),
         ]);
@@ -131,7 +144,13 @@ class AccidentReportsController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'contract_id' => ['required', 'integer'],
+            'accident_context' => ['required', Rule::in(['contract', 'employee', 'branch'])],
+            'contract_id' => ['nullable', 'integer', 'required_if:accident_context,contract'],
+            'car_id' => ['nullable', 'integer', 'required_unless:accident_context,contract'],
+            'branch_id' => ['nullable', 'integer', 'required_unless:accident_context,contract'],
+            'employee_id' => ['nullable', 'integer', 'required_if:accident_context,employee'],
+            'responsibility' => ['nullable', Rule::in(['customer', 'employee', 'company', 'third_party', 'unknown'])],
+            'location_type' => ['nullable', Rule::in(['road', 'branch_gate', 'parking', 'workshop', 'other'])],
             'accident_at' => ['nullable', 'date'],
             'location' => ['nullable', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
@@ -158,18 +177,42 @@ class AccidentReportsController extends Controller
         $files = $this->uploadedPhotoFiles($request);
         $this->validateUploadedPhotos($files);
 
-        $contract = $this->resolveAccessibleContract($request, (int) $validated['contract_id']);
-        $contract->loadMissing(['reservation:id,reservation_number,car_id', 'reservation.car:id,year,make,model,license_plate']);
+        $context = (string) $validated['accident_context'];
+        $contract = null;
+        $reservationId = null;
+        $carId = null;
+        $branchId = null;
+        $employeeId = null;
 
-        $report = DB::transaction(function () use ($request, $validated, $contract, $files): AccidentReport {
-            $reservation = $contract->reservation;
+        if ($context === 'contract') {
+            $contract = $this->resolveAccessibleContract($request, (int) $validated['contract_id']);
+            $contract->loadMissing(['reservation:id,reservation_number,car_id', 'reservation.car:id,year,make,model,license_plate']);
 
+            $reservationId = $contract->reservation_id;
+            $carId = $contract->reservation?->car_id;
+            $branchId = $contract->branch_id;
+        } else {
+            $branchId = $this->resolveAccessibleBranchId($request, (int) $validated['branch_id']);
+            $car = $this->resolveAccessibleCar($request, (int) $validated['car_id'], $branchId);
+            $carId = $car->id;
+
+            if ($context === 'employee') {
+                $employee = $this->resolveAccessibleEmployee($request, (int) $validated['employee_id']);
+                $employeeId = $employee->id;
+            }
+        }
+
+        $report = DB::transaction(function () use ($request, $validated, $context, $contract, $reservationId, $carId, $branchId, $employeeId, $files): AccidentReport {
             $report = AccidentReport::create([
-                'contract_id' => $contract->id,
-                'reservation_id' => $contract->reservation_id,
-                'car_id' => $reservation?->car_id,
-                'branch_id' => $contract->branch_id,
+                'contract_id' => $contract?->id,
+                'reservation_id' => $reservationId,
+                'car_id' => $carId,
+                'branch_id' => $branchId,
                 'reported_by' => $request->user()?->id,
+                'employee_id' => $employeeId,
+                'accident_context' => $context,
+                'responsibility' => $validated['responsibility'] ?? ($context === 'contract' ? 'customer' : 'unknown'),
+                'location_type' => $validated['location_type'] ?? null,
                 'accident_number' => $this->generateAccidentNumber(),
                 'status' => 'reported',
                 'accident_at' => $validated['accident_at'] ?? null,
@@ -205,6 +248,7 @@ class AccidentReportsController extends Controller
             'car:id,year,make,model,license_plate',
             'branch:id,name',
             'reporter:id,name,email',
+            'employee:id,name,email',
         ]);
 
         return Inertia::render('Admin/AccidentReports/Show', [
@@ -214,6 +258,12 @@ class AccidentReportsController extends Controller
                 'status' => $accidentReport->status,
                 'status_label' => $this->statusLabel($accidentReport->status),
                 'status_color' => $this->statusColor($accidentReport->status),
+                'accident_context' => $accidentReport->accident_context ?? 'contract',
+                'accident_context_label' => $this->contextLabel($accidentReport->accident_context ?? 'contract'),
+                'responsibility' => $accidentReport->responsibility,
+                'responsibility_label' => $this->responsibilityLabel($accidentReport->responsibility),
+                'location_type' => $accidentReport->location_type,
+                'location_type_label' => $this->locationTypeLabel($accidentReport->location_type),
                 'contract_number' => $accidentReport->contract?->contract_number,
                 'reservation_number' => $accidentReport->reservation?->reservation_number,
                 'renter_name' => $accidentReport->contract?->renter_name,
@@ -222,6 +272,7 @@ class AccidentReportsController extends Controller
                 'car' => $this->carLabel($accidentReport),
                 'branch' => $accidentReport->branch?->name,
                 'reported_by' => $accidentReport->reporter?->name,
+                'employee_name' => $accidentReport->employee?->name,
                 'accident_at' => optional($accidentReport->accident_at)?->format('Y-m-d H:i'),
                 'location' => $accidentReport->location,
                 'latitude' => $accidentReport->latitude,
@@ -279,6 +330,77 @@ class AccidentReportsController extends Controller
         ])->values();
     }
 
+    private function carOptions(Request $request)
+    {
+        $query = Car::query()
+            ->select(['id', 'branch_id', 'year', 'make', 'model', 'license_plate'])
+            ->with('branch:id,name')
+            ->orderBy('make')
+            ->orderBy('model')
+            ->limit(500);
+
+        $this->branchAccess->applyToQuery($query, $request->user(), null, 'branch_id');
+
+        return $query->get()->map(fn (Car $car) => [
+            'id' => $car->id,
+            'branch_id' => $car->branch_id,
+            'label' => trim("{$car->year} {$car->make} {$car->model} ({$car->license_plate})"),
+            'branch_name' => $car->branch?->name,
+        ])->values();
+    }
+
+    private function branchOptions(Request $request)
+    {
+        return $this->branchAccess
+            ->availableBranchesForUser($request->user())
+            ->map(fn ($branch) => [
+                'id' => $branch->id,
+                'name' => $branch->name,
+            ])
+            ->values();
+    }
+
+    private function employeeOptions(Request $request)
+    {
+        $query = User::query()
+            ->select(['id', 'name', 'email', 'branch_id'])
+            ->with('branch:id,name')
+            ->where('role', UserRole::ADMIN)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->limit(500);
+
+        $this->branchAccess->applyToQuery($query, $request->user(), null, 'branch_id');
+
+        return $query->get()->map(fn (User $employee) => [
+            'id' => $employee->id,
+            'name' => $employee->name,
+            'email' => $employee->email,
+            'branch_id' => $employee->branch_id,
+            'branch_name' => $employee->branch?->name,
+        ])->values();
+    }
+
+    private function responsibilityOptions(): array
+    {
+        return collect(['customer', 'employee', 'company', 'third_party', 'unknown'])
+            ->map(fn (string $value) => [
+                'value' => $value,
+                'label' => $this->responsibilityLabel($value),
+            ])
+            ->all();
+    }
+
+    private function locationTypeOptions(): array
+    {
+        return collect(['road', 'branch_gate', 'parking', 'workshop', 'other'])
+            ->map(fn (string $value) => [
+                'value' => $value,
+                'label' => $this->locationTypeLabel($value),
+            ])
+            ->all();
+    }
+
     private function resolveAccessibleContract(Request $request, int $contractId): Contract
     {
         $query = Contract::query()->whereKey($contractId);
@@ -292,6 +414,53 @@ class AccidentReportsController extends Controller
         }
 
         return $contract;
+    }
+
+    private function resolveAccessibleBranchId(Request $request, int $branchId): int
+    {
+        if (!$this->branchAccess->canAccessBranchId($request->user(), $branchId)) {
+            throw ValidationException::withMessages([
+                'branch_id' => 'Selected branch is invalid or not accessible.',
+            ]);
+        }
+
+        return $branchId;
+    }
+
+    private function resolveAccessibleCar(Request $request, int $carId, int $branchId): Car
+    {
+        $query = Car::query()->whereKey($carId)->where('branch_id', $branchId);
+        $this->branchAccess->applyToQuery($query, $request->user(), null, 'branch_id');
+
+        $car = $query->first();
+
+        if (!$car) {
+            throw ValidationException::withMessages([
+                'car_id' => 'Selected car is invalid or not accessible.',
+            ]);
+        }
+
+        return $car;
+    }
+
+    private function resolveAccessibleEmployee(Request $request, int $employeeId): User
+    {
+        $query = User::query()
+            ->whereKey($employeeId)
+            ->where('role', UserRole::ADMIN)
+            ->where('is_active', true);
+
+        $this->branchAccess->applyToQuery($query, $request->user(), null, 'branch_id');
+
+        $employee = $query->first();
+
+        if (!$employee) {
+            throw ValidationException::withMessages([
+                'employee_id' => 'Selected employee is invalid or not accessible.',
+            ]);
+        }
+
+        return $employee;
     }
 
     /**
@@ -424,6 +593,39 @@ class AccidentReportsController extends Controller
             'resolved' => '#059669',
             'rejected' => '#DC2626',
             default => '#6B7280',
+        };
+    }
+
+    private function contextLabel(?string $context): string
+    {
+        return match ($context) {
+            'employee' => 'With employee',
+            'branch' => 'At office or gate',
+            default => 'With customer',
+        };
+    }
+
+    private function responsibilityLabel(?string $responsibility): string
+    {
+        return match ($responsibility) {
+            'customer' => 'Customer',
+            'employee' => 'Employee',
+            'company' => 'Company',
+            'third_party' => 'Third party',
+            'unknown' => 'Unknown',
+            default => '-',
+        };
+    }
+
+    private function locationTypeLabel(?string $locationType): string
+    {
+        return match ($locationType) {
+            'road' => 'Road',
+            'branch_gate' => 'Branch gate',
+            'parking' => 'Parking',
+            'workshop' => 'Workshop',
+            'other' => 'Other',
+            default => '-',
         };
     }
 }

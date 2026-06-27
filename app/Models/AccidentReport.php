@@ -18,6 +18,10 @@ class AccidentReport extends Model
         'car_id',
         'branch_id',
         'reported_by',
+        'employee_id',
+        'accident_context',
+        'responsibility',
+        'location_type',
         'accident_number',
         'status',
         'accident_at',
@@ -64,6 +68,11 @@ class AccidentReport extends Model
     public function reporter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reported_by');
+    }
+
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'employee_id');
     }
 
     public function photos(): HasMany
