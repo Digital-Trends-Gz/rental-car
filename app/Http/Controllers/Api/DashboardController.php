@@ -81,6 +81,7 @@ class DashboardController extends Controller
                 'branch:id,name',
             ])
             ->where('status', 'active')
+            ->whereDoesntHave('returnStatusReport')
             ->whereDate('end_date', '<', $today)
             ->orderBy('end_date')
             ->latest('id');

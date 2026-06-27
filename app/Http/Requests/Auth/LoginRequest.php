@@ -12,6 +12,28 @@ use Illuminate\Validation\ValidationException;
 class LoginRequest extends FormRequest
 {
     /**
+     * Apply the request language before validation or credential checks read translations.
+     */
+    protected function prepareForValidation(): void
+    {
+        $header = trim((string) $this->header('Accept-Language', ''));
+
+        if ($header === '') {
+            return;
+        }
+
+        $locales = array_values(array_filter(
+            (array) config('app.available_locales', ['en']),
+            static fn ($locale): bool => is_string($locale) && $locale !== ''
+        ));
+
+        $fallback = (string) config('app.fallback_locale', config('app.locale', 'en'));
+        $locale = $this->getPreferredLanguage($locales) ?: $fallback;
+
+        app()->setLocale($locale);
+    }
+
+    /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
