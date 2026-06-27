@@ -1255,6 +1255,7 @@ test('reservation show api returns contract damage reports violations and paymen
 
     $response->assertOk()
         ->assertJsonPath('reservation.reservation_number', 'RES-API-DET-001')
+        ->assertJsonPath('reservation.car.image_url', asset('images/car-default.jpg'))
         ->assertJsonPath('reservation.amount_paid', 100)
         ->assertJsonPath('reservation.balance_due', 295)
         ->assertJsonPath('contract.contract_number', 'CON-API-DET-001')
