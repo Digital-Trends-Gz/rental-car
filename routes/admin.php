@@ -249,6 +249,12 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::get('reports/damages/pdf', [ReportsController::class, 'exportDamagesPdf'])
             ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
             ->name('reports.damages.pdf');
+        Route::get('reports/traffic-violations/pdf', [ReportsController::class, 'exportTrafficViolationsPdf'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.traffic-violations.pdf');
+        Route::get('reports/open-contracts/pdf', [ReportsController::class, 'exportOpenContractsPdf'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('reports.open-contracts.pdf');
         Route::resource('reports', ReportsController::class)
             ->except(['show'])
             ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module']);

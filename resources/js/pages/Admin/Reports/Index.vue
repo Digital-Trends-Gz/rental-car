@@ -224,6 +224,81 @@ interface DamagesReport {
     recent_reports: DamagesReportRow[];
 }
 
+interface TrafficViolationReportRow {
+    id?: number;
+    violation_number?: string;
+    violation_date?: string | null;
+    due_date?: string | null;
+    status?: string;
+    status_label?: string;
+    amount?: number | null;
+    formatted_amount?: string;
+    car_id?: number | null;
+    car_name?: string;
+    license_plate?: string;
+    client_id?: number | null;
+    client_name?: string;
+    client_email?: string;
+    type_name?: string;
+    violations_count?: number;
+    paid_count?: number;
+    unpaid_count?: number;
+    total_amount?: number | null;
+    formatted_total_amount?: string;
+}
+
+interface TrafficViolationsReport {
+    summary: {
+        total_violations: number;
+        open_violations: number;
+        paid_violations: number;
+        unpaid_violations: number;
+        formatted_total_amount: string;
+        formatted_paid_amount: string;
+        formatted_unpaid_amount: string;
+    };
+    by_client: TrafficViolationReportRow[];
+    by_car: TrafficViolationReportRow[];
+    recent_violations: TrafficViolationReportRow[];
+}
+
+interface OpenContractReportRow {
+    id: number;
+    contract_number: string;
+    status: string;
+    status_label: string;
+    reservation_number?: string | null;
+    client_name: string;
+    client_email?: string | null;
+    car_name: string;
+    license_plate: string;
+    branch_name: string;
+    start_date?: string | null;
+    end_date?: string | null;
+    hours_until_end?: number | null;
+    remaining_label: string;
+    ending_bucket: string;
+    is_overdue: boolean;
+    payment_status: string;
+    payment_status_label: string;
+    formatted_total_amount: string;
+    formatted_paid_amount: string;
+    formatted_outstanding_amount: string;
+}
+
+interface OpenContractsReport {
+    summary: {
+        open_contracts: number;
+        ending_24_hours: number;
+        ending_48_hours: number;
+        ending_72_hours: number;
+        overdue_contracts: number;
+        formatted_total_outstanding: string;
+    };
+    contracts: OpenContractReportRow[];
+    ending_soon: OpenContractReportRow[];
+}
+
 interface PageProps {
     kpis: {
         totalRevenue: KPI;
@@ -253,6 +328,10 @@ interface PageProps {
     customersReportExports?: ReportExportUrls;
     damagesReport?: DamagesReport;
     damagesReportExports?: ReportExportUrls;
+    trafficViolationsReport?: TrafficViolationsReport;
+    trafficViolationsReportExports?: ReportExportUrls;
+    openContractsReport?: OpenContractsReport;
+    openContractsReportExports?: ReportExportUrls;
     reservationsReport?: any;
     reservationsReportExports?: ReportExportUrls;
     actionAlerts: ReportAlert[];
@@ -360,6 +439,10 @@ const customersReport = computed(() => page.props.customersReport);
 const customersReportExports = computed(() => page.props.customersReportExports);
 const damagesReport = computed(() => page.props.damagesReport);
 const damagesReportExports = computed(() => page.props.damagesReportExports);
+const trafficViolationsReport = computed(() => page.props.trafficViolationsReport);
+const trafficViolationsReportExports = computed(() => page.props.trafficViolationsReportExports);
+const openContractsReport = computed(() => page.props.openContractsReport);
+const openContractsReportExports = computed(() => page.props.openContractsReportExports);
 const showCarRankingsModal = ref(false);
 const executiveReport = computed<ExecutiveReport>(() => page.props.executiveReport ?? {
     financial: financialSummary.value,
@@ -550,6 +633,10 @@ const handlePeriodChange = () => {
                 'customersReportExports',
                 'damagesReport',
                 'damagesReportExports',
+                'trafficViolationsReport',
+                'trafficViolationsReportExports',
+                'openContractsReport',
+                'openContractsReportExports',
                 'actionAlerts',
                 'executiveReport',
                 'currentPeriod',
@@ -2281,6 +2368,308 @@ onMounted(() => {
                                     {{ localize('No after-return photos.', 'لا توجد صور بعد الرجوع.', 'No after-return photos.') }}
                                 </p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8. Traffic Violations Report -->
+            <section
+                v-if="trafficViolationsReport"
+                class="mt-8 overflow-hidden rounded-2xl border border-sky-100 bg-white shadow"
+            >
+                <div class="border-b border-sky-100 bg-gradient-to-r from-sky-50 to-white px-6 py-5">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-sky-100 px-4 py-2 text-sm font-bold text-sky-800">
+                                {{ reportLabel('Most important') }}
+                            </span>
+                            <h2 class="text-2xl font-bold text-sky-950">
+                                8. {{ localize('Traffic Violations Report', 'تقرير المخالفات', 'Traffic Violations Report') }}
+                            </h2>
+                        </div>
+                        <p class="max-w-2xl text-sm text-gray-600" :class="{ 'text-right': isArabic }">
+                            {{
+                                localize(
+                                    'Violation totals, open and paid records, unpaid balances, and distribution by client and vehicle.',
+                                    'إجمالي المخالفات والمفتوحة والمدفوعة وغير المدفوعة مع توزيعها حسب العميل والسيارة.',
+                                    'Violation totals, open and paid records, unpaid balances, and distribution by client and vehicle.',
+                                )
+                            }}
+                        </p>
+                        <div class="flex flex-col gap-3 sm:flex-row">
+                            <a
+                                v-if="trafficViolationsReportExports?.pdf"
+                                :href="trafficViolationsReportExports.pdf"
+                                target="_blank"
+                                class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                            >
+                                PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 p-6">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <div class="rounded-xl border border-sky-100 bg-sky-50 p-5">
+                            <p class="text-sm font-semibold text-sky-700">{{ localize('Total violations', 'إجمالي المخالفات', 'Total violations') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-sky-950">{{ trafficViolationsReport.summary.total_violations }}</p>
+                            <p class="mt-1 text-sm text-sky-700">{{ trafficViolationsReport.summary.formatted_total_amount }}</p>
+                        </div>
+                        <div class="rounded-xl border border-amber-100 bg-amber-50 p-5">
+                            <p class="text-sm font-semibold text-amber-700">{{ localize('Open violations', 'المخالفات المفتوحة', 'Open violations') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-amber-950">{{ trafficViolationsReport.summary.open_violations }}</p>
+                        </div>
+                        <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                            <p class="text-sm font-semibold text-emerald-700">{{ localize('Paid violations', 'المخالفات المدفوعة', 'Paid violations') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-emerald-950">{{ trafficViolationsReport.summary.paid_violations }}</p>
+                            <p class="mt-1 text-sm text-emerald-700">{{ trafficViolationsReport.summary.formatted_paid_amount }}</p>
+                        </div>
+                        <div class="rounded-xl border border-rose-100 bg-rose-50 p-5">
+                            <p class="text-sm font-semibold text-rose-700">{{ localize('Unpaid violations', 'المخالفات غير المدفوعة', 'Unpaid violations') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-rose-950">{{ trafficViolationsReport.summary.unpaid_violations }}</p>
+                            <p class="mt-1 text-sm text-rose-700">{{ trafficViolationsReport.summary.formatted_unpaid_amount }}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                        <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-900">
+                                {{ localize('By client', 'حسب العميل', 'By client') }}
+                            </h3>
+                            <div class="mt-4 overflow-x-auto rounded-lg border border-gray-100">
+                                <table class="min-w-full divide-y divide-gray-100">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Client', 'العميل', 'Client') }}</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Violations', 'المخالفات', 'Violations') }}</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Paid', 'مدفوعة', 'Paid') }}</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Unpaid', 'غير مدفوعة', 'Unpaid') }}</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Amount', 'المبلغ', 'Amount') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 bg-white">
+                                        <tr v-for="client in trafficViolationsReport.by_client" :key="`traffic-client-${client.client_id ?? client.client_name}`">
+                                            <td class="px-4 py-4">
+                                                <p class="font-semibold text-gray-900">{{ client.client_name }}</p>
+                                                <p class="text-sm text-gray-500">{{ client.client_email }}</p>
+                                            </td>
+                                            <td class="px-4 py-4">{{ client.violations_count ?? 0 }}</td>
+                                            <td class="px-4 py-4 text-emerald-700">{{ client.paid_count ?? 0 }}</td>
+                                            <td class="px-4 py-4 text-rose-700">{{ client.unpaid_count ?? 0 }}</td>
+                                            <td class="px-4 py-4 font-bold text-sky-800">{{ client.formatted_total_amount }}</td>
+                                        </tr>
+                                        <tr v-if="trafficViolationsReport.by_client.length === 0">
+                                            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                                {{ localize('No client violations in this period.', 'لا توجد مخالفات للعملاء في هذه الفترة.', 'No client violations in this period.') }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <h3 class="text-lg font-bold text-gray-900">
+                                {{ localize('By vehicle', 'حسب السيارة', 'By vehicle') }}
+                            </h3>
+                            <div class="mt-4 overflow-x-auto rounded-lg border border-gray-100">
+                                <table class="min-w-full divide-y divide-gray-100">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Car', 'السيارة', 'Car') }}</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Violations', 'المخالفات', 'Violations') }}</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Paid', 'مدفوعة', 'Paid') }}</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Unpaid', 'غير مدفوعة', 'Unpaid') }}</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Amount', 'المبلغ', 'Amount') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 bg-white">
+                                        <tr v-for="car in trafficViolationsReport.by_car" :key="`traffic-car-${car.car_id ?? car.car_name}`">
+                                            <td class="px-4 py-4">
+                                                <p class="font-semibold text-gray-900">{{ car.car_name }}</p>
+                                                <p class="text-sm text-gray-500">{{ car.license_plate }}</p>
+                                            </td>
+                                            <td class="px-4 py-4">{{ car.violations_count ?? 0 }}</td>
+                                            <td class="px-4 py-4 text-emerald-700">{{ car.paid_count ?? 0 }}</td>
+                                            <td class="px-4 py-4 text-rose-700">{{ car.unpaid_count ?? 0 }}</td>
+                                            <td class="px-4 py-4 font-bold text-sky-800">{{ car.formatted_total_amount }}</td>
+                                        </tr>
+                                        <tr v-if="trafficViolationsReport.by_car.length === 0">
+                                            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                                {{ localize('No vehicle violations in this period.', 'لا توجد مخالفات للسيارات في هذه الفترة.', 'No vehicle violations in this period.') }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                        <h3 class="text-lg font-bold text-gray-900">
+                            {{ localize('Recent violations', 'أحدث المخالفات', 'Recent violations') }}
+                        </h3>
+                        <div class="mt-4 overflow-x-auto rounded-lg border border-gray-100">
+                            <table class="min-w-full divide-y divide-gray-100">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Violation #', 'رقم المخالفة', 'Violation #') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Date', 'التاريخ', 'Date') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Client', 'العميل', 'Client') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Car', 'السيارة', 'Car') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Type', 'النوع', 'Type') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Status', 'الحالة', 'Status') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Amount', 'المبلغ', 'Amount') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white">
+                                    <tr v-for="violation in trafficViolationsReport.recent_violations" :key="`traffic-violation-${violation.id}`">
+                                        <td class="px-4 py-4 font-semibold text-gray-900">{{ violation.violation_number }}</td>
+                                        <td class="px-4 py-4">{{ violation.violation_date ?? '-' }}</td>
+                                        <td class="px-4 py-4">{{ violation.client_name }}</td>
+                                        <td class="px-4 py-4">
+                                            <p class="font-semibold text-gray-900">{{ violation.car_name }}</p>
+                                            <p class="text-sm text-gray-500">{{ violation.license_plate }}</p>
+                                        </td>
+                                        <td class="px-4 py-4">{{ violation.type_name }}</td>
+                                        <td class="px-4 py-4">{{ violation.status_label }}</td>
+                                        <td class="px-4 py-4 font-bold text-sky-800">{{ violation.formatted_amount }}</td>
+                                    </tr>
+                                    <tr v-if="trafficViolationsReport.recent_violations.length === 0">
+                                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                            {{ localize('No traffic violations in this period.', 'لا توجد مخالفات في هذه الفترة.', 'No traffic violations in this period.') }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 9. Open Contracts Report -->
+            <section
+                v-if="openContractsReport"
+                class="mt-8 overflow-hidden rounded-2xl border border-sky-100 bg-white shadow"
+            >
+                <div class="border-b border-sky-100 bg-gradient-to-r from-sky-50 to-white px-6 py-5">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-sky-100 px-4 py-2 text-sm font-bold text-sky-800">
+                                {{ reportLabel('Most important') }}
+                            </span>
+                            <h2 class="text-2xl font-bold text-sky-950">
+                                9. {{ localize('Open Contracts Report', 'تقرير العقود المفتوحة', 'Open Contracts Report') }}
+                            </h2>
+                        </div>
+                        <p class="max-w-2xl text-sm text-gray-600" :class="{ 'text-right': isArabic }">
+                            {{
+                                localize(
+                                    'Active contracts with end dates, outstanding balances, and payment status.',
+                                    'العقود النشطة مع تاريخ النهاية والمبالغ المستحقة وحالة الدفع.',
+                                    'Active contracts with end dates, outstanding balances, and payment status.',
+                                )
+                            }}
+                        </p>
+                        <div class="flex flex-col gap-3 sm:flex-row">
+                            <a
+                                v-if="openContractsReportExports?.pdf"
+                                :href="openContractsReportExports.pdf"
+                                target="_blank"
+                                class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                            >
+                                PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6 p-6">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+                        <div class="rounded-xl border border-sky-100 bg-sky-50 p-5">
+                            <p class="text-sm font-semibold text-sky-700">{{ localize('Open contracts', 'العقود المفتوحة', 'Open contracts') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-sky-950">{{ openContractsReport.summary.open_contracts }}</p>
+                        </div>
+                        <div class="rounded-xl border border-amber-100 bg-amber-50 p-5">
+                            <p class="text-sm font-semibold text-amber-700">{{ localize('Ending 24h', 'تنتهي خلال 24 ساعة', 'Ending 24h') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-amber-950">{{ openContractsReport.summary.ending_24_hours }}</p>
+                        </div>
+                        <div class="rounded-xl border border-orange-100 bg-orange-50 p-5">
+                            <p class="text-sm font-semibold text-orange-700">{{ localize('Ending 48h', 'تنتهي خلال 48 ساعة', 'Ending 48h') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-orange-950">{{ openContractsReport.summary.ending_48_hours }}</p>
+                        </div>
+                        <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-5">
+                            <p class="text-sm font-semibold text-indigo-700">{{ localize('Ending 72h', 'تنتهي خلال 72 ساعة', 'Ending 72h') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-indigo-950">{{ openContractsReport.summary.ending_72_hours }}</p>
+                        </div>
+                        <div class="rounded-xl border border-rose-100 bg-rose-50 p-5">
+                            <p class="text-sm font-semibold text-rose-700">{{ localize('Overdue', 'متأخرة', 'Overdue') }}</p>
+                            <p class="mt-3 text-3xl font-bold text-rose-950">{{ openContractsReport.summary.overdue_contracts }}</p>
+                        </div>
+                        <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                            <p class="text-sm font-semibold text-emerald-700">{{ localize('Outstanding', 'المستحق', 'Outstanding') }}</p>
+                            <p class="mt-3 text-2xl font-bold text-emerald-950">{{ openContractsReport.summary.formatted_total_outstanding }}</p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                        <h3 class="text-lg font-bold text-gray-900">
+                            {{ localize('Active contracts', 'العقود النشطة', 'Active contracts') }}
+                        </h3>
+                        <div class="mt-4 overflow-x-auto rounded-lg border border-gray-100">
+                            <table class="min-w-full divide-y divide-gray-100">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Contract', 'العقد', 'Contract') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Client', 'العميل', 'Client') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Car', 'السيارة', 'Car') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Start', 'البداية', 'Start') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('End', 'النهاية', 'End') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Payment', 'الدفع', 'Payment') }}</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ localize('Outstanding', 'المستحق', 'Outstanding') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white">
+                                    <tr v-for="contract in openContractsReport.contracts" :key="`open-contract-${contract.id}`">
+                                        <td class="px-4 py-4">
+                                            <p class="font-semibold text-gray-900">{{ contract.contract_number }}</p>
+                                            <p class="text-sm text-gray-500">{{ contract.reservation_number ?? '-' }}</p>
+                                            <span
+                                                class="mt-2 inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                                                :class="contract.is_overdue ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'"
+                                            >
+                                                {{ contract.remaining_label }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-4">
+                                            <p class="font-semibold text-gray-900">{{ contract.client_name }}</p>
+                                            <p class="text-sm text-gray-500">{{ contract.client_email ?? '-' }}</p>
+                                        </td>
+                                        <td class="px-4 py-4">
+                                            <p class="font-semibold text-gray-900">{{ contract.car_name }}</p>
+                                            <p class="text-sm text-gray-500">{{ contract.license_plate }}</p>
+                                        </td>
+                                        <td class="px-4 py-4">{{ contract.start_date ?? '-' }}</td>
+                                        <td class="px-4 py-4">{{ contract.end_date ?? '-' }}</td>
+                                        <td class="px-4 py-4">
+                                            <span
+                                                class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
+                                                :class="contract.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'"
+                                            >
+                                                {{ contract.payment_status_label }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-4 font-bold text-sky-800">{{ contract.formatted_outstanding_amount }}</td>
+                                    </tr>
+                                    <tr v-if="openContractsReport.contracts.length === 0">
+                                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                            {{ localize('No active contracts found.', 'لا توجد عقود نشطة.', 'No active contracts found.') }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

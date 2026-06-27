@@ -92,6 +92,16 @@ class ReportsController extends Controller
             $branchId,
             $request->route('subdomain')
         );
+        $trafficViolationsReportExports = $this->trafficViolationsExportUrls(
+            $period,
+            $branchId,
+            $request->route('subdomain')
+        );
+        $openContractsReportExports = $this->openContractsExportUrls(
+            $period,
+            $branchId,
+            $request->route('subdomain')
+        );
 
         $data = [
             'kpis' => $this->getHighLevelKPIs($dateRange, $user, $branchId, $canViewFinancialAmounts),
@@ -114,6 +124,10 @@ class ReportsController extends Controller
             'customersReportExports' => $customersReportExports,
             'damagesReport' => $this->getDamagesReport($dateRange, $user, $branchId, $canViewFinancialAmounts),
             'damagesReportExports' => $damagesReportExports,
+            'trafficViolationsReport' => $this->getTrafficViolationsReport($dateRange, $user, $branchId, $canViewFinancialAmounts),
+            'trafficViolationsReportExports' => $trafficViolationsReportExports,
+            'openContractsReport' => $this->getOpenContractsReport($dateRange, $user, $branchId, $canViewFinancialAmounts),
+            'openContractsReportExports' => $openContractsReportExports,
             'actionAlerts' => $this->getActionAlerts($user, $branchId, $canViewFinancialAmounts),
             'executiveReport' => $executiveReport,
             'currentPeriod' => $period,
@@ -482,6 +496,124 @@ class ReportsController extends Controller
         return $pdf->download($fileName);
     }
 
+    public function exportTrafficViolationsPdf(Request $request)
+    {
+        $payload = $this->buildTrafficViolationsExportPayload($request);
+        $fileName = $this->trafficViolationsExportFileName('pdf');
+
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                $pdf = Pdf::view('admin.reports.traffic-violations-pdf', $payload)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    });
+
+                return $pdf->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $pdf = DomPdf::loadView('admin.reports.traffic-violations-pdf', $payload)
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
+            ->setOption('defaultFont', 'DejaVu Sans');
+
+        return $pdf->download($fileName);
+    }
+
+    public function exportOpenContractsPdf(Request $request)
+    {
+        $payload = $this->buildOpenContractsExportPayload($request);
+        $fileName = $this->openContractsExportFileName('pdf');
+
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                $pdf = Pdf::view('admin.reports.open-contracts-pdf', $payload)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(4, 4, 4, 4)
+                    ->withBrowsershot(function (Browsershot $browsershot): void {
+                        $nodeBinary = PdfRuntime::nodeBinary();
+                        if ($nodeBinary) {
+                            $browsershot->setNodeBinary($nodeBinary);
+                        }
+
+                        $npmBinary = PdfRuntime::npmBinary();
+                        if ($npmBinary) {
+                            $browsershot->setNpmBinary($npmBinary);
+                        }
+
+                        $chromePath = PdfRuntime::chromeBinary();
+                        if ($chromePath) {
+                            $browsershot->setChromePath($chromePath);
+                        }
+
+                        $browsershot
+                            ->noSandbox()
+                            ->addChromiumArguments([
+                                'disable-dev-shm-usage',
+                                'disable-gpu',
+                            ])
+                            ->setOption('printBackground', true)
+                            ->setOption('preferCSSPageSize', true)
+                            ->waitUntilNetworkIdle(false)
+                            ->timeout(120)
+                            ->newHeadless();
+                    });
+
+                return $pdf->download($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $pdf = DomPdf::loadView('admin.reports.open-contracts-pdf', $payload)
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory())
+            ->setOption('defaultFont', 'DejaVu Sans');
+
+        return $pdf->download($fileName);
+    }
+
     public function exportFinancialPdf(Request $request)
     {
         $payload = $this->buildFinancialExportPayload($request);
@@ -724,6 +856,42 @@ class ReportsController extends Controller
         return $payload;
     }
 
+    private function buildTrafficViolationsExportPayload(Request $request): array
+    {
+        $payload = $this->buildExecutiveExportPayload($request);
+        $user = $request->user();
+        $branchId = $payload['branchId'] ?? null;
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
+
+        $payload['reportNumber'] = 'TVR-'.now()->format('Ymd-Hi');
+        $payload['trafficViolationsReport'] = $this->getTrafficViolationsReport(
+            $payload['dateRange'],
+            $user,
+            $branchId,
+            $canViewFinancialAmounts
+        );
+
+        return $payload;
+    }
+
+    private function buildOpenContractsExportPayload(Request $request): array
+    {
+        $payload = $this->buildExecutiveExportPayload($request);
+        $user = $request->user();
+        $branchId = $payload['branchId'] ?? null;
+        $canViewFinancialAmounts = FinancialVisibility::canViewFinancialAmounts($user);
+
+        $payload['reportNumber'] = 'OCR-'.now()->format('Ymd-Hi');
+        $payload['openContractsReport'] = $this->getOpenContractsReport(
+            $payload['dateRange'],
+            $user,
+            $branchId,
+            $canViewFinancialAmounts
+        );
+
+        return $payload;
+    }
+
     private function buildReservationsExportPayload(Request $request): array
     {
         $payload = $this->buildExecutiveExportPayload($request);
@@ -947,6 +1115,40 @@ class ReportsController extends Controller
         ];
     }
 
+    private function trafficViolationsExportUrls(string $period, ?int $branchId, ?string $subdomain): array
+    {
+        $query = ['period' => $period];
+
+        if ($subdomain) {
+            $query['subdomain'] = $subdomain;
+        }
+
+        if ($branchId) {
+            $query['branch_id'] = $branchId;
+        }
+
+        return [
+            'pdf' => route('admin.reports.traffic-violations.pdf', $query),
+        ];
+    }
+
+    private function openContractsExportUrls(string $period, ?int $branchId, ?string $subdomain): array
+    {
+        $query = ['period' => $period];
+
+        if ($subdomain) {
+            $query['subdomain'] = $subdomain;
+        }
+
+        if ($branchId) {
+            $query['branch_id'] = $branchId;
+        }
+
+        return [
+            'pdf' => route('admin.reports.open-contracts.pdf', $query),
+        ];
+    }
+
     private function executiveExportFileName(string $extension): string
     {
         return 'executive-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
@@ -975,6 +1177,16 @@ class ReportsController extends Controller
     private function damagesExportFileName(string $extension): string
     {
         return 'damages-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
+    }
+
+    private function trafficViolationsExportFileName(string $extension): string
+    {
+        return 'traffic-violations-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
+    }
+
+    private function openContractsExportFileName(string $extension): string
+    {
+        return 'open-contracts-report-'.now()->format('Y-m-d_H-i').'.'.$extension;
     }
 
     private function financialReportSections(?array $dateRange = null, $user = null, ?int $branchId = null, bool $canViewFinancialAmounts = true): array
@@ -2082,6 +2294,292 @@ class ReportsController extends Controller
             'top_profitable' => $rows->take(3)->values()->all(),
             'least_profitable' => $rows->sortBy(fn (array $row) => (float) ($row['net_profit'] ?? 0))->take(3)->values()->all(),
             'cars' => $rows->all(),
+        ];
+    }
+
+    private function getTrafficViolationsReport(array $dateRange, $user, ?int $branchId, bool $canViewFinancialAmounts): array
+    {
+        $currencySymbol = (string) config('app.currency_symbol', '$');
+        $formatMoney = fn (float $value): string => $canViewFinancialAmounts
+            ? $currencySymbol.number_format($value, 2)
+            : '*******';
+
+        $carsQuery = Car::query();
+        $this->branchAccess->applyToQuery($carsQuery, $user, $branchId);
+        $carIds = $carsQuery->pluck('id')->map(fn ($id) => (int) $id)->values();
+
+        $baseQuery = CarViolation::query()
+            ->with([
+                'car:id,make,model,year,license_plate,branch_id',
+                'issuedTo:id,name,email',
+                'violationType:id,name',
+            ])
+            ->whereBetween('violation_date', [
+                $dateRange['start']->copy()->toDateString(),
+                $dateRange['end']->copy()->toDateString(),
+            ]);
+
+        if ($carIds->isEmpty()) {
+            $baseQuery->whereRaw('1 = 0');
+        } else {
+            $baseQuery->where(function ($query) use ($carIds): void {
+                $query->whereIn('car_id', $carIds)
+                    ->orWhereNull('car_id');
+            });
+        }
+
+        $violations = $baseQuery->latest('violation_date')->get();
+        $paidStatus = CarViolationStatus::PAID->value;
+        $cancelledStatus = CarViolationStatus::CANCELLED->value;
+        $openStatuses = [
+            CarViolationStatus::PENDING->value,
+            CarViolationStatus::DISPUTED->value,
+        ];
+
+        $statusValue = fn (CarViolation $violation): string => $violation->status instanceof CarViolationStatus
+            ? $violation->status->value
+            : (string) $violation->status;
+        $statusLabel = fn (CarViolation $violation): string => $violation->status instanceof CarViolationStatus
+            ? $violation->status->label()
+            : ucfirst(str_replace('_', ' ', (string) $violation->status));
+        $violationAmount = fn (CarViolation $violation): float => (float) ($violation->amount ?? 0);
+
+        $paidViolations = $violations->filter(fn (CarViolation $violation) => $statusValue($violation) === $paidStatus);
+        $openViolations = $violations->filter(fn (CarViolation $violation) => in_array($statusValue($violation), $openStatuses, true));
+        $unpaidViolations = $violations->filter(fn (CarViolation $violation) => ! in_array($statusValue($violation), [$paidStatus, $cancelledStatus], true));
+
+        $groupRows = function ($groups, string $type) use ($formatMoney, $violationAmount, $statusValue, $paidStatus, $cancelledStatus, $canViewFinancialAmounts): array {
+            return $groups
+                ->map(function ($group) use ($type, $formatMoney, $violationAmount, $statusValue, $paidStatus, $cancelledStatus, $canViewFinancialAmounts): array {
+                    $first = $group->first();
+                    $totalAmount = (float) $group->sum($violationAmount);
+                    $paidCount = $group->filter(fn (CarViolation $violation) => $statusValue($violation) === $paidStatus)->count();
+                    $unpaidCount = $group->filter(fn (CarViolation $violation) => ! in_array($statusValue($violation), [$paidStatus, $cancelledStatus], true))->count();
+
+                    $base = [
+                        'violations_count' => $group->count(),
+                        'paid_count' => $paidCount,
+                        'unpaid_count' => $unpaidCount,
+                        'total_amount' => FinancialVisibility::numericAmount($totalAmount, $canViewFinancialAmounts),
+                        'formatted_total_amount' => $formatMoney($totalAmount),
+                    ];
+
+                    if ($type === 'client') {
+                        return $base + [
+                            'client_id' => $first?->issued_to_user_id ? (int) $first->issued_to_user_id : null,
+                            'client_name' => $first?->issuedTo?->name ?? '-',
+                            'client_email' => $first?->issuedTo?->email ?? '-',
+                        ];
+                    }
+
+                    return $base + [
+                        'car_id' => $first?->car_id ? (int) $first->car_id : null,
+                        'car_name' => $first?->car?->full_name ?? '-',
+                        'license_plate' => $first?->car?->license_plate ?? '-',
+                    ];
+                })
+                ->sortByDesc('violations_count')
+                ->values()
+                ->all();
+        };
+
+        $recentRows = $violations->take(12)->map(function (CarViolation $violation) use ($formatMoney, $violationAmount, $statusValue, $statusLabel, $canViewFinancialAmounts): array {
+            $amount = $violationAmount($violation);
+
+            return [
+                'id' => (int) $violation->id,
+                'violation_number' => (string) ($violation->violation_number ?? '-'),
+                'violation_date' => optional($violation->violation_date)->format('Y-m-d'),
+                'due_date' => optional($violation->due_date)->format('Y-m-d'),
+                'status' => $statusValue($violation),
+                'status_label' => $statusLabel($violation),
+                'amount' => FinancialVisibility::numericAmount($amount, $canViewFinancialAmounts),
+                'formatted_amount' => $formatMoney($amount),
+                'client_name' => $violation->issuedTo?->name ?? '-',
+                'car_name' => $violation->car?->full_name ?? '-',
+                'license_plate' => $violation->car?->license_plate ?? '-',
+                'type_name' => $violation->violationType?->name ?? ($violation->type ?? '-'),
+            ];
+        })->values()->all();
+
+        return [
+            'summary' => [
+                'total_violations' => $violations->count(),
+                'open_violations' => $openViolations->count(),
+                'paid_violations' => $paidViolations->count(),
+                'unpaid_violations' => $unpaidViolations->count(),
+                'total_amount' => FinancialVisibility::numericAmount((float) $violations->sum($violationAmount), $canViewFinancialAmounts),
+                'paid_amount' => FinancialVisibility::numericAmount((float) $paidViolations->sum($violationAmount), $canViewFinancialAmounts),
+                'unpaid_amount' => FinancialVisibility::numericAmount((float) $unpaidViolations->sum($violationAmount), $canViewFinancialAmounts),
+                'formatted_total_amount' => $formatMoney((float) $violations->sum($violationAmount)),
+                'formatted_paid_amount' => $formatMoney((float) $paidViolations->sum($violationAmount)),
+                'formatted_unpaid_amount' => $formatMoney((float) $unpaidViolations->sum($violationAmount)),
+            ],
+            'by_client' => $groupRows($violations->whereNotNull('issued_to_user_id')->groupBy('issued_to_user_id'), 'client'),
+            'by_car' => $groupRows($violations->whereNotNull('car_id')->groupBy('car_id'), 'car'),
+            'recent_violations' => $recentRows,
+        ];
+    }
+
+    private function getOpenContractsReport(array $dateRange, $user, ?int $branchId, bool $canViewFinancialAmounts): array
+    {
+        $currencySymbol = (string) config('app.currency_symbol', '$');
+        $formatMoney = fn (float $value): string => $canViewFinancialAmounts
+            ? $currencySymbol.number_format($value, 2)
+            : '*******';
+
+        $query = Contract::query()
+            ->with([
+                'branch:id,name',
+                'reservation:id,reservation_number,user_id,car_id,total_amount,status',
+                'reservation.user:id,name,email',
+                'reservation.car:id,make,model,year,license_plate,branch_id',
+            ])
+            ->where('status', ContractStatus::ACTIVE->value);
+
+        $this->branchAccess->applyToQuery($query, $user, $branchId);
+
+        $contracts = $query
+            ->orderByRaw('CASE WHEN end_date IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('end_date')
+            ->get();
+
+        $reservationIds = $contracts
+            ->pluck('reservation_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $paidByReservation = $reservationIds->isEmpty()
+            ? collect()
+            : Payment::completed()
+                ->whereIn('reservation_id', $reservationIds)
+                ->select('reservation_id', DB::raw('SUM(amount - COALESCE(refunded_amount, 0)) as total_paid'))
+                ->groupBy('reservation_id')
+                ->pluck('total_paid', 'reservation_id');
+
+        $now = now();
+
+        $paymentStatus = function (float $total, float $paid, float $outstanding): array {
+            if ($total <= 0.01) {
+                return ['not_billed', 'Not billed'];
+            }
+
+            if ($outstanding <= 0.01) {
+                return ['paid', 'Paid'];
+            }
+
+            if ($paid > 0.01) {
+                return ['partial', 'Partially paid'];
+            }
+
+            return ['unpaid', 'Unpaid'];
+        };
+
+        $endingBucket = function (?int $hoursUntilEnd): string {
+            if ($hoursUntilEnd === null) {
+                return 'none';
+            }
+
+            if ($hoursUntilEnd < 0) {
+                return 'overdue';
+            }
+
+            if ($hoursUntilEnd <= 24) {
+                return '24h';
+            }
+
+            if ($hoursUntilEnd <= 48) {
+                return '48h';
+            }
+
+            if ($hoursUntilEnd <= 72) {
+                return '72h';
+            }
+
+            return 'later';
+        };
+
+        $remainingLabel = function (?int $hoursUntilEnd): string {
+            if ($hoursUntilEnd === null) {
+                return '-';
+            }
+
+            if ($hoursUntilEnd < 0) {
+                return abs($hoursUntilEnd).'h overdue';
+            }
+
+            if ($hoursUntilEnd < 24) {
+                return $hoursUntilEnd.'h left';
+            }
+
+            return floor($hoursUntilEnd / 24).'d '.($hoursUntilEnd % 24).'h left';
+        };
+
+        $rows = $contracts
+            ->map(function (Contract $contract) use ($paidByReservation, $formatMoney, $canViewFinancialAmounts, $now, $paymentStatus, $endingBucket, $remainingLabel): array {
+                $total = (float) ($contract->total_amount ?? $contract->reservation?->total_amount ?? 0);
+                $paid = (float) ($paidByReservation->get((int) $contract->reservation_id, 0) ?? 0);
+                $outstanding = max(0, $total - $paid);
+                [$paymentStatusValue, $paymentStatusLabel] = $paymentStatus($total, $paid, $outstanding);
+
+                $endAt = $contract->end_date
+                    ? Carbon::parse($contract->end_date)->endOfDay()
+                    : null;
+                $hoursUntilEnd = $endAt ? (int) floor($now->diffInHours($endAt, false)) : null;
+
+                return [
+                    'id' => (int) $contract->id,
+                    'contract_number' => (string) $contract->contract_number,
+                    'status' => $contract->status instanceof ContractStatus ? $contract->status->value : (string) $contract->status,
+                    'status_label' => $contract->status instanceof ContractStatus ? $contract->status->label() : ucfirst((string) $contract->status),
+                    'reservation_number' => $contract->reservation?->reservation_number,
+                    'client_name' => $contract->reservation?->user?->name ?? $contract->renter_name ?? '-',
+                    'client_email' => $contract->reservation?->user?->email,
+                    'car_name' => $contract->reservation?->car?->full_name ?? $contract->car_details ?? '-',
+                    'license_plate' => $contract->reservation?->car?->license_plate ?? $contract->plate_number ?? '-',
+                    'branch_name' => $contract->branch?->name ?? '-',
+                    'start_date' => optional($contract->start_date)->format('Y-m-d'),
+                    'end_date' => optional($contract->end_date)->format('Y-m-d'),
+                    'hours_until_end' => $hoursUntilEnd,
+                    'remaining_label' => $remainingLabel($hoursUntilEnd),
+                    'ending_bucket' => $endingBucket($hoursUntilEnd),
+                    'is_overdue' => $hoursUntilEnd !== null && $hoursUntilEnd < 0,
+                    'payment_status' => $paymentStatusValue,
+                    'payment_status_label' => $paymentStatusLabel,
+                    'total_amount' => FinancialVisibility::numericAmount($total, $canViewFinancialAmounts),
+                    'paid_amount' => FinancialVisibility::numericAmount($paid, $canViewFinancialAmounts),
+                    'outstanding_amount' => FinancialVisibility::numericAmount($outstanding, $canViewFinancialAmounts),
+                    'formatted_total_amount' => $formatMoney($total),
+                    'formatted_paid_amount' => $formatMoney($paid),
+                    'formatted_outstanding_amount' => $formatMoney($outstanding),
+                ];
+            })
+            ->sortBy(fn (array $row) => $row['hours_until_end'] ?? PHP_INT_MAX)
+            ->values();
+
+        $endingWithin = fn (int $hours): int => $rows
+            ->filter(fn (array $row) => $row['hours_until_end'] !== null && $row['hours_until_end'] >= 0 && $row['hours_until_end'] <= $hours)
+            ->count();
+
+        $totalOutstanding = (float) $rows->sum(fn (array $row) => (float) ($row['outstanding_amount'] ?? 0));
+
+        return [
+            'summary' => [
+                'open_contracts' => $rows->count(),
+                'ending_24_hours' => $endingWithin(24),
+                'ending_48_hours' => $endingWithin(48),
+                'ending_72_hours' => $endingWithin(72),
+                'overdue_contracts' => $rows->filter(fn (array $row) => (bool) ($row['is_overdue'] ?? false))->count(),
+                'total_outstanding' => FinancialVisibility::numericAmount($totalOutstanding, $canViewFinancialAmounts),
+                'formatted_total_outstanding' => $formatMoney($totalOutstanding),
+            ],
+            'contracts' => $rows->all(),
+            'ending_soon' => $rows
+                ->filter(fn (array $row) => in_array($row['ending_bucket'], ['24h', '48h', '72h', 'overdue'], true))
+                ->values()
+                ->all(),
         ];
     }
 
