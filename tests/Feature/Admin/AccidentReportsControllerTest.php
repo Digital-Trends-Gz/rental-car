@@ -54,7 +54,7 @@ class AccidentReportsControllerTest extends TestCase
         $response = $this
             ->actingAs($admin)
             ->withoutMiddleware()
-            ->post(route('admin.accident-reports.store'), [
+            ->post(route('admin.accident-reports.store', ['subdomain' => $tenant->slug]), [
                 'accident_context' => 'branch',
                 'branch_id' => $branch->id,
                 'car_id' => $car->id,

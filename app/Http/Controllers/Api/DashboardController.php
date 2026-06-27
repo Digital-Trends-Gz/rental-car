@@ -111,7 +111,7 @@ class DashboardController extends Controller
                 count: (clone $todayPickupsQuery)->count(),
                 items: $todayPickupsQuery->limit(10)->get()->map(fn (Reservation $reservation) => $this->reservationItem($reservation))->values()->all(),
                 descriptionEn: 'Reservations scheduled for pickup today',
-                descriptionAr: 'الحجوزات المجدولة للاستلام اليوم',
+                descriptionAr: 'الحجوزات المجدولة لتسليم اليوم',
             ),
             $this->contractCard(
                 key: 'today_returns',
