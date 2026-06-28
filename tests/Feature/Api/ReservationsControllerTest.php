@@ -29,6 +29,7 @@ use App\Models\User;
 use App\Services\Rentals\RentalStatusSyncService;
 use App\Services\Contracts\ContractDriverDocumentExtractor;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 
@@ -1050,6 +1051,20 @@ test('reservation show api returns contract damage reports violations and paymen
         'status' => CarStatus::AVAILABLE->value,
     ]);
 
+    DB::table('files')->insert([
+        'original_name' => 'Chevrolet Tahoe',
+        'filename' => 'Chevrolet_Tahoe.webp',
+        'path' => "files/car/{$car->id}/image/Chevrolet_Tahoe.webp",
+        'mime_type' => 'image/webp',
+        'size' => 100,
+        'fileable_id' => $car->id,
+        'fileable_type' => Car::class,
+        'collection' => 'image',
+        'order' => 0,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
     $reservation = Reservation::create([
         'tenant_id' => $tenant->id,
         'user_id' => $client->id,
@@ -1255,7 +1270,7 @@ test('reservation show api returns contract damage reports violations and paymen
 
     $response->assertOk()
         ->assertJsonPath('reservation.reservation_number', 'RES-API-DET-001')
-        ->assertJsonPath('reservation.car.image_url', asset('images/car-default.jpg'))
+        ->assertJsonPath('reservation.car.image_url', url("storage/files/car/{$car->id}/image/Chevrolet_Tahoe.webp"))
         ->assertJsonPath('reservation.amount_paid', 100)
         ->assertJsonPath('reservation.balance_due', 295)
         ->assertJsonPath('contract.contract_number', 'CON-API-DET-001')

@@ -525,7 +525,7 @@ class ReservationsController extends Controller
                 )),
                 'license_plate' => (string) ($car?->license_plate ?? ''),
                 'branch_name' => (string) ($car?->branch?->name ?? ''),
-                'image_url' => $car?->image_url,
+                'image_url' => $this->absoluteUrl($car?->image_url),
                 'status' => $car?->status instanceof \App\Enums\CarStatus
                     ? $car->status->value
                     : (string) ($car?->status ?? ''),
@@ -589,11 +589,26 @@ class ReservationsController extends Controller
                 'license_plate' => (string) ($car->license_plate ?? ''),
                 'branch_id' => $car->branch_id,
                 'branch_name' => (string) ($car->branch?->name ?? ''),
-                'image_url' => $car->image_url,
+                'image_url' => $this->absoluteUrl($car->image_url),
                 'status' => $car->status instanceof CarStatus ? $car->status->value : (string) $car->status,
                 'status_label' => $this->carStatusLabel($car->status),
             ] : null,
         ];
+    }
+
+    private function absoluteUrl(?string $url): ?string
+    {
+        $url = trim((string) $url);
+
+        if ($url === '') {
+            return null;
+        }
+
+        if (preg_match('/^https?:\/\//i', $url)) {
+            return $url;
+        }
+
+        return url($url);
     }
 
     private function contractDetailPayload(Contract $contract): array
@@ -1093,7 +1108,7 @@ class ReservationsController extends Controller
                 )),
                 'license_plate' => (string) ($car?->license_plate ?? ''),
                 'branch_name' => (string) ($contract->branch?->name ?? $car?->branch?->name ?? ''),
-                'image_url' => $car?->image_url,
+                'image_url' => $this->absoluteUrl($car?->image_url),
             ],
             'start_date' => optional($contract->start_date)->toDateString(),
             'end_date' => $endDate,
