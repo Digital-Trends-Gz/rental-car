@@ -63,6 +63,10 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        $middleware->api(prepend: [
+            \App\Http\Middleware\SetApiLocale::class,
+        ]);
+
         $middleware->validateCsrfTokens(except: [
             'payment/webhooks/subscriptions/*',
         ]);

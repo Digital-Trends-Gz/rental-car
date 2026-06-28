@@ -108,7 +108,7 @@ class AccidentReportsController extends Controller
             'location' => $report->location,
             'accident_at' => optional($report->accident_at)?->format('Y-m-d H:i'),
             'photos_count' => (int) $report->photos_count,
-            'show_url' => route('admin.accident-reports.show', $report),
+            'show_url' => route('admin.accident-reports.show', $this->routeParams($request, ['accident_report' => $report])),
         ]);
 
         return Inertia::render('Admin/AccidentReports/Index', [
@@ -121,8 +121,8 @@ class AccidentReportsController extends Controller
                 'status' => $status === '' ? 'all' : $status,
                 'branch_id' => $branchId,
             ],
-            'indexUrl' => route('admin.accident-reports.index'),
-            'createUrl' => route('admin.accident-reports.create'),
+            'indexUrl' => route('admin.accident-reports.index', $this->routeParams($request)),
+            'createUrl' => route('admin.accident-reports.create', $this->routeParams($request)),
         ]);
     }
 
@@ -136,8 +136,8 @@ class AccidentReportsController extends Controller
             'statuses' => $this->statusOptions(),
             'responsibilities' => $this->responsibilityOptions(),
             'locationTypes' => $this->locationTypeOptions(),
-            'indexUrl' => route('admin.accident-reports.index'),
-            'submitUrl' => route('admin.accident-reports.store'),
+            'indexUrl' => route('admin.accident-reports.index', $this->routeParams($request)),
+            'submitUrl' => route('admin.accident-reports.store', $this->routeParams($request)),
         ]);
     }
 
@@ -233,7 +233,7 @@ class AccidentReportsController extends Controller
         });
 
         return redirect()
-            ->route('admin.accident-reports.show', $report)
+            ->route('admin.accident-reports.show', $this->routeParams($request, ['accident_report' => $report]))
             ->with('success', 'Accident report created successfully.');
     }
 
@@ -294,7 +294,7 @@ class AccidentReportsController extends Controller
                 ])->values(),
                 'created_at' => optional($accidentReport->created_at)?->format('Y-m-d H:i'),
             ],
-            'indexUrl' => route('admin.accident-reports.index'),
+            'indexUrl' => route('admin.accident-reports.index', $this->routeParams($request)),
         ]);
     }
 
@@ -627,5 +627,16 @@ class AccidentReportsController extends Controller
             'other' => 'Other',
             default => '-',
         };
+    }
+
+    private function routeParams(Request $request, array $params = []): array
+    {
+        $subdomain = $request->route('subdomain') ?? $request->input('subdomain');
+
+        if ($subdomain) {
+            return ['subdomain' => $subdomain] + $params;
+        }
+
+        return $params;
     }
 }

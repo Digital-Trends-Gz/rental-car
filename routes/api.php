@@ -78,8 +78,8 @@ Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
     Route::get('damage-options', [ContractsController::class, 'damageOptions'])->name('api.contracts.damage-options');
     Route::get('damage-options/{group}', [ContractsController::class, 'damageOptionGroup'])->name('api.contracts.damage-options.group');
     Route::get('{contract}/documents', [ContractsController::class, 'documents'])->name('api.contracts.documents');
-    Route::get('{contract}/accident-reports', [AccidentReportsController::class, 'index'])->name('api.contracts.accident-reports.index');
-    Route::post('{contract}/accident-reports', [AccidentReportsController::class, 'store'])->name('api.contracts.accident-reports.store');
+    Route::get('{contract}/accident-reports', [AccidentReportsController::class, 'contractIndex'])->name('api.contracts.accident-reports.index');
+    Route::post('{contract}/accident-reports', [AccidentReportsController::class, 'contractStore'])->name('api.contracts.accident-reports.store');
     Route::get('{contract}/damage-report-status', [ContractsController::class, 'damageReportStatus'])->name('api.contracts.damage-report-status');
     Route::post('{contract}/damage-items', [ContractsController::class, 'storeDamageItem'])->name('api.contracts.damage-items.store');
     Route::match(['post', 'put', 'patch'], '{contract}/damage-items/{damageItem}', [ContractsController::class, 'updateDamageItem'])->name('api.contracts.damage-items.update');
@@ -89,8 +89,19 @@ Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
     Route::match(['post', 'patch'], '{contract}/handover', [ContractsController::class, 'updateHandover'])->name('api.contracts.handover');
 });
 
-Route::middleware('auth:sanctum')->get('accident-reports/{accidentReport}', [AccidentReportsController::class, 'show'])
-    ->name('api.accident-reports.show');
+Route::middleware('auth:sanctum')->prefix('accident-reports')->group(function () {
+    Route::get('options', [AccidentReportsController::class, 'options'])->name('api.accident-reports.options');
+    Route::get('context-options', [AccidentReportsController::class, 'contextOptions'])->name('api.accident-reports.context-options');
+    Route::get('responsibility-options', [AccidentReportsController::class, 'responsibilityOptionList'])->name('api.accident-reports.responsibility-options');
+    Route::get('location-type-options', [AccidentReportsController::class, 'locationTypeOptionList'])->name('api.accident-reports.location-type-options');
+    Route::get('branch-options', [AccidentReportsController::class, 'branchOptionList'])->name('api.accident-reports.branch-options');
+    Route::get('car-options', [AccidentReportsController::class, 'carOptionList'])->name('api.accident-reports.car-options');
+    Route::get('employee-options', [AccidentReportsController::class, 'employeeOptionList'])->name('api.accident-reports.employee-options');
+    Route::get('contract-options', [AccidentReportsController::class, 'contractOptionList'])->name('api.accident-reports.contract-options');
+    Route::get('/', [AccidentReportsController::class, 'index'])->name('api.accident-reports.index');
+    Route::post('/', [AccidentReportsController::class, 'store'])->name('api.accident-reports.store');
+    Route::get('{accidentReport}', [AccidentReportsController::class, 'show'])->name('api.accident-reports.show');
+});
 
 Route::prefix('settings')->group(function () {
     Route::get('general', [SettingsController::class, 'general'])->name('api.settings.general');
