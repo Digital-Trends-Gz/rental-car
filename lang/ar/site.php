@@ -681,6 +681,7 @@ return array (
         'payments' => 'المدفوعات',
         'debtors' => 'المدينون',
         'reports' => 'التقارير',
+        'ai_insights' => 'تحليلات الذكاء الاصطناعي',
         'support' => 'الدعم',
         'dashboard' => 'لوحة التحكم',
         'maintenance_types' => 'أنواع الصيانة',

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('logo_url', 1000)->nullable();
             $table->string('primary_color', 20)->default('#f97316');
             $table->string('secondary_color', 20)->default('#ea580c');
+            $table->json('market_location')->nullable();
             $table->json('hero')->nullable();
             $table->json('contact')->nullable();
             $table->json('footer')->nullable();
@@ -27,4 +28,3 @@ return new class extends Migration
         Schema::dropIfExists('tenant_site_settings');
     }
 };
-

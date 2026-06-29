@@ -69,6 +69,13 @@ class WebsiteSettingsController extends Controller
             'favicon_removed_files.*' => ['integer'],
             'primary_color' => ['required', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
             'secondary_color' => ['required', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
+            'market_location.country_code' => ['nullable', 'string', 'size:2'],
+            'market_location.country_name' => ['nullable', 'string', 'max:120'],
+            'market_location.region' => ['nullable', 'string', 'max:120'],
+            'market_location.city' => ['nullable', 'string', 'max:120'],
+            'market_location.market_area' => ['nullable', 'string', 'max:255'],
+            'market_location.timezone' => ['nullable', 'string', 'max:120'],
+            'market_location.currency_code' => ['nullable', 'string', 'size:3'],
             'tax_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'enabled_locales' => ['nullable', 'array'],
             'enabled_locales.*' => ['string', Rule::in($supportedLocales)],
@@ -236,6 +243,15 @@ class WebsiteSettingsController extends Controller
                 'favicon_url' => $this->nullableString($validated['favicon_url'] ?? null),
                 'primary_color' => strtolower((string) $validated['primary_color']),
                 'secondary_color' => strtolower((string) $validated['secondary_color']),
+                'market_location' => [
+                    'country_code' => $this->upperNullableString(data_get($validated, 'market_location.country_code')),
+                    'country_name' => $this->nullableString(data_get($validated, 'market_location.country_name')),
+                    'region' => $this->nullableString(data_get($validated, 'market_location.region')),
+                    'city' => $this->nullableString(data_get($validated, 'market_location.city')),
+                    'market_area' => $this->nullableString(data_get($validated, 'market_location.market_area')),
+                    'timezone' => $this->nullableString(data_get($validated, 'market_location.timezone')),
+                    'currency_code' => $this->upperNullableString(data_get($validated, 'market_location.currency_code')),
+                ],
                 'tax_percentage' => max(0, min(100, $taxPercentage)),
                 'enabled_locales' => $enabledLocales,
                 'hero' => [
@@ -836,6 +852,13 @@ class WebsiteSettingsController extends Controller
         $value = trim((string) ($value ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    private function upperNullableString(mixed $value): ?string
+    {
+        $value = $this->nullableString($value);
+
+        return $value === null ? null : strtoupper($value);
     }
 
     private function nullablePositiveInteger(mixed $value): ?int

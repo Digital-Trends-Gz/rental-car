@@ -26,6 +26,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import {
     AlertTriangle,
     BarChart,
+    Brain,
     Calendar,
     CalendarDays,
     Car,
@@ -342,6 +343,14 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     title: t('dashboard.sidebar.admin.reports'),
                     href: reportsIndex(slug).url,
                     icon: BarChart,
+                    permission: 'tenant-view-reports',
+                    feature: 'reports_module',
+                },
+                {
+                    key: 'ai-insights',
+                    title: t('dashboard.sidebar.admin.ai_insights'),
+                    href: adminHref('/ai-insights'),
+                    icon: Brain,
                     permission: 'tenant-view-reports',
                     feature: 'reports_module',
                 },

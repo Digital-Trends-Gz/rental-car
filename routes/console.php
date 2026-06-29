@@ -66,3 +66,4 @@ Schedule::command('maintenance:process-schedule')->everyFiveMinutes();
 Schedule::command('rentals:sync-statuses')->everyFiveMinutes();
 Schedule::command('cars:notify-expiring-documents')->dailyAt('14:22');
 Schedule::command('contracts:notify-ending-tomorrow')->dailyAt('14:23');
+Schedule::command('ai-insights:generate-monthly --with-openai')->monthlyOn(1, '09:00');

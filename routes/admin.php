@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\CarDiscountsController;
 use App\Http\Controllers\Admin\CarDamageReportsController;
 use App\Http\Controllers\Admin\DamageRepairsController;
 use App\Http\Controllers\Admin\AccidentReportsController;
+use App\Http\Controllers\Admin\AiInsightsController;
 use App\Http\Controllers\Admin\CarDocumentsController;
 use App\Http\Controllers\Admin\DashboardController;
 
@@ -267,6 +268,24 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::resource('reports', ReportsController::class)
             ->except(['show'])
             ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module']);
+        Route::get('ai-insights', [AiInsightsController::class, 'index'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('ai-insights.index');
+        Route::post('ai-insights/generate', [AiInsightsController::class, 'generate'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('ai-insights.generate');
+        Route::post('ai-insights/{aiInsightReport}/analyze', [AiInsightsController::class, 'analyze'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('ai-insights.analyze');
+        Route::post('ai-insights/apply-pricing', [AiInsightsController::class, 'applyPricing'])
+            ->middleware(['permission:tenant-manage-cars', 'tenant.feature:reports_module'])
+            ->name('ai-insights.apply-pricing');
+        Route::get('ai-insights/{aiInsightReport}/pdf', [AiInsightsController::class, 'exportPdf'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('ai-insights.pdf');
+        Route::get('ai-insights/{aiInsightReport}/excel', [AiInsightsController::class, 'exportExcel'])
+            ->middleware(['permission:tenant-view-reports', 'tenant.feature:reports_module'])
+            ->name('ai-insights.excel');
 
         // Support
         Route::resource('support', SupportController::class)

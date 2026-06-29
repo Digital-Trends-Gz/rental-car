@@ -20,6 +20,7 @@ class TenantSiteSetting extends Model
         'favicon_url',
         'primary_color',
         'secondary_color',
+        'market_location',
         'tax_percentage',
         'default_locale',
         'document_extraction_daily_limit',
@@ -40,6 +41,7 @@ class TenantSiteSetting extends Model
     ];
 
     protected $casts = [
+        'market_location' => 'array',
         'tax_percentage' => 'decimal:2',
         'document_extraction_daily_limit' => 'integer',
         'enabled_locales' => 'array',
@@ -71,9 +73,18 @@ class TenantSiteSetting extends Model
             'site_name' => null,
             'logo_url' => null,
             'favicon_url' => null,
-            'primary_color' => '#f97316',
-            'secondary_color' => '#ea580c',
-            'tax_percentage' => 7.0,
+        'primary_color' => '#f97316',
+        'secondary_color' => '#ea580c',
+        'market_location' => [
+            'country_code' => null,
+            'country_name' => null,
+            'region' => null,
+            'city' => null,
+            'market_area' => null,
+            'timezone' => null,
+            'currency_code' => null,
+        ],
+        'tax_percentage' => 7.0,
             'default_locale' => self::normalizeDefaultLocale(
                 (string) config('app.locale', 'en'),
                 $supportedLocales,
@@ -519,6 +530,15 @@ class TenantSiteSetting extends Model
             'favicon_url' => self::nullableString($faviconUrl ?: ($data['favicon_url'] ?? $defaults['favicon_url'])),
             'primary_color' => self::normalizeHexColor($data['primary_color'] ?? $defaults['primary_color'], $defaults['primary_color']),
             'secondary_color' => self::normalizeHexColor($data['secondary_color'] ?? $defaults['secondary_color'], $defaults['secondary_color']),
+            'market_location' => [
+                'country_code' => self::normalizeCountryCode(data_get($data, 'market_location.country_code')),
+                'country_name' => self::nullableString(data_get($data, 'market_location.country_name')),
+                'region' => self::nullableString(data_get($data, 'market_location.region')),
+                'city' => self::nullableString(data_get($data, 'market_location.city')),
+                'market_area' => self::nullableString(data_get($data, 'market_location.market_area')),
+                'timezone' => self::nullableString(data_get($data, 'market_location.timezone')),
+                'currency_code' => self::normalizeCurrencyCode(data_get($data, 'market_location.currency_code')),
+            ],
             'tax_percentage' => self::normalizePercentage($data['tax_percentage'] ?? $defaults['tax_percentage'], 7.0),
             'default_locale' => self::normalizeDefaultLocale(
                 $data['default_locale'] ?? $defaults['default_locale'],
@@ -935,6 +955,20 @@ class TenantSiteSetting extends Model
         $value = trim((string) ($value ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    private static function normalizeCountryCode(mixed $value): ?string
+    {
+        $value = strtoupper(trim((string) ($value ?? '')));
+
+        return preg_match('/^[A-Z]{2}$/', $value) === 1 ? $value : null;
+    }
+
+    private static function normalizeCurrencyCode(mixed $value): ?string
+    {
+        $value = strtoupper(trim((string) ($value ?? '')));
+
+        return preg_match('/^[A-Z]{3}$/', $value) === 1 ? $value : null;
     }
 
     private static function normalizeHexColor(mixed $value, string $fallback): string

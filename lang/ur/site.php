@@ -530,6 +530,7 @@ return [
                 'clients' => 'Clients',
                 'payments' => 'Payments',
                 'reports' => 'Reports',
+                'ai_insights' => 'AI Insights',
                 'support' => 'Support',
                 'branches' => 'Branches',
                 'employees' => 'Employees',

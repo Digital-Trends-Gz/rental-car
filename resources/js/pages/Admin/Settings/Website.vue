@@ -27,6 +27,15 @@ const props = defineProps<{
         favicon_url: string | null;
         primary_color: string;
         secondary_color: string;
+        market_location?: {
+            country_code?: string | null;
+            country_name?: string | null;
+            region?: string | null;
+            city?: string | null;
+            market_area?: string | null;
+            timezone?: string | null;
+            currency_code?: string | null;
+        };
         tax_percentage: number;
         hero: {
             title: LocalizedText;
@@ -139,6 +148,74 @@ const props = defineProps<{
 const { locale } = useTrans();
 const page = usePage<any>();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const selectClass = 'h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
+
+type MarketCountryOption = {
+    name: string;
+    code: string;
+    currency: string;
+    timezone: string;
+    regions: string[];
+    cities: string[];
+    areas: string[];
+};
+
+const marketCountryOptions: MarketCountryOption[] = [
+    {
+        name: 'Oman',
+        code: 'OM',
+        currency: 'OMR',
+        timezone: 'Asia/Muscat',
+        regions: ['Muscat Governorate', 'Dhofar Governorate', 'Al Batinah North', 'Al Batinah South', 'Ad Dakhiliyah', 'Ash Sharqiyah North', 'Ash Sharqiyah South'],
+        cities: ['Muscat', 'Salalah', 'Sohar', 'Nizwa', 'Sur', 'Seeb', 'Barka'],
+        areas: ['Airport', 'City center', 'Tourism area', 'Business district', 'Hotels area', 'All service areas'],
+    },
+    {
+        name: 'United Arab Emirates',
+        code: 'AE',
+        currency: 'AED',
+        timezone: 'Asia/Dubai',
+        regions: ['Abu Dhabi', 'Dubai', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain'],
+        cities: ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah'],
+        areas: ['Airport', 'City center', 'Tourism area', 'Business district', 'Hotels area', 'All service areas'],
+    },
+    {
+        name: 'Palestine',
+        code: 'PS',
+        currency: 'ILS',
+        timezone: 'Asia/Hebron',
+        regions: ['Gaza Governorate', 'North Gaza', 'Khan Yunis', 'Rafah', 'Hebron', 'Ramallah and Al-Bireh', 'Nablus'],
+        cities: ['Gaza', 'Khan Yunis', 'Rafah', 'Hebron', 'Ramallah', 'Nablus'],
+        areas: ['City center', 'Border crossing', 'Business district', 'Hotels area', 'All service areas'],
+    },
+    {
+        name: 'Saudi Arabia',
+        code: 'SA',
+        currency: 'SAR',
+        timezone: 'Asia/Riyadh',
+        regions: ['Riyadh Province', 'Makkah Province', 'Eastern Province', 'Madinah Province', 'Asir Province'],
+        cities: ['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah', 'Abha'],
+        areas: ['Airport', 'City center', 'Tourism area', 'Business district', 'Hotels area', 'All service areas'],
+    },
+    {
+        name: 'Qatar',
+        code: 'QA',
+        currency: 'QAR',
+        timezone: 'Asia/Qatar',
+        regions: ['Doha', 'Al Rayyan', 'Al Wakrah', 'Al Khor', 'Umm Salal'],
+        cities: ['Doha', 'Al Rayyan', 'Al Wakrah', 'Al Khor'],
+        areas: ['Airport', 'City center', 'Tourism area', 'Business district', 'Hotels area', 'All service areas'],
+    },
+    {
+        name: 'United States',
+        code: 'US',
+        currency: 'USD',
+        timezone: 'America/New_York',
+        regions: ['California', 'Florida', 'New York', 'Texas', 'Nevada'],
+        cities: ['Los Angeles', 'Miami', 'New York', 'Houston', 'Las Vegas'],
+        areas: ['Airport', 'City center', 'Tourism area', 'Business district', 'Hotels area', 'All service areas'],
+    },
+];
 
 const form = useForm({
     site_name: props.settings.site_name ?? '',
@@ -152,6 +229,15 @@ const form = useForm({
     seo_og_image_removed_files: [] as number[],
     primary_color: props.settings.primary_color || '#f97316',
     secondary_color: props.settings.secondary_color || '#ea580c',
+    market_location: {
+        country_code: props.settings.market_location?.country_code ?? '',
+        country_name: props.settings.market_location?.country_name ?? '',
+        region: props.settings.market_location?.region ?? '',
+        city: props.settings.market_location?.city ?? '',
+        market_area: props.settings.market_location?.market_area ?? '',
+        timezone: props.settings.market_location?.timezone ?? '',
+        currency_code: props.settings.market_location?.currency_code ?? '',
+    },
     tax_percentage: props.settings.tax_percentage ?? 7,
     hero: {
         title: {
@@ -371,6 +457,61 @@ const form = useForm({
         },
     },
 });
+
+const selectedMarketCountry = computed(() => {
+    const countryName = String(form.market_location.country_name || '');
+    const countryCode = String(form.market_location.country_code || '').toUpperCase();
+
+    return marketCountryOptions.find((country) => country.name === countryName || country.code === countryCode) ?? null;
+});
+const marketRegionOptions = computed(() => selectedMarketCountry.value?.regions ?? []);
+const marketCityOptions = computed(() => selectedMarketCountry.value?.cities ?? []);
+const marketAreaOptions = computed(() => selectedMarketCountry.value?.areas ?? []);
+const marketTimezoneOptions = computed(() => Array.from(new Set(marketCountryOptions.map((country) => country.timezone))));
+const marketCurrencyOptions = computed(() => Array.from(new Set(marketCountryOptions.map((country) => country.currency))));
+
+function syncMarketCountry(country: MarketCountryOption) {
+    form.market_location.country_name = country.name;
+    form.market_location.country_code = country.code;
+    form.market_location.currency_code = country.currency;
+    form.market_location.timezone = country.timezone;
+
+    if (!country.regions.includes(form.market_location.region || '')) {
+        form.market_location.region = country.regions[0] ?? '';
+    }
+
+    if (!country.cities.includes(form.market_location.city || '')) {
+        form.market_location.city = country.cities[0] ?? '';
+    }
+
+    if (!country.areas.includes(form.market_location.market_area || '')) {
+        form.market_location.market_area = country.areas[0] ?? '';
+    }
+}
+
+function handleMarketCountryChange() {
+    const country = marketCountryOptions.find((option) => option.name === form.market_location.country_name);
+
+    if (country) {
+        syncMarketCountry(country);
+    }
+}
+
+function handleMarketCountryCodeChange() {
+    const country = marketCountryOptions.find((option) => option.code === String(form.market_location.country_code || '').toUpperCase());
+
+    if (country) {
+        syncMarketCountry(country);
+    }
+}
+
+const initialMarketCountry = marketCountryOptions.find((country) =>
+    country.name === form.market_location.country_name ||
+    country.code === String(form.market_location.country_code || '').toUpperCase(),
+);
+if (initialMarketCountry) {
+    syncMarketCountry(initialMarketCountry);
+}
 
 const flashSuccess = computed(() => page.props.flash?.success ?? null);
 const flashError = computed(() => page.props.flash?.error ?? null);
@@ -990,6 +1131,95 @@ function submit() {
                                     {{ localize('Set `0` to hide tax in booking page.', 'ضع `0` لإخفاء الضريبة في صفحة الحجز.') }}
                                 </p>
                                 <p v-if="form.errors.tax_percentage" class="text-sm text-red-600">{{ form.errors.tax_percentage }}</p>
+                            </div>
+
+                            <div class="space-y-4 rounded-md border bg-muted/20 p-4 md:col-span-2">
+                                <div>
+                                    <h3 class="text-sm font-semibold">{{ localize('Market Location', 'موقع السوق') }}</h3>
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ localize('Used by AI market reports, pricing suggestions, and local business analysis.', 'تستخدمها تقارير الذكاء الاصطناعي ودراسة السوق واقتراحات التسعير حسب منطقة التاجر.') }}
+                                    </p>
+                                </div>
+
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div class="space-y-2">
+                                        <Label for="market_country_name">{{ localize('Country', 'الدولة') }}</Label>
+                                        <select id="market_country_name" v-model="form.market_location.country_name" :class="selectClass" @change="handleMarketCountryChange">
+                                            <option value="">{{ localize('Select country', 'اختر الدولة') }}</option>
+                                            <option v-for="country in marketCountryOptions" :key="country.code" :value="country.name">
+                                                {{ country.name }}
+                                            </option>
+                                        </select>
+                                        <p v-if="form.errors['market_location.country_name']" class="text-sm text-red-600">{{ form.errors['market_location.country_name'] }}</p>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label for="market_country_code">{{ localize('Country Code', 'رمز الدولة') }}</Label>
+                                        <select id="market_country_code" v-model="form.market_location.country_code" :class="selectClass" @change="handleMarketCountryCodeChange">
+                                            <option value="">{{ localize('Select code', 'اختر الرمز') }}</option>
+                                            <option v-for="country in marketCountryOptions" :key="country.code" :value="country.code">
+                                                {{ country.code }}
+                                            </option>
+                                        </select>
+                                        <p class="text-xs text-muted-foreground">{{ localize('ISO 2-letter code, for example OM, AE, PS.', 'رمز ISO من حرفين مثل OM أو AE أو PS.') }}</p>
+                                        <p v-if="form.errors['market_location.country_code']" class="text-sm text-red-600">{{ form.errors['market_location.country_code'] }}</p>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label for="market_region">{{ localize('Region / Governorate', 'المنطقة / المحافظة') }}</Label>
+                                        <select id="market_region" v-model="form.market_location.region" :class="selectClass">
+                                            <option value="">{{ localize('Select region', 'اختر المنطقة') }}</option>
+                                            <option v-for="region in marketRegionOptions" :key="region" :value="region">
+                                                {{ region }}
+                                            </option>
+                                        </select>
+                                        <p v-if="form.errors['market_location.region']" class="text-sm text-red-600">{{ form.errors['market_location.region'] }}</p>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label for="market_city">{{ localize('City', 'المدينة') }}</Label>
+                                        <select id="market_city" v-model="form.market_location.city" :class="selectClass">
+                                            <option value="">{{ localize('Select city', 'اختر المدينة') }}</option>
+                                            <option v-for="city in marketCityOptions" :key="city" :value="city">
+                                                {{ city }}
+                                            </option>
+                                        </select>
+                                        <p v-if="form.errors['market_location.city']" class="text-sm text-red-600">{{ form.errors['market_location.city'] }}</p>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label for="market_area">{{ localize('Business Area', 'نطاق العمل') }}</Label>
+                                        <select id="market_area" v-model="form.market_location.market_area" :class="selectClass">
+                                            <option value="">{{ localize('Select area', 'اختر النطاق') }}</option>
+                                            <option v-for="area in marketAreaOptions" :key="area" :value="area">
+                                                {{ area }}
+                                            </option>
+                                        </select>
+                                        <p v-if="form.errors['market_location.market_area']" class="text-sm text-red-600">{{ form.errors['market_location.market_area'] }}</p>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label for="market_currency_code">{{ localize('Currency Code', 'رمز العملة') }}</Label>
+                                        <select id="market_currency_code" v-model="form.market_location.currency_code" :class="selectClass">
+                                            <option value="">{{ localize('Select currency', 'اختر العملة') }}</option>
+                                            <option v-for="currency in marketCurrencyOptions" :key="currency" :value="currency">
+                                                {{ currency }}
+                                            </option>
+                                        </select>
+                                        <p v-if="form.errors['market_location.currency_code']" class="text-sm text-red-600">{{ form.errors['market_location.currency_code'] }}</p>
+                                    </div>
+
+                                    <div class="space-y-2 md:col-span-2">
+                                        <Label for="market_timezone">{{ localize('Timezone', 'المنطقة الزمنية') }}</Label>
+                                        <select id="market_timezone" v-model="form.market_location.timezone" :class="selectClass">
+                                            <option value="">{{ localize('Select timezone', 'اختر المنطقة الزمنية') }}</option>
+                                            <option v-for="timezone in marketTimezoneOptions" :key="timezone" :value="timezone">
+                                                {{ timezone }}
+                                            </option>
+                                        </select>
+                                        <p v-if="form.errors['market_location.timezone']" class="text-sm text-red-600">{{ form.errors['market_location.timezone'] }}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

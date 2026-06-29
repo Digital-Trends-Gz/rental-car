@@ -619,6 +619,7 @@ return [
                 'coupons' => 'Coupons',
                 'auto_discounts' => 'Auto Discounts',
                 'reports' => 'Reports',
+                'ai_insights' => 'AI Insights',
                 'support' => 'Support',
                 'platform_support' => 'Platform Support',
                 'branches' => 'Branches',
