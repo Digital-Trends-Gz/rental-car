@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Contract;
 use App\Models\TenantSiteSetting;
 use App\Support\BrandLogoImageResizer;
+use App\Support\BranchLocationOptions;
+use App\Support\CountryOptions;
 use App\Support\TenantPdfTemplateRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -1222,6 +1224,8 @@ class WebsiteSettingsController extends Controller
                 'slug' => $tenant->slug,
             ],
             'settings' => TenantSiteSetting::forTenant($tenant),
+            'marketCountryOptions' => CountryOptions::all(),
+            'marketCityOptionsByCountry' => BranchLocationOptions::cityOptionsByCountry(app()->getLocale()),
             'pdfTemplateOptions' => TenantPdfTemplateRegistry::contractTemplateOptions(),
             'logoFiles' => $logoFiles,
             'faviconFiles' => $faviconFiles,

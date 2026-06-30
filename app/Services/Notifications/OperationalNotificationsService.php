@@ -59,10 +59,15 @@ class OperationalNotificationsService
             ->merge($type === '' || $type === 'missing_documents' ? $this->missingDocumentNotifications($user, $branchId, $locale) : [])
             ->merge($type === '' || $type === 'new_damage' ? $this->newDamageNotifications($user, $branchId, $locale) : [])
             ->merge($type === '' || $type === 'missing_payment' ? $this->missingPaymentNotifications($user, $branchId, $locale) : [])
-            ->sortBy([
-                ['priority_rank', 'asc'],
-                ['occurred_at_sort', 'desc'],
-            ])
+            ->sort(function (array $a, array $b): int {
+                $dateComparison = ($b['occurred_at_sort'] ?? 0) <=> ($a['occurred_at_sort'] ?? 0);
+
+                if ($dateComparison !== 0) {
+                    return $dateComparison;
+                }
+
+                return ($a['priority_rank'] ?? 999) <=> ($b['priority_rank'] ?? 999);
+            })
             ->take($limit)
             ->map(function (array $item): array {
                 unset($item['priority_rank'], $item['occurred_at_sort']);
