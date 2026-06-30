@@ -9,11 +9,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use App\Traits\BelongsToTenant;
+use MohamedGaldi\ViltFilepond\Traits\HasFiles;
 
 class Payment extends Model
 {
     use SoftDeletes;
     use BelongsToTenant;
+    use HasFiles;
 
     /**
      * The attributes that are mass assignable.

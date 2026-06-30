@@ -55,7 +55,6 @@ class ReservationsController extends Controller
 
             $query = $this->reservationQuery($user, $branchId)
                 ->whereDate('start_date', $today)
-                ->whereDoesntHave('contract')
                 ->whereIn('status', $statuses)
                 ->orderBy('start_date')
                 ->orderBy('pickup_time')
@@ -118,7 +117,6 @@ class ReservationsController extends Controller
 
         $pickupCount = $this->reservationQuery($user, $branchId)
             ->whereDate('start_date', $today)
-            ->whereDoesntHave('contract')
             ->whereIn('status', $pickupStatuses)
             ->count();
 
@@ -175,7 +173,6 @@ class ReservationsController extends Controller
         $pickupItems = $this->reservationItems(
             $this->reservationQuery($user, $branchId)
                 ->whereDate('start_date', $today)
-                ->whereDoesntHave('contract')
                 ->whereIn('status', $pickupStatuses)
                 ->orderBy('start_date')
                 ->orderBy('pickup_time')
@@ -1014,8 +1011,8 @@ class ReservationsController extends Controller
                 'closed' => ['en' => 'Closed', 'ar' => 'مغلق', 'ur' => 'بند'],
             ],
             'task_types' => [
-                'pickup' => ['en' => 'Pickup', 'ar' => 'تسليم', 'ur' => 'حوالگی'],
-                'return' => ['en' => 'Return', 'ar' => 'استلام', 'ur' => 'واپسی'],
+                'pickup' => ['en' => 'Pickup', 'ar' => 'استلام', 'ur' => 'حوالگی'],
+                'return' => ['en' => 'Return', 'ar' => 'تسليم', 'ur' => 'واپسی'],
                 'overdue' => ['en' => 'Overdue', 'ar' => 'متأخر', 'ur' => 'تاخیر شدہ'],
                 'total' => ['en' => 'All', 'ar' => 'الكل', 'ur' => 'سب'],
                 'all' => ['en' => 'All', 'ar' => 'الكل', 'ur' => 'سب'],

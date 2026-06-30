@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AccidentReportsController;
+use App\Http\Controllers\Api\CashPaymentsController;
 use App\Http\Controllers\Api\CarPhotoHistoryController;
 use App\Http\Controllers\Api\CarsController;
 use App\Http\Controllers\Api\ClientsController;
@@ -68,9 +69,14 @@ Route::middleware('auth:sanctum')->prefix('reservations')->group(function () {
     Route::get('tasks', [ReservationsController::class, 'tasks'])->name('api.reservations.tasks');
     Route::get('today-pickups', [ReservationsController::class, 'todayPickups'])->name('api.reservations.today-pickups');
     Route::get('returns', [ReservationsController::class, 'returns'])->name('api.reservations.returns');
+    Route::post('{reservation}/cash-payments', [CashPaymentsController::class, 'storeReservationPayment'])->name('api.reservations.cash-payments.store');
     Route::get('{reservation}/handover', [ContractsController::class, 'handover'])->name('api.reservations.handover');
     Route::post('{reservation}/note', [ReservationsController::class, 'updateNote'])->name('api.reservations.note');
     Route::get('{reservation}', [ReservationsController::class, 'show'])->name('api.reservations.show');
+});
+
+Route::middleware('auth:sanctum')->prefix('contract-return-reports')->group(function () {
+    Route::post('{contractReturnReport}/cash-payments', [CashPaymentsController::class, 'storeReturnReportPayment'])->name('api.contract-return-reports.cash-payments.store');
 });
 
 Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
@@ -86,6 +92,7 @@ Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
     Route::delete('{contract}/damage-items/{damageItem}', [ContractsController::class, 'deleteDamageItem'])->name('api.contracts.damage-items.delete');
     Route::get('{contract}/pdf', [\App\Http\Controllers\Admin\ContractsController::class, 'pdf'])->name('api.contracts.pdf');
     Route::get('{contract}/return-status-report/pdf', [\App\Http\Controllers\Admin\ContractReturnReportsController::class, 'pdf'])->name('api.contracts.return-report.pdf');
+    Route::post('{contract}/return-status-report/cash-payments', [CashPaymentsController::class, 'storeContractReturnReportPayment'])->name('api.contracts.return-report.cash-payments.store');
     Route::match(['post', 'patch'], '{contract}/handover', [ContractsController::class, 'updateHandover'])->name('api.contracts.handover');
 });
 

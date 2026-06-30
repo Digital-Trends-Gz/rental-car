@@ -132,6 +132,23 @@ test('today pickups api supports pagination and reservation status filtering', f
         'status' => CarStatus::AVAILABLE->value,
     ]);
 
+    $contractedPickupCar = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branchA->id,
+        'make' => 'Audi',
+        'model' => 'A4',
+        'year' => 2024,
+        'license_plate' => 'API-A-006',
+        'color' => CarColor::WHITE->value,
+        'price_per_day' => 110,
+        'mileage' => 900,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::AVAILABLE->value,
+    ]);
+
     $otherBranchCar = Car::create([
         'tenant_id' => $tenant->id,
         'branch_id' => $branchB->id,
@@ -187,6 +204,44 @@ test('today pickups api supports pagination and reservation status filtering', f
         'discount_amount' => 0,
         'total_amount' => 180,
         'status' => ReservationStatus::PENDING,
+    ]);
+
+    $contractedPickupReservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $contractedPickupCar->id,
+        'reservation_number' => 'RES-API-006',
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'pickup_time' => '12:00',
+        'return_time' => '18:00',
+        'pickup_location' => 'Main Office',
+        'return_location' => 'Main Office',
+        'total_days' => 2,
+        'daily_rate' => 110,
+        'subtotal' => 220,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 220,
+        'status' => ReservationStatus::ACTIVE,
+    ]);
+
+    Contract::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branchA->id,
+        'reservation_id' => $contractedPickupReservation->id,
+        'contract_number' => 'CON-API-006',
+        'status' => ContractStatus::ACTIVE,
+        'contract_date' => today()->toDateString(),
+        'renter_name' => $client->name,
+        'renter_id_number' => '333333333',
+        'renter_phone' => '97000000006',
+        'car_details' => '2024 Audi A4',
+        'plate_number' => 'API-A-006',
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'total_amount' => 220,
+        'currency' => 'USD',
     ]);
 
     Reservation::create([
@@ -330,16 +385,18 @@ test('today pickups api supports pagination and reservation status filtering', f
         ])
         ->assertJsonPath('pagination.current_page', 1)
         ->assertJsonPath('pagination.per_page', 15)
-        ->assertJsonPath('pagination.total', 4)
+        ->assertJsonPath('pagination.total', 5)
         ->assertJsonPath('pagination.last_page', 1)
         ->assertJsonPath('pagination.from', 1)
-        ->assertJsonPath('pagination.to', 4)
+        ->assertJsonPath('pagination.to', 5)
         ->assertJsonPath('pagination.has_more_pages', false)
         ->assertJsonPath('pickup.type', 'pickup')
         ->assertJsonPath('pickup.type_label', 'Pickup')
-        ->assertJsonPath('pickup.count', 2)
+        ->assertJsonPath('pickup.count', 3)
         ->assertJsonPath('pickup.items.0.reservation_number', 'RES-API-001')
+        ->assertJsonPath('pickup.items.2.reservation_number', 'RES-API-006')
         ->assertJsonPath('pickup.reservations.0.reservation_number', 'RES-API-001')
+        ->assertJsonPath('pickup.reservations.2.reservation_number', 'RES-API-006')
         ->assertJsonPath('return.type', 'return')
         ->assertJsonPath('return.type_label', 'Return')
         ->assertJsonPath('return.count', 1)
