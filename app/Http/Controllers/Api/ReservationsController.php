@@ -1011,8 +1011,8 @@ class ReservationsController extends Controller
                 'closed' => ['en' => 'Closed', 'ar' => 'مغلق', 'ur' => 'بند'],
             ],
             'task_types' => [
-                'pickup' => ['en' => 'Pickup', 'ar' => 'استلام', 'ur' => 'حوالگی'],
-                'return' => ['en' => 'Return', 'ar' => 'تسليم', 'ur' => 'واپسی'],
+                'pickup' => ['en' => 'Pickup', 'ar' => 'تسليم', 'ur' => 'حوالگی'],
+                'return' => ['en' => 'Return', 'ar' => 'استلام', 'ur' => 'واپسی'],
                 'overdue' => ['en' => 'Overdue', 'ar' => 'متأخر', 'ur' => 'تاخیر شدہ'],
                 'total' => ['en' => 'All', 'ar' => 'الكل', 'ur' => 'سب'],
                 'all' => ['en' => 'All', 'ar' => 'الكل', 'ur' => 'سب'],
