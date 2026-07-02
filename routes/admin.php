@@ -169,6 +169,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::resource('contracts', ContractsController::class)
             ->only(['index', 'create', 'store', 'show', 'edit', 'update'])
             ->middleware('permission:tenant-manage-reservations');
+        Route::get('accident-reports/{accidentReport}/mrta-form', [AccidentReportsController::class, 'mrtaForm'])
+            ->middleware('permission:tenant-manage-reservations')
+            ->name('accident-reports.mrta-form');
         Route::resource('accident-reports', AccidentReportsController::class)
             ->only(['index', 'create', 'store', 'show'])
             ->middleware('permission:tenant-manage-reservations');
@@ -383,6 +386,12 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::put('settings/contract-pdf', [WebsiteSettingsController::class, 'contractPdfUpdate'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.contract-pdf.update');
+        Route::get('settings/mrta-pdf', [WebsiteSettingsController::class, 'mrtaPdfEdit'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.mrta-pdf.edit');
+        Route::put('settings/mrta-pdf', [WebsiteSettingsController::class, 'mrtaPdfUpdate'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.mrta-pdf.update');
         Route::get('settings/translations', [TranslationSettingsController::class, 'edit'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.translations.edit');

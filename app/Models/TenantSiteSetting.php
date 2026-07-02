@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Core\ReservationSettings as ReservationSettingsCore;
 use App\Core\PlateFormatSettings as PlateFormatSettingsCore;
+use App\Core\MrtaPdfSettings as MrtaPdfSettingsCore;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
@@ -38,6 +39,7 @@ class TenantSiteSetting extends Model
         'footer',
         'plate_formats',
         'contract_pdf',
+        'mrta_pdf',
     ];
 
     protected $casts = [
@@ -58,6 +60,7 @@ class TenantSiteSetting extends Model
         'footer' => 'array',
         'plate_formats' => 'array',
         'contract_pdf' => 'array',
+        'mrta_pdf' => 'array',
     ];
 
     public function tenant(): BelongsTo
@@ -337,6 +340,7 @@ class TenantSiteSetting extends Model
                     'ar' => null,
                 ],
             ],
+            'mrta_pdf' => MrtaPdfSettingsCore::defaults(),
             'police_notice' => [
                 'company_name' => [
                     'en' => null,
@@ -840,6 +844,7 @@ class TenantSiteSetting extends Model
                     'ar' => self::nullableString(data_get($data, 'contract_pdf.closing_notice.ar')),
                 ],
             ],
+            'mrta_pdf' => MrtaPdfSettingsCore::normalize($data['mrta_pdf'] ?? $defaults['mrta_pdf']),
             'police_notice' => [
                 'company_name' => [
                     'en' => self::nullableString(data_get($data, 'police_notice.company_name.en')),

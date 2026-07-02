@@ -12,6 +12,18 @@ type ThirdPartyDetails = {
     details?: string | null;
     [key: string]: string | number | boolean | null | undefined;
 };
+type MrtaParty = Record<string, string | null | undefined>;
+type MrtaWitness = { name?: string | null; address?: string | null; phone?: string | null };
+type MrtaPayload = {
+    accident_types: string[];
+    first_party: MrtaParty;
+    second_party: MrtaParty;
+    witnesses: MrtaWitness[];
+    accident_causes: string[];
+    vehicle_damages: Record<string, string | null | undefined>;
+    insurance: Record<string, string | number | boolean | null | undefined>;
+    signatures: Record<string, string | null | undefined>;
+};
 
 const props = defineProps<{
     report: {
@@ -46,6 +58,8 @@ const props = defineProps<{
         has_injuries: boolean;
         third_party_involved: boolean;
         third_party_details: ThirdPartyDetails | null;
+        mrta: MrtaPayload | null;
+        mrta_pdf_url: string;
         notes: string | null;
         photos: Array<{
             id: number;
@@ -66,6 +80,25 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const isImage = (mimeType: string | null) => Boolean(mimeType?.startsWith('image/'));
 const yesNo = (value: boolean) => (value ? localize('Yes', '\u0646\u0639\u0645') : localize('No', '\u0644\u0627'));
+const nonEmpty = (value: unknown) => value !== null && value !== undefined && String(value).trim() !== '';
+const emptyParty = {} as MrtaParty;
+const emptyStringRecord = {} as Record<string, string | null | undefined>;
+const emptyMixedRecord = {} as Record<string, string | number | boolean | null | undefined>;
+
+const mrta = computed(() => {
+    const value = props.report.mrta || ({} as Partial<MrtaPayload>);
+
+    return {
+        accident_types: Array.isArray(value.accident_types) ? value.accident_types : [],
+        first_party: value.first_party && typeof value.first_party === 'object' ? value.first_party : emptyParty,
+        second_party: value.second_party && typeof value.second_party === 'object' ? value.second_party : emptyParty,
+        witnesses: Array.isArray(value.witnesses) ? value.witnesses : [],
+        accident_causes: Array.isArray(value.accident_causes) ? value.accident_causes : [],
+        vehicle_damages: value.vehicle_damages && typeof value.vehicle_damages === 'object' ? value.vehicle_damages : emptyStringRecord,
+        insurance: value.insurance && typeof value.insurance === 'object' ? value.insurance : emptyMixedRecord,
+        signatures: value.signatures && typeof value.signatures === 'object' ? value.signatures : emptyStringRecord,
+    };
+});
 
 const thirdPartyRows = computed(() => {
     const details = props.report.third_party_details;
@@ -82,6 +115,41 @@ const thirdPartyRows = computed(() => {
             value: String(value),
         }));
 });
+
+const mrtaPartyFields = computed(() => [
+    { key: 'vehicle_no', label: localize('Vehicle No.', 'رقم المركبة') },
+    { key: 'driver_name', label: localize("Driver's Name", 'اسم السائق') },
+    { key: 'address_tel', label: localize('Address / Tel. No.', 'العنوان / الهاتف') },
+    { key: 'driving_license_no_category', label: localize('Driving License No. / Category', 'رقم الرخصة / الفئة') },
+    { key: 'sex_nationality', label: localize('Sex / Nationality', 'الجنس / الجنسية') },
+    { key: 'insurance_company', label: localize('Insurance Company', 'شركة التأمين') },
+    { key: 'insurance_type', label: localize('Type of Insurance', 'نوع التأمين') },
+    { key: 'insurance_policy_no', label: localize('Insurance Policy No.', 'رقم الوثيقة') },
+]);
+
+const accidentTypeLabels: Record<string, () => string> = {
+    stationary_object: () => localize('Collision against a stationary object', 'اصطدام بجسم ثابت'),
+    vehicle_collision: () => localize('Collision between vehicles', 'اصطدام بين مركبات'),
+    roll_over: () => localize('Roll-over', 'تدهور'),
+};
+
+const causeLabels: Record<string, () => string> = {
+    over_speed: () => localize('Over-speed', 'السرعة'),
+    negligence: () => localize('Negligence', 'الإهمال'),
+    fatigue: () => localize('Fatigue', 'الإرهاق'),
+    overtaking: () => localize('Overtaking', 'التجاوز'),
+    weather_conditions: () => localize('Weather Conditions', 'الطقس'),
+    sudden_halt: () => localize('Sudden halt', 'الوقوف المفاجئ'),
+    no_safety_distance: () => localize('No safety distance', 'عدم ترك مسافة الأمان'),
+    wrong_action: () => localize('Wrong action', 'سوء التصرف'),
+    vehicle_defects: () => localize('Vehicle defects', 'عيوب المركبة'),
+    road_defects: () => localize('Road defects', 'عيوب الطريق'),
+    using_gsm: () => localize('Using GSM', 'استخدام الهاتف'),
+};
+
+const accidentTypeText = computed(() => mrta.value.accident_types.map((value) => accidentTypeLabels[value]?.() ?? value).join(', ') || '-');
+const accidentCauseText = computed(() => mrta.value.accident_causes.map((value) => causeLabels[value]?.() ?? value).join(', ') || '-');
+const witnessRows = computed(() => mrta.value.witnesses.filter((witness) => Object.values(witness || {}).some(nonEmpty)));
 
 function thirdPartyLabel(key: string): string {
     const labels: Record<string, string> = {
@@ -108,9 +176,14 @@ function thirdPartyLabel(key: string): string {
                     </p>
                 </div>
 
-                <Link :href="indexUrl">
-                    <Button variant="outline">{{ localize('Back', '\u0631\u062c\u0648\u0639') }}</Button>
-                </Link>
+                <div class="flex flex-wrap gap-2">
+                    <a :href="`${report.mrta_pdf_url}?download=1`" target="_blank">
+                        <Button>{{ localize('Download MRTA PDF', 'تحميل ملف MRTA') }}</Button>
+                    </a>
+                    <Link :href="indexUrl">
+                        <Button variant="outline">{{ localize('Back', '\u0631\u062c\u0648\u0639') }}</Button>
+                    </Link>
+                </div>
             </div>
 
             <section class="grid grid-cols-1 gap-4 rounded-lg border bg-white p-6 shadow-sm md:grid-cols-4">
@@ -230,6 +303,100 @@ function thirdPartyLabel(key: string): string {
                         <div v-for="row in thirdPartyRows" :key="row.key">
                             <dt class="text-xs text-muted-foreground">{{ row.label }}</dt>
                             <dd class="font-medium">{{ row.value }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </section>
+
+            <section class="rounded-lg border bg-white p-6 shadow-sm">
+                <h2 class="mb-4 text-lg font-semibold">{{ localize('MRTA / Liva form details', 'بيانات نموذج MRTA / Liva') }}</h2>
+
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div class="rounded-md bg-muted/40 p-3">
+                        <div class="text-sm text-muted-foreground">{{ localize('Type of accident', 'نوع الحادث') }}</div>
+                        <div class="font-medium">{{ accidentTypeText }}</div>
+                    </div>
+                    <div class="rounded-md bg-muted/40 p-3">
+                        <div class="text-sm text-muted-foreground">{{ localize('Causes of accident', 'أسباب الحادث') }}</div>
+                        <div class="font-medium">{{ accidentCauseText }}</div>
+                    </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+                    <div class="rounded-md border p-4">
+                        <h3 class="mb-3 font-semibold">{{ localize('First party', 'الطرف الأول') }}</h3>
+                        <dl class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+                            <div v-for="field in mrtaPartyFields" :key="`first-${field.key}`">
+                                <dt class="text-xs text-muted-foreground">{{ field.label }}</dt>
+                                <dd class="font-medium">{{ mrta.first_party[field.key] || '-' }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                    <div class="rounded-md border p-4">
+                        <h3 class="mb-3 font-semibold">{{ localize('Second party / faulty party', 'الطرف الثاني / المتسبب') }}</h3>
+                        <dl class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+                            <div v-for="field in mrtaPartyFields" :key="`second-${field.key}`">
+                                <dt class="text-xs text-muted-foreground">{{ field.label }}</dt>
+                                <dd class="font-medium">{{ mrta.second_party[field.key] || '-' }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div class="rounded-md border p-4">
+                        <h3 class="mb-3 font-semibold">{{ localize('Witnesses', 'الشهود') }}</h3>
+                        <div v-if="!witnessRows.length" class="text-sm text-muted-foreground">-</div>
+                        <div v-else class="space-y-3">
+                            <div v-for="(witness, index) in witnessRows" :key="index" class="grid grid-cols-1 gap-2 rounded-md bg-muted/30 p-3 text-sm md:grid-cols-3">
+                                <div><span class="text-xs text-muted-foreground">{{ localize('Name', 'الاسم') }}</span><br>{{ witness.name || '-' }}</div>
+                                <div><span class="text-xs text-muted-foreground">{{ localize('Address', 'العنوان') }}</span><br>{{ witness.address || '-' }}</div>
+                                <div><span class="text-xs text-muted-foreground">{{ localize('Phone', 'الهاتف') }}</span><br>{{ witness.phone || '-' }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-md border p-4">
+                        <h3 class="mb-3 font-semibold">{{ localize('Vehicle damages', 'أضرار المركبات') }}</h3>
+                        <dl class="grid grid-cols-1 gap-3 text-sm">
+                            <div>
+                                <dt class="text-xs text-muted-foreground">{{ localize('First vehicle damages', 'أضرار المركبة الأولى') }}</dt>
+                                <dd class="whitespace-pre-wrap font-medium">{{ mrta.vehicle_damages.first_party_notes || '-' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs text-muted-foreground">{{ localize('Second vehicle damages', 'أضرار المركبة الثانية') }}</dt>
+                                <dd class="whitespace-pre-wrap font-medium">{{ mrta.vehicle_damages.second_party_notes || '-' }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="mt-4 rounded-md border p-4">
+                    <h3 class="mb-3 font-semibold">{{ localize('Insurance use', 'لاستعمال التأمين') }}</h3>
+                    <dl class="grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
+                        <div>
+                            <dt class="text-xs text-muted-foreground">{{ localize('Policy No.', 'رقم الوثيقة') }}</dt>
+                            <dd class="font-medium">{{ mrta.insurance.policy_no || '-' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-muted-foreground">{{ localize('Insurance type', 'نوع التأمين') }}</dt>
+                            <dd class="font-medium">{{ mrta.insurance.type || '-' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-muted-foreground">{{ localize('Claim No.', 'رقم المطالبة') }}</dt>
+                            <dd class="font-medium">{{ mrta.insurance.claim_no || '-' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-muted-foreground">{{ localize('Company will repair damages', 'الشركة ستصلح الأضرار') }}</dt>
+                            <dd class="font-medium">{{ yesNo(Boolean(mrta.insurance.company_will_repair)) }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-muted-foreground">{{ localize('Technical opinion required', 'مطلوب رأي فني') }}</dt>
+                            <dd class="font-medium">{{ yesNo(Boolean(mrta.insurance.technical_opinion_required)) }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-muted-foreground">{{ localize('Signatory name', 'اسم المخول بالتوقيع') }}</dt>
+                            <dd class="font-medium">{{ mrta.insurance.signatory_name || '-' }}</dd>
                         </div>
                     </dl>
                 </div>

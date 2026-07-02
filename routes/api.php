@@ -107,6 +107,7 @@ Route::middleware('auth:sanctum')->prefix('accident-reports')->group(function ()
     Route::get('contract-options', [AccidentReportsController::class, 'contractOptionList'])->name('api.accident-reports.contract-options');
     Route::get('/', [AccidentReportsController::class, 'index'])->name('api.accident-reports.index');
     Route::post('/', [AccidentReportsController::class, 'store'])->name('api.accident-reports.store');
+    Route::get('{accidentReport}/mrta-form', [AccidentReportsController::class, 'mrtaForm'])->name('api.accident-reports.mrta-form');
     Route::get('{accidentReport}', [AccidentReportsController::class, 'show'])->name('api.accident-reports.show');
 });
 

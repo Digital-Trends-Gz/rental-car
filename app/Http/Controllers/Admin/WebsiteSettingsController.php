@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Core\TenantContext;
+use App\Core\MrtaPdfSettings;
 use App\Http\Controllers\Controller;
 use App\Models\Contract;
+use App\Models\AccidentReport;
 use App\Models\TenantSiteSetting;
 use App\Support\BrandLogoImageResizer;
 use App\Support\BranchLocationOptions;
@@ -602,6 +604,34 @@ class WebsiteSettingsController extends Controller
         ]);
     }
 
+    public function mrtaPdfEdit(): Response
+    {
+        $tenant = TenantContext::get();
+        abort_unless($tenant, 404);
+
+        $tenant->loadMissing('siteSetting.files');
+        $previewAccidentReportId = AccidentReport::query()
+            ->where('tenant_id', $tenant->id)
+            ->latest('id')
+            ->value('id');
+        $mrtaLogoFiles = $this->mrtaLogoFiles($tenant->siteSetting);
+
+        return Inertia::render('Admin/Settings/MrtaPdf', [
+            'tenant' => [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'slug' => $tenant->slug,
+            ],
+            'settings' => TenantSiteSetting::forTenant($tenant),
+            'mrtaPdfDefaults' => MrtaPdfSettings::defaults(),
+            'mrtaLogoFiles' => $mrtaLogoFiles,
+            'previewUrl' => $previewAccidentReportId ? route('admin.accident-reports.mrta-form', ['accidentReport' => $previewAccidentReportId]) : null,
+            'actions' => [
+                'update' => url()->current(),
+            ],
+        ]);
+    }
+
     public function policeNoticeUpdate(Request $request): RedirectResponse
     {
         $tenant = TenantContext::get();
@@ -847,6 +877,49 @@ class WebsiteSettingsController extends Controller
         );
 
         return back()->with('success', 'Contract PDF text settings updated successfully.');
+    }
+
+    public function mrtaPdfUpdate(Request $request): RedirectResponse
+    {
+        $tenant = TenantContext::get();
+        abort_unless($tenant, 404);
+
+        $validated = $request->validate([
+            'mrta_pdf.primary_color' => ['required', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
+            'mrta_pdf.liva_logo_text' => ['nullable', 'string', 'max:100'],
+            'mrta_pdf.liva_logo_ar' => ['nullable', 'string', 'max:100'],
+            'mrta_pdf.liva_contact_email' => ['nullable', 'string', 'max:255'],
+            'mrta_pdf.liva_contact_website' => ['nullable', 'string', 'max:255'],
+            'mrta_pdf.insurance_section_title_en' => ['nullable', 'string', 'max:255'],
+            'mrta_pdf.insurance_section_title_ar' => ['nullable', 'string', 'max:255'],
+            'mrta_pdf.footer_ar' => ['nullable', 'string', 'max:1000'],
+            'mrta_pdf.footer_en' => ['nullable', 'string', 'max:1000'],
+            'mrta_oman_logo_temp_folders' => ['array'],
+            'mrta_oman_logo_temp_folders.*' => ['string'],
+            'mrta_oman_logo_removed_files' => ['array'],
+            'mrta_oman_logo_removed_files.*' => ['integer'],
+            'mrta_rop_logo_temp_folders' => ['array'],
+            'mrta_rop_logo_temp_folders.*' => ['string'],
+            'mrta_rop_logo_removed_files' => ['array'],
+            'mrta_rop_logo_removed_files.*' => ['integer'],
+            'mrta_liva_logo_temp_folders' => ['array'],
+            'mrta_liva_logo_temp_folders.*' => ['string'],
+            'mrta_liva_logo_removed_files' => ['array'],
+            'mrta_liva_logo_removed_files.*' => ['integer'],
+        ]);
+
+        $siteSetting = TenantSiteSetting::updateOrCreate(
+            ['tenant_id' => $tenant->id],
+            [
+                'mrta_pdf' => MrtaPdfSettings::normalize($validated['mrta_pdf'] ?? []),
+            ]
+        );
+
+        $this->syncSingleFileUpload($request, $siteSetting, 'mrta_oman_logo');
+        $this->syncSingleFileUpload($request, $siteSetting, 'mrta_rop_logo');
+        $this->syncSingleFileUpload($request, $siteSetting, 'mrta_liva_logo');
+
+        return back()->with('success', 'MRTA PDF settings updated successfully.');
     }
 
     private function nullableString(mixed $value): ?string
@@ -1271,6 +1344,60 @@ class WebsiteSettingsController extends Controller
                 'seo_audit' => route('admin.settings.seo-audit'),
             ],
     ];
+    }
+
+    private function mrtaLogoFiles(?TenantSiteSetting $siteSetting): array
+    {
+        $collections = [
+            'oman' => 'mrta_oman_logo',
+            'rop' => 'mrta_rop_logo',
+            'liva' => 'mrta_liva_logo',
+        ];
+
+        return collect($collections)
+            ->mapWithKeys(function (string $collection, string $key) use ($siteSetting) {
+                if (! $siteSetting) {
+                    return [$key => []];
+                }
+
+                $files = $siteSetting->files()
+                    ->where('collection', $collection)
+                    ->get()
+                    ->map(fn ($file) => [
+                        'id' => $file->id,
+                        'url' => TenantSiteSetting::publicUrlFromPath($file->path),
+                    ])
+                    ->values()
+                    ->all();
+
+                return [$key => $files];
+            })
+            ->all();
+    }
+
+    private function syncSingleFileUpload(Request $request, TenantSiteSetting $siteSetting, string $collection): void
+    {
+        $tempFoldersKey = "{$collection}_temp_folders";
+        $removedFilesKey = "{$collection}_removed_files";
+
+        $tempFolders = is_array($request->input($tempFoldersKey, []))
+            ? array_values(array_filter($request->input($tempFoldersKey, [])))
+            : [];
+        $removedIds = is_array($request->input($removedFilesKey, []))
+            ? array_values(array_filter($request->input($removedFilesKey, [])))
+            : [];
+
+        if (!empty($tempFolders)) {
+            $existingIds = $siteSetting->files()->where('collection', $collection)->pluck('id')->all();
+            $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+        }
+
+        $this->filePondService->handleFileUpdates(
+            $siteSetting,
+            $tempFolders,
+            $removedIds,
+            $collection
+        );
     }
 
     private function syncSeoOgImageUpload(Request $request, TenantSiteSetting $siteSetting): void

@@ -182,6 +182,13 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     icon: FileText,
                     permission: 'tenant-manage-settings',
                 },
+                {
+                    key: 'mrta-pdf-template',
+                    title: t('dashboard.sidebar.admin.mrta_pdf') || 'MRTA PDF Template',
+                    href: adminHref('/settings/mrta-pdf'),
+                    icon: FileText,
+                    permission: 'tenant-manage-settings',
+                },
             ],
         },
         {

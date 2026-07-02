@@ -33,6 +33,14 @@ class AccidentReport extends Model
         'has_injuries',
         'third_party_involved',
         'third_party_details',
+        'mrta_accident_types',
+        'mrta_first_party',
+        'mrta_second_party',
+        'mrta_witnesses',
+        'mrta_accident_causes',
+        'mrta_vehicle_damages',
+        'mrta_insurance',
+        'mrta_signatures',
         'notes',
     ];
 
@@ -43,6 +51,14 @@ class AccidentReport extends Model
         'has_injuries' => 'boolean',
         'third_party_involved' => 'boolean',
         'third_party_details' => 'array',
+        'mrta_accident_types' => 'array',
+        'mrta_first_party' => 'array',
+        'mrta_second_party' => 'array',
+        'mrta_witnesses' => 'array',
+        'mrta_accident_causes' => 'array',
+        'mrta_vehicle_damages' => 'array',
+        'mrta_insurance' => 'array',
+        'mrta_signatures' => 'array',
     ];
 
     public function contract(): BelongsTo

@@ -6,6 +6,7 @@ use App\Enums\CarColor;
 use App\Enums\CarStatus;
 use App\Enums\FuelType;
 use App\Enums\UserRole;
+use App\Models\AccidentReport;
 use App\Models\Branch;
 use App\Models\Car;
 use App\Models\Tenant;
@@ -65,9 +66,26 @@ class AccidentReportsControllerTest extends TestCase
                 'description' => 'Third party hit the car at the office gate.',
                 'has_injuries' => false,
                 'third_party_involved' => true,
+                'mrta_accident_types' => ['vehicle_collision'],
+                'mrta_second_party' => [
+                    'vehicle_no' => 'TP-009',
+                    'driver_name' => 'Other Driver',
+                ],
+                'mrta_accident_causes' => ['negligence'],
+                'mrta_insurance' => [
+                    'policy_no' => 'POL-ADMIN-001',
+                    'technical_opinion_required' => true,
+                ],
             ]);
 
         $response->assertRedirect();
+
+        $report = AccidentReport::query()->firstOrFail();
+
+        $this->assertSame(['vehicle_collision'], $report->mrta_accident_types);
+        $this->assertSame('TP-009', $report->mrta_second_party['vehicle_no']);
+        $this->assertSame(['negligence'], $report->mrta_accident_causes);
+        $this->assertSame('POL-ADMIN-001', $report->mrta_insurance['policy_no']);
 
         $this->assertDatabaseHas('accident_reports', [
             'contract_id' => null,

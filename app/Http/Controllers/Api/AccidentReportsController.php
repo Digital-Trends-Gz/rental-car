@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\UserRole;
+use App\Core\MrtaPdfSettings;
 use App\Http\Controllers\Controller;
 use App\Models\AccidentReport;
 use App\Models\Car;
 use App\Models\Contract;
+use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Support\BranchAccess;
+use App\Support\PdfRuntime;
+use Barryvdh\DomPDF\Facade\Pdf as DomPdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +24,11 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Spatie\Browsershot\Browsershot;
+use Spatie\LaravelPdf\Enums\Format;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class AccidentReportsController extends Controller
 {
@@ -195,6 +204,85 @@ class AccidentReportsController extends Controller
         ]);
     }
 
+    public function mrtaForm(Request $request, AccidentReport $accidentReport): Response
+    {
+        $user = $this->authorizeAdminApiUser($request);
+        abort_unless($this->canAccessBranchId($user, $accidentReport->branch_id ? (int) $accidentReport->branch_id : null), 403);
+
+        $accidentReport->load($this->reportRelations());
+
+        PdfRuntime::ensureDompdfDirectories();
+
+        $fileName = sprintf('mrta-accident-%s.pdf', $accidentReport->accident_number ?: $accidentReport->id);
+        $viewData = [
+            'report' => $accidentReport,
+            'payload' => $this->mrtaPayload($accidentReport),
+            'mrtaPdfSettings' => MrtaPdfSettings::forTenantSiteSetting(
+                TenantSiteSetting::query()
+                    ->with('files')
+                    ->where('tenant_id', $accidentReport->tenant_id)
+                    ->first()
+            ),
+        ];
+
+        if (PdfRuntime::canUseBrowsershot()) {
+            try {
+                $pdf = Pdf::view('admin.accident-reports.mrta-form', $viewData)
+                    ->format(Format::A4)
+                    ->portrait()
+                    ->margins(0, 0, 0, 0)
+                    ->withBrowsershot(fn (Browsershot $browsershot) => $this->configureBrowsershot($browsershot));
+
+                return $request->boolean('download')
+                    ? $pdf->download($fileName)
+                    : $pdf->inline($fileName);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        $pdf = DomPdf::loadView('admin.accident-reports.mrta-form', $viewData)
+            ->setPaper('a4')
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('fontDir', PdfRuntime::dompdfFontDirectory())
+            ->setOption('fontCache', PdfRuntime::dompdfFontDirectory())
+            ->setOption('tempDir', PdfRuntime::dompdfTempDirectory());
+
+        return $request->boolean('download')
+            ? $pdf->download($fileName)
+            : $pdf->stream($fileName);
+    }
+
+    private function configureBrowsershot(Browsershot $browsershot): void
+    {
+        $nodeBinary = PdfRuntime::nodeBinary();
+        if ($nodeBinary) {
+            $browsershot->setNodeBinary($nodeBinary);
+        }
+
+        $npmBinary = PdfRuntime::npmBinary();
+        if ($npmBinary) {
+            $browsershot->setNpmBinary($npmBinary);
+        }
+
+        $chromePath = PdfRuntime::chromeBinary();
+        if ($chromePath) {
+            $browsershot->setChromePath($chromePath);
+        }
+
+        $browsershot
+            ->noSandbox()
+            ->addChromiumArguments([
+                'disable-dev-shm-usage',
+                'disable-gpu',
+            ])
+            ->setOption('printBackground', true)
+            ->setOption('preferCSSPageSize', true)
+            ->waitUntilNetworkIdle(false)
+            ->timeout(120)
+            ->newHeadless();
+    }
+
     private function validateReportRequest(Request $request): array
     {
         return $request->validate([
@@ -214,6 +302,14 @@ class AccidentReportsController extends Controller
             'has_injuries' => ['nullable', 'boolean'],
             'third_party_involved' => ['nullable', 'boolean'],
             'third_party_details' => ['nullable'],
+            'mrta_accident_types' => ['nullable'],
+            'mrta_first_party' => ['nullable'],
+            'mrta_second_party' => ['nullable'],
+            'mrta_witnesses' => ['nullable'],
+            'mrta_accident_causes' => ['nullable'],
+            'mrta_vehicle_damages' => ['nullable'],
+            'mrta_insurance' => ['nullable'],
+            'mrta_signatures' => ['nullable'],
             'notes' => ['nullable', 'string', 'max:3000'],
             'photos' => ['nullable', 'array', 'max:10'],
             'photo_types' => ['nullable', 'array'],
@@ -277,6 +373,14 @@ class AccidentReportsController extends Controller
                 'has_injuries' => $request->boolean('has_injuries'),
                 'third_party_involved' => $request->boolean('third_party_involved'),
                 'third_party_details' => $this->normalizeThirdPartyDetails($validated['third_party_details'] ?? null),
+                'mrta_accident_types' => $this->normalizeStringList($validated['mrta_accident_types'] ?? null),
+                'mrta_first_party' => $this->normalizeJsonObject($validated['mrta_first_party'] ?? null),
+                'mrta_second_party' => $this->normalizeJsonObject($validated['mrta_second_party'] ?? null),
+                'mrta_witnesses' => $this->normalizeJsonList($validated['mrta_witnesses'] ?? null),
+                'mrta_accident_causes' => $this->normalizeStringList($validated['mrta_accident_causes'] ?? null),
+                'mrta_vehicle_damages' => $this->normalizeJsonObject($validated['mrta_vehicle_damages'] ?? null),
+                'mrta_insurance' => $this->normalizeJsonObject($validated['mrta_insurance'] ?? null),
+                'mrta_signatures' => $this->normalizeJsonObject($validated['mrta_signatures'] ?? null),
                 'notes' => $validated['notes'] ?? null,
             ]);
 
@@ -474,6 +578,8 @@ class AccidentReportsController extends Controller
             'has_injuries' => $report->has_injuries,
             'third_party_involved' => $report->third_party_involved,
             'third_party_details' => $report->third_party_details,
+            'mrta' => $this->mrtaPayload($report),
+            'mrta_pdf_url' => route('api.accident-reports.mrta-form', ['accidentReport' => $report->id]),
             'notes' => $report->notes,
             'photos' => $report->photos
                 ->map(fn ($photo) => [
@@ -489,6 +595,102 @@ class AccidentReportsController extends Controller
             'created_at' => $report->created_at?->toISOString(),
             'updated_at' => $report->updated_at?->toISOString(),
         ];
+    }
+
+    private function mrtaPayload(AccidentReport $report): array
+    {
+        $firstParty = $this->mergeDefaults($report->mrta_first_party, [
+            'vehicle_no' => $report->car?->license_plate,
+            'driver_name' => $report->contract?->renter_name,
+            'address_tel' => $report->contract?->renter_phone,
+            'driving_license_no_category' => $report->contract?->renter_id_number,
+            'sex_nationality' => null,
+            'insurance_company' => null,
+            'insurance_type' => null,
+            'insurance_policy_no' => null,
+        ]);
+
+        $thirdParty = is_array($report->third_party_details) ? $report->third_party_details : [];
+        $secondParty = $this->mergeDefaults($report->mrta_second_party, [
+            'vehicle_no' => $thirdParty['plate_number'] ?? null,
+            'driver_name' => $thirdParty['name'] ?? null,
+            'address_tel' => $thirdParty['phone'] ?? null,
+            'driving_license_no_category' => $thirdParty['license_no'] ?? null,
+            'sex_nationality' => $thirdParty['nationality'] ?? null,
+            'insurance_company' => $thirdParty['insurance_company'] ?? null,
+            'insurance_type' => $thirdParty['insurance_type'] ?? null,
+            'insurance_policy_no' => $thirdParty['insurance_policy_no'] ?? null,
+        ]);
+
+        return [
+            'date' => $report->accident_at?->format('Y-m-d'),
+            'time' => $report->accident_at?->format('H:i'),
+            'location' => $report->location,
+            'accident_types' => $this->normalizeStringList($report->mrta_accident_types),
+            'first_party' => $firstParty,
+            'second_party' => $secondParty,
+            'witnesses' => $this->normalizeJsonList($report->mrta_witnesses),
+            'accident_causes' => $this->normalizeStringList($report->mrta_accident_causes),
+            'vehicle_damages' => $this->normalizeJsonObject($report->mrta_vehicle_damages),
+            'insurance' => $this->normalizeJsonObject($report->mrta_insurance),
+            'signatures' => $this->normalizeJsonObject($report->mrta_signatures),
+        ];
+    }
+
+    private function normalizeJsonObject(mixed $value): array
+    {
+        $normalized = $this->normalizeJsonValue($value);
+
+        return is_array($normalized) ? $normalized : [];
+    }
+
+    private function normalizeJsonList(mixed $value): array
+    {
+        $normalized = $this->normalizeJsonValue($value);
+
+        if (! is_array($normalized)) {
+            return [];
+        }
+
+        return array_values(array_filter($normalized, fn ($item) => $item !== null && $item !== ''));
+    }
+
+    private function normalizeStringList(mixed $value): array
+    {
+        $normalized = $this->normalizeJsonValue($value);
+
+        if (is_string($normalized)) {
+            $normalized = preg_split('/\s*,\s*/', $normalized) ?: [];
+        }
+
+        if (! is_array($normalized)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            fn ($item) => is_scalar($item) ? trim((string) $item) : null,
+            $normalized
+        )));
+    }
+
+    private function normalizeJsonValue(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (is_string($value) && trim($value) !== '') {
+            $decoded = json_decode($value, true);
+
+            return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+        }
+
+        return null;
+    }
+
+    private function mergeDefaults(?array $value, array $defaults): array
+    {
+        return array_replace($defaults, array_filter($value ?? [], fn ($item) => $item !== null && $item !== ''));
     }
 
     private function resolveAccessibleContract(User $user, int $contractId): Contract
@@ -668,7 +870,7 @@ class AccidentReportsController extends Controller
     {
         return [
             'photos',
-            'contract:id,contract_number',
+            'contract:id,contract_number,renter_name,renter_phone,renter_id_number',
             'reservation:id,reservation_number',
             'car:id,make,model,year,license_plate',
             'branch:id,name',

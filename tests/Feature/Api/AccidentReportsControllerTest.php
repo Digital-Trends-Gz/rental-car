@@ -298,6 +298,58 @@ class AccidentReportsControllerTest extends TestCase
         ]);
     }
 
+    public function test_accident_report_can_store_mrta_data_and_download_form_pdf(): void
+    {
+        [, $branch, $admin, $car] = $this->createAccidentApiContext();
+
+        Sanctum::actingAs($admin, ['*']);
+
+        $response = $this->postJson(route('api.accident-reports.store'), [
+            'accident_context' => 'branch',
+            'branch_id' => $branch->id,
+            'car_id' => $car->id,
+            'responsibility' => 'third_party',
+            'location_type' => 'road',
+            'accident_at' => '2026-06-20 14:50:00',
+            'location' => 'Muscat road',
+            'description' => 'Minor road traffic accident.',
+            'mrta_accident_types' => ['vehicle_collision'],
+            'mrta_second_party' => [
+                'vehicle_no' => 'TP-321',
+                'driver_name' => 'Other Driver',
+                'address_tel' => '96890000000',
+            ],
+            'mrta_witnesses' => [
+                ['name' => 'First Witness', 'phone' => '96811111111'],
+            ],
+            'mrta_accident_causes' => ['negligence', 'no_safety_distance'],
+            'mrta_vehicle_damages' => [
+                'first_party_notes' => 'Front bumper scratch',
+                'second_party_notes' => 'Rear bumper dent',
+            ],
+            'mrta_insurance' => [
+                'policy_no' => 'POL-001',
+                'type' => 'Comprehensive',
+                'claim_no' => 'CLM-001',
+                'technical_opinion_required' => true,
+            ],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('accident_report.mrta.accident_types.0', 'vehicle_collision')
+            ->assertJsonPath('accident_report.mrta.second_party.vehicle_no', 'TP-321')
+            ->assertJsonPath('accident_report.mrta.accident_causes.1', 'no_safety_distance');
+
+        $reportId = $response->json('accident_report.id');
+
+        $pdfResponse = $this->get(route('api.accident-reports.mrta-form', [
+            'accidentReport' => $reportId,
+        ]));
+
+        $pdfResponse->assertOk();
+        $this->assertStringContainsString('application/pdf', (string) $pdfResponse->headers->get('content-type'));
+    }
+
     /**
      * @return array{Tenant, Branch, User, Car}
      */
