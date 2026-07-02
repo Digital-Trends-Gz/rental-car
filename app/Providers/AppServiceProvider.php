@@ -8,6 +8,8 @@ use App\Core\LocalizationSettings;
 use App\Core\SocialLoginSettings;
 use App\Core\StripeSettings;
 use App\Models\SiteSetting;
+use App\Support\DatabaseTranslationLoader;
+use Illuminate\Contracts\Translation\Loader;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
@@ -24,7 +26,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->extend('translation.loader', function (Loader $loader): Loader {
+            return new DatabaseTranslationLoader($loader);
+        });
     }
 
     /**

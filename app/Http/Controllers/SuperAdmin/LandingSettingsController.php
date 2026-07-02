@@ -449,11 +449,21 @@ class LandingSettingsController extends Controller
             LandingPageSettings::contentKeys()
         ));
 
-        foreach (['api', 'auth'] as $group) {
+        foreach ($this->translationGroups() as $group) {
             $translations = trans($group, [], $locale);
 
             if (!is_array($translations)) {
                 $translations = trans($group, [], config('app.fallback_locale', 'en'));
+            }
+
+            if (!is_array($translations)) {
+                foreach ($this->supportedLocaleKeys() as $supportedLocale) {
+                    $translations = trans($group, [], $supportedLocale);
+
+                    if (is_array($translations)) {
+                        break;
+                    }
+                }
             }
 
             if (is_array($translations)) {
@@ -462,6 +472,22 @@ class LandingSettingsController extends Controller
         }
 
         return $rows;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function translationGroups(): array
+    {
+        $files = glob(lang_path('*/*.php')) ?: [];
+
+        return collect($files)
+            ->map(static fn (string $path): string => pathinfo($path, PATHINFO_FILENAME))
+            ->filter(static fn (string $group): bool => $group !== '')
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
     }
 
     private function persistLandingSettings(array $settings): SiteSetting

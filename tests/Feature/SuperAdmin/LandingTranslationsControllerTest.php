@@ -43,6 +43,8 @@ class LandingTranslationsControllerTest extends TestCase
                 ->component('SuperAdmin/Settings/LandingTranslations')
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('api.task_types.pickup'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('auth.api.account_not_found'))
+                ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('contracts.damage_catalog.damage_types.scratch'))
+                ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('validation.required'))
             );
     }
 
@@ -154,5 +156,43 @@ class LandingTranslationsControllerTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('task_types.0.key', 'pickup')
             ->assertJsonPath('task_types.0.label', 'استلام');
+    }
+
+    public function test_contract_damage_options_use_global_translation_overrides(): void
+    {
+        SiteSetting::query()->create([
+            'key' => 'landing_page',
+            'value' => [
+                'translations' => [
+                    'ar' => [
+                        'contracts' => [
+                            'damage_catalog' => [
+                                'damage_types' => [
+                                    'scratch' => 'GLOBAL_CUSTOM_SCRATCH',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $tenant = Tenant::factory()->create();
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        Sanctum::actingAs($admin, ['*']);
+
+        $response = $this->getJson(route('api.contracts.damage-options'), [
+            'Accept-Language' => 'ar',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.damage_types.0.value', 'scratch')
+            ->assertJsonPath('data.damage_types.0.label', 'GLOBAL_CUSTOM_SCRATCH');
     }
 }
