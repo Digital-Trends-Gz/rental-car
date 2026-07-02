@@ -134,7 +134,7 @@ return [
             'major' => 'شديد',
         ],
         'damage_timings' => [
-            'before_pickup' => 'قبل الاستلام',
+            'before_pickup' => 'قبل التسليم ',
             'after_return' => 'بعد التسليم',
         ],
         'view_sides' => [
