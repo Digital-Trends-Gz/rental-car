@@ -444,6 +444,42 @@ test('today pickups api supports pagination and reservation status filtering', f
         ->assertJsonPath('reservations.0.reservation_number', 'RES-API-002');
 });
 
+test('reservation task labels can use tenant translation overrides', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    TenantSiteSetting::create([
+        'tenant_id' => $tenant->id,
+        'translations' => [
+            'ar' => [
+                'api' => [
+                    'task_types' => [
+                        'pickup' => 'CUSTOM_PICKUP_LABEL',
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::SUPER_ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $response = $this->getJson(route('api.reservations.task-types'), [
+        'Accept-Language' => 'ar',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('task_types.0.key', 'pickup')
+        ->assertJsonPath('task_types.0.label', 'CUSTOM_PICKUP_LABEL');
+});
+
 test('returns api supports today and overdue scopes', function () {
     $tenant = Tenant::factory()->create([
         'is_active' => true,

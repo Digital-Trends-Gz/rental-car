@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\ApiPasswordResetNotification;
+use App\Support\TenantTranslations;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -263,21 +264,23 @@ class AuthController extends Controller
         $translationKey = "auth.api.{$key}";
 
         if (Lang::has($translationKey)) {
-            return trans($translationKey);
+            $fallback = trans($translationKey);
+        } else {
+            $fallback = match ($key) {
+                'account_not_found' => 'We could not find an account with this email.',
+                'otp_required' => 'The otp field is required.',
+                'otp_digits' => 'The otp must be exactly 6 digits.',
+                'otp_invalid' => 'no same or not match',
+                'otp_blocked' => 'OTP verification is blocked for 2 minutes. Please try again later.',
+                'success' => 'success',
+                'password_reset_sent' => 'If the account exists, we sent a password reset link and OTP to the registered email.',
+                'otp_verify_first' => 'Please verify the OTP first.',
+                'password_reset_success' => 'Password reset successfully.',
+                default => $translationKey,
+            };
         }
 
-        return match ($key) {
-            'account_not_found' => 'We could not find an account with this email.',
-            'otp_required' => 'The otp field is required.',
-            'otp_digits' => 'The otp must be exactly 6 digits.',
-            'otp_invalid' => 'no same or not match',
-            'otp_blocked' => 'OTP verification is blocked for 2 minutes. Please try again later.',
-            'success' => 'success',
-            'password_reset_sent' => 'If the account exists, we sent a password reset link and OTP to the registered email.',
-            'otp_verify_first' => 'Please verify the OTP first.',
-            'password_reset_success' => 'Password reset successfully.',
-            default => $translationKey,
-        };
+        return TenantTranslations::get($translationKey, app()->getLocale(), $fallback);
     }
 
     private function userPayload(User $user): array

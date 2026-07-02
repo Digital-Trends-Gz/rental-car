@@ -19,6 +19,7 @@ use App\Models\Reservation;
 use App\Models\User;
 use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
+use App\Support\TenantTranslations;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -923,6 +924,13 @@ class ReservationsController extends Controller
             return '';
         }
 
+        $translationKey = "api.{$group}.{$value}";
+        $translated = TenantTranslations::get($translationKey, $this->apiLocale);
+
+        if ($translated !== $translationKey) {
+            return $translated;
+        }
+
         $labels = [
             'reservation_statuses' => [
                 'pending' => ['en' => 'Pending', 'ar' => 'قيد الانتظار', 'ur' => 'زیر التواء'],
@@ -1274,4 +1282,3 @@ class ReservationsController extends Controller
         $query->whereHas('reservation.car', fn (Builder $q) => $q->where('branch_id', $userBranchId));
     }
 }
-

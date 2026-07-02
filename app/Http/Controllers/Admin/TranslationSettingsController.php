@@ -30,10 +30,7 @@ class TranslationSettingsController extends Controller
         $keyPool = [];
 
         foreach ($supportedLocales as $locale) {
-            $baseTranslations = trans('site', [], $locale);
-            if (!is_array($baseTranslations)) {
-                $baseTranslations = trans('site', [], config('app.fallback_locale', 'en'));
-            }
+            $baseTranslations = $this->baseTranslationsForLocale($locale);
 
             $flatBaseByLocale[$locale] = is_array($baseTranslations)
                 ? $this->flatten($baseTranslations)
@@ -136,6 +133,30 @@ class TranslationSettingsController extends Controller
         );
 
         return back()->with('success', 'Translations updated successfully.');
+    }
+
+    private function baseTranslationsForLocale(string $locale): array
+    {
+        $baseTranslations = trans('site', [], $locale);
+        if (!is_array($baseTranslations)) {
+            $baseTranslations = trans('site', [], config('app.fallback_locale', 'en'));
+        }
+
+        $baseTranslations = is_array($baseTranslations) ? $baseTranslations : [];
+
+        foreach (['api', 'auth'] as $group) {
+            $groupTranslations = trans($group, [], $locale);
+
+            if (!is_array($groupTranslations)) {
+                $groupTranslations = trans($group, [], config('app.fallback_locale', 'en'));
+            }
+
+            if (is_array($groupTranslations)) {
+                $baseTranslations[$group] = $groupTranslations;
+            }
+        }
+
+        return $baseTranslations;
     }
 
     private function flatten(array $input, string $prefix = ''): array

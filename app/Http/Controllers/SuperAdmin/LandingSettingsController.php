@@ -61,10 +61,7 @@ class LandingSettingsController extends Controller
         $settings = $this->landingSettings();
         $supportedLocales = $this->supportedLocaleKeys();
         $supportedLocaleMeta = LaravelLocalization::getSupportedLocales();
-        $defaultRows = $this->flatten(Arr::only(
-            LandingPageSettings::localize($settings, 'en'),
-            LandingPageSettings::contentKeys()
-        ));
+        $defaultRows = $this->defaultTranslationRows('en');
 
         $overrideRowsByLocale = [];
         $keyPool = array_keys($defaultRows);
@@ -257,10 +254,7 @@ class LandingSettingsController extends Controller
 
         $targetLocale = (string) ($validated['target_locale'] ?? 'ar');
         $settings = $this->landingSettings();
-        $sourceRows = $this->flatten(Arr::only(
-            LandingPageSettings::localize($settings, 'en'),
-            LandingPageSettings::contentKeys()
-        ));
+        $sourceRows = $this->defaultTranslationRows('en');
 
         if (empty($sourceRows)) {
             return response()->json([
@@ -447,10 +441,37 @@ class LandingSettingsController extends Controller
         return LandingPageSettings::normalize(is_array($stored) ? $stored : null);
     }
 
+    private function defaultTranslationRows(string $locale): array
+    {
+        $settings = $this->landingSettings();
+        $rows = $this->flatten(Arr::only(
+            LandingPageSettings::localize($settings, $locale),
+            LandingPageSettings::contentKeys()
+        ));
+
+        foreach (['api', 'auth'] as $group) {
+            $translations = trans($group, [], $locale);
+
+            if (!is_array($translations)) {
+                $translations = trans($group, [], config('app.fallback_locale', 'en'));
+            }
+
+            if (is_array($translations)) {
+                $rows = array_merge($rows, $this->flatten([$group => $translations]));
+            }
+        }
+
+        return $rows;
+    }
+
     private function persistLandingSettings(array $settings): SiteSetting
     {
         $current = $this->landingSettings();
         $merged = array_replace_recursive($current, $settings);
+
+        if (array_key_exists('translations', $settings)) {
+            $merged['translations'] = $settings['translations'];
+        }
 
         return SiteSetting::query()->updateOrCreate(
             ['key' => LandingPageSettings::KEY],
