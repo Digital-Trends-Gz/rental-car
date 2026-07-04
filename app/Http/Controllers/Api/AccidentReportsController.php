@@ -605,6 +605,15 @@ class AccidentReportsController extends Controller
 
     private function reportPayload(AccidentReport $report, Request $request): array
     {
+        $requestRoot = rtrim($request->getSchemeAndHttpHost(), '/');
+        $mrtaPublicPath = URL::temporarySignedRoute(
+            'api.accident-reports.mrta-form.public',
+            now()->addDays(30),
+            ['accidentReport' => $report->id],
+            false
+        );
+        $mrtaAuthenticatedPath = route('api.accident-reports.mrta-form', ['accidentReport' => $report->id], false);
+
         return [
             'id' => $report->id,
             'accident_number' => $report->accident_number,
@@ -657,12 +666,8 @@ class AccidentReportsController extends Controller
             'third_party_involved' => $report->third_party_involved,
             'third_party_details' => $report->third_party_details,
             'mrta' => $this->mrtaPayload($report),
-            'mrta_pdf_url' => URL::temporarySignedRoute(
-                'api.accident-reports.mrta-form.public',
-                now()->addDays(30),
-                ['accidentReport' => $report->id]
-            ),
-            'mrta_pdf_authenticated_url' => route('api.accident-reports.mrta-form', ['accidentReport' => $report->id]),
+            'mrta_pdf_url' => $requestRoot.$mrtaPublicPath,
+            'mrta_pdf_authenticated_url' => $requestRoot.$mrtaAuthenticatedPath,
             'notes' => $report->notes,
             'photos' => $report->photos
                 ->map(fn ($photo) => [

@@ -97,7 +97,7 @@ Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
 });
 
 Route::get('accident-reports/{accidentReport}/mrta-form-file', [AccidentReportsController::class, 'publicMrtaForm'])
-    ->middleware('signed')
+    ->middleware('signed:relative')
     ->name('api.accident-reports.mrta-form.public');
 
 Route::middleware('auth:sanctum')->prefix('accident-reports')->group(function () {
