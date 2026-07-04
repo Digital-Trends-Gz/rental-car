@@ -96,6 +96,10 @@ Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
     Route::match(['post', 'patch'], '{contract}/handover', [ContractsController::class, 'updateHandover'])->name('api.contracts.handover');
 });
 
+Route::get('accident-reports/{accidentReport}/mrta-form-file', [AccidentReportsController::class, 'publicMrtaForm'])
+    ->middleware('signed')
+    ->name('api.accident-reports.mrta-form.public');
+
 Route::middleware('auth:sanctum')->prefix('accident-reports')->group(function () {
     Route::get('options', [AccidentReportsController::class, 'options'])->name('api.accident-reports.options');
     Route::get('context-options', [AccidentReportsController::class, 'contextOptions'])->name('api.accident-reports.context-options');

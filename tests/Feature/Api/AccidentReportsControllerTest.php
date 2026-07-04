@@ -387,10 +387,21 @@ class AccidentReportsControllerTest extends TestCase
             ->assertJsonPath('accident_report.mrta.accident_causes.1', 'no_safety_distance');
 
         $reportId = $response->json('accident_report.id');
+        $publicPdfUrl = $response->json('accident_report.mrta_pdf_url');
+        $authenticatedPdfUrl = $response->json('accident_report.mrta_pdf_authenticated_url');
 
-        $pdfResponse = $this->get(route('api.accident-reports.mrta-form', [
+        $this->assertIsString($publicPdfUrl);
+        $this->assertStringContainsString('/api/accident-reports/'.$reportId.'/mrta-form-file', $publicPdfUrl);
+        $this->assertStringContainsString('signature=', $publicPdfUrl);
+        $this->assertSame(route('api.accident-reports.mrta-form', [
             'accidentReport' => $reportId,
-        ]));
+        ]), $authenticatedPdfUrl);
+
+        $this->get(route('api.accident-reports.mrta-form.public', [
+            'accidentReport' => $reportId,
+        ]))->assertForbidden();
+
+        $pdfResponse = $this->get($publicPdfUrl);
 
         $pdfResponse->assertOk();
         $this->assertStringContainsString('application/pdf', (string) $pdfResponse->headers->get('content-type'));

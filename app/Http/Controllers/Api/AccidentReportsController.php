@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\UserRole;
 use App\Core\MrtaPdfSettings;
+use App\Core\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Models\AccidentReport;
 use App\Models\Car;
@@ -20,6 +21,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -229,6 +231,24 @@ class AccidentReportsController extends Controller
         $user = $this->authorizeAdminApiUser($request);
         abort_unless($this->canAccessBranchId($user, $accidentReport->branch_id ? (int) $accidentReport->branch_id : null), 403);
 
+        return $this->renderMrtaForm($request, $accidentReport);
+    }
+
+    public function publicMrtaForm(Request $request, int|string $accidentReport): Response
+    {
+        $accidentReport = AccidentReport::withoutGlobalScope('tenant')
+            ->with('tenant')
+            ->findOrFail($accidentReport);
+
+        if ($accidentReport->tenant) {
+            TenantContext::set($accidentReport->tenant);
+        }
+
+        return $this->renderMrtaForm($request, $accidentReport);
+    }
+
+    private function renderMrtaForm(Request $request, AccidentReport $accidentReport): Response
+    {
         $accidentReport->load($this->reportRelations());
 
         PdfRuntime::ensureDompdfDirectories();
@@ -637,7 +657,12 @@ class AccidentReportsController extends Controller
             'third_party_involved' => $report->third_party_involved,
             'third_party_details' => $report->third_party_details,
             'mrta' => $this->mrtaPayload($report),
-            'mrta_pdf_url' => route('api.accident-reports.mrta-form', ['accidentReport' => $report->id]),
+            'mrta_pdf_url' => URL::temporarySignedRoute(
+                'api.accident-reports.mrta-form.public',
+                now()->addDays(30),
+                ['accidentReport' => $report->id]
+            ),
+            'mrta_pdf_authenticated_url' => route('api.accident-reports.mrta-form', ['accidentReport' => $report->id]),
             'notes' => $report->notes,
             'photos' => $report->photos
                 ->map(fn ($photo) => [
