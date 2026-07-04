@@ -38,16 +38,16 @@ class AppBrandingSettings
 
         if ($source instanceof SiteSetting) {
             $file = $source->relationLoaded('files')
-                ? $source->files->firstWhere('collection', 'logo')
-                : $source->files()->where('collection', 'logo')->first();
+                ? $source->files->where('collection', 'logo')->sortByDesc('id')->first()
+                : $source->files()->where('collection', 'logo')->latest('id')->first();
 
             if ($file && $file->path) {
                 $logoUrl = SiteSetting::publicUrlFromPath($file->path);
             }
 
             $faviconFile = $source->relationLoaded('files')
-                ? $source->files->firstWhere('collection', 'favicon')
-                : $source->files()->where('collection', 'favicon')->first();
+                ? $source->files->where('collection', 'favicon')->sortByDesc('id')->first()
+                : $source->files()->where('collection', 'favicon')->latest('id')->first();
 
             if ($faviconFile && $faviconFile->path) {
                 $faviconUrl = SiteSetting::publicUrlFromPath($faviconFile->path);

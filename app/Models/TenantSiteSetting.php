@@ -512,19 +512,27 @@ class TenantSiteSetting extends Model
 
         if ($settings) {
             $file = $settings->relationLoaded('files')
-                ? $settings->files->firstWhere('collection', 'logo')
-                : $settings->files()->where('collection', 'logo')->first();
+                ? $settings->files->where('collection', 'logo')->sortByDesc('id')->first()
+                : $settings->files()->where('collection', 'logo')->latest('id')->first();
 
             if ($file && $file->path) {
                 $logoUrl = self::publicUrlFromPath($file->path);
             }
 
+            if (! self::publicUrlExists($logoUrl)) {
+                $logoUrl = self::latestStoredCollectionUrl($settings, 'logo') ?: $logoUrl;
+            }
+
             $faviconFile = $settings->relationLoaded('files')
-                ? $settings->files->firstWhere('collection', 'favicon')
-                : $settings->files()->where('collection', 'favicon')->first();
+                ? $settings->files->where('collection', 'favicon')->sortByDesc('id')->first()
+                : $settings->files()->where('collection', 'favicon')->latest('id')->first();
 
             if ($faviconFile && $faviconFile->path) {
                 $faviconUrl = self::publicUrlFromPath($faviconFile->path);
+            }
+
+            if (! self::publicUrlExists($faviconUrl)) {
+                $faviconUrl = self::latestStoredCollectionUrl($settings, 'favicon') ?: $faviconUrl;
             }
         }
 
@@ -953,6 +961,40 @@ class TenantSiteSetting extends Model
         }
 
         return Storage::url($normalized);
+    }
+
+    private static function publicUrlExists(?string $url): bool
+    {
+        $url = trim((string) ($url ?? ''));
+        if ($url === '') {
+            return false;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH) ?: $url;
+        $path = ltrim($path, '/');
+
+        if (str_starts_with($path, 'storage/')) {
+            $path = substr($path, strlen('storage/'));
+        }
+
+        return $path !== '' && Storage::disk('public')->exists($path);
+    }
+
+    private static function latestStoredCollectionUrl(self $settings, string $collection): ?string
+    {
+        $directory = 'files/tenantsitesetting/'.$settings->id.'/'.$collection;
+        $files = Storage::disk('public')->files($directory);
+
+        if ($files === []) {
+            return null;
+        }
+
+        usort(
+            $files,
+            fn (string $a, string $b) => Storage::disk('public')->lastModified($b) <=> Storage::disk('public')->lastModified($a)
+        );
+
+        return self::publicUrlFromPath($files[0] ?? null);
     }
 
     private static function nullableString(mixed $value): ?string

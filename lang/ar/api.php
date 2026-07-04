@@ -88,8 +88,8 @@ return [
         'closed' => 'مغلق',
     ],
     'task_types' => [
-        'pickup' => 'استلام',
-        'return' => 'تسليم',
+        'pickup' => 'تسليم',
+        'return' => 'استلام',
         'overdue' => 'متأخر',
         'total' => 'الكل',
         'all' => 'الكل',

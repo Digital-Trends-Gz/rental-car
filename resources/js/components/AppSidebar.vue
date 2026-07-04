@@ -47,7 +47,7 @@ import {
     Users,
     Wrench,
 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 interface SidebarNavItem extends NavItem {
@@ -84,6 +84,10 @@ const sidebarSiteName = computed(
 );
 const sidebarLogoUrl = computed(() => tenantSiteSettings.value?.logo_url || null);
 const sidebarInitial = computed(() => sidebarSiteName.value.trim().charAt(0).toUpperCase() || 'W');
+const sidebarLogoFailed = ref(false);
+watch(sidebarLogoUrl, () => {
+    sidebarLogoFailed.value = false;
+});
 const tenantFeatureFlags = computed<Record<string, boolean>>(
     () => currentTenant.value?.subscription_plan?.feature_flags || {},
 );
@@ -444,10 +448,11 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                         >
                             <div v-if="currentTenant" class="flex w-full flex-row items-center gap-3">
                                 <img
-                                    v-if="sidebarLogoUrl"
+                                    v-if="sidebarLogoUrl && !sidebarLogoFailed"
                                     :src="sidebarLogoUrl"
                                     :alt="sidebarSiteName"
                                     class="h-12 w-24 shrink-0 object-contain"
+                                    @error="sidebarLogoFailed = true"
                                 />
                                 <div
                                     v-else
