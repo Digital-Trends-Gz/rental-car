@@ -74,6 +74,12 @@ class DashboardController extends Controller
             ->orderBy('updated_at', 'desc')
             ->latest('id');
 
+        $maintenanceCarsQuery = (clone $carsQuery)
+            ->with(['branch:id,name'])
+            ->where('status', CarStatus::MAINTENANCE->value)
+            ->orderBy('updated_at', 'desc')
+            ->latest('id');
+
         $overdueContractsQuery = (clone $contractsQuery)
             ->with([
                 'reservation.user:id,name,email',
@@ -135,6 +141,17 @@ class DashboardController extends Controller
                 descriptionEn: 'Cars currently marked for cleaning',
                 descriptionAr: 'السيارات المصنفة حاليًا كتنظيف',
             ),
+            $this->carCard(
+                key: 'needs_maintenance',
+                locale: $locale,
+                titleEn: 'Needs Maintenance',
+                titleAr: 'تحتاج صيانة',
+                accent: '#EF4444',
+                count: (clone $maintenanceCarsQuery)->count(),
+                items: $maintenanceCarsQuery->limit(10)->get()->map(fn (Car $car) => $this->carItem($car))->values()->all(),
+                descriptionEn: 'Cars currently marked for maintenance',
+                descriptionAr: 'السيارات المصنفة حالياً كصيانة',
+            ),
             $this->contractCard(
                 key: 'overdue',
                 locale: $locale,
@@ -162,6 +179,7 @@ class DashboardController extends Controller
             'stats' => [
                 'total_cars' => (clone $carsQuery)->count(),
                 'available_cars' => (clone $carsQuery)->where('status', CarStatus::AVAILABLE->value)->count(),
+                'maintenance_cars' => (clone $carsQuery)->where('status', CarStatus::MAINTENANCE->value)->count(),
                 'active_reservations' => (clone $reservationsQuery)->where('status', ReservationStatus::ACTIVE->value)->count(),
                 'pending_reservations' => (clone $reservationsQuery)->where('status', ReservationStatus::PENDING->value)->count(),
                 'total_reservations' => (clone $reservationsQuery)->count(),

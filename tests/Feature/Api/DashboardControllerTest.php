@@ -93,6 +93,79 @@ test('dashboard summary overdue count excludes contracts with return reports', f
     expect($overdueCard['items'][0]['contract_number'] ?? null)->toBe($openOverdueContract->contract_number);
 });
 
+test('dashboard summary includes maintenance cars count', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Branch A',
+    ]);
+
+    $otherBranch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Branch B',
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'role' => UserRole::ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Toyota',
+        'model' => 'Camry',
+        'year' => 2024,
+        'license_plate' => 'MNT-001',
+        'color' => CarColor::WHITE->value,
+        'price_per_day' => 100,
+        'mileage' => 1000,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::MAINTENANCE->value,
+    ]);
+
+    Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $otherBranch->id,
+        'make' => 'Honda',
+        'model' => 'Civic',
+        'year' => 2024,
+        'license_plate' => 'MNT-002',
+        'color' => CarColor::WHITE->value,
+        'price_per_day' => 100,
+        'mileage' => 1000,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'description' => null,
+        'status' => CarStatus::MAINTENANCE->value,
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $response = $this->getJson(route('api.dashboard.summary', [
+        'branch_id' => $branch->id,
+    ]));
+
+    $response->assertOk()
+        ->assertJsonPath('stats.maintenance_cars', 1);
+
+    $maintenanceCard = collect($response->json('cards'))
+        ->firstWhere('key', 'needs_maintenance');
+
+    expect($maintenanceCard['count'] ?? null)->toBe(1);
+    expect($maintenanceCard['items'][0]['license_plate'] ?? null)->toBe('MNT-001');
+});
+
 function createDashboardOverdueContract(Tenant $tenant, Branch $branch, User $client, string $suffix): Contract
 {
     $car = Car::create([
