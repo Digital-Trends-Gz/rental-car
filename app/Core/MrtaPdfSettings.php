@@ -18,7 +18,7 @@ class MrtaPdfSettings
             'liva_contact_email' => 'info.om@livainsurance.com',
             'liva_contact_website' => 'www.livainsurance.com',
             'insurance_section_title_en' => 'For the use of Liva Insurance',
-            'insurance_section_title_ar' => 'لإستعمال شركة ليفا للتأمين',
+            'insurance_section_title_ar' => 'لاستعمال شركة ليفا للتأمين',
             'footer_ar' => 'شركة ليفا للتأمين، ص.ب: ١٤٦٣، الرمز البريدي: ١١٢، روي، سلطنة عمان، هاتف: ٢٤٧٦٦٨٠٠، فاكس: ٢٤٧٩٣٥٨٢، س.ت: ١٧٥٤٨٠٧',
             'footer_en' => 'Liva Insurance, P.O. Box: 1463, Ruwi, PC: 112, Sultanate of Oman, Tel.:24766800, Fax: 24793582, C.R. No.: 1754807',
         ];

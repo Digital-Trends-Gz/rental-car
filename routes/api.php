@@ -101,6 +101,8 @@ Route::middleware('auth:sanctum')->prefix('accident-reports')->group(function ()
     Route::get('context-options', [AccidentReportsController::class, 'contextOptions'])->name('api.accident-reports.context-options');
     Route::get('responsibility-options', [AccidentReportsController::class, 'responsibilityOptionList'])->name('api.accident-reports.responsibility-options');
     Route::get('location-type-options', [AccidentReportsController::class, 'locationTypeOptionList'])->name('api.accident-reports.location-type-options');
+    Route::get('mrta-accident-type-options', [AccidentReportsController::class, 'mrtaAccidentTypeOptionList'])->name('api.accident-reports.mrta-accident-type-options');
+    Route::get('mrta-accident-cause-options', [AccidentReportsController::class, 'mrtaAccidentCauseOptionList'])->name('api.accident-reports.mrta-accident-cause-options');
     Route::get('branch-options', [AccidentReportsController::class, 'branchOptionList'])->name('api.accident-reports.branch-options');
     Route::get('car-options', [AccidentReportsController::class, 'carOptionList'])->name('api.accident-reports.car-options');
     Route::get('employee-options', [AccidentReportsController::class, 'employeeOptionList'])->name('api.accident-reports.employee-options');

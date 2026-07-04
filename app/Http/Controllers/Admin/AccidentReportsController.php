@@ -151,6 +151,8 @@ class AccidentReportsController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->normalizeBooleanInputs($request, ['has_injuries', 'third_party_involved']);
+
         $validated = $request->validate([
             'accident_context' => ['required', Rule::in(['contract', 'employee', 'branch'])],
             'contract_id' => ['nullable', 'integer', 'required_if:accident_context,contract'],
@@ -362,9 +364,9 @@ class AccidentReportsController extends Controller
                     ->margins(0, 0, 0, 0)
                     ->withBrowsershot(fn (Browsershot $browsershot) => $this->configureBrowsershot($browsershot));
 
-                return $request->boolean('download')
+                return ($request->boolean('download')
                     ? $pdf->download($fileName)
-                    : $pdf->inline($fileName);
+                    : $pdf->inline($fileName))->toResponse($request);
             } catch (Throwable $e) {
                 report($e);
             }
@@ -648,6 +650,42 @@ class AccidentReportsController extends Controller
         $details = array_filter($details, fn ($value) => filled($value));
 
         return $details === [] ? null : $details;
+    }
+
+    /**
+     * Laravel's boolean validation accepts real booleans and 1/0, but not
+     * string "true"/"false" values sent by multipart form-data clients.
+     *
+     * @param array<int, string> $fields
+     */
+    private function normalizeBooleanInputs(Request $request, array $fields): void
+    {
+        $normalized = [];
+
+        foreach ($fields as $field) {
+            if (! $request->has($field)) {
+                continue;
+            }
+
+            $value = $request->input($field);
+
+            if (is_bool($value) || $value === 0 || $value === 1 || $value === '0' || $value === '1') {
+                $normalized[$field] = $value;
+                continue;
+            }
+
+            if (is_scalar($value)) {
+                $boolean = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+                if ($boolean !== null) {
+                    $normalized[$field] = $boolean;
+                }
+            }
+        }
+
+        if ($normalized !== []) {
+            $request->merge($normalized);
+        }
     }
 
     private function mrtaPayload(AccidentReport $report): array

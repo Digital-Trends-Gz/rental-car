@@ -62,6 +62,8 @@ class AccidentReportsControllerTest extends TestCase
             ->assertJsonPath('contexts.2.value', 'branch')
             ->assertJsonPath('responsibilities.3.value', 'third_party')
             ->assertJsonPath('location_types.1.value', 'branch_gate')
+            ->assertJsonPath('mrta_accident_types.1.value', 'vehicle_collision')
+            ->assertJsonPath('mrta_accident_causes.9.value', 'road_defects')
             ->assertJsonPath('branches.0.id', $branch->id)
             ->assertJsonPath('cars.0.id', $car->id);
 
@@ -111,6 +113,22 @@ class AccidentReportsControllerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('location_types.0.value', 'road')
             ->assertJsonMissingPath('responsibilities');
+
+        $this->getJson(route('api.accident-reports.mrta-accident-type-options'), [
+            'Accept-Language' => 'ar',
+        ])
+            ->assertOk()
+            ->assertJsonPath('mrta_accident_types.0.value', 'stationary_object')
+            ->assertJsonPath('mrta_accident_types.0.label', "\u{0627}\u{0635}\u{0637}\u{062F}\u{0627}\u{0645} \u{0628}\u{062C}\u{0633}\u{0645} \u{062B}\u{0627}\u{0628}\u{062A}")
+            ->assertJsonMissingPath('mrta_accident_causes');
+
+        $this->getJson(route('api.accident-reports.mrta-accident-cause-options'), [
+            'Accept-Language' => 'ar',
+        ])
+            ->assertOk()
+            ->assertJsonPath('mrta_accident_causes.0.value', 'over_speed')
+            ->assertJsonPath('mrta_accident_causes.0.label', "\u{0627}\u{0644}\u{0633}\u{0631}\u{0639}\u{0629}")
+            ->assertJsonMissingPath('mrta_accident_types');
     }
 
     public function test_employee_options_include_tenant_owner_accounts(): void
@@ -295,6 +313,34 @@ class AccidentReportsControllerTest extends TestCase
             'branch_id' => $branch->id,
             'accident_context' => 'contract',
             'responsibility' => 'customer',
+        ]);
+    }
+
+    public function test_accident_report_accepts_string_boolean_values_from_form_data(): void
+    {
+        [, $branch, $admin, $car] = $this->createAccidentApiContext();
+
+        Sanctum::actingAs($admin, ['*']);
+
+        $response = $this->postJson(route('api.accident-reports.store'), [
+            'accident_context' => 'branch',
+            'branch_id' => $branch->id,
+            'car_id' => $car->id,
+            'responsibility' => 'third_party',
+            'location_type' => 'branch_gate',
+            'description' => 'Boolean values sent as multipart form-data strings.',
+            'has_injuries' => 'false',
+            'third_party_involved' => 'false',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('accident_report.has_injuries', false)
+            ->assertJsonPath('accident_report.third_party_involved', false);
+
+        $this->assertDatabaseHas('accident_reports', [
+            'id' => $response->json('accident_report.id'),
+            'has_injuries' => false,
+            'third_party_involved' => false,
         ]);
     }
 

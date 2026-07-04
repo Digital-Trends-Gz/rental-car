@@ -50,6 +50,8 @@ class AccidentReportsController extends Controller
             'contexts' => $this->contextOptionItems($request),
             'responsibilities' => $this->responsibilityOptions($request),
             'location_types' => $this->locationTypeOptions($request),
+            'mrta_accident_types' => $this->mrtaAccidentTypeOptions($request),
+            'mrta_accident_causes' => $this->mrtaAccidentCauseOptions($request),
             'branches' => $this->branchOptions($user),
             'cars' => $this->carOptions($user, $branchId),
             'employees' => $this->employeeOptions($user, $branchId),
@@ -81,6 +83,24 @@ class AccidentReportsController extends Controller
 
         return response()->json([
             'location_types' => $this->locationTypeOptions($request),
+        ]);
+    }
+
+    public function mrtaAccidentTypeOptionList(Request $request): JsonResponse
+    {
+        $this->authorizeAdminApiUser($request);
+
+        return response()->json([
+            'mrta_accident_types' => $this->mrtaAccidentTypeOptions($request),
+        ]);
+    }
+
+    public function mrtaAccidentCauseOptionList(Request $request): JsonResponse
+    {
+        $this->authorizeAdminApiUser($request);
+
+        return response()->json([
+            'mrta_accident_causes' => $this->mrtaAccidentCauseOptions($request),
         ]);
     }
 
@@ -233,9 +253,9 @@ class AccidentReportsController extends Controller
                     ->margins(0, 0, 0, 0)
                     ->withBrowsershot(fn (Browsershot $browsershot) => $this->configureBrowsershot($browsershot));
 
-                return $request->boolean('download')
+                return ($request->boolean('download')
                     ? $pdf->download($fileName)
-                    : $pdf->inline($fileName);
+                    : $pdf->inline($fileName))->toResponse($request);
             } catch (Throwable $e) {
                 report($e);
             }
@@ -285,6 +305,8 @@ class AccidentReportsController extends Controller
 
     private function validateReportRequest(Request $request): array
     {
+        $this->normalizeBooleanInputs($request, ['has_injuries', 'third_party_involved']);
+
         return $request->validate([
             'accident_context' => ['required', Rule::in(['contract', 'employee', 'branch'])],
             'contract_id' => ['nullable', 'integer', 'required_if:accident_context,contract'],
@@ -388,6 +410,42 @@ class AccidentReportsController extends Controller
 
             return $report->load($this->reportRelations());
         });
+    }
+
+    /**
+     * Laravel's boolean validation accepts real booleans and 1/0, but not
+     * string "true"/"false" values sent by multipart form-data clients.
+     *
+     * @param array<int, string> $fields
+     */
+    private function normalizeBooleanInputs(Request $request, array $fields): void
+    {
+        $normalized = [];
+
+        foreach ($fields as $field) {
+            if (! $request->has($field)) {
+                continue;
+            }
+
+            $value = $request->input($field);
+
+            if (is_bool($value) || $value === 0 || $value === 1 || $value === '0' || $value === '1') {
+                $normalized[$field] = $value;
+                continue;
+            }
+
+            if (is_scalar($value)) {
+                $boolean = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+                if ($boolean !== null) {
+                    $normalized[$field] = $boolean;
+                }
+            }
+        }
+
+        if ($normalized !== []) {
+            $request->merge($normalized);
+        }
     }
 
     private function applyFilters(Builder $query, Request $request): void
@@ -780,6 +838,7 @@ class AccidentReportsController extends Controller
                 'id' => $car->id,
                 'branch_id' => $car->branch_id,
                 'label' => trim("{$car->year} {$car->make} {$car->model} ({$car->license_plate})"),
+                'license_plate' => $car->license_plate,
             ])
             ->values()
             ->all();
@@ -810,7 +869,7 @@ class AccidentReportsController extends Controller
     private function contractOptions(User $user, ?int $branchId): array
     {
         $query = Contract::query()
-            ->select(['id', 'contract_number', 'reservation_id', 'renter_name', 'branch_id'])
+            ->select(['id', 'contract_number', 'reservation_id', 'renter_name', 'renter_phone', 'renter_id_number', 'branch_id'])
             ->with(['reservation:id,reservation_number,car_id', 'reservation.car:id,year,make,model,license_plate'])
             ->latest('id')
             ->limit(500);
@@ -831,6 +890,9 @@ class AccidentReportsController extends Controller
                 'contract_number' => $contract->contract_number,
                 'reservation_number' => $contract->reservation?->reservation_number,
                 'renter_name' => $contract->renter_name,
+                'renter_phone' => $contract->renter_phone,
+                'renter_id_number' => $contract->renter_id_number,
+                'car_license_plate' => $contract->reservation?->car?->license_plate,
                 'branch_id' => $contract->branch_id,
             ])
             ->values()
@@ -864,6 +926,32 @@ class AccidentReportsController extends Controller
                 'label' => $this->locationTypeLabel($value, $request),
             ])
             ->all();
+    }
+
+    private function mrtaAccidentTypeOptions(Request $request): array
+    {
+        return [
+            ['value' => 'stationary_object', 'label' => $this->localized($request, 'Collision against a stationary object', 'اصطدام بجسم ثابت')],
+            ['value' => 'vehicle_collision', 'label' => $this->localized($request, 'Collision between vehicles', 'اصطدام بين مركبات')],
+            ['value' => 'roll_over', 'label' => $this->localized($request, 'Roll-over', 'تدهور')],
+        ];
+    }
+
+    private function mrtaAccidentCauseOptions(Request $request): array
+    {
+        return [
+            ['value' => 'over_speed', 'label' => $this->localized($request, 'Over-speed', 'السرعة')],
+            ['value' => 'negligence', 'label' => $this->localized($request, 'Negligence', 'الإهمال')],
+            ['value' => 'fatigue', 'label' => $this->localized($request, 'Fatigue', 'الإرهاق')],
+            ['value' => 'overtaking', 'label' => $this->localized($request, 'Overtaking', 'التجاوز')],
+            ['value' => 'weather_conditions', 'label' => $this->localized($request, 'Weather Conditions', 'الطقس')],
+            ['value' => 'sudden_halt', 'label' => $this->localized($request, 'Sudden halt', 'الوقوف المفاجئ')],
+            ['value' => 'no_safety_distance', 'label' => $this->localized($request, 'No safety distance', 'عدم ترك مسافة الأمان')],
+            ['value' => 'wrong_action', 'label' => $this->localized($request, 'Wrong action', 'سوء التصرف')],
+            ['value' => 'vehicle_defects', 'label' => $this->localized($request, 'Vehicle defects', 'عيوب المركبة')],
+            ['value' => 'road_defects', 'label' => $this->localized($request, 'Road defects', 'عيوب الطريق')],
+            ['value' => 'using_gsm', 'label' => $this->localized($request, 'Using GSM', 'استخدام الهاتف')],
+        ];
     }
 
     private function reportRelations(): array

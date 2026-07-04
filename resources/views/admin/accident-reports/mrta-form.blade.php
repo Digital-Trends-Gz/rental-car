@@ -9,27 +9,54 @@
     $signatures = $payload['signatures'] ?? [];
     $pdfSettings = \App\Core\MrtaPdfSettings::normalize($mrtaPdfSettings ?? null);
     $primaryColor = $pdfSettings['primary_color'];
-    $pdfImageUrl = function (?string $url): ?string {
+    $fileDataUri = function (string $path, ?string $mime = null): ?string {
+        if (! is_file($path)) {
+            return null;
+        }
+
+        $mime ??= pathinfo($path, PATHINFO_EXTENSION) === 'svg'
+            ? 'image/svg+xml'
+            : (mime_content_type($path) ?: 'application/octet-stream');
+
+        return 'data:'.$mime.';base64,'.base64_encode((string) file_get_contents($path));
+    };
+    $pdfImageSource = function (?string $url) use ($fileDataUri): ?string {
         $url = trim((string) ($url ?? ''));
         if ($url === '') {
             return null;
         }
 
-        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://') || str_starts_with($url, 'data:')) {
+        if (str_starts_with($url, 'data:')) {
+            return $url;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH) ?: $url;
+        $path = ltrim($path, '/');
+
+        if (str_starts_with($path, 'storage/')) {
+            $source = $fileDataUri(storage_path('app/public/'.substr($path, strlen('storage/'))));
+            if ($source) {
+                return $source;
+            }
+        }
+
+        $source = $fileDataUri(public_path($path));
+        if ($source) {
+            return $source;
+        }
+
+        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
             return $url;
         }
 
         return url('/'.ltrim($url, '/'));
     };
-    $omanLogoUrl = $pdfImageUrl($pdfSettings['oman_logo_url']);
-    $ropLogoUrl = $pdfImageUrl($pdfSettings['rop_logo_url']);
-    $livaLogoUrl = $pdfImageUrl($pdfSettings['liva_logo_url']);
+    $omanLogoUrl = $pdfImageSource($pdfSettings['oman_logo_url']);
+    $ropLogoUrl = $pdfImageSource($pdfSettings['rop_logo_url']);
+    $livaLogoUrl = $pdfImageSource($pdfSettings['liva_logo_url']);
 
     $checked = fn (array $values, string $value): string => in_array($value, $values, true) ? 'is-checked' : '';
     $value = fn (array $data, string $key): string => (string) data_get($data, $key, '');
-    $fileDataUri = function (string $path, string $mime): ?string {
-        return is_file($path) ? 'data:'.$mime.';base64,'.base64_encode((string) file_get_contents($path)) : null;
-    };
     $carView = fn (string $name): ?string => $fileDataUri(public_path("images/car-damage-views/{$name}.svg"), 'image/svg+xml');
     $cairoPath = collect([
         ...glob(storage_path('app/dompdf-fonts/cairo_normal_*.ttf')),
