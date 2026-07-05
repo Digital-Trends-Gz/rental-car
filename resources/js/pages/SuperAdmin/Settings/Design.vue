@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { useTrans } from '@/composables/useTrans';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { ExternalLink, RefreshCw } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 interface FeatureCard {
     title: string;
@@ -61,6 +63,7 @@ interface LandingSettings {
 const props = defineProps<{
     settings: LandingSettings;
     previewUrl: string;
+    heroFiles: Array<{ id: number; url: string }>;
 }>();
 
 const { locale } = useTrans();
@@ -70,26 +73,85 @@ const previewNonce = ref(Date.now());
 
 const form = useForm<{
     settings: LandingSettings;
+    hero_temp_folders: string[];
+    hero_removed_files: number[];
 }>({
     settings: JSON.parse(JSON.stringify(props.settings)),
+    hero_temp_folders: [] as string[],
+    hero_removed_files: [] as number[],
 });
 
+const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
+const heroTempFolders = ref<string[]>([]);
+const heroRemovedFileIds = ref<number[]>([]);
+const heroSourceMode = ref<'upload' | 'url'>(props.heroFiles?.length ? 'upload' : 'url');
 const previewSrc = computed(() => {
     const separator = props.previewUrl.includes('?') ? '&' : '?';
     return `${props.previewUrl}${separator}preview=${previewNonce.value}`;
 });
+const uploadedHeroUrl = computed(() => props.heroFiles?.[0]?.url || null);
+const previewHeroUrl = computed(() => (
+    heroSourceMode.value === 'url'
+        ? form.settings.hero.image_url || null
+        : uploadedHeroUrl.value || form.settings.hero.image_url || null
+));
+const heroIsVideo = computed(() => isVideoUrl(previewHeroUrl.value));
+
+watch(
+    heroTempFolders,
+    (value) => {
+        form.hero_temp_folders = [...value];
+    },
+    { deep: true },
+);
+
+watch(heroSourceMode, (value) => {
+    if (value !== 'url') {
+        return;
+    }
+
+    const existingIds = (props.heroFiles || []).map((file) => file.id).filter(Boolean);
+    heroRemovedFileIds.value = [...new Set([...heroRemovedFileIds.value, ...existingIds])];
+    form.hero_removed_files = [...heroRemovedFileIds.value];
+});
+
+function isVideoUrl(url: string | null): boolean {
+    if (!url) {
+        return false;
+    }
+
+    return /\.(mp4|webm|ogg|mov)(?:$|[?#])/i.test(url);
+}
+
+const handleHeroFileRemoved = (data: { type: string; fileId?: number }) => {
+    if (data.type === 'existing' && data.fileId) {
+        heroRemovedFileIds.value.push(data.fileId);
+        form.hero_removed_files = [...new Set(heroRemovedFileIds.value)];
+    }
+};
 
 const refreshPreview = () => {
     previewNonce.value = Date.now();
 };
 
 const submit = () => {
-    form.put('/superadmin/settings/design', {
-        preserveScroll: true,
-        onSuccess: () => {
-            refreshPreview();
-        },
-    });
+    form
+        .transform((data) => ({
+            ...data,
+            _method: 'put',
+        }))
+        .post('/superadmin/settings/design', {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                heroTempFolders.value = [];
+                form.hero_temp_folders = [];
+                form.hero_removed_files = [];
+                heroRemovedFileIds.value = [];
+                fileUploadRef.value?.resetFiles();
+                refreshPreview();
+            },
+        });
 };
 
 const openPreview = () => {
@@ -176,8 +238,56 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="hero_image_url">{{ localize('Hero Image URL', 'رابط صورة القسم الرئيسي') }}</Label>
-                                <Input id="hero_image_url" v-model="form.settings.hero.image_url" placeholder="https://..." />
+                                <Label>{{ localize('Hero Media Source', 'مصدر وسائط القسم الرئيسي') }}</Label>
+                                <Select v-model="heroSourceMode">
+                                    <SelectTrigger>
+                                        <SelectValue :placeholder="localize('Select source', 'اختر المصدر')" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="upload">{{ localize('Upload image or video', 'رفع صورة أو فيديو') }}</SelectItem>
+                                        <SelectItem value="url">{{ localize('External URL', 'رابط خارجي') }}</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                <div v-if="heroSourceMode === 'upload'" class="space-y-2">
+                                    <FileUpload
+                                        ref="fileUploadRef"
+                                        v-model="heroTempFolders"
+                                        :initial-files="heroFiles || []"
+                                        :allow-multiple="false"
+                                        :max-files="1"
+                                        :max-file-size="1024 * 1024 * 50"
+                                        :allowed-file-types="['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']"
+                                        collection="hero"
+                                        theme="light"
+                                        width="100%"
+                                        @file-removed="handleHeroFileRemoved"
+                                    />
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ localize('Upload one image or video for the hero section. A new upload replaces the previous file.', 'ارفع صورة أو فيديو واحد للقسم الرئيسي. أي رفع جديد سيستبدل الملف السابق.') }}
+                                    </p>
+                                </div>
+
+                                <div v-else class="space-y-2">
+                                    <Input id="hero_image_url" v-model="form.settings.hero.image_url" placeholder="https://..." />
+                                </div>
+
+                                <div v-if="previewHeroUrl" class="overflow-hidden rounded-lg border bg-muted/20">
+                                    <video
+                                        v-if="heroIsVideo"
+                                        :src="previewHeroUrl"
+                                        class="h-44 w-full object-cover"
+                                        controls
+                                        muted
+                                        playsinline
+                                    />
+                                    <img
+                                        v-else
+                                        :src="previewHeroUrl"
+                                        alt="hero preview"
+                                        class="h-44 w-full object-cover"
+                                    />
+                                </div>
                             </div>
 
                             <div class="space-y-3">

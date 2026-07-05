@@ -210,6 +210,7 @@ const currentYear = new Date().getFullYear();
 const registerUrl = mainRegister().url;
 const navigationCtaLabel = computed(() => props.landingSettings.navigation?.cta_label || 'Start Free Trial');
 const heroImage = computed(() => props.landingSettings.hero.image_url || heroMockup);
+const heroIsVideo = computed(() => /\.(mp4|webm|ogg|mov)(?:$|[?#])/i.test(heroImage.value));
 const carSearch = ref(props.carSearch ?? '');
 const fleetUrl = mainFleet().url;
 
@@ -533,7 +534,17 @@ onUnmounted(() => {
 
                     <div class="mx-auto mt-16 max-w-5xl animate-reveal-up-delay">
                         <div class="card-elevated overflow-hidden rounded-2xl p-1">
+                            <video
+                                v-if="heroIsVideo"
+                                :src="heroImage"
+                                class="w-full rounded-xl"
+                                autoplay
+                                muted
+                                loop
+                                playsinline
+                            />
                             <img
+                                v-else
                                 :src="heroImage"
                                 alt="Hero"
                                 class="w-full rounded-xl"

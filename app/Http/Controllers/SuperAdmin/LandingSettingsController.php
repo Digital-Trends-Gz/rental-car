@@ -109,9 +109,27 @@ class LandingSettingsController extends Controller
 
     public function design(): Response
     {
+        $brandingSetting = SiteSetting::query()
+            ->with('files')
+            ->where('key', LandingPageSettings::KEY)
+            ->first();
+
+        $heroFiles = $brandingSetting
+            ? $brandingSetting->files()
+                ->where('collection', 'hero')
+                ->get()
+                ->map(fn ($file) => [
+                    'id' => $file->id,
+                    'url' => SiteSetting::publicUrlFromPath($file->path),
+                ])
+                ->values()
+                ->all()
+            : [];
+
         return Inertia::render('SuperAdmin/Settings/Design', [
             'settings' => $this->landingSettings(),
             'previewUrl' => route('home'),
+            'heroFiles' => $heroFiles,
         ]);
     }
 
