@@ -13,6 +13,7 @@ use App\Models\SubscriptionPaymentTransaction;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Payments\MyFatoorahSubscriptionProvider;
+use App\Support\PlanTranslations;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -194,7 +195,7 @@ class RegisteredUserController extends Controller
             return to_route($this->authRouteName('register'))->with('error', 'Please complete registration details first.');
         }
 
-        $plans = Plan::query()
+        $plans = PlanTranslations::localizeCollection(Plan::query()
             ->where('is_active', true)
             ->orderBy('monthly_price')
             ->get([
@@ -208,7 +209,7 @@ class RegisteredUserController extends Controller
                 'yearly_price_id',
                 'one_time_price',
                 'one_time_price_id',
-            ]);
+            ]), app()->getLocale());
 
         return Inertia::render('auth/RegisterPlans', [
             'plans' => $plans,
@@ -290,6 +291,8 @@ class RegisteredUserController extends Controller
             return to_route($this->authRouteName('register.plans'))->with('error', 'The selected plan is no longer available.');
         }
 
+        $localizedPlan = PlanTranslations::localizePlan($plan, app()->getLocale());
+
         $paymentProviders = $this->availablePlatformSubscriptionProviders();
         $providerPaymentMethods = [];
         $defaultMyFatoorahPaymentMethodId = null;
@@ -328,9 +331,9 @@ class RegisteredUserController extends Controller
             ],
             'plan' => [
                 'id' => $plan->id,
-                'name' => $plan->name,
-                'description' => $plan->description,
-                'features' => $plan->features ?? [],
+                'name' => $localizedPlan->name,
+                'description' => $localizedPlan->description,
+                'features' => $localizedPlan->features ?? [],
             ],
             'billingCycle' => $selection['billing_cycle'],
             'amount' => $this->resolvePlanAmount($plan, $selection['billing_cycle']),

@@ -29,6 +29,10 @@ const props = defineProps<{
 
 const { locale } = useTrans();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const activeRegisterHeroLocale = computed(
+    () => props.supportedLocales.find((localeOption) => localeOption.code === locale.value) ?? props.supportedLocales[0] ?? { code: 'en', name: 'English', native: 'English' },
+);
+const activeRegisterHeroCode = computed(() => activeRegisterHeroLocale.value.code);
 
 const form = useForm({
     app_name: props.settings.app_name ?? '',
@@ -253,38 +257,33 @@ const submit = () => {
                                 </p>
                             </div>
 
-                            <div class="grid gap-4 lg:grid-cols-2">
-                                <div
-                                    v-for="localeOption in supportedLocales"
-                                    :key="`register-hero-${localeOption.code}`"
-                                    class="space-y-2 rounded-lg border bg-muted/20 p-3"
-                                >
-                                    <div class="flex items-center justify-between gap-3">
-                                        <Label>
-                                            {{ localeOption.name }}
-                                            <span class="text-muted-foreground">({{ localeOption.code.toUpperCase() }})</span>
-                                        </Label>
-                                        <span class="text-xs text-muted-foreground">{{ localeOption.native }}</span>
-                                    </div>
-                                    <FileUpload
-                                        :ref="(el) => setRegisterHeroUploadRef(localeOption.code, el as InstanceType<typeof FileUpload> | null)"
-                                        v-model="registerHeroTempFolders[localeOption.code]"
-                                        :initial-files="registerHeroFiles?.[localeOption.code] || []"
-                                        :allow-multiple="false"
-                                        :max-files="1"
-                                        :allowed-file-types="['image/jpeg', 'image/png', 'image/webp']"
-                                        :collection="`register_hero_${localeOption.code}`"
-                                        theme="light"
-                                        width="100%"
-                                        @file-removed="(data) => handleRegisterHeroFileRemoved(localeOption.code, data)"
+                            <div class="space-y-2 rounded-lg border bg-muted/20 p-3">
+                                <div class="flex items-center justify-between gap-3">
+                                    <Label>
+                                        {{ activeRegisterHeroLocale.name }}
+                                        <span class="text-muted-foreground">({{ activeRegisterHeroCode.toUpperCase() }})</span>
+                                    </Label>
+                                    <span class="text-xs text-muted-foreground">{{ activeRegisterHeroLocale.native }}</span>
+                                </div>
+                                <FileUpload
+                                    :key="`register-hero-${activeRegisterHeroCode}`"
+                                    :ref="(el) => setRegisterHeroUploadRef(activeRegisterHeroCode, el as InstanceType<typeof FileUpload> | null)"
+                                    v-model="registerHeroTempFolders[activeRegisterHeroCode]"
+                                    :initial-files="registerHeroFiles?.[activeRegisterHeroCode] || []"
+                                    :allow-multiple="false"
+                                    :max-files="1"
+                                    :allowed-file-types="['image/jpeg', 'image/png', 'image/webp']"
+                                    :collection="`register_hero_${activeRegisterHeroCode}`"
+                                    theme="light"
+                                    width="100%"
+                                    @file-removed="(data) => handleRegisterHeroFileRemoved(activeRegisterHeroCode, data)"
+                                />
+                                <div v-if="registerHeroPreview(activeRegisterHeroCode)" class="overflow-hidden rounded-md border bg-background">
+                                    <img
+                                        :src="registerHeroPreview(activeRegisterHeroCode) || ''"
+                                        :alt="`${activeRegisterHeroLocale.name} register image preview`"
+                                        class="h-40 w-full object-cover"
                                     />
-                                    <div v-if="registerHeroPreview(localeOption.code)" class="overflow-hidden rounded-md border bg-background">
-                                        <img
-                                            :src="registerHeroPreview(localeOption.code) || ''"
-                                            :alt="`${localeOption.name} register image preview`"
-                                            class="h-40 w-full object-cover"
-                                        />
-                                    </div>
                                 </div>
                             </div>
                         </div>

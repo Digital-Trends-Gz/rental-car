@@ -27,6 +27,12 @@ defineProps<{
 
 const page = usePage<any>();
 const currentTenant = computed(() => page.props.current_tenant);
+const authSideImage = computed(() => {
+    const images = page.props.app_branding?.register_hero_images || {};
+    const currentLocale = String(page.props.locale || 'en');
+
+    return images[currentLocale] || images.en || authHero;
+});
 
 const loginAction = computed(() => {
     const slug = currentTenant.value?.slug;
@@ -61,7 +67,7 @@ const landingUrl = computed(() => {
     <div class="flex min-h-screen bg-white" :style="themeVars">
         <div class="relative hidden overflow-hidden lg:flex lg:w-1/2">
             <img
-                :src="authHero"
+                :src="authSideImage"
                 alt="Car4U background"
                 class="absolute inset-0 h-full w-full object-cover object-center"
             />

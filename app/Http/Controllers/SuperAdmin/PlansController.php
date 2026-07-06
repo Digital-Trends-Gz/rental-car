@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
+use App\Support\PlanTranslations;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -48,7 +49,7 @@ class PlansController extends Controller
     public function index(): Response
     {
         return Inertia::render('SuperAdmin/Plans/Index', [
-            'plans' => Plan::withCount('tenants')->latest()->get(),
+            'plans' => PlanTranslations::localizeCollection(Plan::withCount('tenants')->latest()->get(), app()->getLocale()),
         ]);
     }
 

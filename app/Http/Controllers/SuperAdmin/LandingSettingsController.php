@@ -7,6 +7,7 @@ use App\Core\AiProviderSettings;
 use App\Core\LandingPageSettings;
 use App\Http\Controllers\Controller;
 use App\Models\SiteSetting;
+use App\Support\PlanTranslations;
 use Google\Cloud\DocumentAI\V1\Client\DocumentProcessorServiceClient;
 use Google\Cloud\DocumentAI\V1\GetProcessorRequest;
 use Illuminate\Http\JsonResponse;
@@ -466,6 +467,7 @@ class LandingSettingsController extends Controller
             LandingPageSettings::localize($settings, $locale),
             LandingPageSettings::contentKeys()
         ));
+        $rows = array_merge($rows, $this->flatten(PlanTranslations::defaultTranslationTree()));
 
         foreach ($this->translationGroups() as $group) {
             $translations = trans($group, [], $locale);

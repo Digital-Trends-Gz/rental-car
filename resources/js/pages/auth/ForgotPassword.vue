@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import authHero from '@/assets/auth-hero.jpg';
+import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
 import InputError from '@/components/InputError.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +17,12 @@ import { computed, reactive, ref } from 'vue';
 
 const page = usePage<any>();
 const currentTenant = computed(() => page.props.current_tenant);
+const authSideImage = computed(() => {
+    const images = page.props.app_branding?.register_hero_images || {};
+    const currentLocale = String(page.props.locale || 'en');
+
+    return images[currentLocale] || images.en || authHero;
+});
 
 const loginHref = computed(() =>
     currentTenant.value?.slug
@@ -283,13 +290,17 @@ const restartWizard = (): void => {
     <div class="flex min-h-screen bg-white">
         <div class="relative hidden overflow-hidden lg:flex lg:w-1/2">
             <img
-                :src="authHero"
+                :src="authSideImage"
                 alt="Car4U background"
                 class="absolute inset-0 h-full w-full object-cover object-center"
             />
         </div>
 
-        <div class="flex w-full items-center justify-center p-6 sm:p-8 lg:w-1/2">
+        <div class="relative flex w-full items-center justify-center p-6 sm:p-8 lg:w-1/2">
+            <div class="absolute top-4 ltr:right-4 rtl:left-4 z-50">
+                <AuthLanguageSwitcher />
+            </div>
+
             <div class="w-full max-w-lg space-y-6">
                 <div class="space-y-2">
                     <h1 class="text-3xl font-bold text-gray-900">
