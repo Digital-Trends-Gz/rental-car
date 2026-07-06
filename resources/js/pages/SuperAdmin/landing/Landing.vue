@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SeoHead from '@/components/SeoHead.vue';
@@ -34,6 +34,11 @@ interface StepItem {
 interface FaqItem {
     question: string;
     answer: string;
+}
+
+interface QuickLinkItem {
+    label: string;
+    href: string;
 }
 
 interface TenantLogo {
@@ -88,6 +93,32 @@ interface LandingSettings {
         title: string;
         description: string;
         items: FaqItem[];
+    };
+    contact_section: {
+        title: string;
+        description: string;
+        form_title: string;
+        name_label: string;
+        name_placeholder: string;
+        email_label: string;
+        email_placeholder: string;
+        subject_label: string;
+        subject_placeholder: string;
+        message_label: string;
+        message_placeholder: string;
+        submit_label: string;
+        sending_label: string;
+        success_message: string;
+        error_message: string;
+        direct_title: string;
+        direct_email_label: string;
+        direct_email: string;
+        direct_phone_label: string;
+        direct_phone: string;
+        response_time_label: string;
+        response_time: string;
+        quick_links_title: string;
+        quick_links: QuickLinkItem[];
     };
     footer: {
         title: string;
@@ -211,6 +242,8 @@ const registerUrl = mainRegister().url;
 const navigationCtaLabel = computed(() => props.landingSettings.navigation?.cta_label || 'Start Free Trial');
 const heroImage = computed(() => props.landingSettings.hero.image_url || heroMockup);
 const heroIsVideo = computed(() => /\.(mp4|webm|ogg|mov)(?:$|[?#])/i.test(heroImage.value));
+const contactSection = computed(() => props.landingSettings.contact_section);
+const contactRecipient = computed(() => contactSection.value.direct_email || 'info@car4u.net');
 const carSearch = ref(props.carSearch ?? '');
 const fleetUrl = mainFleet().url;
 
@@ -355,21 +388,14 @@ const submitContact = () => {
         onSuccess() {
             contactForm.reset();
             contactNoticeTone.value = 'success';
-            contactNotice.value = localize(
-                'Thanks. We received your message and will review it shortly.',
-                'شكرًا. لقد استلمنا رسالتك وسنراجعها قريبًا.',
-            );
+            contactNotice.value = contactSection.value.success_message;
         },
         onError() {
             contactNoticeTone.value = 'error';
-            contactNotice.value = localize(
-                'Please check the form and try again.',
-                'يرجى التحقق من النموذج والمحاولة مرة أخرى.',
-            );
+            contactNotice.value = contactSection.value.error_message;
         },
     });
 };
-
 onMounted(() => {
     onScroll();
     window.addEventListener('scroll', onScroll);
@@ -720,7 +746,7 @@ onUnmounted(() => {
                             {{ localize('No cars matched your search.', 'لا توجد سيارات مطابقة لبحثك.') }}
                         </p>
                         <p class="mt-2 text-sm text-muted-foreground">
-                            {{ localize('Try a different make, model, or tenant name.', 'جرّب اسم شركة أو موديل أو مستأجر آخر.') }}
+                            {{ localize('Try a different make, model, or tenant name.', 'جرب اسم شركة أو موديل أو مستأجر آخر.') }}
                         </p>
                     </div>
 
@@ -907,52 +933,52 @@ onUnmounted(() => {
                 <div class="section-container">
                     <div class="mx-auto mb-10 max-w-2xl text-center">
                         <h2 class="text-3xl font-bold text-foreground sm:text-4xl">
-                            {{ localize('Contact form', 'نموذج التواصل') }}
+                            {{ contactSection.title }}
                         </h2>
                         <p class="mt-4 text-lg text-muted-foreground">
-                            {{ localize('Send us a note and our team will follow up by email.', 'أرسل لنا رسالة وسيتابع فريقنا معك عبر البريد الإلكتروني.') }}
+                            {{ contactSection.description }}
                         </p>
                     </div>
 
                     <div class="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)]">
                         <Card class="border-border shadow-sm">
                             <CardHeader>
-                                <CardTitle>{{ localize('Tell us what you need', 'أخبرنا بما تحتاجه') }}</CardTitle>
+                                <CardTitle>{{ contactSection.form_title }}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <form class="space-y-4" @submit.prevent="submitContact">
                                     <div class="grid gap-4 sm:grid-cols-2">
                                         <div class="space-y-2">
-                                            <label class="text-sm font-medium text-foreground">{{ localize('Name', 'الاسم') }}</label>
-                                            <Input v-model="contactForm.name" :placeholder="localize('Your name', 'اسمك')" />
+                                            <label class="text-sm font-medium text-foreground">{{ contactSection.name_label }}</label>
+                                            <Input v-model="contactForm.name" :placeholder="contactSection.name_placeholder" />
                                             <p v-if="contactForm.errors.name" class="text-xs text-destructive">{{ contactForm.errors.name }}</p>
                                         </div>
                                         <div class="space-y-2">
-                                            <label class="text-sm font-medium text-foreground">{{ localize('Email', 'البريد الإلكتروني') }}</label>
-                                            <Input v-model="contactForm.email" type="email" :placeholder="localize('you@example.com', 'you@example.com')" />
+                                            <label class="text-sm font-medium text-foreground">{{ contactSection.email_label }}</label>
+                                            <Input v-model="contactForm.email" type="email" :placeholder="contactSection.email_placeholder" />
                                             <p v-if="contactForm.errors.email" class="text-xs text-destructive">{{ contactForm.errors.email }}</p>
                                         </div>
                                     </div>
 
                                     <div class="space-y-2">
-                                        <label class="text-sm font-medium text-foreground">{{ localize('Subject', 'الموضوع') }}</label>
-                                        <Input v-model="contactForm.subject" :placeholder="localize('How can we help?', 'كيف يمكننا المساعدة؟')" />
+                                        <label class="text-sm font-medium text-foreground">{{ contactSection.subject_label }}</label>
+                                        <Input v-model="contactForm.subject" :placeholder="contactSection.subject_placeholder" />
                                         <p v-if="contactForm.errors.subject" class="text-xs text-destructive">{{ contactForm.errors.subject }}</p>
                                     </div>
 
                                     <div class="space-y-2">
-                                        <label class="text-sm font-medium text-foreground">{{ localize('Message', 'الرسالة') }}</label>
+                                        <label class="text-sm font-medium text-foreground">{{ contactSection.message_label }}</label>
                                         <Textarea
                                             v-model="contactForm.message"
                                             rows="5"
-                                            :placeholder="localize('Tell us a bit about your fleet or the feature you want to launch.', 'اكتب لنا باختصار عن أسطولك أو الميزة التي تريد إطلاقها.')"
+                                            :placeholder="contactSection.message_placeholder"
                                         />
                                         <p v-if="contactForm.errors.message" class="text-xs text-destructive">{{ contactForm.errors.message }}</p>
                                     </div>
 
                                     <Button type="submit" class="gradient-button h-12 rounded-full px-6">
-                                        <span v-if="contactForm.processing">{{ localize('Sending...', 'جارٍ الإرسال...') }}</span>
-                                        <span v-else>{{ localize('Send message', 'إرسال الرسالة') }}</span>
+                                        <span v-if="contactForm.processing">{{ contactSection.sending_label }}</span>
+                                        <span v-else>{{ contactSection.submit_label }}</span>
                                     </Button>
 
                                     <p
@@ -969,37 +995,36 @@ onUnmounted(() => {
                         <div class="space-y-6">
                             <Card class="border-border shadow-sm">
                                 <CardHeader>
-                                    <CardTitle>{{ localize('Direct contact', 'التواصل المباشر') }}</CardTitle>
+                                    <CardTitle>{{ contactSection.direct_title }}</CardTitle>
                                 </CardHeader>
                                 <CardContent class="space-y-4 text-sm text-muted-foreground">
                                     <div>
-                                        <p class="font-medium text-foreground">{{ localize('Email', 'البريد الإلكتروني') }}</p>
+                                        <p class="font-medium text-foreground">{{ contactSection.direct_email_label }}</p>
                                         <a class="text-primary hover:underline" :href="`mailto:${contactRecipient}`">{{ contactRecipient }}</a>
                                     </div>
                                     <div>
-                                        <p class="font-medium text-foreground">{{ localize('Phone', 'الهاتف') }}</p>
-                                        <p>+1 (555) 123-4567</p>
+                                        <p class="font-medium text-foreground">{{ contactSection.direct_phone_label }}</p>
+                                        <p>{{ contactSection.direct_phone }}</p>
                                     </div>
                                     <div>
-                                        <p class="font-medium text-foreground">{{ localize('Response time', 'زمن الاستجابة') }}</p>
-                                        <p>{{ localize('Within one business day', 'خلال يوم عمل واحد') }}</p>
+                                        <p class="font-medium text-foreground">{{ contactSection.response_time_label }}</p>
+                                        <p>{{ contactSection.response_time }}</p>
                                     </div>
                                 </CardContent>
                             </Card>
 
                             <Card class="border-border shadow-sm">
                                 <CardHeader>
-                                    <CardTitle>{{ localize('Quick links', 'روابط سريعة') }}</CardTitle>
+                                    <CardTitle>{{ contactSection.quick_links_title }}</CardTitle>
                                 </CardHeader>
                                 <CardContent class="space-y-3 text-sm">
-                                    <a href="#cars" class="block font-medium text-primary hover:underline">
-                                        {{ localize('Browse tenant cars', 'تصفح سيارات المستأجرين') }}
-                                    </a>
-                                    <a href="#pricing" class="block font-medium text-primary hover:underline">
-                                        {{ localize('View plans', 'عرض الخطط') }}
-                                    </a>
-                                    <a href="#faq" class="block font-medium text-primary hover:underline">
-                                        {{ localize('Read the FAQ', 'قراءة الأسئلة الشائعة') }}
+                                    <a
+                                        v-for="link in contactSection.quick_links"
+                                        :key="`${link.label}-${link.href}`"
+                                        :href="link.href"
+                                        class="block font-medium text-primary hover:underline"
+                                    >
+                                        {{ link.label }}
                                     </a>
                                 </CardContent>
                             </Card>

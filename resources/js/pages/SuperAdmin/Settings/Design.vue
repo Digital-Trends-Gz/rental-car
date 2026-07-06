@@ -28,6 +28,11 @@ interface FaqItem {
     answer: string;
 }
 
+interface QuickLinkItem {
+    label: string;
+    href: string;
+}
+
 interface LandingSettings {
     hero: {
         title: string;
@@ -53,6 +58,32 @@ interface LandingSettings {
         title: string;
         description: string;
         items: FaqItem[];
+    };
+    contact_section: {
+        title: string;
+        description: string;
+        form_title: string;
+        name_label: string;
+        name_placeholder: string;
+        email_label: string;
+        email_placeholder: string;
+        subject_label: string;
+        subject_placeholder: string;
+        message_label: string;
+        message_placeholder: string;
+        submit_label: string;
+        sending_label: string;
+        success_message: string;
+        error_message: string;
+        direct_title: string;
+        direct_email_label: string;
+        direct_email: string;
+        direct_phone_label: string;
+        direct_phone: string;
+        response_time_label: string;
+        response_time: string;
+        quick_links_title: string;
+        quick_links: QuickLinkItem[];
     };
     footer: {
         title: string;
@@ -185,6 +216,14 @@ const addFaqItem = () => {
     });
 };
 const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(index, 1);
+
+const addQuickLink = () => {
+    form.settings.contact_section.quick_links.push({
+        label: '',
+        href: '#',
+    });
+};
+const removeQuickLink = (index: number) => form.settings.contact_section.quick_links.splice(index, 1);
 </script>
 
 <template>
@@ -439,6 +478,146 @@ const removeFaqItem = (index: number) => form.settings.faq_section.items.splice(
                                     </div>
                                     <div class="flex justify-end">
                                         <Button type="button" variant="destructive" size="sm" @click="removeFaqItem(index)">{{ localize('Remove FAQ', 'حذف السؤال') }}</Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{{ localize('Contact Section', 'قسم التواصل') }}</CardTitle>
+                            <CardDescription>{{ localize('Edit the English source text for the contact form, direct contact card, and quick links.', 'عدّل النص الإنجليزي الأساسي لنموذج التواصل وبطاقة التواصل المباشر والروابط السريعة.') }}</CardDescription>
+                        </CardHeader>
+                        <CardContent class="space-y-4">
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Section Title', 'عنوان القسم') }}</Label>
+                                    <Input v-model="form.settings.contact_section.title" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Form Card Title', 'عنوان بطاقة النموذج') }}</Label>
+                                    <Input v-model="form.settings.contact_section.form_title" />
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label>{{ localize('Section Description', 'وصف القسم') }}</Label>
+                                <Textarea v-model="form.settings.contact_section.description" rows="2" />
+                            </div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Name Label', 'عنوان حقل الاسم') }}</Label>
+                                    <Input v-model="form.settings.contact_section.name_label" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Name Placeholder', 'تلميح حقل الاسم') }}</Label>
+                                    <Input v-model="form.settings.contact_section.name_placeholder" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Email Label', 'عنوان حقل البريد') }}</Label>
+                                    <Input v-model="form.settings.contact_section.email_label" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Email Placeholder', 'تلميح حقل البريد') }}</Label>
+                                    <Input v-model="form.settings.contact_section.email_placeholder" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Subject Label', 'عنوان حقل الموضوع') }}</Label>
+                                    <Input v-model="form.settings.contact_section.subject_label" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Subject Placeholder', 'تلميح حقل الموضوع') }}</Label>
+                                    <Input v-model="form.settings.contact_section.subject_placeholder" />
+                                </div>
+                            </div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Message Label', 'عنوان حقل الرسالة') }}</Label>
+                                    <Input v-model="form.settings.contact_section.message_label" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Message Placeholder', 'تلميح حقل الرسالة') }}</Label>
+                                    <Textarea v-model="form.settings.contact_section.message_placeholder" rows="2" />
+                                </div>
+                            </div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Submit Label', 'نص زر الإرسال') }}</Label>
+                                    <Input v-model="form.settings.contact_section.submit_label" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Sending Label', 'نص حالة الإرسال') }}</Label>
+                                    <Input v-model="form.settings.contact_section.sending_label" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Success Message', 'رسالة النجاح') }}</Label>
+                                    <Textarea v-model="form.settings.contact_section.success_message" rows="2" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Error Message', 'رسالة الخطأ') }}</Label>
+                                    <Textarea v-model="form.settings.contact_section.error_message" rows="2" />
+                                </div>
+                            </div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Direct Contact Title', 'عنوان التواصل المباشر') }}</Label>
+                                    <Input v-model="form.settings.contact_section.direct_title" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Quick Links Title', 'عنوان الروابط السريعة') }}</Label>
+                                    <Input v-model="form.settings.contact_section.quick_links_title" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Email Label', 'عنوان البريد') }}</Label>
+                                    <Input v-model="form.settings.contact_section.direct_email_label" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Email Address', 'البريد') }}</Label>
+                                    <Input v-model="form.settings.contact_section.direct_email" type="email" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Phone Label', 'عنوان الهاتف') }}</Label>
+                                    <Input v-model="form.settings.contact_section.direct_phone_label" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Phone Number', 'رقم الهاتف') }}</Label>
+                                    <Input v-model="form.settings.contact_section.direct_phone" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Response Time Label', 'عنوان زمن الاستجابة') }}</Label>
+                                    <Input v-model="form.settings.contact_section.response_time_label" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Response Time', 'زمن الاستجابة') }}</Label>
+                                    <Input v-model="form.settings.contact_section.response_time" />
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <Label>{{ localize('Quick Links', 'الروابط السريعة') }}</Label>
+                                    <Button type="button" variant="outline" size="sm" @click="addQuickLink">{{ localize('Add Link', 'إضافة رابط') }}</Button>
+                                </div>
+                                <div
+                                    v-for="(link, index) in form.settings.contact_section.quick_links"
+                                    :key="`contact-link-${index}`"
+                                    class="grid gap-3 rounded-lg border p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                                >
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Label', 'النص') }}</Label>
+                                        <Input v-model="link.label" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Href', 'الرابط') }}</Label>
+                                        <Input v-model="link.href" placeholder="#cars" />
+                                    </div>
+                                    <div class="flex items-end">
+                                        <Button type="button" variant="destructive" size="sm" @click="removeQuickLink(index)">{{ localize('Remove', 'حذف') }}</Button>
                                     </div>
                                 </div>
                             </div>

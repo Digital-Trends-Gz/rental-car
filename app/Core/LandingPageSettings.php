@@ -22,7 +22,7 @@ class LandingPageSettings
      */
     public static function contentKeys(): array
     {
-        return ['navigation', 'hero', 'features_section', 'getting_started', 'plans_section', 'faq_section', 'footer'];
+        return ['navigation', 'hero', 'features_section', 'getting_started', 'plans_section', 'faq_section', 'contact_section', 'footer'];
     }
 
     /**
@@ -110,6 +110,36 @@ class LandingPageSettings
                         'question' => 'Can I cancel anytime?',
                         'answer' => 'Yes. There are no long-term contracts.',
                     ],
+                ],
+            ],
+            'contact_section' => [
+                'title' => 'Contact form',
+                'description' => 'Send us a note and our team will follow up by email.',
+                'form_title' => 'Tell us what you need',
+                'name_label' => 'Name',
+                'name_placeholder' => 'Your name',
+                'email_label' => 'Email',
+                'email_placeholder' => 'you@example.com',
+                'subject_label' => 'Subject',
+                'subject_placeholder' => 'How can we help?',
+                'message_label' => 'Message',
+                'message_placeholder' => 'Tell us a bit about your fleet or the feature you want to launch.',
+                'submit_label' => 'Send message',
+                'sending_label' => 'Sending...',
+                'success_message' => 'Thanks. We received your message and will review it shortly.',
+                'error_message' => 'Please check the form and try again.',
+                'direct_title' => 'Direct contact',
+                'direct_email_label' => 'Email',
+                'direct_email' => 'info@car4u.net',
+                'direct_phone_label' => 'Phone',
+                'direct_phone' => '+1 (555) 123-4567',
+                'response_time_label' => 'Response time',
+                'response_time' => 'Within one business day',
+                'quick_links_title' => 'Quick links',
+                'quick_links' => [
+                    ['label' => 'Browse tenant cars', 'href' => '#cars'],
+                    ['label' => 'View plans', 'href' => '#pricing'],
+                    ['label' => 'Read the FAQ', 'href' => '#faq'],
                 ],
             ],
             'footer' => [
