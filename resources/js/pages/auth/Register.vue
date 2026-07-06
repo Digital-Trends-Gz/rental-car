@@ -64,6 +64,12 @@ const homeUrl = computed(() =>
 );
 
 const isArabic = computed(() => page.props.locale === 'ar');
+const registerHeroImage = computed(() => {
+    const images = page.props.app_branding?.register_hero_images || {};
+    const locale = String(page.props.locale || 'en');
+
+    return images[locale] || images.en || authHero;
+});
 
 const initial = computed(() => ({
     name: props.prefill?.name ?? '',
@@ -106,7 +112,7 @@ watch(
     <div class="flex min-h-screen bg-white" :style="themeVars">
         <div class="relative hidden overflow-hidden lg:flex lg:w-1/2">
             <img
-                :src="authHero"
+                :src="registerHeroImage"
                 alt="Car4U background"
                 class="absolute inset-0 h-full w-full object-cover object-center"
             />

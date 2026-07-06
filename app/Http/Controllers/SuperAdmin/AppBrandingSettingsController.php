@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use MohamedGaldi\ViltFilepond\Services\FilePondService;
 
 class AppBrandingSettingsController extends Controller
@@ -49,11 +50,31 @@ class AppBrandingSettingsController extends Controller
                 ->values()
                 ->all()
             : [];
+        $supportedLocales = $this->supportedLocaleOptions();
+        $registerHeroFiles = [];
+
+        foreach ($supportedLocales as $locale) {
+            $code = (string) $locale['code'];
+            $collection = AppBrandingSettings::registerHeroCollection($code);
+            $registerHeroFiles[$code] = $brandingSetting
+                ? $brandingSetting->files()
+                    ->where('collection', $collection)
+                    ->get()
+                    ->map(fn ($file) => [
+                        'id' => $file->id,
+                        'url' => SiteSetting::publicUrlFromPath($file->path),
+                    ])
+                    ->values()
+                    ->all()
+                : [];
+        }
 
         return Inertia::render('SuperAdmin/Settings/Branding', [
             'settings' => AppBrandingSettings::normalize($brandingSetting),
             'logoFiles' => $logoFiles,
             'faviconFiles' => $faviconFiles,
+            'registerHeroFiles' => $registerHeroFiles,
+            'supportedLocales' => $supportedLocales,
             'actions' => [
                 'update' => route('superadmin.settings.branding.update'),
             ],
@@ -76,6 +97,12 @@ class AppBrandingSettingsController extends Controller
             'favicon_temp_folders.*' => ['string'],
             'favicon_removed_files' => ['array'],
             'favicon_removed_files.*' => ['integer'],
+            'register_hero_temp_folders' => ['array'],
+            'register_hero_temp_folders.*' => ['array'],
+            'register_hero_temp_folders.*.*' => ['string'],
+            'register_hero_removed_files' => ['array'],
+            'register_hero_removed_files.*' => ['array'],
+            'register_hero_removed_files.*.*' => ['integer'],
         ]);
 
         $brandingSetting = SiteSetting::query()->updateOrCreate(
@@ -128,6 +155,90 @@ class AppBrandingSettingsController extends Controller
             'favicon'
         );
 
+        $settings = AppBrandingSettings::normalize($brandingSetting->fresh('files'));
+        $registerHeroImages = is_array($settings['register_hero_images'] ?? null)
+            ? $settings['register_hero_images']
+            : [];
+        $registerHeroTempFolders = is_array($request->input('register_hero_temp_folders', []))
+            ? $request->input('register_hero_temp_folders', [])
+            : [];
+        $registerHeroRemovedFiles = is_array($request->input('register_hero_removed_files', []))
+            ? $request->input('register_hero_removed_files', [])
+            : [];
+
+        foreach ($this->supportedLocaleCodes() as $locale) {
+            $collection = AppBrandingSettings::registerHeroCollection($locale);
+            $localeTempFolders = is_array($registerHeroTempFolders[$locale] ?? null)
+                ? array_values(array_filter($registerHeroTempFolders[$locale]))
+                : [];
+            $localeRemovedIds = is_array($registerHeroRemovedFiles[$locale] ?? null)
+                ? array_values(array_unique(array_filter($registerHeroRemovedFiles[$locale])))
+                : [];
+
+            if (!empty($localeTempFolders)) {
+                $existingIds = $brandingSetting->files()->where('collection', $collection)->pluck('id')->all();
+                $localeRemovedIds = array_values(array_unique(array_merge($localeRemovedIds, $existingIds)));
+            }
+
+            $this->filePondService->handleFileUpdates(
+                $brandingSetting,
+                $localeTempFolders,
+                $localeRemovedIds,
+                $collection
+            );
+
+            if (!empty($localeTempFolders)) {
+                $heroFile = $brandingSetting->files()
+                    ->where('collection', $collection)
+                    ->latest('id')
+                    ->first();
+
+                $registerHeroImages[$locale] = $heroFile
+                    ? (SiteSetting::publicUrlFromPath($heroFile->path) ?? null)
+                    : ($registerHeroImages[$locale] ?? null);
+            } elseif (!empty($localeRemovedIds)) {
+                $registerHeroImages[$locale] = null;
+            }
+        }
+
+        $brandingSetting->update([
+            'value' => AppBrandingSettings::normalize([
+                ...($brandingSetting->value ?? []),
+                'register_hero_images' => $registerHeroImages,
+            ]),
+        ]);
+
         return back()->with('success', 'Application branding updated successfully.');
+    }
+
+    /**
+     * @return array<int, array{code: string, name: string, native: string}>
+     */
+    private function supportedLocaleOptions(): array
+    {
+        $meta = LaravelLocalization::getSupportedLocales();
+
+        return array_map(function (string $code) use ($meta): array {
+            $localeMeta = (array) ($meta[$code] ?? []);
+
+            return [
+                'code' => $code,
+                'name' => (string) ($localeMeta['name'] ?? strtoupper($code)),
+                'native' => (string) ($localeMeta['native'] ?? strtoupper($code)),
+            ];
+        }, $this->supportedLocaleCodes());
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function supportedLocaleCodes(): array
+    {
+        $locales = array_values(array_filter(array_map(
+            'strval',
+            (array) config('app.available_locales', ['en'])
+        )));
+
+        return empty($locales) ? ['en'] : $locales;
     }
 }

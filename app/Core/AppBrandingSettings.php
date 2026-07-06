@@ -14,6 +14,7 @@ class AppBrandingSettings
             'app_name' => config('app.name', 'Car4u'),
             'logo_url' => null,
             'favicon_url' => null,
+            'register_hero_images' => [],
             'primary_color' => '#3b82f6',
             'secondary_color' => '#6d28d9',
         ];
@@ -35,6 +36,8 @@ class AppBrandingSettings
         $data = $source instanceof SiteSetting ? ($source->value ?? []) : $source;
         $logoUrl = null;
         $faviconUrl = null;
+        $registerHeroImages = [];
+        $supportedLocales = self::supportedLocales();
 
         if ($source instanceof SiteSetting) {
             $file = $source->relationLoaded('files')
@@ -52,12 +55,29 @@ class AppBrandingSettings
             if ($faviconFile && $faviconFile->path) {
                 $faviconUrl = SiteSetting::publicUrlFromPath($faviconFile->path);
             }
+
+            foreach ($supportedLocales as $locale) {
+                $collection = self::registerHeroCollection($locale);
+                $heroFile = $source->relationLoaded('files')
+                    ? $source->files->where('collection', $collection)->sortByDesc('id')->first()
+                    : $source->files()->where('collection', $collection)->latest('id')->first();
+
+                if ($heroFile && $heroFile->path) {
+                    $registerHeroImages[$locale] = SiteSetting::publicUrlFromPath($heroFile->path);
+                }
+            }
+        }
+
+        foreach ($supportedLocales as $locale) {
+            $storedUrl = data_get($data, "register_hero_images.$locale");
+            $registerHeroImages[$locale] = self::nullableString($registerHeroImages[$locale] ?? $storedUrl);
         }
 
         return [
             'app_name' => trim((string) ($data['app_name'] ?? $defaults['app_name'])) ?: $defaults['app_name'],
             'logo_url' => self::nullableString($logoUrl ?: ($data['logo_url'] ?? $defaults['logo_url'])),
             'favicon_url' => self::nullableString($faviconUrl ?: ($data['favicon_url'] ?? $defaults['favicon_url'])),
+            'register_hero_images' => $registerHeroImages,
             'primary_color' => self::normalizeHexColor($data['primary_color'] ?? $defaults['primary_color'], $defaults['primary_color']),
             'secondary_color' => self::normalizeHexColor($data['secondary_color'] ?? $defaults['secondary_color'], $defaults['secondary_color']),
         ];
@@ -79,5 +99,25 @@ class AppBrandingSettings
         }
 
         return $normalized;
+    }
+
+    public static function registerHeroCollection(string $locale): string
+    {
+        $locale = preg_replace('/[^a-z0-9_-]/i', '', strtolower($locale)) ?: 'default';
+
+        return 'register_hero_'.$locale;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function supportedLocales(): array
+    {
+        $locales = array_values(array_filter(array_map(
+            'strval',
+            (array) config('app.available_locales', ['en'])
+        )));
+
+        return empty($locales) ? ['en'] : $locales;
     }
 }

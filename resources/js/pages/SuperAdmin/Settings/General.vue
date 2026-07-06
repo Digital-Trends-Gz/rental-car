@@ -1,5 +1,4 @@
-<script setup lang="ts">
-import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
+﻿<script setup lang="ts">
 import { useTrans } from '@/composables/useTrans';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { computed, ref, watch } from 'vue';
+import { ref } from 'vue';
 import { testAiConnection as testAiConnectionRoute, testMailConnection as testMailConnectionRoute } from '@/routes/superadmin/settings/general';
 
 interface FeatureCard {
@@ -106,7 +105,6 @@ const props = defineProps<{
     };
     aiProviderSettings: AiProviderSettings;
     socialLoginSettings: SocialLoginSettings;
-    heroFiles: Array<{ id: number; url: string }>;
 }>();
 
 const { locale } = useTrans();
@@ -121,8 +119,6 @@ const form = useForm<{
     };
     ai_provider: AiProviderSettings;
     social_login: SocialLoginSettings;
-    hero_temp_folders: string[];
-    hero_removed_files: number[];
 }>({
     settings: JSON.parse(JSON.stringify(props.settings)),
     ai: {
@@ -134,63 +130,7 @@ const form = useForm<{
         google: { enabled: false, client_id: '', client_secret: '' },
         apple: { enabled: false, client_id: '', client_secret: '' },
     })),
-    hero_temp_folders: [] as string[],
-    hero_removed_files: [] as number[],
 });
-
-const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
-const heroTempFolders = ref<string[]>([]);
-const heroRemovedFileIds = ref<number[]>([]);
-
-watch(
-    heroTempFolders,
-    (value) => {
-        form.hero_temp_folders = [...value];
-    },
-    { deep: true },
-);
-
-const addHeroFeature = () => {
-    form.settings.hero.features.push('');
-};
-
-const removeHeroFeature = (index: number) => {
-    form.settings.hero.features.splice(index, 1);
-};
-
-const addFeatureCard = () => {
-    form.settings.features_section.cards.push({
-        title: '',
-        image_url: '',
-        content: '',
-    });
-};
-
-const removeFeatureCard = (index: number) => {
-    form.settings.features_section.cards.splice(index, 1);
-};
-
-const addStepItem = () => {
-    form.settings.getting_started.items.push({
-        title: '',
-        description: '',
-    });
-};
-
-const removeStepItem = (index: number) => {
-    form.settings.getting_started.items.splice(index, 1);
-};
-
-const addFaqItem = () => {
-    form.settings.faq_section.items.push({
-        question: '',
-        answer: '',
-    });
-};
-
-const removeFaqItem = (index: number) => {
-    form.settings.faq_section.items.splice(index, 1);
-};
 
 const submit = () => {
     const updateUrl = typeof window !== 'undefined' ? window.location.pathname : '/superadmin/settings/general';
@@ -201,23 +141,7 @@ const submit = () => {
     })).post(updateUrl, {
         preserveScroll: true,
         forceFormData: true,
-        onSuccess: () => {
-            heroTempFolders.value = [];
-            form.hero_temp_folders = [];
-            form.hero_removed_files = [];
-            heroRemovedFileIds.value = [];
-            fileUploadRef.value?.resetFiles();
-        },
     });
-};
-
-const previewHeroUrl = computed(() => props.heroFiles?.[0]?.url || form.settings.hero.image_url || null);
-
-const handleHeroFileRemoved = (data: { type: string; fileId?: number }) => {
-    if (data.type === 'existing' && data.fileId) {
-        heroRemovedFileIds.value.push(data.fileId);
-        form.hero_removed_files = [...new Set(heroRemovedFileIds.value)];
-    }
 };
 
 const testingAiConnection = ref(false);
@@ -275,15 +199,15 @@ async function testAiConnection() {
         if (!response.ok || !payload?.ok) {
             const firstValidationError = extractFirstValidationError(payload?.errors);
             aiConnectionTestState.value = 'error';
-            aiConnectionTestMessage.value = firstValidationError ?? payload?.message ?? localize('AI connection test failed.', 'فشل اختبار اتصال الذكاء الاصطناعي.');
+            aiConnectionTestMessage.value = firstValidationError ?? payload?.message ?? localize('AI connection test failed.', 'ظپط´ظ„ ط§ط®طھط¨ط§ط± ط§طھطµط§ظ„ ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ.');
             return;
         }
 
         aiConnectionTestState.value = 'success';
-        aiConnectionTestMessage.value = payload?.message ?? localize('AI connection is valid.', 'اتصال الذكاء الاصطناعي صالح.');
+        aiConnectionTestMessage.value = payload?.message ?? localize('AI connection is valid.', 'ط§طھطµط§ظ„ ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ طµط§ظ„ط­.');
     } catch {
         aiConnectionTestState.value = 'error';
-        aiConnectionTestMessage.value = localize('Could not test AI connection. Please try again.', 'تعذر اختبار اتصال الذكاء الاصطناعي. حاول مرة أخرى.');
+        aiConnectionTestMessage.value = localize('Could not test AI connection. Please try again.', 'طھط¹ط°ط± ط§ط®طھط¨ط§ط± ط§طھطµط§ظ„ ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ. ط­ط§ظˆظ„ ظ…ط±ط© ط£ط®ط±ظ‰.');
     } finally {
         testingAiConnection.value = false;
     }
@@ -320,15 +244,15 @@ async function testMailConnection() {
         if (!response.ok || !payload?.ok) {
             const firstValidationError = extractFirstValidationError(payload?.errors);
             mailConnectionTestState.value = 'error';
-            mailConnectionTestMessage.value = firstValidationError ?? payload?.message ?? localize('Mail test failed.', 'فشل اختبار البريد الإلكتروني.');
+            mailConnectionTestMessage.value = firstValidationError ?? payload?.message ?? localize('Mail test failed.', 'ظپط´ظ„ ط§ط®طھط¨ط§ط± ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ.');
             return;
         }
 
         mailConnectionTestState.value = 'success';
-        mailConnectionTestMessage.value = payload?.message ?? localize('Test email sent successfully.', 'تم إرسال البريد التجريبي بنجاح.');
+        mailConnectionTestMessage.value = payload?.message ?? localize('Test email sent successfully.', 'طھظ… ط¥ط±ط³ط§ظ„ ط§ظ„ط¨ط±ظٹط¯ ط§ظ„طھط¬ط±ظٹط¨ظٹ ط¨ظ†ط¬ط§ط­.');
     } catch {
         mailConnectionTestState.value = 'error';
-        mailConnectionTestMessage.value = localize('Could not test mail connection. Please try again.', 'تعذر اختبار اتصال البريد الإلكتروني. حاول مرة أخرى.');
+        mailConnectionTestMessage.value = localize('Could not test mail connection. Please try again.', 'طھط¹ط°ط± ط§ط®طھط¨ط§ط± ط§طھطµط§ظ„ ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ. ط­ط§ظˆظ„ ظ…ط±ط© ط£ط®ط±ظ‰.');
     } finally {
         testingMailConnection.value = false;
     }
@@ -336,33 +260,33 @@ async function testMailConnection() {
 </script>
 
 <template>
-    <Head :title="localize('Landing Settings', 'إعدادات صفحة الهبوط')" />
+    <Head :title="localize('Landing Settings', 'ط¥ط¹ط¯ط§ط¯ط§طھ طµظپط­ط© ط§ظ„ظ‡ط¨ظˆط·')" />
     <SuperAdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">{{ localize('Landing Page Settings', 'إعدادات صفحة الهبوط') }}</h1>
+                    <h1 class="text-2xl font-semibold">{{ localize('Landing Page Settings', 'ط¥ط¹ط¯ط§ط¯ط§طھ طµظپط­ط© ط§ظ„ظ‡ط¨ظˆط·') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        {{ localize('Edit SaaS landing sections shown on the main domain.', 'عدّل أقسام صفحة هبوط المنصة المعروضة على الدومين الرئيسي.') }}
+                        {{ localize('Edit SaaS landing sections shown on the main domain.', 'ط¹ط¯ظ‘ظ„ ط£ظ‚ط³ط§ظ… طµظپط­ط© ظ‡ط¨ظˆط· ط§ظ„ظ…ظ†طµط© ط§ظ„ظ…ط¹ط±ظˆط¶ط© ط¹ظ„ظ‰ ط§ظ„ط¯ظˆظ…ظٹظ† ط§ظ„ط±ط¦ظٹط³ظٹ.') }}
                     </p>
                 </div>
                 <Button :disabled="form.processing" @click="submit">
-                    {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Changes', 'حفظ التغييرات') }}
+                    {{ form.processing ? localize('Saving...', 'ط¬ط§ط±ظچ ط§ظ„ط­ظپط¸...') : localize('Save Changes', 'ط­ظپط¸ ط§ظ„طھط؛ظٹظٹط±ط§طھ') }}
                 </Button>
             </div>
 
             <form class="space-y-6" @submit.prevent="submit">
                 <Card>
                     <CardHeader>
-                        <CardTitle>{{ localize('AI Automation', 'الأتمتة بالذكاء الاصطناعي') }}</CardTitle>
+                        <CardTitle>{{ localize('AI Automation', 'ط§ظ„ط£طھظ…طھط© ط¨ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ') }}</CardTitle>
                         <CardDescription>
-                            {{ localize('Super Admin controls whether AI extraction is active for contract files. When disabled, the system only stores uploaded files.', 'يتحكم السوبر أدمن في تفعيل استخراج البيانات بالذكاء الاصطناعي لملفات العقود. عند التعطيل، سيحفظ النظام الملفات المرفوعة فقط.') }}
+                            {{ localize('Super Admin controls whether AI extraction is active for contract files. When disabled, the system only stores uploaded files.', 'ظٹطھط­ظƒظ… ط§ظ„ط³ظˆط¨ط± ط£ط¯ظ…ظ† ظپظٹ طھظپط¹ظٹظ„ ط§ط³طھط®ط±ط§ط¬ ط§ظ„ط¨ظٹط§ظ†ط§طھ ط¨ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ ظ„ظ…ظ„ظپط§طھ ط§ظ„ط¹ظ‚ظˆط¯. ط¹ظ†ط¯ ط§ظ„طھط¹ط·ظٹظ„طŒ ط³ظٹط­ظپط¸ ط§ظ„ظ†ط¸ط§ظ… ط§ظ„ظ…ظ„ظپط§طھ ط§ظ„ظ…ط±ظپظˆط¹ط© ظپظ‚ط·.') }}
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <label class="flex items-center gap-3">
                             <input v-model="form.ai.enabled" type="checkbox" class="h-4 w-4" />
-                            <span class="text-sm font-medium">{{ localize('Enable AI globally', 'تفعيل الذكاء الاصطناعي على مستوى النظام') }}</span>
+                            <span class="text-sm font-medium">{{ localize('Enable AI globally', 'طھظپط¹ظٹظ„ ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ ط¹ظ„ظ‰ ظ…ط³طھظˆظ‰ ط§ظ„ظ†ط¸ط§ظ…') }}</span>
                         </label>
 
                         <label class="flex items-center gap-3">
@@ -372,29 +296,29 @@ async function testMailConnection() {
                                 class="h-4 w-4"
                                 :disabled="!form.ai.enabled"
                             />
-                            <span class="text-sm font-medium">{{ localize('Enable contract extraction AI', 'تفعيل استخراج العقود بالذكاء الاصطناعي') }}</span>
+                            <span class="text-sm font-medium">{{ localize('Enable contract extraction AI', 'طھظپط¹ظٹظ„ ط§ط³طھط®ط±ط§ط¬ ط§ظ„ط¹ظ‚ظˆط¯ ط¨ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ') }}</span>
                         </label>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{{ localize('AI Provider Settings', 'إعدادات مزود الذكاء الاصطناعي') }}</CardTitle>
+                        <CardTitle>{{ localize('AI Provider Settings', 'ط¥ط¹ط¯ط§ط¯ط§طھ ظ…ط²ظˆط¯ ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ') }}</CardTitle>
                         <CardDescription>
-                            {{ localize('Configure provider credentials and extraction behavior. Empty secret fields keep existing saved values.', 'اضبط بيانات اعتماد المزود وسلوك الاستخراج. ترك الحقول السرية فارغة سيبقي القيم الحالية.') }}
+                            {{ localize('Configure provider credentials and extraction behavior. Empty secret fields keep existing saved values.', 'ط§ط¶ط¨ط· ط¨ظٹط§ظ†ط§طھ ط§ط¹طھظ…ط§ط¯ ط§ظ„ظ…ط²ظˆط¯ ظˆط³ظ„ظˆظƒ ط§ظ„ط§ط³طھط®ط±ط§ط¬. طھط±ظƒ ط§ظ„ط­ظ‚ظˆظ„ ط§ظ„ط³ط±ظٹط© ظپط§ط±ط؛ط© ط³ظٹط¨ظ‚ظٹ ط§ظ„ظ‚ظٹظ… ط§ظ„ط­ط§ظ„ظٹط©.') }}
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-6">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <p class="text-xs text-muted-foreground">
-                                {{ localize('Test provider credentials before saving.', 'اختبر بيانات اعتماد المزود قبل الحفظ.') }}
+                                {{ localize('Test provider credentials before saving.', 'ط§ط®طھط¨ط± ط¨ظٹط§ظ†ط§طھ ط§ط¹طھظ…ط§ط¯ ط§ظ„ظ…ط²ظˆط¯ ظ‚ط¨ظ„ ط§ظ„ط­ظپط¸.') }}
                             </p>
                             <div class="flex flex-wrap gap-2">
                                 <Button type="button" variant="outline" :disabled="testingAiConnection" @click="testAiConnection">
-                                    {{ testingAiConnection ? localize('Testing...', 'جارٍ الاختبار...') : localize('Test AI Connection', 'اختبار اتصال الذكاء الاصطناعي') }}
+                                    {{ testingAiConnection ? localize('Testing...', 'ط¬ط§ط±ظچ ط§ظ„ط§ط®طھط¨ط§ط±...') : localize('Test AI Connection', 'ط§ط®طھط¨ط§ط± ط§طھطµط§ظ„ ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ') }}
                                 </Button>
                                 <Button type="button" variant="outline" :disabled="testingMailConnection" @click="testMailConnection">
-                                    {{ testingMailConnection ? localize('Sending...', 'جارٍ الإرسال...') : localize('Send Test Email', 'إرسال بريد تجريبي') }}
+                                    {{ testingMailConnection ? localize('Sending...', 'ط¬ط§ط±ظچ ط§ظ„ط¥ط±ط³ط§ظ„...') : localize('Send Test Email', 'ط¥ط±ط³ط§ظ„ ط¨ط±ظٹط¯ طھط¬ط±ظٹط¨ظٹ') }}
                                 </Button>
                             </div>
                         </div>
@@ -421,7 +345,7 @@ async function testMailConnection() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="ai_provider">{{ localize('Provider', 'المزود') }}</Label>
+                            <Label for="ai_provider">{{ localize('Provider', 'ط§ظ„ظ…ط²ظˆط¯') }}</Label>
                             <select
                                 id="ai_provider"
                                 v-model="form.ai_provider.provider"
@@ -439,10 +363,10 @@ async function testMailConnection() {
                             <h3 class="text-sm font-semibold">OpenAI</h3>
 
                             <div class="space-y-2">
-                                <Label for="openai_api_key">{{ localize('API Key', 'مفتاح API') }}</Label>
+                                <Label for="openai_api_key">{{ localize('API Key', 'ظ…ظپطھط§ط­ API') }}</Label>
                                 <Input id="openai_api_key" v-model="form.ai_provider.openai.api_key" type="password" placeholder="sk-..." />
                                 <p v-if="props.aiProviderSettings.meta?.has_openai_api_key" class="text-xs text-muted-foreground">
-                                    {{ localize('A key is already saved. Leave blank to keep it.', 'يوجد مفتاح محفوظ بالفعل. اترك الحقل فارغًا للاحتفاظ به.') }}
+                                    {{ localize('A key is already saved. Leave blank to keep it.', 'ظٹظˆط¬ط¯ ظ…ظپطھط§ط­ ظ…ط­ظپظˆط¸ ط¨ط§ظ„ظپط¹ظ„. ط§طھط±ظƒ ط§ظ„ط­ظ‚ظ„ ظپط§ط±ط؛ظ‹ط§ ظ„ظ„ط§ط­طھظپط§ط¸ ط¨ظ‡.') }}
                                 </p>
                                 <p v-if="form.errors['ai_provider.openai.api_key']" class="text-sm text-red-600">
                                     {{ form.errors['ai_provider.openai.api_key'] }}
@@ -451,25 +375,25 @@ async function testMailConnection() {
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label for="openai_organization">{{ localize('Organization (optional)', 'المؤسسة (اختياري)') }}</Label>
+                                    <Label for="openai_organization">{{ localize('Organization (optional)', 'ط§ظ„ظ…ط¤ط³ط³ط© (ط§ط®طھظٹط§ط±ظٹ)') }}</Label>
                                     <Input id="openai_organization" v-model="form.ai_provider.openai.organization" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="openai_project">{{ localize('Project (optional)', 'المشروع (اختياري)') }}</Label>
+                                    <Label for="openai_project">{{ localize('Project (optional)', 'ط§ظ„ظ…ط´ط±ظˆط¹ (ط§ط®طھظٹط§ط±ظٹ)') }}</Label>
                                     <Input id="openai_project" v-model="form.ai_provider.openai.project" />
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label for="openai_model">{{ localize('Model', 'النموذج') }}</Label>
+                                    <Label for="openai_model">{{ localize('Model', 'ط§ظ„ظ†ظ…ظˆط°ط¬') }}</Label>
                                     <Input id="openai_model" v-model="form.ai_provider.openai.model" placeholder="gpt-4.1-mini" />
                                     <p v-if="form.errors['ai_provider.openai.model']" class="text-sm text-red-600">
                                         {{ form.errors['ai_provider.openai.model'] }}
                                     </p>
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="openai_base_uri">{{ localize('Base URL (optional)', 'الرابط الأساسي (اختياري)') }}</Label>
+                                    <Label for="openai_base_uri">{{ localize('Base URL (optional)', 'ط§ظ„ط±ط§ط¨ط· ط§ظ„ط£ط³ط§ط³ظٹ (ط§ط®طھظٹط§ط±ظٹ)') }}</Label>
                                     <Input id="openai_base_uri" v-model="form.ai_provider.openai.base_uri" placeholder="https://api.openai.com/v1" />
                                     <p v-if="form.errors['ai_provider.openai.base_uri']" class="text-sm text-red-600">
                                         {{ form.errors['ai_provider.openai.base_uri'] }}
@@ -479,28 +403,28 @@ async function testMailConnection() {
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label for="openai_temperature">{{ localize('Temperature (0-2)', 'الحرارة (0-2)') }}</Label>
+                                    <Label for="openai_temperature">{{ localize('Temperature (0-2)', 'ط§ظ„ط­ط±ط§ط±ط© (0-2)') }}</Label>
                                     <Input id="openai_temperature" v-model="form.ai_provider.openai.temperature" type="number" min="0" max="2" step="0.1" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="openai_tokens">{{ localize('Max Output Tokens', 'الحد الأقصى للرموز الناتجة') }}</Label>
+                                    <Label for="openai_tokens">{{ localize('Max Output Tokens', 'ط§ظ„ط­ط¯ ط§ظ„ط£ظ‚طµظ‰ ظ„ظ„ط±ظ…ظˆط² ط§ظ„ظ†ط§طھط¬ط©') }}</Label>
                                     <Input id="openai_tokens" v-model="form.ai_provider.openai.max_output_tokens" type="number" min="1" max="16384" />
                                 </div>
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="openai_system_prompt">{{ localize('System Prompt (optional)', 'رسالة النظام (اختياري)') }}</Label>
+                                <Label for="openai_system_prompt">{{ localize('System Prompt (optional)', 'ط±ط³ط§ظ„ط© ط§ظ„ظ†ط¸ط§ظ… (ط§ط®طھظٹط§ط±ظٹ)') }}</Label>
                                 <Textarea
                                     id="openai_system_prompt"
                                     v-model="form.ai_provider.openai.system_prompt"
                                     rows="4"
-                                    :placeholder="localize('Extract key fields from Arabic and English rental contract files as JSON.', 'استخرج الحقول الأساسية من ملفات عقود التأجير العربية والإنجليزية بصيغة JSON.')"
+                                    :placeholder="localize('Extract key fields from Arabic and English rental contract files as JSON.', 'ط§ط³طھط®ط±ط¬ ط§ظ„ط­ظ‚ظˆظ„ ط§ظ„ط£ط³ط§ط³ظٹط© ظ…ظ† ظ…ظ„ظپط§طھ ط¹ظ‚ظˆط¯ ط§ظ„طھط£ط¬ظٹط± ط§ظ„ط¹ط±ط¨ظٹط© ظˆط§ظ„ط¥ظ†ط¬ظ„ظٹط²ظٹط© ط¨طµظٹط؛ط© JSON.')"
                                 />
                             </div>
 
                             <div class="space-y-2">
                                 <Label for="document_extraction_daily_limit">
-                                    {{ localize('Document Extraction Daily Limit', 'الحد اليومي لاستخراج المستندات') }}
+                                    {{ localize('Document Extraction Daily Limit', 'ط§ظ„ط­ط¯ ط§ظ„ظٹظˆظ…ظٹ ظ„ط§ط³طھط®ط±ط§ط¬ ط§ظ„ظ…ط³طھظ†ط¯ط§طھ') }}
                                 </Label>
                                 <Input
                                     id="document_extraction_daily_limit"
@@ -511,7 +435,7 @@ async function testMailConnection() {
                                     placeholder="10"
                                 />
                                 <p class="text-xs text-muted-foreground">
-                                    {{ localize('Tenants can override this limit in their website settings.', 'يمكن للمستأجرين تغيير هذا الحد من إعدادات موقعهم.') }}
+                                    {{ localize('Tenants can override this limit in their website settings.', 'ظٹظ…ظƒظ† ظ„ظ„ظ…ط³طھط£ط¬ط±ظٹظ† طھط؛ظٹظٹط± ظ‡ط°ط§ ط§ظ„ط­ط¯ ظ…ظ† ط¥ط¹ط¯ط§ط¯ط§طھ ظ…ظˆظ‚ط¹ظ‡ظ….') }}
                                 </p>
                                 <p v-if="form.errors['ai_provider.document_extraction_daily_limit']" class="text-sm text-red-600">
                                     {{ form.errors['ai_provider.document_extraction_daily_limit'] }}
@@ -524,26 +448,26 @@ async function testMailConnection() {
 
                             <label class="flex items-center gap-3">
                                 <input v-model="form.ai_provider.google_document_ai.enabled" type="checkbox" class="h-4 w-4" />
-                                <span class="text-sm font-medium">{{ localize('Enable Google Document AI OCR', 'تفعيل OCR من Google Document AI') }}</span>
+                                <span class="text-sm font-medium">{{ localize('Enable Google Document AI OCR', 'طھظپط¹ظٹظ„ OCR ظ…ظ† Google Document AI') }}</span>
                             </label>
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                                 <div class="space-y-2">
-                                    <Label for="gdoc_project_id">{{ localize('Project ID', 'معرف المشروع') }}</Label>
+                                    <Label for="gdoc_project_id">{{ localize('Project ID', 'ظ…ط¹ط±ظپ ط§ظ„ظ…ط´ط±ظˆط¹') }}</Label>
                                     <Input id="gdoc_project_id" v-model="form.ai_provider.google_document_ai.project_id" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="gdoc_location">{{ localize('Location', 'المنطقة') }}</Label>
+                                    <Label for="gdoc_location">{{ localize('Location', 'ط§ظ„ظ…ظ†ط·ظ‚ط©') }}</Label>
                                     <Input id="gdoc_location" v-model="form.ai_provider.google_document_ai.location" placeholder="us" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="gdoc_processor_id">{{ localize('Processor ID', 'معرف المعالج') }}</Label>
+                                    <Label for="gdoc_processor_id">{{ localize('Processor ID', 'ظ…ط¹ط±ظپ ط§ظ„ظ…ط¹ط§ظ„ط¬') }}</Label>
                                     <Input id="gdoc_processor_id" v-model="form.ai_provider.google_document_ai.processor_id" />
                                 </div>
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="gdoc_credentials_json">{{ localize('Service Account JSON', 'JSON حساب الخدمة') }}</Label>
+                                <Label for="gdoc_credentials_json">{{ localize('Service Account JSON', 'JSON ط­ط³ط§ط¨ ط§ظ„ط®ط¯ظ…ط©') }}</Label>
                                 <Textarea
                                     id="gdoc_credentials_json"
                                     v-model="form.ai_provider.google_document_ai.service_account_json"
@@ -551,216 +475,16 @@ async function testMailConnection() {
                                     placeholder='{"type":"service_account","project_id":"..."}'
                                 />
                                 <p v-if="props.aiProviderSettings.meta?.has_google_credentials" class="text-xs text-muted-foreground">
-                                    {{ localize('Credentials are already saved. Leave blank to keep them.', 'بيانات الاعتماد محفوظة بالفعل. اترك الحقل فارغًا للاحتفاظ بها.') }}
+                                    {{ localize('Credentials are already saved. Leave blank to keep them.', 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ط§ط¹طھظ…ط§ط¯ ظ…ط­ظپظˆط¸ط© ط¨ط§ظ„ظپط¹ظ„. ط§طھط±ظƒ ط§ظ„ط­ظ‚ظ„ ظپط§ط±ط؛ظ‹ط§ ظ„ظ„ط§ط­طھظپط§ط¸ ط¨ظ‡ط§.') }}
                                 </p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{{ localize('Hero Section', 'قسم البطل') }}</CardTitle>
-                        <CardDescription>{{ localize('Title, description, hero features, and hero image upload.', 'العنوان والوصف ومزايا القسم ورفع صورة البطل.') }}</CardDescription>
-                    </CardHeader>
-                    <CardContent class="space-y-4">
-                        <div class="space-y-2">
-                            <Label for="hero_title">{{ localize('Title', 'العنوان') }}</Label>
-                            <Input id="hero_title" v-model="form.settings.hero.title" />
-                            <p v-if="form.errors['settings.hero.title']" class="text-sm text-red-600">
-                                {{ form.errors['settings.hero.title'] }}
-                            </p>
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label for="hero_description">{{ localize('Description', 'الوصف') }}</Label>
-                            <Textarea id="hero_description" v-model="form.settings.hero.description" rows="3" />
-                            <p v-if="form.errors['settings.hero.description']" class="text-sm text-red-600">
-                                {{ form.errors['settings.hero.description'] }}
-                            </p>
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label>{{ localize('Hero Image Upload', 'رفع صورة البطل') }}</Label>
-                            <FileUpload
-                                ref="fileUploadRef"
-                                v-model="heroTempFolders"
-                                :initial-files="heroFiles || []"
-                                :allow-multiple="false"
-                                :max-files="1"
-                                collection="hero"
-                                theme="light"
-                                width="100%"
-                                @file-removed="handleHeroFileRemoved"
-                            />
-                            <p class="text-xs text-muted-foreground">
-                                {{ localize('Upload the hero image here. A new upload replaces the previous image.', 'ارفع صورة القسم الرئيسي هنا. أي رفع جديد سيستبدل الصورة السابقة.') }}
-                            </p>
-                            <div v-if="previewHeroUrl" class="overflow-hidden rounded-lg border bg-muted/20">
-                                <img :src="previewHeroUrl" alt="hero preview" class="h-44 w-full object-cover" />
-                            </div>
-                        </div>
-
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between">
-                                <Label>{{ localize('Hero Features', 'مزايا القسم الرئيسي') }}</Label>
-                                <Button type="button" variant="outline" size="sm" @click="addHeroFeature">{{ localize('Add Feature', 'إضافة ميزة') }}</Button>
-                            </div>
-                            <div v-for="(_item, index) in form.settings.hero.features" :key="`hero-feature-${index}`" class="flex items-center gap-2">
-                                <Input v-model="form.settings.hero.features[index]" :placeholder="localize('Feature text', 'نص الميزة')" />
-                                <Button type="button" variant="destructive" size="sm" @click="removeHeroFeature(index)">{{ localize('Remove', 'حذف') }}</Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{{ localize('Features Section', 'قسم المزايا') }}</CardTitle>
-                        <CardDescription>{{ localize('Section title/description and feature cards.', 'عنوان ووصف القسم وبطاقات المزايا.') }}</CardDescription>
-                    </CardHeader>
-                    <CardContent class="space-y-4">
-                        <div class="space-y-2">
-                            <Label for="features_title">{{ localize('Title', 'العنوان') }}</Label>
-                            <Input id="features_title" v-model="form.settings.features_section.title" />
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label for="features_description">{{ localize('Description', 'الوصف') }}</Label>
-                            <Textarea id="features_description" v-model="form.settings.features_section.description" rows="3" />
-                        </div>
-
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <Label>{{ localize('Feature Cards', 'بطاقات المزايا') }}</Label>
-                                <Button type="button" variant="outline" size="sm" @click="addFeatureCard">{{ localize('Add Card', 'إضافة بطاقة') }}</Button>
-                            </div>
-
-                            <div
-                                v-for="(card, index) in form.settings.features_section.cards"
-                                :key="`feature-card-${index}`"
-                                class="space-y-2 rounded-md border p-3"
-                            >
-                                <Input v-model="card.title" :placeholder="localize('Card title', 'عنوان البطاقة')" />
-                                <Input v-model="card.image_url" :placeholder="localize('Image URL', 'رابط الصورة')" />
-                                <Textarea v-model="card.content" rows="2" :placeholder="localize('Card content', 'محتوى البطاقة')" />
-                                <Button type="button" variant="destructive" size="sm" @click="removeFeatureCard(index)">{{ localize('Remove Card', 'حذف البطاقة') }}</Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{{ localize('Start in Minutes Section', 'قسم ابدأ خلال دقائق') }}</CardTitle>
-                        <CardDescription>{{ localize('Section title/description and quick start features.', 'عنوان ووصف القسم وخطوات البدء السريع.') }}</CardDescription>
-                    </CardHeader>
-                    <CardContent class="space-y-4">
-                        <div class="space-y-2">
-                            <Label for="start_title">{{ localize('Title', 'العنوان') }}</Label>
-                            <Input id="start_title" v-model="form.settings.getting_started.title" />
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label for="start_description">{{ localize('Description', 'الوصف') }}</Label>
-                            <Textarea id="start_description" v-model="form.settings.getting_started.description" rows="3" />
-                        </div>
-
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <Label>{{ localize('Items', 'العناصر') }}</Label>
-                                <Button type="button" variant="outline" size="sm" @click="addStepItem">{{ localize('Add Item', 'إضافة عنصر') }}</Button>
-                            </div>
-
-                            <div
-                                v-for="(item, index) in form.settings.getting_started.items"
-                                :key="`step-item-${index}`"
-                                class="space-y-2 rounded-md border p-3"
-                            >
-                                <Input v-model="item.title" :placeholder="localize('Item title', 'عنوان العنصر')" />
-                                <Textarea v-model="item.description" rows="2" :placeholder="localize('Item description', 'وصف العنصر')" />
-                                <Button type="button" variant="destructive" size="sm" @click="removeStepItem(index)">{{ localize('Remove Item', 'حذف العنصر') }}</Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{{ localize('Plans Section', 'قسم الخطط') }}</CardTitle>
-                        <CardDescription>
-                            {{ localize('Only heading and description are editable here. Plans are loaded from the plans table.', 'يمكن تعديل العنوان والوصف فقط هنا. أما الخطط فيتم تحميلها من جدول الخطط.') }}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent class="space-y-4">
-                        <div class="space-y-2">
-                            <Label for="plans_title">{{ localize('Title', 'العنوان') }}</Label>
-                            <Input id="plans_title" v-model="form.settings.plans_section.title" />
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label for="plans_description">{{ localize('Description', 'الوصف') }}</Label>
-                            <Textarea id="plans_description" v-model="form.settings.plans_section.description" rows="3" />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{{ localize('FAQ Section', 'قسم الأسئلة الشائعة') }}</CardTitle>
-                        <CardDescription>{{ localize('Manage questions and answers.', 'إدارة الأسئلة والأجوبة.') }}</CardDescription>
-                    </CardHeader>
-                    <CardContent class="space-y-4">
-                        <div class="space-y-2">
-                            <Label for="faq_title">{{ localize('Title', 'العنوان') }}</Label>
-                            <Input id="faq_title" v-model="form.settings.faq_section.title" />
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label for="faq_description">{{ localize('Description', 'الوصف') }}</Label>
-                            <Textarea id="faq_description" v-model="form.settings.faq_section.description" rows="3" />
-                        </div>
-
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <Label>{{ localize('FAQ Items', 'عناصر الأسئلة الشائعة') }}</Label>
-                                <Button type="button" variant="outline" size="sm" @click="addFaqItem">{{ localize('Add FAQ', 'إضافة سؤال') }}</Button>
-                            </div>
-
-                            <div
-                                v-for="(item, index) in form.settings.faq_section.items"
-                                :key="`faq-item-${index}`"
-                                class="space-y-2 rounded-md border p-3"
-                            >
-                                <Input v-model="item.question" :placeholder="localize('Question', 'السؤال')" />
-                                <Textarea v-model="item.answer" rows="3" :placeholder="localize('Answer', 'الإجابة')" />
-                                <Button type="button" variant="destructive" size="sm" @click="removeFaqItem(index)">{{ localize('Remove FAQ', 'حذف السؤال') }}</Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{{ localize('Footer Section', 'قسم التذييل') }}</CardTitle>
-                        <CardDescription>{{ localize('Footer title and description text.', 'عنوان ووصف التذييل.') }}</CardDescription>
-                    </CardHeader>
-                    <CardContent class="space-y-4">
-                        <div class="space-y-2">
-                            <Label for="footer_title">{{ localize('Title', 'العنوان') }}</Label>
-                            <Input id="footer_title" v-model="form.settings.footer.title" />
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label for="footer_description">{{ localize('Description', 'الوصف') }}</Label>
-                            <Textarea id="footer_description" v-model="form.settings.footer.description" rows="3" />
-                        </div>
-                    </CardContent>
-                </Card>
-
                 <div class="flex justify-end">
                     <Button type="submit" :disabled="form.processing">
-                        {{ form.processing ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Changes', 'حفظ التغييرات') }}
+                        {{ form.processing ? localize('Saving...', 'ط¬ط§ط±ظچ ط§ظ„ط­ظپط¸...') : localize('Save Changes', 'ط­ظپط¸ ط§ظ„طھط؛ظٹظٹط±ط§طھ') }}
                     </Button>
                 </div>
             </form>

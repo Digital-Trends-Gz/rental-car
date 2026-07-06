@@ -14,11 +14,14 @@ const props = defineProps<{
         app_name: string;
         logo_url: string | null;
         favicon_url: string | null;
+        register_hero_images: Record<string, string | null>;
         primary_color: string;
         secondary_color: string;
     };
     logoFiles: Array<{ id: number; url: string }>;
     faviconFiles: Array<{ id: number; url: string }>;
+    registerHeroFiles: Record<string, Array<{ id: number; url: string }>>;
+    supportedLocales: Array<{ code: string; name: string; native: string }>;
     actions: {
         update: string;
     };
@@ -37,6 +40,8 @@ const form = useForm({
     logo_removed_files: [] as number[],
     favicon_temp_folders: [] as string[],
     favicon_removed_files: [] as number[],
+    register_hero_temp_folders: {} as Record<string, string[]>,
+    register_hero_removed_files: {} as Record<string, number[]>,
 });
 
 const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
@@ -46,6 +51,13 @@ const logoRemovedFileIds = ref<number[]>([]);
 const faviconUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
 const faviconTempFolders = ref<string[]>([]);
 const faviconRemovedFileIds = ref<number[]>([]);
+const registerHeroUploadRefs = ref<Record<string, InstanceType<typeof FileUpload> | null>>({});
+const registerHeroTempFolders = ref<Record<string, string[]>>(
+    Object.fromEntries((props.supportedLocales || []).map((locale) => [locale.code, []])),
+);
+const registerHeroRemovedFileIds = ref<Record<string, number[]>>(
+    Object.fromEntries((props.supportedLocales || []).map((locale) => [locale.code, []])),
+);
 
 watch(
     logoTempFolders,
@@ -63,9 +75,19 @@ watch(
     { deep: true },
 );
 
+watch(
+    registerHeroTempFolders,
+    (value) => {
+        form.register_hero_temp_folders = JSON.parse(JSON.stringify(value));
+    },
+    { deep: true },
+);
+
 const previewName = computed(() => form.app_name || 'Car4u');
 const uploadedLogoUrl = computed(() => props.logoFiles?.[0]?.url || null);
 const previewLogo = computed(() => uploadedLogoUrl.value || form.logo_url || '/logo/logo.png');
+const registerHeroPreview = (locale: string) =>
+    props.registerHeroFiles?.[locale]?.[0]?.url || props.settings.register_hero_images?.[locale] || null;
 const previewGradient = computed(
     () => `linear-gradient(135deg, ${form.primary_color || '#3b82f6'}, ${form.secondary_color || '#6d28d9'})`,
 );
@@ -81,6 +103,18 @@ const handleFaviconFileRemoved = (data: { type: string; fileId?: number }) => {
     if (data.type === 'existing' && data.fileId) {
         faviconRemovedFileIds.value.push(data.fileId);
         form.favicon_removed_files = [...new Set(faviconRemovedFileIds.value)];
+    }
+};
+
+const setRegisterHeroUploadRef = (locale: string, el: InstanceType<typeof FileUpload> | null) => {
+    registerHeroUploadRefs.value[locale] = el;
+};
+
+const handleRegisterHeroFileRemoved = (locale: string, data: { type: string; fileId?: number }) => {
+    if (data.type === 'existing' && data.fileId) {
+        const current = registerHeroRemovedFileIds.value[locale] || [];
+        registerHeroRemovedFileIds.value[locale] = [...new Set([...current, data.fileId])];
+        form.register_hero_removed_files = JSON.parse(JSON.stringify(registerHeroRemovedFileIds.value));
     }
 };
 
@@ -105,6 +139,12 @@ const submit = () => {
                 form.favicon_removed_files = [];
                 faviconRemovedFileIds.value = [];
                 faviconUploadRef.value?.resetFiles();
+
+                registerHeroTempFolders.value = Object.fromEntries((props.supportedLocales || []).map((locale) => [locale.code, []]));
+                registerHeroRemovedFileIds.value = Object.fromEntries((props.supportedLocales || []).map((locale) => [locale.code, []]));
+                form.register_hero_temp_folders = {};
+                form.register_hero_removed_files = {};
+                Object.values(registerHeroUploadRefs.value).forEach((upload) => upload?.resetFiles());
             },
         });
 };
@@ -201,6 +241,52 @@ const submit = () => {
                             <p v-if="form.errors.favicon_url" class="text-sm text-red-600">
                                 {{ form.errors.favicon_url }}
                             </p>
+                        </div>
+
+                        <div class="space-y-4 rounded-xl border p-4">
+                            <div class="space-y-1">
+                                <h3 class="text-base font-semibold">
+                                    {{ localize('Register Page Image', 'صورة صفحة التسجيل') }}
+                                </h3>
+                                <p class="text-xs text-muted-foreground">
+                                    {{ localize('Upload a different left-side registration image for each dashboard language.', 'ارفع صورة مختلفة للجزء الأيسر من صفحة التسجيل حسب لغة لوحة التحكم.') }}
+                                </p>
+                            </div>
+
+                            <div class="grid gap-4 lg:grid-cols-2">
+                                <div
+                                    v-for="localeOption in supportedLocales"
+                                    :key="`register-hero-${localeOption.code}`"
+                                    class="space-y-2 rounded-lg border bg-muted/20 p-3"
+                                >
+                                    <div class="flex items-center justify-between gap-3">
+                                        <Label>
+                                            {{ localeOption.name }}
+                                            <span class="text-muted-foreground">({{ localeOption.code.toUpperCase() }})</span>
+                                        </Label>
+                                        <span class="text-xs text-muted-foreground">{{ localeOption.native }}</span>
+                                    </div>
+                                    <FileUpload
+                                        :ref="(el) => setRegisterHeroUploadRef(localeOption.code, el as InstanceType<typeof FileUpload> | null)"
+                                        v-model="registerHeroTempFolders[localeOption.code]"
+                                        :initial-files="registerHeroFiles?.[localeOption.code] || []"
+                                        :allow-multiple="false"
+                                        :max-files="1"
+                                        :allowed-file-types="['image/jpeg', 'image/png', 'image/webp']"
+                                        :collection="`register_hero_${localeOption.code}`"
+                                        theme="light"
+                                        width="100%"
+                                        @file-removed="(data) => handleRegisterHeroFileRemoved(localeOption.code, data)"
+                                    />
+                                    <div v-if="registerHeroPreview(localeOption.code)" class="overflow-hidden rounded-md border bg-background">
+                                        <img
+                                            :src="registerHeroPreview(localeOption.code) || ''"
+                                            :alt="`${localeOption.name} register image preview`"
+                                            class="h-40 w-full object-cover"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
