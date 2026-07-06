@@ -38,10 +38,8 @@ class LandingPageSettings
                 'links' => [
                     ['label' => 'Cars', 'href' => '#cars'],
                     ['label' => 'Features', 'href' => '#features'],
-                    ['label' => 'Start in Minutes', 'href' => '#how-it-works'],
                     ['label' => 'Clients', 'href' => '#clients'],
                     ['label' => 'Plans', 'href' => '#pricing'],
-                    ['label' => 'FAQ', 'href' => '#faq'],
                     ['label' => 'Contact', 'href' => '#contact'],
                 ],
             ],

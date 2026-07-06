@@ -628,7 +628,15 @@ class LandingSettingsController extends Controller
             'settings.footer.description' => ['required', 'string', 'max:2000'],
         ]);
 
-        return LandingPageSettings::normalize($validated['settings'] ?? []);
+        return Arr::only(LandingPageSettings::normalize($validated['settings'] ?? []), [
+            'hero',
+            'features_section',
+            'getting_started',
+            'plans_section',
+            'faq_section',
+            'contact_section',
+            'footer',
+        ]);
     }
 
     /**

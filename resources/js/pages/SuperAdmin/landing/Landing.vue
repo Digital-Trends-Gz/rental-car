@@ -204,14 +204,14 @@ const carTheme = (car: FeaturedCar) => {
     };
 };
 
+const hiddenNavHrefs = new Set(['#how-it-works', '#faq']);
+
 const navLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
         { label: 'Features', href: '#features' },
-        { label: 'Start in Minutes', href: '#how-it-works' },
         { label: 'Clients', href: '#clients' },
         { label: 'Plans', href: '#pricing' },
-        { label: 'FAQ', href: '#faq' },
         { label: 'Contact', href: '#contact' },
     ];
 
@@ -228,7 +228,7 @@ const navLinks = computed(() => {
             label: String(link?.label || fallback[index]?.label || ''),
             href: String(link?.href || fallback[index]?.href || '#'),
         }))
-        .filter((link) => link.label !== '');
+        .filter((link) => link.label !== '' && !hiddenNavHrefs.has(link.href));
 });
 
 const mobileOpen = ref(false);
@@ -424,21 +424,24 @@ onUnmounted(() => {
                     : 'bg-background/90 shadow-sm backdrop-blur-lg'
             "
         >
-                <div class="section-container flex h-16 items-center justify-between gap-4">
-                    <Link href="/" class="inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+                <div class="section-container flex h-16 max-w-7xl items-center gap-6">
+                    <Link href="/" class="inline-flex shrink-0 items-center gap-2 text-xl font-bold tracking-tight text-foreground">
                         <AppLogoIcon class="h-6 w-6" />
                         <span v-if="!hasAppLogo">{{ appName }}</span>
                     </Link>
 
-                <div class="hidden items-center gap-8 md:flex">
-                    <a
-                        v-for="link in navLinks"
-                        :key="link.href"
-                        :href="link.href"
-                        class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                        {{ link.label }}
-                    </a>
+                <div class="hidden min-w-0 flex-1 items-center justify-end gap-8 md:flex">
+                    <div class="flex items-center gap-7">
+                        <a
+                            v-for="link in navLinks"
+                            :key="link.href"
+                            :href="link.href"
+                            class="whitespace-nowrap text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            {{ link.label }}
+                        </a>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-4">
                     <DropdownMenu v-if="availableLocales.length > 1">
                         <DropdownMenuTrigger as-child>
                             <Button
@@ -467,10 +470,11 @@ onUnmounted(() => {
                     <Button as-child class="gradient-button rounded-full px-5" size="sm">
                         <Link :href="registerUrl">{{ navigationCtaLabel }}</Link>
                     </Button>
+                    </div>
                 </div>
 
                 <button
-                    class="text-foreground md:hidden"
+                    class="ml-auto text-foreground md:hidden"
                     :aria-label="t('landing.toggle_menu')"
                     type="button"
                     @click="toggleMenu"
