@@ -424,24 +424,24 @@ onUnmounted(() => {
                     : 'bg-background/90 shadow-sm backdrop-blur-lg'
             "
         >
-                <div class="section-container flex h-16 max-w-7xl items-center gap-6">
-                    <Link href="/" class="inline-flex shrink-0 items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+                <div class="section-container relative flex h-16 max-w-7xl items-center justify-center">
+                    <Link href="/" class="absolute left-4 inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground sm:left-6 lg:left-8">
                         <AppLogoIcon class="h-6 w-6" />
                         <span v-if="!hasAppLogo">{{ appName }}</span>
                     </Link>
 
-                <div class="hidden min-w-0 flex-1 items-center justify-end gap-8 md:flex">
-                    <div class="flex items-center gap-7">
+                <div class="hidden items-center justify-center md:flex">
+                    <div class="flex items-center justify-center gap-8">
                         <a
                             v-for="link in navLinks"
                             :key="link.href"
                             :href="link.href"
-                            class="whitespace-nowrap text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                            class="whitespace-nowrap text-base font-medium text-muted-foreground transition-colors hover:text-foreground"
                         >
                             {{ link.label }}
                         </a>
                     </div>
-                    <div class="flex shrink-0 items-center gap-4">
+                    <div class="absolute right-4 flex items-center gap-4 sm:right-6 lg:right-8">
                     <DropdownMenu v-if="availableLocales.length > 1">
                         <DropdownMenuTrigger as-child>
                             <Button
@@ -547,7 +547,7 @@ onUnmounted(() => {
                                 href="#cars"
                                 class="inline-flex h-12 items-center justify-center rounded-full border border-input px-8 text-base font-medium hover:bg-accent"
                             >
-                                {{ localize('Browse cars', 'تصفح السيارات') }}
+                                {{ t('landing.browse_cars') }}
                             </a>
                         </div>
 

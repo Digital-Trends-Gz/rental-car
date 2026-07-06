@@ -315,6 +315,7 @@ return [
         'hero_title' => 'Automate your workflows.',
         'hero_highlight' => 'Ship faster.',
         'hero_desc' => 'Streamline replaces scattered tools with one platform that automates repetitive tasks.',
+        'browse_cars' => 'Browse cars',
         'see_pricing' => 'See Pricing',
         'features_title' => 'Everything you need to move faster',
         'features_subtitle' => 'Powerful features that replace your entire tool stack with one intuitive platform.',
