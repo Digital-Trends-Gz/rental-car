@@ -596,26 +596,35 @@ onUnmounted(() => {
                         </p>
                     </div>
 
-                    <div class="mx-auto mb-8 flex max-w-2xl flex-col gap-3 sm:flex-row">
-                        <Input
-                            v-model="carSearch"
-                            :placeholder="t('landing.cars_search_placeholder')"
-                            class="h-12"
-                            @keyup.enter="searchCars"
-                        />
-                        <div class="flex gap-3">
-                            <Button type="button" class="h-12 rounded-full px-6" @click="searchCars">
-                                <Search :size="16" class="mr-2" />
-                                {{ t('landing.cars_search') }}
-                            </Button>
-                            <Button
+                    <div class="mx-auto mb-10 max-w-3xl">
+                        <div
+                            class="flex items-center gap-2 rounded-[28px] border border-border/70 bg-white p-2 shadow-[0_18px_50px_rgba(15,23,42,0.08)] ring-1 ring-transparent transition-all duration-200 focus-within:border-primary/45 focus-within:ring-primary/15"
+                        >
+                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                <Search :size="19" />
+                            </div>
+                            <input
+                                v-model="carSearch"
+                                type="search"
+                                :placeholder="t('landing.cars_search_placeholder')"
+                                class="min-w-0 flex-1 bg-transparent px-1 text-base font-medium text-foreground outline-none placeholder:text-muted-foreground/65"
+                                @keyup.enter="searchCars"
+                            >
+                            <button
                                 v-if="carSearch.trim()"
                                 type="button"
-                                variant="outline"
-                                class="h-12 rounded-full px-6"
+                                :aria-label="t('landing.cars_clear')"
+                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
                                 @click="clearCarSearch"
                             >
-                                {{ t('landing.cars_clear') }}
+                                <X :size="17" />
+                            </button>
+                            <Button
+                                type="button"
+                                class="h-11 shrink-0 rounded-full bg-foreground px-6 text-base font-semibold text-background shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:bg-foreground/90"
+                                @click="searchCars"
+                            >
+                                {{ t('landing.cars_search') }}
                             </Button>
                         </div>
                     </div>
