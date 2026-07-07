@@ -5,11 +5,17 @@ import { useBrandTheme } from '@/composables/useBrandTheme';
 import { login as mainLogin, register as mainRegister, home as mainHome, fleet as mainFleet, about as mainAbout, contact as mainContact } from '@/routes';
 import { login as tenantLogin, register as tenantRegister, home as tenantHome, fleet as tenantFleet, about as tenantAbout, contact as tenantContact } from '@/routes/tenant';
 import { useTrans } from '@/composables/useTrans';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { index as tenantAdminCarsIndex } from '@/routes/admin/cars/index';
 import { index as tenantClientReservationsIndex } from '@/routes/client/reservations/index';
 import { dashboard as superAdminDashboard } from '@/routes/superadmin/index';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Menu, X } from 'lucide-vue-next';
+import { Check, ChevronDown, Languages, Menu, X } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 const $page = usePage<any>();
@@ -29,6 +35,10 @@ const isTenant = computed(() => !!currentTenant.value);
 const isLandingShell = computed(() => props.shellVariant === 'landing');
 const role = computed(() => $page.props.auth.user?.role);
 const mobileOpen = ref(false);
+const appBranding = computed(() => $page.props.app_branding ?? {});
+const landingSettings = computed(() => $page.props.landingSettings ?? {});
+const hiddenLandingNavHrefs = new Set(['#how-it-works', '#faq']);
+const currentYear = new Date().getFullYear();
 
 const normalizedRedirectPath = computed(() => {
     const currentPath = String($page.url || '/');
@@ -76,15 +86,59 @@ const appName = computed(() => $page.props.name || 'Car4u');
 const siteName = computed(() => tenantBranding.value?.site_name || currentTenant.value?.name || appName.value);
 const siteLogoUrl = computed(() => tenantBranding.value?.logo_url || null);
 const { primaryColor, secondaryColor, themeVars: globalThemeVars } = useBrandTheme();
-const landingNavLinks = [
-    { label: 'Cars', href: `${mainHome().url}#cars` },
-    { label: 'Features', href: `${mainHome().url}#features` },
-    { label: 'Start in Minutes', href: `${mainHome().url}#how-it-works` },
-    { label: 'Clients', href: `${mainHome().url}#clients` },
-    { label: 'Plans', href: `${mainHome().url}#pricing` },
-    { label: 'FAQ', href: `${mainHome().url}#faq` },
-    { label: 'Contact', href: `${mainHome().url}#contact` },
-];
+const hasAppLogo = computed(() => !!appBranding.value?.logo_url);
+const landingHomeUrl = computed(() => {
+    const localeCode = String(locale.value || '').trim();
+    const currentPath = String($page.url || '/');
+
+    if (localeCode && (currentPath === `/${localeCode}` || currentPath.startsWith(`/${localeCode}/`))) {
+        return `/${localeCode}`;
+    }
+
+    return mainHome().url;
+});
+const resolveLandingHref = (href: string) => {
+    const value = String(href || '#').trim() || '#';
+
+    if (value.startsWith('#')) {
+        return `${landingHomeUrl.value}${value}`;
+    }
+
+    if (value.startsWith('/#')) {
+        return `${landingHomeUrl.value}${value.slice(1)}`;
+    }
+
+    return value;
+};
+const landingNavLinks = computed(() => {
+    const fallback = [
+        { label: 'Cars', href: '#cars' },
+        { label: 'Features', href: '#features' },
+        { label: 'Clients', href: '#clients' },
+        { label: 'Plans', href: '#pricing' },
+        { label: 'Contact', href: '#contact' },
+    ];
+    const configuredLinks = Array.isArray(landingSettings.value?.navigation?.links)
+        ? landingSettings.value.navigation.links
+        : [];
+    const links = configuredLinks.length ? configuredLinks : fallback;
+
+    return links
+        .map((link: any, index: number) => ({
+            label: String(link?.label || fallback[index]?.label || ''),
+            href: String(link?.href || fallback[index]?.href || '#'),
+        }))
+        .filter((link) => link.label !== '' && !hiddenLandingNavHrefs.has(link.href))
+        .map((link) => ({
+            ...link,
+            href: resolveLandingHref(link.href),
+        }));
+});
+const navigationCtaLabel = computed(() => landingSettings.value?.navigation?.cta_label || t('landing.start_free_trial'));
+const landingFooterTitle = computed(() => landingSettings.value?.footer?.title || appName.value);
+const landingFooterDescription = computed(() =>
+    landingSettings.value?.footer?.description || 'Premium car rental service providing luxury and reliable vehicles for your transportation needs.'
+);
 const toggleLandingMenu = () => {
     mobileOpen.value = !mobileOpen.value;
 };
@@ -103,42 +157,57 @@ const themeVars = computed(() => ({
     <template v-if="isLandingShell">
         <div class="min-h-screen bg-background" :style="themeVars">
             <nav class="fixed left-0 right-0 top-0 z-50 border-b border-border bg-background/95 shadow-sm backdrop-blur-lg">
-                <div class="section-container flex h-16 items-center justify-between gap-4">
-                    <Link href="/" class="inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
+                <div class="section-container relative flex h-16 max-w-7xl items-center justify-center">
+                    <Link :href="landingHomeUrl" class="absolute left-4 inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground sm:left-6 lg:left-8">
                         <AppLogoIcon class="h-6 w-6" />
-                        <span>{{ appName }}</span>
+                        <span v-if="!hasAppLogo">{{ appName }}</span>
                     </Link>
 
-                    <div class="hidden items-center gap-8 md:flex">
-                        <a
-                            v-for="link in landingNavLinks"
-                            :key="link.href"
-                            :href="link.href"
-                            class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                            {{ link.label }}
-                        </a>
-                        <div
-                            v-if="props.showLocaleSwitcher && availableLocales.length > 1"
-                            class="flex items-center rounded-full border border-border bg-muted/50 p-1"
-                        >
+                    <div class="hidden items-center justify-center md:flex">
+                        <div class="flex items-center justify-center gap-8">
                             <a
-                                v-for="localeCode in availableLocales"
-                                :key="localeCode"
-                                :href="localeSwitcherUrl(localeCode)"
-                                class="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
-                                :class="locale === localeCode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
+                                v-for="link in landingNavLinks"
+                                :key="link.href"
+                                :href="link.href"
+                                class="whitespace-nowrap text-base font-medium text-muted-foreground transition-colors hover:text-foreground"
                             >
-                                {{ localeCode.toUpperCase() }}
+                                {{ link.label }}
                             </a>
                         </div>
+                        <div class="absolute right-4 flex items-center gap-4 sm:right-6 lg:right-8">
+                            <DropdownMenu v-if="props.showLocaleSwitcher && availableLocales.length > 1">
+                                <DropdownMenuTrigger as-child>
+                                    <Button
+                                        variant="ghost"
+                                        class="h-9 gap-2 rounded-full border border-border bg-background px-4 text-sm font-semibold text-muted-foreground hover:text-foreground"
+                                    >
+                                        <Languages class="h-4 w-4" />
+                                        <span>{{ locale.toUpperCase() }}</span>
+                                        <ChevronDown class="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" class="min-w-40">
+                                    <DropdownMenuItem v-for="localeCode in availableLocales" :key="localeCode" as-child>
+                                        <a
+                                            :href="localeSwitcherUrl(localeCode)"
+                                            class="flex w-full items-center justify-between gap-2"
+                                        >
+                                            <span>{{ localeCode.toUpperCase() }}</span>
+                                            <span v-if="locale === localeCode" class="text-[11px] font-semibold text-primary">
+                                                {{ t('language.label') }}
+                                            </span>
+                                        </a>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         <Button as-child class="gradient-button rounded-full px-5" size="sm">
-                            <Link :href="mainRegister().url">{{ t('landing.start_free_trial') }}</Link>
+                            <Link :href="mainRegister().url">{{ navigationCtaLabel }}</Link>
                         </Button>
+                        </div>
                     </div>
 
                     <button
-                        class="text-foreground md:hidden"
+                        class="ml-auto text-foreground md:hidden"
                         :aria-label="t('landing.toggle_menu')"
                         type="button"
                         @click="toggleLandingMenu"
@@ -158,23 +227,38 @@ const themeVars = computed(() => ({
                     >
                         {{ link.label }}
                     </a>
-                    <div
-                        v-if="props.showLocaleSwitcher && availableLocales.length > 1"
-                        class="mt-3 flex items-center gap-2 rounded-xl border border-border bg-muted/50 p-1"
-                    >
-                        <a
-                            v-for="localeCode in availableLocales"
-                            :key="`mobile-${localeCode}`"
-                            :href="localeSwitcherUrl(localeCode)"
-                            class="flex-1 rounded-lg px-3 py-2 text-center text-xs font-semibold transition-colors"
-                            :class="locale === localeCode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
-                        >
-                            {{ localeCode.toUpperCase() }}
-                        </a>
-                    </div>
+                    <DropdownMenu v-if="props.showLocaleSwitcher && availableLocales.length > 1">
+                        <DropdownMenuTrigger as-child>
+                            <Button
+                                variant="ghost"
+                                class="mt-3 h-9 w-full justify-between rounded-xl border border-border bg-muted/50 px-4 text-sm font-semibold text-muted-foreground"
+                            >
+                                <span class="inline-flex items-center gap-2">
+                                    <Languages class="h-4 w-4" />
+                                    {{ t('language.label') }}
+                                </span>
+                                <ChevronDown class="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent class="min-w-44">
+                            <DropdownMenuItem v-for="localeCode in availableLocales" :key="`mobile-${localeCode}`" as-child>
+                                <a
+                                    :href="localeSwitcherUrl(localeCode)"
+                                    class="flex w-full items-center justify-between gap-2"
+                                    @click="closeLandingMenu"
+                                >
+                                    <span>{{ localeCode.toUpperCase() }}</span>
+                                    <Check v-if="locale === localeCode" class="h-4 w-4 text-primary" />
+                                </a>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button as-child class="gradient-button mt-2 w-full rounded-full" size="sm">
-                        <Link :href="mainRegister().url" @click="closeLandingMenu">
-                            {{ t('landing.start_free_trial') }}
+                        <Link
+                            :href="mainRegister().url"
+                            @click="closeLandingMenu"
+                        >
+                            {{ navigationCtaLabel }}
                         </Link>
                     </Button>
                 </div>
@@ -186,12 +270,10 @@ const themeVars = computed(() => ({
 
             <footer class="border-t border-border py-10">
                 <div class="section-container text-center">
-                    <h3 class="text-2xl font-bold text-foreground">{{ appName }}</h3>
-                    <p class="mx-auto mt-3 max-w-2xl text-muted-foreground">
-                        Premium car rental service providing luxury and reliable vehicles for your transportation needs.
-                    </p>
+                    <h3 class="text-2xl font-bold text-foreground">{{ landingFooterTitle }}</h3>
+                    <p class="mx-auto mt-3 max-w-2xl text-muted-foreground">{{ landingFooterDescription }}</p>
                     <p class="mt-6 text-sm text-muted-foreground">
-                        &copy; {{ new Date().getFullYear() }} {{ appName }}. {{ t('landing.footer_rights') }}
+                        &copy; {{ currentYear }} {{ appName }}. {{ t('landing.footer_rights') }}
                     </p>
                 </div>
             </footer>

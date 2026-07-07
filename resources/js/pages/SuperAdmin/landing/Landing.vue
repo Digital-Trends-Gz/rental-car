@@ -15,10 +15,15 @@ import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { fleet as mainFleet, register as mainRegister } from '@/routes';
 import { show as tenantFleetShow } from '@/routes/tenant/fleet';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { Calendar, Check, ChevronDown, Languages, Menu, Search, X } from 'lucide-vue-next';
+import { Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Languages, Menu, Search, X } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import heroMockup from '@/assets/hero-mockup.png';
 import { type Plan } from '@/types';
+import { A11y, Autoplay, Navigation, Pagination } from 'swiper/modules';
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 interface FeatureCard {
     title: string;
@@ -237,6 +242,7 @@ const yearly = ref(false);
 const clientsRail = ref<HTMLElement | null>(null);
 const clientsAutoplay = ref<number | null>(null);
 const brokenTenantLogos = ref<Record<number, boolean>>({});
+const brokenCarTenantLogos = ref<Record<number, boolean>>({});
 const currentYear = new Date().getFullYear();
 const registerUrl = mainRegister().url;
 const navigationCtaLabel = computed(() => props.landingSettings.navigation?.cta_label || 'Start Free Trial');
@@ -246,6 +252,8 @@ const contactSection = computed(() => props.landingSettings.contact_section);
 const contactRecipient = computed(() => contactSection.value.direct_email || 'info@car4u.net');
 const carSearch = ref(props.carSearch ?? '');
 const fleetUrl = mainFleet().url;
+const featureSwiperModules = [Navigation, Pagination, Autoplay, A11y];
+const planSwiperModules = [Navigation, Pagination, Autoplay, A11y];
 
 const contactForm = useForm({
     name: '',
@@ -298,6 +306,14 @@ const hasTenantLogo = (tenant: TenantLogo) => {
 
 const markTenantLogoBroken = (tenantId: number) => {
     brokenTenantLogos.value[tenantId] = true;
+};
+
+const hasCarTenantLogo = (car: FeaturedCar) => {
+    return !!car.tenant_logo_url && !brokenCarTenantLogos.value[car.id];
+};
+
+const markCarTenantLogoBroken = (carId: number) => {
+    brokenCarTenantLogos.value[carId] = true;
 };
 
 const formatCarPrice = (value: string) => {
@@ -662,13 +678,14 @@ onUnmounted(() => {
                                 <div class="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
                                     <div class="flex min-w-0 items-center gap-2">
                                         <div
-                                            v-if="car.tenant_logo_url"
+                                            v-if="hasCarTenantLogo(car)"
                                             class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-white p-0.5"
                                         >
                                             <img
                                                 :src="car.tenant_logo_url"
                                                 :alt="car.tenant_name || t('landing.cars_tenant_logo')"
                                                 class="h-full w-full object-contain"
+                                                @error="markCarTenantLogoBroken(car.id)"
                                             >
                                         </div>
                                         <div
@@ -781,21 +798,55 @@ onUnmounted(() => {
                         <p class="mt-4 text-lg text-muted-foreground">{{ landingSettings.features_section.description }}</p>
                     </div>
 
-                    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        <div
-                            v-for="card in landingSettings.features_section.cards"
-                            :key="`${card.title}-${card.content}`"
-                            class="card-elevated rounded-xl p-6"
+                    <div class="relative">
+                        <Swiper
+                            :modules="featureSwiperModules"
+                            :slides-per-view="1"
+                            :space-between="24"
+                            :loop="landingSettings.features_section.cards.length > 3"
+                            :autoplay="{ delay: 3500, disableOnInteraction: false, pauseOnMouseEnter: true }"
+                            :pagination="{ clickable: true, el: '.features-swiper-pagination' }"
+                            :navigation="{ prevEl: '.features-swiper-prev', nextEl: '.features-swiper-next' }"
+                            :breakpoints="{
+                                640: { slidesPerView: 1.35, spaceBetween: 20 },
+                                768: { slidesPerView: 2, spaceBetween: 24 },
+                                1024: { slidesPerView: 3, spaceBetween: 28 },
+                            }"
+                            class="features-swiper !pb-14"
                         >
-                            <img
-                                v-if="card.image_url"
-                                :src="card.image_url"
-                                :alt="card.title"
-                                class="mb-4 h-40 w-full rounded-lg object-cover"
+                            <SwiperSlide
+                                v-for="card in landingSettings.features_section.cards"
+                                :key="`${card.title}-${card.content}`"
+                                class="h-auto"
                             >
-                            <h3 class="mb-2 text-lg font-semibold text-foreground">{{ card.title }}</h3>
-                            <p class="text-sm leading-relaxed text-muted-foreground">{{ card.content }}</p>
-                        </div>
+                                <div class="card-elevated flex h-full min-h-[190px] flex-col rounded-xl p-6">
+                                    <img
+                                        v-if="card.image_url"
+                                        :src="card.image_url"
+                                        :alt="card.title"
+                                        class="mb-4 h-40 w-full rounded-lg object-cover"
+                                    >
+                                    <h3 class="mb-3 text-xl font-semibold text-foreground">{{ card.title }}</h3>
+                                    <p class="text-base leading-relaxed text-muted-foreground">{{ card.content }}</p>
+                                </div>
+                            </SwiperSlide>
+                        </Swiper>
+
+                        <button
+                            type="button"
+                            class="features-swiper-prev absolute left-0 top-1/2 z-10 hidden h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-lg transition hover:bg-primary hover:text-primary-foreground lg:flex"
+                            aria-label="Previous feature"
+                        >
+                            <ChevronLeft class="h-5 w-5" />
+                        </button>
+                        <button
+                            type="button"
+                            class="features-swiper-next absolute right-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-lg transition hover:bg-primary hover:text-primary-foreground lg:flex"
+                            aria-label="Next feature"
+                        >
+                            <ChevronRight class="h-5 w-5" />
+                        </button>
+                        <div class="features-swiper-pagination mt-2 flex justify-center"></div>
                     </div>
                 </div>
             </section>
@@ -890,31 +941,66 @@ onUnmounted(() => {
                         <span class="text-sm font-medium" :class="yearly ? 'text-foreground' : 'text-muted-foreground'">{{ t('landing.yearly') }}</span>
                     </div>
 
-                    <div class="mx-auto grid max-w-6xl gap-6 md:grid-cols-3">
-                        <div
-                            v-for="plan in plans"
-                            :key="plan.id"
-                            class="card-elevated flex flex-col rounded-xl p-6"
+                    <div class="relative mx-auto max-w-7xl">
+                        <Swiper
+                            :modules="planSwiperModules"
+                            :slides-per-view="1"
+                            :space-between="24"
+                            :pagination="{ clickable: true, el: '.plans-swiper-pagination' }"
+                            :navigation="{ prevEl: '.plans-swiper-prev', nextEl: '.plans-swiper-next' }"
+                            :autoplay="{ delay: 4200, disableOnInteraction: false, pauseOnMouseEnter: true }"
+                            :loop="plans.length > 4"
+                            :breakpoints="{
+                                640: { slidesPerView: 1.25, spaceBetween: 20 },
+                                768: { slidesPerView: 2, spaceBetween: 22 },
+                                1024: { slidesPerView: 3, spaceBetween: 24 },
+                                1280: { slidesPerView: 4, spaceBetween: 24 },
+                            }"
+                            class="plans-swiper !pb-14"
                         >
-                            <h3 class="text-lg font-semibold text-foreground">{{ plan.name }}</h3>
-                            <p class="mb-4 text-sm text-muted-foreground">{{ plan.description || '' }}</p>
+                            <SwiperSlide
+                                v-for="plan in plans"
+                                :key="plan.id"
+                                class="!h-auto"
+                            >
+                                <div class="card-elevated flex h-full flex-col rounded-xl p-6">
+                                    <h3 class="text-lg font-semibold text-foreground">{{ plan.name }}</h3>
+                                    <p class="mb-4 text-sm text-muted-foreground">{{ plan.description || '' }}</p>
 
-                            <div class="mb-6">
-                                <span class="text-4xl font-extrabold text-foreground">${{ money(planPrice(plan)) }}</span>
-                                <span class="text-sm text-muted-foreground">/{{ yearly ? t('landing.yearly') : t('landing.monthly') }}</span>
-                            </div>
+                                    <div class="mb-6">
+                                        <span class="text-4xl font-extrabold text-foreground">${{ money(planPrice(plan)) }}</span>
+                                        <span class="text-sm text-muted-foreground">/{{ yearly ? t('landing.yearly') : t('landing.monthly') }}</span>
+                                    </div>
 
-                            <ul class="mb-8 flex-1 space-y-3">
-                                <li v-for="feature in (plan.features || [])" :key="feature" class="flex items-start gap-2 text-sm text-muted-foreground">
-                                    <Check :size="16" class="mt-0.5 shrink-0 text-primary" />
-                                    {{ feature }}
-                                </li>
-                            </ul>
+                                    <ul class="mb-8 flex-1 space-y-3">
+                                        <li v-for="feature in (plan.features || [])" :key="feature" class="flex items-start gap-2 text-sm text-muted-foreground">
+                                            <Check :size="16" class="mt-0.5 shrink-0 text-primary" />
+                                            {{ feature }}
+                                        </li>
+                                    </ul>
 
-                            <Button as-child class="gradient-button w-full rounded-full">
-                                <Link :href="registerUrl">{{ navigationCtaLabel }}</Link>
-                            </Button>
-                        </div>
+                                    <Button as-child class="gradient-button w-full rounded-full">
+                                        <Link :href="registerUrl">{{ navigationCtaLabel }}</Link>
+                                    </Button>
+                                </div>
+                            </SwiperSlide>
+                        </Swiper>
+
+                        <button
+                            class="plans-swiper-prev absolute left-0 top-1/2 z-10 hidden h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-lg transition hover:bg-primary hover:text-primary-foreground lg:flex"
+                            type="button"
+                            :aria-label="t('pagination.previous')"
+                        >
+                            <ChevronLeft :size="20" />
+                        </button>
+                        <button
+                            class="plans-swiper-next absolute right-0 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-lg transition hover:bg-primary hover:text-primary-foreground lg:flex"
+                            type="button"
+                            :aria-label="t('pagination.next')"
+                        >
+                            <ChevronRight :size="20" />
+                        </button>
+                        <div class="plans-swiper-pagination mt-2 flex justify-center"></div>
                     </div>
                 </div>
             </section>
@@ -1071,5 +1157,22 @@ onUnmounted(() => {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+:deep(.features-swiper-pagination .swiper-pagination-bullet),
+:deep(.plans-swiper-pagination .swiper-pagination-bullet) {
+    width: 0.65rem;
+    height: 0.65rem;
+    margin: 0 0.25rem;
+    background: var(--muted-foreground);
+    opacity: 0.35;
+}
+
+:deep(.features-swiper-pagination .swiper-pagination-bullet-active),
+:deep(.plans-swiper-pagination .swiper-pagination-bullet-active) {
+    width: 1.75rem;
+    border-radius: 999px;
+    background: var(--primary);
+    opacity: 1;
 }
 </style>

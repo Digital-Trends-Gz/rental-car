@@ -148,6 +148,7 @@ const fleetThemeVars = computed(() => ({
     '--fleet-primary': appBranding.value.primary_color || '#3b82f6',
     '--fleet-secondary': appBranding.value.secondary_color || '#6d28d9',
 }));
+const selectClass = 'w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100';
 
 </script>
 
@@ -293,10 +294,7 @@ const fleetThemeVars = computed(() => ({
                                             class="mb-2 block text-sm font-medium text-gray-700"
                                             >Tenant</label
                                         >
-                                        <select
-                                            v-model="selectedTenant"
-                                            class="w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
-                                        >
+                                        <select v-model="selectedTenant" :class="selectClass">
                                             <option value="">All Tenants</option>
                                             <option
                                                 v-for="tenant in tenants"
@@ -314,10 +312,7 @@ const fleetThemeVars = computed(() => ({
                                             class="mb-2 block text-sm font-medium text-gray-700"
                                             >Branch</label
                                         >
-                                        <select
-                                            v-model="selectedBranch"
-                                            class="w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
-                                        >
+                                        <select v-model="selectedBranch" :class="selectClass">
                                             <option value="">All Branches</option>
                                             <option
                                                 v-for="branch in tenantBranches"
@@ -335,10 +330,7 @@ const fleetThemeVars = computed(() => ({
                                             class="mb-2 block text-sm font-medium text-gray-700"
                                             >{{ t('fleet.vehicle_make') }}</label
                                         >
-                                        <select
-                                            v-model="selectedMake"
-                                            class="w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
-                                        >
+                                        <select v-model="selectedMake" :class="selectClass">
                                             <option value="">{{ t('fleet.all_makes') }}</option>
                                             <option
                                                 v-for="make in makes"
@@ -356,10 +348,7 @@ const fleetThemeVars = computed(() => ({
                                             class="mb-2 block text-sm font-medium text-gray-700"
                                             >{{ t('fleet.fuel_type') }}</label
                                         >
-                                        <select
-                                            v-model="selectedFuelType"
-                                            class="w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
-                                        >
+                                        <select v-model="selectedFuelType" :class="selectClass">
                                             <option value="">
                                                 {{ t('fleet.all_fuel_types') }}
                                             </option>
@@ -384,10 +373,7 @@ const fleetThemeVars = computed(() => ({
                                             class="mb-2 block text-sm font-medium text-gray-700"
                                             >{{ t('fleet.model_year') }}</label
                                         >
-                                        <select
-                                            v-model="selectedYear"
-                                            class="w-full rounded-xl border border-gray-300 px-4 py-2 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
-                                        >
+                                        <select v-model="selectedYear" :class="selectClass">
                                             <option value="">{{ t('fleet.all_years') }}</option>
                                             <option
                                                 v-for="year in years"

@@ -94,6 +94,7 @@ class HomePagesController extends Controller
 
             $featuredCars = Car::withoutTenantScope()
                 ->whereIn('status', $this->publicFleetStatuses())
+                ->where('tenant_id', '>', 0)
                 ->with([
                     'tenant.siteSetting',
                     'branch:id,tenant_id,address',
@@ -211,7 +212,7 @@ class HomePagesController extends Controller
         $tenantId = TenantContext::id();
 
         $query = Car::withoutTenantScope()->whereIn('status', $this->publicFleetStatuses())
-           ->whereNotNull('tenant_id')
+            ->where('tenant_id', '>', 0)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->with([
                 'tenant.siteSetting',
@@ -274,6 +275,7 @@ class HomePagesController extends Controller
         // Get filter options
         $makes = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
+            ->where('tenant_id', '>', 0)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('make')
@@ -281,6 +283,7 @@ class HomePagesController extends Controller
 
         $fuelTypes = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
+            ->where('tenant_id', '>', 0)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('fuel_type')
@@ -288,6 +291,7 @@ class HomePagesController extends Controller
 
         $years = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
+            ->where('tenant_id', '>', 0)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('year')
@@ -295,6 +299,7 @@ class HomePagesController extends Controller
 
         $publicTenantIds = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
+            ->where('tenant_id', '>', 0)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('tenant_id');
@@ -313,6 +318,7 @@ class HomePagesController extends Controller
 
         $publicBranchIds = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
+            ->where('tenant_id', '>', 0)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->whereNotNull('branch_id')
             ->distinct()
@@ -333,16 +339,34 @@ class HomePagesController extends Controller
 
         $filters = $request->only(['search', 'tenant_id', 'branch_id', 'make', 'fuel_type', 'min_price', 'max_price', 'year']);
         $seo = TenantSeoResolver::forPage(TenantContext::get(), 'fleet');
+        $landingSettings = null;
+        $availableLocales = null;
 
-        return inertia('Fleet', compact('cars', 'makes', 'fuelTypes', 'years', 'filters', 'tenants', 'branches', 'seo'));
+        if (!$tenantId) {
+            $stored = SiteSetting::query()
+                ->where('key', LandingPageSettings::KEY)
+                ->value('value');
+
+            $landingSettings = LandingPageSettings::localize(
+                LandingPageSettings::normalize(is_array($stored) ? $stored : null),
+                app()->getLocale()
+            );
+            $availableLocales = array_values(array_map('strval', array_filter(
+                (array) data_get($landingSettings, 'enabled_locales', []),
+                static fn ($value) => trim((string) $value) !== ''
+            )));
+
+            if (empty($availableLocales)) {
+                $availableLocales = LandingPageSettings::supportedLocaleKeys();
+            }
+        }
+
+        return inertia('Fleet', compact('cars', 'makes', 'fuelTypes', 'years', 'filters', 'tenants', 'branches', 'seo', 'landingSettings', 'availableLocales'));
     }
 
     private function applyTenantFleetScope($query, int $tenantId)
     {
-        return $query->where(function ($query) use ($tenantId) {
-            $query->where('tenant_id', $tenantId)
-                ->orWhereNull('tenant_id');
-        });
+        return $query->where('tenant_id', $tenantId);
     }
 
     /**
@@ -410,7 +434,7 @@ class HomePagesController extends Controller
             return null;
         }
 
-        $siteLogo = trim((string) data_get($tenant->siteSetting, 'logo_url', ''));
+        $siteLogo = trim((string) data_get(TenantSiteSetting::forTenant($tenant), 'logo_url', ''));
         if ($siteLogo !== '') {
             return $siteLogo;
         }

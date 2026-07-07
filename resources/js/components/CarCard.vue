@@ -4,7 +4,7 @@ import { usePage } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
 import { show as tenantFleetShow } from '@/routes/tenant/fleet';
 import { Calendar, MapPin } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 interface Car {
     id: number;
@@ -32,6 +32,7 @@ const page = usePage<any>();
 const { t } = useTrans();
 const currentTenant = computed(() => page.props.current_tenant);
 const appBranding = computed(() => page.props.app_branding ?? {});
+const tenantLogoFailed = ref(false);
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
     const normalized = hex.trim().replace('#', '');
@@ -157,13 +158,14 @@ defineProps<Props>();
                 <div class="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
                     <div class="flex min-w-0 items-center gap-2">
                         <div
-                            v-if="car.tenant_logo_url"
+                            v-if="car.tenant_logo_url && !tenantLogoFailed"
                             class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-white p-0.5"
                         >
                             <img
                                 :src="car.tenant_logo_url"
                                 :alt="car.tenant_name || 'Tenant logo'"
                                 class="h-full w-full object-contain"
+                                @error="tenantLogoFailed = true"
                             >
                         </div>
                         <div
