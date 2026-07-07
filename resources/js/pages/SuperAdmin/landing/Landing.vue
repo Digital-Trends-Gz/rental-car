@@ -307,7 +307,7 @@ const formatCarPrice = (value: string) => {
 
 const formatStatus = (status?: string) => {
     if (!status) {
-        return localize('Available', 'متاح');
+        return t('landing.cars_status_available');
     }
 
     return status
@@ -589,24 +589,24 @@ onUnmounted(() => {
                 <div class="section-container">
                     <div class="mx-auto mb-10 max-w-3xl text-center">
                         <h2 class="text-3xl font-bold text-foreground sm:text-4xl">
-                            {{ localize('Random cars from tenants', 'سيارات عشوائية من المستأجرين') }}
+                            {{ t('landing.cars_title') }}
                         </h2>
                         <p class="mt-4 text-lg text-muted-foreground">
-                            {{ localize('Showcase live inventory from different tenants and search by car, model, or tenant name.', 'اعرض السيارات المتاحة من مختلف المستأجرين وابحث بالسيارة أو الموديل أو اسم المستأجر.') }}
+                            {{ t('landing.cars_description') }}
                         </p>
                     </div>
 
                     <div class="mx-auto mb-8 flex max-w-2xl flex-col gap-3 sm:flex-row">
                         <Input
                             v-model="carSearch"
-                            :placeholder="localize('Search cars or tenants...', 'ابحث عن سيارة أو مستأجر...')"
+                            :placeholder="t('landing.cars_search_placeholder')"
                             class="h-12"
                             @keyup.enter="searchCars"
                         />
                         <div class="flex gap-3">
                             <Button type="button" class="h-12 rounded-full px-6" @click="searchCars">
                                 <Search :size="16" class="mr-2" />
-                                {{ localize('Search', 'بحث') }}
+                                {{ t('landing.cars_search') }}
                             </Button>
                             <Button
                                 v-if="carSearch.trim()"
@@ -615,7 +615,7 @@ onUnmounted(() => {
                                 class="h-12 rounded-full px-6"
                                 @click="clearCarSearch"
                             >
-                                {{ localize('Clear', 'مسح') }}
+                                {{ t('landing.cars_clear') }}
                             </Button>
                         </div>
                     </div>
@@ -642,7 +642,7 @@ onUnmounted(() => {
                                     }"
                                 >
                                     <span class="text-lg font-extrabold leading-none text-white">${{ formatCarPrice(car.price_per_day) }}</span>
-                                    <span class="ml-1 text-sm font-medium text-primary-foreground/90">/ {{ localize('day', 'يوم') }}</span>
+                                    <span class="ml-1 text-sm font-medium text-primary-foreground/90">/ {{ t('landing.cars_day') }}</span>
                                 </div>
                             </div>
                         <CardContent class="flex h-full flex-col p-6">
@@ -658,7 +658,7 @@ onUnmounted(() => {
                                         >
                                             <img
                                                 :src="car.tenant_logo_url"
-                                                :alt="car.tenant_name || localize('Tenant logo', 'شعار المستأجر')"
+                                                :alt="car.tenant_name || t('landing.cars_tenant_logo')"
                                                 class="h-full w-full object-contain"
                                             >
                                         </div>
@@ -672,7 +672,7 @@ onUnmounted(() => {
                                         >
                                             {{ (car.tenant_name || 'T').trim().charAt(0) }}
                                         </div>
-                                        <span class="truncate">{{ car.tenant_name || localize('Tenant', 'المستأجر') }}</span>
+                                        <span class="truncate">{{ car.tenant_name || t('landing.cars_tenant') }}</span>
                                     </div>
                                     <span class="inline-flex shrink-0 items-center gap-1 text-[11px] normal-case tracking-normal text-muted-foreground">
                                         <svg
@@ -695,7 +695,7 @@ onUnmounted(() => {
                                                 d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                                             ></path>
                                         </svg>
-                                        {{ car.location_text || localize('Location not set', 'الموقع غير محدد') }}
+                                        {{ car.location_text || t('landing.cars_location_not_set') }}
                                     </span>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-1.5">
@@ -738,7 +738,7 @@ onUnmounted(() => {
                                 >
                                     <span class="flex items-center justify-center gap-2 text-white">
                                         <Calendar :size="18" class="transition-transform group-hover:scale-110" />
-                                        {{ localize('Book Now', 'احجز الآن') }}
+                                        {{ t('landing.cars_book_now') }}
                                     </span>
                                 </button>
                             </CardContent>
@@ -747,10 +747,10 @@ onUnmounted(() => {
 
                     <div v-else class="rounded-2xl border border-dashed border-border p-10 text-center">
                         <p class="text-lg font-medium text-foreground">
-                            {{ localize('No cars matched your search.', 'لا توجد سيارات مطابقة لبحثك.') }}
+                            {{ t('landing.cars_empty_title') }}
                         </p>
                         <p class="mt-2 text-sm text-muted-foreground">
-                            {{ localize('Try a different make, model, or tenant name.', 'جرب اسم شركة أو موديل أو مستأجر آخر.') }}
+                            {{ t('landing.cars_empty_description') }}
                         </p>
                     </div>
 
@@ -759,7 +759,7 @@ onUnmounted(() => {
                             :href="fleetUrl"
                         class="gradient-button inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-semibold shadow-lg shadow-primary/20 transition-all duration-200 hover:shadow-xl"
                         >
-                            {{ localize('View Complete Fleet', 'عرض الأسطول الكامل') }}
+                            {{ t('landing.cars_view_complete_fleet') }}
                         </a>
                     </div>
                 </div>
@@ -814,10 +814,10 @@ onUnmounted(() => {
                 <div class="section-container">
                     <div class="mx-auto mb-10 max-w-3xl text-center">
                         <div class="mb-4 inline-flex rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold uppercase tracking-wide text-primary">
-                            {{ localize('Our clients', 'عملاؤنا') }}
+                            {{ t('landing.clients_label') }}
                         </div>
                         <h2 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                            {{ localize('Trusted by teams worldwide', 'موثوق به من قبل فرق حول العالم') }}
+                            {{ t('landing.clients_title') }}
                         </h2>
                     </div>
 
