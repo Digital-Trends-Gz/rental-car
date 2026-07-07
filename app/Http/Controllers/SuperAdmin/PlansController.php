@@ -49,7 +49,10 @@ class PlansController extends Controller
     public function index(): Response
     {
         return Inertia::render('SuperAdmin/Plans/Index', [
-            'plans' => PlanTranslations::localizeCollection(Plan::withCount('tenants')->latest()->get(), app()->getLocale()),
+            'plans' => PlanTranslations::localizeCollection(Plan::withCount('tenants')
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get(), app()->getLocale()),
         ]);
     }
 
@@ -71,6 +74,7 @@ class PlansController extends Controller
         $validated = $request->validate(array_merge([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'sort_order' => 'required|integer|min:0',
             'features' => 'nullable|array',
             'feature_flags' => 'nullable|array',
             'monthly_price' => 'required|numeric|min:0',
@@ -114,6 +118,7 @@ class PlansController extends Controller
         $validated = $request->validate(array_merge([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'sort_order' => 'required|integer|min:0',
             'features' => 'nullable|array',
             'feature_flags' => 'nullable|array',
             'monthly_price' => 'required|numeric|min:0',

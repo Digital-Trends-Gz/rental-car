@@ -38,6 +38,7 @@ const buildFeatureFlags = () => {
 const form = useForm({
     name: props.plan.name,
     description: props.plan.description || '',
+    sort_order: props.plan.sort_order ?? 0,
     features: props.plan.features?.length ? [...props.plan.features] : [''],
     feature_flags: buildFeatureFlags(),
     monthly_price: Number(props.plan.monthly_price),
@@ -145,6 +146,12 @@ const submit = () => {
                                     <Label for="description">Description</Label>
                                     <Textarea id="description" v-model="form.description" placeholder="Short description of the plan" />
                                     <div v-if="form.errors.description" class="text-sm text-red-600">{{ form.errors.description }}</div>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="sort_order">Display Order *</Label>
+                                    <Input id="sort_order" v-model.number="form.sort_order" type="number" min="0" step="1" required />
+                                    <p class="text-xs text-muted-foreground">Lower numbers appear first. Use 0 for the first plan.</p>
+                                    <div v-if="form.errors.sort_order" class="text-sm text-red-600">{{ form.errors.sort_order }}</div>
                                 </div>
                                 <div class="flex items-center justify-between space-x-2 py-2">
                                     <div class="space-y-0.5">

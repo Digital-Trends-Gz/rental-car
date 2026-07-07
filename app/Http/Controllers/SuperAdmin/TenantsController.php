@@ -54,8 +54,8 @@ class TenantsController
         return Inertia::render('SuperAdmin/Tenants/Create', [
             'plans' => Plan::query()
                 ->where('is_active', true)
-                ->orderBy('monthly_price')
-                ->orderBy('name')
+                ->orderBy('sort_order')
+                ->orderBy('id')
                 ->get(['id', 'name']),
             'logoFiles' => [],
         ]);
@@ -179,8 +179,8 @@ class TenantsController
 
         $plans = Plan::query()
             ->where('is_active', true)
-            ->orderBy('monthly_price')
-            ->orderBy('name')
+            ->orderBy('sort_order')
+            ->orderBy('id')
             ->get(['id', 'name']);
 
         return Inertia::render('SuperAdmin/Tenants/Edit', [

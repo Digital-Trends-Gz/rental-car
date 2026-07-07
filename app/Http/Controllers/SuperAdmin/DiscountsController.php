@@ -27,7 +27,10 @@ class DiscountsController extends Controller
     public function create(): Response
     {
         return Inertia::render('SuperAdmin/Discounts/Create', [
-            'plans' => Plan::where('is_active', true)->get(),
+            'plans' => Plan::where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get(),
         ]);
     }
 
@@ -60,7 +63,10 @@ class DiscountsController extends Controller
     {
         return Inertia::render('SuperAdmin/Discounts/Edit', [
             'discount' => $discount,
-            'plans' => Plan::where('is_active', true)->get(),
+            'plans' => Plan::where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get(),
         ]);
     }
 

@@ -197,11 +197,13 @@ class RegisteredUserController extends Controller
 
         $plans = PlanTranslations::localizeCollection(Plan::query()
             ->where('is_active', true)
-            ->orderBy('monthly_price')
+            ->orderBy('sort_order')
+            ->orderBy('id')
             ->get([
                 'id',
                 'name',
                 'description',
+                'sort_order',
                 'features',
                 'monthly_price',
                 'monthly_price_id',

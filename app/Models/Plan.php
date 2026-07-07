@@ -37,6 +37,7 @@ class Plan extends Model
     protected $fillable = [
         'name',
         'description',
+        'sort_order',
         'features',
         'feature_flags',
         'monthly_price',
@@ -65,6 +66,7 @@ class Plan extends Model
         'max_cars' => 'integer',
         'max_contracts' => 'integer',
         'openai_requests_per_day' => 'integer',
+        'sort_order' => 'integer',
     ];
 
     public function tenants(): HasMany

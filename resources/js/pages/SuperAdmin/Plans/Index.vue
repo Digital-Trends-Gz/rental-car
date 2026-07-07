@@ -57,6 +57,7 @@ const deletePlan = (planId: number, planName: string) => {
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.super_admin.plans.index.plan') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.super_admin.plans.index.prices') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.super_admin.plans.index.limits') }}</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.super_admin.plans.index.features') }}</th>
@@ -80,6 +81,9 @@ const deletePlan = (planId: number, planName: string) => {
                                         </div>
                                     </div>
                                 </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-700">
+                                {{ plan.sort_order }}
                             </td>
                             <td class="px-4 py-3">
                                 <div class="text-sm space-y-1">
@@ -142,7 +146,7 @@ const deletePlan = (planId: number, planName: string) => {
                             </td>
                         </tr>
                         <tr v-if="plans.length === 0">
-                            <td colspan="7" class="px-4 py-6 text-center text-gray-500">
+                            <td colspan="8" class="px-4 py-6 text-center text-gray-500">
                                 {{ t('dashboard.super_admin.plans.index.empty') }}
                             </td>
                         </tr>

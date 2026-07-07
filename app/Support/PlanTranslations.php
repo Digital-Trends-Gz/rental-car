@@ -16,7 +16,7 @@ class PlanTranslations
     public static function defaultTranslationTree(): array
     {
         $plans = Plan::query()
-            ->orderBy('monthly_price')
+            ->orderBy('sort_order')
             ->orderBy('id')
             ->get(['id', 'name', 'description', 'features']);
 

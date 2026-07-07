@@ -54,6 +54,7 @@ export interface Plan {
     id: number;
     name: string;
     description: string | null;
+    sort_order: number;
     features: string[] | null;
     feature_flags: Record<string, boolean> | null;
     monthly_price: number;

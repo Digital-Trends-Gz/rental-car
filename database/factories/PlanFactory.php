@@ -20,6 +20,7 @@ class PlanFactory extends Factory
         return [
             'name' => $this->faker->sentence(2),
             'description' => $this->faker->paragraph(),
+            'sort_order' => 0,
             'features' => ['Core booking', 'Admin dashboard'],
             'feature_flags' => [
                 'client_portal' => true,
