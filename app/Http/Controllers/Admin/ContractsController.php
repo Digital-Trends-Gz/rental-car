@@ -595,6 +595,8 @@ class ContractsController extends Controller
         }
         $pdfTemplate = TenantPdfTemplateRegistry::resolveContractTemplate(data_get($siteSettings, 'pdf_templates.contract'));
         $templateView = $pdfTemplate['view'];
+        $renterSignatureImage = $this->pdfImageSource($this->contractRenterSignatureUrl($contract));
+        $inchargeSignatureImage = $this->pdfImageSource(data_get($siteSettings, 'contract_pdf.incharge_signature_image'));
 
         $viewData = [
             'contract' => $contract,
@@ -615,6 +617,8 @@ class ContractsController extends Controller
             'siteSettings' => $siteSettings,
             'pdfHeader' => data_get($siteSettings, 'pdf_header', []),
             'pdfTemplate' => $pdfTemplate,
+            'renterSignatureImage' => $renterSignatureImage,
+            'inchargeSignatureImage' => $inchargeSignatureImage,
         ];
 
         $fileName = $contract->contract_number.'-'.$locale.'-report.pdf';
@@ -2835,32 +2839,61 @@ class ContractsController extends Controller
             return null;
         }
 
-        if (str_starts_with($url, 'data:') || preg_match('/^https?:\/\//i', $url) === 1) {
+        if (str_starts_with($url, 'data:')) {
             return $url;
         }
 
         $path = null;
+        $pathPart = parse_url($url, PHP_URL_PATH);
+        $localUrl = $pathPart ? $pathPart : $url;
 
-        if (str_starts_with($url, '/storage/')) {
-            $path = public_path(ltrim($url, '/'));
-        } elseif (str_starts_with($url, 'storage/')) {
-            $path = public_path($url);
-        } elseif (str_starts_with($url, '/')) {
-            $path = public_path(ltrim($url, '/'));
+        if (str_starts_with($localUrl, '/storage/')) {
+            $relativeStoragePath = substr(ltrim($localUrl, '/'), strlen('storage/'));
+            $path = public_path(ltrim($localUrl, '/'));
+        } elseif (str_starts_with($localUrl, 'storage/')) {
+            $relativeStoragePath = substr($localUrl, strlen('storage/'));
+            $path = public_path($localUrl);
+        } elseif (str_starts_with($localUrl, '/')) {
+            $relativeStoragePath = null;
+            $path = public_path(ltrim($localUrl, '/'));
+        } else {
+            $relativeStoragePath = $localUrl;
+            $path = public_path('storage/'.ltrim($localUrl, '/'));
         }
 
-        if (!$path || !is_file($path)) {
-            return $url;
+        $paths = array_filter([
+            $path,
+            isset($relativeStoragePath) && $relativeStoragePath ? storage_path('app/public/'.ltrim($relativeStoragePath, '/')) : null,
+        ]);
+
+        foreach ($paths as $candidatePath) {
+            if (is_file($candidatePath)) {
+                $contents = file_get_contents($candidatePath);
+                if (!is_string($contents) || $contents === '') {
+                    return null;
+                }
+
+                $mime = mime_content_type($candidatePath) ?: 'application/octet-stream';
+
+                return 'data:'.$mime.';base64,'.base64_encode($contents);
+            }
         }
 
-        $contents = file_get_contents($path);
-        if (!is_string($contents) || $contents === '') {
-            return null;
+        return $url;
+    }
+
+    private function contractRenterSignatureUrl(Contract $contract): ?string
+    {
+        $handoverState = is_array($contract->handover_state ?? null) ? $contract->handover_state : [];
+        $signature = data_get($handoverState, 'steps.terms_confirmation.payload.signature_image')
+            ?? data_get($handoverState, 'phases.delivery.steps.terms_confirmation.payload.signature_image')
+            ?? data_get($handoverState, 'delivery.steps.terms_confirmation.payload.signature_image');
+
+        if (is_array($signature)) {
+            return data_get($signature, 'url') ?: data_get($signature, 'file_path');
         }
 
-        $mime = mime_content_type($path) ?: 'application/octet-stream';
-
-        return 'data:'.$mime.';base64,'.base64_encode($contents);
+        return $this->nullableString($signature);
     }
 
     private function nullableString(mixed $value): ?string

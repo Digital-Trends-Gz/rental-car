@@ -260,14 +260,14 @@
     $renterSignature = data_get($handoverState, 'steps.terms_confirmation.payload.signature_image')
         ?? data_get($handoverState, 'phases.delivery.steps.terms_confirmation.payload.signature_image')
         ?? data_get($handoverState, 'delivery.steps.terms_confirmation.payload.signature_image');
-    $renterSignatureUrl = is_array($renterSignature)
+    $renterSignatureUrl = $renterSignatureImage ?? (is_array($renterSignature)
         ? (data_get($renterSignature, 'url') ?: data_get($renterSignature, 'file_path'))
-        : $renterSignature;
-    if ($renterSignatureUrl && !preg_match('/^https?:\/\//i', (string) $renterSignatureUrl)) {
+        : $renterSignature);
+    if ($renterSignatureUrl && !str_starts_with((string) $renterSignatureUrl, 'data:') && !preg_match('/^https?:\/\//i', (string) $renterSignatureUrl)) {
         $renterSignatureUrl = url('/'.ltrim((string) $renterSignatureUrl, '/'));
     }
-    $inchargeSignatureUrl = data_get($contractPdf, 'incharge_signature_image');
-    if ($inchargeSignatureUrl && !preg_match('/^https?:\/\//i', (string) $inchargeSignatureUrl)) {
+    $inchargeSignatureUrl = $inchargeSignatureImage ?? data_get($contractPdf, 'incharge_signature_image');
+    if ($inchargeSignatureUrl && !str_starts_with((string) $inchargeSignatureUrl, 'data:') && !preg_match('/^https?:\/\//i', (string) $inchargeSignatureUrl)) {
         $inchargeSignatureUrl = url('/'.ltrim((string) $inchargeSignatureUrl, '/'));
     }
 @endphp
