@@ -532,10 +532,9 @@
                 @if($livaLogoUrl)
                     <img class="liva-logo-image" src="{{ $livaLogoUrl }}" alt="">
                 @else
-                    <div class="liva-logo-text">{{ $pdfSettings['liva_logo_text'] }}</div>
-                    <div class="liva-logo-ar ar">{{ $pdfSettings['liva_logo_ar'] }}</div>
+                    <!-- <div class="liva-logo-text">{{ $pdfSettings['liva_logo_text'] }}</div>
+                    <div class="liva-logo-ar ar">{{ $pdfSettings['liva_logo_ar'] }}</div> -->
                 @endif
-                <div class="liva-contact">{{ $pdfSettings['liva_contact_email'] }}<br>{{ $pdfSettings['liva_contact_website'] }}</div>
             </td>
             <td style="width:39%;">
                 <div class="stamp"></div>

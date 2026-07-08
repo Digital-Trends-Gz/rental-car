@@ -183,7 +183,7 @@ function submit() {
                 <div>
                     <h1 class="text-2xl font-semibold">{{ localize('MRTA PDF Settings', 'إعدادات ملف الحادث PDF') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        {{ localize('Control the logos, color, Liva text, contact details, and footer used in the accident PDF.', 'تحكم بالصور واللون ونصوص ليفا ومعلومات التواصل والفوتر داخل ملف الحادث.') }}
+                        {{ localize('Control the logos, color, Liva text, contact details, and footer used in the accident PDF.', 'تحكم بالصور واللون ونصوص  ومعلومات التواصل والفوتر داخل ملف الحادث.') }}
                     </p>
                 </div>
                 <Button :disabled="form.processing" @click="submit">
@@ -247,7 +247,7 @@ function submit() {
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label>{{ localize('Bottom Liva logo', 'شعار ليفا في الأسفل') }}</Label>
+                                <Label>{{ localize('Bottom Liva logo', 'شعار  في الأسفل') }}</Label>
                                 <FileUpload
                                     ref="livaLogoUploadRef"
                                     v-model="livaLogoTempFolders"
@@ -263,8 +263,8 @@ function submit() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>{{ localize('Liva section text', 'نصوص قسم ليفا') }}</CardTitle>
-                            <CardDescription>{{ localize('These values control the visible Liva title, fallback logo text, and contact details.', 'هذه القيم تتحكم بعنوان ليفا ونص الشعار البديل ومعلومات التواصل.') }}</CardDescription>
+                            <CardTitle>{{ localize('Insurance section text', 'نصوص قسم التأمين') }}</CardTitle>
+                            <CardDescription>{{ localize('These values control the visible Insurance title, fallback logo text, and contact details.', 'هذه القيم تتحكم بعنوان التأمين ونص الشعار البديل ومعلومات التواصل.') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="grid gap-4 md:grid-cols-2">
                             <div class="space-y-2">

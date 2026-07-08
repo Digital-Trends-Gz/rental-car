@@ -564,6 +564,9 @@ class ContractsController extends Controller
                     ],
                     5 => [
                         'accepted_terms' => $request->boolean('accepted_terms', false),
+                        'signature_image' => $request->file('signature_image') ?: $request->file('signature_file'),
+                        'signature_temp_folder' => $request->input('signature_temp_folder'),
+                        'signature_temp_folders' => $request->input('signature_temp_folders', []),
                         'note' => $request->input('note'),
                         'notes' => $request->input('notes'),
                     ],
@@ -776,12 +779,19 @@ class ContractsController extends Controller
             ]);
         } elseif ($page === 5) {
             $acceptedTerms = (bool) ($stepPayload['accepted_terms'] ?? false);
+            $state = $this->normalizeHandoverState($contract->handover_state);
+            $existingSignature = data_get($state, 'steps.terms_confirmation.payload.signature_image');
+            $existingSignature = is_array($existingSignature) ? $existingSignature : null;
+            $signatureImage = $this->persistHandoverSignatureImage($contract, $stepPayload, $existingSignature);
 
             $stepPayload = array_merge($stepPayload, [
                 'accepted_terms' => $acceptedTerms,
                 'accepted_at' => $acceptedTerms ? now()->toIso8601String() : null,
+                'signature_image' => $signatureImage,
+                'signature_uploaded_at' => data_get($signatureImage, 'uploaded_at'),
                 'mobile_signature_text' => $this->mobileSignatureTextForContract($contract),
             ]);
+            unset($stepPayload['signature_file'], $stepPayload['signature_temp_folder'], $stepPayload['signature_temp_folders']);
         } elseif ($page === 6) {
             $reviewed = array_key_exists('reviewed', $stepPayload)
                 ? filter_var($stepPayload['reviewed'], FILTER_VALIDATE_BOOLEAN)
@@ -1843,10 +1853,18 @@ class ContractsController extends Controller
                     }
 
                     if ($step['page'] === 5) {
+                        $signatureImage = data_get($payload, 'signature_image');
+                        if (is_array($signatureImage)) {
+                            $signatureImage['url'] = $this->absoluteUrl($signatureImage['url'] ?? null);
+                            $payload['signature_image'] = $signatureImage;
+                        }
+
                         $payload = array_merge([
                             'mobile_signature_text' => $this->mobileSignatureTextForContract($contract, $locale),
                             'accepted_terms' => (bool) data_get($payload, 'accepted_terms', false),
                             'accepted_at' => data_get($payload, 'accepted_at'),
+                            'signature_image' => $signatureImage,
+                            'signature_uploaded_at' => data_get($payload, 'signature_uploaded_at') ?: data_get($payload, 'signature_image.uploaded_at'),
                         ], $payload);
                     }
 
@@ -2730,6 +2748,11 @@ class ContractsController extends Controller
             ])->validate(),
             5 => Validator::make($payload, [
                 'accepted_terms' => ['required', 'accepted'],
+                'signature_image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+                'signature_file' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+                'signature_temp_folder' => ['nullable', 'string'],
+                'signature_temp_folders' => ['nullable', 'array'],
+                'signature_temp_folders.*' => ['string'],
                 'note' => ['nullable', 'string', 'max:5000'],
                 'notes' => ['nullable', 'string', 'max:5000'],
             ])->validate(),
@@ -2953,6 +2976,29 @@ class ContractsController extends Controller
             $payload['accepted_terms'] = $request->boolean('accepted_terms', (bool) ($payload['accepted_terms'] ?? false));
         }
 
+        $signatureImage = $request->file('signature_image') ?: $request->file('signature_file');
+        if ($signatureImage instanceof UploadedFile) {
+            $payload['signature_image'] = $signatureImage;
+        }
+
+        $signatureImageFolder = $this->nullableString($payload['signature_image'] ?? null)
+            ?? $this->nullableString($request->input('signature_image'));
+        $signatureFileFolder = $this->nullableString($payload['signature_file'] ?? null)
+            ?? $this->nullableString($request->input('signature_file'));
+        $hasSignatureUpload = ($payload['signature_image'] ?? null) instanceof UploadedFile;
+        if (!$hasSignatureUpload && ($signatureImageFolder || $signatureFileFolder)) {
+            $payload['signature_temp_folder'] = $payload['signature_temp_folder'] ?? $signatureImageFolder ?? $signatureFileFolder;
+            unset($payload['signature_image'], $payload['signature_file']);
+        }
+
+        if (array_key_exists('signature_temp_folder', $payload) || $request->has('signature_temp_folder')) {
+            $payload['signature_temp_folder'] = $payload['signature_temp_folder'] ?? $request->input('signature_temp_folder');
+        }
+
+        if (array_key_exists('signature_temp_folders', $payload) || $request->has('signature_temp_folders')) {
+            $payload['signature_temp_folders'] = $payload['signature_temp_folders'] ?? $request->input('signature_temp_folders', []);
+        }
+
         if (array_key_exists('note', $payload) || $request->has('note')) {
             $payload['note'] = $payload['note'] ?? $request->input('note');
         }
@@ -2962,6 +3008,75 @@ class ContractsController extends Controller
         }
 
         return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $stepPayload
+     * @param  array<string, mixed>|null  $existingSignature
+     * @return array<string, mixed>|null
+     */
+    private function persistHandoverSignatureImage(Contract $contract, array $stepPayload, ?array $existingSignature = null): ?array
+    {
+        $folders = [];
+
+        $signatureTempFolder = trim((string) ($stepPayload['signature_temp_folder'] ?? ''));
+        if ($signatureTempFolder !== '') {
+            $folders[] = $signatureTempFolder;
+        }
+
+        foreach (is_array($stepPayload['signature_temp_folders'] ?? null) ? $stepPayload['signature_temp_folders'] : [] as $folder) {
+            $folder = trim((string) $folder);
+            if ($folder !== '') {
+                $folders[] = $folder;
+            }
+        }
+
+        $signatureImage = $stepPayload['signature_image'] ?? null;
+        if ($signatureImage instanceof UploadedFile) {
+            foreach ($this->storeUploadedHandoverFiles([$signatureImage]) as $folder) {
+                $folders[] = $folder;
+            }
+        }
+
+        $folders = array_values(array_unique($folders));
+        if ($folders === []) {
+            return $existingSignature;
+        }
+
+        $archiveFile = $this->moveTempFileToHandoverArchiveFile(
+            $contract,
+            $folders[0],
+            'signature',
+            $stepPayload['notes'] ?? $stepPayload['note'] ?? null,
+            'Handover signature'
+        );
+
+        if (!$archiveFile) {
+            return $existingSignature;
+        }
+
+        $existingArchiveFileId = (int) data_get($existingSignature, 'archive_file_id', 0);
+        if ($existingArchiveFileId > 0 && $existingArchiveFileId !== $archiveFile->id) {
+            ContractArchiveFile::query()
+                ->where('tenant_id', $contract->tenant_id)
+                ->where('contract_id', $contract->id)
+                ->where('document_type', 'signature')
+                ->whereKey($existingArchiveFileId)
+                ->delete();
+        }
+
+        return [
+            'source' => 'contract_archive',
+            'storage_target' => 'contract_archive',
+            'archive_file_id' => $archiveFile->id,
+            'document_type' => $archiveFile->document_type,
+            'title' => $archiveFile->title,
+            'file_path' => $archiveFile->file_path,
+            'file_name' => $archiveFile->file_name,
+            'mime_type' => $archiveFile->mime_type,
+            'url' => $this->absoluteStorageUrl($archiveFile->file_path),
+            'uploaded_at' => now()->toIso8601String(),
+        ];
     }
 
     /**
@@ -4474,6 +4589,25 @@ class ContractsController extends Controller
         }
 
         return Storage::url($normalized);
+    }
+
+    private function absoluteStorageUrl(?string $path): ?string
+    {
+        return $this->absoluteUrl($this->storageUrl($path));
+    }
+
+    private function absoluteUrl(?string $url): ?string
+    {
+        $url = trim((string) ($url ?? ''));
+        if ($url === '') {
+            return null;
+        }
+
+        if (preg_match('/^https?:\/\//i', $url)) {
+            return $url;
+        }
+
+        return url($url);
     }
 
     private function returnStatusReportSummaryPayload(
