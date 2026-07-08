@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { computed, ref, watch } from 'vue';
 
 type LocalizedText = {
@@ -39,9 +40,12 @@ const props = defineProps<{
         slug: string;
     };
     settings: {
-        contract_pdf?: Partial<ContractPdfTextSet>;
+        contract_pdf?: Partial<ContractPdfTextSet> & {
+            incharge_signature_image?: string | null;
+        };
     };
     contractPdfDefaults: ContractPdfDefaults;
+    contractSignatureFiles: Array<{ id: number; url: string }>;
     previewUrl: string | null;
     actions: {
         update: string;
@@ -111,17 +115,31 @@ const form = useForm({
             ar: resolvedText('closing_notice', 'ar'),
         },
     },
+    contract_incharge_signature_temp_folders: [] as string[],
+    contract_incharge_signature_removed_files: [] as number[],
 });
 
 const flashSuccess = computed(() => page.props.flash?.success ?? null);
 const flashError = computed(() => page.props.flash?.error ?? null);
 const formErrorList = computed(() => Object.values(form.errors ?? {}).filter((value): value is string => typeof value === 'string' && value.length > 0));
 const previewNonce = ref(0);
+const acceptedSignatureTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+const inchargeSignatureUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
+const inchargeSignatureTempFolders = ref<string[]>([]);
+const inchargeSignatureRemovedFileIds = ref<number[]>([]);
 
 watch(
     () => form.contract_pdf,
     () => {
         previewNonce.value += 1;
+    },
+    { deep: true }
+);
+
+watch(
+    inchargeSignatureTempFolders,
+    (value) => {
+        form.contract_incharge_signature_temp_folders = [...value];
     },
     { deep: true }
 );
@@ -139,7 +157,25 @@ const previewSrc = computed(() => {
     return `${props.previewUrl}${separator}preview=1&preview_state=${previewState}&preview_nonce=${previewNonce.value}`;
 });
 function submit() {
-    form.put(props.actions.update, { preserveScroll: true });
+    form.put(props.actions.update, {
+        preserveScroll: true,
+        onSuccess: resetUploadState,
+    });
+}
+
+function handleInchargeSignatureRemoved(data: { type: string; fileId?: number }) {
+    if (data.type === 'existing' && data.fileId) {
+        inchargeSignatureRemovedFileIds.value.push(data.fileId);
+        form.contract_incharge_signature_removed_files = [...new Set(inchargeSignatureRemovedFileIds.value)];
+    }
+}
+
+function resetUploadState() {
+    inchargeSignatureTempFolders.value = [];
+    inchargeSignatureRemovedFileIds.value = [];
+    form.contract_incharge_signature_temp_folders = [];
+    form.contract_incharge_signature_removed_files = [];
+    inchargeSignatureUploadRef.value?.resetFiles();
 }
 </script>
 
@@ -284,6 +320,32 @@ function submit() {
                         <CardContent class="space-y-2">
                             <Label>{{ localize('Mobile note', 'ملاحظة الجوال') }}</Label>
                             <Textarea v-model="form.contract_pdf.mobile_signature_text" rows="4" />
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{{ localize('Company signature image', 'صورة توقيع الشركة') }}</CardTitle>
+                            <CardDescription>
+                                {{ localize('Upload the incharge signature that appears in the contract PDF signature area.', 'ارفع توقيع المسؤول الذي يظهر في منطقة التوقيع داخل ملف العقد.') }}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent class="space-y-3">
+                            <div class="space-y-2">
+                                <Label>{{ localize('Incharge signature', 'توقيع المسؤول') }}</Label>
+                                <FileUpload
+                                    ref="inchargeSignatureUploadRef"
+                                    v-model="inchargeSignatureTempFolders"
+                                    :initial-files="props.contractSignatureFiles"
+                                    :allowed-file-types="acceptedSignatureTypes"
+                                    :max-file-size="1024 * 1024 * 5"
+                                    collection="contract_incharge_signature"
+                                    @file-removed="handleInchargeSignatureRemoved"
+                                />
+                                <p class="text-xs text-muted-foreground">
+                                    {{ localize('Use a transparent PNG/WebP for the cleanest result.', 'يفضل استخدام صورة PNG/WebP بخلفية شفافة للحصول على أفضل نتيجة.') }}
+                                </p>
+                            </div>
                         </CardContent>
                     </Card>
 

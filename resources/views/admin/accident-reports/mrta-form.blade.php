@@ -284,8 +284,19 @@
         .signature-box { margin-top: 8px; border: 1px solid {{ $primaryColor }}; padding: 7px 8px 7px; }
         .signature-box td { padding: 0 5px; vertical-align: bottom; text-align: center; }
         .sig-line { height: 17px; margin-top: 7px; border-bottom: 1px solid {{ $primaryColor }}; font-weight: 800; line-height: 17px; }
-        .sig-image-line { height: 28px; margin-top: 2px; border-bottom: 1px solid {{ $primaryColor }}; line-height: 28px; }
-        .sig-image { max-width: 135px; max-height: 25px; vertical-align: bottom; object-fit: contain; }
+        .sig-image-line {
+            height: 24px;
+            margin-top: 4px;
+            border-bottom: 1px solid {{ $primaryColor }};
+            text-align: center;
+            line-height: 23px;
+        }
+        .sig-image {
+            max-width: 150px;
+            max-height: 22px;
+            vertical-align: bottom;
+            object-fit: contain;
+        }
         .sig-label { font-size: 10px; font-weight: 900; line-height: 1; }
         .sig-label .ar { display: block; margin-bottom: 0; }
 

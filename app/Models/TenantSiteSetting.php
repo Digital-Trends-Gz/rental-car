@@ -339,6 +339,7 @@ class TenantSiteSetting extends Model
                     'en' => null,
                     'ar' => null,
                 ],
+                'incharge_signature_image' => null,
             ],
             'mrta_pdf' => MrtaPdfSettingsCore::defaults(),
             'police_notice' => [
@@ -509,6 +510,7 @@ class TenantSiteSetting extends Model
         $data = $settings?->toArray() ?? [];
         $logoUrl = null;
         $faviconUrl = null;
+        $contractInchargeSignatureUrl = null;
 
         if ($settings) {
             $file = $settings->relationLoaded('files')
@@ -533,6 +535,18 @@ class TenantSiteSetting extends Model
 
             if (! self::publicUrlExists($faviconUrl)) {
                 $faviconUrl = self::latestStoredCollectionUrl($settings, 'favicon') ?: $faviconUrl;
+            }
+
+            $contractInchargeSignatureFile = $settings->relationLoaded('files')
+                ? $settings->files->where('collection', 'contract_incharge_signature')->sortByDesc('id')->first()
+                : $settings->files()->where('collection', 'contract_incharge_signature')->latest('id')->first();
+
+            if ($contractInchargeSignatureFile && $contractInchargeSignatureFile->path) {
+                $contractInchargeSignatureUrl = self::publicUrlFromPath($contractInchargeSignatureFile->path);
+            }
+
+            if (! self::publicUrlExists($contractInchargeSignatureUrl)) {
+                $contractInchargeSignatureUrl = self::latestStoredCollectionUrl($settings, 'contract_incharge_signature') ?: $contractInchargeSignatureUrl;
             }
         }
 
@@ -851,6 +865,9 @@ class TenantSiteSetting extends Model
                     'en' => self::nullableString(data_get($data, 'contract_pdf.closing_notice.en')),
                     'ar' => self::nullableString(data_get($data, 'contract_pdf.closing_notice.ar')),
                 ],
+                'incharge_signature_image' => self::nullableString(
+                    $contractInchargeSignatureUrl ?: data_get($data, 'contract_pdf.incharge_signature_image')
+                ),
             ],
             'mrta_pdf' => MrtaPdfSettingsCore::normalize($data['mrta_pdf'] ?? $defaults['mrta_pdf']),
             'police_notice' => [

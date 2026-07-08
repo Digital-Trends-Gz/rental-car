@@ -75,13 +75,13 @@ const previewNonce = ref(0);
 const acceptedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
 const omanLogoUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
 const ropLogoUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
-const livaLogoUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
+const bottomLogoUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
 const omanLogoTempFolders = ref<string[]>([]);
 const ropLogoTempFolders = ref<string[]>([]);
-const livaLogoTempFolders = ref<string[]>([]);
+const bottomLogoTempFolders = ref<string[]>([]);
 const omanLogoRemovedFileIds = ref<number[]>([]);
 const ropLogoRemovedFileIds = ref<number[]>([]);
-const livaLogoRemovedFileIds = ref<number[]>([]);
+const bottomLogoRemovedFileIds = ref<number[]>([]);
 
 watch(
     () => form.mrta_pdf,
@@ -108,7 +108,7 @@ watch(
 );
 
 watch(
-    livaLogoTempFolders,
+    bottomLogoTempFolders,
     (value) => {
         form.mrta_liva_logo_temp_folders = [...value];
     },
@@ -139,10 +139,10 @@ function handleRopLogoRemoved(data: { type: string; fileId?: number }) {
     }
 }
 
-function handleLivaLogoRemoved(data: { type: string; fileId?: number }) {
+function handleBottomLogoRemoved(data: { type: string; fileId?: number }) {
     if (data.type === 'existing' && data.fileId) {
-        livaLogoRemovedFileIds.value.push(data.fileId);
-        form.mrta_liva_logo_removed_files = [...new Set(livaLogoRemovedFileIds.value)];
+        bottomLogoRemovedFileIds.value.push(data.fileId);
+        form.mrta_liva_logo_removed_files = [...new Set(bottomLogoRemovedFileIds.value)];
     }
 }
 
@@ -159,11 +159,11 @@ function resetUploadState() {
     ropLogoRemovedFileIds.value = [];
     ropLogoUploadRef.value?.resetFiles();
 
-    livaLogoTempFolders.value = [];
+    bottomLogoTempFolders.value = [];
     form.mrta_liva_logo_temp_folders = [];
     form.mrta_liva_logo_removed_files = [];
-    livaLogoRemovedFileIds.value = [];
-    livaLogoUploadRef.value?.resetFiles();
+    bottomLogoRemovedFileIds.value = [];
+    bottomLogoUploadRef.value?.resetFiles();
 }
 
 function submit() {
@@ -183,7 +183,7 @@ function submit() {
                 <div>
                     <h1 class="text-2xl font-semibold">{{ localize('MRTA PDF Settings', 'إعدادات ملف الحادث PDF') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        {{ localize('Control the logos, color, Liva text, contact details, and footer used in the accident PDF.', 'تحكم بالصور واللون ونصوص  ومعلومات التواصل والفوتر داخل ملف الحادث.') }}
+                        {{ localize('Control the logos, color, insurance text, contact details, and footer used in the accident PDF.', 'تحكم بالصور واللون ونصوص التأمين ومعلومات التواصل والفوتر داخل ملف الحادث.') }}
                     </p>
                 </div>
                 <Button :disabled="form.processing" @click="submit">
@@ -247,15 +247,15 @@ function submit() {
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label>{{ localize('Bottom Liva logo', 'شعار  في الأسفل') }}</Label>
+                                <Label>{{ localize('Bottom insurance logo', 'شعار التأمين في الأسفل') }}</Label>
                                 <FileUpload
-                                    ref="livaLogoUploadRef"
-                                    v-model="livaLogoTempFolders"
+                                    ref="bottomLogoUploadRef"
+                                    v-model="bottomLogoTempFolders"
                                     :initial-files="props.mrtaLogoFiles.liva"
                                     :allowed-file-types="acceptedImageTypes"
                                     :max-file-size="1024 * 1024 * 5"
                                     collection="mrta_liva_logo"
-                                    @file-removed="handleLivaLogoRemoved"
+                                    @file-removed="handleBottomLogoRemoved"
                                 />
                             </div>
                         </CardContent>

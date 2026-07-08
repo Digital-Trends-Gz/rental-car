@@ -597,6 +597,7 @@ class WebsiteSettingsController extends Controller
             ],
             'settings' => TenantSiteSetting::forTenant($tenant),
             'contractPdfDefaults' => $this->contractPdfDefaults(),
+            'contractSignatureFiles' => $this->contractSignatureFiles($tenant->siteSetting),
             'previewUrl' => $previewContractId ? route('admin.contracts.pdf', ['contract' => $previewContractId, 'lang' => app()->getLocale()]) : null,
             'actions' => [
                 'update' => url()->current(),
@@ -821,9 +822,13 @@ class WebsiteSettingsController extends Controller
             'contract_pdf.important_notice.ar' => ['nullable', 'string', 'max:1500'],
             'contract_pdf.closing_notice.en' => ['nullable', 'string', 'max:1500'],
             'contract_pdf.closing_notice.ar' => ['nullable', 'string', 'max:1500'],
+            'contract_incharge_signature_temp_folders' => ['array'],
+            'contract_incharge_signature_temp_folders.*' => ['string'],
+            'contract_incharge_signature_removed_files' => ['array'],
+            'contract_incharge_signature_removed_files.*' => ['integer'],
         ]);
 
-        TenantSiteSetting::updateOrCreate(
+        $siteSetting = TenantSiteSetting::updateOrCreate(
             ['tenant_id' => $tenant->id],
             [
                 'contract_pdf' => [
@@ -875,6 +880,8 @@ class WebsiteSettingsController extends Controller
                 ],
             ]
         );
+
+        $this->syncSingleFileUpload($request, $siteSetting, 'contract_incharge_signature');
 
         return back()->with('success', 'Contract PDF text settings updated successfully.');
     }
@@ -1372,6 +1379,23 @@ class WebsiteSettingsController extends Controller
 
                 return [$key => $files];
             })
+            ->all();
+    }
+
+    private function contractSignatureFiles(?TenantSiteSetting $siteSetting): array
+    {
+        if (! $siteSetting) {
+            return [];
+        }
+
+        return $siteSetting->files()
+            ->where('collection', 'contract_incharge_signature')
+            ->get()
+            ->map(fn ($file) => [
+                'id' => $file->id,
+                'url' => TenantSiteSetting::publicUrlFromPath($file->path),
+            ])
+            ->values()
             ->all();
     }
 

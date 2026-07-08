@@ -211,6 +211,13 @@
         .important { margin-top: 4px; font-size: 7.6px; line-height: 3.0; }
         .sign td { text-align: center; padding: 7px 3px 2px; font-size: 7.8px; }
         .sign-line { border-bottom: 1px dotted #17306f; height: 18px; margin-bottom: 3px; }
+        .sign-image {
+            max-width: 95px;
+            max-height: 16px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
         .footer {
             text-align: center;
             color: #17306f;
@@ -257,6 +264,20 @@
 
         return \Illuminate\Support\Facades\Lang::get("contracts.pdf.contract_texts.{$key}.{$lang}", [], $lang);
     };
+    $handoverState = is_array($contract->handover_state ?? null) ? $contract->handover_state : [];
+    $renterSignature = data_get($handoverState, 'steps.terms_confirmation.payload.signature_image')
+        ?? data_get($handoverState, 'phases.delivery.steps.terms_confirmation.payload.signature_image')
+        ?? data_get($handoverState, 'delivery.steps.terms_confirmation.payload.signature_image');
+    $renterSignatureUrl = is_array($renterSignature)
+        ? (data_get($renterSignature, 'url') ?: data_get($renterSignature, 'file_path'))
+        : $renterSignature;
+    if ($renterSignatureUrl && !preg_match('/^https?:\/\//i', (string) $renterSignatureUrl)) {
+        $renterSignatureUrl = url('/'.ltrim((string) $renterSignatureUrl, '/'));
+    }
+    $inchargeSignatureUrl = data_get($contractPdf, 'incharge_signature_image');
+    if ($inchargeSignatureUrl && !preg_match('/^https?:\/\//i', (string) $inchargeSignatureUrl)) {
+        $inchargeSignatureUrl = url('/'.ltrim((string) $inchargeSignatureUrl, '/'));
+    }
 
     $dailyRate = $contract->price_per_day ?? $reservation?->daily_rate ?? $reservationCar?->price_per_day;
     $weeklyRate = $contract->price_per_week ?? $reservationCar?->price_per_week;
@@ -500,7 +521,7 @@
                         {{ $contractText('important_notice', 'en') }}
                     </div>
                     <table class="sign">
-                        <tr><td><div class="sign-line"></div><span class="ar">توقيع المستأجر</span><br>Renter Signature</td><td><div class="sign-line"></div><span class="ar">اليوم</span><br>Day</td><td><div class="sign-line">{{ $generatedAt->format('Y-m-d') }}</div><span class="ar">التاريخ</span><br>Date</td><td><div class="sign-line"></div><span class="ar">توقيع المسؤول</span><br>Incharge Signature</td></tr>
+                        <tr><td><div class="sign-line">@if($renterSignatureUrl)<img class="sign-image" src="{{ $renterSignatureUrl }}" alt="Renter Signature">@endif</div><span class="ar">توقيع المستأجر</span><br>Renter Signature</td><td><div class="sign-line"></div><span class="ar">اليوم</span><br>Day</td><td><div class="sign-line">{{ $generatedAt->format('Y-m-d') }}</div><span class="ar">التاريخ</span><br>Date</td><td><div class="sign-line">@if($inchargeSignatureUrl)<img class="sign-image" src="{{ $inchargeSignatureUrl }}" alt="Incharge Signature">@endif</div><span class="ar">توقيع المسؤول</span><br>Incharge Signature</td></tr>
                     </table>
                 </td>
             </tr>

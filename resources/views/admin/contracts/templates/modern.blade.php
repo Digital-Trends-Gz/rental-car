@@ -195,6 +195,13 @@
             font-weight: 900;
         }
         .small { font-size: 8px; }
+        .signature-image {
+            max-width: 130px;
+            max-height: 26px;
+            object-fit: contain;
+            display: block;
+            margin: 1px auto;
+        }
     </style>
 </head>
 <body>
@@ -249,6 +256,20 @@
 
         return \Illuminate\Support\Facades\Lang::get("contracts.pdf.contract_texts.{$key}.{$lang}", [], $lang);
     };
+    $handoverState = is_array($contract->handover_state ?? null) ? $contract->handover_state : [];
+    $renterSignature = data_get($handoverState, 'steps.terms_confirmation.payload.signature_image')
+        ?? data_get($handoverState, 'phases.delivery.steps.terms_confirmation.payload.signature_image')
+        ?? data_get($handoverState, 'delivery.steps.terms_confirmation.payload.signature_image');
+    $renterSignatureUrl = is_array($renterSignature)
+        ? (data_get($renterSignature, 'url') ?: data_get($renterSignature, 'file_path'))
+        : $renterSignature;
+    if ($renterSignatureUrl && !preg_match('/^https?:\/\//i', (string) $renterSignatureUrl)) {
+        $renterSignatureUrl = url('/'.ltrim((string) $renterSignatureUrl, '/'));
+    }
+    $inchargeSignatureUrl = data_get($contractPdf, 'incharge_signature_image');
+    if ($inchargeSignatureUrl && !preg_match('/^https?:\/\//i', (string) $inchargeSignatureUrl)) {
+        $inchargeSignatureUrl = url('/'.ltrim((string) $inchargeSignatureUrl, '/'));
+    }
 @endphp
 
 <div class="document">
@@ -590,11 +611,11 @@
                             <tr>
                                 <td>
                                     <div class="small muted">Renter Signature</div>
-                                    <div style="height: 28px;"></div>
+                                    <div style="height: 28px;">@if($renterSignatureUrl)<img class="signature-image" src="{{ $renterSignatureUrl }}" alt="Renter Signature">@endif</div>
                                 </td>
                                 <td>
                                     <div class="small muted">Incharge Signature</div>
-                                    <div style="height: 28px;"></div>
+                                    <div style="height: 28px;">@if($inchargeSignatureUrl)<img class="signature-image" src="{{ $inchargeSignatureUrl }}" alt="Incharge Signature">@endif</div>
                                 </td>
                             </tr>
                             <tr>
