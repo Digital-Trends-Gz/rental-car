@@ -7,6 +7,7 @@ use App\Core\MrtaPdfSettings;
 use App\Core\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Models\AccidentReport;
+use App\Models\AccidentReportPhoto;
 use App\Models\Car;
 use App\Models\Contract;
 use App\Models\TenantSiteSetting;
@@ -352,6 +353,14 @@ class AccidentReportsController extends Controller
             'mrta_vehicle_damages' => ['nullable'],
             'mrta_insurance' => ['nullable'],
             'mrta_signatures' => ['nullable'],
+            'mrta_first_party_signature_image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'mrta_second_party_signature_image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'first_party_signature_image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'second_party_signature_image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'mrta_signatures.first_party_signature_image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'mrta_signatures.second_party_signature_image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'mrta_signatures.first_party_image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'mrta_signatures.second_party_image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'notes' => ['nullable', 'string', 'max:3000'],
             'photos' => ['nullable', 'array', 'max:10'],
             'photo_types' => ['nullable', 'array'],
@@ -422,11 +431,12 @@ class AccidentReportsController extends Controller
                 'mrta_accident_causes' => $this->normalizeStringList($validated['mrta_accident_causes'] ?? null),
                 'mrta_vehicle_damages' => $this->normalizeJsonObject($validated['mrta_vehicle_damages'] ?? null),
                 'mrta_insurance' => $this->normalizeJsonObject($validated['mrta_insurance'] ?? null),
-                'mrta_signatures' => $this->normalizeJsonObject($validated['mrta_signatures'] ?? null),
+                'mrta_signatures' => $this->normalizeMrtaSignaturesInput($validated['mrta_signatures'] ?? null),
                 'notes' => $validated['notes'] ?? null,
             ]);
 
             $this->storePhotos($report, $files, $request->input('photo_types', []), $request->input('photo_notes', []));
+            $this->storeMrtaSignatureImages($report, $request);
 
             return $report->load($this->reportRelations());
         });
@@ -579,6 +589,75 @@ class AccidentReportsController extends Controller
         }
     }
 
+    private function storeMrtaSignatureImages(AccidentReport $report, Request $request): void
+    {
+        $signatures = $this->normalizeJsonObject($report->mrta_signatures);
+        $signatureFiles = [
+            'first_party' => $request->file('mrta_first_party_signature_image')
+                ?: $request->file('first_party_signature_image')
+                ?: data_get($request->allFiles(), 'mrta_signatures.first_party_signature_image')
+                ?: data_get($request->allFiles(), 'mrta_signatures.first_party_image'),
+            'second_party' => $request->file('mrta_second_party_signature_image')
+                ?: $request->file('second_party_signature_image')
+                ?: data_get($request->allFiles(), 'mrta_signatures.second_party_signature_image')
+                ?: data_get($request->allFiles(), 'mrta_signatures.second_party_image'),
+        ];
+
+        foreach ($signatureFiles as $party => $file) {
+            if (!$file instanceof UploadedFile) {
+                continue;
+            }
+
+            $photoType = "mrta_{$party}_signature";
+            $path = $file->store("accident-reports/{$report->id}/signatures", config('vilt-filepond.storage_disk'));
+            $photo = $report->photos()->create([
+                'photo_type' => $photoType,
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'notes' => Str::headline(str_replace('_', ' ', $party)).' MRTA signature',
+            ]);
+
+            $signatures["{$party}_signature_image"] = $this->signatureImagePayload($photo);
+        }
+
+        if ($signatures !== $this->normalizeJsonObject($report->mrta_signatures)) {
+            $report->forceFill([
+                'mrta_signatures' => $signatures,
+            ])->saveQuietly();
+        }
+    }
+
+    private function signatureImagePayload(AccidentReportPhoto $photo): array
+    {
+        return [
+            'source' => 'accident_report_photo',
+            'photo_id' => $photo->id,
+            'photo_type' => $photo->photo_type,
+            'file_name' => $photo->file_name,
+            'file_path' => $photo->file_path,
+            'mime_type' => $photo->mime_type,
+            'size' => $photo->size,
+            'url' => $this->fileUrl($photo->file_path),
+            'uploaded_at' => $photo->created_at?->toISOString(),
+        ];
+    }
+
+    private function normalizeMrtaSignaturesInput(mixed $value): array
+    {
+        $signatures = $this->normalizeJsonObject($value);
+
+        unset(
+            $signatures['first_party_signature_image'],
+            $signatures['second_party_signature_image'],
+            $signatures['first_party_image'],
+            $signatures['second_party_image']
+        );
+
+        return $signatures;
+    }
+
     private function normalizeThirdPartyDetails(mixed $details): ?array
     {
         if (is_array($details)) {
@@ -721,8 +800,23 @@ class AccidentReportsController extends Controller
             'accident_causes' => $this->normalizeStringList($report->mrta_accident_causes),
             'vehicle_damages' => $this->normalizeJsonObject($report->mrta_vehicle_damages),
             'insurance' => $this->normalizeJsonObject($report->mrta_insurance),
-            'signatures' => $this->normalizeJsonObject($report->mrta_signatures),
+            'signatures' => $this->mrtaSignaturesPayload($report),
         ];
+    }
+
+    private function mrtaSignaturesPayload(AccidentReport $report): array
+    {
+        $signatures = $this->normalizeJsonObject($report->mrta_signatures);
+
+        foreach (['first_party_signature_image', 'second_party_signature_image'] as $key) {
+            if (!is_array($signatures[$key] ?? null)) {
+                continue;
+            }
+
+            $signatures[$key]['url'] = $this->absoluteUrl($signatures[$key]['url'] ?? null);
+        }
+
+        return $signatures;
     }
 
     private function normalizeJsonObject(mixed $value): array
@@ -1009,7 +1103,21 @@ class AccidentReportsController extends Controller
             return $normalized;
         }
 
-        return Storage::disk(config('vilt-filepond.storage_disk'))->url($normalized);
+        return $this->absoluteUrl(Storage::disk(config('vilt-filepond.storage_disk'))->url($normalized));
+    }
+
+    private function absoluteUrl(?string $url): ?string
+    {
+        $url = trim((string) ($url ?? ''));
+        if ($url === '') {
+            return null;
+        }
+
+        if (preg_match('/^https?:\/\//i', $url)) {
+            return $url;
+        }
+
+        return url($url);
     }
 
     private function authorizeAdminApiUser(Request $request): User

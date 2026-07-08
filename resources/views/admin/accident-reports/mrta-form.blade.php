@@ -284,6 +284,8 @@
         .signature-box { margin-top: 8px; border: 1px solid {{ $primaryColor }}; padding: 7px 8px 7px; }
         .signature-box td { padding: 0 5px; vertical-align: bottom; text-align: center; }
         .sig-line { height: 17px; margin-top: 7px; border-bottom: 1px solid {{ $primaryColor }}; font-weight: 800; line-height: 17px; }
+        .sig-image-line { height: 28px; margin-top: 2px; border-bottom: 1px solid {{ $primaryColor }}; line-height: 28px; }
+        .sig-image { max-width: 135px; max-height: 25px; vertical-align: bottom; object-fit: contain; }
         .sig-label { font-size: 10px; font-weight: 900; line-height: 1; }
         .sig-label .ar { display: block; margin-bottom: 0; }
 
@@ -480,12 +482,24 @@
             <tr>
                 <td style="width:44%;">
                     <div class="sig-label"><span class="ar">توقيع الطرف الثاني</span><br>Second Party Signature</div>
-                    <div class="sig-line">{{ data_get($signatures, 'second_party_name') }}</div>
+                    @if(data_get($signatures, 'second_party_signature_image.url'))
+                        <div class="sig-image-line">
+                            <img class="sig-image" src="{{ data_get($signatures, 'second_party_signature_image.url') }}" alt="Second party signature">
+                        </div>
+                    @else
+                        <div class="sig-line">{{ data_get($signatures, 'second_party_name') }}</div>
+                    @endif
                 </td>
                 <td style="width:12%;"></td>
                 <td style="width:44%;">
                     <div class="sig-label"><span class="ar">توقيع الطرف الأول</span><br>First Party Signature</div>
-                    <div class="sig-line">{{ data_get($signatures, 'first_party_name') }}</div>
+                    @if(data_get($signatures, 'first_party_signature_image.url'))
+                        <div class="sig-image-line">
+                            <img class="sig-image" src="{{ data_get($signatures, 'first_party_signature_image.url') }}" alt="First party signature">
+                        </div>
+                    @else
+                        <div class="sig-line">{{ data_get($signatures, 'first_party_name') }}</div>
+                    @endif
                 </td>
             </tr>
         </table>
