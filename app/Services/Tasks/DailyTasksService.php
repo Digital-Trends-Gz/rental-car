@@ -303,7 +303,7 @@ class DailyTasksService
                 'branch:id,name',
             ])
             ->where('tenant_id', $tenantId)
-            ->where('status', ContractStatus::ACTIVE->value)
+            ->pendingReturnTask($date)
             ->whereNotNull('reservation_id')
             ->whereDate('end_date', $date);
 

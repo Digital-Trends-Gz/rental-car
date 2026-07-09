@@ -63,8 +63,8 @@ class DashboardController extends Controller
                 'reservation.car:id,branch_id,year,make,model,license_plate',
                 'branch:id,name',
             ])
+            ->pendingReturnTask($today)
             ->whereDate('end_date', $today)
-            ->where('status', 'active')
             ->orderBy('end_date')
             ->latest('id');
 
@@ -86,8 +86,7 @@ class DashboardController extends Controller
                 'reservation.car:id,branch_id,year,make,model,license_plate',
                 'branch:id,name',
             ])
-            ->where('status', 'active')
-            ->whereDoesntHave('returnStatusReport')
+            ->pendingReturnTask($today)
             ->whereDate('end_date', '<', $today)
             ->orderBy('end_date')
             ->latest('id');

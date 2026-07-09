@@ -69,8 +69,7 @@ class ReservationsController extends Controller
             $isOverdue = $taskType === 'overdue';
 
             $query = $this->contractQuery($user, $branchId)
-                ->where('status', ContractStatus::ACTIVE->value)
-                ->whereDoesntHave('returnStatusReport');
+                ->pendingReturnTask($today);
 
             if ($isOverdue) {
                 $query->whereDate('end_date', '<', $today)
@@ -120,14 +119,12 @@ class ReservationsController extends Controller
             ->count();
 
         $returnCount = $this->contractQuery($user, $branchId)
-            ->where('status', ContractStatus::ACTIVE->value)
-            ->whereDoesntHave('returnStatusReport')
+            ->pendingReturnTask($today)
             ->whereDate('end_date', $today)
             ->count();
 
         $overdueCount = $this->contractQuery($user, $branchId)
-            ->where('status', ContractStatus::ACTIVE->value)
-            ->whereDoesntHave('returnStatusReport')
+            ->pendingReturnTask($today)
             ->whereDate('end_date', '<', $today)
             ->count();
 
@@ -180,8 +177,7 @@ class ReservationsController extends Controller
 
         $returnItems = $this->contractItems(
             $this->contractQuery($user, $branchId)
-                ->where('status', ContractStatus::ACTIVE->value)
-                ->whereDoesntHave('returnStatusReport')
+                ->pendingReturnTask($today)
                 ->whereDate('end_date', $today)
                 ->orderBy('end_date')
                 ->orderByDesc('id')
@@ -192,8 +188,7 @@ class ReservationsController extends Controller
 
         $overdueItems = $this->contractItems(
             $this->contractQuery($user, $branchId)
-                ->where('status', ContractStatus::ACTIVE->value)
-                ->whereDoesntHave('returnStatusReport')
+                ->pendingReturnTask($today)
                 ->whereDate('end_date', '<', $today)
                 ->orderBy('end_date')
                 ->orderByDesc('id')
@@ -202,13 +197,20 @@ class ReservationsController extends Controller
             'overdue'
         );
 
+        $returnAndOverdueItems = array_values(array_merge($returnItems, $overdueItems));
+        $allItems = array_values(array_merge($pickupItems, $returnAndOverdueItems));
+
         return response()->json([
                 'date' => $today->toDateString(),
                 'branch_id' => $branchId,
+                'count' => count($allItems),
                 'pagination' => $this->overviewPaginationPayload(
-                    count($pickupItems) + count($returnItems) + count($overdueItems),
+                    count($allItems),
                     $request
                 ),
+                'items' => $allItems,
+                'reservations' => $pickupItems,
+                'returns' => $returnAndOverdueItems,
                 'pickup' => $this->taskBlockPayload('pickup', $branchId, [
                     'status' => $pickupStatuses,
                 ], $pickupItems),
@@ -318,8 +320,7 @@ class ReservationsController extends Controller
         $scope = $this->resolveReturnScope($request->input('scope'));
 
         $query = $this->contractQuery($user, $branchId)
-            ->where('status', ContractStatus::ACTIVE->value)
-            ->whereDoesntHave('returnStatusReport');
+            ->pendingReturnTask($today);
 
         if ($scope === 'overdue') {
             $query->whereDate('end_date', '<', $today)

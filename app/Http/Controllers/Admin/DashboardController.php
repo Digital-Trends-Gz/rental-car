@@ -99,7 +99,7 @@ class DashboardController extends Controller
 
         $todayReturnsQuery = Contract::query()
             ->withoutGlobalScope('tenant')
-            ->where('status', 'active')
+            ->pendingReturnTask($today)
             ->whereNotNull('reservation_id')
             ->whereDate('end_date', $today);
         $this->applyContractBranchScope($todayReturnsQuery, $user, $branchId);
@@ -107,7 +107,7 @@ class DashboardController extends Controller
 
         $overdueContractsQuery = Contract::query()
             ->withoutGlobalScope('tenant')
-            ->where('status', 'active')
+            ->pendingReturnTask($today)
             ->whereNotNull('reservation_id')
             ->whereDate('end_date', '<', $today);
         $this->applyContractBranchScope($overdueContractsQuery, $user, $branchId);

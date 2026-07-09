@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\ContractStatus;
 use App\Traits\BelongsToTenant;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -132,5 +134,21 @@ class Contract extends Model
     public function extensionRequests(): HasMany
     {
         return $this->hasMany(RentalExtensionRequest::class);
+    }
+
+    public function scopePendingReturnTask(Builder $query, CarbonInterface $date): Builder
+    {
+        return $query
+            ->where('status', ContractStatus::ACTIVE->value)
+            ->whereNotExists(function ($taskQuery) use ($date): void {
+                $taskQuery->selectRaw('1')
+                    ->from((new DailyTaskStatus())->getTable())
+                    ->whereColumn('daily_task_statuses.tenant_id', 'contracts.tenant_id')
+                    ->whereColumn('daily_task_statuses.source_id', 'contracts.id')
+                    ->where('daily_task_statuses.task_type', 'return')
+                    ->where('daily_task_statuses.source_type', 'contract')
+                    ->where('daily_task_statuses.status', 'completed')
+                    ->whereDate('daily_task_statuses.completed_at', $date);
+            });
     }
 }
