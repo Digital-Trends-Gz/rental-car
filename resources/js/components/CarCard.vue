@@ -152,11 +152,18 @@ defineProps<Props>();
         </div>
 
         <!--  Car Details -->
-        <div class="flex flex-1 flex-col gap-3 p-5">
+        <div class="flex flex-1 flex-col gap-4 p-5">
             <!-- Header -->
-            <div class="space-y-1.5">
-                <div class="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-                    <div class="flex min-w-0 items-center gap-2">
+            <div class="space-y-3">
+                <h3
+                    class="min-h-[4rem] text-[1.55rem] font-bold leading-tight tracking-tight text-foreground transition-colors"
+                    :style="{ color: cardTheme(car).primary }"
+                >
+                    {{ car.make }} {{ car.model }} - {{ car.year }}
+                </h3>
+
+                <div class="grid gap-2 text-xs font-medium text-muted-foreground">
+                    <div class="flex min-w-0 items-center gap-2 rounded-xl bg-slate-50 px-2.5 py-2">
                         <div
                             v-if="car.tenant_logo_url && !tenantLogoFailed"
                             class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-white p-0.5"
@@ -178,24 +185,20 @@ defineProps<Props>();
                         >
                             {{ (car.tenant_name || 'T').trim().charAt(0) }}
                         </div>
-                        <span class="truncate">{{ car.tenant_name || 'Tenant' }}</span>
+                        <span class="min-w-0 truncate">{{ car.tenant_name || 'Tenant' }}</span>
                     </div>
-                    <span class="inline-flex shrink-0 items-center gap-1 text-[11px] normal-case tracking-normal text-muted-foreground">
-                        <MapPin :size="12" :style="{ color: cardTheme(car).primary }" />
-                        {{ car.location_text || 'Location not set' }}
-                    </span>
+                    <div class="flex min-w-0 items-start gap-2 rounded-xl bg-slate-50 px-2.5 py-2">
+                        <MapPin :size="14" class="mt-0.5 shrink-0" :style="{ color: cardTheme(car).primary }" />
+                        <span class="line-clamp-2 min-w-0 break-words leading-snug">
+                            {{ car.location_text || 'Location not set' }}
+                        </span>
+                    </div>
                 </div>
-                <h3
-                    class="text-[1.7rem] font-bold tracking-tight text-foreground transition-colors"
-                    :style="{ color: cardTheme(car).primary }"
-                >
-                    {{ car.make }} {{ car.model }} - {{ car.year }}
-                </h3>
 
-                <div class="flex flex-wrap items-center gap-1.5">
-                    <div class="flex items-center gap-1.5 capitalize text-sm text-foreground">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex min-w-0 items-center gap-1.5 capitalize text-sm text-foreground">
                         <svg
-                            class="h-4 w-4"
+                            class="h-4 w-4 shrink-0"
                             :style="{ color: cardTheme(car).primary }"
                             fill="none"
                             stroke="currentColor"
@@ -208,12 +211,12 @@ defineProps<Props>();
                                 d="M13 10V3L4 14h7v7l9-11h-7z"
                             ></path>
                         </svg>
-                        <span class="font-medium">{{ car.fuel_type }}</span>
+                        <span class="truncate font-medium">{{ car.fuel_type }}</span>
                     </div>
-                    <div class="rounded-lg bg-slate-400 px-2.5 py-1 text-[11px] text-white">
+                    <div class="shrink-0 rounded-full bg-slate-400 px-3 py-1 text-[11px] leading-none text-white">
                         <p>{{ t('car_card.gps_included') }}</p>
                     </div>
-                    <div class="rounded-lg bg-slate-400 px-2.5 py-1 text-[11px] text-white">
+                    <div class="shrink-0 rounded-full bg-slate-400 px-3 py-1 text-[11px] leading-none text-white">
                         <p>{{ t('car_card.insurance_included') }}</p>
                     </div>
                 </div>
