@@ -257,7 +257,7 @@ class DailyTasksService
             ])
             ->where('tenant_id', $tenantId)
             ->whereDate('start_date', $date)
-            ->whereIn('status', [
+            ->pendingPickupTask($date, [
                 ReservationStatus::CONFIRMED->value,
                 ReservationStatus::ACTIVE->value,
                 ReservationStatus::COMPLETED_WAIT_CONTRACT->value,

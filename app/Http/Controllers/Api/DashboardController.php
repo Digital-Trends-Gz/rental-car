@@ -48,7 +48,7 @@ class DashboardController extends Controller
         $todayPickupsQuery = (clone $reservationsQuery)
             ->with(['user:id,name,email', 'car:id,branch_id,year,make,model,license_plate', 'car.branch:id,name'])
             ->whereDate('start_date', $today)
-            ->whereIn('status', [
+            ->pendingPickupTask($today, [
                 ReservationStatus::CONFIRMED->value,
                 ReservationStatus::ACTIVE->value,
                 ReservationStatus::COMPLETED_WAIT_CONTRACT->value,

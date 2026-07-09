@@ -54,9 +54,8 @@ class ReservationsController extends Controller
         if ($taskType === 'pickup') {
             $statuses = $this->resolvePickupStatuses($request->input('status'));
 
-            $query = $this->reservationQuery($user, $branchId)
+            $query = $this->pendingPickupReservationQuery($user, $branchId, $today, $statuses)
                 ->whereDate('start_date', $today)
-                ->whereIn('status', $statuses)
                 ->orderBy('start_date')
                 ->orderBy('pickup_time')
                 ->orderByDesc('id');
@@ -116,9 +115,8 @@ class ReservationsController extends Controller
     {
         $pickupStatuses = $this->resolvePickupStatuses($request->input('status'));
 
-        $pickupCount = $this->reservationQuery($user, $branchId)
+        $pickupCount = $this->pendingPickupReservationQuery($user, $branchId, $today, $pickupStatuses)
             ->whereDate('start_date', $today)
-            ->whereIn('status', $pickupStatuses)
             ->count();
 
         $returnCount = $this->contractQuery($user, $branchId)
@@ -172,9 +170,8 @@ class ReservationsController extends Controller
         $pickupStatuses = $this->resolvePickupStatuses($request->input('status'));
 
         $pickupItems = $this->reservationItems(
-            $this->reservationQuery($user, $branchId)
+            $this->pendingPickupReservationQuery($user, $branchId, $today, $pickupStatuses)
                 ->whereDate('start_date', $today)
-                ->whereIn('status', $pickupStatuses)
                 ->orderBy('start_date')
                 ->orderBy('pickup_time')
                 ->orderByDesc('id')
@@ -450,7 +447,14 @@ class ReservationsController extends Controller
             'car:id,branch_id,year,make,model,license_plate,status',
             'car.branch:id,name',
             'car.files',
+            'contract:id,reservation_id,status,handover_state',
         ]);
+    }
+
+    private function pendingPickupReservationQuery(User $user, ?int $branchId, Carbon $today, array $statuses): Builder
+    {
+        return $this->reservationQuery($user, $branchId)
+            ->pendingPickupTask($today, $statuses);
     }
 
     private function contractQuery(User $user, ?int $branchId): Builder

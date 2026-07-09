@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\ContractStatus;
 use App\Enums\ReservationStatus;
 use App\Services\Rentals\RentalStatusSyncService;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -228,6 +231,25 @@ class Reservation extends Model
     public function scopeActive($query)
     {
         return $query->where('status', ReservationStatus::ACTIVE->value);
+    }
+
+    public function scopePendingPickupTask(Builder $query, CarbonInterface $date, array $statuses): Builder
+    {
+        return $query
+            ->whereIn('status', $statuses)
+            ->whereDoesntHave('contract', function (Builder $contractQuery): void {
+                $contractQuery->where('status', ContractStatus::ACTIVE->value);
+            })
+            ->whereNotExists(function ($taskQuery) use ($date): void {
+                $taskQuery->selectRaw('1')
+                    ->from((new DailyTaskStatus())->getTable())
+                    ->whereColumn('daily_task_statuses.tenant_id', 'reservations.tenant_id')
+                    ->whereColumn('daily_task_statuses.source_id', 'reservations.id')
+                    ->where('daily_task_statuses.task_type', 'pickup')
+                    ->where('daily_task_statuses.source_type', 'reservation')
+                    ->where('daily_task_statuses.status', 'completed')
+                    ->whereDate('daily_task_statuses.completed_at', $date);
+            });
     }
 
     /**

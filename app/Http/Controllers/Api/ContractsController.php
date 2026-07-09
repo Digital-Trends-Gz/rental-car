@@ -24,6 +24,7 @@ use App\Models\ContractDriver;
 use App\Models\ContractDriverDocument;
 use App\Models\CarDamageReport;
 use App\Models\ClientNote;
+use App\Models\DailyTaskStatus;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\TenantSiteSetting;
@@ -842,7 +843,7 @@ class ContractsController extends Controller
             $deliveryConfirmed = (bool) ($stepPayload['delivery_confirmed'] ?? false);
 
             if ($deliveryConfirmed) {
-                DB::transaction(function () use ($contract): void {
+                DB::transaction(function () use ($contract, $request): void {
                     $contract->forceFill([
                         'status' => ContractStatus::ACTIVE->value,
                     ])->saveQuietly();
@@ -851,6 +852,22 @@ class ContractsController extends Controller
                         $contract->reservation->forceFill([
                             'status' => ReservationStatus::ACTIVE->value,
                         ])->saveQuietly();
+
+                        DailyTaskStatus::query()->updateOrCreate(
+                            [
+                                'tenant_id' => (int) $contract->tenant_id,
+                                'task_type' => 'pickup',
+                                'source_type' => 'reservation',
+                                'source_id' => (int) $contract->reservation->id,
+                            ],
+                            [
+                                'status' => 'completed',
+                                'started_at' => now(),
+                                'completed_at' => now(),
+                                'started_by' => $request->user()?->id,
+                                'completed_by' => $request->user()?->id,
+                            ],
+                        );
                     }
 
                     if ($contract->reservation?->car) {

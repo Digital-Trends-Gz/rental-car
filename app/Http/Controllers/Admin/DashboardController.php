@@ -90,7 +90,7 @@ class DashboardController extends Controller
 
         $todayPickupsQuery = (clone $reservationsQuery)
             ->whereDate('start_date', $today)
-            ->whereIn('status', [
+            ->pendingPickupTask($today, [
                 ReservationStatus::CONFIRMED->value,
                 ReservationStatus::ACTIVE->value,
                 ReservationStatus::COMPLETED_WAIT_CONTRACT->value,
