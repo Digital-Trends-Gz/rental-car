@@ -86,7 +86,7 @@ const pricingFor = (plan: PlanOption): PricingMeta | undefined => {
     return plan.pricing_meta?.[form.billing_cycle];
 };
 
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+
 
 const supportsCycle = (plan: PlanOption, cycle: BillingCycle): boolean => {
     if (cycle === 'monthly') {
@@ -226,12 +226,23 @@ const submit = () => {
                                 v-if="pricingFor(plan)?.has_discount"
                                 class="mb-2 inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700"
                             >
-                                {{
-                                    Math.round(
-                                        pricingFor(plan)?.savings_percentage ||
-                                            0,
-                                    )
-                                }}% {{ localize('OFF', 'خصم') }}
+                                <template v-if="locale === 'ar'">
+                                    {{ t('landing.discount_off') }}
+                                    {{
+                                        Math.round(
+                                            pricingFor(plan)?.savings_percentage ||
+                                                0,
+                                        )
+                                    }}%
+                                </template>
+                                <template v-else>
+                                    {{
+                                        Math.round(
+                                            pricingFor(plan)?.savings_percentage ||
+                                                0,
+                                        )
+                                    }}% {{ t('landing.discount_off') }}
+                                </template>
                             </div>
                             <div class="flex items-end gap-2">
                                 <p class="text-3xl font-bold text-slate-900">
@@ -256,14 +267,13 @@ const submit = () => {
                                 v-if="pricingFor(plan)?.has_discount"
                                 class="mt-1 text-xs font-medium text-emerald-700"
                             >
-                                {{ localize('Save', 'وفّر') }} ${{
+                                {{ t('landing.discount_save') }}&nbsp;${{
                                     Number(
                                         pricingFor(plan)?.savings_amount || 0,
                                     ).toFixed(2)
                                 }}
                                 <span v-if="pricingFor(plan)?.discount?.name"
-                                    >{{ localize('with', 'عبر') }}
-                                    {{ pricingFor(plan)?.discount?.name }}</span
+                                    >&nbsp;{{ t('landing.discount_with') }}&nbsp;{{ pricingFor(plan)?.discount?.name }}</span
                                 >
                             </p>
                         </div>

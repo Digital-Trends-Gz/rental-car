@@ -102,7 +102,7 @@ const activePricing = computed(() => {
     return props.plan.pricing_meta?.[props.billingCycle] || null;
 });
 
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+
 
 const selectedProvider = computed(
     () =>
@@ -471,19 +471,30 @@ const errorMessages = computed(() => {
                                 v-if="activePricing?.has_discount"
                                 class="mt-2 inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700"
                             >
-                                {{ localize('Save', 'وفّر') }}
-                                {{
+                                {{ t('landing.discount_save') }}&nbsp;{{
                                     Number(
                                         activePricing.savings_amount,
                                     ).toFixed(2)
                                 }}
-                                ({{
-                                    Math.round(
-                                        Number(
-                                            activePricing.savings_percentage,
-                                        ),
-                                    )
-                                }}% {{ localize('OFF', 'خصم') }})
+                                (<template v-if="locale === 'ar'">
+                                    {{ t('landing.discount_off') }}
+                                    {{
+                                        Math.round(
+                                            Number(
+                                                activePricing.savings_percentage,
+                                            ),
+                                        )
+                                    }}%
+                                </template>
+                                <template v-else>
+                                    {{
+                                        Math.round(
+                                            Number(
+                                                activePricing.savings_percentage,
+                                            ),
+                                        )
+                                    }}% {{ t('landing.discount_off') }}
+                                </template>)
                             </p>
                         </div>
                     </section>

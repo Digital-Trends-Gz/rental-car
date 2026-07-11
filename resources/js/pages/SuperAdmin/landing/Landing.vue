@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import heroMockup from '@/assets/hero-mockup.png';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import SeoHead from '@/components/SeoHead.vue';
@@ -202,7 +202,7 @@ const normalizedRedirectPath = computed(() => {
 const localeSwitcherUrl = (targetLocale: string) =>
     `/locale/${targetLocale}?redirect=${encodeURIComponent(normalizedRedirectPath.value)}`;
 
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
     const normalized = hex.trim().replace('#', '');
@@ -503,6 +503,13 @@ const submitContact = () => {
     });
 };
 onMounted(() => {
+    // Clean up empty car_search query parameter from URL (e.g. after browser back)
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('car_search') && !url.searchParams.get('car_search')?.trim()) {
+        url.searchParams.delete('car_search');
+        window.history.replaceState(window.history.state, '', url.pathname + (url.search || '') + url.hash);
+    }
+
     onScroll();
     window.addEventListener('scroll', onScroll);
     nextTick(startClientsAutoplay);
@@ -1331,12 +1338,23 @@ onUnmounted(() => {
                                             "
                                             class="mb-2 inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700"
                                         >
-                                            {{
-                                                Math.round(
-                                                    planPricing(plan)
-                                                        .savings_percentage,
-                                                )
-                                            }}% {{ localize('OFF', 'خصم') }}
+                                            <template v-if="locale === 'ar'">
+                                                {{ t('landing.discount_off') }}
+                                                {{
+                                                    Math.round(
+                                                        planPricing(plan)
+                                                            .savings_percentage,
+                                                    )
+                                                }}%
+                                            </template>
+                                            <template v-else>
+                                                {{
+                                                    Math.round(
+                                                        planPricing(plan)
+                                                            .savings_percentage,
+                                                    )
+                                                }}% {{ t('landing.discount_off') }}
+                                            </template>
                                         </div>
                                         <div class="flex items-end gap-2">
                                             <span
@@ -1375,12 +1393,9 @@ onUnmounted(() => {
                                                 }}
                                             </span>
                                             <span
-                                                class="ml-2 font-medium text-emerald-700"
+                                                class="ms-2 font-medium text-emerald-700"
                                             >
-                                                {{
-                                                    localize('Save', 'وفّر')
-                                                }}
-                                                ${{
+                                                {{ t('landing.discount_save') }}&nbsp;${{
                                                     money(
                                                         planPricing(plan)
                                                             .savings_amount,

@@ -488,6 +488,9 @@ return array (
     'toggle_menu' => 'تبديل القائمة',
     'hero_image_alt' => 'لوحة تحكم منتج ستريم لاين',
     'toggle_yearly_pricing' => 'تبديل التسعير السنوي',
+    'discount_off' => 'خصم',
+    'discount_save' => 'وفّر',
+    'discount_with' => 'عبر',
     'trusted_by' => 'موثوق من أكثر من 2000 فريق حول العالم',
     'badges' => 
     array (

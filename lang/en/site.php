@@ -454,6 +454,9 @@ return [
         'toggle_menu' => 'Toggle menu',
         'hero_image_alt' => 'Streamline product dashboard',
         'toggle_yearly_pricing' => 'Toggle yearly pricing',
+        'discount_off' => 'OFF',
+        'discount_save' => 'Save',
+        'discount_with' => 'with',
         'trusted_by' => 'Trusted by 2,000+ teams worldwide',
         'badges' => [
             'security' => 'Bank-level security',
