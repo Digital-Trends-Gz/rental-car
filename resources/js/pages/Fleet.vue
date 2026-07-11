@@ -150,6 +150,25 @@ const fleetThemeVars = computed(() => ({
 }));
 const selectClass = 'w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100';
 
+const translatedOr = (key: string, fallback: string): string => {
+    const value = t(key);
+
+    return value === key ? fallback : value;
+};
+
+const prettifyValue = (value: string): string =>
+    value
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const fuelTypeLabel = (fuelType: string): string => {
+    const normalized = String(fuelType || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+    return translatedOr(`fleet.fuel_types.${normalized}`, prettifyValue(String(fuelType || '')));
+};
+
 </script>
 
 <template>
@@ -292,10 +311,10 @@ const selectClass = 'w-full rounded-xl border border-gray-300 bg-white px-4 py-2
                                     <div v-if="!isTenant">
                                         <label
                                             class="mb-2 block text-sm font-medium text-gray-700"
-                                            >Tenant</label
+                                            >{{ t('fleet.tenant') }}</label
                                         >
                                         <select v-model="selectedTenant" :class="selectClass">
-                                            <option value="">All Tenants</option>
+                                            <option value="">{{ t('fleet.all_tenants') }}</option>
                                             <option
                                                 v-for="tenant in tenants"
                                                 :key="tenant.id"
@@ -310,10 +329,10 @@ const selectClass = 'w-full rounded-xl border border-gray-300 bg-white px-4 py-2
                                     <div v-if="tenantBranches.length > 0">
                                         <label
                                             class="mb-2 block text-sm font-medium text-gray-700"
-                                            >Branch</label
+                                            >{{ t('fleet.branch') }}</label
                                         >
                                         <select v-model="selectedBranch" :class="selectClass">
-                                            <option value="">All Branches</option>
+                                            <option value="">{{ t('fleet.all_branches') }}</option>
                                             <option
                                                 v-for="branch in tenantBranches"
                                                 :key="branch.id"
@@ -357,12 +376,7 @@ const selectClass = 'w-full rounded-xl border border-gray-300 bg-white px-4 py-2
                                                 :key="fuelType"
                                                 :value="fuelType"
                                             >
-                                                {{
-                                                    fuelType
-                                                        .charAt(0)
-                                                        .toUpperCase() +
-                                                    fuelType.slice(1)
-                                                }}
+                                                {{ fuelTypeLabel(fuelType) }}
                                             </option>
                                         </select>
                                     </div>

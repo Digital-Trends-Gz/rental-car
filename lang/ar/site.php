@@ -69,10 +69,21 @@ return array (
     'filters_and_search' => 'الفلاتر والبحث',
     'search_placeholder' => 'ابحث بالشركة أو الموديل أو المزايا...',
     'search_fleet' => 'بحث في الأسطول',
+    'tenant' => 'المستأجر',
+    'all_tenants' => 'كل المستأجرين',
+    'branch' => 'الفرع',
+    'all_branches' => 'كل الفروع',
     'vehicle_make' => 'الشركة المصنعة',
     'all_makes' => 'كل الشركات',
     'fuel_type' => 'نوع الوقود',
     'all_fuel_types' => 'كل أنواع الوقود',
+    'fuel_types' => 
+    array (
+      'gasoline' => 'بنزين',
+      'diesel' => 'ديزل',
+      'electric' => 'كهرباء',
+      'hybrid' => 'هايبرد',
+    ),
     'model_year' => 'سنة الموديل',
     'all_years' => 'كل السنوات',
     'daily_rate_range' => 'نطاق السعر اليومي',
@@ -404,6 +415,18 @@ return array (
     'gps_included' => 'GPS شامل',
     'insurance_included' => 'التأمين شامل',
     'book_now' => 'احجز الآن',
+    'check_availability' => 'تحقق من التوفر',
+    'tenant' => 'المستأجر',
+    'tenant_logo' => 'شعار المستأجر',
+    'location_not_set' => 'لم يتم تحديد الموقع',
+    'statuses' => 
+    array (
+      'available' => 'متاحة',
+      'rented' => 'مؤجرة',
+      'cleaning' => 'تنظيف',
+      'maintenance' => 'صيانة',
+      'out_of_service' => 'خارج الخدمة',
+    ),
   ),
   'landing' => 
   array (

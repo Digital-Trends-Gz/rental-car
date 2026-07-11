@@ -112,6 +112,34 @@ const bookCar = (car: Car) => {
     window.location.href = bookingUrl.toString();
 };
 
+const translatedOr = (key: string, fallback: string): string => {
+    const value = t(key);
+
+    return value === key ? fallback : value;
+};
+
+const prettifyValue = (value: string): string =>
+    value
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const normalizedKey = (value: string): string =>
+    String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+const fuelTypeLabel = (fuelType: string): string => {
+    const normalized = normalizedKey(fuelType);
+
+    return translatedOr(`fleet.fuel_types.${normalized}`, prettifyValue(String(fuelType || '')));
+};
+
+const statusLabel = (status?: string): string => {
+    const normalized = normalizedKey(status || '');
+
+    return translatedOr(`car_card.statuses.${normalized}`, prettifyValue(String(status || '')));
+};
+
 defineProps<Props>();
 </script>
 
@@ -147,7 +175,7 @@ defineProps<Props>();
                 v-if="car.status && car.status !== 'available'"
                 class="absolute left-4 top-4 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur"
             >
-                {{ car.status }}
+                {{ statusLabel(car.status) }}
             </div>
         </div>
 
@@ -170,7 +198,7 @@ defineProps<Props>();
                         >
                             <img
                                 :src="car.tenant_logo_url"
-                                :alt="car.tenant_name || 'Tenant logo'"
+                                :alt="car.tenant_name || t('car_card.tenant_logo')"
                                 class="h-full w-full object-contain"
                                 @error="tenantLogoFailed = true"
                             >
@@ -185,12 +213,12 @@ defineProps<Props>();
                         >
                             {{ (car.tenant_name || 'T').trim().charAt(0) }}
                         </div>
-                        <span class="min-w-0 truncate">{{ car.tenant_name || 'Tenant' }}</span>
+                        <span class="min-w-0 truncate">{{ car.tenant_name || t('car_card.tenant') }}</span>
                     </div>
                     <div class="flex min-w-0 items-start gap-2 rounded-xl bg-slate-50 px-2.5 py-2">
                         <MapPin :size="14" class="mt-0.5 shrink-0" :style="{ color: cardTheme(car).primary }" />
                         <span class="line-clamp-2 min-w-0 break-words leading-snug">
-                            {{ car.location_text || 'Location not set' }}
+                            {{ car.location_text || t('car_card.location_not_set') }}
                         </span>
                     </div>
                 </div>
@@ -211,7 +239,7 @@ defineProps<Props>();
                                 d="M13 10V3L4 14h7v7l9-11h-7z"
                             ></path>
                         </svg>
-                        <span class="truncate font-medium">{{ car.fuel_type }}</span>
+                        <span class="truncate font-medium">{{ fuelTypeLabel(car.fuel_type) }}</span>
                     </div>
                     <div class="shrink-0 rounded-full bg-slate-400 px-3 py-1 text-[11px] leading-none text-white">
                         <p>{{ t('car_card.gps_included') }}</p>
@@ -237,7 +265,7 @@ defineProps<Props>();
             >
                 <span class="flex items-center justify-center gap-2 text-white">
                     <Calendar :size="18" class="transition-transform group-hover/btn:scale-110" />
-                    {{ car.status && car.status !== 'available' ? 'Check Availability' : t('car_card.book_now') }}
+                    {{ car.status && car.status !== 'available' ? t('car_card.check_availability') : t('car_card.book_now') }}
                 </span>
             </button>
         </div>

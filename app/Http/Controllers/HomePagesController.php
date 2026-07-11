@@ -452,7 +452,7 @@ class HomePagesController extends Controller
         return $brandingLogo !== '' ? $brandingLogo : null;
     }
 
-    private function resolveCarLocation(Car $car): string
+    private function resolveCarLocation(Car $car): ?string
     {
         $branchLocation = trim((string) ($car->branch?->address ?? ''));
         if ($branchLocation !== '') {
@@ -469,7 +469,7 @@ class HomePagesController extends Controller
             ?: ''
         ));
 
-        return $localizedAddress !== '' ? $localizedAddress : 'Location not set';
+        return $localizedAddress !== '' ? $localizedAddress : null;
     }
 
     public function about()
