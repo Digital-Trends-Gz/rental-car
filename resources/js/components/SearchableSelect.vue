@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { Input } from '@/components/ui/input';
 import { useTrans } from '@/composables/useTrans';
+import { Check, ChevronDown } from 'lucide-vue-next';
 
 interface Option {
     value: string;
@@ -115,7 +116,8 @@ function handleBlur() {
         <button
             v-if="clearable && normalizedValue && !disabled"
             type="button"
-            class="absolute right-8 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+            class="absolute top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+            :class="isRtl ? 'left-8' : 'right-8'"
             @mousedown.prevent
             @click="clearSelection"
         >
@@ -130,7 +132,7 @@ function handleBlur() {
             @mousedown.prevent
             @click="menuOpen = !menuOpen"
         >
-            <span class="text-xs">▼</span>
+            <ChevronDown class="h-4 w-4" />
         </button>
 
         <div
@@ -150,7 +152,7 @@ function handleBlur() {
                 @mousedown.prevent="selectOption(option)"
             >
                 <span>{{ option.label }}</span>
-                <span v-if="normalizedValue === option.value" class="text-xs text-muted-foreground">✓</span>
+                <Check v-if="normalizedValue === option.value" class="h-4 w-4 text-muted-foreground" />
             </button>
         </div>
     </div>

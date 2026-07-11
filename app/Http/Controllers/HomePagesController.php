@@ -16,6 +16,7 @@ use App\Models\Ticket;
 use App\Enums\TicketStatus;
 use App\Rules\LettersOnly;
 use App\Support\PlanTranslations;
+use App\Support\PlanPricing;
 use App\Support\TenantSeoResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -58,20 +59,23 @@ class HomePagesController extends Controller
                 $availableLocales = LandingPageSettings::supportedLocaleKeys();
             }
 
-            $plans = PlanTranslations::localizeCollection(Plan::query()
-                ->where('is_active', true)
-                ->orderBy('sort_order')
-                ->orderBy('id')
-                ->get([
-                    'id',
-                    'name',
-                    'description',
-                    'sort_order',
-                    'features',
-                    'monthly_price',
-                    'yearly_price',
-                    'one_time_price',
-                ]), app()->getLocale());
+            $plans = PlanPricing::decorateCollection(
+                PlanTranslations::localizeCollection(Plan::query()
+                    ->with('discounts')
+                    ->where('is_active', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('id')
+                    ->get([
+                        'id',
+                        'name',
+                        'description',
+                        'sort_order',
+                        'features',
+                        'monthly_price',
+                        'yearly_price',
+                        'one_time_price',
+                    ]), app()->getLocale())
+            );
 
             $tenantLogos = Tenant::query()
                 ->where('is_active', true)

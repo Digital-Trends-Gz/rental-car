@@ -74,6 +74,11 @@ class Plan extends Model
         return $this->hasMany(Tenant::class, 'plan_id');
     }
 
+    public function discounts(): HasMany
+    {
+        return $this->hasMany(Discount::class);
+    }
+
     public function supportsFeature(string $feature): bool
     {
         if (empty($this->feature_flags)) {

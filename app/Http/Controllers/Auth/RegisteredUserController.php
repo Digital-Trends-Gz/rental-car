@@ -14,6 +14,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Payments\MyFatoorahSubscriptionProvider;
 use App\Support\PlanTranslations;
+use App\Support\PlanPricing;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -195,23 +196,26 @@ class RegisteredUserController extends Controller
             return to_route($this->authRouteName('register'))->with('error', 'Please complete registration details first.');
         }
 
-        $plans = PlanTranslations::localizeCollection(Plan::query()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->get([
-                'id',
-                'name',
-                'description',
-                'sort_order',
-                'features',
-                'monthly_price',
-                'monthly_price_id',
-                'yearly_price',
-                'yearly_price_id',
-                'one_time_price',
-                'one_time_price_id',
-            ]), app()->getLocale());
+        $plans = PlanPricing::decorateCollection(
+            PlanTranslations::localizeCollection(Plan::query()
+                ->with('discounts')
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get([
+                    'id',
+                    'name',
+                    'description',
+                    'sort_order',
+                    'features',
+                    'monthly_price',
+                    'monthly_price_id',
+                    'yearly_price',
+                    'yearly_price_id',
+                    'one_time_price',
+                    'one_time_price_id',
+                ]), app()->getLocale())
+        );
 
         return Inertia::render('auth/RegisterPlans', [
             'plans' => $plans,
@@ -253,9 +257,10 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-        if (!$this->resolvePlanPriceId($plan, $validated['billing_cycle'])) {
+        if (!$this->resolvePlanPriceId($plan, $validated['billing_cycle'])
+            && $this->resolvePlanAmount($plan, $validated['billing_cycle']) <= 0) {
             return back()->withErrors([
-                'billing_cycle' => 'The selected plan must use a Stripe price ID (price_...) for this billing cycle.',
+                'billing_cycle' => 'The selected plan is not available for this billing cycle.',
             ]);
         }
 
@@ -336,9 +341,11 @@ class RegisteredUserController extends Controller
                 'name' => $localizedPlan->name,
                 'description' => $localizedPlan->description,
                 'features' => $localizedPlan->features ?? [],
+                'pricing_meta' => data_get(PlanPricing::decoratePlan($localizedPlan), 'pricing_meta', []),
             ],
             'billingCycle' => $selection['billing_cycle'],
             'amount' => $this->resolvePlanAmount($plan, $selection['billing_cycle']),
+            'originalAmount' => $this->resolveBasePlanAmount($plan, $selection['billing_cycle']),
             'currencyCode' => config('app.currency_code', 'USD'),
             'urls' => [
                 'register' => route($this->authRouteName('register')),
@@ -438,9 +445,9 @@ class RegisteredUserController extends Controller
         }
 
         $priceId = $this->resolvePlanPriceId($plan, $selection['billing_cycle']);
-        if ($requestedProviderCode === 'stripe' && !$priceId) {
+        if ($requestedProviderCode === 'stripe' && !$priceId && $this->resolvePlanAmount($plan, (string) $selection['billing_cycle']) <= 0) {
             return back()->withErrors([
-                'accept_terms' => 'Invalid Stripe price ID. Please set a valid price_... ID on this plan.',
+                'accept_terms' => 'Invalid Stripe pricing configuration for the selected plan.',
             ]);
         }
 
@@ -531,16 +538,21 @@ class RegisteredUserController extends Controller
         }
 
         $mode = $selection['billing_cycle'] === 'one_time' ? 'payment' : 'subscription';
+        $discountedAmount = $this->resolvePlanAmount($plan, (string) $selection['billing_cycle']);
+        $baseAmount = $this->resolveBasePlanAmount($plan, (string) $selection['billing_cycle']);
 
         try {
             $stripe = new \Stripe\StripeClient($stripeSecret);
             $checkoutSession = $stripe->checkout->sessions->create([
                 'mode' => $mode,
                 'line_items' => [
-                    [
-                        'price' => $priceId,
-                        'quantity' => 1,
-                    ],
+                    $this->buildStripeLineItem(
+                        $plan,
+                        (string) $selection['billing_cycle'],
+                        $priceId,
+                        $discountedAmount,
+                        $baseAmount
+                    ),
                 ],
                 'customer_email' => $registration['email'],
                 'success_url' => route($this->authRouteName('register.checkout.success')).'?session_id={CHECKOUT_SESSION_ID}',
@@ -1059,9 +1071,14 @@ class RegisteredUserController extends Controller
 
     private function resolvePlanAmount(Plan $plan, string $billingCycle): float
     {
+        return PlanPricing::resolveAmount($plan, $billingCycle);
+    }
+
+    private function resolveBasePlanAmount(Plan $plan, string $billingCycle): float
+    {
         return match ($billingCycle) {
             'yearly' => (float) $plan->yearly_price,
-            'one_time' => (float) ($plan->one_time_price ?? $plan->monthly_price),
+            'one_time' => (float) ($plan->one_time_price ?? 0),
             default => (float) $plan->monthly_price,
         };
     }
@@ -1127,6 +1144,41 @@ class RegisteredUserController extends Controller
         }
 
         return $priceId;
+    }
+
+    private function buildStripeLineItem(
+        Plan $plan,
+        string $billingCycle,
+        ?string $priceId,
+        float $discountedAmount,
+        float $baseAmount
+    ): array {
+        if ($priceId && abs($discountedAmount - $baseAmount) < 0.00001) {
+            return [
+                'price' => $priceId,
+                'quantity' => 1,
+            ];
+        }
+
+        $currency = strtolower((string) config('app.currency_code', 'usd'));
+        $lineItem = [
+            'price_data' => [
+                'currency' => $currency,
+                'product_data' => [
+                    'name' => sprintf('SaaS Plan %s (%s)', $plan->name, $billingCycle),
+                ],
+                'unit_amount' => max(0, (int) round($discountedAmount * 100)),
+            ],
+            'quantity' => 1,
+        ];
+
+        if ($billingCycle === 'monthly' || $billingCycle === 'yearly') {
+            $lineItem['price_data']['recurring'] = [
+                'interval' => $billingCycle === 'yearly' ? 'year' : 'month',
+            ];
+        }
+
+        return $lineItem;
     }
 
     private function persistCheckoutSubscription(

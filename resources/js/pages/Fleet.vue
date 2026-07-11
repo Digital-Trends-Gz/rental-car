@@ -279,7 +279,7 @@ const fuelTypeLabel = (fuelType: string): string => {
                                             v-model="searchQuery"
                                             type="text"
                                             :placeholder="t('fleet.search_placeholder')"
-                                            class="w-full rounded-xl border border-gray-300 py-2 pr-4 pl-12 text-gray-900 placeholder-gray-500 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+                                            class="w-full rounded-xl border border-gray-300 py-2 pr-4 pl-12 text-sm text-gray-900 placeholder:text-xs placeholder:text-gray-500 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                                             @keydown.enter="handleSearch"
                                         />
                                         <svg
@@ -415,7 +415,7 @@ const fuelTypeLabel = (fuelType: string): string => {
                                                     v-model="minPrice"
                                                     type="number"
                                                     :placeholder="t('fleet.min')"
-                                                    class="w-full rounded-xl border border-gray-300 py-2 pr-4 pl-8 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+                                                    class="w-full rounded-xl border border-gray-300 py-2 pr-4 pl-8 text-sm text-gray-900 placeholder:text-xs transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                                                 />
                                             </div>
                                             <div class="relative">
@@ -427,7 +427,7 @@ const fuelTypeLabel = (fuelType: string): string => {
                                                     v-model="maxPrice"
                                                     type="number"
                                                     :placeholder="t('fleet.max')"
-                                                    class="w-full rounded-xl border border-gray-300 py-2 pr-4 pl-8 text-gray-900 transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+                                                    class="w-full rounded-xl border border-gray-300 py-2 pr-4 pl-8 text-sm text-gray-900 placeholder:text-xs transition-all duration-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                                                 />
                                             </div>
                                         </div>

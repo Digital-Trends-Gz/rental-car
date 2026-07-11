@@ -44,6 +44,7 @@ class LandingPageSettings
                 ],
             ],
             'hero' => [
+                'enabled' => true,
                 'title' => 'Automate your workflows.',
                 'description' => 'Streamline replaces scattered tools with one platform that automates repetitive tasks.',
                 'features' => [
@@ -53,7 +54,11 @@ class LandingPageSettings
                 ],
                 'image_url' => '',
             ],
+            'cars_section' => [
+                'enabled' => true,
+            ],
             'features_section' => [
+                'enabled' => true,
                 'title' => 'Everything you need to move faster',
                 'description' => 'Powerful features that replace your entire tool stack with one intuitive platform.',
                 'cards' => [
@@ -75,6 +80,7 @@ class LandingPageSettings
                 ],
             ],
             'getting_started' => [
+                'enabled' => true,
                 'title' => 'Up and running in minutes',
                 'description' => 'Three simple steps to launch your fleet operations quickly.',
                 'items' => [
@@ -92,11 +98,16 @@ class LandingPageSettings
                     ],
                 ],
             ],
+            'clients_section' => [
+                'enabled' => true,
+            ],
             'plans_section' => [
+                'enabled' => true,
                 'title' => 'Simple, transparent pricing',
                 'description' => 'Choose the plan that fits your team.',
             ],
             'faq_section' => [
+                'enabled' => true,
                 'title' => 'Frequently asked questions',
                 'description' => 'Everything you need to know before getting started.',
                 'items' => [
@@ -111,6 +122,7 @@ class LandingPageSettings
                 ],
             ],
             'contact_section' => [
+                'enabled' => true,
                 'title' => 'Contact form',
                 'description' => 'Send us a note and our team will follow up by email.',
                 'form_title' => 'Tell us what you need',
@@ -141,6 +153,7 @@ class LandingPageSettings
                 ],
             ],
             'footer' => [
+                'enabled' => true,
                 'title' => 'Ready to streamline your workflow?',
                 'description' => 'Join teams who already save hours every week.',
             ],
@@ -156,11 +169,20 @@ class LandingPageSettings
     {
         $settings = array_replace_recursive(self::defaults(), is_array($data) ? $data : []);
 
+        $settings['hero']['enabled'] = (bool) ($settings['hero']['enabled'] ?? true);
         $settings['hero']['features'] = self::normalizeStringList($settings['hero']['features'] ?? []);
 
+        $settings['cars_section']['enabled'] = (bool) ($settings['cars_section']['enabled'] ?? true);
+        $settings['features_section']['enabled'] = (bool) ($settings['features_section']['enabled'] ?? true);
         $settings['features_section']['cards'] = self::normalizeCards($settings['features_section']['cards'] ?? []);
+        $settings['getting_started']['enabled'] = (bool) ($settings['getting_started']['enabled'] ?? true);
         $settings['getting_started']['items'] = self::normalizeStepItems($settings['getting_started']['items'] ?? []);
+        $settings['clients_section']['enabled'] = (bool) ($settings['clients_section']['enabled'] ?? true);
+        $settings['plans_section']['enabled'] = (bool) ($settings['plans_section']['enabled'] ?? true);
+        $settings['faq_section']['enabled'] = (bool) ($settings['faq_section']['enabled'] ?? true);
         $settings['faq_section']['items'] = self::normalizeFaqItems($settings['faq_section']['items'] ?? []);
+        $settings['contact_section']['enabled'] = (bool) ($settings['contact_section']['enabled'] ?? true);
+        $settings['footer']['enabled'] = (bool) ($settings['footer']['enabled'] ?? true);
         $settings['enabled_locales'] = self::normalizeEnabledLocales($settings['enabled_locales'] ?? []);
         $settings['translations'] = self::normalizeTranslations($settings['translations'] ?? []);
 

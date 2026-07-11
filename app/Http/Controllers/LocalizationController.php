@@ -15,10 +15,19 @@ class LocalizationController extends Controller
             abort(404);
         }
 
-        $request->session()->put('locale', $locale);
+        $redirect = (string) $request->query('redirect', '');
+        $isDashboardRedirect = $redirect !== '' && $this->isDashboardPath($redirect, $supported);
+
+        if ($isDashboardRedirect) {
+            $request->session()->put('dashboard_locale', $locale);
+            $request->session()->put('locale', $locale);
+        } else {
+            $request->session()->put('site_locale', $locale);
+            $request->session()->put('locale', $locale);
+        }
+
         LaravelLocalization::setLocale($locale);
 
-        $redirect = (string) $request->query('redirect', '');
         if ($redirect !== '' && str_starts_with($redirect, '/')) {
             return redirect()->to($this->localizedRedirectPath($redirect, $locale, $supported));
         }
@@ -55,5 +64,23 @@ class LocalizationController extends Controller
         }
 
         return $normalizedPath.$query.$fragment;
+    }
+
+    private function isDashboardPath(string $path, array $supportedLocales): bool
+    {
+        $parts = parse_url($path);
+        $path = trim((string) ($parts['path'] ?? ''), '/');
+
+        if ($path === '') {
+            return false;
+        }
+
+        $segments = explode('/', $path);
+
+        if (isset($segments[0]) && in_array($segments[0], $supportedLocales, true)) {
+            array_shift($segments);
+        }
+
+        return in_array($segments[0] ?? null, ['admin', 'superadmin', 'client', 'dashboard'], true);
     }
 }

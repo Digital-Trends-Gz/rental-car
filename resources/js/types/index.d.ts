@@ -63,6 +63,11 @@ export interface Plan {
     yearly_price_id: string | null;
     one_time_price: number | null;
     one_time_price_id: string | null;
+    pricing_meta?: {
+        monthly?: PlanPricingMeta;
+        yearly?: PlanPricingMeta;
+        one_time?: PlanPricingMeta;
+    };
     max_employees: number | null;
     max_branches: number | null;
     max_cars: number | null;
@@ -72,6 +77,21 @@ export interface Plan {
     is_active: boolean;
     created_at: string;
     updated_at: string;
+}
+
+export interface PlanPricingMeta {
+    billing_cycle: 'monthly' | 'yearly' | 'one_time';
+    original_amount: number | null;
+    final_amount: number | null;
+    savings_amount: number;
+    savings_percentage: number;
+    has_discount: boolean;
+    discount: {
+        id: number;
+        name: string;
+        type: 'percentage' | 'fixed';
+        value: number;
+    } | null;
 }
 
 export interface Discount {

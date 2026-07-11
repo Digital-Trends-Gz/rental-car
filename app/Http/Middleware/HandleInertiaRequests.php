@@ -49,8 +49,13 @@ class HandleInertiaRequests extends Middleware
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'locale' => app()->getLocale(),
             'direction' => LaravelLocalization::getCurrentLocaleDirection(),
-            'available_locales' => function () {
+            'available_locales' => function () use ($request) {
                 $supported = LaravelLocalization::getSupportedLanguagesKeys();
+
+                if ($this->isDashboardRequest($request, $supported)) {
+                    return $supported;
+                }
+
                 $tenant = \App\Core\TenantContext::get();
 
                 if (!$tenant) {
@@ -168,5 +173,20 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
             ],
         ];
+    }
+
+    /**
+     * Dashboard locale is separate from tenant website locale, even when the
+     * route still contains a localized URL prefix such as /ar/admin.
+     */
+    private function isDashboardRequest(Request $request, array $supportedLocales): bool
+    {
+        $segments = $request->segments();
+
+        if (isset($segments[0]) && in_array($segments[0], $supportedLocales, true)) {
+            array_shift($segments);
+        }
+
+        return in_array($segments[0] ?? null, ['admin', 'superadmin', 'client', 'dashboard'], true);
     }
 }

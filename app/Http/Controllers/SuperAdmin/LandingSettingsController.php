@@ -139,12 +139,15 @@ class LandingSettingsController extends Controller
         $this->normalizeAiProviderPayload($request);
 
         $validated = $request->validate([
+            'settings.hero.enabled' => ['nullable', 'boolean'],
             'settings.hero.title' => ['required', 'string', 'max:255'],
             'settings.hero.description' => ['required', 'string', 'max:2000'],
             'settings.hero.features' => ['nullable', 'array'],
             'settings.hero.features.*' => ['nullable', 'string', 'max:255'],
             'settings.hero.image_url' => ['nullable', 'string', 'max:2000'],
 
+            'settings.cars_section.enabled' => ['nullable', 'boolean'],
+            'settings.features_section.enabled' => ['nullable', 'boolean'],
             'settings.features_section.title' => ['required', 'string', 'max:255'],
             'settings.features_section.description' => ['required', 'string', 'max:2000'],
             'settings.features_section.cards' => ['nullable', 'array'],
@@ -152,21 +155,26 @@ class LandingSettingsController extends Controller
             'settings.features_section.cards.*.image_url' => ['nullable', 'string', 'max:2000'],
             'settings.features_section.cards.*.content' => ['nullable', 'string', 'max:2000'],
 
+            'settings.getting_started.enabled' => ['nullable', 'boolean'],
             'settings.getting_started.title' => ['required', 'string', 'max:255'],
             'settings.getting_started.description' => ['required', 'string', 'max:2000'],
             'settings.getting_started.items' => ['nullable', 'array'],
             'settings.getting_started.items.*.title' => ['nullable', 'string', 'max:255'],
             'settings.getting_started.items.*.description' => ['nullable', 'string', 'max:2000'],
 
+            'settings.clients_section.enabled' => ['nullable', 'boolean'],
+            'settings.plans_section.enabled' => ['nullable', 'boolean'],
             'settings.plans_section.title' => ['required', 'string', 'max:255'],
             'settings.plans_section.description' => ['required', 'string', 'max:2000'],
 
+            'settings.faq_section.enabled' => ['nullable', 'boolean'],
             'settings.faq_section.title' => ['required', 'string', 'max:255'],
             'settings.faq_section.description' => ['required', 'string', 'max:2000'],
             'settings.faq_section.items' => ['nullable', 'array'],
             'settings.faq_section.items.*.question' => ['nullable', 'string', 'max:2000'],
             'settings.faq_section.items.*.answer' => ['nullable', 'string', 'max:5000'],
 
+            'settings.footer.enabled' => ['nullable', 'boolean'],
             'settings.footer.title' => ['required', 'string', 'max:255'],
             'settings.footer.description' => ['required', 'string', 'max:2000'],
 
@@ -464,7 +472,7 @@ class LandingSettingsController extends Controller
     {
         $settings = $this->landingSettings();
         $rows = $this->flatten(Arr::only(
-            LandingPageSettings::localize($settings, $locale),
+            $this->translatableSettings(LandingPageSettings::localize($settings, $locale)),
             LandingPageSettings::contentKeys()
         ));
         $rows = array_merge($rows, $this->flatten(PlanTranslations::defaultTranslationTree()));
@@ -569,12 +577,15 @@ class LandingSettingsController extends Controller
     private function validatedLandingSettings(Request $request): array
     {
         $validated = $request->validate([
+            'settings.hero.enabled' => ['nullable', 'boolean'],
             'settings.hero.title' => ['required', 'string', 'max:255'],
             'settings.hero.description' => ['required', 'string', 'max:2000'],
             'settings.hero.features' => ['nullable', 'array'],
             'settings.hero.features.*' => ['nullable', 'string', 'max:255'],
             'settings.hero.image_url' => ['nullable', 'string', 'max:2000'],
 
+            'settings.cars_section.enabled' => ['nullable', 'boolean'],
+            'settings.features_section.enabled' => ['nullable', 'boolean'],
             'settings.features_section.title' => ['required', 'string', 'max:255'],
             'settings.features_section.description' => ['required', 'string', 'max:2000'],
             'settings.features_section.cards' => ['nullable', 'array'],
@@ -582,21 +593,26 @@ class LandingSettingsController extends Controller
             'settings.features_section.cards.*.image_url' => ['nullable', 'string', 'max:2000'],
             'settings.features_section.cards.*.content' => ['nullable', 'string', 'max:2000'],
 
+            'settings.getting_started.enabled' => ['nullable', 'boolean'],
             'settings.getting_started.title' => ['required', 'string', 'max:255'],
             'settings.getting_started.description' => ['required', 'string', 'max:2000'],
             'settings.getting_started.items' => ['nullable', 'array'],
             'settings.getting_started.items.*.title' => ['nullable', 'string', 'max:255'],
             'settings.getting_started.items.*.description' => ['nullable', 'string', 'max:2000'],
 
+            'settings.clients_section.enabled' => ['nullable', 'boolean'],
+            'settings.plans_section.enabled' => ['nullable', 'boolean'],
             'settings.plans_section.title' => ['required', 'string', 'max:255'],
             'settings.plans_section.description' => ['required', 'string', 'max:2000'],
 
+            'settings.faq_section.enabled' => ['nullable', 'boolean'],
             'settings.faq_section.title' => ['required', 'string', 'max:255'],
             'settings.faq_section.description' => ['required', 'string', 'max:2000'],
             'settings.faq_section.items' => ['nullable', 'array'],
             'settings.faq_section.items.*.question' => ['nullable', 'string', 'max:2000'],
             'settings.faq_section.items.*.answer' => ['nullable', 'string', 'max:5000'],
 
+            'settings.contact_section.enabled' => ['nullable', 'boolean'],
             'settings.contact_section.title' => ['required', 'string', 'max:255'],
             'settings.contact_section.description' => ['required', 'string', 'max:2000'],
             'settings.contact_section.form_title' => ['required', 'string', 'max:255'],
@@ -624,14 +640,17 @@ class LandingSettingsController extends Controller
             'settings.contact_section.quick_links.*.label' => ['nullable', 'string', 'max:255'],
             'settings.contact_section.quick_links.*.href' => ['nullable', 'string', 'max:255'],
 
+            'settings.footer.enabled' => ['nullable', 'boolean'],
             'settings.footer.title' => ['required', 'string', 'max:255'],
             'settings.footer.description' => ['required', 'string', 'max:2000'],
         ]);
 
         return Arr::only(LandingPageSettings::normalize($validated['settings'] ?? []), [
             'hero',
+            'cars_section',
             'features_section',
             'getting_started',
+            'clients_section',
             'plans_section',
             'faq_section',
             'contact_section',
@@ -859,5 +878,16 @@ class LandingSettingsController extends Controller
         }
 
         return $flat;
+    }
+
+    private function translatableSettings(array $settings): array
+    {
+        foreach (LandingPageSettings::contentKeys() as $key) {
+            if (isset($settings[$key]) && is_array($settings[$key])) {
+                unset($settings[$key]['enabled']);
+            }
+        }
+
+        return $settings;
     }
 }

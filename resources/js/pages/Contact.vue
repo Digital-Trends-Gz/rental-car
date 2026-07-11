@@ -239,7 +239,7 @@ const sendTicket = () => {
                                     >
                                         {{ t('contact.phone') }}
                                     </h4>
-                                    <p class="text-gray-600">
+                                    <p class="ltr-value inline-block text-gray-600">
                                         {{ contactPhone }}
                                     </p>
                                 </div>
