@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Core\LandingPageSettings;
 use App\Models\Plan;
+use App\Models\SiteSetting;
 use App\Support\PlanTranslations;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -107,6 +109,8 @@ class PlansController extends Controller
         return Inertia::render('SuperAdmin/Plans/Edit', [
             'plan' => $plan,
             'featureFlags' => $this->featureFlags(),
+            'supportedLocales' => $this->supportedLocaleMeta(),
+            'planTranslations' => $this->planTranslationPayload($plan),
         ]);
     }
 
@@ -120,6 +124,12 @@ class PlansController extends Controller
             'description' => 'nullable|string',
             'sort_order' => 'required|integer|min:0',
             'features' => 'nullable|array',
+            'translations' => 'nullable|array',
+            'translations.*.name' => 'nullable|string|max:255',
+            'translations.*.description' => 'nullable|string',
+            'translations.*.sort_order' => 'nullable|integer|min:0',
+            'translations.*.features' => 'nullable|array',
+            'translations.*.features.*' => 'nullable|string|max:500',
             'feature_flags' => 'nullable|array',
             'monthly_price' => 'required|numeric|min:0',
             'monthly_price_id' => 'nullable|string|max:255',
@@ -135,7 +145,11 @@ class PlansController extends Controller
             'is_active' => 'required|boolean',
         ], $this->featureFlagValidationRules()));
 
+        $translations = $validated['translations'] ?? [];
+        unset($validated['translations']);
+
         $plan->update($this->normalizePlanPayload($validated));
+        $this->syncPlanTranslations($plan->fresh(), $translations);
 
         return redirect()->route('superadmin.plans.index')
             ->with('success', 'Plan updated successfully.');
@@ -188,5 +202,120 @@ class PlansController extends Controller
         }
 
         return $rules;
+    }
+
+    private function planTranslationPayload(Plan $plan): array
+    {
+        $settings = $this->landingSettings();
+        $payload = [];
+        $features = array_values(array_map('strval', $plan->features ?? []));
+
+        foreach ($this->supportedLocaleKeys() as $locale) {
+            $root = "translations.{$locale}.".PlanTranslations::ROOT_KEY.'.'.$plan->getKey();
+            $translatedFeatures = data_get($settings, "{$root}.features", []);
+            $translatedFeatures = is_array($translatedFeatures) ? $translatedFeatures : [];
+
+            $payload[$locale] = [
+                'name' => (string) data_get($settings, "{$root}.name", $plan->name),
+                'description' => (string) data_get($settings, "{$root}.description", $plan->description ?? ''),
+                'sort_order' => (int) data_get($settings, "{$root}.sort_order", $plan->sort_order ?? 0),
+                'features' => array_map(
+                    static fn (string $feature, int $index): string => (string) data_get($translatedFeatures, (string) $index, $feature),
+                    $features,
+                    array_keys($features)
+                ),
+            ];
+        }
+
+        return $payload;
+    }
+
+    private function syncPlanTranslations(Plan $plan, mixed $translations): void
+    {
+        $translations = is_array($translations) ? $translations : [];
+        $settings = $this->landingSettings();
+
+        foreach ($this->supportedLocaleKeys() as $locale) {
+            $input = data_get($translations, $locale, []);
+            if (!is_array($input)) {
+                continue;
+            }
+
+            $root = 'translations.'.$locale.'.'.PlanTranslations::ROOT_KEY.'.'.$plan->getKey();
+            $row = [];
+
+            $name = trim((string) data_get($input, 'name', ''));
+            if ($name !== '') {
+                $row['name'] = $name;
+            }
+
+            $description = trim((string) data_get($input, 'description', ''));
+            if ($description !== '') {
+                $row['description'] = $description;
+            }
+
+            $sortOrder = data_get($input, 'sort_order');
+            if ($sortOrder !== null && $sortOrder !== '' && is_numeric($sortOrder)) {
+                $row['sort_order'] = (string) max(0, (int) $sortOrder);
+            }
+
+            $features = data_get($input, 'features', []);
+            if (is_array($features)) {
+                foreach ($features as $index => $feature) {
+                    $feature = trim((string) $feature);
+                    if ($feature !== '') {
+                        $row['features'][(int) $index] = $feature;
+                    }
+                }
+            }
+
+            if (empty($row)) {
+                data_forget($settings, $root);
+            } else {
+                data_set($settings, $root, $row);
+            }
+        }
+
+        SiteSetting::query()->updateOrCreate(
+            ['key' => LandingPageSettings::KEY],
+            ['value' => LandingPageSettings::normalize($settings)]
+        );
+    }
+
+    private function landingSettings(): array
+    {
+        $stored = SiteSetting::query()
+            ->where('key', LandingPageSettings::KEY)
+            ->value('value');
+
+        return LandingPageSettings::normalize(is_array($stored) ? $stored : null);
+    }
+
+    private function supportedLocaleKeys(): array
+    {
+        $supported = array_keys((array) config('laravellocalization.supportedLocales', []));
+        if (empty($supported)) {
+            $supported = LandingPageSettings::supportedLocaleKeys();
+        }
+
+        $supported = array_values(array_unique(array_map('strval', $supported)));
+
+        return empty($supported) ? ['en'] : $supported;
+    }
+
+    private function supportedLocaleMeta(): array
+    {
+        $meta = (array) config('laravellocalization.supportedLocales', []);
+
+        return array_map(function (string $code) use ($meta): array {
+            $locale = (array) ($meta[$code] ?? []);
+
+            return [
+                'code' => $code,
+                'name' => (string) ($locale['name'] ?? strtoupper($code)),
+                'native' => (string) ($locale['native'] ?? $locale['name'] ?? strtoupper($code)),
+                'direction' => (string) ($locale['script'] ?? '') === 'Arab' ? 'rtl' : 'ltr',
+            ];
+        }, $this->supportedLocaleKeys());
     }
 }

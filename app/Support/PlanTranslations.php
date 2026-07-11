@@ -28,6 +28,7 @@ class PlanTranslations
             $tree[self::ROOT_KEY][(string) $plan->id] = [
                 'name' => (string) $plan->name,
                 'description' => (string) ($plan->description ?? ''),
+                'sort_order' => (string) ((int) ($plan->sort_order ?? 0)),
                 'features' => array_values(array_map('strval', $plan->features ?? [])),
             ];
         }
@@ -39,7 +40,10 @@ class PlanTranslations
     {
         $settings = self::landingSettings();
 
-        return $plans->map(fn (Plan $plan) => self::localizePlan($plan, $locale, $settings));
+        return $plans
+            ->map(fn (Plan $plan) => self::localizePlan($plan, $locale, $settings))
+            ->sortBy(static fn (Plan $plan): string => sprintf('%010d-%010d', (int) ($plan->sort_order ?? 0), (int) $plan->getKey()))
+            ->values();
     }
 
     public static function localizePlan(Plan $plan, ?string $locale = null, ?array $settings = null): Plan
@@ -65,6 +69,11 @@ class PlanTranslations
         $description = trim((string) data_get($translations, 'description', ''));
         if ($description !== '') {
             $plan->setAttribute('description', $description);
+        }
+
+        $sortOrder = trim((string) data_get($translations, 'sort_order', ''));
+        if ($sortOrder !== '' && is_numeric($sortOrder)) {
+            $plan->setAttribute('sort_order', max(0, (int) $sortOrder));
         }
 
         $translatedFeatures = data_get($translations, 'features', []);

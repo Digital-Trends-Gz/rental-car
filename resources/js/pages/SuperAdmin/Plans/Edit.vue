@@ -15,9 +15,16 @@ import { useTrans } from '@/composables/useTrans';
 const props = defineProps<{
     plan: Plan;
     featureFlags: Array<{ key: string; label: string; helper: string }>;
+    supportedLocales: Array<{ code: string; name: string; native: string; direction: 'ltr' | 'rtl' }>;
+    planTranslations: Record<string, {
+        name: string;
+        description: string;
+        sort_order: number;
+        features: string[];
+    }>;
 }>();
 
-const { t, locale } = useTrans();
+const { t } = useTrans();
 
 type FeatureFlagField = {
     key: string;
@@ -26,6 +33,24 @@ type FeatureFlagField = {
 };
 
 const featureFlagFields = props.featureFlags as FeatureFlagField[];
+const initialFeatures = props.plan.features?.length ? [...props.plan.features] : [''];
+
+const buildTranslations = () => Object.fromEntries(
+    props.supportedLocales.map((locale) => {
+        const translation = props.planTranslations?.[locale.code] ?? {};
+        const translatedFeatures = Array.isArray(translation.features) ? translation.features : [];
+
+        return [
+            locale.code,
+            {
+                name: String(translation.name ?? props.plan.name ?? ''),
+                description: String(translation.description ?? props.plan.description ?? ''),
+                sort_order: Number(translation.sort_order ?? props.plan.sort_order ?? 0),
+                features: initialFeatures.map((feature, index) => String(translatedFeatures[index] ?? feature ?? '')),
+            },
+        ];
+    }),
+) as Record<string, { name: string; description: string; sort_order: number; features: string[] }>;
 
 const buildFeatureFlags = () => {
     const current = props.plan.feature_flags || {};
@@ -39,7 +64,8 @@ const form = useForm({
     name: props.plan.name,
     description: props.plan.description || '',
     sort_order: props.plan.sort_order ?? 0,
-    features: props.plan.features?.length ? [...props.plan.features] : [''],
+    features: [...initialFeatures],
+    translations: buildTranslations(),
     feature_flags: buildFeatureFlags(),
     monthly_price: Number(props.plan.monthly_price),
     monthly_price_id: props.plan.monthly_price_id || '',
@@ -103,12 +129,15 @@ const formatSummaryValue = (fieldKey: string, value: number | null | undefined) 
 
 const addFeature = () => {
     form.features.push('');
+    Object.values(form.translations).forEach((translation) => translation.features.push(''));
 };
 
 const removeFeature = (index: number) => {
     form.features.splice(index, 1);
+    Object.values(form.translations).forEach((translation) => translation.features.splice(index, 1));
     if (form.features.length === 0) {
         form.features.push('');
+        Object.values(form.translations).forEach((translation) => translation.features.push(''));
     }
 };
 
@@ -182,6 +211,89 @@ const submit = () => {
                                 <Button type="button" variant="outline" size="sm" @click="addFeature" class="w-full">
                                     <Plus class="h-4 w-4 mr-2" /> Add Feature
                                 </Button>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Translations</CardTitle>
+                                <CardDescription>
+                                    Override the plan text and display order per language. Leave fields matching the default plan if no special translation is needed.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent class="space-y-5">
+                                <div
+                                    v-for="localeMeta in supportedLocales"
+                                    :key="localeMeta.code"
+                                    class="space-y-4 rounded-lg border p-4"
+                                    :dir="localeMeta.direction"
+                                >
+                                    <div class="flex flex-wrap items-center justify-between gap-3">
+                                        <div>
+                                            <div class="text-sm font-semibold">{{ localeMeta.name }} ({{ localeMeta.code.toUpperCase() }})</div>
+                                            <div class="text-xs text-muted-foreground">{{ localeMeta.native }}</div>
+                                        </div>
+                                        <div class="w-32 space-y-1">
+                                            <Label :for="`translation-${localeMeta.code}-sort`">Display Order</Label>
+                                            <Input
+                                                :id="`translation-${localeMeta.code}-sort`"
+                                                v-model.number="form.translations[localeMeta.code].sort_order"
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                            />
+                                            <div
+                                                v-if="form.errors[`translations.${localeMeta.code}.sort_order`]"
+                                                class="text-xs text-red-600"
+                                            >
+                                                {{ form.errors[`translations.${localeMeta.code}.sort_order`] }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <div class="space-y-2">
+                                            <Label :for="`translation-${localeMeta.code}-name`">Name</Label>
+                                            <Input
+                                                :id="`translation-${localeMeta.code}-name`"
+                                                v-model="form.translations[localeMeta.code].name"
+                                                :placeholder="form.name"
+                                            />
+                                            <div
+                                                v-if="form.errors[`translations.${localeMeta.code}.name`]"
+                                                class="text-sm text-red-600"
+                                            >
+                                                {{ form.errors[`translations.${localeMeta.code}.name`] }}
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label :for="`translation-${localeMeta.code}-description`">Description</Label>
+                                            <Textarea
+                                                :id="`translation-${localeMeta.code}-description`"
+                                                v-model="form.translations[localeMeta.code].description"
+                                                :placeholder="form.description"
+                                            />
+                                            <div
+                                                v-if="form.errors[`translations.${localeMeta.code}.description`]"
+                                                class="text-sm text-red-600"
+                                            >
+                                                {{ form.errors[`translations.${localeMeta.code}.description`] }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label>Features</Label>
+                                        <div class="space-y-2">
+                                            <Input
+                                                v-for="(_, index) in form.features"
+                                                :key="`${localeMeta.code}-feature-${index}`"
+                                                v-model="form.translations[localeMeta.code].features[index]"
+                                                :placeholder="form.features[index] || `Feature ${index + 1}`"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
 
