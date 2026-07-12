@@ -847,7 +847,7 @@ onUnmounted(() => {
                             </button>
                             <Button
                                 type="button"
-                                class="h-11 shrink-0 rounded-full bg-foreground px-6 text-base font-semibold text-background shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition hover:bg-foreground/90"
+                                class="gradient-button h-11 shrink-0 rounded-full px-6 text-base font-semibold"
                                 @click="searchCars"
                             >
                                 {{ t('landing.cars_search') }}
@@ -1076,7 +1076,7 @@ onUnmounted(() => {
                     <div class="mt-14 flex justify-center">
                         <a
                             :href="fleetUrl"
-                            class="gradient-button inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-semibold shadow-lg shadow-primary/20 transition-all duration-200 hover:shadow-xl"
+                            class="gradient-button inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-semibold"
                         >
                             {{ t('landing.cars_view_complete_fleet') }}
                         </a>
@@ -1461,7 +1461,7 @@ onUnmounted(() => {
                             </div>
                             <div
                                 v-else
-                                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
+                                class="brand-gradient-surface flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
                             >
                                 {{ tenantInitial(tenant.name) }}
                             </div>
@@ -1505,8 +1505,7 @@ onUnmounted(() => {
                             >{{ t('landing.monthly') }}</span
                         >
                         <button
-                            class="relative h-6 w-12 rounded-full transition-colors"
-                            :class="yearly ? 'bg-primary' : 'bg-border'"
+                            class="brand-gradient-surface relative h-6 w-12 rounded-full transition-colors"
                             :aria-label="t('landing.toggle_yearly_pricing')"
                             type="button"
                             @click="toggleYearly"

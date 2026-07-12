@@ -244,8 +244,14 @@
     }
 
     .gradient-button {
-        background-image: var(--gradient-primary);
-        @apply text-primary-foreground shadow-md transition-all duration-200 hover:brightness-110 hover:shadow-lg;
+        background: linear-gradient(90deg, rgb(59, 130, 246), rgb(109, 40, 217));
+        box-shadow: rgb(59, 130, 246) 0px 12px 24px -12px;
+        @apply text-white transition-all duration-200 hover:brightness-110;
+    }
+
+    .brand-gradient-surface {
+        background: linear-gradient(90deg, rgb(59, 130, 246), rgb(109, 40, 217));
+        box-shadow: rgb(59, 130, 246) 0px 12px 24px -12px;
     }
 
     .card-elevated {

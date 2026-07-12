@@ -40,6 +40,7 @@ const props = defineProps<Props>();
 
 const page = usePage<any>();
 const search = ref('');
+const sectionFilter = ref('all');
 const focusedLocale = ref(props.supported_locales.some((locale) => locale.code === 'ar')
     ? 'ar'
     : props.supported_locales[0]?.code || 'en');
@@ -71,14 +72,31 @@ const localeMetaByCode = computed<Record<string, LocaleMeta>>(() =>
 const rowsWithForm = computed(() =>
     props.rows.map((row, index) => ({
         ...row,
+        section: row.key.split('.')[0] || 'other',
         formRow: form.rows[index] as RowForm,
     })),
 );
+
+const sectionOptions = computed(() => {
+    const sections = Array.from(new Set(rowsWithForm.value.map((row) => row.section)));
+
+    return sections.sort().map((section) => ({
+        value: section,
+        label: section
+            .split('_')
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' '),
+    }));
+});
 
 const filteredRows = computed(() => {
     const query = search.value.trim().toLowerCase();
 
     return rowsWithForm.value.filter((row) => {
+        if (sectionFilter.value !== 'all' && row.section !== sectionFilter.value) {
+            return false;
+        }
+
         if (!query) {
             return true;
         }
@@ -299,6 +317,19 @@ async function autoFillArabic(): Promise<void> {
                         </div>
                     </div>
                     <div class="mt-4 flex flex-wrap items-center gap-2">
+                        <select
+                            v-model="sectionFilter"
+                            class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                        >
+                            <option value="all">All sections</option>
+                            <option
+                                v-for="section in sectionOptions"
+                                :key="section.value"
+                                :value="section.value"
+                            >
+                                {{ section.label }}
+                            </option>
+                        </select>
                         <select
                             v-model="focusedLocale"
                             class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"

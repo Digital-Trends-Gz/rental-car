@@ -53,6 +53,7 @@ class LandingPageSettings
                     'Cancel anytime',
                 ],
                 'image_url' => '',
+                'localized_images' => array_fill_keys($supportedLocales, ''),
             ],
             'cars_section' => [
                 'enabled' => true,
@@ -111,6 +112,7 @@ class LandingPageSettings
                         'subtitle' => 'For your customers',
                         'description' => 'Browse the fleet, book cars in seconds, and manage rentals from their pocket.',
                         'image_url' => '',
+                        'icon_url' => '',
                         'app_store_url' => '',
                         'google_play_url' => '',
                         'features' => [
@@ -124,6 +126,7 @@ class LandingPageSettings
                         'subtitle' => 'For your team',
                         'description' => 'Assign tasks, handle handovers, and track daily operations without leaving the lot.',
                         'image_url' => '',
+                        'icon_url' => '',
                         'app_store_url' => '',
                         'google_play_url' => '',
                         'features' => [
@@ -137,6 +140,7 @@ class LandingPageSettings
                         'subtitle' => 'For fleet owners',
                         'description' => 'Real-time analytics, revenue insights, and full control over your entire fleet.',
                         'image_url' => '',
+                        'icon_url' => '',
                         'app_store_url' => '',
                         'google_play_url' => '',
                         'features' => [
@@ -228,6 +232,7 @@ class LandingPageSettings
 
         $settings['hero']['enabled'] = (bool) ($settings['hero']['enabled'] ?? true);
         $settings['hero']['features'] = self::normalizeStringList($settings['hero']['features'] ?? []);
+        $settings['hero']['localized_images'] = self::normalizeLocalizedImages($settings['hero']['localized_images'] ?? []);
 
         $settings['cars_section']['enabled'] = (bool) ($settings['cars_section']['enabled'] ?? true);
         $settings['features_section']['enabled'] = (bool) ($settings['features_section']['enabled'] ?? true);
@@ -274,12 +279,44 @@ class LandingPageSettings
             return $normalized;
         }
 
+        $defaultLocale = in_array('en', $normalized['enabled_locales'] ?? [], true)
+            ? 'en'
+            : (string) (($normalized['enabled_locales'] ?? [])[0] ?? 'en');
+        $applyLocalizedHeroImage = static function (array $settings) use ($normalized, $locale, $defaultLocale): array {
+            if ($locale === $defaultLocale) {
+                return $settings;
+            }
+
+            $localizedImageUrl = trim((string) data_get($normalized, "hero.localized_images.$locale", ''));
+
+            if ($localizedImageUrl !== '') {
+                data_set($settings, 'hero.image_url', $localizedImageUrl);
+            }
+
+            return $settings;
+        };
+
         $overrides = data_get($normalized, "translations.$locale", []);
         if (!is_array($overrides) || empty($overrides)) {
-            return $normalized;
+            return $applyLocalizedHeroImage($normalized);
         }
 
-        return array_replace_recursive($normalized, $overrides);
+        $localized = array_replace_recursive($normalized, $overrides);
+
+        return $applyLocalizedHeroImage($localized);
+    }
+
+    private static function normalizeLocalizedImages(mixed $value): array
+    {
+        $supported = self::supportedLocaleKeys();
+        $images = is_array($value) ? $value : [];
+        $normalized = [];
+
+        foreach ($supported as $locale) {
+            $normalized[$locale] = trim((string) ($images[$locale] ?? ''));
+        }
+
+        return $normalized;
     }
 
     private static function normalizeStringList(mixed $items): array
@@ -399,6 +436,7 @@ class LandingPageSettings
             $subtitle = trim((string) ($item['subtitle'] ?? ''));
             $description = trim((string) ($item['description'] ?? ''));
             $imageUrl = trim((string) ($item['image_url'] ?? ''));
+            $iconUrl = trim((string) ($item['icon_url'] ?? ''));
             $appStoreUrl = trim((string) ($item['app_store_url'] ?? ''));
             $googlePlayUrl = trim((string) ($item['google_play_url'] ?? ''));
             $features = self::normalizeStringList($item['features'] ?? []);
@@ -412,6 +450,7 @@ class LandingPageSettings
                 'subtitle' => $subtitle,
                 'description' => $description,
                 'image_url' => $imageUrl,
+                'icon_url' => $iconUrl,
                 'app_store_url' => $appStoreUrl,
                 'google_play_url' => $googlePlayUrl,
                 'features' => $features,

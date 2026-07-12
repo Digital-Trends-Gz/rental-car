@@ -52,6 +52,7 @@ class LandingSettingsController extends Controller
         return Inertia::render('SuperAdmin/Settings/General', [
             'settings' => $this->landingSettings(),
             'heroFiles' => $heroFiles,
+            'heroLocalizedFiles' => $this->heroLocalizedFiles($brandingSetting),
             'aiSettings' => AiAutomationSettings::load(),
             'aiProviderSettings' => AiProviderSettings::forUi(),
         ]);
@@ -72,7 +73,10 @@ class LandingSettingsController extends Controller
             $keyPool = array_merge($keyPool, array_keys($overrideRowsByLocale[$locale]));
         }
 
-        $keys = array_values(array_unique($keyPool));
+        $keys = array_values(array_filter(
+            array_unique($keyPool),
+            fn (string $key): bool => $this->isLandingTranslationKey($key)
+        ));
         sort($keys);
 
         $rows = array_map(function (string $key) use ($supportedLocales, $defaultRows, $overrideRowsByLocale): array {
@@ -131,6 +135,8 @@ class LandingSettingsController extends Controller
             'settings' => $this->landingSettings(),
             'previewUrl' => route('home'),
             'heroFiles' => $heroFiles,
+            'heroLocalizedFiles' => $this->heroLocalizedFiles($brandingSetting),
+            'mobileAppFiles' => $this->mobileAppFiles($brandingSetting),
         ]);
     }
 
@@ -145,6 +151,8 @@ class LandingSettingsController extends Controller
             'settings.hero.features' => ['nullable', 'array'],
             'settings.hero.features.*' => ['nullable', 'string', 'max:255'],
             'settings.hero.image_url' => ['nullable', 'string', 'max:2000'],
+            'settings.hero.localized_images' => ['nullable', 'array'],
+            'settings.hero.localized_images.*' => ['nullable', 'string', 'max:2000'],
 
             'settings.cars_section.enabled' => ['nullable', 'boolean'],
             'settings.features_section.enabled' => ['nullable', 'boolean'],
@@ -173,6 +181,7 @@ class LandingSettingsController extends Controller
             'settings.mobile_apps_section.apps.*.subtitle' => ['nullable', 'string', 'max:255'],
             'settings.mobile_apps_section.apps.*.description' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.image_url' => ['nullable', 'string', 'max:2000'],
+            'settings.mobile_apps_section.apps.*.icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.app_store_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.google_play_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.features' => ['nullable', 'array'],
@@ -223,6 +232,7 @@ class LandingSettingsController extends Controller
         $normalizedAiProvider = AiProviderSettings::mergeSecrets($currentAiProvider, $normalizedAiProvider);
 
         $this->syncHeroImageUpload($request, $landingSetting);
+        $this->syncMobileAppUploads($request, $landingSetting);
 
         SiteSetting::query()->updateOrCreate(
             ['key' => AiAutomationSettings::KEY],
@@ -242,6 +252,7 @@ class LandingSettingsController extends Controller
         $normalized = $this->validatedLandingSettings($request);
         $landingSetting = $this->persistLandingSettings($normalized);
         $this->syncHeroImageUpload($request, $landingSetting);
+        $this->syncMobileAppUploads($request, $landingSetting);
 
         return back()->with('success', 'Landing page design updated successfully.');
     }
@@ -594,6 +605,107 @@ class LandingSettingsController extends Controller
         }
 
         data_set($settings, 'hero.image_url', $heroImageUrl);
+
+        $localizedImages = (array) data_get($settings, 'hero.localized_images', []);
+        $tempFoldersByLocale = is_array($request->input('hero_locale_temp_folders', []))
+            ? $request->input('hero_locale_temp_folders', [])
+            : [];
+        $removedIdsByLocale = is_array($request->input('hero_locale_removed_files', []))
+            ? $request->input('hero_locale_removed_files', [])
+            : [];
+
+        foreach ($this->supportedLocaleKeys() as $locale) {
+            $collection = $this->heroLocaleCollection($locale);
+            $localeTempFolders = is_array($tempFoldersByLocale[$locale] ?? null)
+                ? array_values(array_filter($tempFoldersByLocale[$locale]))
+                : [];
+            $localeRemovedIds = is_array($removedIdsByLocale[$locale] ?? null)
+                ? array_values(array_unique(array_filter($removedIdsByLocale[$locale])))
+                : [];
+
+            if (!empty($localeTempFolders)) {
+                $existingIds = $landingSetting->files()->where('collection', $collection)->pluck('id')->all();
+                $localeRemovedIds = array_values(array_unique(array_merge($localeRemovedIds, $existingIds)));
+            }
+
+            $this->filePondService->handleFileUpdates(
+                $landingSetting,
+                $localeTempFolders,
+                $localeRemovedIds,
+                $collection
+            );
+
+            if (!empty($localeTempFolders)) {
+                $heroFile = $landingSetting->files()
+                    ->where('collection', $collection)
+                    ->latest('id')
+                    ->first();
+
+                $localizedImages[$locale] = $heroFile
+                    ? (SiteSetting::publicUrlFromPath($heroFile->path) ?? '')
+                    : (string) ($localizedImages[$locale] ?? '');
+            } elseif (!empty($localeRemovedIds)) {
+                $localizedImages[$locale] = '';
+            }
+        }
+
+        data_set($settings, 'hero.localized_images', $localizedImages);
+        $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
+    }
+
+    private function syncMobileAppUploads(Request $request, SiteSetting $landingSetting): void
+    {
+        $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
+        $apps = (array) data_get($settings, 'mobile_apps_section.apps', []);
+        $tempFoldersByIndex = is_array($request->input('mobile_app_temp_folders', []))
+            ? $request->input('mobile_app_temp_folders', [])
+            : [];
+        $removedIdsByIndex = is_array($request->input('mobile_app_removed_files', []))
+            ? $request->input('mobile_app_removed_files', [])
+            : [];
+
+        foreach ($apps as $index => $app) {
+            if (!is_array($app)) {
+                continue;
+            }
+
+            foreach (['image' => 'image_url', 'icon' => 'icon_url'] as $type => $urlKey) {
+                $collection = $this->mobileAppCollection((int) $index, $type);
+                $tempFolders = is_array($tempFoldersByIndex[$index][$type] ?? null)
+                    ? array_values(array_filter($tempFoldersByIndex[$index][$type]))
+                    : [];
+                $removedIds = is_array($removedIdsByIndex[$index][$type] ?? null)
+                    ? array_values(array_unique(array_filter($removedIdsByIndex[$index][$type])))
+                    : [];
+
+                if (!empty($tempFolders)) {
+                    $existingIds = $landingSetting->files()->where('collection', $collection)->pluck('id')->all();
+                    $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+                }
+
+                $this->filePondService->handleFileUpdates(
+                    $landingSetting,
+                    $tempFolders,
+                    $removedIds,
+                    $collection
+                );
+
+                if (!empty($tempFolders)) {
+                    $file = $landingSetting->files()
+                        ->where('collection', $collection)
+                        ->latest('id')
+                        ->first();
+
+                    $apps[$index][$urlKey] = $file
+                        ? (SiteSetting::publicUrlFromPath($file->path) ?? '')
+                        : (string) ($apps[$index][$urlKey] ?? '');
+                } elseif (!empty($removedIds)) {
+                    $apps[$index][$urlKey] = '';
+                }
+            }
+        }
+
+        data_set($settings, 'mobile_apps_section.apps', $apps);
         $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
     }
 
@@ -606,6 +718,8 @@ class LandingSettingsController extends Controller
             'settings.hero.features' => ['nullable', 'array'],
             'settings.hero.features.*' => ['nullable', 'string', 'max:255'],
             'settings.hero.image_url' => ['nullable', 'string', 'max:2000'],
+            'settings.hero.localized_images' => ['nullable', 'array'],
+            'settings.hero.localized_images.*' => ['nullable', 'string', 'max:2000'],
 
             'settings.cars_section.enabled' => ['nullable', 'boolean'],
             'settings.features_section.enabled' => ['nullable', 'boolean'],
@@ -634,6 +748,7 @@ class LandingSettingsController extends Controller
             'settings.mobile_apps_section.apps.*.subtitle' => ['nullable', 'string', 'max:255'],
             'settings.mobile_apps_section.apps.*.description' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.image_url' => ['nullable', 'string', 'max:2000'],
+            'settings.mobile_apps_section.apps.*.icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.app_store_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.google_play_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.features' => ['nullable', 'array'],
@@ -696,6 +811,77 @@ class LandingSettingsController extends Controller
             'contact_section',
             'footer',
         ]);
+    }
+
+    /**
+     * @return array<string, array<int, array{id: int, url: string|null}>>
+     */
+    private function heroLocalizedFiles(?SiteSetting $landingSetting): array
+    {
+        $files = [];
+
+        foreach ($this->supportedLocaleKeys() as $locale) {
+            $files[$locale] = $landingSetting
+                ? $landingSetting->files()
+                    ->where('collection', $this->heroLocaleCollection($locale))
+                    ->get()
+                    ->map(fn ($file) => [
+                        'id' => $file->id,
+                        'url' => SiteSetting::publicUrlFromPath($file->path),
+                    ])
+                    ->values()
+                    ->all()
+                : [];
+        }
+
+        return $files;
+    }
+
+    /**
+     * @return array<int, array{image: array<int, array{id: int, url: string|null}>, icon: array<int, array{id: int, url: string|null}>}>
+     */
+    private function mobileAppFiles(?SiteSetting $landingSetting): array
+    {
+        $settings = $this->landingSettings();
+        $apps = (array) data_get($settings, 'mobile_apps_section.apps', []);
+        $files = [];
+
+        foreach (array_keys($apps) as $index) {
+            $files[(int) $index] = [
+                'image' => $this->landingFilesForCollection($landingSetting, $this->mobileAppCollection((int) $index, 'image')),
+                'icon' => $this->landingFilesForCollection($landingSetting, $this->mobileAppCollection((int) $index, 'icon')),
+            ];
+        }
+
+        return $files;
+    }
+
+    /**
+     * @return array<int, array{id: int, url: string|null}>
+     */
+    private function landingFilesForCollection(?SiteSetting $landingSetting, string $collection): array
+    {
+        return $landingSetting
+            ? $landingSetting->files()
+                ->where('collection', $collection)
+                ->get()
+                ->map(fn ($file) => [
+                    'id' => $file->id,
+                    'url' => SiteSetting::publicUrlFromPath($file->path),
+                ])
+                ->values()
+                ->all()
+            : [];
+    }
+
+    private function mobileAppCollection(int $index, string $type): string
+    {
+        return 'mobile_app_' . max(0, $index) . '_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $type);
+    }
+
+    private function heroLocaleCollection(string $locale): string
+    {
+        return 'hero_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $locale);
     }
 
     /**
@@ -929,5 +1115,21 @@ class LandingSettingsController extends Controller
         }
 
         return $settings;
+    }
+
+    private function isLandingTranslationKey(string $key): bool
+    {
+        foreach ([
+            '.image_url',
+            '.icon_url',
+            '.app_store_url',
+            '.google_play_url',
+        ] as $suffix) {
+            if (str_ends_with($key, $suffix)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

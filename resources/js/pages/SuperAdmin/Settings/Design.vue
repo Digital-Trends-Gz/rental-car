@@ -51,6 +51,7 @@ interface MobileAppCard {
     subtitle: string;
     description: string;
     image_url: string;
+    icon_url: string;
     app_store_url: string;
     google_play_url: string;
     features: string[];
@@ -63,6 +64,7 @@ interface LandingSettings {
         description: string;
         features: string[];
         image_url: string;
+        localized_images: Record<string, string>;
     };
     cars_section: {
         enabled: boolean;
@@ -134,12 +136,21 @@ interface LandingSettings {
         title: string;
         description: string;
     };
+    enabled_locales: string[];
 }
 
 const props = defineProps<{
     settings: LandingSettings;
     previewUrl: string;
     heroFiles: Array<{ id: number; url: string }>;
+    heroLocalizedFiles: Record<string, Array<{ id: number; url: string }>>;
+    mobileAppFiles: Record<
+        number,
+        {
+            image: Array<{ id: number; url: string }>;
+            icon: Array<{ id: number; url: string }>;
+        }
+    >;
 }>();
 
 const { locale } = useTrans();
@@ -151,29 +162,110 @@ const form = useForm<{
     settings: LandingSettings;
     hero_temp_folders: string[];
     hero_removed_files: number[];
+    hero_locale_temp_folders: Record<string, string[]>;
+    hero_locale_removed_files: Record<string, number[]>;
+    mobile_app_temp_folders: Record<
+        number,
+        { image: string[]; icon: string[] }
+    >;
+    mobile_app_removed_files: Record<
+        number,
+        { image: number[]; icon: number[] }
+    >;
 }>({
     settings: JSON.parse(JSON.stringify(props.settings)),
     hero_temp_folders: [] as string[],
     hero_removed_files: [] as number[],
+    hero_locale_temp_folders: {},
+    hero_locale_removed_files: {},
+    mobile_app_temp_folders: {},
+    mobile_app_removed_files: {},
 });
 
 const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
 const heroTempFolders = ref<string[]>([]);
 const heroRemovedFileIds = ref<number[]>([]);
+const heroLocaleTempFolders = ref<Record<string, string[]>>({});
+const heroLocaleRemovedFileIds = ref<Record<string, number[]>>({});
+const mobileAppTempFolders = ref<
+    Record<number, { image: string[]; icon: string[] }>
+>({});
+const mobileAppRemovedFileIds = ref<
+    Record<number, { image: number[]; icon: number[] }>
+>({});
+const heroLocaleSourceModes = ref<Record<string, 'upload' | 'url'>>({});
+const enabledLocales = computed(() =>
+    Array.isArray(form.settings.enabled_locales) &&
+    form.settings.enabled_locales.length
+        ? form.settings.enabled_locales
+        : ['en'],
+);
+const activeHeroLocale = computed(() => {
+    const currentLocale = String(locale.value || '');
+
+    return enabledLocales.value.includes(currentLocale)
+        ? currentLocale
+        : enabledLocales.value[0] || 'en';
+});
+const defaultHeroLocale = computed(() =>
+    enabledLocales.value.includes('en') ? 'en' : enabledLocales.value[0] || 'en',
+);
+const activeHeroUsesDefaultMedia = computed(
+    () => activeHeroLocale.value === defaultHeroLocale.value,
+);
 const heroSourceMode = ref<'upload' | 'url'>(
-    props.heroFiles?.length ? 'upload' : 'url',
+    activeHeroUsesDefaultMedia.value
+        ? props.heroFiles?.length
+            ? 'upload'
+            : 'url'
+        : props.heroLocalizedFiles?.[activeHeroLocale.value]?.length
+        ? 'upload'
+        : 'url',
 );
 const previewSrc = computed(() => {
     const separator = props.previewUrl.includes('?') ? '&' : '?';
     return `${props.previewUrl}${separator}preview=${previewNonce.value}`;
 });
-const uploadedHeroUrl = computed(() => props.heroFiles?.[0]?.url || null);
+const uploadedHeroUrl = computed(() =>
+    activeHeroUsesDefaultMedia.value
+        ? props.heroFiles?.[0]?.url || null
+        : props.heroLocalizedFiles?.[activeHeroLocale.value]?.[0]?.url || null,
+);
 const previewHeroUrl = computed(() =>
     heroSourceMode.value === 'url'
-        ? form.settings.hero.image_url || null
-        : uploadedHeroUrl.value || form.settings.hero.image_url || null,
+        ? activeHeroUsesDefaultMedia.value
+            ? form.settings.hero.image_url || null
+            : form.settings.hero.localized_images?.[activeHeroLocale.value] ||
+              null
+        : uploadedHeroUrl.value ||
+          (activeHeroUsesDefaultMedia.value
+              ? form.settings.hero.image_url
+              : form.settings.hero.localized_images?.[activeHeroLocale.value]) ||
+          null,
 );
 const heroIsVideo = computed(() => isVideoUrl(previewHeroUrl.value));
+
+if (!form.settings.hero.localized_images) {
+    form.settings.hero.localized_images = {};
+}
+
+for (const localeCode of enabledLocales.value) {
+    form.settings.hero.localized_images[localeCode] =
+        form.settings.hero.localized_images[localeCode] || '';
+    heroLocaleSourceModes.value[localeCode] =
+        props.heroLocalizedFiles?.[localeCode]?.length ? 'upload' : 'url';
+    heroLocaleTempFolders.value[localeCode] = [];
+    heroLocaleRemovedFileIds.value[localeCode] = [];
+}
+
+form.settings.mobile_apps_section.apps.forEach((app, index) => {
+    if (!('icon_url' in app)) {
+        app.icon_url = '';
+    }
+
+    mobileAppTempFolders.value[index] = { image: [], icon: [] };
+    mobileAppRemovedFileIds.value[index] = { image: [], icon: [] };
+});
 
 watch(
     heroTempFolders,
@@ -183,19 +275,78 @@ watch(
     { deep: true },
 );
 
+watch(
+    heroLocaleTempFolders,
+    (value) => {
+        form.hero_locale_temp_folders = JSON.parse(JSON.stringify(value));
+    },
+    { deep: true },
+);
+
+watch(
+    mobileAppTempFolders,
+    (value) => {
+        form.mobile_app_temp_folders = JSON.parse(JSON.stringify(value));
+    },
+    { deep: true },
+);
+
 watch(heroSourceMode, (value) => {
     if (value !== 'url') {
         return;
     }
 
-    const existingIds = (props.heroFiles || [])
+    if (activeHeroUsesDefaultMedia.value) {
+        const existingIds = (props.heroFiles || [])
+            .map((file) => file.id)
+            .filter(Boolean);
+        heroRemovedFileIds.value = [
+            ...new Set([...heroRemovedFileIds.value, ...existingIds]),
+        ];
+        form.hero_removed_files = [...heroRemovedFileIds.value];
+        return;
+    }
+
+    const localeCode = activeHeroLocale.value;
+    const existingIds = (props.heroLocalizedFiles?.[localeCode] || [])
         .map((file) => file.id)
         .filter(Boolean);
-    heroRemovedFileIds.value = [
-        ...new Set([...heroRemovedFileIds.value, ...existingIds]),
+    heroLocaleRemovedFileIds.value[localeCode] = [
+        ...new Set([
+            ...(heroLocaleRemovedFileIds.value[localeCode] || []),
+            ...existingIds,
+        ]),
     ];
-    form.hero_removed_files = [...heroRemovedFileIds.value];
+    form.hero_locale_removed_files = JSON.parse(
+        JSON.stringify(heroLocaleRemovedFileIds.value),
+    );
 });
+
+watch(
+    heroLocaleSourceModes,
+    (value) => {
+        for (const localeCode of enabledLocales.value) {
+            if (value[localeCode] !== 'url') {
+                continue;
+            }
+
+            const existingIds = (props.heroLocalizedFiles?.[localeCode] || [])
+                .map((file) => file.id)
+                .filter(Boolean);
+            heroLocaleRemovedFileIds.value[localeCode] = [
+                ...new Set([
+                    ...(heroLocaleRemovedFileIds.value[localeCode] || []),
+                    ...existingIds,
+                ]),
+            ];
+        }
+
+        form.hero_locale_removed_files = JSON.parse(
+            JSON.stringify(heroLocaleRemovedFileIds.value),
+        );
+    },
+    { deep: true },
+);
 
 function isVideoUrl(url: string | null): boolean {
     if (!url) {
@@ -212,6 +363,73 @@ const handleHeroFileRemoved = (data: { type: string; fileId?: number }) => {
     }
 };
 
+const handleHeroLocaleFileRemoved = (
+    localeCode: string,
+    data: { type: string; fileId?: number },
+) => {
+    if (data.type === 'existing' && data.fileId) {
+        heroLocaleRemovedFileIds.value[localeCode] = [
+            ...new Set([
+                ...(heroLocaleRemovedFileIds.value[localeCode] || []),
+                data.fileId,
+            ]),
+        ];
+        form.hero_locale_removed_files = JSON.parse(
+            JSON.stringify(heroLocaleRemovedFileIds.value),
+        );
+    }
+};
+
+const mobileAppFileList = (index: number, type: 'image' | 'icon') =>
+    props.mobileAppFiles?.[index]?.[type] || [];
+
+const handleMobileAppFileRemoved = (
+    index: number,
+    type: 'image' | 'icon',
+    data: { type: string; fileId?: number },
+) => {
+    if (data.type !== 'existing' || !data.fileId) {
+        return;
+    }
+
+    if (!mobileAppRemovedFileIds.value[index]) {
+        mobileAppRemovedFileIds.value[index] = { image: [], icon: [] };
+    }
+
+    mobileAppRemovedFileIds.value[index][type] = [
+        ...new Set([
+            ...(mobileAppRemovedFileIds.value[index][type] || []),
+            data.fileId,
+        ]),
+    ];
+    form.mobile_app_removed_files = JSON.parse(
+        JSON.stringify(mobileAppRemovedFileIds.value),
+    );
+};
+
+const localeDisplayName = (localeCode: string) =>
+    (
+        {
+            en: 'English',
+            ar: 'Arabic',
+            ur: 'Urdu',
+        } as Record<string, string>
+    )[String(localeCode || '').toLowerCase()] ||
+    String(localeCode || '').toUpperCase();
+
+const heroLocaleFiles = (localeCode: string) =>
+    props.heroLocalizedFiles?.[localeCode] || [];
+
+const uploadedHeroLocaleUrl = (localeCode: string) =>
+    heroLocaleFiles(localeCode)[0]?.url || null;
+
+const previewHeroLocaleUrl = (localeCode: string) =>
+    heroLocaleSourceModes.value[localeCode] === 'url'
+        ? form.settings.hero.localized_images?.[localeCode] || null
+        : uploadedHeroLocaleUrl(localeCode) ||
+          form.settings.hero.localized_images?.[localeCode] ||
+          null;
+
 const refreshPreview = () => {
     previewNonce.value = Date.now();
 };
@@ -227,7 +445,29 @@ const submit = () => {
             heroTempFolders.value = [];
             form.hero_temp_folders = [];
             form.hero_removed_files = [];
+            form.hero_locale_temp_folders = {};
+            form.hero_locale_removed_files = {};
+            form.mobile_app_temp_folders = {};
+            form.mobile_app_removed_files = {};
             heroRemovedFileIds.value = [];
+            heroLocaleTempFolders.value = Object.fromEntries(
+                enabledLocales.value.map((localeCode) => [localeCode, []]),
+            );
+            heroLocaleRemovedFileIds.value = Object.fromEntries(
+                enabledLocales.value.map((localeCode) => [localeCode, []]),
+            );
+            mobileAppTempFolders.value = Object.fromEntries(
+                form.settings.mobile_apps_section.apps.map((_app, index) => [
+                    index,
+                    { image: [], icon: [] },
+                ]),
+            );
+            mobileAppRemovedFileIds.value = Object.fromEntries(
+                form.settings.mobile_apps_section.apps.map((_app, index) => [
+                    index,
+                    { image: [], icon: [] },
+                ]),
+            );
             fileUploadRef.value?.resetFiles();
             refreshPreview();
         },
@@ -267,13 +507,21 @@ const addMobileApp = () => {
         subtitle: '',
         description: '',
         image_url: '',
+        icon_url: '',
         app_store_url: '',
         google_play_url: '',
         features: [''],
     });
+
+    const index = form.settings.mobile_apps_section.apps.length - 1;
+    mobileAppTempFolders.value[index] = { image: [], icon: [] };
+    mobileAppRemovedFileIds.value[index] = { image: [], icon: [] };
 };
-const removeMobileApp = (index: number) =>
+const removeMobileApp = (index: number) => {
     form.settings.mobile_apps_section.apps.splice(index, 1);
+    delete mobileAppTempFolders.value[index];
+    delete mobileAppRemovedFileIds.value[index];
+};
 const addMobileAppFeature = (index: number) =>
     form.settings.mobile_apps_section.apps[index].features.push('');
 const removeMobileAppFeature = (appIndex: number, featureIndex: number) =>
@@ -509,6 +757,7 @@ const toggleSection = (
                                     class="space-y-2"
                                 >
                                     <FileUpload
+                                        v-if="activeHeroUsesDefaultMedia"
                                         ref="fileUploadRef"
                                         v-model="heroTempFolders"
                                         :initial-files="heroFiles || []"
@@ -530,6 +779,41 @@ const toggleSection = (
                                         width="100%"
                                         @file-removed="handleHeroFileRemoved"
                                     />
+                                    <FileUpload
+                                        v-else
+                                        ref="fileUploadRef"
+                                        v-model="
+                                            heroLocaleTempFolders[
+                                                activeHeroLocale
+                                            ]
+                                        "
+                                        :initial-files="
+                                            heroLocaleFiles(activeHeroLocale)
+                                        "
+                                        :allow-multiple="false"
+                                        :max-files="1"
+                                        :max-file-size="1024 * 1024 * 50"
+                                        :allowed-file-types="[
+                                            'image/jpeg',
+                                            'image/png',
+                                            'image/webp',
+                                            'image/gif',
+                                            'video/mp4',
+                                            'video/webm',
+                                            'video/ogg',
+                                            'video/quicktime',
+                                        ]"
+                                        :collection="`hero_${activeHeroLocale}`"
+                                        theme="light"
+                                        width="100%"
+                                        @file-removed="
+                                            (data) =>
+                                                handleHeroLocaleFileRemoved(
+                                                    activeHeroLocale,
+                                                    data,
+                                                )
+                                        "
+                                    />
                                     <p class="text-xs text-muted-foreground">
                                         {{
                                             localize(
@@ -542,8 +826,18 @@ const toggleSection = (
 
                                 <div v-else class="space-y-2">
                                     <Input
+                                        v-if="activeHeroUsesDefaultMedia"
                                         id="hero_image_url"
                                         v-model="form.settings.hero.image_url"
+                                        placeholder="https://..."
+                                    />
+                                    <Input
+                                        v-else
+                                        v-model="
+                                            form.settings.hero.localized_images[
+                                                activeHeroLocale
+                                            ]
+                                        "
                                         placeholder="https://..."
                                     />
                                 </div>
@@ -566,6 +860,135 @@ const toggleSection = (
                                         alt="hero preview"
                                         class="h-44 w-full object-cover"
                                     />
+                                </div>
+
+                                <div v-if="false" class="space-y-4 rounded-xl border bg-muted/10 p-4">
+                                    <div>
+                                        <p class="text-sm font-semibold">
+                                            {{
+                                                localize(
+                                                    'Hero media by language',
+                                                    'وسائط القسم الرئيسي حسب اللغة',
+                                                )
+                                            }}
+                                        </p>
+                                        <p class="text-xs text-muted-foreground">
+                                            {{
+                                                localize(
+                                                    'Set a specific hero image or video for each language. Empty languages use the default hero media above.',
+                                                    'حدد صورة أو فيديو خاص لكل لغة. اللغات الفارغة تستخدم الوسائط العامة أعلاه.',
+                                                )
+                                            }}
+                                        </p>
+                                    </div>
+
+                                    <div
+                                        v-for="localeCode in enabledLocales"
+                                        :key="`hero-media-${localeCode}`"
+                                        class="space-y-3 rounded-lg border bg-background p-3"
+                                    >
+                                        <div class="flex items-center justify-between gap-3">
+                                            <div>
+                                                <p class="text-sm font-medium">
+                                                    {{ localeDisplayName(localeCode) }}
+                                                </p>
+                                                <p class="text-xs uppercase text-muted-foreground">
+                                                    {{ localeCode }}
+                                                </p>
+                                            </div>
+                                            <Select v-model="heroLocaleSourceModes[localeCode]">
+                                                <SelectTrigger class="w-44">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="upload">{{
+                                                        localize(
+                                                            'Upload',
+                                                            'رفع',
+                                                        )
+                                                    }}</SelectItem>
+                                                    <SelectItem value="url">{{
+                                                        localize(
+                                                            'External URL',
+                                                            'رابط خارجي',
+                                                        )
+                                                    }}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <FileUpload
+                                            v-if="heroLocaleSourceModes[localeCode] === 'upload'"
+                                            v-model="heroLocaleTempFolders[localeCode]"
+                                            :initial-files="heroLocaleFiles(localeCode)"
+                                            :allow-multiple="false"
+                                            :max-files="1"
+                                            :max-file-size="1024 * 1024 * 50"
+                                            :allowed-file-types="[
+                                                'image/jpeg',
+                                                'image/png',
+                                                'image/webp',
+                                                'image/gif',
+                                                'video/mp4',
+                                                'video/webm',
+                                                'video/ogg',
+                                                'video/quicktime',
+                                            ]"
+                                            :collection="`hero_${localeCode}`"
+                                            theme="light"
+                                            width="100%"
+                                            @file-removed="
+                                                (data) =>
+                                                    handleHeroLocaleFileRemoved(
+                                                        localeCode,
+                                                        data,
+                                                    )
+                                            "
+                                        />
+
+                                        <Input
+                                            v-else
+                                            v-model="
+                                                form.settings.hero
+                                                    .localized_images[localeCode]
+                                            "
+                                            placeholder="https://..."
+                                        />
+
+                                        <div
+                                            v-if="previewHeroLocaleUrl(localeCode)"
+                                            class="overflow-hidden rounded-lg border bg-muted/20"
+                                        >
+                                            <video
+                                                v-if="
+                                                    isVideoUrl(
+                                                        previewHeroLocaleUrl(
+                                                            localeCode,
+                                                        ),
+                                                    )
+                                                "
+                                                :src="
+                                                    previewHeroLocaleUrl(
+                                                        localeCode,
+                                                    ) || ''
+                                                "
+                                                class="h-36 w-full object-cover"
+                                                controls
+                                                muted
+                                                playsinline
+                                            />
+                                            <img
+                                                v-else
+                                                :src="
+                                                    previewHeroLocaleUrl(
+                                                        localeCode,
+                                                    ) || ''
+                                                "
+                                                alt="localized hero preview"
+                                                class="h-36 w-full object-cover"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
