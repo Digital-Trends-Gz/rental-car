@@ -616,7 +616,7 @@ onUnmounted(() => {
                     <div
                         class="absolute right-4 flex items-center gap-4 sm:right-6 lg:right-8"
                     >
-                        <DropdownMenu v-if="availableLocales.length > 1">
+                        <DropdownMenu v-if="availableLocales.length > 1" :modal="false">
                             <DropdownMenuTrigger as-child>
                                 <Button
                                     variant="ghost"
@@ -678,7 +678,7 @@ onUnmounted(() => {
                 >
                     {{ link.label }}
                 </a>
-                <DropdownMenu v-if="availableLocales.length > 1">
+                <DropdownMenu v-if="availableLocales.length > 1" :modal="false">
                     <DropdownMenuTrigger as-child>
                         <Button
                             variant="ghost"
