@@ -18,6 +18,7 @@ import { show as tenantFleetShow } from '@/routes/tenant/fleet';
 import { type Plan } from '@/types';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
+    Apple,
     BriefcaseBusiness,
     Building2,
     Calendar,
@@ -377,6 +378,11 @@ const mobileAppTitleParts = computed(() => {
         highlight: title.slice(index),
     };
 });
+const mobileAppStoreHref = (url?: string | null) => {
+    const normalized = String(url || '').trim();
+
+    return normalized || '#';
+};
 const contactForm = useForm({
     name: '',
     email: '',

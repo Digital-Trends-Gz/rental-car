@@ -286,6 +286,9 @@ class AuthController extends Controller
     private function userPayload(User $user): array
     {
         $tenant = $this->resolveTenant($user);
+        $branch = $user->branch_id
+            ? $user->branch()->withoutGlobalScope('tenant')->select('id', 'name')->first()
+            : null;
 
         return [
             'id' => $user->id,
@@ -294,6 +297,7 @@ class AuthController extends Controller
             'role' => $user->role instanceof UserRole ? $user->role->value : (string) $user->role,
             'tenant_id' => $user->tenant_id,
             'branch_id' => $user->branch_id,
+            'branch_name' => $branch?->name,
             'is_active' => (bool) $user->is_active,
             'email_verified_at' => optional($user->email_verified_at)->toIso8601String(),
             'tenant' => $tenant ? [

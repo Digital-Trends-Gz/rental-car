@@ -1,8 +1,64 @@
 <?php
 
 use App\Core\TenantContext;
+use App\Enums\UserRole;
+use App\Models\Branch;
+use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
+
+test('api login returns the assigned branch name', function () {
+    $plan = Plan::factory()->create(['is_active' => true]);
+    $tenant = Tenant::factory()->create([
+        'plan_id' => $plan->id,
+        'trial_ends_at' => now()->addMonth(),
+    ]);
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Ramallah Branch',
+    ]);
+    $user = User::factory()->create([
+        'email' => 'branch-login@example.com',
+        'password' => 'password',
+        'role' => UserRole::ADMIN,
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'is_active' => true,
+    ]);
+
+    $response = $this->postJson('/api/auth/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('user.branch_id', $branch->id)
+        ->assertJsonPath('user.branch_name', 'Ramallah Branch');
+});
+
+test('api me returns the assigned branch name', function () {
+    $tenant = Tenant::factory()->create();
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Nablus Branch',
+    ]);
+    $user = User::factory()->create([
+        'role' => UserRole::ADMIN,
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'is_active' => true,
+    ]);
+
+    Sanctum::actingAs($user, ['*']);
+
+    $response = $this->getJson('/api/auth/me');
+
+    $response->assertOk()
+        ->assertJsonPath('user.branch_id', $branch->id)
+        ->assertJsonPath('user.branch_name', 'Nablus Branch');
+});
 
 test('api login credentials error uses accept language header', function () {
     app()->setLocale('en');
