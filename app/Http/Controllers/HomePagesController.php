@@ -115,6 +115,7 @@ class HomePagesController extends Controller
                     'year',
                     'price_per_day',
                     'description',
+                    'description_translations',
                     'fuel_type',
                     'status',
                 ])
@@ -147,7 +148,7 @@ class HomePagesController extends Controller
                 'branch:id,tenant_id,address',
                 'files',
             ])
-            ->select('id', 'tenant_id', 'branch_id', 'make', 'model', 'year', 'price_per_day', 'description', 'fuel_type', 'status')
+            ->select('id', 'tenant_id', 'branch_id', 'make', 'model', 'year', 'price_per_day', 'description', 'description_translations', 'fuel_type', 'status')
             ->orderByRaw("CASE WHEN status = ? THEN 0 WHEN status = ? THEN 1 WHEN status = ? THEN 2 ELSE 3 END", [
                 CarStatus::AVAILABLE->value,
                 CarStatus::RESERVED->value,
@@ -225,7 +226,7 @@ class HomePagesController extends Controller
                 'branch:id,tenant_id,name,address',
                 'files',
             ])
-            ->select('id', 'tenant_id', 'branch_id', 'make', 'model', 'year', 'price_per_day', 'description', 'fuel_type', 'status');
+            ->select('id', 'tenant_id', 'branch_id', 'make', 'model', 'year', 'price_per_day', 'description', 'description_translations', 'fuel_type', 'status');
         // Search functionality
         if ($request->filled('search')) {
             $searchTerm = $request->search;
@@ -389,7 +390,7 @@ class HomePagesController extends Controller
             'model' => $car->model,
             'year' => $car->year,
             'price_per_day' => (string) $car->price_per_day,
-            'description' => $car->description,
+            'description' => $car->localizedDescription(),
             'fuel_type' => $car->fuel_type?->value ?? (string) $car->fuel_type,
             'status' => $car->status?->value ?? (string) $car->status,
             'image_url' => $car->image_url,

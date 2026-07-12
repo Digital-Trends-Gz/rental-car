@@ -34,6 +34,7 @@ interface Car {
     engine_power?: number | string | null;
     fuel_type: string;
     description: string;
+    description_translations?: Record<string, string | null> | null;
     status: string;
     status_task_time?: string | null;
 }
@@ -106,6 +107,13 @@ interface Enums {
     statuses: StatusEnum[];
 }
 
+interface SupportedLocale {
+    code: string;
+    name: string;
+    native: string;
+    direction: 'ltr' | 'rtl';
+}
+
 const props = defineProps<{
     car: Car | null;
     imageFiles: ImageFile[];
@@ -119,6 +127,7 @@ const props = defineProps<{
     plateFormats?: PlateFormatOption[];
     selectedPlateFormat?: string;
     canAccessAllBranches: boolean;
+    supportedLocales: SupportedLocale[];
     enums: Enums;
 }>();
 
@@ -127,6 +136,11 @@ const subdomain = computed<string | undefined>(() => page.props.current_tenant?.
 const isEdit = computed(() => !!props.car);
 const { locale } = useTrans();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const supportedLocales = computed<SupportedLocale[]>(() =>
+    props.supportedLocales?.length
+        ? props.supportedLocales
+        : [{ code: 'en', name: 'English', native: 'English', direction: 'ltr' }],
+);
 
 const carColors = computed(() =>
     props.enums.colors.map((color) => ({
@@ -231,6 +245,15 @@ function safeLower(value: unknown, fallback: string): string {
     return String(value).toLowerCase();
 }
 
+function localizedTextRecord(values?: Record<string, string | null> | null, fallback = ''): Record<string, string> {
+    return Object.fromEntries(
+        supportedLocales.value.map((localeMeta) => [
+            localeMeta.code,
+            safeStr(values?.[localeMeta.code], localeMeta.code === 'en' ? fallback : ''),
+        ]),
+    );
+}
+
 function createAdditionalPhotoRow(type = '', files: ImageFile[] = []): AdditionalPhotoRow {
     return {
         key: `${type || 'new'}-${Math.random().toString(36).slice(2, 10)}`,
@@ -270,6 +293,7 @@ const form = useForm({
     engine_power: safeNum(props.car?.engine_power),
     fuel_type: safeLower(props.car?.fuel_type, 'gasoline'),
     description: safeStr(props.car?.description),
+    description_translations: localizedTextRecord(props.car?.description_translations, safeStr(props.car?.description)),
     status: safeStr(props.car?.status, 'available'),
     status_task_time: safeStr(props.car?.status_task_time),
     image: [] as string[],
@@ -905,6 +929,34 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                             :placeholder="localize('Enter a detailed description of the car including features, condition, and any special notes...', 'أدخل وصفًا تفصيليًا للسيارة يشمل المزايا والحالة وأي ملاحظات خاصة...')"
                         />
                         <InputError :message="form.errors.description" class="mt-1" />
+                    </div>
+
+                    <div class="md:col-span-2 rounded-xl border border-border bg-slate-50/70 p-4">
+                        <div class="mb-4">
+                            <h2 class="text-base font-semibold text-foreground">
+                                {{ localize('Public description translations', 'ترجمات وصف السيارة في الموقع') }}
+                            </h2>
+                            <p class="mt-1 text-sm text-muted-foreground">
+                                {{ localize('These descriptions are shown on the landing and fleet car cards according to the selected site language.', 'تظهر هذه الأوصاف في بطاقات السيارات حسب لغة الموقع المختارة.') }}
+                            </p>
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div v-for="localeMeta in supportedLocales" :key="localeMeta.code" class="space-y-2">
+                                <Label :for="`description_translation_${localeMeta.code}`">
+                                    {{ localeMeta.name }} ({{ localeMeta.code.toUpperCase() }})
+                                </Label>
+                                <textarea
+                                    :id="`description_translation_${localeMeta.code}`"
+                                    v-model="form.description_translations[localeMeta.code]"
+                                    rows="3"
+                                    :dir="localeMeta.direction"
+                                    class="w-full rounded-md border border-input bg-white px-3 py-2 text-sm dark:bg-input/30"
+                                    :placeholder="localeMeta.code === 'en' ? form.description : localize('Translated car description', 'وصف السيارة المترجم')"
+                                />
+                                <InputError :message="form.errors[`description_translations.${localeMeta.code}`]" class="mt-1" />
+                            </div>
+                        </div>
                     </div>
                 </div>
 

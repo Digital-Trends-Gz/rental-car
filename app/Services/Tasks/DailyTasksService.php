@@ -126,6 +126,7 @@ class DailyTasksService
         }
 
         $tenantId = (int) ($user->tenant_id ?? 0);
+        $this->ensureCanAccessTaskSource($user, $taskType, $sourceType, $sourceId);
 
         return DailyTaskStatus::query()->updateOrCreate(
             [
@@ -218,6 +219,7 @@ class DailyTasksService
     private function setStatus(User $user, string $taskType, string $sourceType, int $sourceId, string $status, ?string $notes = null): DailyTaskStatus
     {
         $tenantId = (int) ($user->tenant_id ?? 0);
+        $this->ensureCanAccessTaskSource($user, $taskType, $sourceType, $sourceId);
 
         $task = DailyTaskStatus::query()->updateOrCreate(
             [
@@ -244,6 +246,112 @@ class DailyTasksService
         }
 
         return $task->refresh();
+    }
+
+    private function ensureCanAccessTaskSource(User $user, string $taskType, string $sourceType, int $sourceId): void
+    {
+        $tenantId = (int) ($user->tenant_id ?? 0);
+        abort_unless($tenantId > 0, 403);
+
+        $source = match ($sourceType) {
+            'reservation' => $this->reservationBranch($tenantId, $sourceId),
+            'contract' => $this->contractBranch($tenantId, $sourceId),
+            'maintenance' => $this->maintenanceBranch($tenantId, $sourceId),
+            'car' => $this->carBranch($tenantId, $sourceId),
+            default => null,
+        };
+
+        abort_unless(is_array($source) && (bool) ($source['exists'] ?? false), 404, 'Task source was not found.');
+        abort_unless($this->branchAccess->canAccessBranchId($user, $source['branch_id'] ?? null), 403);
+
+        if ($sourceType === 'reservation') {
+            abort_unless($taskType === 'pickup', 422, 'Reservation sources can only be used with pickup tasks.');
+        }
+
+        if ($sourceType === 'contract') {
+            abort_unless($taskType === 'return', 422, 'Contract sources can only be used with return tasks.');
+        }
+
+        if ($sourceType === 'maintenance') {
+            abort_unless($taskType === 'maintenance', 422, 'Maintenance sources can only be used with maintenance tasks.');
+        }
+
+        if ($sourceType === 'car') {
+            abort_unless(in_array($taskType, ['cleaning', 'maintenance'], true), 422, 'Car sources can only be used with cleaning or maintenance tasks.');
+        }
+    }
+
+    /**
+     * @return array{exists: bool, branch_id: ?int}
+     */
+    private function reservationBranch(int $tenantId, int $reservationId): array
+    {
+        $reservation = Reservation::query()
+            ->with('car:id,branch_id')
+            ->where('tenant_id', $tenantId)
+            ->find($reservationId);
+
+        return [
+            'exists' => (bool) $reservation,
+            'branch_id' => $reservation?->car?->branch_id ? (int) $reservation->car->branch_id : null,
+        ];
+    }
+
+    /**
+     * @return array{exists: bool, branch_id: ?int}
+     */
+    private function contractBranch(int $tenantId, int $contractId): array
+    {
+        $contract = Contract::query()
+            ->with('reservation.car:id,branch_id')
+            ->where('tenant_id', $tenantId)
+            ->find($contractId);
+
+        if (!$contract) {
+            return ['exists' => false, 'branch_id' => null];
+        }
+
+        $branchId = $contract->branch_id
+            ? (int) $contract->branch_id
+            : ($contract->reservation?->car?->branch_id ? (int) $contract->reservation->car->branch_id : null);
+
+        return ['exists' => true, 'branch_id' => $branchId];
+    }
+
+    /**
+     * @return array{exists: bool, branch_id: ?int}
+     */
+    private function maintenanceBranch(int $tenantId, int $maintenanceId): array
+    {
+        $maintenance = CarMaintenance::query()
+            ->with('car:id,branch_id')
+            ->where('tenant_id', $tenantId)
+            ->find($maintenanceId);
+
+        if (!$maintenance) {
+            return ['exists' => false, 'branch_id' => null];
+        }
+
+        $branchId = $maintenance->branch_id
+            ? (int) $maintenance->branch_id
+            : ($maintenance->car?->branch_id ? (int) $maintenance->car->branch_id : null);
+
+        return ['exists' => true, 'branch_id' => $branchId];
+    }
+
+    /**
+     * @return array{exists: bool, branch_id: ?int}
+     */
+    private function carBranch(int $tenantId, int $carId): array
+    {
+        $car = Car::query()
+            ->where('tenant_id', $tenantId)
+            ->find($carId);
+
+        return [
+            'exists' => (bool) $car,
+            'branch_id' => $car?->branch_id ? (int) $car->branch_id : null,
+        ];
     }
 
     private function pickupTasks(User $user, int $tenantId, CarbonInterface $date, ?int $branchId, string $locale): Collection

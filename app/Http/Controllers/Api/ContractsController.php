@@ -64,7 +64,7 @@ class ContractsController extends Controller
     {
         $user = $this->authorizeAdminApiUser($request);
         $today = Carbon::today();
-        $branchId = $this->branchAccess->normalizeRequestedBranchId($request->query('branch_id'));
+        $branchId = $this->resolveBranchId($request, $user);
         $perPage = $this->resolvePerPage($request);
 
         $query = Contract::query()
@@ -77,21 +77,14 @@ class ContractsController extends Controller
             ->orderBy('end_date')
             ->orderBy('id');
 
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->where(function ($branchQuery) use ($branchId): void {
-                    $branchQuery
-                        ->where('branch_id', $branchId)
-                        ->orWhereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
-                });
-            }
-        } elseif (! empty($user->branch_id)) {
-            $userBranchId = (int) $user->branch_id;
-            $query->where(function ($branchQuery) use ($userBranchId): void {
+        if ($branchId) {
+            $query->where(function ($branchQuery) use ($branchId): void {
                 $branchQuery
-                    ->where('branch_id', $userBranchId)
-                    ->orWhereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $userBranchId));
+                    ->where('branch_id', $branchId)
+                    ->orWhereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
             });
+        } elseif (!$this->branchAccess->canAccessAllBranches($user)) {
+            $query->whereRaw('1 = 0');
         }
 
         $paginator = $query->paginate($perPage);
@@ -1531,6 +1524,17 @@ class ContractsController extends Controller
         abort_unless(in_array($user->role, [UserRole::SUPER_ADMIN, UserRole::ADMIN], true), 403);
 
         return $user;
+    }
+
+    private function resolveBranchId(Request $request, User $user): ?int
+    {
+        $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->query('branch_id'));
+
+        if ($this->branchAccess->canAccessAllBranches($user)) {
+            return $requestedBranchId;
+        }
+
+        return (int) ($user->branch_id ?? 0) > 0 ? (int) $user->branch_id : null;
     }
 
     private function resolveApiLocale(Request $request): string

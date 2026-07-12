@@ -190,6 +190,7 @@ class CarsController extends Controller
                 'name' => $branch->name,
             ])->values(),
             'countries' => BranchLocationOptions::countrySelectOptions(app()->getLocale()),
+            'supportedLocales' => $this->supportedLocaleMeta(),
             'canAccessAllBranches' => $this->branchAccess->canAccessAllBranches($user),
             'enums' => [
                 'colors' => CarColor::forFrontend(),
@@ -499,6 +500,8 @@ class CarsController extends Controller
             'engine_power' => ['nullable', 'integer', 'min:0'],
             'fuel_type' => [$requiredRule, 'string', Rule::enum(FuelType::class)],
             'description' => ['nullable', 'string'],
+            'description_translations' => ['nullable', 'array'],
+            'description_translations.*' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::enum(CarStatus::class)],
             'status_task_time' => ['nullable', 'date_format:H:i'],
             'image' => ['array'],
@@ -532,6 +535,11 @@ class CarsController extends Controller
                 ->back()
                 ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
         }
+
+        $validated['description_translations'] = $this->localizedTextPayload(
+            (array) ($validated['description_translations'] ?? []),
+            $validated['description'] ?? null
+        );
 
         if ($message = $this->planUsageLimits->carLimitMessage()) {
             return redirect()->back()->with('error', $message);
@@ -628,6 +636,7 @@ class CarsController extends Controller
                 'name' => $branch->name,
             ])->values(),
             'countries' => BranchLocationOptions::countrySelectOptions(app()->getLocale()),
+            'supportedLocales' => $this->supportedLocaleMeta(),
             'canAccessAllBranches' => $this->branchAccess->canAccessAllBranches(request()->user()),
             'enums' => [
                 'colors' => CarColor::forFrontend(),
@@ -818,6 +827,8 @@ class CarsController extends Controller
             'engine_power' => ['nullable', 'integer', 'min:0'],
             'fuel_type' => [$requiredRule, 'string', Rule::enum(FuelType::class)],
             'description' => ['nullable', 'string'],
+            'description_translations' => ['nullable', 'array'],
+            'description_translations.*' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::enum(CarStatus::class)],
             'status_task_time' => ['nullable', 'date_format:H:i'],
             // File updates for the cover image
@@ -858,6 +869,11 @@ class CarsController extends Controller
                 ->back()
                 ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
         }
+
+        $validated['description_translations'] = $this->localizedTextPayload(
+            (array) ($validated['description_translations'] ?? []),
+            $validated['description'] ?? null
+        );
 
         $car->update(collect($this->normalizeCarPayload($validated, $isDraftSubmission, $car))->except([
             'image_temp_folders',
@@ -1006,6 +1022,64 @@ class CarsController extends Controller
             'status' => CarStatus::DRAFT->value,
             'branch_id' => $validated['branch_id'] ?? $car?->branch_id,
         ]);
+    }
+
+    /**
+     * @return array<int, array{code:string,name:string,native:string,direction:string}>
+     */
+    private function supportedLocaleMeta(): array
+    {
+        $meta = (array) config('laravellocalization.supportedLocales', []);
+
+        return array_map(function (string $locale) use ($meta): array {
+            $details = (array) ($meta[$locale] ?? []);
+            $script = strtolower((string) ($details['script'] ?? ''));
+
+            return [
+                'code' => $locale,
+                'name' => (string) ($details['name'] ?? strtoupper($locale)),
+                'native' => (string) ($details['native'] ?? strtoupper($locale)),
+                'direction' => $script === 'arab' || in_array($locale, ['ar', 'ur'], true) ? 'rtl' : 'ltr',
+            ];
+        }, $this->supportedLocaleKeys());
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function supportedLocaleKeys(): array
+    {
+        $supported = array_keys((array) config('laravellocalization.supportedLocales', []));
+
+        if (empty($supported)) {
+            $supported = array_values((array) config('app.available_locales', ['en']));
+        }
+
+        return array_values(array_filter(array_map('strval', $supported)));
+    }
+
+    /**
+     * @param array<string, mixed> $values
+     * @return array<string, string>
+     */
+    private function localizedTextPayload(array $values, ?string $fallback = null): array
+    {
+        $payload = [];
+        $fallback = trim((string) ($fallback ?? ''));
+
+        foreach ($this->supportedLocaleKeys() as $locale) {
+            $value = trim((string) ($values[$locale] ?? ''));
+
+            if ($value === '' && $locale === 'en') {
+                $value = $fallback;
+            }
+
+            if ($value !== '') {
+                $payload[$locale] = $value;
+            }
+        }
+
+        return $payload;
     }
 
     /**

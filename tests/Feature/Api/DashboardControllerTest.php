@@ -166,6 +166,42 @@ test('dashboard summary includes maintenance cars count', function () {
     expect($maintenanceCard['items'][0]['license_plate'] ?? null)->toBe('MNT-001');
 });
 
+test('active today contracts are empty for branch restricted user without assigned branch', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Branch A',
+    ]);
+
+    $client = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::CLIENT,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    createDashboardOverdueContract($tenant, $branch, $client, 'ACTIVE-TODAY');
+
+    $employeeWithoutBranch = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => null,
+        'role' => UserRole::ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    Sanctum::actingAs($employeeWithoutBranch, ['*']);
+
+    $response = $this->getJson(route('api.contracts.active-today'));
+
+    $response->assertOk()
+        ->assertJsonPath('count', 0)
+        ->assertJsonPath('contracts', []);
+});
+
 function createDashboardOverdueContract(Tenant $tenant, Branch $branch, User $client, string $suffix): Contract
 {
     $car = Car::create([

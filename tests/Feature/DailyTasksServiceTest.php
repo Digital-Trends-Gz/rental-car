@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\CarStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
+use App\Models\Branch;
 use App\Models\Car;
 use App\Models\Reservation;
 use App\Models\Tenant;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Services\Rentals\RentalStatusSyncService;
 use App\Services\Tasks\DailyTasksService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class DailyTasksServiceTest extends TestCase
@@ -137,5 +139,52 @@ class DailyTasksServiceTest extends TestCase
 
         $car->refresh();
         $this->assertSame(CarStatus::AVAILABLE, $car->status);
+    }
+
+    public function test_employee_cannot_complete_task_for_car_in_another_branch(): void
+    {
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+
+        $branchA = Branch::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Branch A',
+        ]);
+
+        $branchB = Branch::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Branch B',
+        ]);
+
+        $employee = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branchA->id,
+            'role' => UserRole::ADMIN,
+            'is_active' => true,
+        ]);
+
+        $otherBranchCar = Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branchB->id,
+            'make' => 'Nissan',
+            'model' => 'Altima',
+            'year' => 2024,
+            'license_plate' => 'BR-B-1001',
+            'color' => 'white',
+            'price_per_day' => 75,
+            'mileage' => 1500,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'fuel_type' => 'gasoline',
+            'status' => CarStatus::CLEANING->value,
+        ]);
+
+        $this->expectException(HttpException::class);
+
+        app(DailyTasksService::class)->complete(
+            user: $employee,
+            taskType: 'cleaning',
+            sourceType: 'car',
+            sourceId: (int) $otherBranchCar->id,
+        );
     }
 }

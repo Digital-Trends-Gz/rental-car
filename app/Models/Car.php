@@ -54,6 +54,7 @@ class Car extends Model
         'engine_power',
         'fuel_type',
         'description',
+        'description_translations',
         'status',
     ];
 
@@ -77,6 +78,7 @@ class Car extends Model
         'status' => CarStatus::class,
         'fuel_type' => FuelType::class,
         'color' => CarColor::class,
+        'description_translations' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -120,6 +122,25 @@ class Car extends Model
     public function getFullNameAttribute()
     {
         return "{$this->year} {$this->make} {$this->model}";
+    }
+
+    public function localizedDescription(?string $locale = null): ?string
+    {
+        $locale = trim((string) ($locale ?? app()->getLocale()));
+        $fallbackLocale = trim((string) config('app.fallback_locale', 'en'));
+        $translations = is_array($this->description_translations) ? $this->description_translations : [];
+
+        foreach (array_filter([$locale, $fallbackLocale, 'en', 'ar', 'ur']) as $candidate) {
+            $value = trim((string) ($translations[$candidate] ?? ''));
+
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        $description = trim((string) ($this->description ?? ''));
+
+        return $description !== '' ? $description : null;
     }
 
     /**
