@@ -208,7 +208,15 @@ class LandingPageSettings
      */
     public static function normalize(?array $data): array
     {
-        $settings = array_replace_recursive(self::defaults(), is_array($data) ? $data : []);
+        $data = is_array($data) ? $data : [];
+        $settings = array_replace_recursive(self::defaults(), $data);
+
+        foreach (self::replaceableListPaths() as $path) {
+            $value = data_get($data, $path);
+            if (is_array($value)) {
+                data_set($settings, $path, $value);
+            }
+        }
 
         $settings['hero']['enabled'] = (bool) ($settings['hero']['enabled'] ?? true);
         $settings['hero']['features'] = self::normalizeStringList($settings['hero']['features'] ?? []);
@@ -230,6 +238,23 @@ class LandingPageSettings
         $settings['translations'] = self::normalizeTranslations($settings['translations'] ?? []);
 
         return $settings;
+    }
+
+    /**
+     * Numeric lists must replace existing values instead of merging by index.
+     *
+     * @return array<int, string>
+     */
+    public static function replaceableListPaths(): array
+    {
+        return [
+            'hero.features',
+            'features_section.cards',
+            'getting_started.items',
+            'mobile_apps_section.apps',
+            'faq_section.items',
+            'contact_section.quick_links',
+        ];
     }
 
     public static function localize(array $settings, ?string $locale): array

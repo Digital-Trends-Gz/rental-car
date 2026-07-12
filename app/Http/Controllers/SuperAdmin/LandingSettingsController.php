@@ -535,6 +535,13 @@ class LandingSettingsController extends Controller
         $current = $this->landingSettings();
         $merged = array_replace_recursive($current, $settings);
 
+        foreach (LandingPageSettings::replaceableListPaths() as $path) {
+            $value = data_get($settings, $path);
+            if (is_array($value)) {
+                data_set($merged, $path, $value);
+            }
+        }
+
         if (array_key_exists('translations', $settings)) {
             $merged['translations'] = $settings['translations'];
         }
