@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\Tasks\DailyTasksService;
+use App\Support\BranchAccess;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ class DailyTasksController extends Controller
 {
     public function __construct(
         private readonly DailyTasksService $dailyTasks,
+        private readonly BranchAccess $branchAccess,
     ) {
     }
 
@@ -29,11 +31,12 @@ class DailyTasksController extends Controller
 
         $locale = $this->resolveLocale($request);
         $date = isset($validated['date']) ? Carbon::parse($validated['date']) : Carbon::today();
+        $branchId = $this->resolveBranchId($request, $user);
 
         $payload = $this->dailyTasks->timeline(
             user: $user,
             date: $date,
-            branchId: $validated['branch_id'] ?? null,
+            branchId: $branchId,
             type: $validated['type'] ?? null,
             locale: $locale,
         );
@@ -149,6 +152,21 @@ class DailyTasksController extends Controller
             'source_id' => ['required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];
+    }
+
+    private function resolveBranchId(Request $request, $user): ?int
+    {
+        $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
+
+        if ($requestedBranchId && !$this->branchAccess->canAccessBranchId($user, $requestedBranchId)) {
+            abort(403);
+        }
+
+        if ($this->branchAccess->canAccessAllBranches($user)) {
+            return $requestedBranchId;
+        }
+
+        return !empty($user->branch_id) ? (int) $user->branch_id : null;
     }
 
     private function taskStatusFilters(string $locale): array
