@@ -18,6 +18,8 @@ import { show as tenantFleetShow } from '@/routes/tenant/fleet';
 import { type Plan } from '@/types';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
+    BriefcaseBusiness,
+    Building2,
     Calendar,
     Check,
     ChevronDown,
@@ -26,6 +28,8 @@ import {
     Languages,
     Menu,
     Search,
+    Smartphone,
+    Users,
     X,
 } from 'lucide-vue-next';
 import 'swiper/css';
@@ -54,6 +58,14 @@ interface FaqItem {
 interface QuickLinkItem {
     label: string;
     href: string;
+}
+
+interface MobileAppCard {
+    title: string;
+    subtitle: string;
+    description: string;
+    image_url: string;
+    features: string[];
 }
 
 interface TenantLogo {
@@ -105,6 +117,13 @@ interface LandingSettings {
         title: string;
         description: string;
         items: StepItem[];
+    };
+    mobile_apps_section: {
+        enabled: boolean;
+        eyebrow: string;
+        title: string;
+        description: string;
+        apps: MobileAppCard[];
     };
     clients_section: {
         enabled: boolean;
@@ -328,6 +347,25 @@ const carSearch = ref(props.carSearch ?? '');
 const fleetUrl = mainFleet().url;
 const featureSwiperModules = [Navigation, Pagination, Autoplay, A11y];
 const planSwiperModules = [Navigation, Pagination, Autoplay, A11y];
+const mobileAppBackgrounds = [
+    'linear-gradient(135deg, #dbeafe 0%, #f8fafc 100%)',
+    'linear-gradient(135deg, #ede9fe 0%, #f8fafc 100%)',
+    'linear-gradient(135deg, #f3e8ff 0%, #f8fafc 100%)',
+];
+const mobileAppTitleParts = computed(() => {
+    const title = props.landingSettings.mobile_apps_section?.title || '';
+    const marker = 'One connected platform';
+    const index = title.toLowerCase().indexOf(marker.toLowerCase());
+
+    if (index === -1) {
+        return { lead: title, highlight: '' };
+    }
+
+    return {
+        lead: title.slice(0, index),
+        highlight: title.slice(index),
+    };
+});
 
 const contactForm = useForm({
     name: '',
@@ -1174,6 +1212,161 @@ onUnmounted(() => {
                                 {{ item.description }}
                             </p>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <section
+                v-if="landingSettings.mobile_apps_section.enabled"
+                class="section-padding bg-white"
+            >
+                <div class="section-container">
+                    <div class="mx-auto mb-16 max-w-4xl text-center">
+                        <div
+                            class="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold tracking-[0.18em] text-primary uppercase"
+                        >
+                            <Smartphone class="h-4 w-4" />
+                            {{ landingSettings.mobile_apps_section.eyebrow }}
+                        </div>
+                        <h2
+                            class="text-4xl leading-[1.05] font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl"
+                        >
+                            {{ mobileAppTitleParts.lead }}
+                            <span
+                                v-if="mobileAppTitleParts.highlight"
+                                class="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent"
+                            >
+                                {{ mobileAppTitleParts.highlight }}
+                            </span>
+                        </h2>
+                        <p
+                            class="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-muted-foreground sm:text-xl"
+                        >
+                            {{
+                                landingSettings.mobile_apps_section.description
+                            }}
+                        </p>
+                    </div>
+
+                    <div class="grid gap-8 lg:grid-cols-3">
+                        <article
+                            v-for="(app, index) in landingSettings
+                                .mobile_apps_section.apps"
+                            :key="`${app.title}-${index}`"
+                            class="group overflow-hidden rounded-2xl border border-border bg-white shadow-[0_18px_55px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(15,23,42,0.13)]"
+                        >
+                            <div
+                                class="relative flex h-80 items-center justify-center overflow-hidden"
+                                :style="{
+                                    background:
+                                        mobileAppBackgrounds[
+                                            index %
+                                                mobileAppBackgrounds.length
+                                        ],
+                                }"
+                            >
+                                <div
+                                    class="absolute inset-8 rounded-full bg-white/45 blur-3xl"
+                                ></div>
+                                <img
+                                    v-if="app.image_url"
+                                    :src="app.image_url"
+                                    :alt="app.title"
+                                    class="relative h-52 w-auto rotate-[-12deg] object-contain drop-shadow-[0_24px_28px_rgba(15,23,42,0.20)] transition-transform duration-300 group-hover:rotate-[-8deg] group-hover:scale-105"
+                                    loading="lazy"
+                                />
+                                <div
+                                    v-else
+                                    class="relative h-52 w-28 rotate-[-12deg] rounded-[2rem] border-[6px] border-slate-900 bg-slate-950 p-1 shadow-[0_24px_34px_rgba(15,23,42,0.24)] transition-transform duration-300 group-hover:rotate-[-8deg] group-hover:scale-105"
+                                >
+                                    <div
+                                        class="h-full rounded-[1.55rem] bg-white p-2"
+                                    >
+                                        <div
+                                            class="mx-auto mb-2 h-2 w-10 rounded-full bg-slate-900"
+                                        ></div>
+                                        <div
+                                            class="rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 p-2 text-white"
+                                        >
+                                            <div
+                                                class="h-2 w-12 rounded-full bg-white/80"
+                                            ></div>
+                                            <div
+                                                class="mt-3 h-8 rounded-lg bg-white/25"
+                                            ></div>
+                                        </div>
+                                        <div class="mt-3 space-y-2">
+                                            <div
+                                                class="h-3 rounded-full bg-slate-200"
+                                            ></div>
+                                            <div
+                                                class="h-3 w-3/4 rounded-full bg-slate-200"
+                                            ></div>
+                                            <div
+                                                class="grid grid-cols-2 gap-1 pt-1"
+                                            >
+                                                <div
+                                                    class="h-8 rounded-lg bg-blue-100"
+                                                ></div>
+                                                <div
+                                                    class="h-8 rounded-lg bg-violet-100"
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-7">
+                                <div class="mb-5 flex items-center gap-4">
+                                    <div
+                                        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                                    >
+                                        <Users
+                                            v-if="index === 0"
+                                            class="h-6 w-6"
+                                        />
+                                        <BriefcaseBusiness
+                                            v-else-if="index === 1"
+                                            class="h-6 w-6"
+                                        />
+                                        <Building2
+                                            v-else
+                                            class="h-6 w-6"
+                                        />
+                                    </div>
+                                    <div>
+                                        <h3
+                                            class="text-xl font-bold text-foreground"
+                                        >
+                                            {{ app.title }}
+                                        </h3>
+                                        <p
+                                            class="text-sm text-muted-foreground"
+                                        >
+                                            {{ app.subtitle }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <p
+                                    class="min-h-[72px] text-base leading-relaxed text-muted-foreground"
+                                >
+                                    {{ app.description }}
+                                </p>
+
+                                <ul class="mt-6 space-y-3">
+                                    <li
+                                        v-for="feature in app.features"
+                                        :key="feature"
+                                        class="flex items-center gap-3 text-sm font-medium text-foreground"
+                                    >
+                                        <Check class="h-4 w-4 text-primary" />
+                                        <span>{{ feature }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </article>
                     </div>
                 </div>
             </section>

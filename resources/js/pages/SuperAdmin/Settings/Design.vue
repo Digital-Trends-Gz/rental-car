@@ -46,6 +46,14 @@ interface QuickLinkItem {
     href: string;
 }
 
+interface MobileAppCard {
+    title: string;
+    subtitle: string;
+    description: string;
+    image_url: string;
+    features: string[];
+}
+
 interface LandingSettings {
     hero: {
         enabled: boolean;
@@ -68,6 +76,13 @@ interface LandingSettings {
         title: string;
         description: string;
         items: StepItem[];
+    };
+    mobile_apps_section: {
+        enabled: boolean;
+        eyebrow: string;
+        title: string;
+        description: string;
+        apps: MobileAppCard[];
     };
     clients_section: {
         enabled: boolean;
@@ -242,6 +257,25 @@ const addStepItem = () => {
 const removeStepItem = (index: number) =>
     form.settings.getting_started.items.splice(index, 1);
 
+const addMobileApp = () => {
+    form.settings.mobile_apps_section.apps.push({
+        title: '',
+        subtitle: '',
+        description: '',
+        image_url: '',
+        features: [''],
+    });
+};
+const removeMobileApp = (index: number) =>
+    form.settings.mobile_apps_section.apps.splice(index, 1);
+const addMobileAppFeature = (index: number) =>
+    form.settings.mobile_apps_section.apps[index].features.push('');
+const removeMobileAppFeature = (appIndex: number, featureIndex: number) =>
+    form.settings.mobile_apps_section.apps[appIndex].features.splice(
+        featureIndex,
+        1,
+    );
+
 const addFaqItem = () => {
     form.settings.faq_section.items.push({
         question: '',
@@ -265,6 +299,7 @@ const toggleSection = (
         | 'cars_section'
         | 'features_section'
         | 'getting_started'
+        | 'mobile_apps_section'
         | 'clients_section'
         | 'plans_section'
         | 'faq_section'
@@ -679,6 +714,263 @@ const toggleSection = (
                                               )
                                     }}
                                 </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader
+                            class="flex flex-row items-start justify-between gap-4 space-y-0"
+                        >
+                            <div class="space-y-1.5">
+                                <CardTitle>{{
+                                    localize('Mobile Apps', 'تطبيقات الجوال')
+                                }}</CardTitle>
+                                <CardDescription>{{
+                                    localize(
+                                        'Three role-based apps shown after the setup section.',
+                                        'ثلاثة تطبيقات حسب الدور تظهر بعد قسم البدء.',
+                                    )
+                                }}</CardDescription>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <Label class="text-sm">{{
+                                    form.settings.mobile_apps_section.enabled
+                                        ? localize('Visible', 'ظاهر')
+                                        : localize('Hidden', 'مخفي')
+                                }}</Label>
+                                <Switch
+                                    v-model:checked="
+                                        form.settings.mobile_apps_section
+                                            .enabled
+                                    "
+                                />
+                            </div>
+                        </CardHeader>
+                        <CardContent class="space-y-4">
+                            <div
+                                class="flex items-center justify-between rounded-lg border border-dashed p-3"
+                            >
+                                <p class="text-sm text-muted-foreground">
+                                    {{
+                                        localize(
+                                            'Control whether this section appears on the landing page.',
+                                            'تحكم بظهور هذا القسم في صفحة الهبوط.',
+                                        )
+                                    }}
+                                </p>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    :variant="
+                                        form.settings.mobile_apps_section
+                                            .enabled
+                                            ? 'destructive'
+                                            : 'outline'
+                                    "
+                                    @click="
+                                        toggleSection('mobile_apps_section')
+                                    "
+                                >
+                                    {{
+                                        form.settings.mobile_apps_section
+                                            .enabled
+                                            ? localize(
+                                                  'Hide Section',
+                                                  'إخفاء القسم',
+                                              )
+                                            : localize(
+                                                  'Show Section',
+                                                  'إظهار القسم',
+                                              )
+                                    }}
+                                </Button>
+                            </div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label>{{
+                                        localize('Eyebrow', 'النص العلوي')
+                                    }}</Label>
+                                    <Input
+                                        v-model="
+                                            form.settings.mobile_apps_section
+                                                .eyebrow
+                                        "
+                                    />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{
+                                        localize('Section Title', 'عنوان القسم')
+                                    }}</Label>
+                                    <Input
+                                        v-model="
+                                            form.settings.mobile_apps_section
+                                                .title
+                                        "
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label>{{
+                                    localize(
+                                        'Section Description',
+                                        'وصف القسم',
+                                    )
+                                }}</Label>
+                                <Textarea
+                                    v-model="
+                                        form.settings.mobile_apps_section
+                                            .description
+                                    "
+                                    rows="3"
+                                />
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <Label>{{
+                                        localize('App Cards', 'بطاقات التطبيقات')
+                                    }}</Label>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        @click="addMobileApp"
+                                        >{{
+                                            localize(
+                                                'Add App',
+                                                'إضافة تطبيق',
+                                            )
+                                        }}</Button
+                                    >
+                                </div>
+
+                                <div
+                                    v-for="(app, appIndex) in form.settings
+                                        .mobile_apps_section.apps"
+                                    :key="`mobile-app-${appIndex}`"
+                                    class="space-y-3 rounded-lg border p-4"
+                                >
+                                    <div class="grid gap-3 md:grid-cols-2">
+                                        <div class="space-y-2">
+                                            <Label>{{
+                                                localize(
+                                                    'App Title',
+                                                    'عنوان التطبيق',
+                                                )
+                                            }}</Label>
+                                            <Input v-model="app.title" />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label>{{
+                                                localize(
+                                                    'Subtitle',
+                                                    'العنوان الفرعي',
+                                                )
+                                            }}</Label>
+                                            <Input v-model="app.subtitle" />
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label>{{
+                                            localize(
+                                                'Image URL',
+                                                'رابط الصورة',
+                                            )
+                                        }}</Label>
+                                        <Input
+                                            v-model="app.image_url"
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label>{{
+                                            localize('Description', 'الوصف')
+                                        }}</Label>
+                                        <Textarea
+                                            v-model="app.description"
+                                            rows="3"
+                                        />
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <Label>{{
+                                                localize(
+                                                    'Features',
+                                                    'المميزات',
+                                                )
+                                            }}</Label>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                @click="
+                                                    addMobileAppFeature(
+                                                        appIndex,
+                                                    )
+                                                "
+                                                >{{
+                                                    localize(
+                                                        'Add Feature',
+                                                        'إضافة ميزة',
+                                                    )
+                                                }}</Button
+                                            >
+                                        </div>
+                                        <div
+                                            v-for="(
+                                                _feature, featureIndex
+                                            ) in app.features"
+                                            :key="`mobile-app-${appIndex}-feature-${featureIndex}`"
+                                            class="flex items-center gap-2"
+                                        >
+                                            <Input
+                                                v-model="
+                                                    app.features[featureIndex]
+                                                "
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="destructive"
+                                                @click="
+                                                    removeMobileAppFeature(
+                                                        appIndex,
+                                                        featureIndex,
+                                                    )
+                                                "
+                                                >{{
+                                                    localize(
+                                                        'Remove',
+                                                        'حذف',
+                                                    )
+                                                }}</Button
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-end">
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            @click="removeMobileApp(appIndex)"
+                                            >{{
+                                                localize(
+                                                    'Remove App',
+                                                    'حذف التطبيق',
+                                                )
+                                            }}</Button
+                                        >
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

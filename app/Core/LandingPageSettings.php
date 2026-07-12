@@ -22,7 +22,7 @@ class LandingPageSettings
      */
     public static function contentKeys(): array
     {
-        return ['navigation', 'hero', 'features_section', 'getting_started', 'plans_section', 'faq_section', 'contact_section', 'footer'];
+        return ['navigation', 'hero', 'features_section', 'getting_started', 'mobile_apps_section', 'plans_section', 'faq_section', 'contact_section', 'footer'];
     }
 
     /**
@@ -95,6 +95,47 @@ class LandingPageSettings
                     [
                         'title' => 'Start receiving bookings',
                         'description' => 'Track reservations and revenue from the dashboard.',
+                    ],
+                ],
+            ],
+            'mobile_apps_section' => [
+                'enabled' => true,
+                'eyebrow' => 'Mobile apps',
+                'title' => 'Three apps. One connected platform.',
+                'description' => 'A tailored mobile experience for every role in your rental business, built to work seamlessly together.',
+                'apps' => [
+                    [
+                        'title' => 'Client App',
+                        'subtitle' => 'For your customers',
+                        'description' => 'Browse the fleet, book cars in seconds, and manage rentals from their pocket.',
+                        'image_url' => '',
+                        'features' => [
+                            'Instant booking',
+                            'Live availability',
+                            'Trip history',
+                        ],
+                    ],
+                    [
+                        'title' => 'Employee App',
+                        'subtitle' => 'For your team',
+                        'description' => 'Assign tasks, handle handovers, and track daily operations without leaving the lot.',
+                        'image_url' => '',
+                        'features' => [
+                            'Task assignments',
+                            'Vehicle inspections',
+                            'Shift handovers',
+                        ],
+                    ],
+                    [
+                        'title' => 'Tenant App',
+                        'subtitle' => 'For fleet owners',
+                        'description' => 'Real-time analytics, revenue insights, and full control over your entire fleet.',
+                        'image_url' => '',
+                        'features' => [
+                            'Revenue analytics',
+                            'Fleet overview',
+                            'Multi-branch control',
+                        ],
                     ],
                 ],
             ],
@@ -177,6 +218,8 @@ class LandingPageSettings
         $settings['features_section']['cards'] = self::normalizeCards($settings['features_section']['cards'] ?? []);
         $settings['getting_started']['enabled'] = (bool) ($settings['getting_started']['enabled'] ?? true);
         $settings['getting_started']['items'] = self::normalizeStepItems($settings['getting_started']['items'] ?? []);
+        $settings['mobile_apps_section']['enabled'] = (bool) ($settings['mobile_apps_section']['enabled'] ?? true);
+        $settings['mobile_apps_section']['apps'] = self::normalizeAppCards($settings['mobile_apps_section']['apps'] ?? []);
         $settings['clients_section']['enabled'] = (bool) ($settings['clients_section']['enabled'] ?? true);
         $settings['plans_section']['enabled'] = (bool) ($settings['plans_section']['enabled'] ?? true);
         $settings['faq_section']['enabled'] = (bool) ($settings['faq_section']['enabled'] ?? true);
@@ -304,6 +347,41 @@ class LandingPageSettings
         }
 
         return $faqs;
+    }
+
+    private static function normalizeAppCards(mixed $items): array
+    {
+        if (!is_array($items)) {
+            return [];
+        }
+
+        $cards = [];
+
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $title = trim((string) ($item['title'] ?? ''));
+            $subtitle = trim((string) ($item['subtitle'] ?? ''));
+            $description = trim((string) ($item['description'] ?? ''));
+            $imageUrl = trim((string) ($item['image_url'] ?? ''));
+            $features = self::normalizeStringList($item['features'] ?? []);
+
+            if ($title === '' && $subtitle === '' && $description === '' && $imageUrl === '' && empty($features)) {
+                continue;
+            }
+
+            $cards[] = [
+                'title' => $title,
+                'subtitle' => $subtitle,
+                'description' => $description,
+                'image_url' => $imageUrl,
+                'features' => $features,
+            ];
+        }
+
+        return $cards;
     }
 
     private static function normalizeEnabledLocales(mixed $value): array
