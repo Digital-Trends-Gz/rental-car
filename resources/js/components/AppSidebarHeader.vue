@@ -25,7 +25,7 @@ withDefaults(
 );
 
 const page = usePage<any>();
-const { locale, direction, t } = useTrans();
+const { locale, direction } = useTrans();
 const currentUser = computed(() => page.props?.auth?.user ?? null);
 
 const availableLocales = computed<string[]>(() =>
@@ -49,6 +49,13 @@ const normalizedRedirectPath = computed(() => {
 
 const localeSwitcherUrl = (targetLocale: string) =>
     `/locale/${targetLocale}?redirect=${encodeURIComponent(normalizedRedirectPath.value)}`;
+
+const localeDisplayName = (localeCode: string) =>
+    ({
+        en: 'English',
+        ar: 'Arabic',
+        ur: 'Urdu',
+    })[String(localeCode || '').toLowerCase()] || String(localeCode || '').toUpperCase();
 
 const nextLocale = computed(() => {
     const locales = availableLocales.value;
@@ -247,7 +254,7 @@ async function markAllAsRead() {
                         class="h-8 gap-1 rounded-md border border-sidebar-border/70 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
                     >
                         <Languages class="h-4 w-4" />
-                        <span class="hidden sm:inline">{{ String(locale || '').toUpperCase() }}</span>
+                        <span class="hidden sm:inline">{{ localeDisplayName(String(locale || '')) }}</span>
                         <ChevronDown class="hidden h-3.5 w-3.5 sm:inline" />
                     </Button>
                 </DropdownMenuTrigger>
@@ -257,13 +264,7 @@ async function markAllAsRead() {
                             :href="localeSwitcherUrl(localeCode)"
                             class="flex w-full items-center justify-between gap-2"
                         >
-                            <span>{{ localeCode.toUpperCase() }}</span>
-                            <span
-                                v-if="locale === localeCode"
-                                class="text-[11px] font-semibold text-primary"
-                            >
-                                {{ t('language.label') }}
-                            </span>
+                            <span>{{ localeDisplayName(localeCode) }}</span>
                         </a>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -272,7 +273,7 @@ async function markAllAsRead() {
             <a
                 v-else-if="availableLocales.length > 1"
                 :href="localeSwitcherUrl(nextLocale)"
-                :title="t('language.label')"
+                :title="localeDisplayName(nextLocale)"
                 class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-sidebar-border/70 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:hidden"
             >
                 <Languages class="h-4 w-4" />
@@ -294,7 +295,7 @@ async function markAllAsRead() {
                             : 'text-muted-foreground hover:text-foreground'
                     "
                 >
-                    {{ localeCode.toUpperCase() }}
+                    {{ localeDisplayName(localeCode) }}
                 </a>
             </div>
 

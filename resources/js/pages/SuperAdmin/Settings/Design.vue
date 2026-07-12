@@ -51,6 +51,8 @@ interface MobileAppCard {
     subtitle: string;
     description: string;
     image_url: string;
+    app_store_url: string;
+    google_play_url: string;
     features: string[];
 }
 
@@ -82,6 +84,8 @@ interface LandingSettings {
         eyebrow: string;
         title: string;
         description: string;
+        ios_label: string;
+        android_label: string;
         apps: MobileAppCard[];
     };
     clients_section: {
@@ -263,6 +267,8 @@ const addMobileApp = () => {
         subtitle: '',
         description: '',
         image_url: '',
+        app_store_url: '',
+        google_play_url: '',
         features: [''],
     });
 };
@@ -810,6 +816,31 @@ const toggleSection = (
                                         "
                                     />
                                 </div>
+                                <div class="space-y-2">
+                                    <Label>{{
+                                        localize('iOS Button Label', 'نص زر iOS')
+                                    }}</Label>
+                                    <Input
+                                        v-model="
+                                            form.settings.mobile_apps_section
+                                                .ios_label
+                                        "
+                                    />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{
+                                        localize(
+                                            'Android Button Label',
+                                            'نص زر Android',
+                                        )
+                                    }}</Label>
+                                    <Input
+                                        v-model="
+                                            form.settings.mobile_apps_section
+                                                .android_label
+                                        "
+                                    />
+                                </div>
                             </div>
 
                             <div class="space-y-2">
@@ -885,6 +916,33 @@ const toggleSection = (
                                             v-model="app.image_url"
                                             placeholder="https://..."
                                         />
+                                    </div>
+
+                                    <div class="grid gap-3 md:grid-cols-2">
+                                        <div class="space-y-2">
+                                            <Label>{{
+                                                localize(
+                                                    'App Store URL',
+                                                    'رابط App Store',
+                                                )
+                                            }}</Label>
+                                            <Input
+                                                v-model="app.app_store_url"
+                                                placeholder="https://..."
+                                            />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label>{{
+                                                localize(
+                                                    'Google Play URL',
+                                                    'رابط Google Play',
+                                                )
+                                            }}</Label>
+                                            <Input
+                                                v-model="app.google_play_url"
+                                                placeholder="https://..."
+                                            />
+                                        </div>
                                     </div>
 
                                     <div class="space-y-2">

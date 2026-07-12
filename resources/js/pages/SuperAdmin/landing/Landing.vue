@@ -65,6 +65,8 @@ interface MobileAppCard {
     subtitle: string;
     description: string;
     image_url: string;
+    app_store_url: string;
+    google_play_url: string;
     features: string[];
 }
 
@@ -123,6 +125,8 @@ interface LandingSettings {
         eyebrow: string;
         title: string;
         description: string;
+        ios_label: string;
+        android_label: string;
         apps: MobileAppCard[];
     };
     clients_section: {
@@ -221,6 +225,13 @@ const normalizedRedirectPath = computed(() => {
 const localeSwitcherUrl = (targetLocale: string) =>
     `/locale/${targetLocale}?redirect=${encodeURIComponent(normalizedRedirectPath.value)}`;
 
+const localeDisplayName = (localeCode: string) =>
+    ({
+        en: 'English',
+        ar: 'Arabic',
+        ur: 'Urdu',
+    })[String(localeCode || '').toLowerCase()] || String(localeCode || '').toUpperCase();
+
 
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
@@ -248,7 +259,7 @@ const withOpacity = (color: string, alpha: number) => {
     return rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : color;
 };
 
-const carTheme = (car: FeaturedCar) => {
+const carTheme = () => {
     const primary = appBranding.value.primary_color || '#3b82f6';
     const secondary = appBranding.value.secondary_color || '#6d28d9';
 
@@ -366,7 +377,6 @@ const mobileAppTitleParts = computed(() => {
         highlight: title.slice(index),
     };
 });
-
 const contactForm = useForm({
     name: '',
     email: '',
@@ -607,7 +617,7 @@ onUnmounted(() => {
                                     class="h-9 gap-2 rounded-full border border-border bg-background px-4 text-sm font-semibold text-muted-foreground hover:text-foreground"
                                 >
                                     <Languages class="h-4 w-4" />
-                                    <span>{{ locale.toUpperCase() }}</span>
+                                    <span>{{ localeDisplayName(String(locale || '')) }}</span>
                                     <ChevronDown class="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -621,15 +631,7 @@ onUnmounted(() => {
                                         :href="localeSwitcherUrl(localeCode)"
                                         class="flex w-full items-center justify-between gap-2"
                                     >
-                                        <span>{{
-                                            localeCode.toUpperCase()
-                                        }}</span>
-                                        <span
-                                            v-if="locale === localeCode"
-                                            class="text-[11px] font-semibold text-primary"
-                                        >
-                                            {{ t('language.label') }}
-                                        </span>
+                                        <span>{{ localeDisplayName(localeCode) }}</span>
                                     </a>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -678,7 +680,7 @@ onUnmounted(() => {
                         >
                             <span class="inline-flex items-center gap-2">
                                 <Languages class="h-4 w-4" />
-                                {{ t('language.label') }}
+                                {{ localeDisplayName(String(locale || '')) }}
                             </span>
                             <ChevronDown class="h-4 w-4" />
                         </Button>
@@ -694,7 +696,7 @@ onUnmounted(() => {
                                 class="flex w-full items-center justify-between gap-2"
                                 @click="closeMenu"
                             >
-                                <span>{{ localeCode.toUpperCase() }}</span>
+                                <span>{{ localeDisplayName(localeCode) }}</span>
                                 <Check
                                     v-if="locale === localeCode"
                                     class="h-4 w-4 text-primary"
@@ -1365,6 +1367,47 @@ onUnmounted(() => {
                                         <span>{{ feature }}</span>
                                     </li>
                                 </ul>
+
+                                <div class="mt-8 grid grid-cols-2 gap-3">
+                                    <a
+                                        :href="
+                                            mobileAppStoreHref(
+                                                app.app_store_url,
+                                            )
+                                        "
+                                        class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-white px-4 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:bg-primary/5"
+                                        :class="{
+                                            'pointer-events-none opacity-60':
+                                                !app.app_store_url,
+                                        }"
+                                        :aria-disabled="!app.app_store_url"
+                                    >
+                                        <Apple class="h-4 w-4" />
+                                        {{
+                                            landingSettings.mobile_apps_section
+                                                .ios_label
+                                        }}
+                                    </a>
+                                    <a
+                                        :href="
+                                            mobileAppStoreHref(
+                                                app.google_play_url,
+                                            )
+                                        "
+                                        class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-white px-4 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:bg-primary/5"
+                                        :class="{
+                                            'pointer-events-none opacity-60':
+                                                !app.google_play_url,
+                                        }"
+                                        :aria-disabled="!app.google_play_url"
+                                    >
+                                        <Smartphone class="h-4 w-4" />
+                                        {{
+                                            landingSettings.mobile_apps_section
+                                                .android_label
+                                        }}
+                                    </a>
+                                </div>
                             </div>
                         </article>
                     </div>

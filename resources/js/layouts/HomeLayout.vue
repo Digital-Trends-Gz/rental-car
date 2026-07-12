@@ -52,6 +52,13 @@ const normalizedRedirectPath = computed(() => {
 const localeSwitcherUrl = (targetLocale: string) =>
     `/locale/${targetLocale}?redirect=${encodeURIComponent(normalizedRedirectPath.value)}`;
 
+const localeDisplayName = (localeCode: string) =>
+    ({
+        en: 'English',
+        ar: 'Arabic',
+        ur: 'Urdu',
+    })[String(localeCode || '').toLowerCase()] || String(localeCode || '').toUpperCase();
+
 const routeHelpers = computed(() => {
     if (isTenant.value) {
         return {
@@ -182,7 +189,7 @@ const themeVars = computed(() => ({
                                         class="h-9 gap-2 rounded-full border border-border bg-background px-4 text-sm font-semibold text-muted-foreground hover:text-foreground"
                                     >
                                         <Languages class="h-4 w-4" />
-                                        <span>{{ locale.toUpperCase() }}</span>
+                                        <span>{{ localeDisplayName(String(locale || '')) }}</span>
                                         <ChevronDown class="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -192,10 +199,7 @@ const themeVars = computed(() => ({
                                             :href="localeSwitcherUrl(localeCode)"
                                             class="flex w-full items-center justify-between gap-2"
                                         >
-                                            <span>{{ localeCode.toUpperCase() }}</span>
-                                            <span v-if="locale === localeCode" class="text-[11px] font-semibold text-primary">
-                                                {{ t('language.label') }}
-                                            </span>
+                                            <span>{{ localeDisplayName(localeCode) }}</span>
                                         </a>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -235,7 +239,7 @@ const themeVars = computed(() => ({
                             >
                                 <span class="inline-flex items-center gap-2">
                                     <Languages class="h-4 w-4" />
-                                    {{ t('language.label') }}
+                                    {{ localeDisplayName(String(locale || '')) }}
                                 </span>
                                 <ChevronDown class="h-4 w-4" />
                             </Button>
@@ -247,7 +251,7 @@ const themeVars = computed(() => ({
                                     class="flex w-full items-center justify-between gap-2"
                                     @click="closeLandingMenu"
                                 >
-                                    <span>{{ localeCode.toUpperCase() }}</span>
+                                    <span>{{ localeDisplayName(localeCode) }}</span>
                                     <Check v-if="locale === localeCode" class="h-4 w-4 text-primary" />
                                 </a>
                             </DropdownMenuItem>
@@ -344,7 +348,7 @@ const themeVars = computed(() => ({
                                 :class="locale === localeCode ? 'text-white' : 'text-gray-600 hover:text-orange-600'"
                                 :style="locale === localeCode ? { backgroundColor: 'var(--tenant-primary)' } : undefined"
                             >
-                                {{ localeCode.toUpperCase() }}
+                                {{ localeDisplayName(localeCode) }}
                             </a>
                         </div>
                         <Link

@@ -103,12 +103,16 @@ class LandingPageSettings
                 'eyebrow' => 'Mobile apps',
                 'title' => 'Three apps. One connected platform.',
                 'description' => 'A tailored mobile experience for every role in your rental business, built to work seamlessly together.',
+                'ios_label' => 'iOS',
+                'android_label' => 'Android',
                 'apps' => [
                     [
                         'title' => 'Client App',
                         'subtitle' => 'For your customers',
                         'description' => 'Browse the fleet, book cars in seconds, and manage rentals from their pocket.',
                         'image_url' => '',
+                        'app_store_url' => '',
+                        'google_play_url' => '',
                         'features' => [
                             'Instant booking',
                             'Live availability',
@@ -120,6 +124,8 @@ class LandingPageSettings
                         'subtitle' => 'For your team',
                         'description' => 'Assign tasks, handle handovers, and track daily operations without leaving the lot.',
                         'image_url' => '',
+                        'app_store_url' => '',
+                        'google_play_url' => '',
                         'features' => [
                             'Task assignments',
                             'Vehicle inspections',
@@ -131,6 +137,8 @@ class LandingPageSettings
                         'subtitle' => 'For fleet owners',
                         'description' => 'Real-time analytics, revenue insights, and full control over your entire fleet.',
                         'image_url' => '',
+                        'app_store_url' => '',
+                        'google_play_url' => '',
                         'features' => [
                             'Revenue analytics',
                             'Fleet overview',
@@ -391,9 +399,11 @@ class LandingPageSettings
             $subtitle = trim((string) ($item['subtitle'] ?? ''));
             $description = trim((string) ($item['description'] ?? ''));
             $imageUrl = trim((string) ($item['image_url'] ?? ''));
+            $appStoreUrl = trim((string) ($item['app_store_url'] ?? ''));
+            $googlePlayUrl = trim((string) ($item['google_play_url'] ?? ''));
             $features = self::normalizeStringList($item['features'] ?? []);
 
-            if ($title === '' && $subtitle === '' && $description === '' && $imageUrl === '' && empty($features)) {
+            if ($title === '' && $subtitle === '' && $description === '' && $imageUrl === '' && $appStoreUrl === '' && $googlePlayUrl === '' && empty($features)) {
                 continue;
             }
 
@@ -402,6 +412,8 @@ class LandingPageSettings
                 'subtitle' => $subtitle,
                 'description' => $description,
                 'image_url' => $imageUrl,
+                'app_store_url' => $appStoreUrl,
+                'google_play_url' => $googlePlayUrl,
                 'features' => $features,
             ];
         }
