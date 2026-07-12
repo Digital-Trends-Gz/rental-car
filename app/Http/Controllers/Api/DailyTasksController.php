@@ -43,7 +43,7 @@ class DailyTasksController extends Controller
 
         unset($payload['filters']);
 
-        return response()->json($payload);
+        return $this->jsonUtf8($payload);
     }
 
     public function status(Request $request): JsonResponse
@@ -53,7 +53,7 @@ class DailyTasksController extends Controller
 
         $locale = $this->resolveLocale($request);
 
-        return response()->json([
+        return $this->jsonUtf8([
             'filters' => $this->taskStatusFilters($locale),
         ]);
     }
@@ -73,7 +73,7 @@ class DailyTasksController extends Controller
             notes: $validated['notes'] ?? null,
         );
 
-        return response()->json([
+        return $this->jsonUtf8([
             'message' => 'Task started successfully.',
             'task_status' => $status,
         ]);
@@ -94,7 +94,7 @@ class DailyTasksController extends Controller
             notes: $validated['notes'] ?? null,
         );
 
-        return response()->json([
+        return $this->jsonUtf8([
             'message' => 'Task completed successfully.',
             'task_status' => $status,
         ]);
@@ -121,7 +121,7 @@ class DailyTasksController extends Controller
         }
 
         if (!$scheduledAt) {
-            return response()->json([
+            return $this->jsonUtf8([
                 'message' => 'The scheduled_at or scheduled_time field is required.',
                 'errors' => [
                     'scheduled_at' => ['The scheduled_at or scheduled_time field is required.'],
@@ -138,7 +138,7 @@ class DailyTasksController extends Controller
             notes: $validated['notes'] ?? null,
         );
 
-        return response()->json([
+        return $this->jsonUtf8([
             'message' => 'Task time updated successfully.',
             'task_status' => $status,
         ]);
@@ -183,6 +183,16 @@ class DailyTasksController extends Controller
     private function translate(string $locale, string $english, string $arabic): string
     {
         return str_starts_with(strtolower($locale), 'ar') ? $arabic : $english;
+    }
+
+    private function jsonUtf8(array $payload, int $status = 200): JsonResponse
+    {
+        return response()->json(
+            $payload,
+            $status,
+            ['Content-Type' => 'application/json; charset=UTF-8'],
+            JSON_UNESCAPED_UNICODE
+        );
     }
 
     private function resolveLocale(Request $request): string

@@ -89,6 +89,31 @@ class DailyTasksControllerTest extends TestCase
         ]))->assertForbidden();
     }
 
+    public function test_status_filters_return_readable_arabic_labels(): void
+    {
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+
+        $employee = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        Sanctum::actingAs($employee, ['*']);
+
+        $response = $this->withHeader('Accept-Language', 'ar')
+            ->getJson(route('api.tasks.status'));
+
+        $response->assertOk()
+            ->assertHeader('content-type', 'application/json; charset=UTF-8')
+            ->assertJsonPath('filters.0.label', 'الكل')
+            ->assertJsonPath('filters.1.label', 'تسليم')
+            ->assertJsonPath('filters.2.label', 'استلام')
+            ->assertJsonPath('filters.3.label', 'صيانة')
+            ->assertJsonPath('filters.4.label', 'تنظيف');
+    }
+
     private function createCleaningTaskCar(Tenant $tenant, Branch $branch, string $licensePlate): Car
     {
         return Car::create([
