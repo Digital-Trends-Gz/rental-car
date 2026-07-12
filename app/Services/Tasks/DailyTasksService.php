@@ -904,7 +904,7 @@ class DailyTasksService
                     sourceType: 'reservation',
                     sourceId: (int) $reservation->id,
                     titleEn: 'Car pickup',
-                    titleAr: 'طھط³ظ„ظٹظ… ط³ظٹط§ط±ط©',
+                    titleAr: 'تسليم سيارة',
                     scheduledAt: Carbon::parse($scheduledAt),
                     car: $car,
                     client: $reservation->user,
@@ -960,7 +960,7 @@ class DailyTasksService
                     sourceType: 'contract',
                     sourceId: (int) $contract->id,
                     titleEn: 'Car return',
-                    titleAr: 'ط§ط³طھظ„ط§ظ… ط³ظٹط§ط±ط©',
+                    titleAr: 'استلام سيارة',
                     scheduledAt: Carbon::parse($scheduledAt),
                     car: $car,
                     client: $reservation?->user,
@@ -980,6 +980,25 @@ class DailyTasksService
 
     private function translate(string $locale, string $en, string $ar): string
     {
-        return Str::startsWith(strtolower($locale), 'ar') ? $ar : $en;
+        return Str::startsWith(strtolower($locale), 'ar') ? $this->repairArabicMojibake($ar) : $en;
+    }
+
+    private function repairArabicMojibake(string $value): string
+    {
+        return strtr($value, [
+            'ط§ظ„ظƒظ„' => 'الكل',
+            'طھط³ظ„ظٹظ…' => 'تسليم',
+            'ط§ط³طھظ„ط§ظ…' => 'استلام',
+            'طµظٹط§ظ†ط©' => 'صيانة',
+            'طھظ†ط¸ظٹظپ' => 'تنظيف',
+            'طھط³ظ„ظٹظ… ط³ظٹط§ط±ط©' => 'تسليم سيارة',
+            'ط§ط³طھظ„ط§ظ… ط³ظٹط§ط±ط©' => 'استلام سيارة',
+            'طµظٹط§ظ†ط© ط³ظٹط§ط±ط©' => 'صيانة سيارة',
+            'طھظ†ط¸ظٹظپ ط³ظٹط§ط±ط©' => 'تنظيف سيارة',
+            'ظ‚ظٹط¯ ط§ظ„طھظ†ظپظٹط°' => 'قيد التنفيذ',
+            'ظ…ظƒطھظ…ظ„ط©' => 'مكتملة',
+            'ظ…ظ„ط؛ط§ط©' => 'ملغاة',
+            'ط¨ط§ظ†طھط¸ط§ط± ط§ظ„ط¨ط¯ط،' => 'بانتظار البدء',
+        ]);
     }
 }
