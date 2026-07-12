@@ -501,6 +501,23 @@ const addStepItem = () => {
 const removeStepItem = (index: number) =>
     form.settings.getting_started.items.splice(index, 1);
 
+const resetMobileAppUploadState = () => {
+    mobileAppTempFolders.value = Object.fromEntries(
+        form.settings.mobile_apps_section.apps.map((_app, index) => [
+            index,
+            { image: [], icon: [] },
+        ]),
+    );
+    mobileAppRemovedFileIds.value = Object.fromEntries(
+        form.settings.mobile_apps_section.apps.map((_app, index) => [
+            index,
+            { image: [], icon: [] },
+        ]),
+    );
+    form.mobile_app_temp_folders = {};
+    form.mobile_app_removed_files = {};
+};
+
 const addMobileApp = () => {
     form.settings.mobile_apps_section.apps.push({
         title: '',
@@ -519,8 +536,7 @@ const addMobileApp = () => {
 };
 const removeMobileApp = (index: number) => {
     form.settings.mobile_apps_section.apps.splice(index, 1);
-    delete mobileAppTempFolders.value[index];
-    delete mobileAppRemovedFileIds.value[index];
+    resetMobileAppUploadState();
 };
 const addMobileAppFeature = (index: number) =>
     form.settings.mobile_apps_section.apps[index].features.push('');
@@ -1311,6 +1327,101 @@ const toggleSection = (
                                         <div class="space-y-2">
                                             <Label>{{
                                                 localize(
+                                                    'App Image',
+                                                    'صورة التطبيق',
+                                                )
+                                            }}</Label>
+                                            <FileUpload
+                                                v-model="
+                                                    mobileAppTempFolders[
+                                                        appIndex
+                                                    ].image
+                                                "
+                                                :initial-files="
+                                                    mobileAppFileList(
+                                                        appIndex,
+                                                        'image',
+                                                    )
+                                                "
+                                                :allow-multiple="false"
+                                                :max-files="1"
+                                                :max-file-size="1024 * 1024 * 10"
+                                                :allowed-file-types="[
+                                                    'image/jpeg',
+                                                    'image/jpg',
+                                                    'image/png',
+                                                    'image/svg+xml',
+                                                ]"
+                                                :collection="`mobile_app_${appIndex}_image`"
+                                                theme="light"
+                                                width="100%"
+                                                @file-removed="
+                                                    (data) =>
+                                                        handleMobileAppFileRemoved(
+                                                            appIndex,
+                                                            'image',
+                                                            data,
+                                                        )
+                                                "
+                                            />
+                                            <img
+                                                v-if="app.image_url"
+                                                :src="app.image_url"
+                                                alt="app image preview"
+                                                class="h-28 w-full rounded-lg border object-contain p-2"
+                                            />
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            <Label>{{
+                                                localize(
+                                                    'Title Icon SVG',
+                                                    'أيقونة العنوان SVG',
+                                                )
+                                            }}</Label>
+                                            <FileUpload
+                                                v-model="
+                                                    mobileAppTempFolders[
+                                                        appIndex
+                                                    ].icon
+                                                "
+                                                :initial-files="
+                                                    mobileAppFileList(
+                                                        appIndex,
+                                                        'icon',
+                                                    )
+                                                "
+                                                :allow-multiple="false"
+                                                :max-files="1"
+                                                :max-file-size="1024 * 1024 * 2"
+                                                :allowed-file-types="[
+                                                    'image/svg+xml',
+                                                ]"
+                                                :collection="`mobile_app_${appIndex}_icon`"
+                                                theme="light"
+                                                width="100%"
+                                                @file-removed="
+                                                    (data) =>
+                                                        handleMobileAppFileRemoved(
+                                                            appIndex,
+                                                            'icon',
+                                                            data,
+                                                        )
+                                                "
+                                            />
+                                            <img
+                                                v-if="app.icon_url"
+                                                :src="app.icon_url"
+                                                alt="app icon preview"
+                                                class="h-16 w-16 rounded-xl border object-contain p-2"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="grid gap-3 md:grid-cols-2">
+                                        <div class="space-y-2">
+                                            <Label>{{
+                                                localize(
                                                     'App Title',
                                                     'عنوان التطبيق',
                                                 )
@@ -1328,7 +1439,7 @@ const toggleSection = (
                                         </div>
                                     </div>
 
-                                    <div class="space-y-2">
+                                    <div v-if="false" class="space-y-2">
                                         <Label>{{
                                             localize(
                                                 'Image URL',

@@ -38,6 +38,7 @@ class LandingPageSettings
                 'links' => [
                     ['label' => 'Cars', 'href' => '#cars'],
                     ['label' => 'Features', 'href' => '#features'],
+                    ['label' => 'Application', 'href' => '#application'],
                     ['label' => 'Clients', 'href' => '#clients'],
                     ['label' => 'Plans', 'href' => '#pricing'],
                     ['label' => 'Contact', 'href' => '#contact'],
@@ -241,6 +242,7 @@ class LandingPageSettings
         $settings['getting_started']['items'] = self::normalizeStepItems($settings['getting_started']['items'] ?? []);
         $settings['mobile_apps_section']['enabled'] = (bool) ($settings['mobile_apps_section']['enabled'] ?? true);
         $settings['mobile_apps_section']['apps'] = self::normalizeAppCards($settings['mobile_apps_section']['apps'] ?? []);
+        $settings['navigation']['links'] = self::ensureApplicationNavigationLink($settings);
         $settings['clients_section']['enabled'] = (bool) ($settings['clients_section']['enabled'] ?? true);
         $settings['plans_section']['enabled'] = (bool) ($settings['plans_section']['enabled'] ?? true);
         $settings['faq_section']['enabled'] = (bool) ($settings['faq_section']['enabled'] ?? true);
@@ -262,6 +264,7 @@ class LandingPageSettings
     {
         return [
             'hero.features',
+            'navigation.links',
             'features_section.cards',
             'getting_started.items',
             'mobile_apps_section.apps',
@@ -317,6 +320,43 @@ class LandingPageSettings
         }
 
         return $normalized;
+    }
+
+    private static function ensureApplicationNavigationLink(array $settings): array
+    {
+        $links = $settings['navigation']['links'] ?? [];
+
+        if (!is_array($links)) {
+            return [];
+        }
+
+        if (($settings['mobile_apps_section']['enabled'] ?? true) === false) {
+            return array_values($links);
+        }
+
+        foreach ($links as $link) {
+            if (is_array($link) && ($link['href'] ?? null) === '#application') {
+                return array_values($links);
+            }
+        }
+
+        $applicationLink = ['label' => 'Application', 'href' => '#application'];
+        $featuresIndex = null;
+
+        foreach ($links as $index => $link) {
+            if (is_array($link) && ($link['href'] ?? null) === '#features') {
+                $featuresIndex = $index;
+                break;
+            }
+        }
+
+        if ($featuresIndex === null) {
+            $links[] = $applicationLink;
+        } else {
+            array_splice($links, $featuresIndex + 1, 0, [$applicationLink]);
+        }
+
+        return array_values($links);
     }
 
     private static function normalizeStringList(mixed $items): array

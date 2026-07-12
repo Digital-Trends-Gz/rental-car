@@ -1108,11 +1108,51 @@ class LandingSettingsController extends Controller
 
     private function translatableSettings(array $settings): array
     {
+        $settings = $this->withApplicationNavigationLink($settings);
+
         foreach (LandingPageSettings::contentKeys() as $key) {
             if (isset($settings[$key]) && is_array($settings[$key])) {
                 unset($settings[$key]['enabled']);
             }
         }
+
+        return $settings;
+    }
+
+    private function withApplicationNavigationLink(array $settings): array
+    {
+        if (data_get($settings, 'mobile_apps_section.enabled') === false) {
+            return $settings;
+        }
+
+        $links = data_get($settings, 'navigation.links', []);
+        if (!is_array($links)) {
+            return $settings;
+        }
+
+        foreach ($links as $link) {
+            if (is_array($link) && ($link['href'] ?? null) === '#application') {
+                return $settings;
+            }
+        }
+
+        $applicationLink = ['label' => 'Application', 'href' => '#application'];
+        $featuresIndex = null;
+
+        foreach ($links as $index => $link) {
+            if (is_array($link) && ($link['href'] ?? null) === '#features') {
+                $featuresIndex = $index;
+                break;
+            }
+        }
+
+        if ($featuresIndex === null) {
+            $links[] = $applicationLink;
+        } else {
+            array_splice($links, $featuresIndex + 1, 0, [$applicationLink]);
+        }
+
+        data_set($settings, 'navigation.links', array_values($links));
 
         return $settings;
     }

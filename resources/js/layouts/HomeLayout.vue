@@ -121,6 +121,7 @@ const landingNavLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
         { label: 'Features', href: '#features' },
+        { label: 'Application', href: '#application' },
         { label: 'Clients', href: '#clients' },
         { label: 'Plans', href: '#pricing' },
         { label: 'Contact', href: '#contact' },
@@ -129,17 +130,31 @@ const landingNavLinks = computed(() => {
         ? landingSettings.value.navigation.links
         : [];
     const links = configuredLinks.length ? configuredLinks : fallback;
-
-    return links
+    const normalizedLinks = links
         .map((link: any, index: number) => ({
             label: String(link?.label || fallback[index]?.label || ''),
             href: String(link?.href || fallback[index]?.href || '#'),
         }))
         .filter((link) => link.label !== '' && !hiddenLandingNavHrefs.has(link.href))
-        .map((link) => ({
-            ...link,
-            href: resolveLandingHref(link.href),
-        }));
+
+    if (
+        landingSettings.value?.mobile_apps_section?.enabled !== false &&
+        !normalizedLinks.some((link) => link.href === '#application')
+    ) {
+        const featuresIndex = normalizedLinks.findIndex((link) => link.href === '#features');
+        const applicationLink = { label: 'Application', href: '#application' };
+
+        if (featuresIndex >= 0) {
+            normalizedLinks.splice(featuresIndex + 1, 0, applicationLink);
+        } else {
+            normalizedLinks.push(applicationLink);
+        }
+    }
+
+    return normalizedLinks.map((link) => ({
+        ...link,
+        href: resolveLandingHref(link.href),
+    }));
 });
 const navigationCtaLabel = computed(() => landingSettings.value?.navigation?.cta_label || t('landing.start_free_trial'));
 const landingFooterTitle = computed(() => landingSettings.value?.footer?.title || appName.value);

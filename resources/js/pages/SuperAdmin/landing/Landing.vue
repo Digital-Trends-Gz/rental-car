@@ -66,6 +66,7 @@ interface MobileAppCard {
     subtitle: string;
     description: string;
     image_url: string;
+    icon_url: string;
     app_store_url: string;
     google_play_url: string;
     features: string[];
@@ -287,6 +288,10 @@ const visibleNavHrefs = computed(() => {
         hrefs.add('#features');
     }
 
+    if (props.landingSettings.mobile_apps_section?.enabled !== false) {
+        hrefs.add('#application');
+    }
+
     if (props.landingSettings.plans_section?.enabled !== false) {
         hrefs.add('#pricing');
     }
@@ -302,6 +307,7 @@ const navLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
         { label: 'Features', href: '#features' },
+        { label: 'Application', href: '#application' },
         { label: 'Clients', href: '#clients' },
         { label: 'Plans', href: '#pricing' },
         { label: 'Contact', href: '#contact' },
@@ -313,11 +319,8 @@ const navLinks = computed(() => {
         ? props.landingSettings.navigation.links
         : [];
 
-    if (!configuredLinks.length) {
-        return fallback.filter((link) => visibleNavHrefs.value.has(link.href));
-    }
-
-    return configuredLinks
+    const links = configuredLinks.length ? configuredLinks : fallback;
+    const normalizedLinks = links
         .map((link, index) => ({
             label: String(link?.label || fallback[index]?.label || ''),
             href: String(link?.href || fallback[index]?.href || '#'),
@@ -328,6 +331,27 @@ const navLinks = computed(() => {
                 !hiddenNavHrefs.has(link.href) &&
                 visibleNavHrefs.value.has(link.href),
         );
+
+    if (
+        visibleNavHrefs.value.has('#application') &&
+        !normalizedLinks.some((link) => link.href === '#application')
+    ) {
+        const featuresIndex = normalizedLinks.findIndex(
+            (link) => link.href === '#features',
+        );
+        const applicationLink = {
+            label: 'Application',
+            href: '#application',
+        };
+
+        if (featuresIndex >= 0) {
+            normalizedLinks.splice(featuresIndex + 1, 0, applicationLink);
+        } else {
+            normalizedLinks.push(applicationLink);
+        }
+    }
+
+    return normalizedLinks;
 });
 
 const mobileOpen = ref(false);
@@ -1226,6 +1250,7 @@ onUnmounted(() => {
 
             <section
                 v-if="landingSettings.mobile_apps_section.enabled"
+                id="application"
                 class="section-padding bg-white"
             >
                 <div class="section-container">
@@ -1330,8 +1355,15 @@ onUnmounted(() => {
                                     <div
                                         class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
                                     >
+                                        <img
+                                            v-if="app.icon_url"
+                                            :src="app.icon_url"
+                                            :alt="`${app.title} icon`"
+                                            class="h-7 w-7 object-contain"
+                                            loading="lazy"
+                                        />
                                         <Users
-                                            v-if="index === 0"
+                                            v-else-if="index === 0"
                                             class="h-6 w-6"
                                         />
                                         <BriefcaseBusiness
