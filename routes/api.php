@@ -20,7 +20,7 @@ Route::prefix('auth')->group(function () {
     Route::post('verify-otp', [AuthController::class, 'verifyOtp'])
         ->middleware('throttle:api-otp-verify');
 
-    Route::middleware('auth:sanctum')->group(function () {
+     Route::middleware('auth:sanctum')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('me', [AuthController::class, 'me']);
     });
