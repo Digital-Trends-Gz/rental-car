@@ -85,7 +85,6 @@ class SettingsController extends Controller
             'secondary_color' => $this->normalizeHexColor(data_get($settings, 'secondary_color'), '#ea580c'),
             'currency_code' => $currencyCode,
             'currency' => $currency,
-            'currencies' => $currencies,
             'default_language' => (string) data_get($settings, 'default_locale', config('app.locale', 'en')),
             'enabled_language_codes' => array_values(array_map(
                 static fn (array $language): string => (string) $language['code'],
