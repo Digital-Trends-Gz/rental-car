@@ -287,6 +287,7 @@ class DashboardController extends Controller
 
         return [
             'id' => $reservation->id,
+            'reservation_id' => $reservation->id,
             'reservation_number' => $reservation->reservation_number,
             'client_name' => $user?->name,
             'car_name' => trim(sprintf(
@@ -312,6 +313,7 @@ class DashboardController extends Controller
 
         return [
             'id' => $contract->id,
+            'reservation_id' => $reservation?->id,
             'contract_number' => $contract->contract_number,
             'reservation_number' => $reservation?->reservation_number,
             'client_name' => $client?->name,
@@ -336,6 +338,7 @@ class DashboardController extends Controller
     {
         return [
             'id' => $car->id,
+            'reservation_id' => null,
             'car_name' => trim(sprintf('%s %s %s', (string) $car->year, (string) $car->make, (string) $car->model)),
             'license_plate' => (string) ($car->license_plate ?? ''),
             'branch_name' => (string) ($car->branch?->name ?? ''),
