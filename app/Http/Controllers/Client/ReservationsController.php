@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\RentalExtensionRequest;
 use App\Models\Reservation;
 use App\Models\TenantSiteSetting;
+use App\Support\CurrencyCatalog;
 use App\Support\PdfRuntime;
 use Barryvdh\DomPDF\Facade\Pdf as DomPdf;
 use Carbon\CarbonImmutable;
@@ -106,7 +107,7 @@ class ReservationsController extends Controller
             'reservation' => $reservation,
             'statusMeta' => ReservationStatus::getMeta(),
             'paymentStatusMeta' => PaymentStatus::getMeta(),
-            'currency' => config('app.currency_symbol'),
+            'currency' => CurrencyCatalog::forTenant($reservation->tenant)['symbol'],
             'companyLogo' => $branding['logo'],
             'companyName' => $branding['name'],
             'siteSettings' => $siteSettings,
@@ -274,7 +275,7 @@ class ReservationsController extends Controller
                 'reservation_id' => $reservation->id,
                 'user_id' => $reservation->user_id,
                 'amount' => number_format($extraAmount, 2, '.', ''),
-                'currency' => strtoupper((string) config('app.currency_code', 'USD')),
+                'currency' => CurrencyCatalog::codeForTenantId($reservation->tenant_id),
                 'payment_method' => PaymentMethod::CASH,
                 'status' => PaymentStatus::PENDING,
                 'notes' => 'Rental extension approved by client. Payment pending collection.',

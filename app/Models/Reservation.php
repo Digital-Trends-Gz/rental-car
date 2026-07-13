@@ -182,6 +182,11 @@ class Reservation extends Model
         return $this->hasMany(RentalExtensionRequest::class);
     }
 
+    public function discountRequests(): HasMany
+    {
+        return $this->hasMany(DiscountRequest::class);
+    }
+
     /**
      * Get the formatted total amount attribute.
      *

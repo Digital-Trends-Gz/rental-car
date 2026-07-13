@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -147,6 +147,9 @@ const props = defineProps<{
         can_edit_return_report?: boolean;
     };
 }>();
+
+const page = usePage<any>();
+const currencySymbol = computed(() => page.props.currency?.symbol ?? '$');
 
 
 const { t, locale } = useTrans();
@@ -1118,7 +1121,7 @@ function submit() {
                             <select id="damage_report_id" v-model="form.damage_report_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2" :disabled="!form.has_damage">
                                 <option value="">{{ localize('None', 'بدون') }}</option>
                                 <option v-for="damageReport in afterReturnDamageReports" :key="damageReport.id" :value="damageReport.id">
-                                    {{ damageReport.report_number }} - {{ damageReport.items_count }} {{ localize('items', 'عنصر') }} - ${{ Number(damageReport.total_estimated_cost).toFixed(2) }}
+                                    {{ damageReport.report_number }} - {{ damageReport.items_count }} {{ localize('items', 'عنصر') }} - {{ currencySymbol }}{{ Number(damageReport.total_estimated_cost).toFixed(2) }}
                                 </option>
                             </select>
                             <p v-if="!form.has_damage" class="mt-1 text-xs text-muted-foreground">
@@ -1238,7 +1241,7 @@ function submit() {
                             <Label for="damage_fee">{{ localize('Damage Fee', 'رسوم الضرر') }}</Label>
                             <Input id="damage_fee" v-model="form.damage_fee" type="number" min="0" step="0.01" class="mt-1" />
                             <p v-if="selectedDamageReport && (selectedDamageReport.after_return_total_estimated_cost !== undefined || selectedDamageReport.total_estimated_cost !== undefined)" class="mt-1 text-xs text-muted-foreground">
-                                {{ localize('Selected after-return damage total:', 'إجمالي ضرر بعد التسليم المحدد:') }} ${{ Number(selectedDamageReport.after_return_total_estimated_cost ?? selectedDamageReport.total_estimated_cost ?? 0).toFixed(2) }}
+                                {{ localize('Selected after-return damage total:', 'إجمالي ضرر بعد التسليم المحدد:') }} {{ currencySymbol }}{{ Number(selectedDamageReport.after_return_total_estimated_cost ?? selectedDamageReport.total_estimated_cost ?? 0).toFixed(2) }}
                             </p>
                             <InputError :message="form.errors.damage_fee" class="mt-1" />
                         </div>
@@ -1300,7 +1303,7 @@ function submit() {
                                             {{ damageReport.items_count }} {{ localize('items', 'عنصر') }}
                                         </td>
                                         <td class="px-3 py-3">
-                                            ${{ Number(damageReport.total_estimated_cost).toFixed(2) }}
+                                            {{ currencySymbol }}{{ Number(damageReport.total_estimated_cost).toFixed(2) }}
                                         </td>
                                         <td class="px-3 py-3">
                                             {{ damageReport.status }}
@@ -1361,28 +1364,28 @@ function submit() {
                         </div>
                         <div class="rounded-md border bg-muted/20 p-4">
                             <div class="text-sm text-muted-foreground">{{ localize('Extra Kilometer Charges', 'رسوم الكيلومترات الإضافية') }}</div>
-                            <div class="mt-1 text-lg font-semibold">${{ Number(extraKilometerCharges).toFixed(2) }}</div>
+                            <div class="mt-1 text-lg font-semibold">{{ currencySymbol }}{{ Number(extraKilometerCharges).toFixed(2) }}</div>
                             <div class="mt-1 text-xs text-muted-foreground">
                                 {{ localize('Extra kilometers after allowance', 'الكيلومترات الزائدة بعد السماح') }}: {{ Number(form.extra_kilometers || 0).toFixed(2) }}
                             </div>
                         </div>
                         <div class="rounded-md border bg-muted/20 p-4">
                             <div class="text-sm text-muted-foreground">{{ localize('Cleaning Fee', 'رسوم التنظيف') }}</div>
-                            <div class="mt-1 text-lg font-semibold">${{ Number(form.cleaning_fee || 0).toFixed(2) }}</div>
+                            <div class="mt-1 text-lg font-semibold">{{ currencySymbol }}{{ Number(form.cleaning_fee || 0).toFixed(2) }}</div>
                         </div>
                         <div class="rounded-md border bg-muted/20 p-4">
                             <div class="text-sm text-muted-foreground">{{ localize('Fuel Fee', 'رسوم البنزين') }}</div>
-                            <div class="mt-1 text-lg font-semibold">${{ Number(form.fuel_fee || 0).toFixed(2) }}</div>
+                            <div class="mt-1 text-lg font-semibold">{{ currencySymbol }}{{ Number(form.fuel_fee || 0).toFixed(2) }}</div>
                             <div v-if="fuelLossDescription" class="mt-1 text-xs text-muted-foreground">
                                 {{ fuelLossDescription }}
                             </div>
                             <div v-if="Number(form.fuel_credit || 0) > 0" class="mt-2 text-sm text-emerald-600">
-                                - ${{ Number(form.fuel_credit || 0).toFixed(2) }} {{ localize('Fuel credit for customer', 'رصيد البنزين لصالح العميل') }}
+                                - {{ currencySymbol }}{{ Number(form.fuel_credit || 0).toFixed(2) }} {{ localize('Fuel credit for customer', 'رصيد البنزين لصالح العميل') }}
                             </div>
                         </div>
                         <div class="rounded-md border bg-muted/20 p-4">
                             <div class="text-sm text-muted-foreground">{{ localize('Late Return Fee', 'رسوم التأخير') }}</div>
-                            <div class="mt-1 text-lg font-semibold">${{ Number(lateFeePreview).toFixed(2) }}</div>
+                            <div class="mt-1 text-lg font-semibold">{{ currencySymbol }}{{ Number(lateFeePreview).toFixed(2) }}</div>
                             <div class="mt-1 text-xs text-muted-foreground">
                                 {{ form.late_hours }} {{ localize('hours', 'ساعات') }}
                             </div>
@@ -1392,26 +1395,26 @@ function submit() {
                         </div>
                         <div class="rounded-md border bg-muted/20 p-4">
                             <div class="text-sm text-muted-foreground">{{ localize('Damage Fee', 'رسوم الضرر') }}</div>
-                            <div class="mt-1 text-lg font-semibold">${{ Number(form.damage_fee || 0).toFixed(2) }}</div>
+                            <div class="mt-1 text-lg font-semibold">{{ currencySymbol }}{{ Number(form.damage_fee || 0).toFixed(2) }}</div>
                         </div>
                         <div class="rounded-md border bg-muted/20 p-4">
                             <div class="text-sm text-muted-foreground">{{ localize('Maintenance Fee', 'رسوم الصيانة') }}</div>
-                            <div class="mt-1 text-lg font-semibold">${{ Number(form.maintenance_fee || 0).toFixed(2) }}</div>
+                            <div class="mt-1 text-lg font-semibold">{{ currencySymbol }}{{ Number(form.maintenance_fee || 0).toFixed(2) }}</div>
                         </div>
                         <div class="rounded-md border bg-muted/20 p-4">
                             <div class="text-sm text-muted-foreground">{{ localize('Other Fee', 'رسوم أخرى') }}</div>
-                            <div class="mt-1 text-lg font-semibold">${{ Number(form.other_fee || 0).toFixed(2) }}</div>
+                            <div class="mt-1 text-lg font-semibold">{{ currencySymbol }}{{ Number(form.other_fee || 0).toFixed(2) }}</div>
                         </div>
                         <div class="rounded-md border bg-muted/20 p-4">
                             <div class="text-sm text-muted-foreground">{{ localize('Discount', 'الخصم') }}</div>
-                            <div class="mt-1 text-lg font-semibold text-emerald-600">-${{ Number(appliedDiscount).toFixed(2) }}</div>
+                            <div class="mt-1 text-lg font-semibold text-emerald-600">-{{ currencySymbol }}{{ Number(appliedDiscount).toFixed(2) }}</div>
                             <div class="mt-1 text-xs text-muted-foreground">
                                 {{ localize('Applied after all charges and credits.', 'يطبق بعد كل الرسوم والأرصدة.') }}
                             </div>
                         </div>
                         <div class="rounded-md border border-primary/30 bg-primary/5 p-4">
                             <div class="text-sm text-primary">{{ localize('Total Extra Charges', 'إجمالي الرسوم الإضافية') }}</div>
-                            <div class="mt-1 text-2xl font-bold text-primary">${{ Number(totalExtraCharges).toFixed(2) }}</div>
+                            <div class="mt-1 text-2xl font-bold text-primary">{{ currencySymbol }}{{ Number(totalExtraCharges).toFixed(2) }}</div>
                             <div v-if="Number(form.fuel_credit || 0) > 0" class="mt-1 text-xs text-muted-foreground">
                                 {{ localize('Fuel credit deducted from the total.', 'تم خصم رصيد البنزين من الإجمالي.') }}
                             </div>

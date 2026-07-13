@@ -36,6 +36,7 @@ use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
 use App\Support\ContractCustomerPhotoExtractor;
 use App\Support\CountryOptions;
+use App\Support\CurrencyCatalog;
 use App\Support\PaidReturnReportLock;
 use App\Support\PdfRuntime;
 use App\Support\TenantPdfTemplateRegistry;
@@ -245,7 +246,7 @@ class ContractsController extends Controller
                 'contract_number' => $this->generateContractNumber(),
                 'status' => 'draft',
                 'contract_date' => now()->toDateString(),
-                'currency' => strtoupper((string) config('app.currency_code', 'USD')),
+                'currency' => CurrencyCatalog::codeForTenantId(TenantContext::id()),
             ],
             'carData' => $reservation ? $this->prefillCarDataFromReservation($reservation) : $this->emptyCarData(),
             'currentCarDamages' => $reservation?->car_id ? $this->serializeCarDamageCases((int) $reservation->car_id, $request->user()) : [],
@@ -611,7 +612,7 @@ class ContractsController extends Controller
             'generatedAt' => now(),
             'companyName' => $branding['name'],
             'companyLogo' => $branding['logo'],
-            'currencySymbol' => config('app.currency_symbol', '$'),
+            'currencySymbol' => CurrencyCatalog::find($contract->currency)['symbol'],
             'locale' => $locale,
             'direction' => $direction,
             'siteSettings' => $siteSettings,
@@ -1064,7 +1065,7 @@ class ContractsController extends Controller
                 $paymentNotes = sprintf(
                     'Rental extension payment recorded from contract extension. %s day(s) added at %s %s per day.%s',
                     $extraDays,
-                    strtoupper((string) ($contract->currency ?: config('app.currency_code', 'USD'))),
+                    CurrencyCatalog::normalizeCode($contract->currency, CurrencyCatalog::codeForTenantId($contract->tenant_id)),
                     number_format($dailyRate, 2, '.', ','),
                     $notes !== '' ? ' Notes: '.$notes : ''
                 );
@@ -1074,7 +1075,7 @@ class ContractsController extends Controller
                     'reservation_id' => $reservation->id,
                     'user_id' => $reservation->user_id,
                     'amount' => number_format($extraAmount, 2, '.', ''),
-                    'currency' => strtoupper((string) ($contract->currency ?: config('app.currency_code', 'USD'))),
+                    'currency' => CurrencyCatalog::normalizeCode($contract->currency, CurrencyCatalog::codeForTenantId($contract->tenant_id)),
                     'payment_method' => PaymentMethod::CASH,
                     'status' => PaymentStatus::COMPLETED,
                     'notes' => $paymentNotes,
@@ -1401,7 +1402,10 @@ class ContractsController extends Controller
         $contract->start_date = $validated['start_date'] ?? $reservation?->start_date?->toDateString();
         $contract->end_date = $validated['end_date'] ?? $reservation?->end_date?->toDateString();
         $contract->total_amount = $validated['total_amount'] ?? $reservation?->total_amount;
-        $contract->currency = strtoupper((string) ($validated['currency'] ?? 'USD'));
+        $contract->currency = CurrencyCatalog::normalizeCode(
+            $validated['currency'] ?? null,
+            CurrencyCatalog::codeForTenantId($contract->tenant_id)
+        );
         $contract->notes = $this->nullableString($validated['notes'] ?? null);
         if (array_key_exists('ai_extracted_data', $validated)) {
             $contract->ai_extracted_data = is_array($validated['ai_extracted_data']) && !empty($validated['ai_extracted_data'])
@@ -1648,7 +1652,7 @@ class ContractsController extends Controller
             'start_date' => optional($reservation->start_date)->toDateString(),
             'end_date' => optional($reservation->end_date)->toDateString(),
             'total_amount' => $reservation->total_amount,
-            'currency' => strtoupper((string) config('app.currency_code', 'USD')),
+            'currency' => CurrencyCatalog::codeForTenantId(TenantContext::id()),
             'notes' => null,
             'ai_extracted_data' => null,
             'ai_extraction_status' => AiAutomationSettings::isContractsExtractionEnabled() ? 'not_requested' : 'disabled',

@@ -18,6 +18,7 @@ use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Support\BranchAccess;
+use App\Support\CurrencyCatalog;
 use App\Support\PdfRuntime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -230,7 +231,7 @@ class ContractReturnReportsController extends Controller
         $headerGsm3 = data_get($pdfHeader, 'gsm_3') ?: '';
         $headerRegistryLabelEn = data_get($pdfHeader, 'registry_label.en') ?: 'No.';
         $headerRegistryLabelAr = data_get($pdfHeader, 'registry_label.ar') ?: 'رقم';
-        $currencySymbol = config('app.currency_symbol', '$');
+        $currencySymbol = CurrencyCatalog::find($contract->currency ?: CurrencyCatalog::codeForTenantId($contract->tenant_id))['symbol'];
         $extraKilometerCharges = $this->normalizeMoney((float) $report->extra_kilometers * (float) $report->kilometer_rate);
         $lateFee = $this->calculateLateFee(
             (float) $report->late_hours,
@@ -505,7 +506,7 @@ class ContractReturnReportsController extends Controller
                 }
 
                 $payment->amount = $totalExtraCharges;
-                $payment->currency = strtoupper((string) ($contract->currency ?: config('app.currency_code', 'USD')));
+                $payment->currency = CurrencyCatalog::normalizeCode($contract->currency, CurrencyCatalog::codeForTenantId($contract->tenant_id));
                 $payment->payment_method = PaymentMethod::CASH;
                 $payment->status = $paymentStatus === 'paid'
                     ? PaymentStatus::COMPLETED

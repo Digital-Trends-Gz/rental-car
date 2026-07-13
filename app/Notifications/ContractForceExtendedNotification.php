@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Contract;
 use App\Models\Tenant;
+use App\Support\CurrencyCatalog;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -60,7 +61,7 @@ class ContractForceExtendedNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $currency = strtoupper((string) ($this->contract->currency ?: config('app.currency_code', 'USD')));
+        $currency = CurrencyCatalog::normalizeCode($this->contract->currency, CurrencyCatalog::codeForTenantId($this->contract->tenant_id));
 
         return (new MailMessage())
             ->subject(sprintf(

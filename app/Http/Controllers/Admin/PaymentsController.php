@@ -9,6 +9,7 @@ use App\Models\ContractReturnReport;
 use App\Models\Payment;
 use App\Support\FinancialVisibility;
 use App\Support\BranchAccess;
+use App\Support\CurrencyCatalog;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -128,7 +129,7 @@ class PaymentsController extends Controller
         $debtQuery = ContractReturnReport::query()
             ->with([
                 'payment:id,payment_number,status,currency',
-                'contract:id,contract_number',
+                'contract:id,tenant_id,contract_number,currency',
                 'reservation:id,reservation_number,user_id,car_id',
                 'reservation.user:id,name,email',
                 'reservation.car:id,branch_id,make,model,year,license_plate',
@@ -171,7 +172,8 @@ class PaymentsController extends Controller
                 'id' => $report->id,
                 'report_number' => $report->report_number,
                 'amount' => FinancialVisibility::numericAmount($report->total_extra_charges, $canViewFinancialAmounts),
-                'currency' => $report->payment?->currency ?: strtoupper((string) config('app.currency_code', 'USD')),
+                'currency' => $report->payment?->currency
+                    ?: CurrencyCatalog::normalizeCode($report->contract?->currency, CurrencyCatalog::codeForTenantId($report->contract?->tenant_id)),
                 'created_at' => optional($report->created_at)->toDateTimeString(),
                 'return_report_url' => url('/admin/contracts/'.$report->contract_id.'/return-status-report'),
                 'client' => $report->reservation?->user ? [

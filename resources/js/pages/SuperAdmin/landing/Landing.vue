@@ -88,6 +88,10 @@ interface FeaturedCar {
     model: string;
     year: number;
     price_per_day: string;
+    currency?: {
+        code?: string;
+        symbol?: string;
+    } | null;
     description: string;
     fuel_type: string;
     status?: string;
@@ -488,6 +492,8 @@ const formatCarPrice = (value: string) => {
     const amount = Number(value);
     return Number.isFinite(amount) ? amount.toFixed(2) : value;
 };
+
+const carCurrencySymbol = (car: FeaturedCar) => car.currency?.symbol || page.props.currency?.symbol || '$';
 
 const formatStatus = (status?: string) => {
     if (!status) {
@@ -907,7 +913,7 @@ onUnmounted(() => {
                                 >
                                     <span
                                         class="text-lg leading-none font-extrabold text-white"
-                                        >${{
+                                        >{{ carCurrencySymbol(car) }}{{
                                             formatCarPrice(car.price_per_day)
                                         }}</span
                                     >

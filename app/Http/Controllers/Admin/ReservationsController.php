@@ -12,6 +12,7 @@ use App\Models\Payment;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Support\ClientReturnDebt;
+use App\Support\CurrencyCatalog;
 use App\Support\PaidReturnReportLock;
 use App\Support\PdfRuntime;
 use App\Enums\CarStatus;
@@ -311,7 +312,7 @@ class ReservationsController extends Controller
                     'reservation_id' => $reservation->id,
                     'user_id' => $client->id,
                     'amount' => $depositAmount,
-                    'currency' => strtoupper((string) config('app.currency_code', 'USD')),
+                    'currency' => CurrencyCatalog::codeForTenantId($user?->tenant_id),
                     'payment_method' => PaymentMethod::CASH,
                     'status' => PaymentStatus::COMPLETED,
                     'notes' => 'Cash deposit recorded from admin reservation form.',
@@ -749,7 +750,7 @@ class ReservationsController extends Controller
                 'reservation_id' => $reservationRow->id,
                 'user_id' => $reservationRow->user_id,
                 'amount' => $balanceDue,
-                'currency' => strtoupper((string) config('app.currency_code', 'USD')),
+                'currency' => CurrencyCatalog::codeForTenantId($request->user()?->tenant_id),
                 'payment_method' => PaymentMethod::CASH,
                 'status' => PaymentStatus::COMPLETED,
                 'notes' => 'Final cash payment recorded from admin reservation details.',
@@ -788,7 +789,7 @@ class ReservationsController extends Controller
             'reservation' => $reservation,
             'statusMeta' => ReservationStatus::getMeta(),
             'paymentStatusMeta' => PaymentStatus::getMeta(),
-            'currency' => config('app.currency_symbol'),
+            'currency' => CurrencyCatalog::forTenant($reservation->tenant)['symbol'],
             'companyLogo' => $branding['logo'],
             'companyName' => $branding['name'],
             'siteSettings' => $siteSettings,

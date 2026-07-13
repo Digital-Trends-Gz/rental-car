@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CarsController;
 use App\Http\Controllers\Api\ClientsController;
 use App\Http\Controllers\Api\ContractsController;
 use App\Http\Controllers\Api\DailyTasksController;
+use App\Http\Controllers\Api\DiscountRequestsController;
 use App\Http\Controllers\Api\ReservationsController;
 use App\Http\Controllers\Api\NotificationsController;
 use App\Http\Controllers\Api\SettingsController;
@@ -93,6 +94,8 @@ Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
     Route::get('{contract}/pdf', [\App\Http\Controllers\Admin\ContractsController::class, 'pdf'])->name('api.contracts.pdf');
     Route::get('{contract}/return-status-report/pdf', [\App\Http\Controllers\Admin\ContractReturnReportsController::class, 'pdf'])->name('api.contracts.return-report.pdf');
     Route::post('{contract}/return-status-report/cash-payments', [CashPaymentsController::class, 'storeContractReturnReportPayment'])->name('api.contracts.return-report.cash-payments.store');
+    Route::get('{contract}/return-status-report/discount-request', [DiscountRequestsController::class, 'showForContract'])->name('api.contracts.return-report.discount-request.show');
+    Route::post('{contract}/return-status-report/discount-requests', [DiscountRequestsController::class, 'store'])->name('api.contracts.return-report.discount-requests.store');
     Route::match(['post', 'patch'], '{contract}/handover', [ContractsController::class, 'updateHandover'])->name('api.contracts.handover');
 });
 
@@ -119,6 +122,7 @@ Route::middleware('auth:sanctum')->prefix('accident-reports')->group(function ()
 
 Route::prefix('settings')->group(function () {
     Route::get('general', [SettingsController::class, 'general'])->name('api.settings.general');
+    Route::get('currencies', [SettingsController::class, 'currencies'])->name('api.settings.currencies');
     Route::middleware('auth:sanctum')->get('tenant', [SettingsController::class, 'tenant'])->name('api.settings.tenant');
 });
 

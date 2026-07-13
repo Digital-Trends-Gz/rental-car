@@ -21,6 +21,10 @@ interface Car {
     make: string;
     model: string;
     price_per_day: string;
+    currency?: {
+        code?: string;
+        symbol?: string;
+    } | null;
     price_per_week?: string | number | null;
     price_per_month?: string | number | null;
     image_url: string;
@@ -51,6 +55,7 @@ const { t } = useTrans();
 const car = computed<Car>(() => $page.props.car as Car);
 const currentTenant = computed(() => $page.props.current_tenant);
 const tenantSiteSettings = computed(() => $page.props.tenant_site_settings ?? null);
+const currencySymbol = computed(() => car.value.currency?.symbol || $page.props.currency?.symbol || '$');
 const seo = computed(() => $page.props.seo ?? null);
 const reservationSettings = computed<Record<string, any> | null>(() => tenantSiteSettings.value?.reservation_settings ?? null);
 const hasCoupons = computed(() => Boolean($page.props.hasCoupons));
@@ -688,7 +693,7 @@ watch(
                                             class="rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-white"
                                         >
                                             <span class="text-3xl font-bold"
-                                                >${{ car.price_per_day }}</span
+                                                >{{ currencySymbol }}{{ car.price_per_day }}</span
                                             >
                                             <span
                                                 class="block text-sm text-orange-100"
@@ -1128,7 +1133,7 @@ watch(
                                             >{{ rateSummary.label }}</span
                                         >
                                         <span class="font-bold text-gray-900"
-                                            >${{ formatMoney(rateSummary.amount) }}</span
+                                            >{{ currencySymbol }}{{ formatMoney(rateSummary.amount) }}</span
                                         >
                                     </div>
                                 </div>
@@ -1143,7 +1148,7 @@ watch(
                                         <span
                                             class="text-lg font-bold text-gray-900"
                                         >
-                                            ${{
+                                            {{ currencySymbol }}{{
                                                 rentalDays > 0
                                                     ? subtotal.toFixed(2)
                                                     : '0.00'
@@ -1161,7 +1166,7 @@ watch(
                                         <span
                                             class="text-lg font-bold text-gray-900"
                                         >
-                                            ${{
+                                            {{ currencySymbol }}{{
                                                 rentalDays > 0
                                                     ? tax.toFixed(2)
                                                     : '0.00'
@@ -1181,7 +1186,7 @@ watch(
                                         <span
                                             class="text-lg font-bold text-gray-900"
                                         >
-                                            ${{
+                                            {{ currencySymbol }}{{
                                                 rentalDays > 0
                                                     ? returnLocationFee.toFixed(2)
                                                     : '0.00'
@@ -1199,7 +1204,7 @@ watch(
                                         <span
                                             class="text-lg font-bold text-emerald-600"
                                         >
-                                            -${{
+                                            -{{ currencySymbol }}{{
                                                 rentalDays > 0
                                                     ? autoDiscount.toFixed(2)
                                                     : '0.00'
@@ -1215,7 +1220,7 @@ watch(
                                         <span
                                             class="text-lg font-bold text-emerald-600"
                                         >
-                                            -${{
+                                            -{{ currencySymbol }}{{
                                                 rentalDays > 0
                                                     ? couponDiscount.toFixed(2)
                                                     : '0.00'
@@ -1236,7 +1241,7 @@ watch(
                                             <span
                                                 class="text-2xl font-bold text-orange-500"
                                             >
-                                                ${{
+                                                {{ currencySymbol }}{{
                                                     rentalDays > 0
                                                         ? total.toFixed(2)
                                                         : '0.00'

@@ -14,6 +14,7 @@ use App\Models\Reservation;
 use App\Models\User;
 use App\Services\Rentals\RentalStatusSyncService;
 use App\Support\BranchAccess;
+use App\Support\CurrencyCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -448,12 +449,15 @@ class CashPaymentsController extends Controller
 
     private function reservationCurrency(Reservation $reservation): string
     {
-        return strtoupper((string) ($reservation->contract?->currency ?: config('app.currency_code', 'USD')));
+        return CurrencyCatalog::normalizeCode($reservation->contract?->currency, CurrencyCatalog::codeForTenantId($reservation->tenant_id));
     }
 
     private function contractCurrency(ContractReturnReport $report): string
     {
-        return strtoupper((string) ($report->contract?->currency ?: config('app.currency_code', 'USD')));
+        return CurrencyCatalog::normalizeCode(
+            $report->contract?->currency,
+            CurrencyCatalog::codeForTenantId($report->tenant_id ?? $report->contract?->tenant_id)
+        );
     }
 
     private function canAccessReservation(Reservation $reservation, User $user): bool

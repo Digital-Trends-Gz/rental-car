@@ -319,6 +319,13 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     permission: 'tenant-view-debtors',
                 },
                 {
+                    key: 'discount-requests',
+                    title: t('dashboard.sidebar.admin.discount_requests') || 'Discount Requests',
+                    href: adminHref('/discount-requests'),
+                    icon: Percent,
+                    permission: 'tenant-manage-payments',
+                },
+                {
                     key: 'payment-providers',
                     title: t('dashboard.sidebar.admin.payment_providers'),
                     href: adminHref('/settings/payment-providers'),

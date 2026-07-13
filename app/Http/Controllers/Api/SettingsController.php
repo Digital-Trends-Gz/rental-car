@@ -7,6 +7,7 @@ use App\Core\LocalizationSettings;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
+use App\Support\CurrencyCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -62,13 +63,8 @@ class SettingsController extends Controller
         $settings = TenantSiteSetting::forTenant($tenant);
         $siteName = $this->nullableString(data_get($settings, 'site_name')) ?? $tenant->name;
         $availableLanguages = $this->availableLanguagesForTenant($settings);
-        $currencies = $this->availableCurrencies();
-        $currencyCode = strtoupper((string) (
-            data_get($settings, 'market_location.currency_code')
-            ?: $tenant->stripe_currency
-            ?: config('app.currency_code', 'USD')
-        ));
-        $currency = collect($currencies)->firstWhere('code', $currencyCode) ?? $currencies[0];
+        $currency = CurrencyCatalog::forTenant($tenant);
+        $currencyCode = $currency['code'];
 
         return response()->json([
             'source' => 'tenant',
@@ -91,6 +87,18 @@ class SettingsController extends Controller
                 $availableLanguages
             )),
             'available_languages' => $availableLanguages,
+        ]);
+    }
+
+    public function currencies(Request $request): JsonResponse
+    {
+        $locale = $this->resolveCurrencyLocale($request);
+        $currencies = CurrencyCatalog::all($locale);
+
+        return response()->json([
+            'locale' => $locale,
+            'count' => count($currencies),
+            'currencies' => $currencies,
         ]);
     }
 
@@ -252,6 +260,34 @@ class SettingsController extends Controller
         }
 
         return $defaultLanguage;
+    }
+
+    private function resolveCurrencyLocale(Request $request): string
+    {
+        $acceptLanguage = trim((string) $request->header('Accept-Language', ''));
+        $primaryAcceptedLanguage = $acceptLanguage !== ''
+            ? trim(explode(';', explode(',', $acceptLanguage)[0])[0])
+            : null;
+
+        $candidates = [
+            $request->query('locale'),
+            $request->query('lang'),
+            $request->header('X-Locale'),
+            $request->header('X-Language'),
+            $primaryAcceptedLanguage,
+            app()->getLocale(),
+            'en',
+        ];
+
+        foreach ($candidates as $candidate) {
+            $locale = $this->normalizeLanguageCode($candidate);
+
+            if ($locale !== null) {
+                return $locale;
+            }
+        }
+
+        return 'en';
     }
 
     private function normalizeLanguageCode(mixed $value): ?string

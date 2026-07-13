@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Models\User;
 use App\Support\BranchAccess;
+use App\Support\CurrencyCatalog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,7 +52,7 @@ class CarsController extends Controller
             ->all();
 
         $carsQuery = Car::query()
-            ->with(['branch:id,name', 'files']);
+            ->with(['branch:id,name', 'files', 'tenant.siteSetting']);
 
         $this->branchAccess->applyToQuery($carsQuery, $user, $branchId);
 
@@ -129,6 +130,7 @@ class CarsController extends Controller
             'price_per_day' => $car->price_per_day,
             'price_per_week' => $car->price_per_week,
             'price_per_month' => $car->price_per_month,
+            'currency' => CurrencyCatalog::forTenant($car->tenant),
             'allowed_km_per_day' => $car->allowed_km_per_day,
             'allowed_km_per_week' => $car->allowed_km_per_week,
             'allowed_km_per_month' => $car->allowed_km_per_month,

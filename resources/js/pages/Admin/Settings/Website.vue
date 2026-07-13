@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
+import SearchableSelect from '@/components/SearchableSelect.vue';
 import { getCurrencyOptions } from '@/lib/currencies';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
@@ -182,6 +183,12 @@ const marketTimezoneOptions = computed(() => {
     return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
 });
 const marketCurrencyOptions = computed(() => getCurrencyOptions(locale.value || 'en'));
+const marketCurrencySelectOptions = computed(() =>
+    marketCurrencyOptions.value.map((currency) => ({
+        value: currency.code,
+        label: currency.label,
+    })),
+);
 
 function localizedCountryName(country: CountryOption): string {
     return locale.value === 'ar' ? country.name_ar || country.name_en : country.name_en;
@@ -1196,13 +1203,16 @@ function submit() {
                                     </div>
 
                                     <div class="space-y-2">
-                                        <Label for="market_currency_code">{{ localize('Currency Code', 'رمز العملة') }}</Label>
-                                        <select id="market_currency_code" v-model="form.market_location.currency_code" :class="selectClass">
-                                            <option value="">{{ localize('Select currency', 'اختر العملة') }}</option>
-                                            <option v-for="currency in marketCurrencyOptions" :key="currency.code" :value="currency.code">
-                                                {{ currency.label }}
-                                            </option>
-                                        </select>
+                                        <Label for="market_currency_code">{{ localize('Site Currency', 'عملة الموقع') }}</Label>
+                                        <SearchableSelect
+                                            id="market_currency_code"
+                                            v-model="form.market_location.currency_code"
+                                            :options="marketCurrencySelectOptions"
+                                            :placeholder="localize('Select currency', 'اختر العملة')"
+                                            :search-placeholder="localize('Search currency...', 'ابحث عن عملة...')"
+                                            :empty-text="localize('No currencies found.', 'لا توجد عملات.')"
+                                            clearable
+                                        />
                                         <p v-if="form.errors['market_location.currency_code']" class="text-sm text-red-600">{{ form.errors['market_location.currency_code'] }}</p>
                                     </div>
 

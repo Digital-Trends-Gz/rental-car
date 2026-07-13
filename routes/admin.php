@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\CarViolationsController;
 use App\Http\Controllers\Admin\ViolationTypesController;
 use App\Http\Controllers\Admin\StripeConnectController;
 use App\Http\Controllers\Admin\PaymentProvidersController;
+use App\Http\Controllers\Admin\DiscountRequestsController;
 use App\Http\Controllers\Admin\PlateFormatSettingsController;
 use App\Http\Controllers\Admin\ReservationSettingsController;
 use App\Http\Controllers\Admin\WebsiteSettingsController;
@@ -206,6 +207,15 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::resource('payments', PaymentsController::class)
             ->only(['index'])
             ->middleware('permission:tenant-manage-payments');
+        Route::get('discount-requests', [DiscountRequestsController::class, 'index'])
+            ->middleware('permission:tenant-manage-payments')
+            ->name('discount-requests.index');
+        Route::post('discount-requests/{discountRequest}/approve', [DiscountRequestsController::class, 'approve'])
+            ->middleware('permission:tenant-manage-payments')
+            ->name('discount-requests.approve');
+        Route::post('discount-requests/{discountRequest}/reject', [DiscountRequestsController::class, 'reject'])
+            ->middleware('permission:tenant-manage-payments')
+            ->name('discount-requests.reject');
 
         // Coupons
         Route::resource('coupons', CouponsController::class)

@@ -31,6 +31,7 @@ use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
+use App\Support\CurrencyCatalog;
 use App\Services\Clients\ClientStatusService;
 use App\Services\Contracts\ContractDamagePhotoExtractor;
 use App\Services\Contracts\ContractDriverDocumentExtractor;
@@ -2494,7 +2495,7 @@ class ContractsController extends Controller
 
         $payment->forceFill([
             'amount' => $totalExtraCharges,
-            'currency' => strtoupper((string) ($contract->currency ?: config('app.currency_code', 'USD'))),
+            'currency' => CurrencyCatalog::normalizeCode($contract->currency, CurrencyCatalog::codeForTenantId($contract->tenant_id)),
             'payment_method' => PaymentMethod::CASH,
             'status' => $paymentStatus === 'paid'
                 ? PaymentStatus::COMPLETED
@@ -3429,7 +3430,7 @@ class ContractsController extends Controller
             'start_date' => optional($reservation->start_date)->toDateString(),
             'end_date' => optional($reservation->end_date)->toDateString(),
             'total_amount' => $reservation->total_amount,
-            'currency' => strtoupper((string) config('app.currency_code', 'USD')),
+            'currency' => CurrencyCatalog::codeForTenantId($reservation->tenant_id),
             'notes' => null,
             'ai_extracted_data' => null,
             'ai_extraction_status' => AiAutomationSettings::isContractsExtractionEnabled() ? 'not_requested' : 'disabled',
@@ -4731,7 +4732,7 @@ class ContractsController extends Controller
         return [
             'return_status_report' => $this->returnStatusReportPayload($report),
             'payment_status' => $paymentStatus,
-            'currency' => strtoupper((string) ($contract->currency ?: config('app.currency_code', 'USD'))),
+            'currency' => CurrencyCatalog::normalizeCode($contract->currency, CurrencyCatalog::codeForTenantId($contract->tenant_id)),
             'allowed_kilometers' => $this->resolveAllowedKilometers($contract, $settings, $actualReturnTime),
             'actual_kilometers_driven' => max(0, (float) ($returnOdometer ?? 0) - (float) ($contract->vehicle_odometer ?? 0)),
             'extra_kilometers' => $extraKilometers,

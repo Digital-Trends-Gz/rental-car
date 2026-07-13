@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Core\AppBrandingSettings;
 use App\Models\TenantSiteSetting;
+use App\Support\CurrencyCatalog;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -128,10 +129,15 @@ class HandleInertiaRequests extends Middleware
                 'locale' => config('vilt-filepond.locale'),
                 'chunkSize' => config('vilt-filepond.chunk_size'),
             ],
-            'currency' =>[
-                'symbol' => config('app.currency_symbol'),
-                'code' => config('app.currency_code'),
-            ],
+            'currency' => function () {
+                $tenant = \App\Core\TenantContext::get();
+
+                if ($tenant) {
+                    return CurrencyCatalog::forTenant($tenant);
+                }
+
+                return CurrencyCatalog::find(config('app.currency_code', 'USD'));
+            },
             'app_url_base' => parse_url(config('app.url'), PHP_URL_HOST),
             'current_tenant' => function () {
                 $tenant = \App\Core\TenantContext::get();

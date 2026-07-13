@@ -20,6 +20,7 @@ use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Support\Payments\MyFatoorahSubscriptionProvider;
 use App\Support\ClientReturnDebt;
+use App\Support\CurrencyCatalog;
 use App\Support\TenantSeoResolver;
 use App\Support\TenantStripeConnect;
 use Carbon\Carbon;
@@ -1439,9 +1440,12 @@ class BookingController extends Controller
 
     private function bookingCurrency(?string $tenantCurrency = null): string
     {
-        $currency = strtoupper(trim((string) ($tenantCurrency ?: config('cashier.currency') ?: config('app.currency_code') ?: 'USD')));
+        $tenant = TenantContext::get();
 
-        return $currency !== '' ? $currency : 'USD';
+        return CurrencyCatalog::codeForTenant(
+            $tenant,
+            $tenantCurrency ?: config('cashier.currency') ?: config('app.currency_code', 'USD')
+        );
     }
 
     private function extractTransactionId(object $session): ?string

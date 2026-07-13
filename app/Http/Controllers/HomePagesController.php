@@ -17,6 +17,7 @@ use App\Enums\TicketStatus;
 use App\Rules\LettersOnly;
 use App\Support\PlanTranslations;
 use App\Support\PlanPricing;
+use App\Support\CurrencyCatalog;
 use App\Support\TenantSeoResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -390,6 +391,7 @@ class HomePagesController extends Controller
             'model' => $car->model,
             'year' => $car->year,
             'price_per_day' => (string) $car->price_per_day,
+            'currency' => CurrencyCatalog::forTenant($car->tenant),
             'description' => $car->localizedDescription(),
             'fuel_type' => $car->fuel_type?->value ?? (string) $car->fuel_type,
             'status' => $car->status?->value ?? (string) $car->status,
