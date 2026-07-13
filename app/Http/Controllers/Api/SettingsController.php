@@ -62,6 +62,13 @@ class SettingsController extends Controller
         $settings = TenantSiteSetting::forTenant($tenant);
         $siteName = $this->nullableString(data_get($settings, 'site_name')) ?? $tenant->name;
         $availableLanguages = $this->availableLanguagesForTenant($settings);
+        $currencies = $this->availableCurrencies();
+        $currencyCode = strtoupper((string) (
+            data_get($settings, 'market_location.currency_code')
+            ?: $tenant->stripe_currency
+            ?: config('app.currency_code', 'USD')
+        ));
+        $currency = collect($currencies)->firstWhere('code', $currencyCode) ?? $currencies[0];
 
         return response()->json([
             'source' => 'tenant',
@@ -76,6 +83,9 @@ class SettingsController extends Controller
             'logo_url' => $this->nullableString(data_get($settings, 'logo_url')),
             'primary_color' => $this->normalizeHexColor(data_get($settings, 'primary_color'), '#f97316'),
             'secondary_color' => $this->normalizeHexColor(data_get($settings, 'secondary_color'), '#ea580c'),
+            'currency_code' => $currencyCode,
+            'currency' => $currency,
+            'currencies' => $currencies,
             'default_language' => (string) data_get($settings, 'default_locale', config('app.locale', 'en')),
             'enabled_language_codes' => array_values(array_map(
                 static fn (array $language): string => (string) $language['code'],
@@ -164,6 +174,59 @@ class SettingsController extends Controller
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * Temporary static currency list until currencies become dashboard-managed.
+     *
+     * @return array<int, array{code: string, name: string, symbol: string, icon: string}>
+     */
+    private function availableCurrencies(): array
+    {
+        return [
+            [
+                'code' => 'USD',
+                'name' => 'US Dollar',
+                'symbol' => '$',
+                'icon' => '$',
+            ],
+            [
+                'code' => 'OMR',
+                'name' => 'Omani Rial',
+                'symbol' => 'OMR',
+                'icon' => 'ر.ع',
+            ],
+            [
+                'code' => 'AED',
+                'name' => 'UAE Dirham',
+                'symbol' => 'AED',
+                'icon' => 'د.إ',
+            ],
+            [
+                'code' => 'SAR',
+                'name' => 'Saudi Riyal',
+                'symbol' => 'SAR',
+                'icon' => 'ر.س',
+            ],
+            [
+                'code' => 'QAR',
+                'name' => 'Qatari Riyal',
+                'symbol' => 'QAR',
+                'icon' => 'ر.ق',
+            ],
+            [
+                'code' => 'ILS',
+                'name' => 'Israeli Shekel',
+                'symbol' => 'ILS',
+                'icon' => '₪',
+            ],
+            [
+                'code' => 'JOD',
+                'name' => 'Jordanian Dinar',
+                'symbol' => 'JOD',
+                'icon' => 'د.أ',
+            ],
+        ];
     }
 
     /**
