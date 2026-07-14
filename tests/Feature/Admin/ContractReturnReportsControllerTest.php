@@ -231,6 +231,65 @@ class ContractReturnReportsControllerTest extends TestCase
             : (string) $fixtures['contract']->fresh()->status);
     }
 
+    public function test_admin_can_save_return_report_with_partial_cash_payment(): void
+    {
+        $fixtures = $this->createContractReturnFixtures();
+
+        $this->actingAs($fixtures['admin'])
+            ->post(route('admin.contracts.return-report.store', [
+                'subdomain' => $fixtures['tenant']->slug,
+                'contract' => $fixtures['contract']->id,
+            ]), [
+                'actual_return_time' => today()->setTime(20, 0)->format('Y-m-d\TH:i'),
+                'return_location' => 'Main Office',
+                'return_odometer' => 1240,
+                'return_fuel_level' => 'half',
+                'vehicle_condition_after' => 'not_clean',
+                'damage_report_id' => $fixtures['damageReport']->id,
+                'payment_status' => 'partial',
+                'payment_amount' => 10,
+                'extra_kilometers' => 0,
+                'kilometer_rate' => 0,
+                'cleaning_fee' => 0,
+                'fuel_fee' => 0,
+                'fuel_credit' => 0,
+                'late_hours' => 0,
+                'late_hour_rate' => 0,
+                'damage_fee' => 0,
+                'maintenance_fee' => 30,
+                'other_fee' => 5,
+                'notes' => 'Partial return payment collected.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $report = ContractReturnReport::query()->where('contract_id', $fixtures['contract']->id)->first();
+        $this->assertNotNull($report);
+        $this->assertSame('partial', $report->payment_status);
+        $this->assertSame(35.0, (float) $report->total_extra_charges);
+        $this->assertNotNull($report->payment_id);
+
+        $payment = Payment::query()->find($report->payment_id);
+        $this->assertNotNull($payment);
+        $this->assertSame(PaymentStatus::COMPLETED->value, $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status);
+        $this->assertSame(10.0, (float) $payment->amount);
+        $this->assertSame(10.0, (float) $payment->base_amount);
+        $this->assertSame('USD', $payment->currency);
+        $this->assertSame('USD', $payment->base_currency);
+        $this->assertSame('contract_return_report', data_get($payment->gateway_data, 'cash_source.type'));
+        $this->assertSame(25.0, (float) data_get($payment->gateway_data, 'remaining_amount_after'));
+
+        $this->actingAs($fixtures['admin'])
+            ->get(route('admin.contracts.return-report', [
+                'subdomain' => $fixtures['tenant']->slug,
+                'contract' => $fixtures['contract']->id,
+            ]))
+            ->assertOk()
+            ->assertSee('"payment_status":"partial"')
+            ->assertSee('"paid_amount":10')
+            ->assertSee('"remaining_amount":25');
+    }
+
     /**
      * @return array{tenant:Tenant,admin:User,client:User,branch:Branch,car:Car,reservation:Reservation,contract:Contract,damageReport:CarDamageReport,beforeDeliveryReport:CarDamageReport}
      */

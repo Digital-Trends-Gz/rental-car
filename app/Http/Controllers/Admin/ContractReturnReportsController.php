@@ -15,6 +15,7 @@ use App\Models\Contract;
 use App\Models\ContractReturnReport;
 use App\Models\DailyTaskStatus;
 use App\Models\Payment;
+use App\Models\Reservation;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Support\BranchAccess;
@@ -363,6 +364,7 @@ class ContractReturnReportsController extends Controller
         $settings = $this->reservationSettings($tenantId);
         $damageReport = null;
         $paymentStatus = (string) ($validated['payment_status'] ?? 'not_paid');
+        $requestedPaymentAmount = $this->normalizeMoney($validated['payment_amount'] ?? 0);
 
         if (!empty($validated['damage_report_id'])) {
             $damageReport = $contract->damageReports
@@ -435,6 +437,7 @@ class ContractReturnReportsController extends Controller
         $totalExtraCharges = $this->normalizeMoney(
             $subtotalBeforeDiscount - $discount
         );
+        $paymentAmount = $this->returnReportPaymentAmount($paymentStatus, $requestedPaymentAmount, $totalExtraCharges);
 
         $report = DB::transaction(function () use (
             $request,
@@ -442,6 +445,7 @@ class ContractReturnReportsController extends Controller
             $contract,
             $damageReport,
             $paymentStatus,
+            $paymentAmount,
             $extraKilometers,
             $kilometerRate,
             $cleaningFee,
@@ -505,19 +509,35 @@ class ContractReturnReportsController extends Controller
                     $payment->user_id = $contract->reservation?->user_id;
                 }
 
-                $payment->amount = $totalExtraCharges;
-                $payment->currency = CurrencyCatalog::normalizeCode($contract->currency, CurrencyCatalog::codeForTenantId($contract->tenant_id));
+                $currency = CurrencyCatalog::normalizeCode($contract->currency, CurrencyCatalog::codeForTenantId($contract->tenant_id));
+                $payment->amount = $paymentStatus === 'not_paid' ? $totalExtraCharges : $paymentAmount;
+                $payment->currency = $currency;
+                $payment->base_currency = $currency;
+                $payment->exchange_rate = 1;
+                $payment->base_amount = $paymentStatus === 'not_paid' ? $totalExtraCharges : $paymentAmount;
                 $payment->payment_method = PaymentMethod::CASH;
-                $payment->status = $paymentStatus === 'paid'
+                $payment->status = in_array($paymentStatus, ['paid', 'partial'], true)
                     ? PaymentStatus::COMPLETED
                     : PaymentStatus::PENDING;
-                $payment->processed_at = $paymentStatus === 'paid' ? now() : null;
+                $payment->processed_at = in_array($paymentStatus, ['paid', 'partial'], true) ? now() : null;
                 $payment->notes = trim(sprintf(
                     'Return status report %s for contract %s%s.',
                     $report->report_number,
                     $contract->contract_number,
-                    $paymentStatus === 'paid' ? '' : ' pending settlement'
+                    $paymentStatus === 'paid' ? '' : ($paymentStatus === 'partial' ? ' partial settlement' : ' pending settlement')
                 ));
+                $payment->gateway_data = [
+                    'cash_source' => [
+                        'type' => 'contract_return_report',
+                        'id' => $report->id,
+                    ],
+                    'contract_id' => $contract->id,
+                    'collected_by_user_id' => $request->user()?->id,
+                    'required_amount_before' => $totalExtraCharges,
+                    'remaining_amount_after' => $paymentStatus === 'not_paid'
+                        ? $totalExtraCharges
+                        : round(max(0, $totalExtraCharges - $paymentAmount), 2),
+                ];
                 $payment->save();
 
                 $report->payment_id = $payment->id;
@@ -600,7 +620,8 @@ class ContractReturnReportsController extends Controller
             'return_fuel_level' => ['nullable', Rule::in(['empty', 'quarter', 'half', 'three_quarters', 'full'])],
             'vehicle_condition_after' => ['nullable', Rule::in(['clean', 'not_clean'])],
             'has_damage' => ['nullable', 'boolean'],
-            'payment_status' => ['nullable', Rule::in(['paid', 'not_paid'])],
+            'payment_status' => ['nullable', Rule::in(['paid', 'partial', 'not_paid'])],
+            'payment_amount' => ['nullable', 'numeric', 'min:0'],
             'damage_report_id' => ['nullable', 'integer'],
             'extra_kilometers' => ['nullable', 'numeric', 'min:0'],
             'kilometer_rate' => ['nullable', 'numeric', 'min:0'],
@@ -615,6 +636,31 @@ class ContractReturnReportsController extends Controller
             'discount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
         ]);
+    }
+
+    private function returnReportPaymentAmount(string $paymentStatus, float $requestedPaymentAmount, float $totalExtraCharges): float
+    {
+        if ($paymentStatus === 'not_paid') {
+            return 0.0;
+        }
+
+        if ($paymentStatus === 'paid') {
+            return $totalExtraCharges;
+        }
+
+        if ($totalExtraCharges <= 0) {
+            throw ValidationException::withMessages([
+                'payment_amount' => 'There is no return report amount to collect.',
+            ]);
+        }
+
+        if ($requestedPaymentAmount <= 0 || $requestedPaymentAmount >= $totalExtraCharges) {
+            throw ValidationException::withMessages([
+                'payment_amount' => 'The partial payment amount must be greater than zero and less than the total extra charges.',
+            ]);
+        }
+
+        return $requestedPaymentAmount;
     }
 
     private function ensureReturnOdometerIsNotLowerThanCheckout(Contract $contract, int $returnOdometer): void
@@ -714,9 +760,22 @@ class ContractReturnReportsController extends Controller
                 'other_fee' => 0,
                 'discount' => 0,
                 'total_extra_charges' => 0,
+                'total_amount' => 0,
+                'paid_amount' => 0,
+                'remaining_amount' => 0,
+                'currency' => null,
+                'payment_id' => null,
+                'payment_amount' => null,
+                'payment_currency' => null,
+                'base_amount' => null,
+                'base_currency' => null,
+                'exchange_rate' => null,
+                'payments' => [],
                 'notes' => '',
             ];
         }
+
+        $paymentSummary = $this->returnReportPaymentSummary($report);
 
         return [
             'id' => $report->id,
@@ -728,7 +787,7 @@ class ContractReturnReportsController extends Controller
             'return_fuel_level' => $report->return_fuel_level,
             'vehicle_condition_after' => $report->vehicle_condition_after,
             'has_damage' => $report->has_damage,
-            'payment_status' => $report->payment_status ?? ($report->payment ? 'paid' : 'not_paid'),
+            'payment_status' => $paymentSummary['payment_status'],
             'damage_report_id' => $report->damage_report_id,
             'extra_kilometers' => $report->extra_kilometers,
             'kilometer_rate' => $report->kilometer_rate,
@@ -742,8 +801,108 @@ class ContractReturnReportsController extends Controller
             'other_fee' => $report->other_fee,
             'discount' => $report->discount ?? 0,
             'total_extra_charges' => $report->total_extra_charges,
+            'total_amount' => $paymentSummary['total_amount'],
+            'paid_amount' => $paymentSummary['paid_amount'],
+            'remaining_amount' => $paymentSummary['remaining_amount'],
+            'currency' => $paymentSummary['currency'],
+            'payment_id' => $paymentSummary['payment_id'],
+            'payment_amount' => $paymentSummary['payment_amount'],
+            'payment_currency' => $paymentSummary['payment_currency'],
+            'base_amount' => $paymentSummary['base_amount'],
+            'base_currency' => $paymentSummary['base_currency'],
+            'exchange_rate' => $paymentSummary['exchange_rate'],
+            'payments' => $paymentSummary['payments'],
             'notes' => $report->notes,
         ];
+    }
+
+    private function returnReportPaymentSummary(ContractReturnReport $report): array
+    {
+        $report->loadMissing(['reservation.payments', 'contract']);
+
+        $payments = $this->completedReservationPayments($report->reservation)
+            ->filter(fn (Payment $payment): bool => $this->isPaymentForReturnReport($payment, $report))
+            ->values();
+
+        $paid = $payments->sum(fn (Payment $payment): float => $this->paymentAccountingAmount($payment));
+        $remaining = round(max(0, (float) $report->total_extra_charges - (float) $paid), 2);
+        $displayPayment = $report->payment_id
+            ? $payments->first(fn (Payment $payment): bool => (int) $payment->id === (int) $report->payment_id)
+            : null;
+        $displayPayment ??= $payments->last();
+
+        return [
+            'total_amount' => (float) $report->total_extra_charges,
+            'paid_amount' => round((float) $paid, 2),
+            'remaining_amount' => $remaining,
+            'currency' => $this->contractCurrency($report),
+            'payment_status' => $remaining <= 0 ? 'paid' : ($paid > 0 ? 'partial' : 'not_paid'),
+            'payment_id' => $report->payment_id,
+            'payment_amount' => $displayPayment ? (float) $displayPayment->amount : null,
+            'payment_currency' => $displayPayment?->currency,
+            'base_amount' => $displayPayment ? $this->paymentAccountingAmount($displayPayment) : null,
+            'base_currency' => $displayPayment?->base_currency ?: $displayPayment?->currency,
+            'exchange_rate' => $displayPayment ? (float) ($displayPayment->exchange_rate ?? 1) : null,
+            'payments' => $payments
+                ->map(fn (Payment $payment): array => $this->paymentSummaryPayload($payment))
+                ->all(),
+        ];
+    }
+
+    private function completedReservationPayments(?Reservation $reservation)
+    {
+        if (!$reservation) {
+            return collect();
+        }
+
+        $reservation->loadMissing(['payments', 'contract.returnStatusReport']);
+
+        return $reservation->payments
+            ->filter(fn (Payment $payment): bool => $this->paymentStatusValue($payment) === PaymentStatus::COMPLETED->value)
+            ->values();
+    }
+
+    private function isPaymentForReturnReport(Payment $payment, ContractReturnReport $report): bool
+    {
+        $sourceType = (string) data_get($payment->gateway_data, 'cash_source.type');
+        $sourceId = (int) data_get($payment->gateway_data, 'cash_source.id');
+
+        if ($sourceType === 'contract_return_report' && $sourceId === (int) $report->id) {
+            return true;
+        }
+
+        return $report->payment_id && (int) $payment->id === (int) $report->payment_id;
+    }
+
+    private function paymentAccountingAmount(Payment $payment): float
+    {
+        return round((float) ($payment->base_amount ?? $payment->amount), 2);
+    }
+
+    private function paymentSummaryPayload(Payment $payment): array
+    {
+        return [
+            'id' => $payment->id,
+            'amount' => (float) $payment->amount,
+            'currency' => $payment->currency,
+            'base_amount' => $this->paymentAccountingAmount($payment),
+            'base_currency' => $payment->base_currency ?: $payment->currency,
+            'exchange_rate' => (float) ($payment->exchange_rate ?? 1),
+            'status' => $this->paymentStatusValue($payment),
+        ];
+    }
+
+    private function paymentStatusValue(Payment $payment): string
+    {
+        return $payment->status instanceof PaymentStatus ? $payment->status->value : (string) $payment->status;
+    }
+
+    private function contractCurrency(ContractReturnReport $report): string
+    {
+        return CurrencyCatalog::normalizeCode(
+            $report->contract?->currency,
+            CurrencyCatalog::codeForTenantId($report->tenant_id ?? $report->contract?->tenant_id)
+        );
     }
 
     private function normalizeMoney(mixed $value): float

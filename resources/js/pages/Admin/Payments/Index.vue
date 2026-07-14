@@ -15,6 +15,10 @@ const props = defineProps<{
             payment_number: string;
             amount: number | string;
             currency?: string;
+            base_amount?: number | string;
+            base_currency?: string;
+            exchange_rate?: number | string | null;
+            has_currency_conversion?: boolean;
             payment_method: string;
             status: string;
             processed_at?: string | null;
@@ -72,6 +76,20 @@ function fmtMoney(n?: number | string) {
 
     const v = Number(n ?? 0);
     return `${props.currency.symbol}${v.toFixed(2)}`;
+}
+
+function fmtCurrencyAmount(n?: number | string, currency?: string) {
+    if (!hasFinancialAccess.value) {
+        return '*******';
+    }
+
+    const v = Number(n ?? 0);
+    return `${currency || props.currency.code || ''} ${v.toFixed(2)}`.trim();
+}
+
+function fmtRate(n?: number | string | null) {
+    const v = Number(n ?? 1);
+    return Number.isFinite(v) ? v.toFixed(8).replace(/\.?0+$/, '') : '1';
 }
 
 // Generate status colors based on the colors from the backend
@@ -220,7 +238,26 @@ const getStatusColor = (status: string) => {
                             </td>
                             <td class="px-4 py-3">{{ p.branch_name || t('dashboard.admin.employees.table.no_branch') }}</td>
                             <td class="px-4 py-3 font-semibold text-green-800">
-                                {{ fmtMoney(p.amount) }}
+                                <div>{{ fmtCurrencyAmount(p.amount, p.currency) }}</div>
+                                <div
+                                    v-if="p.has_currency_conversion"
+                                    class="mt-1 max-w-[220px] text-xs font-normal leading-5 text-muted-foreground"
+                                >
+                                    <div>
+                                        {{
+                                            localize('Converted to', 'تم التحويل إلى')
+                                        }}
+                                        <span class="font-medium text-gray-700">
+                                            {{ fmtCurrencyAmount(p.base_amount, p.base_currency) }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        {{ localize('Rate', 'سعر الصرف') }}:
+                                        1 {{ p.currency }} =
+                                        {{ fmtRate(p.exchange_rate) }}
+                                        {{ p.base_currency }}
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-4 py-3">{{ p.payment_method }}</td>
                             <td class="px-4 py-3">

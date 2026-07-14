@@ -8,6 +8,8 @@ use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -70,6 +72,24 @@ class SettingsControllerTest extends TestCase
 
     public function test_currencies_endpoint_returns_tenant_enabled_currencies_for_authenticated_user(): void
     {
+        Cache::flush();
+        Http::fake([
+            'api.frankfurter.dev/v2/rates*' => Http::response([
+                [
+                    'date' => '2026-07-14',
+                    'base' => 'OMR',
+                    'quote' => 'AED',
+                    'rate' => 9.54,
+                ],
+                [
+                    'date' => '2026-07-14',
+                    'base' => 'OMR',
+                    'quote' => 'USD',
+                    'rate' => 2.60,
+                ],
+            ]),
+        ]);
+
         $tenant = Tenant::factory()->create();
         TenantSiteSetting::query()->create([
             'tenant_id' => $tenant->id,
@@ -90,9 +110,20 @@ class SettingsControllerTest extends TestCase
             ->assertJsonPath('source', 'tenant')
             ->assertJsonPath('base_currency_code', 'OMR')
             ->assertJsonPath('enabled_currency_codes', ['AED', 'USD', 'OMR'])
+            ->assertJsonPath('exchange_rates_source', 'frankfurter')
+            ->assertJsonPath('exchange_rates_date', '2026-07-14')
             ->assertJsonCount(3, 'currencies')
             ->assertJsonPath('currencies.0.code', 'AED')
+            ->assertJsonPath('currencies.0.exchange_rate', 9.54)
             ->assertJsonPath('currencies.1.code', 'USD')
-            ->assertJsonPath('currencies.2.code', 'OMR');
+            ->assertJsonPath('currencies.1.exchange_rate', 2.60)
+            ->assertJsonPath('currencies.2.code', 'OMR')
+            ->assertJsonPath('currencies.2.exchange_rate', 1);
+
+        Http::assertSent(function ($request): bool {
+            return str_starts_with($request->url(), 'https://api.frankfurter.dev/v2/rates')
+                && $request['base'] === 'OMR'
+                && $request['quotes'] === 'AED,USD';
+        });
     }
 }

@@ -61,6 +61,12 @@ class PaymentsController extends Controller
                 'payment_number' => $payment->payment_number,
                 'amount' => FinancialVisibility::numericAmount($payment->amount, $canViewFinancialAmounts),
                 'currency' => $payment->currency,
+                'base_amount' => FinancialVisibility::numericAmount($payment->base_amount ?? $payment->amount, $canViewFinancialAmounts),
+                'base_currency' => $payment->base_currency ?: $payment->currency,
+                'exchange_rate' => $canViewFinancialAmounts ? (float) ($payment->exchange_rate ?? 1) : null,
+                'has_currency_conversion' => $payment->currency
+                    && ($payment->base_currency ?: $payment->currency)
+                    && strtoupper((string) $payment->currency) !== strtoupper((string) ($payment->base_currency ?: $payment->currency)),
                 'payment_method' => $payment->payment_method instanceof \BackedEnum ? $payment->payment_method->value : (string) $payment->payment_method,
                 'status' => $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status,
                 'processed_at' => optional($payment->processed_at)->toDateTimeString(),

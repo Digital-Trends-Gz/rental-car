@@ -10,6 +10,9 @@ use App\Models\TenantSiteSetting;
 use App\Support\CurrencyCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Throwable;
 
 class SettingsController extends Controller
 {
@@ -117,28 +120,171 @@ class SettingsController extends Controller
                 $settings = TenantSiteSetting::forTenant($tenant);
                 $baseCurrency = CurrencyCatalog::forTenant($tenant, null, $locale);
                 $enabledCurrencyCodes = $this->enabledCurrencyCodes($settings, $baseCurrency['code']);
+                $exchangeRatePayload = $this->exchangeRatesForCurrencies($baseCurrency['code'], $enabledCurrencyCodes);
                 $currencies = array_map(
-                    static fn (string $code): array => CurrencyCatalog::find($code, $locale),
+                    fn (string $code): array => $this->currencyWithExchangeRate($code, $locale, $exchangeRatePayload['rates']),
                     $enabledCurrencyCodes
                 );
 
                 return response()->json([
                     'source' => 'tenant',
                     'locale' => $locale,
+                    'base_currency_code' => $baseCurrency['code'],
+                    'enabled_currency_codes' => $enabledCurrencyCodes,
+                    'exchange_rates_source' => $exchangeRatePayload['source'],
+                    'exchange_rates_date' => $exchangeRatePayload['date'],
                     'count' => count($currencies),
                     'currencies' => $currencies,
                 ]);
             }
         }
 
-        $currencies = CurrencyCatalog::all($locale);
+        $baseCurrencyCode = CurrencyCatalog::normalizeCode(config('app.currency_code', 'USD'));
+        $currencyCodes = array_values(array_map(
+            static fn (array $currency): string => $currency['code'],
+            CurrencyCatalog::all($locale)
+        ));
+        $exchangeRatePayload = $this->exchangeRatesForCurrencies($baseCurrencyCode, $currencyCodes);
+        $currencies = array_map(
+            fn (string $code): array => $this->currencyWithExchangeRate($code, $locale, $exchangeRatePayload['rates']),
+            $currencyCodes
+        );
 
         return response()->json([
             'source' => 'catalog',
             'locale' => $locale,
+            'base_currency_code' => $baseCurrencyCode,
+            'exchange_rates_source' => $exchangeRatePayload['source'],
+            'exchange_rates_date' => $exchangeRatePayload['date'],
             'count' => count($currencies),
             'currencies' => $currencies,
         ]);
+    }
+
+    /**
+     * @param  list<string>  $currencyCodes
+     * @return array{source: string, date: string|null, rates: array<string, float>}
+     */
+    private function exchangeRatesForCurrencies(string $baseCurrencyCode, array $currencyCodes): array
+    {
+        $baseCurrencyCode = CurrencyCatalog::normalizeCode($baseCurrencyCode);
+        $currencyCodes = collect($currencyCodes)
+            ->map(fn (mixed $code): string => CurrencyCatalog::normalizeCode($code, $baseCurrencyCode))
+            ->unique()
+            ->values()
+            ->all();
+
+        $rates = array_fill_keys($currencyCodes, 1.0);
+        $quoteCodes = array_values(array_diff($currencyCodes, [$baseCurrencyCode]));
+
+        if (empty($quoteCodes)) {
+            return [
+                'source' => 'base',
+                'date' => null,
+                'rates' => $rates,
+            ];
+        }
+
+        $cacheKey = 'exchange-rates.frankfurter.v2.'.strtolower($baseCurrencyCode).'.'.md5(implode(',', $quoteCodes));
+        $cached = Cache::get($cacheKey);
+
+        if (is_array($cached)) {
+            return [
+                'source' => 'frankfurter_cache',
+                'date' => $cached['date'] ?? null,
+                'rates' => array_replace($rates, (array) ($cached['rates'] ?? [])),
+            ];
+        }
+
+        try {
+            $response = Http::timeout(5)
+                ->acceptJson()
+                ->get('https://api.frankfurter.dev/v2/rates', [
+                    'base' => $baseCurrencyCode,
+                    'quotes' => implode(',', $quoteCodes),
+                ]);
+
+            if ($response->successful()) {
+                $payload = $response->json();
+                $externalRates = $this->extractFrankfurterRates($payload, $baseCurrencyCode);
+                $freshRates = array_replace($rates, $externalRates, [$baseCurrencyCode => 1.0]);
+                $freshPayload = [
+                    'date' => $this->extractFrankfurterDate($payload),
+                    'rates' => $freshRates,
+                ];
+
+                Cache::put($cacheKey, $freshPayload, now()->addHours(12));
+
+                return [
+                    'source' => 'frankfurter',
+                    'date' => $freshPayload['date'],
+                    'rates' => $freshRates,
+                ];
+            }
+        } catch (Throwable) {
+        }
+
+        return [
+            'source' => 'fallback',
+            'date' => null,
+            'rates' => $rates,
+        ];
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function extractFrankfurterRates(mixed $payload, string $baseCurrencyCode): array
+    {
+        $rateMap = data_get($payload, 'rates');
+
+        if (is_array($rateMap)) {
+            return collect($rateMap)
+                ->mapWithKeys(fn (mixed $rate, string $code): array => [
+                    CurrencyCatalog::normalizeCode($code, $baseCurrencyCode) => round((float) $rate, 8),
+                ])
+                ->all();
+        }
+
+        if (is_array($payload) && array_is_list($payload)) {
+            return collect($payload)
+                ->filter(fn (mixed $row): bool => is_array($row) && data_get($row, 'quote') !== null)
+                ->mapWithKeys(fn (array $row): array => [
+                    CurrencyCatalog::normalizeCode(data_get($row, 'quote'), $baseCurrencyCode) => round((float) data_get($row, 'rate', 1), 8),
+                ])
+                ->all();
+        }
+
+        return [];
+    }
+
+    private function extractFrankfurterDate(mixed $payload): ?string
+    {
+        $date = data_get($payload, 'date');
+
+        if ($date !== null) {
+            return (string) $date;
+        }
+
+        if (is_array($payload) && array_is_list($payload)) {
+            $date = data_get($payload, '0.date');
+
+            return $date !== null ? (string) $date : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, float>  $rates
+     * @return array{code:string,abbreviation:string,name:string,currency:string,symbol:string,icon:string,label:string,exchange_rate:float}
+     */
+    private function currencyWithExchangeRate(string $code, string $locale, array $rates): array
+    {
+        $currency = CurrencyCatalog::find($code, $locale);
+        $currency['exchange_rate'] = round((float) ($rates[$currency['code']] ?? 1.0), 8);
+
+        return $currency;
     }
 
     private function nullableString(mixed $value): ?string

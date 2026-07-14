@@ -90,6 +90,25 @@ const props = defineProps<{
         other_fee: number | null;
         discount: number | null;
         total_extra_charges: number | null;
+        total_amount?: number | null;
+        paid_amount?: number | null;
+        remaining_amount?: number | null;
+        currency?: string | null;
+        payment_id?: number | null;
+        payment_amount?: number | null;
+        payment_currency?: string | null;
+        base_amount?: number | null;
+        base_currency?: string | null;
+        exchange_rate?: number | null;
+        payments?: Array<{
+            id: number;
+            amount: number;
+            currency: string | null;
+            base_amount: number;
+            base_currency: string | null;
+            exchange_rate: number;
+            status: string;
+        }>;
         notes: string | null;
     };
     defaults: {
@@ -191,8 +210,11 @@ const arabicTranslations: Record<string, string> = {
     'Damage report selection is disabled when there is no damage.': 'يتم تعطيل اختيار تقرير الضرر عند عدم وجود ضرر.',
     'Payment Status': 'حالة الدفع',
     'Not Paid': 'غير مدفوعة',
+    'Partial': 'مدفوعة جزئياً',
     'Paid': 'مدفوعة',
     'Set Paid to create the extra payment and lock the report after saving.': 'اختر مدفوعة لإنشاء الدفعة الإضافية وقفل التقرير بعد الحفظ.',
+    'Partial Payment Amount': 'مبلغ الدفعة الجزئية',
+    'Enter the amount collected now. It must be less than the total extra charges.': 'أدخل المبلغ الذي تم تحصيله الآن. يجب أن يكون أقل من إجمالي الرسوم الإضافية.',
     'Contract vs Return': 'مقارنة العقد مع الإرجاع',
     'Use this section to compare the original contract values with the actual return values.': 'استخدم هذا القسم لمقارنة قيم العقد الأصلية مع قيم الإرجاع الفعلية.',
     'Compare the contract odometer and expected return time against the actual return values.': 'قارن عداد العقد ووقت الإرجاع المتوقع مع القيم الفعلية عند الإرجاع.',
@@ -239,6 +261,14 @@ const arabicTranslations: Record<string, string> = {
     'hours': 'ساعات',
     'Applied after all charges and credits.': 'يطبق بعد كل الرسوم والأرصدة.',
     'Total Extra Charges': 'إجمالي الرسوم الإضافية',
+    'Paid Amount': 'المبلغ المدفوع',
+    'Remaining Amount': 'المبلغ المتبقي',
+    'Payment Exchange Rate': 'سعر صرف الدفعة',
+    'Paid in': 'تم الدفع بعملة',
+    'Base amount': 'المبلغ الأساسي',
+    'Exchange rate': 'سعر الصرف',
+    'No payment recorded yet.': 'لم يتم تسجيل دفعة بعد.',
+    'Fully paid': 'مدفوع بالكامل',
     'Fuel credit deducted from the total.': 'تم خصم رصيد الوقود من الإجمالي.',
     'Credit due to customer': 'الرصيد المستحق للعميل',
     'Notes': 'ملاحظات',
@@ -318,6 +348,7 @@ function fuelLevelStorageValue(value: string | null | undefined) {
 const form = useForm({
     actual_return_time: props.report.actual_return_time ?? '',
     payment_status: props.report.payment_status ?? 'not_paid',
+    payment_amount: props.report.payment_amount ?? '',
     return_location: props.report.return_location ?? props.contract.reservation?.return_location ?? '',
     return_odometer: props.report.return_odometer ?? props.contract.vehicle_odometer ?? '',
     return_fuel_level: fuelLevelStorageValue(props.report.return_fuel_level ?? props.contract.vehicle_fuel_level ?? ''),
@@ -830,6 +861,51 @@ const totalExtraCharges = computed(() => {
     return roundMoney(chargesBeforeDiscount.value - appliedDiscount.value);
 });
 
+const paidAmount = computed(() => roundMoney(Number(props.report.paid_amount ?? 0)));
+
+const remainingAmount = computed(() => {
+    return roundMoney(Math.max(0, totalExtraCharges.value - paidAmount.value));
+});
+
+const reportCurrencyCode = computed(() => {
+    return (props.report.currency ?? page.props.currency?.code ?? '').toString().toUpperCase();
+});
+
+const paymentCurrencyCode = computed(() => {
+    return (props.report.payment_currency ?? '').toString().toUpperCase();
+});
+
+const paymentDisplayAmount = computed(() => {
+    return Number(props.report.payment_amount ?? props.report.paid_amount ?? 0);
+});
+
+const paymentBaseCurrencyCode = computed(() => {
+    return (props.report.base_currency ?? props.report.currency ?? page.props.currency?.code ?? '').toString().toUpperCase();
+});
+
+const hasPayment = computed(() => paidAmount.value > 0 || Number(props.report.payment_amount ?? 0) > 0);
+
+const hasDifferentPaymentCurrency = computed(() => {
+    return Boolean(
+        hasPayment.value &&
+            paymentCurrencyCode.value &&
+            reportCurrencyCode.value &&
+            paymentCurrencyCode.value !== reportCurrencyCode.value,
+    );
+});
+
+const formatCurrencyCodeAmount = (currency: string | null | undefined, amount: number) => {
+    const code = (currency ?? '').toString().trim().toUpperCase();
+
+    return `${code ? `${code} ` : ''}${Number(amount || 0).toFixed(2)}`;
+};
+
+const formatSummaryAmount = (amount: number) => {
+    return reportCurrencyCode.value
+        ? formatCurrencyCodeAmount(reportCurrencyCode.value, amount)
+        : `${currencySymbol.value}${Number(amount || 0).toFixed(2)}`;
+};
+
 watch(
     computedExtraKilometers,
     (value) => {
@@ -934,6 +1010,7 @@ function submit() {
     form.transform((data) => ({
         ...data,
         payment_status: data.payment_status || 'not_paid',
+        payment_amount: data.payment_status === 'partial' ? Number(data.payment_amount || 0) : null,
         extra_kilometers: Number(data.extra_kilometers || 0),
         kilometer_rate: Number(data.kilometer_rate || 0),
         cleaning_fee: Number(data.cleaning_fee || 0),
@@ -1133,12 +1210,28 @@ function submit() {
                             <Label for="payment_status">{{ localize('Payment Status', 'حالة الدفع') }}</Label>
                             <select id="payment_status" v-model="form.payment_status" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                                 <option value="not_paid">{{ localize('Not Paid', 'غير مدفوعة') }}</option>
+                                <option value="partial">{{ localize('Partial', 'مدفوعة جزئياً') }}</option>
                                 <option value="paid">{{ localize('Paid', 'مدفوعة') }}</option>
                             </select>
                             <p class="mt-1 text-xs text-muted-foreground">
                                 {{ localize('Set Paid to create the extra payment and lock the report after saving.', 'اختر مدفوعة لإنشاء الدفعة الإضافية وقفل التقرير بعد الحفظ.') }}
                             </p>
                             <InputError :message="form.errors.payment_status" class="mt-1" />
+                        </div>
+                        <div v-if="form.payment_status === 'partial'">
+                            <Label for="payment_amount">{{ localize('Partial Payment Amount', 'مبلغ الدفعة الجزئية') }}</Label>
+                            <Input
+                                id="payment_amount"
+                                v-model="form.payment_amount"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="mt-1"
+                            />
+                            <p class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('Enter the amount collected now. It must be less than the total extra charges.', 'أدخل المبلغ الذي تم تحصيله الآن. يجب أن يكون أقل من إجمالي الرسوم الإضافية.') }}
+                            </p>
+                            <InputError :message="form.errors.payment_amount" class="mt-1" />
                         </div>
                     </CardContent>
                 </Card>
@@ -1414,12 +1507,42 @@ function submit() {
                         </div>
                         <div class="rounded-md border border-primary/30 bg-primary/5 p-4">
                             <div class="text-sm text-primary">{{ localize('Total Extra Charges', 'إجمالي الرسوم الإضافية') }}</div>
-                            <div class="mt-1 text-2xl font-bold text-primary">{{ currencySymbol }}{{ Number(totalExtraCharges).toFixed(2) }}</div>
+                            <div class="mt-1 text-2xl font-bold text-primary">{{ formatSummaryAmount(totalExtraCharges) }}</div>
                             <div v-if="Number(form.fuel_credit || 0) > 0" class="mt-1 text-xs text-muted-foreground">
                                 {{ localize('Fuel credit deducted from the total.', 'تم خصم رصيد البنزين من الإجمالي.') }}
                             </div>
                             <div v-if="Number(totalExtraCharges) < 0" class="mt-1 text-xs font-semibold text-emerald-600">
                                 {{ localize('Credit due to customer', 'الرصيد المستحق للعميل') }}
+                            </div>
+                        </div>
+                        <div class="rounded-md border bg-muted/20 p-4">
+                            <div class="text-sm text-muted-foreground">{{ localize('Paid Amount', 'المبلغ المدفوع') }}</div>
+                            <div class="mt-1 text-xl font-semibold text-emerald-600">{{ formatSummaryAmount(paidAmount) }}</div>
+                            <div class="mt-1 text-xs text-muted-foreground">
+                                <template v-if="hasPayment && paymentCurrencyCode">
+                                    {{ localize('Paid in', 'تم الدفع بعملة') }} {{ formatCurrencyCodeAmount(paymentCurrencyCode, paymentDisplayAmount) }}
+                                </template>
+                                <template v-else>
+                                    {{ localize('No payment recorded yet.', 'لم يتم تسجيل دفعة بعد.') }}
+                                </template>
+                            </div>
+                        </div>
+                        <div class="rounded-md border bg-muted/20 p-4">
+                            <div class="text-sm text-muted-foreground">{{ localize('Remaining Amount', 'المبلغ المتبقي') }}</div>
+                            <div class="mt-1 text-xl font-semibold" :class="remainingAmount > 0 ? 'text-amber-600' : 'text-emerald-600'">
+                                {{ formatSummaryAmount(remainingAmount) }}
+                            </div>
+                            <div v-if="remainingAmount <= 0" class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('Fully paid', 'مدفوع بالكامل') }}
+                            </div>
+                        </div>
+                        <div v-if="hasDifferentPaymentCurrency" class="rounded-md border bg-muted/20 p-4">
+                            <div class="text-sm text-muted-foreground">{{ localize('Payment Exchange Rate', 'سعر صرف الدفعة') }}</div>
+                            <div class="mt-1 text-lg font-semibold">
+                                {{ localize('Exchange rate', 'سعر الصرف') }}: {{ Number(props.report.exchange_rate || 1).toFixed(2) }}
+                            </div>
+                            <div class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('Base amount', 'المبلغ الأساسي') }}: {{ formatCurrencyCodeAmount(paymentBaseCurrencyCode, Number(props.report.base_amount ?? paidAmount)) }}
                             </div>
                         </div>
                     </CardContent>

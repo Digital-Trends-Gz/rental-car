@@ -4820,11 +4820,13 @@ class ContractsController extends Controller
             return null;
         }
 
+        $paymentSummary = $this->returnReportPaymentSummary($report);
+
         return [
             'id' => $report->id,
             'report_number' => $report->report_number,
             'status' => $report->status,
-            'payment_status' => $report->payment_status ?? 'not_paid',
+            'payment_status' => $paymentSummary['payment_status'],
             'actual_return_time' => optional($report->actual_return_time)?->toIso8601String(),
             'return_location' => $report->return_location,
             'return_odometer' => $report->return_odometer,
@@ -4844,8 +4846,108 @@ class ContractsController extends Controller
             'other_fee' => $report->other_fee,
             'discount' => $report->discount,
             'total_extra_charges' => $report->total_extra_charges,
+            'total_amount' => $paymentSummary['total_amount'],
+            'paid_amount' => $paymentSummary['paid_amount'],
+            'remaining_amount' => $paymentSummary['remaining_amount'],
+            'currency' => $paymentSummary['currency'],
+            'payment_id' => $paymentSummary['payment_id'],
+            'payment_amount' => $paymentSummary['payment_amount'],
+            'payment_currency' => $paymentSummary['payment_currency'],
+            'base_amount' => $paymentSummary['base_amount'],
+            'base_currency' => $paymentSummary['base_currency'],
+            'exchange_rate' => $paymentSummary['exchange_rate'],
+            'payments' => $paymentSummary['payments'],
             'notes' => $report->notes,
         ];
+    }
+
+    private function returnReportPaymentSummary(ContractReturnReport $report): array
+    {
+        $report->loadMissing(['reservation.payments', 'contract']);
+
+        $payments = $this->completedReservationPayments($report->reservation)
+            ->filter(fn (Payment $payment): bool => $this->isPaymentForReturnReport($payment, $report))
+            ->values();
+
+        $paid = $payments->sum(fn (Payment $payment): float => $this->paymentAccountingAmount($payment));
+        $remaining = round(max(0, (float) $report->total_extra_charges - (float) $paid), 2);
+        $displayPayment = $report->payment_id
+            ? $payments->first(fn (Payment $payment): bool => (int) $payment->id === (int) $report->payment_id)
+            : null;
+        $displayPayment ??= $payments->last();
+
+        return [
+            'total_amount' => (float) $report->total_extra_charges,
+            'paid_amount' => round((float) $paid, 2),
+            'remaining_amount' => $remaining,
+            'currency' => $this->contractCurrency($report),
+            'payment_status' => $remaining <= 0 ? 'paid' : ($paid > 0 ? 'partial' : 'not_paid'),
+            'payment_id' => $report->payment_id,
+            'payment_amount' => $displayPayment ? (float) $displayPayment->amount : null,
+            'payment_currency' => $displayPayment?->currency,
+            'base_amount' => $displayPayment ? $this->paymentAccountingAmount($displayPayment) : null,
+            'base_currency' => $displayPayment?->base_currency ?: $displayPayment?->currency,
+            'exchange_rate' => $displayPayment ? (float) ($displayPayment->exchange_rate ?? 1) : null,
+            'payments' => $payments
+                ->map(fn (Payment $payment): array => $this->paymentSummaryPayload($payment))
+                ->all(),
+        ];
+    }
+
+    private function completedReservationPayments(?Reservation $reservation)
+    {
+        if (!$reservation) {
+            return collect();
+        }
+
+        $reservation->loadMissing(['payments', 'contract.returnStatusReport']);
+
+        return $reservation->payments
+            ->filter(fn (Payment $payment): bool => $this->paymentStatusValue($payment) === PaymentStatus::COMPLETED->value)
+            ->values();
+    }
+
+    private function isPaymentForReturnReport(Payment $payment, ContractReturnReport $report): bool
+    {
+        $sourceType = (string) data_get($payment->gateway_data, 'cash_source.type');
+        $sourceId = (int) data_get($payment->gateway_data, 'cash_source.id');
+
+        if ($sourceType === 'contract_return_report' && $sourceId === (int) $report->id) {
+            return true;
+        }
+
+        return $report->payment_id && (int) $payment->id === (int) $report->payment_id;
+    }
+
+    private function paymentAccountingAmount(Payment $payment): float
+    {
+        return round((float) ($payment->base_amount ?? $payment->amount), 2);
+    }
+
+    private function paymentSummaryPayload(Payment $payment): array
+    {
+        return [
+            'id' => $payment->id,
+            'amount' => (float) $payment->amount,
+            'currency' => $payment->currency,
+            'base_amount' => $this->paymentAccountingAmount($payment),
+            'base_currency' => $payment->base_currency ?: $payment->currency,
+            'exchange_rate' => (float) ($payment->exchange_rate ?? 1),
+            'status' => $this->paymentStatusValue($payment),
+        ];
+    }
+
+    private function paymentStatusValue(Payment $payment): string
+    {
+        return $payment->status instanceof PaymentStatus ? $payment->status->value : (string) $payment->status;
+    }
+
+    private function contractCurrency(ContractReturnReport $report): string
+    {
+        return CurrencyCatalog::normalizeCode(
+            $report->contract?->currency,
+            CurrencyCatalog::codeForTenantId($report->tenant_id ?? $report->contract?->tenant_id)
+        );
     }
 
     private function returnStatusReportFilePayload(Contract $contract, ?ContractReturnReport $report): ?array

@@ -73,7 +73,7 @@ class ClientStatusService
         return ClientFlag::query()
             ->where('user_id', $client->id)
             ->where('is_active', true)
-            ->orderByRaw("FIELD(severity, 'danger', 'warning', 'info')")
+            ->orderByRaw("CASE severity WHEN 'danger' THEN 0 WHEN 'warning' THEN 1 WHEN 'info' THEN 2 ELSE 3 END")
             ->latest('id')
             ->get()
             ->map(function (ClientFlag $flag) use ($locale): array {
