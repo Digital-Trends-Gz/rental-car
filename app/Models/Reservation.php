@@ -243,7 +243,9 @@ class Reservation extends Model
         return $query
             ->whereIn('status', $statuses)
             ->whereDoesntHave('contract', function (Builder $contractQuery): void {
-                $contractQuery->where('status', ContractStatus::ACTIVE->value);
+                $contractQuery
+                    ->where('status', ContractStatus::ACTIVE->value)
+                    ->whereRaw("JSON_EXTRACT(handover_state, '$.steps.delivery_confirmation.payload.delivery_confirmed') = true");
             })
             ->whereNotExists(function ($taskQuery) use ($date): void {
                 $taskQuery->selectRaw('1')

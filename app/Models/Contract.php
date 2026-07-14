@@ -140,7 +140,9 @@ class Contract extends Model
     {
         return $query
             ->where('status', ContractStatus::ACTIVE->value)
-            ->whereDoesntHave('returnStatusReport')
+            ->whereDoesntHave('returnStatusReport', function (Builder $returnReportQuery): void {
+                $returnReportQuery->where('status', 'finalized');
+            })
             ->whereNotExists(function ($taskQuery) use ($date): void {
                 $taskQuery->selectRaw('1')
                     ->from((new DailyTaskStatus())->getTable())

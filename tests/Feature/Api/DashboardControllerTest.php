@@ -17,11 +17,232 @@ use App\Services\Rentals\RentalStatusSyncService;
 use Laravel\Sanctum\Sanctum;
 
 beforeEach(function () {
-    app()->instance(RentalStatusSyncService::class, new class {
-        public function syncCarsByIds(array $carIds): void
+    app()->instance(RentalStatusSyncService::class, new class extends RentalStatusSyncService {
+        public function syncCarsByIds(array $carIds, bool $dryRun = false, ?int $reserveBeforeHours = null): int
         {
+            return 0;
         }
     });
+});
+
+test('pickup remains visible after delivery handover starts until delivery is confirmed', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Pickup Branch',
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'role' => UserRole::ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $client = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::CLIENT,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $car = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Toyota',
+        'model' => 'Camry',
+        'year' => 2024,
+        'license_plate' => 'PU-START-14',
+        'color' => CarColor::BLACK->value,
+        'price_per_day' => 50,
+        'mileage' => 1000,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'status' => CarStatus::RESERVED->value,
+    ]);
+
+    $reservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $car->id,
+        'reservation_number' => 'RES-PU-START-14',
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'pickup_time' => '09:00',
+        'return_time' => '18:00',
+        'pickup_location' => 'Main Office',
+        'return_location' => 'Main Office',
+        'total_days' => 2,
+        'daily_rate' => 50,
+        'subtotal' => 100,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 100,
+        'status' => ReservationStatus::ACTIVE,
+    ]);
+
+    Contract::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'reservation_id' => $reservation->id,
+        'contract_number' => 'CTR-PU-START-14',
+        'status' => ContractStatus::ACTIVE->value,
+        'contract_date' => today()->toDateString(),
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'handover_state' => [
+            'current_page' => 2,
+            'completed_pages' => [1],
+            'steps' => [
+                'customer_review' => [
+                    'page' => 1,
+                    'key' => 'customer_review',
+                    'completed' => true,
+                    'payload' => ['reviewed' => true],
+                ],
+            ],
+        ],
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $this->getJson(route('api.reservations.today-pickups', [
+        'type' => '',
+        'per_page' => 100,
+        'page' => 1,
+    ]))
+        ->assertOk()
+        ->assertJsonPath('pickup.count', 1)
+        ->assertJsonPath('reservations.0.id', $reservation->id);
+
+    $summary = $this->getJson(route('api.dashboard.summary'))
+        ->assertOk();
+
+    $todayPickupCard = collect($summary->json('cards'))->firstWhere('key', 'today_pickups');
+    expect($todayPickupCard['count'])->toBe(1);
+    expect($todayPickupCard['items'][0]['reservation_id'])->toBe($reservation->id);
+
+    $this->getJson(route('api.tasks.today', ['type' => 'pickup']))
+        ->assertOk()
+        ->assertJsonPath('progress.total', 1)
+        ->assertJsonPath('tasks.0.source_type', 'reservation')
+        ->assertJsonPath('tasks.0.source_id', $reservation->id);
+});
+
+test('return remains visible after return handover starts until return is finalized', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Return Branch',
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'role' => UserRole::ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $client = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::CLIENT,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $car = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Hyundai',
+        'model' => 'Tucson',
+        'year' => 2023,
+        'license_plate' => 'RET-START-14',
+        'color' => CarColor::BLACK->value,
+        'price_per_day' => 80,
+        'mileage' => 2000,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'status' => CarStatus::RENTED->value,
+    ]);
+
+    $reservation = Reservation::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $client->id,
+        'car_id' => $car->id,
+        'reservation_number' => 'RES-RET-START-14',
+        'start_date' => today()->subDay()->toDateString(),
+        'end_date' => today()->toDateString(),
+        'pickup_time' => '09:00',
+        'return_time' => '18:00',
+        'pickup_location' => 'Main Office',
+        'return_location' => 'Main Office',
+        'total_days' => 2,
+        'daily_rate' => 80,
+        'subtotal' => 160,
+        'tax_amount' => 0,
+        'discount_amount' => 0,
+        'total_amount' => 160,
+        'status' => ReservationStatus::ACTIVE,
+    ]);
+
+    $contract = Contract::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'reservation_id' => $reservation->id,
+        'contract_number' => 'CTR-RET-START-14',
+        'status' => ContractStatus::ACTIVE->value,
+        'contract_date' => today()->subDay()->toDateString(),
+        'start_date' => today()->subDay()->toDateString(),
+        'end_date' => today()->toDateString(),
+    ]);
+
+    ContractReturnReport::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'contract_id' => $contract->id,
+        'reservation_id' => $reservation->id,
+        'car_id' => $car->id,
+        'created_by' => $admin->id,
+        'report_number' => 'RTR-DRAFT-14',
+        'status' => 'draft',
+        'payment_status' => 'not_paid',
+        'return_location' => 'Main Office',
+        'notes' => 'Return review started.',
+    ]);
+
+    Sanctum::actingAs($admin, ['*']);
+
+    $this->getJson(route('api.reservations.today-pickups', [
+        'type' => '',
+        'per_page' => 100,
+        'page' => 1,
+    ]))
+        ->assertOk()
+        ->assertJsonPath('return.count', 1)
+        ->assertJsonPath('returns.0.contract_id', $contract->id);
+
+    $summary = $this->getJson(route('api.dashboard.summary'))
+        ->assertOk();
+
+    $todayReturnCard = collect($summary->json('cards'))->firstWhere('key', 'today_returns');
+    expect($todayReturnCard['count'])->toBe(1);
+    expect($todayReturnCard['items'][0]['id'])->toBe($contract->id);
+
+    $this->getJson(route('api.tasks.today', ['type' => 'return']))
+        ->assertOk()
+        ->assertJsonPath('progress.total', 1)
+        ->assertJsonPath('tasks.0.source_type', 'contract')
+        ->assertJsonPath('tasks.0.source_id', $contract->id);
 });
 
 test('dashboard summary overdue count excludes contracts with return reports', function () {

@@ -65,13 +65,17 @@ class CashPaymentsController extends Controller
 
             $balance = $this->reservationBalance($lockedReservation);
             $amount = $this->requestedAmount($validated, $balance);
+            $currency = $this->reservationCurrency($lockedReservation);
 
             $payment = Payment::create([
                 'tenant_id' => $lockedReservation->tenant_id,
                 'reservation_id' => $lockedReservation->id,
                 'user_id' => $lockedReservation->user_id,
                 'amount' => $amount,
-                'currency' => $this->reservationCurrency($lockedReservation),
+                'currency' => $currency,
+                'base_currency' => $currency,
+                'exchange_rate' => 1,
+                'base_amount' => $amount,
                 'payment_method' => PaymentMethod::CASH,
                 'status' => PaymentStatus::COMPLETED,
                 'processed_at' => $this->processedAt($validated),
@@ -209,12 +213,13 @@ class CashPaymentsController extends Controller
     }
 
     /**
-     * @return array{amount: mixed, currency_code?: string|null, exchange_rate?: mixed, notes?: string|null, collected_at?: string|null, attachment_temp_folders?: array<int, string>}
+     * @return array{amount: mixed, currency?: string|null, currency_code?: string|null, exchange_rate?: mixed, notes?: string|null, collected_at?: string|null, attachment_temp_folders?: array<int, string>}
      */
     private function validatePaymentRequest(Request $request): array
     {
         return $request->validate([
             'amount' => ['required', 'numeric', 'gt:0'],
+            'currency' => ['nullable', 'string', 'size:3'],
             'currency_code' => ['nullable', 'string', 'size:3'],
             'exchange_rate' => ['nullable', 'numeric', 'gt:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -356,7 +361,7 @@ class CashPaymentsController extends Controller
             ]);
         }
 
-        $currency = CurrencyCatalog::normalizeCode($validated['currency_code'] ?? $baseCurrency, $baseCurrency);
+        $currency = CurrencyCatalog::normalizeCode($validated['currency_code'] ?? $validated['currency'] ?? $baseCurrency, $baseCurrency);
         $exchangeRate = $this->resolveExchangeRate($validated, $currency, $baseCurrency);
         $baseAmount = round($amount * $exchangeRate, 2);
 

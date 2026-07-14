@@ -124,7 +124,7 @@ test('api rejects cash payment when amount is empty', function () {
     expect(Payment::query()->count())->toBe(0);
 });
 
-test('api keeps return status unpaid when collected cash is less than remaining amount', function () {
+test('api marks return status partial when collected cash is less than remaining amount', function () {
     $fixtures = createCashPaymentApiFixtures('RES-CASH-PARTIAL-RR', 500);
     $contract = createCashPaymentApiContract($fixtures);
     $report = createCashPaymentApiReturnReport($fixtures, $contract, 100);
@@ -144,7 +144,42 @@ test('api keeps return status unpaid when collected cash is less than remaining 
         ->assertJsonPath('return_status_report.remaining_amount', 60)
         ->assertJsonPath('return_status_report.payment_status', 'partial');
 
-    expect($report->fresh()->payment_status)->toBe('not_paid');
+    expect($report->fresh()->payment_status)->toBe('partial');
+});
+
+test('api converts return status cash payment using selected currency exchange rate', function () {
+    $fixtures = createCashPaymentApiFixtures('RES-CASH-FX-RR', 500);
+    $contract = createCashPaymentApiContract($fixtures);
+    createCashPaymentApiReturnReport($fixtures, $contract, 100);
+
+    Sanctum::actingAs($fixtures['admin'], ['*']);
+
+    $response = $this->postJson(route('api.contracts.return-report.cash-payments.store', [
+        'contract' => $contract->id,
+    ]), [
+        'amount' => 50,
+        'currency_code' => 'EUR',
+        'exchange_rate' => 1.2,
+        'notes' => 'Foreign currency return payment.',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('payment.amount', 50)
+        ->assertJsonPath('payment.currency', 'EUR')
+        ->assertJsonPath('payment.base_amount', 60)
+        ->assertJsonPath('payment.base_currency', 'USD')
+        ->assertJsonPath('payment.exchange_rate', 1.2)
+        ->assertJsonPath('return_status_report.paid_amount', 60)
+        ->assertJsonPath('return_status_report.remaining_amount', 40)
+        ->assertJsonPath('return_status_report.currency', 'USD')
+        ->assertJsonPath('return_status_report.payment_status', 'partial');
+
+    $payment = Payment::query()->latest('id')->firstOrFail();
+    expect((float) $payment->amount)->toBe(50.0);
+    expect($payment->currency)->toBe('EUR');
+    expect((float) $payment->base_amount)->toBe(60.0);
+    expect($payment->base_currency)->toBe('USD');
+    expect((float) $payment->exchange_rate)->toBe(1.2);
 });
 
 function createCashPaymentApiFixtures(string $reservationNumber, float $totalAmount): array
