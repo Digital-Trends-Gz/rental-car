@@ -78,7 +78,6 @@ class TenantSiteSetting extends Model
             'favicon_url' => null,
         'primary_color' => '#f97316',
         'secondary_color' => '#ea580c',
-        'test' => 'test',
         'market_location' => [
             'country_code' => null,
             'country_name' => null,

@@ -4,7 +4,10 @@ namespace Tests\Feature\Api;
 
 use App\Core\LocalizationSettings;
 use App\Models\SiteSetting;
+use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class SettingsControllerTest extends TestCase
@@ -45,5 +48,22 @@ class SettingsControllerTest extends TestCase
             ->assertJsonPath('default_language', 'en')
             ->assertJsonPath('available_languages.1.code', 'ar')
             ->assertJsonPath('available_languages.1.direction', 'rtl');
+    }
+
+    public function test_tenant_settings_include_access_flag(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'is_active' => true,
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        $this->getJson('/api/settings/tenant')
+            ->assertOk()
+            ->assertJsonPath('access', true)
+            ->assertJsonPath('source', 'tenant')
+            ->assertJsonPath('tenant.id', $tenant->id);
     }
 }

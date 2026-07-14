@@ -67,6 +67,7 @@ class SettingsController extends Controller
         $currencyCode = $currency['code'];
 
         return response()->json([
+            'access' => true,
             'source' => 'tenant',
             'tenant' => [
                 'id' => $tenant->id,
