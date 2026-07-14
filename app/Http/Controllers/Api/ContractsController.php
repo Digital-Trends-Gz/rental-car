@@ -504,14 +504,14 @@ class ContractsController extends Controller
                         'note' => $request->input('note'),
                         'notes' => $request->input('notes'),
                     ],
-                    4 => [
+                    4 => array_filter([
                         'reviewed' => $request->has('reviewed') ? $request->boolean('reviewed') : null,
-                        'summary' => $request->input('summary'),
-                        'vehicle_condition_after' => $request->input('vehicle_condition_after'),
-                        'has_damage' => $request->boolean('has_damage', true),
-                        'note' => $request->input('note'),
-                        'notes' => $request->input('notes'),
-                    ],
+                        'summary' => $request->has('summary') ? $request->input('summary') : null,
+                        'vehicle_condition_after' => $request->has('vehicle_condition_after') ? $request->input('vehicle_condition_after') : null,
+                        'has_damage' => $request->has('has_damage') ? $request->boolean('has_damage') : null,
+                        'note' => $request->has('note') ? $request->input('note') : null,
+                        'notes' => $request->has('notes') ? $request->input('notes') : null,
+                    ], static fn ($value): bool => $value !== null),
                     5 => [
                         'payment_status' => $request->input('payment_status'),
                         'discount' => $request->input('discount'),
@@ -965,6 +965,9 @@ class ContractsController extends Controller
 
         $step = $this->returnHandoverStepForPage($page);
         $stepPayload = $this->validateReturnHandoverStepPayload($page, $payload);
+        if ($page === 4 && $stepPayload === []) {
+            $stepPayload = $this->storedReturnDamageReviewPayload($contract);
+        }
         $extraction = null;
 
         if ($page === 2) {
@@ -1351,7 +1354,7 @@ class ContractsController extends Controller
             $report = $this->syncReturnStatusReportDraft($contract, [
                 'created_by' => $request->user()?->id,
                 'damage_report_id' => data_get($summaryPayload, 'damage_report.id') ?? $contract->returnStatusReport?->damage_report_id,
-                'status' => 'finalized',
+                'status' => $returnConfirmed ? 'finalized' : 'draft',
                 'payment_status' => $paymentStatus,
                 'actual_return_time' => $contract->actual_return_time ?? now(),
                 'return_location' => $contract->reservation?->return_location ?? $contract->returnStatusReport?->return_location,
@@ -1416,7 +1419,9 @@ class ContractsController extends Controller
                 'payment_status' => $paymentStatus,
                 'final_summary' => $summaryPayload,
                 'return_status_report' => $summaryPayload['return_status_report'],
-                'return_status_report_file' => $this->returnStatusReportFilePayload($contract, $report),
+                'return_status_report_file' => $returnConfirmed
+                    ? $this->returnStatusReportFilePayload($contract, $report)
+                    : null,
                 'contract_status' => $this->contractStatusValue($contract->status),
                 'reservation_status' => $contract->reservation?->status instanceof ReservationStatus
                     ? $contract->reservation->status->value
@@ -1439,7 +1444,9 @@ class ContractsController extends Controller
                 'damage_report' => $summaryPayload['damage_report'] ?? null,
                 'vehicle_readings' => $summaryPayload['vehicle_readings'] ?? $this->returnVehicleReadingsPayload($contract),
                 'return_status_report' => $summaryPayload['return_status_report'],
-                'return_status_report_file' => $this->returnStatusReportFilePayload($contract, $report),
+                'return_status_report_file' => $returnConfirmed
+                    ? $this->returnStatusReportFilePayload($contract, $report)
+                    : null,
                 'final_summary' => $summaryPayload,
             ];
         } else {
@@ -1949,14 +1956,20 @@ class ContractsController extends Controller
     private function returnHandoverPayload(Contract $contract, ?string $locale = null): array
     {
         $state = $this->normalizeReturnHandoverState($contract->handover_state);
+        $returnConfirmed = data_get($state, 'steps.return_confirmation.payload.return_confirmed') === true;
+        $returnCompleted = $returnConfirmed
+            && in_array(6, $state['completed_pages'], true)
+            && $this->contractStatusValue($contract->status) === ContractStatus::COMPLETED->value;
 
         return [
             'phase' => 'return',
             'phase_label' => $this->handoverPhaseLabel('return'),
+            'completed' => $returnCompleted,
+            'is_completed' => $returnCompleted,
             'current_page' => $state['current_page'],
             'completed_pages' => $state['completed_pages'],
             'steps' => array_values(array_map(
-                function (array $step) use ($contract, $locale): array {
+                function (array $step) use ($contract, $locale, $returnCompleted): array {
                     $payload = $step['payload'];
 
                     if ($step['page'] === 1) {
@@ -2032,12 +2045,15 @@ class ContractsController extends Controller
 
                     if ($step['page'] === 6) {
                         $summary = $this->returnStatusReportSummaryPayload($contract, $contract->returnStatusReport);
+                        $confirmed = data_get($payload, 'return_confirmed', false) === true;
 
                         $payload = array_merge([
-                            'return_confirmed' => data_get($payload, 'return_confirmed', false),
+                            'return_confirmed' => $confirmed,
                             'final_summary' => $summary,
                             'return_status_report' => $summary['return_status_report'],
-                            'return_status_report_file' => $this->returnStatusReportFilePayload($contract, $contract->returnStatusReport),
+                            'return_status_report_file' => $returnCompleted && $confirmed
+                                ? $this->returnStatusReportFilePayload($contract, $contract->returnStatusReport)
+                                : null,
                             'contract_status' => $this->contractStatusValue($contract->status),
                             'reservation_status' => $contract->reservation?->status instanceof ReservationStatus
                                 ? $contract->reservation->status->value
@@ -2400,6 +2416,41 @@ class ContractsController extends Controller
         return [
             'return_odometer' => $contract->return_odometer,
             'return_fuel_level' => $contract->return_fuel_level,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function storedReturnDamageReviewPayload(Contract $contract): array
+    {
+        $state = $this->normalizeReturnHandoverState($contract->handover_state);
+        $payload = data_get($state, 'steps.damage_review.payload');
+
+        if (is_array($payload) && $payload !== []) {
+            return collect($payload)
+                ->only(['reviewed', 'summary', 'vehicle_condition_after', 'has_damage', 'note', 'notes'])
+                ->all();
+        }
+
+        $contract->loadMissing(['returnStatusReport', 'damageReports.items']);
+        $returnReport = $contract->returnStatusReport;
+        $damageReport = $contract->damageReports
+            ->filter(static fn (CarDamageReport $report): bool => $report->report_type === 'after_return')
+            ->sortByDesc('id')
+            ->first();
+
+        if (!$returnReport && !$damageReport && $contract->vehicle_condition_after === null) {
+            return [];
+        }
+
+        return [
+            'reviewed' => true,
+            'summary' => $returnReport?->notes ?? $damageReport?->summary,
+            'vehicle_condition_after' => $returnReport?->vehicle_condition_after ?? $contract->vehicle_condition_after,
+            'has_damage' => $returnReport?->has_damage ?? ($damageReport !== null),
+            'note' => $returnReport?->notes ?? $damageReport?->summary,
+            'notes' => $returnReport?->notes ?? $damageReport?->summary,
         ];
     }
 

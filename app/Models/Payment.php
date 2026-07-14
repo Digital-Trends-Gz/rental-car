@@ -29,6 +29,9 @@ class Payment extends Model
         'user_id',
         'amount',
         'currency',
+        'base_currency',
+        'exchange_rate',
+        'base_amount',
         'payment_method',
         'status',
         'transaction_id',
@@ -46,6 +49,8 @@ class Payment extends Model
      */
     protected $casts = [
         'amount' => 'decimal:2',
+        'exchange_rate' => 'decimal:8',
+        'base_amount' => 'decimal:2',
         'refunded_amount' => 'decimal:2',
         'payment_method' => PaymentMethod::class,
         'status' => PaymentStatus::class,

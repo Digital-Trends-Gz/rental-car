@@ -2045,6 +2045,23 @@ test('handover api supports a return wizard with review and inspection steps', f
           ->assertJsonPath('extraction.final_summary.damage_fee', 300)
           ->assertJsonPath('extraction.final_summary.total_extra_charges', 300);
 
+      $storedFourthStepResponse = $this->patchJson(route('api.contracts.handover', [
+          'contract' => $contract->id,
+      ]), [
+          'phase' => 'return',
+          'page' => 4,
+      ]);
+
+      $storedFourthStepResponse->assertOk()
+          ->assertJsonPath('phase', 'return')
+          ->assertJsonPath('handover.current_page', 5)
+          ->assertJsonPath('handover.steps.3.key', 'damage_review')
+          ->assertJsonPath('handover.steps.3.payload.summary', 'Return damage reviewed after deletion.')
+          ->assertJsonPath('handover.steps.3.payload.items.0.id', $hoodItemId)
+          ->assertJsonPath('handover.steps.3.payload.items.0.quantity', 2)
+          ->assertJsonPath('handover.steps.3.payload.final_summary.damage_fee', 300)
+          ->assertJsonPath('handover.steps.3.payload.final_summary.total_extra_charges', 300);
+
       $summaryStepResponse = $this->patchJson(route('api.contracts.handover', [
           'contract' => $contract->id,
       ]), [
@@ -2056,6 +2073,8 @@ test('handover api supports a return wizard with review and inspection steps', f
 
       $summaryStepResponse->assertOk()
           ->assertJsonPath('phase', 'return')
+          ->assertJsonPath('handover.completed', false)
+          ->assertJsonPath('handover.is_completed', false)
           ->assertJsonPath('handover.current_page', 6)
           ->assertJsonPath('handover.steps.4.key', 'final_summary')
           ->assertJsonPath('handover.steps.4.payload.final_summary.damage_fee', 300)
@@ -2066,6 +2085,12 @@ test('handover api supports a return wizard with review and inspection steps', f
           ->assertJsonPath('extraction.final_summary.discount', 50)
           ->assertJsonPath('extraction.final_summary.total_extra_charges', 250)
           ->assertJsonPath('extraction.return_status_report.discount', '50.00');
+
+      $contract->refresh()->loadMissing(['reservation.car', 'returnStatusReport']);
+      expect($contract->status)->toBe(ContractStatus::ACTIVE);
+      expect($contract->reservation?->status)->toBe(ReservationStatus::ACTIVE);
+      expect($contract->reservation?->car?->status)->toBe(CarStatus::RENTED);
+      expect($contract->returnStatusReport?->status)->toBe('draft');
 
       $confirmationStepResponse = $this->patchJson(route('api.contracts.handover', [
           'contract' => $contract->id,
@@ -2078,6 +2103,8 @@ test('handover api supports a return wizard with review and inspection steps', f
 
       $confirmationStepResponse->assertOk()
           ->assertJsonPath('phase', 'return')
+          ->assertJsonPath('handover.completed', true)
+          ->assertJsonPath('handover.is_completed', true)
           ->assertJsonPath('handover.current_page', 6)
           ->assertJsonPath('handover.steps.5.key', 'return_confirmation')
           ->assertJsonPath('handover.steps.5.payload.return_confirmed', true)

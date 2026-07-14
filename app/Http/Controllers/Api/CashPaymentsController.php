@@ -150,7 +150,8 @@ class CashPaymentsController extends Controller
                 ->firstOrFail();
 
             $balance = $this->returnReportBalance($report);
-            $amount = $this->requestedAmount($validated, $balance);
+            $baseCurrency = $this->contractCurrency($report);
+            $paymentAmounts = $this->requestedReturnReportPayment($validated, $balance, $baseCurrency);
             $processedAt = $this->processedAt($validated);
 
             $payment = $this->reusablePendingReturnReportPayment($report) ?? new Payment();
@@ -158,8 +159,11 @@ class CashPaymentsController extends Controller
                 'tenant_id' => $report->tenant_id,
                 'reservation_id' => $report->reservation_id,
                 'user_id' => $report->reservation?->user_id,
-                'amount' => $amount,
-                'currency' => $this->contractCurrency($report),
+                'amount' => $paymentAmounts['amount'],
+                'currency' => $paymentAmounts['currency'],
+                'base_currency' => $paymentAmounts['base_currency'],
+                'exchange_rate' => $paymentAmounts['exchange_rate'],
+                'base_amount' => $paymentAmounts['base_amount'],
                 'payment_method' => PaymentMethod::CASH,
                 'status' => PaymentStatus::COMPLETED,
                 'processed_at' => $processedAt,
@@ -171,15 +175,17 @@ class CashPaymentsController extends Controller
                     ],
                     'contract_id' => $report->contract_id,
                     'collected_by_user_id' => $user->id,
+                    'required_amount_before' => $balance,
+                    'remaining_amount_after' => round(max(0, $balance - $paymentAmounts['base_amount']), 2),
                 ],
             ])->save();
 
             $this->storeAttachments($payment, $attachments, $validated['attachment_temp_folders'] ?? []);
 
-            $remaining = round(max(0, $balance - $amount), 2);
+            $remaining = round(max(0, $balance - $paymentAmounts['base_amount']), 2);
             $report->forceFill([
                 'payment_id' => $payment->id,
-                'payment_status' => $remaining <= 0 ? 'paid' : 'not_paid',
+                'payment_status' => $remaining <= 0 ? 'paid' : 'partial',
             ])->save();
 
             $summary = $this->returnReportPaymentSummary($report->fresh(['payment.files', 'reservation.payments.files']));
@@ -203,12 +209,14 @@ class CashPaymentsController extends Controller
     }
 
     /**
-     * @return array{amount: mixed, notes?: string|null, collected_at?: string|null, attachment_temp_folders?: array<int, string>}
+     * @return array{amount: mixed, currency_code?: string|null, exchange_rate?: mixed, notes?: string|null, collected_at?: string|null, attachment_temp_folders?: array<int, string>}
      */
     private function validatePaymentRequest(Request $request): array
     {
         return $request->validate([
             'amount' => ['required', 'numeric', 'gt:0'],
+            'currency_code' => ['nullable', 'string', 'size:3'],
+            'exchange_rate' => ['nullable', 'numeric', 'gt:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'collected_at' => ['nullable', 'date'],
             'attachment_temp_folders' => ['nullable', 'array', 'max:10'],
@@ -284,7 +292,7 @@ class CashPaymentsController extends Controller
     {
         $paid = $this->completedReservationPayments($reservation)
             ->reject(fn (Payment $payment): bool => $this->isReturnReportPayment($payment, $reservation))
-            ->sum(fn (Payment $payment): float => (float) $payment->amount);
+            ->sum(fn (Payment $payment): float => $this->paymentAccountingAmount($payment));
 
         return round(max(0, (float) $reservation->total_amount - (float) $paid), 2);
     }
@@ -293,7 +301,7 @@ class CashPaymentsController extends Controller
     {
         $paid = $this->completedReservationPayments($report->reservation)
             ->filter(fn (Payment $payment): bool => $this->isPaymentForReturnReport($payment, $report))
-            ->sum(fn (Payment $payment): float => (float) $payment->amount);
+            ->sum(fn (Payment $payment): float => $this->paymentAccountingAmount($payment));
 
         return round(max(0, (float) $report->total_extra_charges - (float) $paid), 2);
     }
@@ -328,6 +336,69 @@ class CashPaymentsController extends Controller
         }
 
         return $amount;
+    }
+
+    /**
+     * @return array{amount: float, currency: string, base_currency: string, exchange_rate: float, base_amount: float}
+     */
+    private function requestedReturnReportPayment(array $validated, float $balance, string $baseCurrency): array
+    {
+        if ($balance <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => [$this->message('There is no remaining amount to collect.', 'لا يوجد مبلغ متبق للتحصيل.')],
+            ]);
+        }
+
+        $amount = round((float) $validated['amount'], 2);
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => [$this->message('The cash amount must be greater than zero.', 'يجب أن يكون مبلغ الكاش أكبر من صفر.')],
+            ]);
+        }
+
+        $currency = CurrencyCatalog::normalizeCode($validated['currency_code'] ?? $baseCurrency, $baseCurrency);
+        $exchangeRate = $this->resolveExchangeRate($validated, $currency, $baseCurrency);
+        $baseAmount = round($amount * $exchangeRate, 2);
+
+        if ($baseAmount <= 0 || $baseAmount > $balance) {
+            throw ValidationException::withMessages([
+                'amount' => [$this->message(
+                    'The converted cash amount must be greater than zero and not exceed the remaining balance.',
+                    'يجب أن يكون مبلغ الكاش بعد التحويل أكبر من صفر ولا يتجاوز المبلغ المتبقي.'
+                )],
+            ]);
+        }
+
+        return [
+            'amount' => $amount,
+            'currency' => $currency,
+            'base_currency' => $baseCurrency,
+            'exchange_rate' => $exchangeRate,
+            'base_amount' => $baseAmount,
+        ];
+    }
+
+    private function resolveExchangeRate(array $validated, string $currency, string $baseCurrency): float
+    {
+        if ($currency === $baseCurrency) {
+            return 1.0;
+        }
+
+        if (!array_key_exists('exchange_rate', $validated) || $validated['exchange_rate'] === null || $validated['exchange_rate'] === '') {
+            throw ValidationException::withMessages([
+                'exchange_rate' => [$this->message(
+                    'The exchange rate is required when the payment currency is different from the report currency.',
+                    'سعر الصرف مطلوب عند الدفع بعملة مختلفة عن عملة التقرير.'
+                )],
+            ]);
+        }
+
+        return round((float) $validated['exchange_rate'], 8);
+    }
+
+    private function paymentAccountingAmount(Payment $payment): float
+    {
+        return round((float) ($payment->base_amount ?? $payment->amount), 2);
     }
 
     private function reusablePendingReturnReportPayment(ContractReturnReport $report): ?Payment
@@ -377,7 +448,7 @@ class CashPaymentsController extends Controller
     {
         $paid = $this->completedReservationPayments($reservation)
             ->reject(fn (Payment $payment): bool => $this->isReturnReportPayment($payment, $reservation))
-            ->sum(fn (Payment $payment): float => (float) $payment->amount);
+            ->sum(fn (Payment $payment): float => $this->paymentAccountingAmount($payment));
         $remaining = round(max(0, (float) $reservation->total_amount - (float) $paid), 2);
 
         return [
@@ -394,7 +465,7 @@ class CashPaymentsController extends Controller
     {
         $paid = $this->completedReservationPayments($report->reservation)
             ->filter(fn (Payment $payment): bool => $this->isPaymentForReturnReport($payment, $report))
-            ->sum(fn (Payment $payment): float => (float) $payment->amount);
+            ->sum(fn (Payment $payment): float => $this->paymentAccountingAmount($payment));
         $remaining = round(max(0, (float) $report->total_extra_charges - (float) $paid), 2);
 
         return [
@@ -403,6 +474,7 @@ class CashPaymentsController extends Controller
             'total_amount' => (float) $report->total_extra_charges,
             'paid_amount' => round((float) $paid, 2),
             'remaining_amount' => $remaining,
+            'currency' => $this->contractCurrency($report),
             'payment_status' => $remaining <= 0 ? 'paid' : ($paid > 0 ? 'partial' : 'not_paid'),
             'payment_id' => $report->payment_id,
         ];
@@ -417,6 +489,9 @@ class CashPaymentsController extends Controller
             'payment_number' => $payment->payment_number,
             'amount' => (float) $payment->amount,
             'currency' => $payment->currency,
+            'base_amount' => (float) ($payment->base_amount ?? $payment->amount),
+            'base_currency' => $payment->base_currency ?: $payment->currency,
+            'exchange_rate' => (float) ($payment->exchange_rate ?? 1),
             'payment_method' => $payment->payment_method instanceof PaymentMethod ? $payment->payment_method->value : (string) $payment->payment_method,
             'status' => $this->paymentStatusValue($payment),
             'processed_at' => optional($payment->processed_at)->toIso8601String(),
