@@ -50,11 +50,11 @@ class CurrencyCatalog
     /**
      * @return array{code:string,abbreviation:string,name:string,currency:string,symbol:string,icon:string,label:string}
      */
-    public static function find(mixed $code): array
+    public static function find(mixed $code, ?string $locale = null): array
     {
         $normalized = self::normalizeCode($code);
 
-        foreach (self::all() as $currency) {
+        foreach (self::all($locale) as $currency) {
             if ($currency['code'] === $normalized) {
                 return $currency;
             }
@@ -68,6 +68,7 @@ class CurrencyCatalog
             'symbol' => $normalized,
             'icon' => $normalized,
             'label' => $normalized,
+            'exchange_rate' => 1.0,
         ];
     }
 
@@ -101,9 +102,9 @@ class CurrencyCatalog
     /**
      * @return array{code:string,abbreviation:string,name:string,currency:string,symbol:string,icon:string,label:string}
      */
-    public static function forTenant(?Tenant $tenant, mixed $fallback = null): array
+    public static function forTenant(?Tenant $tenant, mixed $fallback = null, ?string $locale = null): array
     {
-        return self::find(self::codeForTenant($tenant, $fallback));
+        return self::find(self::codeForTenant($tenant, $fallback), $locale);
     }
 
     private static function normalizeLocale(?string $locale): string

@@ -63,7 +63,7 @@ class SettingsController extends Controller
         $settings = TenantSiteSetting::forTenant($tenant);
         $siteName = $this->nullableString(data_get($settings, 'site_name')) ?? $tenant->name;
         $availableLanguages = $this->availableLanguagesForTenant($settings);
-        $currency = CurrencyCatalog::forTenant($tenant);
+        $currency = CurrencyCatalog::forTenant($tenant, null, $this->resolveCurrencyLocale($request));
         $currencyCode = $currency['code'];
 
         return response()->json([
@@ -81,6 +81,8 @@ class SettingsController extends Controller
             'secondary_color' => $this->normalizeHexColor(data_get($settings, 'secondary_color'), '#ea580c'),
             'currency_code' => $currencyCode,
             'currency' => $currency,
+            'base_currency_code' => $currencyCode,
+            'base_currency' => $currency,
             'default_language' => (string) data_get($settings, 'default_locale', config('app.locale', 'en')),
             'enabled_language_codes' => array_values(array_map(
                 static fn (array $language): string => (string) $language['code'],
