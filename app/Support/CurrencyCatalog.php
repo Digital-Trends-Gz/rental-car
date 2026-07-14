@@ -28,6 +28,7 @@ class CurrencyCatalog
                 'symbol' => $symbol,
                 'icon' => $symbol,
                 'label' => $code.' - '.$name,
+                'exchange_rate' => 1.0,
             ];
         }
 
