@@ -86,6 +86,7 @@ class TenantSiteSetting extends Model
             'market_area' => null,
             'timezone' => null,
             'currency_code' => null,
+            'enabled_currency_codes' => [],
         ],
         'tax_percentage' => 7.0,
             'default_locale' => self::normalizeDefaultLocale(
@@ -564,6 +565,7 @@ class TenantSiteSetting extends Model
                 'market_area' => self::nullableString(data_get($data, 'market_location.market_area')),
                 'timezone' => self::nullableString(data_get($data, 'market_location.timezone')),
                 'currency_code' => self::normalizeCurrencyCode(data_get($data, 'market_location.currency_code')),
+                'enabled_currency_codes' => self::normalizeCurrencyCodes(data_get($data, 'market_location.enabled_currency_codes', [])),
             ],
             'tax_percentage' => self::normalizePercentage($data['tax_percentage'] ?? $defaults['tax_percentage'], 7.0),
             'default_locale' => self::normalizeDefaultLocale(
@@ -1033,6 +1035,19 @@ class TenantSiteSetting extends Model
         $value = strtoupper(trim((string) ($value ?? '')));
 
         return preg_match('/^[A-Z]{3}$/', $value) === 1 ? $value : null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function normalizeCurrencyCodes(mixed $value): array
+    {
+        return collect(is_array($value) ? $value : [])
+            ->map(fn (mixed $code): string => strtoupper(trim((string) $code)))
+            ->filter(fn (string $code): bool => preg_match('/^[A-Z]{3}$/', $code) === 1)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private static function normalizeHexColor(mixed $value, string $fallback): string

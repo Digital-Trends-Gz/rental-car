@@ -47,6 +47,7 @@ const props = defineProps<{
             market_area?: string | null;
             timezone?: string | null;
             currency_code?: string | null;
+            enabled_currency_codes?: string[] | null;
         };
         tax_percentage: number;
         hero: {
@@ -189,9 +190,60 @@ const marketCurrencySelectOptions = computed(() =>
         label: currency.label,
     })),
 );
+const enabledCurrencySearch = ref('');
+const filteredEnabledCurrencyOptions = computed(() => {
+    const term = enabledCurrencySearch.value.trim().toLowerCase();
+
+    if (!term) {
+        return marketCurrencyOptions.value;
+    }
+
+    return marketCurrencyOptions.value.filter((currency) =>
+        `${currency.code} ${currency.label}`.toLowerCase().includes(term),
+    );
+});
 
 function localizedCountryName(country: CountryOption): string {
     return locale.value === 'ar' ? country.name_ar || country.name_en : country.name_en;
+}
+
+function isCurrencyEnabled(code: string): boolean {
+    return form.market_location.enabled_currency_codes.includes(code);
+}
+
+function toggleEnabledCurrency(code: string) {
+    const normalized = String(code || '').toUpperCase();
+
+    if (!normalized) {
+        return;
+    }
+
+    if (normalized === form.market_location.currency_code) {
+        if (!form.market_location.enabled_currency_codes.includes(normalized)) {
+            form.market_location.enabled_currency_codes.push(normalized);
+        }
+
+        return;
+    }
+
+    if (form.market_location.enabled_currency_codes.includes(normalized)) {
+        form.market_location.enabled_currency_codes = form.market_location.enabled_currency_codes.filter((item) => item !== normalized);
+        return;
+    }
+
+    form.market_location.enabled_currency_codes = [...form.market_location.enabled_currency_codes, normalized];
+}
+
+function enableAllCurrencies() {
+    form.market_location.enabled_currency_codes = marketCurrencyOptions.value.map((currency) => currency.code);
+}
+
+function clearEnabledCurrencies() {
+    form.market_location.enabled_currency_codes = form.market_location.currency_code ? [form.market_location.currency_code] : [];
+}
+
+function currencyOptionLabel(code: string): string {
+    return marketCurrencyOptions.value.find((currency) => currency.code === code)?.label ?? code;
 }
 
 const form = useForm({
@@ -214,6 +266,7 @@ const form = useForm({
         market_area: props.settings.market_location?.market_area ?? '',
         timezone: props.settings.market_location?.timezone ?? '',
         currency_code: props.settings.market_location?.currency_code ?? '',
+        enabled_currency_codes: props.settings.market_location?.enabled_currency_codes ?? [],
     },
     tax_percentage: props.settings.tax_percentage ?? 7,
     hero: {
@@ -434,6 +487,21 @@ const form = useForm({
         },
     },
 });
+
+watch(
+    () => form.market_location.currency_code,
+    (code) => {
+        const baseCode = String(code || '').toUpperCase();
+        const enabled = Array.from(new Set(form.market_location.enabled_currency_codes.map((item) => String(item || '').toUpperCase()).filter(Boolean)));
+
+        if (baseCode && !enabled.includes(baseCode)) {
+            enabled.unshift(baseCode);
+        }
+
+        form.market_location.enabled_currency_codes = enabled;
+    },
+    { immediate: true },
+);
 
 const selectedMarketCountry = computed(() => {
     const countryName = String(form.market_location.country_name || '');
@@ -1217,6 +1285,59 @@ function submit() {
                                     </div>
 
                                     <div class="space-y-2 md:col-span-2">
+                                        <div class="space-y-3 rounded-md border bg-background p-4">
+                                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                                <div>
+                                                    <Label for="enabled_currency_search">{{ localize('Enabled Currencies', 'العملات المفعلة') }}</Label>
+                                                    <p class="mt-1 text-xs text-muted-foreground">
+                                                        {{ localize('Choose the currencies this office can use across the site, bookings, and contracts.', 'اختر العملات التي يمكن لهذا المكتب التعامل بها في الموقع والحجوزات والعقود.') }}
+                                                    </p>
+                                                </div>
+                                                <div class="flex gap-2">
+                                                    <Button type="button" variant="outline" size="sm" @click="enableAllCurrencies">
+                                                        {{ localize('Select all', 'تحديد الكل') }}
+                                                    </Button>
+                                                    <Button type="button" variant="outline" size="sm" @click="clearEnabledCurrencies">
+                                                        {{ localize('Keep base only', 'الأساسية فقط') }}
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            <Input
+                                                id="enabled_currency_search"
+                                                v-model="enabledCurrencySearch"
+                                                :placeholder="localize('Search enabled currencies...', 'ابحث في العملات المفعلة...')"
+                                            />
+
+                                            <div class="max-h-64 overflow-auto rounded-md border">
+                                                <label
+                                                    v-for="currency in filteredEnabledCurrencyOptions"
+                                                    :key="currency.code"
+                                                    class="flex cursor-pointer items-center justify-between gap-3 border-b px-3 py-2 text-sm last:border-b-0 hover:bg-muted/50"
+                                                >
+                                                    <span>{{ currency.label }}</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        class="h-4 w-4 rounded border-input"
+                                                        :checked="isCurrencyEnabled(currency.code)"
+                                                        :disabled="currency.code === form.market_location.currency_code"
+                                                        @change="toggleEnabledCurrency(currency.code)"
+                                                    />
+                                                </label>
+                                            </div>
+
+                                            <div v-if="form.market_location.enabled_currency_codes.length" class="flex flex-wrap gap-2">
+                                                <span
+                                                    v-for="code in form.market_location.enabled_currency_codes"
+                                                    :key="code"
+                                                    class="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
+                                                >
+                                                    {{ currencyOptionLabel(code) }}
+                                                </span>
+                                            </div>
+                                            <p v-if="form.errors['market_location.enabled_currency_codes']" class="text-sm text-red-600">{{ form.errors['market_location.enabled_currency_codes'] }}</p>
+                                        </div>
+
                                         <Label for="market_timezone">{{ localize('Timezone', 'المنطقة الزمنية') }}</Label>
                                         <select id="market_timezone" v-model="form.market_location.timezone" :class="selectClass">
                                             <option value="">{{ localize('Select timezone', 'اختر المنطقة الزمنية') }}</option>

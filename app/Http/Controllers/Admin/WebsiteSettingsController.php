@@ -80,6 +80,8 @@ class WebsiteSettingsController extends Controller
             'market_location.market_area' => ['nullable', 'string', 'max:255'],
             'market_location.timezone' => ['nullable', 'string', 'max:120'],
             'market_location.currency_code' => ['nullable', 'string', 'size:3'],
+            'market_location.enabled_currency_codes' => ['nullable', 'array'],
+            'market_location.enabled_currency_codes.*' => ['string', 'size:3'],
             'tax_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'enabled_locales' => ['nullable', 'array'],
             'enabled_locales.*' => ['string', Rule::in($supportedLocales)],
@@ -238,6 +240,11 @@ class WebsiteSettingsController extends Controller
                 ?: TenantPdfTemplateRegistry::DEFAULT_CONTRACT_TEMPLATE
             ),
         ];
+        $baseCurrencyCode = $this->upperNullableString(data_get($validated, 'market_location.currency_code'));
+        $enabledCurrencyCodes = $this->sanitizeEnabledCurrencyCodes(
+            data_get($validated, 'market_location.enabled_currency_codes', data_get($existingSettings?->market_location, 'enabled_currency_codes', [])),
+            $baseCurrencyCode
+        );
 
         $siteSetting = TenantSiteSetting::updateOrCreate(
             ['tenant_id' => $tenant->id],
@@ -254,7 +261,8 @@ class WebsiteSettingsController extends Controller
                     'city' => $this->nullableString(data_get($validated, 'market_location.city')),
                     'market_area' => $this->nullableString(data_get($validated, 'market_location.market_area')),
                     'timezone' => $this->nullableString(data_get($validated, 'market_location.timezone')),
-                    'currency_code' => $this->upperNullableString(data_get($validated, 'market_location.currency_code')),
+                    'currency_code' => $baseCurrencyCode,
+                    'enabled_currency_codes' => $enabledCurrencyCodes,
                 ],
                 'tax_percentage' => max(0, min(100, $taxPercentage)),
                 'enabled_locales' => $enabledLocales,
@@ -965,6 +973,26 @@ class WebsiteSettingsController extends Controller
         $enabled = array_values(array_unique(array_intersect($supported, array_map('strval', $enabled))));
 
         return empty($enabled) ? $supported : $enabled;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function sanitizeEnabledCurrencyCodes(mixed $value, ?string $baseCurrencyCode = null): array
+    {
+        $codes = collect(is_array($value) ? $value : [])
+            ->map(fn (mixed $code): string => strtoupper(trim((string) $code)))
+            ->filter(fn (string $code): bool => preg_match('/^[A-Z]{3}$/', $code) === 1)
+            ->values();
+
+        if ($baseCurrencyCode !== null && preg_match('/^[A-Z]{3}$/', $baseCurrencyCode) === 1) {
+            $codes->push($baseCurrencyCode);
+        }
+
+        return $codes
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function sanitizeLocaleOverrides(mixed $value): array
