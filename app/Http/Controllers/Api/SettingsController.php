@@ -126,9 +126,6 @@ class SettingsController extends Controller
                     'source' => 'tenant',
                     'locale' => $locale,
                     'count' => count($currencies),
-                    'base_currency_code' => $baseCurrency['code'],
-                    'base_currency' => $baseCurrency,
-                    'enabled_currency_codes' => $enabledCurrencyCodes,
                     'currencies' => $currencies,
                 ]);
             }
