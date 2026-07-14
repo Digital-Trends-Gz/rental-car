@@ -106,9 +106,38 @@ class SettingsController extends Controller
     public function currencies(Request $request): JsonResponse
     {
         $locale = $this->resolveCurrencyLocale($request);
+        $user = $request->user('sanctum') ?? $request->user();
+
+        if ($user && !empty($user->tenant_id)) {
+            $tenant = Tenant::query()
+                ->with('siteSetting.files')
+                ->find((int) $user->tenant_id);
+
+            if ($tenant) {
+                $settings = TenantSiteSetting::forTenant($tenant);
+                $baseCurrency = CurrencyCatalog::forTenant($tenant, null, $locale);
+                $enabledCurrencyCodes = $this->enabledCurrencyCodes($settings, $baseCurrency['code']);
+                $currencies = array_map(
+                    static fn (string $code): array => CurrencyCatalog::find($code, $locale),
+                    $enabledCurrencyCodes
+                );
+
+                return response()->json([
+                    'source' => 'tenant',
+                    'locale' => $locale,
+                    'count' => count($currencies),
+                    'base_currency_code' => $baseCurrency['code'],
+                    'base_currency' => $baseCurrency,
+                    'enabled_currency_codes' => $enabledCurrencyCodes,
+                    'currencies' => $currencies,
+                ]);
+            }
+        }
+
         $currencies = CurrencyCatalog::all($locale);
 
         return response()->json([
+            'source' => 'catalog',
             'locale' => $locale,
             'count' => count($currencies),
             'currencies' => $currencies,

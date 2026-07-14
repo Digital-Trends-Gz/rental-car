@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Core\LocalizationSettings;
 use App\Models\SiteSetting;
 use App\Models\Tenant;
+use App\Models\TenantSiteSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -65,5 +66,33 @@ class SettingsControllerTest extends TestCase
             ->assertJsonPath('access', true)
             ->assertJsonPath('source', 'tenant')
             ->assertJsonPath('tenant.id', $tenant->id);
+    }
+
+    public function test_currencies_endpoint_returns_tenant_enabled_currencies_for_authenticated_user(): void
+    {
+        $tenant = Tenant::factory()->create();
+        TenantSiteSetting::query()->create([
+            'tenant_id' => $tenant->id,
+            'market_location' => [
+                'currency_code' => 'OMR',
+                'enabled_currency_codes' => ['AED', 'USD'],
+            ],
+        ]);
+        $user = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'is_active' => true,
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        $this->getJson('/api/settings/currencies')
+            ->assertOk()
+            ->assertJsonPath('source', 'tenant')
+            ->assertJsonPath('base_currency_code', 'OMR')
+            ->assertJsonPath('enabled_currency_codes', ['AED', 'USD', 'OMR'])
+            ->assertJsonCount(3, 'currencies')
+            ->assertJsonPath('currencies.0.code', 'AED')
+            ->assertJsonPath('currencies.1.code', 'USD')
+            ->assertJsonPath('currencies.2.code', 'OMR');
     }
 }

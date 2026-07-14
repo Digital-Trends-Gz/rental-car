@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\CarStatus;
 use App\Enums\CarViolationStatus;
 use App\Enums\ContractStatus;
+use App\Enums\DiscountRequestStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
@@ -387,6 +388,7 @@ class ReservationsController extends Controller
             'contract.openedDamageCases.lastReport',
             'damageReports.items',
             'openedDamageCases.lastReport',
+            'discountRequests',
         ]);
 
         abort_unless($this->canAccessReservation($reservation, $user), 403);
@@ -573,6 +575,7 @@ class ReservationsController extends Controller
             'discount_type' => $reservation->discount_type ?: 'fixed',
             'discount_value' => (float) ($reservation->discount_value ?? $reservation->discount_amount ?? 0),
             'discount_amount' => (float) ($reservation->discount_amount ?? 0),
+            'revision' => $this->reservationRevisionFlag($reservation),
             'notes' => $reservation->notes,
             'cancellation_reason' => $reservation->cancellation_reason,
             'cancelled_at' => optional($reservation->cancelled_at)->toIso8601String(),
@@ -597,6 +600,27 @@ class ReservationsController extends Controller
                 'status_label' => $this->carStatusLabel($car->status),
             ] : null,
         ];
+    }
+
+    private function reservationRevisionFlag(Reservation $reservation): int
+    {
+        $discountRequest = $reservation->relationLoaded('discountRequests')
+            ? $reservation->discountRequests->sortByDesc('id')->first()
+            : $reservation->discountRequests()->latest('id')->first();
+
+        if (!$discountRequest) {
+            return 0;
+        }
+
+        $status = $discountRequest->status instanceof DiscountRequestStatus
+            ? $discountRequest->status
+            : DiscountRequestStatus::tryFrom((string) $discountRequest->status);
+
+        return match ($status) {
+            DiscountRequestStatus::PENDING => 1,
+            DiscountRequestStatus::APPROVED => 2,
+            default => 0,
+        };
     }
 
     private function absoluteUrl(?string $url): ?string
