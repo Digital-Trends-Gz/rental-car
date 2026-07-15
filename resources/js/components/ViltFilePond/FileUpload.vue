@@ -311,6 +311,17 @@ function emitLocalFile(fileItem: any) {
     }
 }
 
+function emitLocalFileFromItems(items: any[]) {
+    for (const item of items || []) {
+        const file = item?.file || item;
+
+        if (file instanceof File) {
+            emit("localFileAdded", file);
+            return;
+        }
+    }
+}
+
 // Public method to reset component state
 function resetFiles() {
     files.value = [];
@@ -444,6 +455,14 @@ watch(
         if (JSON.stringify(newValue) !== JSON.stringify(currentValue)) {
             tempFolders.value = [...(((newValue || []) as string[]))];
         }
+    },
+    { deep: true }
+);
+
+watch(
+    files,
+    (newFiles: any[]) => {
+        emitLocalFileFromItems(newFiles || []);
     },
     { deep: true }
 );
