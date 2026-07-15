@@ -540,10 +540,21 @@ const syncUploadStateToForm = () => {
 const submit = () => {
     syncUploadStateToForm();
 
-    form.transform((data) => ({
-        ...data,
-        _method: 'put',
-    })).post('/superadmin/settings/design', {
+    form.transform((data) => {
+        // Strip keys from settings that the design endpoint doesn't use.
+        // When Inertia serializes nested objects to multipart/form-data,
+        // each leaf becomes a separate input variable. The translations
+        // alone produce 2000+ variables, which exceeds PHP's max_input_vars
+        // (default 1000) and causes PHP to silently drop ALL subsequent
+        // fields — including every file upload and _method.
+        const { translations, enabled_locales, navigation, ...designSettings } = data.settings as Record<string, any>;
+
+        return {
+            ...data,
+            settings: designSettings,
+            _method: 'put',
+        };
+    }).post('/superadmin/settings/design', {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => {
