@@ -88,14 +88,17 @@ class LandingPageSettings
                 'items' => [
                     [
                         'title' => 'Connect your account',
+                        'image_url' => '',
                         'description' => 'Link your tenant and bring your cars online.',
                     ],
                     [
                         'title' => 'Publish your fleet',
+                        'image_url' => '',
                         'description' => 'Add cars, pricing, and availability in one place.',
                     ],
                     [
                         'title' => 'Start receiving bookings',
+                        'image_url' => '',
                         'description' => 'Track reservations and revenue from the dashboard.',
                     ],
                 ],
@@ -446,14 +449,16 @@ class LandingPageSettings
             }
 
             $title = trim((string) ($item['title'] ?? ''));
+            $imageUrl = trim((string) ($item['image_url'] ?? ''));
             $description = trim((string) ($item['description'] ?? ''));
 
-            if ($title === '' && $description === '') {
+            if ($title === '' && $description === '' && $imageUrl === '') {
                 continue;
             }
 
             $steps[] = [
                 'title' => $title,
+                'image_url' => $imageUrl,
                 'description' => $description,
             ];
         }

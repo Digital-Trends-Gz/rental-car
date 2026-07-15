@@ -33,6 +33,7 @@ interface FeatureCard {
 
 interface StepItem {
     title: string;
+    image_url: string;
     description: string;
 }
 
@@ -159,6 +160,7 @@ const props = defineProps<{
     heroFiles: Array<{ id: number; url: string }>;
     heroLocalizedFiles: Record<string, Array<{ id: number; url: string }>>;
     featureFiles: Record<number, Array<{ id: number; url: string }>>;
+    gettingStartedFiles: Record<number, Array<{ id: number; url: string }>>;
     mobileAppFiles: Record<
         number,
         {
@@ -181,6 +183,8 @@ const form = useForm<{
     hero_locale_removed_files: Record<string, number[]>;
     feature_card_temp_folders: Record<number, string[]>;
     feature_card_removed_files: Record<number, number[]>;
+    getting_started_temp_folders: Record<number, string[]>;
+    getting_started_removed_files: Record<number, number[]>;
     mobile_app_temp_folders: Record<
         number,
         { image: string[]; icon: string[] }
@@ -192,6 +196,7 @@ const form = useForm<{
     hero_direct_file: File | null;
     hero_locale_direct_files: Record<string, File | null>;
     feature_card_direct_files: Record<number, File | null>;
+    getting_started_direct_files: Record<number, File | null>;
     mobile_app_direct_files: Record<
         number,
         { image: File | null; icon: File | null }
@@ -204,11 +209,14 @@ const form = useForm<{
     hero_locale_removed_files: {},
     feature_card_temp_folders: {},
     feature_card_removed_files: {},
+    getting_started_temp_folders: {},
+    getting_started_removed_files: {},
     mobile_app_temp_folders: {},
     mobile_app_removed_files: {},
     hero_direct_file: null,
     hero_locale_direct_files: {},
     feature_card_direct_files: {},
+    getting_started_direct_files: {},
     mobile_app_direct_files: {},
 });
 
@@ -219,6 +227,8 @@ const heroLocaleTempFolders = ref<Record<string, string[]>>({});
 const heroLocaleRemovedFileIds = ref<Record<string, number[]>>({});
 const featureCardTempFolders = ref<Record<number, string[]>>({});
 const featureCardRemovedFileIds = ref<Record<number, number[]>>({});
+const gettingStartedTempFolders = ref<Record<number, string[]>>({});
+const gettingStartedRemovedFileIds = ref<Record<number, number[]>>({});
 const mobileAppTempFolders = ref<
     Record<number, { image: string[]; icon: string[] }>
 >({});
@@ -228,6 +238,7 @@ const mobileAppRemovedFileIds = ref<
 const heroDirectFile = ref<File | null>(null);
 const heroLocaleDirectFiles = ref<Record<string, File | null>>({});
 const featureCardDirectFiles = ref<Record<number, File | null>>({});
+const gettingStartedDirectFiles = ref<Record<number, File | null>>({});
 const mobileAppDirectFiles = ref<
     Record<number, { image: File | null; icon: File | null }>
 >({});
@@ -310,6 +321,16 @@ form.settings.features_section.cards.forEach((_card, index) => {
     featureCardDirectFiles.value[index] = null;
 });
 
+form.settings.getting_started.items.forEach((item, index) => {
+    if (!('image_url' in item)) {
+        item.image_url = '';
+    }
+
+    gettingStartedTempFolders.value[index] = [];
+    gettingStartedRemovedFileIds.value[index] = [];
+    gettingStartedDirectFiles.value[index] = null;
+});
+
 watch(
     heroTempFolders,
     (value) => {
@@ -338,6 +359,14 @@ watch(
     featureCardTempFolders,
     (value) => {
         form.feature_card_temp_folders = JSON.parse(JSON.stringify(value));
+    },
+    { deep: true },
+);
+
+watch(
+    gettingStartedTempFolders,
+    (value) => {
+        form.getting_started_temp_folders = JSON.parse(JSON.stringify(value));
     },
     { deep: true },
 );
@@ -435,6 +464,9 @@ const mobileAppFileList = (index: number, type: 'image' | 'icon') =>
 const featureCardFileList = (index: number) =>
     props.featureFiles?.[index] || [];
 
+const gettingStartedFileList = (index: number) =>
+    props.gettingStartedFiles?.[index] || [];
+
 const handleFeatureCardFileRemoved = (
     index: number,
     data: { type: string; fileId?: number },
@@ -454,6 +486,27 @@ const handleFeatureCardFileRemoved = (
 const handleFeatureCardLocalFileAdded = (index: number, file: File) => {
     featureCardDirectFiles.value[index] = file;
     form.feature_card_direct_files = { ...featureCardDirectFiles.value };
+};
+
+const handleGettingStartedFileRemoved = (
+    index: number,
+    data: { type: string; fileId?: number },
+) => {
+    if (data.type !== 'existing' || !data.fileId) {
+        return;
+    }
+
+    gettingStartedRemovedFileIds.value[index] = [
+        ...new Set([...(gettingStartedRemovedFileIds.value[index] || []), data.fileId]),
+    ];
+    form.getting_started_removed_files = JSON.parse(
+        JSON.stringify(gettingStartedRemovedFileIds.value),
+    );
+};
+
+const handleGettingStartedLocalFileAdded = (index: number, file: File) => {
+    gettingStartedDirectFiles.value[index] = file;
+    form.getting_started_direct_files = { ...gettingStartedDirectFiles.value };
 };
 
 const handleMobileAppFileRemoved = (
@@ -528,6 +581,13 @@ const syncUploadStateToForm = () => {
         JSON.stringify(featureCardRemovedFileIds.value),
     );
     form.feature_card_direct_files = { ...featureCardDirectFiles.value };
+    form.getting_started_temp_folders = JSON.parse(
+        JSON.stringify(gettingStartedTempFolders.value),
+    );
+    form.getting_started_removed_files = JSON.parse(
+        JSON.stringify(gettingStartedRemovedFileIds.value),
+    );
+    form.getting_started_direct_files = { ...gettingStartedDirectFiles.value };
     form.mobile_app_temp_folders = JSON.parse(
         JSON.stringify(mobileAppTempFolders.value),
     );
@@ -565,6 +625,9 @@ const submit = () => {
             form.hero_locale_removed_files = {};
             form.feature_card_temp_folders = {};
             form.feature_card_removed_files = {};
+            form.getting_started_temp_folders = {};
+            form.getting_started_removed_files = {};
+            form.getting_started_direct_files = {};
             form.mobile_app_temp_folders = {};
             form.mobile_app_removed_files = {};
             heroRemovedFileIds.value = [];
@@ -598,6 +661,24 @@ const submit = () => {
             );
             featureCardDirectFiles.value = Object.fromEntries(
                 form.settings.features_section.cards.map((_card, index) => [
+                    index,
+                    null,
+                ]),
+            );
+            gettingStartedTempFolders.value = Object.fromEntries(
+                form.settings.getting_started.items.map((_item, index) => [
+                    index,
+                    [],
+                ]),
+            );
+            gettingStartedRemovedFileIds.value = Object.fromEntries(
+                form.settings.getting_started.items.map((_item, index) => [
+                    index,
+                    [],
+                ]),
+            );
+            gettingStartedDirectFiles.value = Object.fromEntries(
+                form.settings.getting_started.items.map((_item, index) => [
                     index,
                     null,
                 ]),
@@ -672,11 +753,49 @@ const removeFeatureCard = (index: number) => {
 const addStepItem = () => {
     form.settings.getting_started.items.push({
         title: '',
+        image_url: '',
         description: '',
     });
+
+    const index = form.settings.getting_started.items.length - 1;
+    gettingStartedTempFolders.value[index] = [];
+    gettingStartedRemovedFileIds.value[index] = [];
+    gettingStartedDirectFiles.value[index] = null;
 };
-const removeStepItem = (index: number) =>
+const removeStepItem = (index: number) => {
     form.settings.getting_started.items.splice(index, 1);
+    gettingStartedTempFolders.value = Object.fromEntries(
+        form.settings.getting_started.items.map((_item, itemIndex) => [
+            itemIndex,
+            gettingStartedTempFolders.value[
+                itemIndex >= index ? itemIndex + 1 : itemIndex
+            ] || [],
+        ]),
+    );
+    gettingStartedRemovedFileIds.value = Object.fromEntries(
+        form.settings.getting_started.items.map((_item, itemIndex) => [
+            itemIndex,
+            gettingStartedRemovedFileIds.value[
+                itemIndex >= index ? itemIndex + 1 : itemIndex
+            ] || [],
+        ]),
+    );
+    gettingStartedDirectFiles.value = Object.fromEntries(
+        form.settings.getting_started.items.map((_item, itemIndex) => [
+            itemIndex,
+            gettingStartedDirectFiles.value[
+                itemIndex >= index ? itemIndex + 1 : itemIndex
+            ] || null,
+        ]),
+    );
+    form.getting_started_temp_folders = JSON.parse(
+        JSON.stringify(gettingStartedTempFolders.value),
+    );
+    form.getting_started_removed_files = JSON.parse(
+        JSON.stringify(gettingStartedRemovedFileIds.value),
+    );
+    form.getting_started_direct_files = { ...gettingStartedDirectFiles.value };
+};
 
 const resetMobileAppUploadState = () => {
     mobileAppTempFolders.value = Object.fromEntries(
@@ -1977,6 +2096,61 @@ const toggleSection = (
                                     :key="`step-${index}`"
                                     class="space-y-3 rounded-lg border p-4"
                                 >
+                                    <div class="space-y-2">
+                                        <Label>{{
+                                            localize(
+                                                'Step Image',
+                                                'صورة الخطوة',
+                                            )
+                                        }}</Label>
+                                        <FileUpload
+                                            v-model="
+                                                gettingStartedTempFolders[
+                                                    index
+                                                ]
+                                            "
+                                            :initial-files="
+                                                gettingStartedFileList(index)
+                                            "
+                                            :allow-multiple="false"
+                                            :max-files="1"
+                                            :instant-upload="false"
+                                            :max-file-size="1024 * 1024 * 5"
+                                            :allowed-file-types="[
+                                                'image/jpeg',
+                                                'image/jpg',
+                                                'image/png',
+                                                'image/svg+xml',
+                                            ]"
+                                            :collection="`getting_started_step_${index}_image`"
+                                            theme="light"
+                                            width="100%"
+                                            @file-removed="
+                                                (data) =>
+                                                    handleGettingStartedFileRemoved(
+                                                        index,
+                                                        data,
+                                                    )
+                                            "
+                                            @local-file-added="
+                                                (file) =>
+                                                    handleGettingStartedLocalFileAdded(
+                                                        index,
+                                                        file,
+                                                    )
+                                            "
+                                        />
+                                        <img
+                                            v-if="item.image_url"
+                                            :src="item.image_url"
+                                            alt="getting started step image preview"
+                                            class="h-28 w-full rounded-lg border object-contain p-2"
+                                        />
+                                        <Input
+                                            v-model="item.image_url"
+                                            class="hidden"
+                                        />
+                                    </div>
                                     <div class="space-y-2">
                                         <Label>{{
                                             localize(

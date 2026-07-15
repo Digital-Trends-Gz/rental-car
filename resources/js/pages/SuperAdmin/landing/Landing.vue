@@ -51,6 +51,7 @@ interface FeatureCard {
 
 interface StepItem {
     title: string;
+    image_url: string;
     description: string;
 }
 
@@ -1173,6 +1174,17 @@ onUnmounted(() => {
                             class="text-center"
                         >
                             <div
+                                v-if="item.image_url"
+                                class="mx-auto mb-5 h-20 w-20 overflow-hidden rounded-2xl bg-secondary shadow-sm"
+                            >
+                                <img
+                                    :src="item.image_url"
+                                    :alt="item.title"
+                                    class="h-full w-full object-cover"
+                                />
+                            </div>
+                            <div
+                                v-else
                                 class="gradient-button mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold"
                             >
                                 {{ index + 1 }}
@@ -1214,16 +1226,16 @@ onUnmounted(() => {
                             v-for="card in landingSettings.features_section
                                 .cards"
                             :key="`desktop-${card.title}-${card.content}`"
-                            class="card-elevated flex h-full min-h-[190px] flex-col rounded-xl p-6"
+                            class="card-elevated relative flex h-full min-h-[190px] flex-col rounded-xl p-6"
                         >
                             <img
                                 v-if="card.image_url"
                                 :src="card.image_url"
                                 :alt="card.title"
-                                class="mb-4 h-40 w-full rounded-lg object-cover"
+                                class="absolute top-6 right-6 h-14 w-14 object-contain"
                             />
                             <h3
-                                class="mb-3 text-xl font-semibold text-foreground"
+                                class="mb-3 max-w-[calc(100%-5rem)] text-xl font-semibold text-foreground"
                             >
                                 {{ card.title }}
                             </h3>
@@ -1271,16 +1283,16 @@ onUnmounted(() => {
                                 class="h-auto"
                             >
                                 <div
-                                    class="card-elevated flex h-full min-h-[190px] flex-col rounded-xl p-6"
+                                    class="card-elevated relative flex h-full min-h-[190px] flex-col rounded-xl p-6"
                                 >
                                     <img
                                         v-if="card.image_url"
                                         :src="card.image_url"
                                         :alt="card.title"
-                                        class="mb-4 h-40 w-full rounded-lg object-cover"
+                                        class="absolute top-6 right-6 h-14 w-14 object-contain"
                                     />
                                     <h3
-                                        class="mb-3 text-xl font-semibold text-foreground"
+                                        class="mb-3 max-w-[calc(100%-5rem)] text-xl font-semibold text-foreground"
                                     >
                                         {{ card.title }}
                                     </h3>

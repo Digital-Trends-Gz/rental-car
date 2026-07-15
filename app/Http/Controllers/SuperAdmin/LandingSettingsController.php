@@ -141,6 +141,7 @@ class LandingSettingsController extends Controller
             'heroFiles' => $heroFiles,
             'heroLocalizedFiles' => $this->heroLocalizedFiles($brandingSetting),
             'featureFiles' => $this->featureCardFiles($brandingSetting),
+            'gettingStartedFiles' => $this->gettingStartedFiles($brandingSetting),
             'mobileAppFiles' => $this->mobileAppFiles($brandingSetting),
         ]);
     }
@@ -173,6 +174,7 @@ class LandingSettingsController extends Controller
             'settings.getting_started.description' => ['required', 'string', 'max:2000'],
             'settings.getting_started.items' => ['nullable', 'array'],
             'settings.getting_started.items.*.title' => ['nullable', 'string', 'max:255'],
+            'settings.getting_started.items.*.image_url' => ['nullable', 'string', 'max:2000'],
             'settings.getting_started.items.*.description' => ['nullable', 'string', 'max:2000'],
 
             'settings.mobile_apps_section.enabled' => ['nullable', 'boolean'],
@@ -249,6 +251,7 @@ class LandingSettingsController extends Controller
 
         $this->syncHeroImageUpload($request, $landingSetting);
         $this->syncFeatureCardUploads($request, $landingSetting);
+        $this->syncGettingStartedUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
         $this->refreshLandingImageUrls($landingSetting);
 
@@ -279,6 +282,7 @@ class LandingSettingsController extends Controller
 
         $this->syncHeroImageUpload($request, $landingSetting);
         $this->syncFeatureCardUploads($request, $landingSetting);
+        $this->syncGettingStartedUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
         $this->refreshLandingImageUrls($landingSetting);
 
@@ -286,6 +290,7 @@ class LandingSettingsController extends Controller
             'site_setting_id' => $landingSetting->id,
             'files_count' => $landingSetting->files()->count(),
             'collections' => $landingSetting->files()
+                ->reorder()
                 ->select('collection')
                 ->distinct()
                 ->pluck('collection')
@@ -643,10 +648,12 @@ class LandingSettingsController extends Controller
             'hero_direct_file_input_type' => get_debug_type($request->input('hero_direct_file')),
             'hero_locale_direct_file_keys' => array_keys((array) $request->input('hero_locale_direct_files', [])),
             'feature_card_direct_file_keys' => array_keys((array) $request->input('feature_card_direct_files', [])),
+            'getting_started_direct_file_keys' => array_keys((array) $request->input('getting_started_direct_files', [])),
             'mobile_app_direct_file_keys' => array_keys((array) $request->input('mobile_app_direct_files', [])),
             'hero_temp_folders' => $request->input('hero_temp_folders', []),
             'hero_locale_temp_folders' => $request->input('hero_locale_temp_folders', []),
             'feature_card_temp_folders' => $request->input('feature_card_temp_folders', []),
+            'getting_started_temp_folders' => $request->input('getting_started_temp_folders', []),
             'mobile_app_temp_folders' => $request->input('mobile_app_temp_folders', []),
             'post_max_size' => ini_get('post_max_size'),
             'upload_max_filesize' => ini_get('upload_max_filesize'),
@@ -722,6 +729,19 @@ class LandingSettingsController extends Controller
             }
         }
         data_set($settings, 'features_section.cards', $cards);
+
+        $steps = (array) data_get($settings, 'getting_started.items', []);
+        foreach ($steps as $index => $step) {
+            if (!is_array($step)) {
+                continue;
+            }
+
+            $url = $this->latestLandingFileUrl($landingSetting, $this->gettingStartedStepCollection((int) $index));
+            if ($url && trim((string) ($step['image_url'] ?? '')) === '') {
+                $steps[$index]['image_url'] = $url;
+            }
+        }
+        data_set($settings, 'getting_started.items', $steps);
 
         $apps = (array) data_get($settings, 'mobile_apps_section.apps', []);
         foreach ($apps as $index => $app) {
@@ -1056,6 +1076,70 @@ class LandingSettingsController extends Controller
         $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
     }
 
+    private function syncGettingStartedUploads(Request $request, SiteSetting $landingSetting): void
+    {
+        $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
+        $steps = (array) data_get($settings, 'getting_started.items', []);
+        $tempFoldersByIndex = is_array($request->input('getting_started_temp_folders', []))
+            ? $request->input('getting_started_temp_folders', [])
+            : [];
+        $removedIdsByIndex = is_array($request->input('getting_started_removed_files', []))
+            ? $request->input('getting_started_removed_files', [])
+            : [];
+
+        foreach ($steps as $index => $step) {
+            if (!is_array($step)) {
+                continue;
+            }
+
+            $collection = $this->gettingStartedStepCollection((int) $index);
+            $tempFolders = is_array($tempFoldersByIndex[$index] ?? null)
+                ? array_values(array_filter($tempFoldersByIndex[$index]))
+                : [];
+            $removedIds = is_array($removedIdsByIndex[$index] ?? null)
+                ? array_values(array_unique(array_filter($removedIdsByIndex[$index])))
+                : [];
+            $directFile = $request->file("getting_started_direct_files.$index");
+
+            if ($directFile instanceof UploadedFile) {
+                $steps[$index]['image_url'] = $this->storeDirectLandingFile(
+                    $landingSetting,
+                    $directFile,
+                    $collection
+                );
+                continue;
+            }
+
+            if (!empty($tempFolders)) {
+                $existingIds = $landingSetting->files()->where('collection', $collection)->pluck('id')->all();
+                $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+            }
+
+            $this->filePondService->handleFileUpdates(
+                $landingSetting,
+                $tempFolders,
+                $removedIds,
+                $collection
+            );
+
+            if (!empty($tempFolders)) {
+                $file = $landingSetting->files()
+                    ->where('collection', $collection)
+                    ->latest('id')
+                    ->first();
+
+                $steps[$index]['image_url'] = $file
+                    ? (SiteSetting::publicUrlFromPath($file->path) ?? '')
+                    : (string) ($steps[$index]['image_url'] ?? '');
+            } elseif (!empty($removedIds)) {
+                $steps[$index]['image_url'] = '';
+            }
+        }
+
+        data_set($settings, 'getting_started.items', $steps);
+        $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
+    }
+
     private function sanitizeRequestFiles(Request $request): void
     {
         if ($request->has('hero_direct_file') && !($request->file('hero_direct_file') instanceof UploadedFile)) {
@@ -1092,6 +1176,21 @@ class LandingSettingsController extends Controller
                 }
                 $request->merge(['feature_card_direct_files' => $sanitized]);
                 $request->files->set('feature_card_direct_files', $sanitized);
+            }
+        }
+
+        if ($request->has('getting_started_direct_files')) {
+            $files = $request->input('getting_started_direct_files');
+            if (is_array($files)) {
+                $sanitized = [];
+                foreach ($files as $index => $val) {
+                    $file = $request->file("getting_started_direct_files.$index");
+                    if ($file instanceof UploadedFile) {
+                        $sanitized[$index] = $file;
+                    }
+                }
+                $request->merge(['getting_started_direct_files' => $sanitized]);
+                $request->files->set('getting_started_direct_files', $sanitized);
             }
         }
 
@@ -1144,6 +1243,7 @@ class LandingSettingsController extends Controller
             'settings.getting_started.description' => ['required', 'string', 'max:2000'],
             'settings.getting_started.items' => ['nullable', 'array'],
             'settings.getting_started.items.*.title' => ['nullable', 'string', 'max:255'],
+            'settings.getting_started.items.*.image_url' => ['nullable', 'string', 'max:2000'],
             'settings.getting_started.items.*.description' => ['nullable', 'string', 'max:2000'],
 
             'settings.mobile_apps_section.enabled' => ['nullable', 'boolean'],
@@ -1239,6 +1339,14 @@ class LandingSettingsController extends Controller
             'feature_card_removed_files.*.*' => ['integer'],
             'feature_card_direct_files' => ['nullable', 'array'],
             'feature_card_direct_files.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
+            'getting_started_temp_folders' => ['nullable', 'array'],
+            'getting_started_temp_folders.*' => ['array'],
+            'getting_started_temp_folders.*.*' => ['string'],
+            'getting_started_removed_files' => ['nullable', 'array'],
+            'getting_started_removed_files.*' => ['array'],
+            'getting_started_removed_files.*.*' => ['integer'],
+            'getting_started_direct_files' => ['nullable', 'array'],
+            'getting_started_direct_files.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
             'mobile_app_temp_folders' => ['nullable', 'array'],
             'mobile_app_temp_folders.*' => ['array'],
             'mobile_app_temp_folders.*.image' => ['nullable', 'array'],
@@ -1331,6 +1439,22 @@ class LandingSettingsController extends Controller
     }
 
     /**
+     * @return array<int, array<int, array{id: int, url: string|null}>>
+     */
+    private function gettingStartedFiles(?SiteSetting $landingSetting): array
+    {
+        $settings = $this->landingSettings();
+        $steps = (array) data_get($settings, 'getting_started.items', []);
+        $files = [];
+
+        foreach (array_keys($steps) as $index) {
+            $files[(int) $index] = $this->landingFilesForCollection($landingSetting, $this->gettingStartedStepCollection((int) $index));
+        }
+
+        return $files;
+    }
+
+    /**
      * @return array<int, array{id: int, url: string|null}>
      */
     private function landingFilesForCollection(?SiteSetting $landingSetting, string $collection): array
@@ -1356,6 +1480,11 @@ class LandingSettingsController extends Controller
     private function featureCardCollection(int $index): string
     {
         return 'feature_card_' . max(0, $index) . '_image';
+    }
+
+    private function gettingStartedStepCollection(int $index): string
+    {
+        return 'getting_started_step_' . max(0, $index) . '_image';
     }
 
     private function heroLocaleCollection(string $locale): string
