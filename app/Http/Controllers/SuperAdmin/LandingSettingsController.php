@@ -617,6 +617,7 @@ class LandingSettingsController extends Controller
             'method' => $request->method(),
             'content_type' => $request->headers->get('content-type'),
             'content_length' => $request->headers->get('content-length'),
+            'raw_files_superglobal' => $_FILES,
             'has_files' => $request->hasFile('hero_direct_file')
                 || $request->hasFile('hero_locale_direct_files')
                 || $request->hasFile('feature_card_direct_files')
