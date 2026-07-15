@@ -131,4 +131,5 @@ Route::prefix('static-pages')->group(function () {
     Route::get('support', [StaticPageContentController::class, 'support'])->name('api.static-pages.support');
     Route::get('privacy-policy', [StaticPageContentController::class, 'privacyPolicy'])->name('api.static-pages.privacy-policy');
     Route::get('terms-conditions', [StaticPageContentController::class, 'termsConditions'])->name('api.static-pages.terms-conditions');
+    Route::get('security-policy', [StaticPageContentController::class, 'securityPolicy'])->name('api.static-pages.security-policy');
 });

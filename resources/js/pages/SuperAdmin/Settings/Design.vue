@@ -214,7 +214,6 @@ const mobileAppTempFolders = ref<
 const mobileAppRemovedFileIds = ref<
     Record<number, { image: number[]; icon: number[] }>
 >({});
-const heroLocaleSourceModes = ref<Record<string, 'upload' | 'url'>>({});
 const enabledLocales = computed(() =>
     Array.isArray(form.settings.enabled_locales) &&
     form.settings.enabled_locales.length
@@ -273,8 +272,6 @@ if (!form.settings.hero.localized_images) {
 for (const localeCode of enabledLocales.value) {
     form.settings.hero.localized_images[localeCode] =
         form.settings.hero.localized_images[localeCode] || '';
-    heroLocaleSourceModes.value[localeCode] =
-        props.heroLocalizedFiles?.[localeCode]?.length ? 'upload' : 'url';
     heroLocaleTempFolders.value[localeCode] = [];
     heroLocaleRemovedFileIds.value[localeCode] = [];
 }
@@ -357,29 +354,16 @@ watch(heroSourceMode, (value) => {
 });
 
 watch(
-    heroLocaleSourceModes,
-    (value) => {
-        for (const localeCode of enabledLocales.value) {
-            if (value[localeCode] !== 'url') {
-                continue;
-            }
-
-            const existingIds = (props.heroLocalizedFiles?.[localeCode] || [])
-                .map((file) => file.id)
-                .filter(Boolean);
-            heroLocaleRemovedFileIds.value[localeCode] = [
-                ...new Set([
-                    ...(heroLocaleRemovedFileIds.value[localeCode] || []),
-                    ...existingIds,
-                ]),
-            ];
-        }
-
-        form.hero_locale_removed_files = JSON.parse(
-            JSON.stringify(heroLocaleRemovedFileIds.value),
-        );
+    activeHeroLocale,
+    () => {
+        heroSourceMode.value = activeHeroUsesDefaultMedia.value
+            ? props.heroFiles?.length
+                ? 'upload'
+                : 'url'
+            : props.heroLocalizedFiles?.[activeHeroLocale.value]?.length
+            ? 'upload'
+            : 'url';
     },
-    { deep: true },
 );
 
 function isVideoUrl(url: string | null): boolean {
@@ -472,16 +456,6 @@ const localeDisplayName = (localeCode: string) =>
 
 const heroLocaleFiles = (localeCode: string) =>
     props.heroLocalizedFiles?.[localeCode] || [];
-
-const uploadedHeroLocaleUrl = (localeCode: string) =>
-    heroLocaleFiles(localeCode)[0]?.url || null;
-
-const previewHeroLocaleUrl = (localeCode: string) =>
-    heroLocaleSourceModes.value[localeCode] === 'url'
-        ? form.settings.hero.localized_images?.[localeCode] || null
-        : uploadedHeroLocaleUrl(localeCode) ||
-          form.settings.hero.localized_images?.[localeCode] ||
-          null;
 
 const refreshPreview = () => {
     previewNonce.value = Date.now();
@@ -859,12 +833,23 @@ const toggleSection = (
                             </div>
 
                             <div class="space-y-2">
-                                <Label>{{
-                                    localize(
-                                        'Hero Media Source',
-                                        'مصدر وسائط القسم الرئيسي',
-                                    )
-                                }}</Label>
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <Label>{{
+                                        localize(
+                                            'Hero Media Source',
+                                            'مصدر وسائط القسم الرئيسي',
+                                        )
+                                    }}</Label>
+                                    <span class="text-xs text-muted-foreground">
+                                        {{
+                                            localize(
+                                                'Current page language:',
+                                                'لغة الصفحة الحالية:',
+                                            )
+                                        }}
+                                        {{ localeDisplayName(activeHeroLocale) }}
+                                    </span>
+                                </div>
                                 <Select v-model="heroSourceMode">
                                     <SelectTrigger>
                                         <SelectValue
@@ -1002,134 +987,6 @@ const toggleSection = (
                                     />
                                 </div>
 
-                                <div class="space-y-4 rounded-xl border bg-muted/10 p-4">
-                                    <div>
-                                        <p class="text-sm font-semibold">
-                                            {{
-                                                localize(
-                                                    'Hero media by language',
-                                                    'وسائط القسم الرئيسي حسب اللغة',
-                                                )
-                                            }}
-                                        </p>
-                                        <p class="text-xs text-muted-foreground">
-                                            {{
-                                                localize(
-                                                    'Set a specific hero image or video for each language. Empty languages use the default hero media above.',
-                                                    'حدد صورة أو فيديو خاص لكل لغة. اللغات الفارغة تستخدم الوسائط العامة أعلاه.',
-                                                )
-                                            }}
-                                        </p>
-                                    </div>
-
-                                    <div
-                                        v-for="localeCode in enabledLocales"
-                                        :key="`hero-media-${localeCode}`"
-                                        class="space-y-3 rounded-lg border bg-background p-3"
-                                    >
-                                        <div class="flex items-center justify-between gap-3">
-                                            <div>
-                                                <p class="text-sm font-medium">
-                                                    {{ localeDisplayName(localeCode) }}
-                                                </p>
-                                                <p class="text-xs uppercase text-muted-foreground">
-                                                    {{ localeCode }}
-                                                </p>
-                                            </div>
-                                            <Select v-model="heroLocaleSourceModes[localeCode]">
-                                                <SelectTrigger class="w-44">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="upload">{{
-                                                        localize(
-                                                            'Upload',
-                                                            'رفع',
-                                                        )
-                                                    }}</SelectItem>
-                                                    <SelectItem value="url">{{
-                                                        localize(
-                                                            'External URL',
-                                                            'رابط خارجي',
-                                                        )
-                                                    }}</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <FileUpload
-                                            v-if="heroLocaleSourceModes[localeCode] === 'upload'"
-                                            v-model="heroLocaleTempFolders[localeCode]"
-                                            :initial-files="heroLocaleFiles(localeCode)"
-                                            :allow-multiple="false"
-                                            :max-files="1"
-                                            :max-file-size="1024 * 1024 * 50"
-                                            :allowed-file-types="[
-                                                'image/jpeg',
-                                                'image/png',
-                                                'image/webp',
-                                                'image/gif',
-                                                'video/mp4',
-                                                'video/webm',
-                                                'video/ogg',
-                                                'video/quicktime',
-                                            ]"
-                                            :collection="`hero_${localeCode}`"
-                                            theme="light"
-                                            width="100%"
-                                            @file-removed="
-                                                (data) =>
-                                                    handleHeroLocaleFileRemoved(
-                                                        localeCode,
-                                                        data,
-                                                    )
-                                            "
-                                        />
-
-                                        <Input
-                                            v-else
-                                            v-model="
-                                                form.settings.hero
-                                                    .localized_images[localeCode]
-                                            "
-                                            placeholder="https://..."
-                                        />
-
-                                        <div
-                                            v-if="previewHeroLocaleUrl(localeCode)"
-                                            class="overflow-hidden rounded-lg border bg-muted/20"
-                                        >
-                                            <video
-                                                v-if="
-                                                    isVideoUrl(
-                                                        previewHeroLocaleUrl(
-                                                            localeCode,
-                                                        ),
-                                                    )
-                                                "
-                                                :src="
-                                                    previewHeroLocaleUrl(
-                                                        localeCode,
-                                                    ) || ''
-                                                "
-                                                class="h-36 w-full object-cover"
-                                                controls
-                                                muted
-                                                playsinline
-                                            />
-                                            <img
-                                                v-else
-                                                :src="
-                                                    previewHeroLocaleUrl(
-                                                        localeCode,
-                                                    ) || ''
-                                                "
-                                                alt="localized hero preview"
-                                                class="h-36 w-full object-cover"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
 
                             <div class="space-y-3">

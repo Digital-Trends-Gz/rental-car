@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\CarStatus;
+use App\Core\LocalizationSettings;
 use App\Core\TenantContext;
 use App\Core\LandingPageSettings;
 use App\Models\Car;
@@ -25,6 +26,24 @@ use Illuminate\Http\Response;
 class HomePagesController extends Controller
 {
     private const MAIN_SITE_SEO_KEY = 'main_site_seo';
+    private const STATIC_PAGES_CONTENT_KEY = 'main_static_pages_content';
+    private const STATIC_PAGE_TITLES = [
+        'privacy_policy' => [
+            'en' => 'Privacy Policy',
+            'ar' => 'سياسة الخصوصية',
+            'ur' => 'Privacy Policy',
+        ],
+        'terms_conditions' => [
+            'en' => 'Terms of Use',
+            'ar' => 'سياسة الاستخدام',
+            'ur' => 'Terms of Use',
+        ],
+        'security_policy' => [
+            'en' => 'Security Policy',
+            'ar' => 'سياسة الأمان',
+            'ur' => 'Security Policy',
+        ],
+    ];
     /**
      * @return array<int, string>
      */
@@ -580,6 +599,129 @@ class HomePagesController extends Controller
         return inertia('Contact', [
             'seo' => TenantSeoResolver::forPage(TenantContext::get(), 'contact'),
         ]);
+    }
+
+    public function privacyPolicy()
+    {
+        return $this->staticPage('privacy_policy');
+    }
+
+    public function termsOfUse()
+    {
+        return $this->staticPage('terms_conditions');
+    }
+
+    public function securityPolicy()
+    {
+        return $this->staticPage('security_policy');
+    }
+
+    private function staticPage(string $section)
+    {
+        abort_unless(array_key_exists($section, self::STATIC_PAGE_TITLES), 404);
+
+        $localization = LocalizationSettings::load();
+        $locale = app()->getLocale();
+        $content = $this->localizedStaticPageContent(
+            data_get($this->staticPageSettings(), $section),
+            $locale,
+            $localization
+        );
+        [$landingSettings, $availableLocales] = TenantContext::get()
+            ? [null, null]
+            : $this->landingShellSettings();
+
+        return inertia('StaticPage', [
+            'page' => [
+                'section' => $section,
+                'title' => $this->localizedStaticPageTitle($section, $locale),
+                'content_html' => $content,
+                'locale' => $locale,
+                'direction' => $this->staticPageDirection($locale, $localization),
+            ],
+            'seo' => TenantSeoResolver::forPage(TenantContext::get(), str_replace('_', '-', $section)),
+            'landingSettings' => $landingSettings,
+            'availableLocales' => $availableLocales,
+        ]);
+    }
+
+    private function staticPageSettings(): array
+    {
+        $stored = SiteSetting::query()
+            ->where('key', self::STATIC_PAGES_CONTENT_KEY)
+            ->value('value');
+
+        return is_array($stored) ? $stored : [];
+    }
+
+    private function localizedStaticPageContent(mixed $content, string $locale, array $localization): string
+    {
+        if (!is_array($content)) {
+            return trim((string) ($content ?? ''));
+        }
+
+        $defaultLocale = LocalizationSettings::defaultLocale($localization);
+        $value = trim((string) ($content[$locale] ?? ''));
+
+        if ($value !== '') {
+            return $value;
+        }
+
+        $defaultValue = trim((string) ($content[$defaultLocale] ?? ''));
+
+        if ($defaultValue !== '') {
+            return $defaultValue;
+        }
+
+        foreach ($content as $fallbackValue) {
+            $fallbackValue = trim((string) $fallbackValue);
+            if ($fallbackValue !== '') {
+                return $fallbackValue;
+            }
+        }
+
+        return '';
+    }
+
+    private function localizedStaticPageTitle(string $section, string $locale): string
+    {
+        $titles = self::STATIC_PAGE_TITLES[$section] ?? [];
+        $baseLocale = strtolower(explode('-', $locale)[0] ?? $locale);
+
+        return (string) ($titles[$locale] ?? $titles[$baseLocale] ?? $titles['en'] ?? $section);
+    }
+
+    private function staticPageDirection(string $locale, array $localization): string
+    {
+        foreach (($localization['locales'] ?? []) as $row) {
+            if (($row['code'] ?? null) === $locale && in_array(($row['direction'] ?? null), ['ltr', 'rtl'], true)) {
+                return (string) $row['direction'];
+            }
+        }
+
+        return str_starts_with($locale, 'ar') || str_starts_with($locale, 'ur') ? 'rtl' : 'ltr';
+    }
+
+    private function landingShellSettings(): array
+    {
+        $stored = SiteSetting::query()
+            ->where('key', LandingPageSettings::KEY)
+            ->value('value');
+
+        $landingSettings = LandingPageSettings::localize(
+            LandingPageSettings::normalize(is_array($stored) ? $stored : null),
+            app()->getLocale()
+        );
+        $availableLocales = array_values(array_map('strval', array_filter(
+            (array) data_get($landingSettings, 'enabled_locales', []),
+            static fn ($value) => trim((string) $value) !== ''
+        )));
+
+        if (empty($availableLocales)) {
+            $availableLocales = LandingPageSettings::supportedLocaleKeys();
+        }
+
+        return [$landingSettings, $availableLocales];
     }
 
     public function guestContact(Request $request)

@@ -20,12 +20,29 @@ const emit = defineEmits<{
     'update:modelValue': [value: string];
 }>();
 
+const normalizeUrl = (value: string) => {
+    const url = value.trim();
+
+    if (url === '') {
+        return '';
+    }
+
+    return /^(https?:|mailto:|tel:)/i.test(url) ? url : `https://${url}`;
+};
+
 const editor = useEditor({
     content: props.modelValue || '',
     extensions: [
         StarterKit.configure({
             heading: {
                 levels: [2, 3, 4],
+            },
+            link: {
+                openOnClick: false,
+                HTMLAttributes: {
+                    rel: 'noopener noreferrer',
+                    target: '_blank',
+                },
             },
         }),
     ],
@@ -81,6 +98,22 @@ watch(
         });
     },
 );
+
+const setLink = () => {
+    const previousUrl = editor.value?.getAttributes('link').href ?? '';
+    const url = normalizeUrl(window.prompt('Link URL', previousUrl) ?? '');
+
+    if (!editor.value) {
+        return;
+    }
+
+    if (url === '') {
+        editor.value.chain().focus().extendMarkRange('link').unsetLink().run();
+        return;
+    }
+
+    editor.value.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+};
 </script>
 
 <template>
@@ -101,6 +134,22 @@ watch(
                 @click="editor.chain().focus().toggleItalic().run()"
             >
                 Italic
+            </Button>
+            <Button
+                type="button"
+                size="sm"
+                :variant="editor.isActive('underline') ? 'default' : 'outline'"
+                @click="editor.chain().focus().toggleUnderline().run()"
+            >
+                Underline
+            </Button>
+            <Button
+                type="button"
+                size="sm"
+                :variant="editor.isActive('strike') ? 'default' : 'outline'"
+                @click="editor.chain().focus().toggleStrike().run()"
+            >
+                Strike
             </Button>
             <Button
                 type="button"
@@ -133,6 +182,28 @@ watch(
                 @click="editor.chain().focus().toggleOrderedList().run()"
             >
                 Numbers
+            </Button>
+            <Button
+                type="button"
+                size="sm"
+                :variant="editor.isActive('blockquote') ? 'default' : 'outline'"
+                @click="editor.chain().focus().toggleBlockquote().run()"
+            >
+                Quote
+            </Button>
+            <Button type="button" size="sm" variant="outline" @click="editor.chain().focus().setHorizontalRule().run()">
+                Line
+            </Button>
+            <Button
+                type="button"
+                size="sm"
+                :variant="editor.isActive('link') ? 'default' : 'outline'"
+                @click="setLink"
+            >
+                Link
+            </Button>
+            <Button type="button" size="sm" variant="outline" @click="editor.chain().focus().extendMarkRange('link').unsetLink().run()">
+                Unlink
             </Button>
             <Button type="button" size="sm" variant="outline" @click="editor.chain().focus().unsetAllMarks().clearNodes().run()">
                 Clear
@@ -191,5 +262,22 @@ watch(
 
 .rich-text-editor__content em {
     font-style: italic;
+}
+
+.rich-text-editor__content blockquote {
+    border-inline-start: 3px solid hsl(var(--border));
+    color: hsl(var(--muted-foreground));
+    padding-inline-start: 1rem;
+}
+
+.rich-text-editor__content a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+}
+
+.rich-text-editor__content hr {
+    border: 0;
+    border-top: 1px solid hsl(var(--border));
+    margin: 1rem 0;
 }
 </style>

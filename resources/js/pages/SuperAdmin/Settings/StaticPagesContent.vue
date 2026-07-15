@@ -112,6 +112,16 @@ const sections: ContentSection[] = [
         placeholderAr: 'محتوى الشروط والأحكام...',
         rows: 12,
     },
+    {
+        key: 'security_policy',
+        title: 'Security Policy Page',
+        titleAr: 'سياسة الأمان',
+        description: 'Write the security policy content for data protection, account safety, and responsible use.',
+        descriptionAr: 'اكتب محتوى سياسة الأمان وحماية البيانات وسلامة الحسابات.',
+        placeholder: 'Security policy content...',
+        placeholderAr: 'محتوى سياسة الأمان...',
+        rows: 12,
+    },
 ];
 
 const localeLabel = (localeOption?: LocaleOption) => {
@@ -147,7 +157,7 @@ const submit = () => {
                     <p class="text-sm text-muted-foreground">
                         {{
                             localize(
-                                'Manage translated content for support, privacy policy, and terms pages.',
+                                'Manage translated content for support, privacy policy, terms of use, and security policy pages.',
                                 'إدارة محتوى مترجم لصفحات الدعم وسياسة الخصوصية والشروط والأحكام.'
                             )
                         }}
