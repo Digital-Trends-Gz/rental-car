@@ -21,6 +21,7 @@ interface StaticPageContentSettings {
     support: LocalizedText;
     privacy_policy: LocalizedText;
     terms_conditions: LocalizedText;
+    security_policy: LocalizedText;
 }
 
 interface ContentSection {
@@ -76,6 +77,7 @@ const form = useForm<{
         support: makeLocalizedText(props.settings.support),
         privacy_policy: makeLocalizedText(props.settings.privacy_policy),
         terms_conditions: makeLocalizedText(props.settings.terms_conditions),
+        security_policy: makeLocalizedText(props.settings.security_policy),
     },
 });
 

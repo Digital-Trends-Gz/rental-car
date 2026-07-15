@@ -123,7 +123,7 @@ function routeOrFallback(name: string, params: Record<string, any> = {}) {
     };
     const base = (baseMap as any)[name] || '';
     if (name === 'filepond.revert' && (params as any).folder) {
-        return `${base}?folder=${encodeURIComponent((params as any).folder)}`;
+        return `${base}/${encodeURIComponent((params as any).folder)}`;
     }
     return base;
 }

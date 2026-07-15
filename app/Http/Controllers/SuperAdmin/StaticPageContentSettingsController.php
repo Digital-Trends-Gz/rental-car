@@ -39,6 +39,8 @@ class StaticPageContentSettingsController extends Controller
             'settings.privacy_policy.*' => ['nullable', 'string', 'max:50000'],
             'settings.terms_conditions' => ['nullable', 'array'],
             'settings.terms_conditions.*' => ['nullable', 'string', 'max:50000'],
+            'settings.security_policy' => ['nullable', 'array'],
+            'settings.security_policy.*' => ['nullable', 'string', 'max:50000'],
         ]);
 
         SiteSetting::query()->updateOrCreate(
@@ -67,6 +69,7 @@ class StaticPageContentSettingsController extends Controller
             'support' => $this->localizedField($settings['support'] ?? null, $localeCodes, $defaultLocale),
             'privacy_policy' => $this->localizedField($settings['privacy_policy'] ?? null, $localeCodes, $defaultLocale),
             'terms_conditions' => $this->localizedField($settings['terms_conditions'] ?? null, $localeCodes, $defaultLocale),
+            'security_policy' => $this->localizedField($settings['security_policy'] ?? null, $localeCodes, $defaultLocale),
         ];
     }
 
@@ -89,7 +92,7 @@ class StaticPageContentSettingsController extends Controller
 
     private function sanitizeContent(string $content): string
     {
-        $content = strip_tags($content, '<p><br><strong><b><em><i><h2><h3><h4><ul><ol><li><a>');
+        $content = strip_tags($content, '<p><br><strong><b><em><i><u><s><blockquote><hr><h2><h3><h4><ul><ol><li><a>');
         $content = preg_replace('/\s+on[a-z]+\s*=\s*(".*?"|\'.*?\'|[^\s>]+)/i', '', $content) ?? $content;
         $content = preg_replace('/href\s*=\s*(["\'])\s*javascript:.*?\1/i', 'href="#"', $content) ?? $content;
 

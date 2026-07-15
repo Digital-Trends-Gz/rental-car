@@ -34,6 +34,13 @@ class StaticPageContentController extends Controller
                 'ur' => 'شرائط و ضوابط',
             ],
         ],
+        'security_policy' => [
+            'titles' => [
+                'en' => 'Security Policy',
+                'ar' => 'Security Policy',
+                'ur' => 'Security Policy',
+            ],
+        ],
     ];
 
     public function index(Request $request): JsonResponse
@@ -70,6 +77,11 @@ class StaticPageContentController extends Controller
     public function termsConditions(Request $request): JsonResponse
     {
         return $this->show($request, 'terms_conditions');
+    }
+
+    public function securityPolicy(Request $request): JsonResponse
+    {
+        return $this->show($request, 'security_policy');
     }
 
     private function show(Request $request, string $section): JsonResponse

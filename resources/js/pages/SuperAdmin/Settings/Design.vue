@@ -487,7 +487,32 @@ const refreshPreview = () => {
     previewNonce.value = Date.now();
 };
 
+const syncUploadStateToForm = () => {
+    form.hero_temp_folders = [...heroTempFolders.value];
+    form.hero_removed_files = [...new Set(heroRemovedFileIds.value)];
+    form.hero_locale_temp_folders = JSON.parse(
+        JSON.stringify(heroLocaleTempFolders.value),
+    );
+    form.hero_locale_removed_files = JSON.parse(
+        JSON.stringify(heroLocaleRemovedFileIds.value),
+    );
+    form.feature_card_temp_folders = JSON.parse(
+        JSON.stringify(featureCardTempFolders.value),
+    );
+    form.feature_card_removed_files = JSON.parse(
+        JSON.stringify(featureCardRemovedFileIds.value),
+    );
+    form.mobile_app_temp_folders = JSON.parse(
+        JSON.stringify(mobileAppTempFolders.value),
+    );
+    form.mobile_app_removed_files = JSON.parse(
+        JSON.stringify(mobileAppRemovedFileIds.value),
+    );
+};
+
 const submit = () => {
+    syncUploadStateToForm();
+
     form.transform((data) => ({
         ...data,
         _method: 'put',
@@ -977,7 +1002,7 @@ const toggleSection = (
                                     />
                                 </div>
 
-                                <div v-if="false" class="space-y-4 rounded-xl border bg-muted/10 p-4">
+                                <div class="space-y-4 rounded-xl border bg-muted/10 p-4">
                                     <div>
                                         <p class="text-sm font-semibold">
                                             {{
