@@ -2,7 +2,7 @@
 import InputError from '@/components/InputError.vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,15 @@ type DamageReport = {
 };
 
 type OptionItem = { value: string; label: string };
+type CurrencyOption = {
+    code: string;
+    abbreviation?: string;
+    name?: string;
+    currency?: string;
+    symbol?: string;
+    icon?: string;
+    label?: string;
+};
 
 const props = defineProps<{
     contract: {
@@ -102,12 +111,15 @@ const props = defineProps<{
         exchange_rate?: number | null;
         payments?: Array<{
             id: number;
+            payment_number?: string | null;
             amount: number;
             currency: string | null;
             base_amount: number;
             base_currency: string | null;
             exchange_rate: number;
             status: string;
+            processed_at?: string | null;
+            notes?: string | null;
         }>;
         notes: string | null;
     };
@@ -152,10 +164,12 @@ const props = defineProps<{
     options: {
         fuelLevels: OptionItem[];
         vehicleConditions: OptionItem[];
+        currencies?: CurrencyOption[];
     };
     actions: {
         index: string;
         store: string;
+        cashPayment?: string | null;
         print?: string | null;
     };
     handoverPhotos?: {
@@ -212,9 +226,27 @@ const arabicTranslations: Record<string, string> = {
     'Not Paid': 'غير مدفوعة',
     'Partial': 'مدفوعة جزئياً',
     'Paid': 'مدفوعة',
-    'Set Paid to create the extra payment and lock the report after saving.': 'اختر مدفوعة لإنشاء الدفعة الإضافية وقفل التقرير بعد الحفظ.',
-    'Partial Payment Amount': 'مبلغ الدفعة الجزئية',
-    'Enter the amount collected now. It must be less than the total extra charges.': 'أدخل المبلغ الذي تم تحصيله الآن. يجب أن يكون أقل من إجمالي الرسوم الإضافية.',
+    'Cash payments are added separately after saving the return report.': 'تتم إضافة دفعات الكاش بشكل منفصل بعد حفظ تقرير الإرجاع.',
+    'Add Cash Payment': 'إضافة دفعة كاش',
+    'Record a new payment row against this return report.': 'سجل دفعة جديدة مرتبطة بهذا التقرير.',
+    'Save the return report first, then add cash payments.': 'احفظ تقرير الإرجاع أولاً، ثم أضف دفعات الكاش.',
+    'Amount': 'المبلغ',
+    'Currency': 'العملة',
+    'Exchange Rate': 'سعر الصرف',
+    'Collected At': 'وقت التحصيل',
+    'Attachments': 'المرفقات',
+    'Collect Payment': 'تحصيل الدفعة',
+    'Collecting...': 'جاري التحصيل...',
+    'Payment History': 'سجل الدفعات',
+    'Payment': 'الدفعة',
+    'Converted Amount': 'المبلغ بعد التحويل',
+    'No return report payments have been collected yet.': 'لم يتم تحصيل أي دفعات لهذا التقرير بعد.',
+    'Required only when payment currency differs from report currency.': 'مطلوب فقط عندما تختلف عملة الدفع عن عملة التقرير.',
+    'Select currency': 'اختر العملة',
+    'Base currency': 'عملة التقرير',
+    'Loading exchange rate...': 'جاري جلب سعر الصرف...',
+    'Exchange rate fetched from Frankfurter.': 'تم جلب سعر الصرف من Frankfurter.',
+    'Could not fetch exchange rate. Enter it manually.': 'تعذر جلب سعر الصرف. أدخله يدوياً.',
     'Contract vs Return': 'مقارنة العقد مع الإرجاع',
     'Use this section to compare the original contract values with the actual return values.': 'استخدم هذا القسم لمقارنة قيم العقد الأصلية مع قيم الإرجاع الفعلية.',
     'Compare the contract odometer and expected return time against the actual return values.': 'قارن عداد العقد ووقت الإرجاع المتوقع مع القيم الفعلية عند الإرجاع.',
@@ -292,7 +324,7 @@ const arabicTranslations: Record<string, string> = {
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? (arabicTranslations[en] ?? ar) : en);
 
 // Ensure options is always defined from props
-const options = props.options ?? { fuelLevels: [], vehicleConditions: [] };
+const options = props.options ?? { fuelLevels: [], vehicleConditions: [], currencies: [] };
 
 function fuelLevelStorageValue(value: string | null | undefined) {
     const normalized = String(value ?? '').trim().toLowerCase();
@@ -347,8 +379,6 @@ function fuelLevelStorageValue(value: string | null | undefined) {
 
 const form = useForm({
     actual_return_time: props.report.actual_return_time ?? '',
-    payment_status: props.report.payment_status ?? 'not_paid',
-    payment_amount: props.report.payment_amount ?? '',
     return_location: props.report.return_location ?? props.contract.reservation?.return_location ?? '',
     return_odometer: props.report.return_odometer ?? props.contract.vehicle_odometer ?? '',
     return_fuel_level: fuelLevelStorageValue(props.report.return_fuel_level ?? props.contract.vehicle_fuel_level ?? ''),
@@ -367,6 +397,15 @@ const form = useForm({
     other_fee: props.report.other_fee ?? 0,
     discount: props.report.discount ?? 0,
     notes: props.report.notes ?? '',
+});
+
+const cashPaymentForm = useForm({
+    amount: '',
+    currency_code: (props.report.currency ?? page.props.currency?.code ?? '').toString().toUpperCase(),
+    exchange_rate: 1,
+    collected_at: '',
+    notes: '',
+    attachments: [] as File[],
 });
 
 const isLocked = computed(() => props.report.id !== null && (props.report.payment_status ?? 'not_paid') === 'paid');
@@ -871,6 +910,26 @@ const reportCurrencyCode = computed(() => {
     return (props.report.currency ?? page.props.currency?.code ?? '').toString().toUpperCase();
 });
 
+const cashPaymentCurrencyOptions = computed<CurrencyOption[]>(() => {
+    const provided = Array.isArray(options.currencies) ? options.currencies : [];
+
+    if (provided.length > 0) {
+        return provided;
+    }
+
+    const fallbackCode = reportCurrencyCode.value || 'USD';
+
+    return [{
+        code: fallbackCode,
+        abbreviation: fallbackCode,
+        name: fallbackCode,
+        currency: fallbackCode,
+        symbol: fallbackCode,
+        icon: fallbackCode,
+        label: fallbackCode,
+    }];
+});
+
 const paymentCurrencyCode = computed(() => {
     return (props.report.payment_currency ?? '').toString().toUpperCase();
 });
@@ -905,6 +964,89 @@ const formatSummaryAmount = (amount: number) => {
         ? formatCurrencyCodeAmount(reportCurrencyCode.value, amount)
         : `${currencySymbol.value}${Number(amount || 0).toFixed(2)}`;
 };
+
+const returnReportPayments = computed(() => props.report.payments ?? []);
+const canCollectCashPayment = computed(() => {
+    return Boolean(props.actions.cashPayment && props.report.id && canEditReturnReport.value && remainingAmount.value > 0);
+});
+
+const exchangeRateLoading = ref(false);
+const exchangeRateMessage = ref('');
+const exchangeRateError = ref('');
+let exchangeRateRequestId = 0;
+
+async function fetchExchangeRate(paymentCurrency: string, baseCurrency: string) {
+    const requestId = ++exchangeRateRequestId;
+
+    exchangeRateLoading.value = true;
+    exchangeRateError.value = '';
+    exchangeRateMessage.value = localize('Loading exchange rate...', 'جاري جلب سعر الصرف...');
+
+    try {
+        const url = new URL('https://api.frankfurter.dev/v2/rates');
+        url.searchParams.set('base', paymentCurrency);
+        url.searchParams.set('quotes', baseCurrency);
+
+        const response = await fetch(url.toString(), {
+            headers: { Accept: 'application/json' },
+        });
+
+        if (!response.ok) {
+            throw new Error('Could not fetch exchange rate.');
+        }
+
+        const payload = await response.json();
+        const rate = Number(payload?.rates?.[baseCurrency]);
+
+        if (!Number.isFinite(rate) || rate <= 0) {
+            throw new Error('Invalid exchange rate.');
+        }
+
+        if (requestId !== exchangeRateRequestId) {
+            return;
+        }
+
+        cashPaymentForm.exchange_rate = Number(rate.toFixed(8));
+        exchangeRateMessage.value = localize('Exchange rate fetched from Frankfurter.', 'تم جلب سعر الصرف من Frankfurter.');
+    } catch {
+        if (requestId !== exchangeRateRequestId) {
+            return;
+        }
+
+        exchangeRateError.value = localize('Could not fetch exchange rate. Enter it manually.', 'تعذر جلب سعر الصرف. أدخله يدوياً.');
+        exchangeRateMessage.value = '';
+    } finally {
+        if (requestId === exchangeRateRequestId) {
+            exchangeRateLoading.value = false;
+        }
+    }
+}
+
+function handleCashPaymentAttachments(event: Event) {
+    const input = event.target as HTMLInputElement;
+    cashPaymentForm.attachments = Array.from(input.files ?? []);
+}
+
+watch(
+    [() => cashPaymentForm.currency_code, reportCurrencyCode],
+    ([currency, baseCurrency]) => {
+        const paymentCurrency = String(currency || '').trim().toUpperCase();
+        const targetCurrency = String(baseCurrency || '').trim().toUpperCase();
+
+        exchangeRateRequestId += 1;
+
+        if (!paymentCurrency || !targetCurrency || paymentCurrency === targetCurrency) {
+            cashPaymentForm.exchange_rate = 1;
+            exchangeRateLoading.value = false;
+            exchangeRateMessage.value = '';
+            exchangeRateError.value = '';
+            return;
+        }
+
+        fetchExchangeRate(paymentCurrency, targetCurrency);
+    },
+    { immediate: true },
+);
 
 watch(
     computedExtraKilometers,
@@ -1009,8 +1151,6 @@ function submit() {
 
     form.transform((data) => ({
         ...data,
-        payment_status: data.payment_status || 'not_paid',
-        payment_amount: data.payment_status === 'partial' ? Number(data.payment_amount || 0) : null,
         extra_kilometers: Number(data.extra_kilometers || 0),
         kilometer_rate: Number(data.kilometer_rate || 0),
         cleaning_fee: Number(data.cleaning_fee || 0),
@@ -1028,6 +1168,27 @@ function submit() {
         return_fuel_level: data.return_fuel_level === '' ? null : fuelLevelStorageValue(data.return_fuel_level),
     })).post(props.actions.store, {
         preserveScroll: true,
+    });
+}
+
+function submitCashPayment() {
+    if (!canCollectCashPayment.value || !props.actions.cashPayment) {
+        return;
+    }
+
+    cashPaymentForm.transform((data) => ({
+        ...data,
+        amount: Number(data.amount || 0),
+        currency_code: (data.currency_code || reportCurrencyCode.value).toString().toUpperCase(),
+        exchange_rate: Number(data.exchange_rate || 1),
+    })).post(props.actions.cashPayment, {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => {
+            cashPaymentForm.reset('amount', 'collected_at', 'notes', 'attachments');
+            cashPaymentForm.currency_code = reportCurrencyCode.value;
+            cashPaymentForm.exchange_rate = 1;
+        },
     });
 }
 </script>
@@ -1207,31 +1368,13 @@ function submit() {
                             <InputError :message="form.errors.damage_report_id" class="mt-1" />
                         </div>
                         <div>
-                            <Label for="payment_status">{{ localize('Payment Status', 'حالة الدفع') }}</Label>
-                            <select id="payment_status" v-model="form.payment_status" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                                <option value="not_paid">{{ localize('Not Paid', 'غير مدفوعة') }}</option>
-                                <option value="partial">{{ localize('Partial', 'مدفوعة جزئياً') }}</option>
-                                <option value="paid">{{ localize('Paid', 'مدفوعة') }}</option>
-                            </select>
+                            <Label>{{ localize('Payment Status', 'حالة الدفع') }}</Label>
+                            <div class="mt-1 rounded-md border bg-muted/20 px-3 py-2 text-sm font-medium">
+                                {{ props.report.payment_status === 'paid' ? localize('Paid', 'مدفوعة') : props.report.payment_status === 'partial' ? localize('Partial', 'مدفوعة جزئياً') : localize('Not Paid', 'غير مدفوعة') }}
+                            </div>
                             <p class="mt-1 text-xs text-muted-foreground">
-                                {{ localize('Set Paid to create the extra payment and lock the report after saving.', 'اختر مدفوعة لإنشاء الدفعة الإضافية وقفل التقرير بعد الحفظ.') }}
+                                {{ localize('Cash payments are added separately after saving the return report.', 'تتم إضافة دفعات الكاش بشكل منفصل بعد حفظ تقرير الإرجاع.') }}
                             </p>
-                            <InputError :message="form.errors.payment_status" class="mt-1" />
-                        </div>
-                        <div v-if="form.payment_status === 'partial'">
-                            <Label for="payment_amount">{{ localize('Partial Payment Amount', 'مبلغ الدفعة الجزئية') }}</Label>
-                            <Input
-                                id="payment_amount"
-                                v-model="form.payment_amount"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                class="mt-1"
-                            />
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                {{ localize('Enter the amount collected now. It must be less than the total extra charges.', 'أدخل المبلغ الذي تم تحصيله الآن. يجب أن يكون أقل من إجمالي الرسوم الإضافية.') }}
-                            </p>
-                            <InputError :message="form.errors.payment_amount" class="mt-1" />
                         </div>
                     </CardContent>
                 </Card>
@@ -1568,6 +1711,153 @@ function submit() {
                     </Link>
                 </div>
             </form>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>{{ localize('Add Cash Payment', 'إضافة دفعة كاش') }}</CardTitle>
+                    <CardDescription>
+                        <template v-if="props.report.id">
+                            {{ localize('Record a new payment row against this return report.', 'سجل دفعة جديدة مرتبطة بهذا التقرير.') }}
+                        </template>
+                        <template v-else>
+                            {{ localize('Save the return report first, then add cash payments.', 'احفظ تقرير الإرجاع أولاً، ثم أضف دفعات الكاش.') }}
+                        </template>
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="space-y-6">
+                    <form class="grid gap-4 md:grid-cols-2 xl:grid-cols-4" @submit.prevent="submitCashPayment">
+                        <div>
+                            <Label for="cash_payment_amount">{{ localize('Amount', 'المبلغ') }}</Label>
+                            <Input
+                                id="cash_payment_amount"
+                                v-model="cashPaymentForm.amount"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="mt-1"
+                                :disabled="!canCollectCashPayment || cashPaymentForm.processing"
+                            />
+                            <InputError :message="cashPaymentForm.errors.amount" class="mt-1" />
+                        </div>
+                        <div>
+                            <Label for="cash_payment_currency">{{ localize('Currency', 'العملة') }}</Label>
+                            <select
+                                id="cash_payment_currency"
+                                v-model="cashPaymentForm.currency_code"
+                                class="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                :disabled="!canCollectCashPayment || cashPaymentForm.processing"
+                            >
+                                <option value="">{{ localize('Select currency', 'اختر العملة') }}</option>
+                                <option
+                                    v-for="currency in cashPaymentCurrencyOptions"
+                                    :key="currency.code"
+                                    :value="currency.code"
+                                >
+                                    {{ currency.label || `${currency.code} - ${currency.name || currency.currency || currency.code}` }}
+                                </option>
+                            </select>
+                            <p class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('Base currency', 'عملة التقرير') }}: {{ reportCurrencyCode }}
+                            </p>
+                            <InputError :message="cashPaymentForm.errors.currency_code" class="mt-1" />
+                        </div>
+                        <div>
+                            <Label for="cash_payment_exchange_rate">{{ localize('Exchange Rate', 'سعر الصرف') }}</Label>
+                            <Input
+                                id="cash_payment_exchange_rate"
+                                v-model="cashPaymentForm.exchange_rate"
+                                type="number"
+                                min="0"
+                                step="0.00000001"
+                                class="mt-1"
+                                :disabled="!canCollectCashPayment || cashPaymentForm.processing"
+                            />
+                            <p class="mt-1 text-xs text-muted-foreground">
+                                {{ localize('Required only when payment currency differs from report currency.', 'مطلوب فقط عندما تختلف عملة الدفع عن عملة التقرير.') }}
+                            </p>
+                            <p v-if="exchangeRateLoading" class="mt-1 text-xs text-muted-foreground">
+                                {{ exchangeRateMessage }}
+                            </p>
+                            <p v-else-if="exchangeRateError" class="mt-1 text-xs text-amber-600">
+                                {{ exchangeRateError }}
+                            </p>
+                            <p v-else-if="exchangeRateMessage" class="mt-1 text-xs text-emerald-600">
+                                {{ exchangeRateMessage }}
+                            </p>
+                            <InputError :message="cashPaymentForm.errors.exchange_rate" class="mt-1" />
+                        </div>
+                        <div>
+                            <Label for="cash_payment_collected_at">{{ localize('Collected At', 'وقت التحصيل') }}</Label>
+                            <Input
+                                id="cash_payment_collected_at"
+                                v-model="cashPaymentForm.collected_at"
+                                type="datetime-local"
+                                class="mt-1"
+                                :disabled="!canCollectCashPayment || cashPaymentForm.processing"
+                            />
+                            <InputError :message="cashPaymentForm.errors.collected_at" class="mt-1" />
+                        </div>
+                        <div class="md:col-span-2">
+                            <Label for="cash_payment_attachments">{{ localize('Attachments', 'المرفقات') }}</Label>
+                            <Input
+                                id="cash_payment_attachments"
+                                type="file"
+                                multiple
+                                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                                class="mt-1"
+                                :disabled="!canCollectCashPayment || cashPaymentForm.processing"
+                                @change="handleCashPaymentAttachments"
+                            />
+                            <InputError :message="cashPaymentForm.errors.attachments" class="mt-1" />
+                        </div>
+                        <div class="md:col-span-2">
+                            <Label for="cash_payment_notes">{{ localize('Notes', 'ملاحظات') }}</Label>
+                            <Textarea
+                                id="cash_payment_notes"
+                                v-model="cashPaymentForm.notes"
+                                rows="2"
+                                class="mt-1"
+                                :disabled="!canCollectCashPayment || cashPaymentForm.processing"
+                            />
+                            <InputError :message="cashPaymentForm.errors.notes" class="mt-1" />
+                        </div>
+                        <div class="md:col-span-2 xl:col-span-4">
+                            <Button type="submit" :disabled="!canCollectCashPayment || cashPaymentForm.processing">
+                                {{ cashPaymentForm.processing ? localize('Collecting...', 'جاري التحصيل...') : localize('Collect Payment', 'تحصيل الدفعة') }}
+                            </Button>
+                        </div>
+                    </form>
+
+                    <div>
+                        <h3 class="text-sm font-semibold">{{ localize('Payment History', 'سجل الدفعات') }}</h3>
+                        <div v-if="returnReportPayments.length === 0" class="mt-3 rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                            {{ localize('No return report payments have been collected yet.', 'لم يتم تحصيل أي دفعات لهذا التقرير بعد.') }}
+                        </div>
+                        <div v-else class="mt-3 overflow-x-auto">
+                            <table class="w-full min-w-[760px] border-collapse text-sm">
+                                <thead>
+                                    <tr class="border-b bg-muted/30 text-left">
+                                        <th class="px-3 py-2 font-medium">{{ localize('Payment', 'الدفعة') }}</th>
+                                        <th class="px-3 py-2 font-medium">{{ localize('Amount', 'المبلغ') }}</th>
+                                        <th class="px-3 py-2 font-medium">{{ localize('Converted Amount', 'المبلغ بعد التحويل') }}</th>
+                                        <th class="px-3 py-2 font-medium">{{ localize('Exchange Rate', 'سعر الصرف') }}</th>
+                                        <th class="px-3 py-2 font-medium">{{ localize('Collected At', 'وقت التحصيل') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="payment in returnReportPayments" :key="payment.id" class="border-b last:border-0">
+                                        <td class="px-3 py-3 font-medium">{{ payment.payment_number ?? `#${payment.id}` }}</td>
+                                        <td class="px-3 py-3">{{ formatCurrencyCodeAmount(payment.currency, payment.amount) }}</td>
+                                        <td class="px-3 py-3">{{ formatCurrencyCodeAmount(payment.base_currency, payment.base_amount) }}</td>
+                                        <td class="px-3 py-3">{{ Number(payment.exchange_rate || 1).toFixed(4) }}</td>
+                                        <td class="px-3 py-3">{{ payment.processed_at ?? '-' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </main>
     </AdminLayout>
 </template>

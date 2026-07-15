@@ -161,6 +161,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::post('contracts/{contract}/return-status-report', [ContractReturnReportsController::class, 'store'])
             ->middleware('permission:tenant-manage-reservations')
             ->name('contracts.return-report.store');
+        Route::post('contracts/{contract}/return-status-report/cash-payment', [ContractReturnReportsController::class, 'collectCashPayment'])
+            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:cash_payments'])
+            ->name('contracts.return-report.cash-payment');
         Route::get('contracts/{contractId}/return-status-report/pdf', [ContractReturnReportsController::class, 'pdf'])
             ->middleware('permission:tenant-manage-reservations')
             ->name('contracts.return-report.pdf');

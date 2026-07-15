@@ -144,6 +144,7 @@ const props = defineProps<{
     previewUrl: string;
     heroFiles: Array<{ id: number; url: string }>;
     heroLocalizedFiles: Record<string, Array<{ id: number; url: string }>>;
+    featureFiles: Record<number, Array<{ id: number; url: string }>>;
     mobileAppFiles: Record<
         number,
         {
@@ -164,6 +165,8 @@ const form = useForm<{
     hero_removed_files: number[];
     hero_locale_temp_folders: Record<string, string[]>;
     hero_locale_removed_files: Record<string, number[]>;
+    feature_card_temp_folders: Record<number, string[]>;
+    feature_card_removed_files: Record<number, number[]>;
     mobile_app_temp_folders: Record<
         number,
         { image: string[]; icon: string[] }
@@ -178,6 +181,8 @@ const form = useForm<{
     hero_removed_files: [] as number[],
     hero_locale_temp_folders: {},
     hero_locale_removed_files: {},
+    feature_card_temp_folders: {},
+    feature_card_removed_files: {},
     mobile_app_temp_folders: {},
     mobile_app_removed_files: {},
 });
@@ -187,6 +192,8 @@ const heroTempFolders = ref<string[]>([]);
 const heroRemovedFileIds = ref<number[]>([]);
 const heroLocaleTempFolders = ref<Record<string, string[]>>({});
 const heroLocaleRemovedFileIds = ref<Record<string, number[]>>({});
+const featureCardTempFolders = ref<Record<number, string[]>>({});
+const featureCardRemovedFileIds = ref<Record<number, number[]>>({});
 const mobileAppTempFolders = ref<
     Record<number, { image: string[]; icon: string[] }>
 >({});
@@ -267,6 +274,11 @@ form.settings.mobile_apps_section.apps.forEach((app, index) => {
     mobileAppRemovedFileIds.value[index] = { image: [], icon: [] };
 });
 
+form.settings.features_section.cards.forEach((_card, index) => {
+    featureCardTempFolders.value[index] = [];
+    featureCardRemovedFileIds.value[index] = [];
+});
+
 watch(
     heroTempFolders,
     (value) => {
@@ -287,6 +299,14 @@ watch(
     mobileAppTempFolders,
     (value) => {
         form.mobile_app_temp_folders = JSON.parse(JSON.stringify(value));
+    },
+    { deep: true },
+);
+
+watch(
+    featureCardTempFolders,
+    (value) => {
+        form.feature_card_temp_folders = JSON.parse(JSON.stringify(value));
     },
     { deep: true },
 );
@@ -383,6 +403,25 @@ const handleHeroLocaleFileRemoved = (
 const mobileAppFileList = (index: number, type: 'image' | 'icon') =>
     props.mobileAppFiles?.[index]?.[type] || [];
 
+const featureCardFileList = (index: number) =>
+    props.featureFiles?.[index] || [];
+
+const handleFeatureCardFileRemoved = (
+    index: number,
+    data: { type: string; fileId?: number },
+) => {
+    if (data.type !== 'existing' || !data.fileId) {
+        return;
+    }
+
+    featureCardRemovedFileIds.value[index] = [
+        ...new Set([...(featureCardRemovedFileIds.value[index] || []), data.fileId]),
+    ];
+    form.feature_card_removed_files = JSON.parse(
+        JSON.stringify(featureCardRemovedFileIds.value),
+    );
+};
+
 const handleMobileAppFileRemoved = (
     index: number,
     type: 'image' | 'icon',
@@ -447,6 +486,8 @@ const submit = () => {
             form.hero_removed_files = [];
             form.hero_locale_temp_folders = {};
             form.hero_locale_removed_files = {};
+            form.feature_card_temp_folders = {};
+            form.feature_card_removed_files = {};
             form.mobile_app_temp_folders = {};
             form.mobile_app_removed_files = {};
             heroRemovedFileIds.value = [];
@@ -460,6 +501,18 @@ const submit = () => {
                 form.settings.mobile_apps_section.apps.map((_app, index) => [
                     index,
                     { image: [], icon: [] },
+                ]),
+            );
+            featureCardTempFolders.value = Object.fromEntries(
+                form.settings.features_section.cards.map((_card, index) => [
+                    index,
+                    [],
+                ]),
+            );
+            featureCardRemovedFileIds.value = Object.fromEntries(
+                form.settings.features_section.cards.map((_card, index) => [
+                    index,
+                    [],
                 ]),
             );
             mobileAppRemovedFileIds.value = Object.fromEntries(
@@ -488,9 +541,32 @@ const addFeatureCard = () => {
         image_url: '',
         content: '',
     });
+
+    const index = form.settings.features_section.cards.length - 1;
+    featureCardTempFolders.value[index] = [];
+    featureCardRemovedFileIds.value[index] = [];
 };
-const removeFeatureCard = (index: number) =>
+const removeFeatureCard = (index: number) => {
     form.settings.features_section.cards.splice(index, 1);
+    featureCardTempFolders.value = Object.fromEntries(
+        form.settings.features_section.cards.map((_card, cardIndex) => [
+            cardIndex,
+            featureCardTempFolders.value[cardIndex >= index ? cardIndex + 1 : cardIndex] || [],
+        ]),
+    );
+    featureCardRemovedFileIds.value = Object.fromEntries(
+        form.settings.features_section.cards.map((_card, cardIndex) => [
+            cardIndex,
+            featureCardRemovedFileIds.value[cardIndex >= index ? cardIndex + 1 : cardIndex] || [],
+        ]),
+    );
+    form.feature_card_temp_folders = JSON.parse(
+        JSON.stringify(featureCardTempFolders.value),
+    );
+    form.feature_card_removed_files = JSON.parse(
+        JSON.stringify(featureCardRemovedFileIds.value),
+    );
+};
 
 const addStepItem = () => {
     form.settings.getting_started.items.push({
@@ -1693,8 +1769,42 @@ const toggleSection = (
                                         <Label>{{
                                             localize('Image URL', 'رابط الصورة')
                                         }}</Label>
+                                        <FileUpload
+                                            v-model="
+                                                featureCardTempFolders[index]
+                                            "
+                                            :initial-files="
+                                                featureCardFileList(index)
+                                            "
+                                            :allow-multiple="false"
+                                            :max-files="1"
+                                            :max-file-size="1024 * 1024 * 5"
+                                            :allowed-file-types="[
+                                                'image/jpeg',
+                                                'image/jpg',
+                                                'image/png',
+                                                'image/svg+xml',
+                                            ]"
+                                            :collection="`feature_card_${index}_image`"
+                                            theme="light"
+                                            width="100%"
+                                            @file-removed="
+                                                (data) =>
+                                                    handleFeatureCardFileRemoved(
+                                                        index,
+                                                        data,
+                                                    )
+                                            "
+                                        />
+                                        <img
+                                            v-if="card.image_url"
+                                            :src="card.image_url"
+                                            alt="feature card image preview"
+                                            class="h-28 w-full rounded-lg border object-contain p-2"
+                                        />
                                         <Input
                                             v-model="card.image_url"
+                                            class="hidden"
                                             placeholder="https://..."
                                         />
                                     </div>

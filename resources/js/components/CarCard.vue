@@ -157,11 +157,11 @@ defineProps<Props>();
             '--card-secondary': cardTheme(car).secondary,
             '--card-gradient': cardTheme(car).gradient,
         }"
-        class="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+        class="group relative flex min-h-[530px] flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
     >
         <!-- Car Image -->
         <div
-            class="relative h-56 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100"
+            class="relative h-48 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100"
         >
             <img
                 :src="car.image_url"
@@ -190,15 +190,12 @@ defineProps<Props>();
         <div class="flex flex-1 flex-col gap-4 p-5">
             <!-- Header -->
             <div class="space-y-3">
-                <h3
-                    class="min-h-[4rem] text-[1.55rem] font-bold leading-tight tracking-tight text-foreground transition-colors"
-                    :style="{ color: cardTheme(car).primary }"
-                >
+                <h3 class="min-h-[3.25rem] text-[1.55rem] font-bold leading-tight tracking-tight text-foreground">
                     {{ car.make }} {{ car.model }} - {{ car.year }}
                 </h3>
 
-                <div class="grid gap-2 text-xs font-medium text-muted-foreground">
-                    <div class="flex min-w-0 items-center gap-2 rounded-xl bg-slate-50 px-2.5 py-2">
+                <div class="flex items-center justify-between gap-4 text-xs font-medium text-muted-foreground">
+                    <div class="flex min-w-0 items-center gap-2">
                         <div
                             v-if="car.tenant_logo_url && !tenantLogoFailed"
                             class="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-white p-0.5"
@@ -222,9 +219,9 @@ defineProps<Props>();
                         </div>
                         <span class="min-w-0 truncate">{{ car.tenant_name || t('car_card.tenant') }}</span>
                     </div>
-                    <div class="flex min-w-0 items-start gap-2 rounded-xl bg-slate-50 px-2.5 py-2">
-                        <MapPin :size="14" class="mt-0.5 shrink-0" :style="{ color: cardTheme(car).primary }" />
-                        <span class="line-clamp-2 min-w-0 break-words leading-snug">
+                    <div class="flex min-w-0 shrink-0 items-center gap-1.5">
+                        <MapPin :size="14" class="shrink-0" :style="{ color: cardTheme(car).primary }" />
+                        <span class="max-w-[9rem] truncate">
                             {{ car.location_text || t('car_card.location_not_set') }}
                         </span>
                     </div>

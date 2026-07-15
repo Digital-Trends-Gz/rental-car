@@ -38,6 +38,58 @@ test('api login returns the assigned branch name', function () {
         ->assertJsonPath('user.branch_name', 'Ramallah Branch');
 });
 
+test('api login returns company owner account type for tenant owner', function () {
+    $plan = Plan::factory()->create(['is_active' => true]);
+    $tenant = Tenant::factory()->create([
+        'email' => 'owner-login@example.com',
+        'plan_id' => $plan->id,
+        'trial_ends_at' => now()->addMonth(),
+    ]);
+    $user = User::factory()->create([
+        'name' => 'Owner User',
+        'email' => 'owner-login@example.com',
+        'password' => 'password',
+        'role' => UserRole::ADMIN,
+        'tenant_id' => $tenant->id,
+        'is_active' => true,
+    ]);
+
+    $response = $this->postJson('/api/auth/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('user.account_type', 'company_owner')
+        ->assertJsonPath('user.account_type_label', 'صاحب الشركة');
+});
+
+test('api login returns employee account type for tenant employee', function () {
+    $plan = Plan::factory()->create(['is_active' => true]);
+    $tenant = Tenant::factory()->create([
+        'email' => 'owner-account@example.com',
+        'plan_id' => $plan->id,
+        'trial_ends_at' => now()->addMonth(),
+    ]);
+    $user = User::factory()->create([
+        'name' => 'Employee User',
+        'email' => 'employee-login@example.com',
+        'password' => 'password',
+        'role' => UserRole::ADMIN,
+        'tenant_id' => $tenant->id,
+        'is_active' => true,
+    ]);
+
+    $response = $this->postJson('/api/auth/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('user.account_type', 'employee')
+        ->assertJsonPath('user.account_type_label', 'موظف');
+});
+
 test('api me returns the assigned branch name', function () {
     $tenant = Tenant::factory()->create();
     $branch = Branch::create([

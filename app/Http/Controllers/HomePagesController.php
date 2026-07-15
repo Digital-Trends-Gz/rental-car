@@ -461,22 +461,16 @@ class HomePagesController extends Controller
 
     private function resolveCarLocation(Car $car): ?string
     {
-        $branchLocation = trim((string) ($car->branch?->address ?? ''));
-        if ($branchLocation !== '') {
-            return $branchLocation;
-        }
-
-        $tenantAddress = data_get($car->tenant?->siteSetting?->contact, 'address');
-        $locale = (string) app()->getLocale();
-
-        $localizedAddress = trim((string) (
-            data_get($tenantAddress, $locale)
-            ?: data_get($tenantAddress, 'en')
-            ?: data_get($tenantAddress, 'ar')
+        $marketLocation = $car->tenant?->siteSetting?->market_location;
+        $country = trim((string) (
+            data_get($marketLocation, 'country_name')
+            ?: data_get($marketLocation, 'country_code')
             ?: ''
         ));
+        $city = trim((string) data_get($marketLocation, 'city', ''));
+        $location = implode(' - ', array_values(array_filter([$country, $city])));
 
-        return $localizedAddress !== '' ? $localizedAddress : null;
+        return $location !== '' ? $location : null;
     }
 
     public function about()

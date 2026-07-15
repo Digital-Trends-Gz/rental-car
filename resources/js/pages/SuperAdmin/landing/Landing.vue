@@ -751,7 +751,7 @@ onUnmounted(() => {
             </div>
         </nav>
 
-        <main>
+        <main class="saas-landing-main">
             <section
                 v-if="landingSettings.hero.enabled"
                 class="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28"
@@ -1115,6 +1115,50 @@ onUnmounted(() => {
             </section>
 
             <section
+                v-if="landingSettings.getting_started.enabled"
+                id="how-it-works"
+                class="section-padding"
+            >
+                <div class="section-container">
+                    <div class="mx-auto mb-14 max-w-2xl text-center">
+                        <h2
+                            class="text-3xl font-bold text-foreground sm:text-4xl"
+                        >
+                            {{ landingSettings.getting_started.title }}
+                        </h2>
+                        <p class="mt-4 text-lg text-muted-foreground">
+                            {{ landingSettings.getting_started.description }}
+                        </p>
+                    </div>
+
+                    <div class="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
+                        <div
+                            v-for="(item, index) in landingSettings
+                                .getting_started.items"
+                            :key="`${item.title}-${index}`"
+                            class="text-center"
+                        >
+                            <div
+                                class="gradient-button mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold"
+                            >
+                                {{ index + 1 }}
+                            </div>
+                            <h3
+                                class="mb-2 text-lg font-semibold text-foreground"
+                            >
+                                {{ item.title }}
+                            </h3>
+                            <p
+                                class="text-sm leading-relaxed text-muted-foreground"
+                            >
+                                {{ item.description }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section
                 v-if="landingSettings.features_section.enabled"
                 id="features"
                 class="section-padding bg-secondary/30"
@@ -1131,7 +1175,33 @@ onUnmounted(() => {
                         </p>
                     </div>
 
-                    <div class="relative">
+                    <div class="hidden gap-7 lg:grid lg:grid-cols-3">
+                        <div
+                            v-for="card in landingSettings.features_section
+                                .cards"
+                            :key="`desktop-${card.title}-${card.content}`"
+                            class="card-elevated flex h-full min-h-[190px] flex-col rounded-xl p-6"
+                        >
+                            <img
+                                v-if="card.image_url"
+                                :src="card.image_url"
+                                :alt="card.title"
+                                class="mb-4 h-40 w-full rounded-lg object-cover"
+                            />
+                            <h3
+                                class="mb-3 text-xl font-semibold text-foreground"
+                            >
+                                {{ card.title }}
+                            </h3>
+                            <p
+                                class="text-base leading-relaxed text-muted-foreground"
+                            >
+                                {{ card.content }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="relative lg:hidden">
                         <Swiper
                             :modules="featureSwiperModules"
                             :slides-per-view="1"
@@ -1206,50 +1276,6 @@ onUnmounted(() => {
                         <div
                             class="features-swiper-pagination mt-2 flex justify-center"
                         ></div>
-                    </div>
-                </div>
-            </section>
-
-            <section
-                v-if="landingSettings.getting_started.enabled"
-                id="how-it-works"
-                class="section-padding"
-            >
-                <div class="section-container">
-                    <div class="mx-auto mb-14 max-w-2xl text-center">
-                        <h2
-                            class="text-3xl font-bold text-foreground sm:text-4xl"
-                        >
-                            {{ landingSettings.getting_started.title }}
-                        </h2>
-                        <p class="mt-4 text-lg text-muted-foreground">
-                            {{ landingSettings.getting_started.description }}
-                        </p>
-                    </div>
-
-                    <div class="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
-                        <div
-                            v-for="(item, index) in landingSettings
-                                .getting_started.items"
-                            :key="`${item.title}-${index}`"
-                            class="text-center"
-                        >
-                            <div
-                                class="gradient-button mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold"
-                            >
-                                {{ index + 1 }}
-                            </div>
-                            <h3
-                                class="mb-2 text-lg font-semibold text-foreground"
-                            >
-                                {{ item.title }}
-                            </h3>
-                            <p
-                                class="text-sm leading-relaxed text-muted-foreground"
-                            >
-                                {{ item.description }}
-                            </p>
-                        </div>
                     </div>
                 </div>
             </section>
@@ -2006,6 +2032,18 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+:deep(.saas-landing-main .section-padding) {
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+}
+
+@media (min-width: 768px) {
+    :deep(.saas-landing-main .section-padding) {
+        padding-top: 3.5rem;
+        padding-bottom: 3.5rem;
+    }
+}
+
 .faq-item .faq-chevron {
     transition: transform 0.2s ease;
 }

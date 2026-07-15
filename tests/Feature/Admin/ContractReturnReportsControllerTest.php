@@ -63,7 +63,7 @@ class ContractReturnReportsControllerTest extends TestCase
             ->assertDontSee($fixtures['beforeDeliveryReport']->report_number);
     }
 
-    public function test_admin_can_save_return_report_and_create_cash_payment(): void
+    public function test_admin_can_save_return_report_without_creating_cash_payment(): void
     {
         $fixtures = $this->createContractReturnFixtures();
 
@@ -78,7 +78,6 @@ class ContractReturnReportsControllerTest extends TestCase
                 'return_fuel_level' => 'half',
                 'vehicle_condition_after' => 'not_clean',
                 'damage_report_id' => $fixtures['damageReport']->id,
-                'payment_status' => 'paid',
                 'extra_kilometers' => 0,
                 'kilometer_rate' => 0,
                 'cleaning_fee' => 0,
@@ -95,18 +94,13 @@ class ContractReturnReportsControllerTest extends TestCase
 
         $report = ContractReturnReport::query()->where('contract_id', $fixtures['contract']->id)->first();
         $this->assertNotNull($report);
-        $this->assertSame('paid', $report->payment_status);
+        $this->assertSame('not_paid', $report->payment_status);
         $this->assertSame('Main Office', $report->return_location);
         $this->assertSame(1240, (int) $report->return_odometer);
         $this->assertSame('half', $report->return_fuel_level);
         $this->assertSame(35.0, (float) $report->total_extra_charges);
-        $this->assertNotNull($report->payment_id);
-
-        $payment = Payment::query()->find($report->payment_id);
-        $this->assertNotNull($payment);
-        $this->assertSame(PaymentMethod::CASH->value, $payment->payment_method instanceof \BackedEnum ? $payment->payment_method->value : (string) $payment->payment_method);
-        $this->assertSame(PaymentStatus::COMPLETED->value, $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status);
-        $this->assertSame(35.0, (float) $payment->amount);
+        $this->assertNull($report->payment_id);
+        $this->assertSame(0, Payment::query()->count());
 
         $this->assertSame(ReservationStatus::COMPLETED->value, $fixtures['reservation']->fresh()->status->value);
         $this->assertSame('completed', $fixtures['contract']->fresh()->status instanceof \BackedEnum
@@ -141,7 +135,6 @@ class ContractReturnReportsControllerTest extends TestCase
                 'return_fuel_level' => 'half',
                 'vehicle_condition_after' => 'not_clean',
                 'damage_report_id' => $fixtures['damageReport']->id,
-                'payment_status' => 'paid',
                 'extra_kilometers' => 0,
                 'kilometer_rate' => 0,
                 'cleaning_fee' => 0,
@@ -153,6 +146,19 @@ class ContractReturnReportsControllerTest extends TestCase
                 'maintenance_fee' => 30,
                 'other_fee' => 5,
                 'notes' => 'Return inspection finished.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->actingAs($fixtures['admin'])
+            ->post(route('admin.contracts.return-report.cash-payment', [
+                'subdomain' => $fixtures['tenant']->slug,
+                'contract' => $fixtures['contract']->id,
+            ]), [
+                'amount' => 35,
+                'currency_code' => 'USD',
+                'exchange_rate' => 1,
+                'notes' => 'Full return charge collected.',
             ])
             ->assertRedirect()
             ->assertSessionHas('success');
@@ -198,7 +204,6 @@ class ContractReturnReportsControllerTest extends TestCase
                 'return_fuel_level' => 'half',
                 'vehicle_condition_after' => 'not_clean',
                 'damage_report_id' => $fixtures['damageReport']->id,
-                'payment_status' => 'not_paid',
                 'extra_kilometers' => 0,
                 'kilometer_rate' => 0,
                 'cleaning_fee' => 0,
@@ -217,13 +222,10 @@ class ContractReturnReportsControllerTest extends TestCase
         $report = ContractReturnReport::query()->where('contract_id', $fixtures['contract']->id)->first();
         $this->assertNotNull($report);
         $this->assertSame('not_paid', $report->payment_status);
-        $this->assertNotNull($report->payment_id);
+        $this->assertNull($report->payment_id);
         $this->assertSame('half', $report->return_fuel_level);
         $this->assertSame(35.0, (float) $report->total_extra_charges);
-
-        $payment = Payment::query()->find($report->payment_id);
-        $this->assertNotNull($payment);
-        $this->assertSame(PaymentStatus::PENDING->value, $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status);
+        $this->assertSame(0, Payment::query()->count());
 
         $this->assertSame(ReservationStatus::COMPLETED->value, $fixtures['reservation']->fresh()->status->value);
         $this->assertSame('completed', $fixtures['contract']->fresh()->status instanceof \BackedEnum
@@ -246,8 +248,6 @@ class ContractReturnReportsControllerTest extends TestCase
                 'return_fuel_level' => 'half',
                 'vehicle_condition_after' => 'not_clean',
                 'damage_report_id' => $fixtures['damageReport']->id,
-                'payment_status' => 'partial',
-                'payment_amount' => 10,
                 'extra_kilometers' => 0,
                 'kilometer_rate' => 0,
                 'cleaning_fee' => 0,
@@ -265,12 +265,30 @@ class ContractReturnReportsControllerTest extends TestCase
 
         $report = ContractReturnReport::query()->where('contract_id', $fixtures['contract']->id)->first();
         $this->assertNotNull($report);
-        $this->assertSame('partial', $report->payment_status);
+        $this->assertSame('not_paid', $report->payment_status);
         $this->assertSame(35.0, (float) $report->total_extra_charges);
+        $this->assertNull($report->payment_id);
+
+        $this->actingAs($fixtures['admin'])
+            ->post(route('admin.contracts.return-report.cash-payment', [
+                'subdomain' => $fixtures['tenant']->slug,
+                'contract' => $fixtures['contract']->id,
+            ]), [
+                'amount' => 10,
+                'currency_code' => 'USD',
+                'exchange_rate' => 1,
+                'notes' => 'Partial return payment collected.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $report->refresh();
+        $this->assertSame('partial', $report->payment_status);
         $this->assertNotNull($report->payment_id);
 
         $payment = Payment::query()->find($report->payment_id);
         $this->assertNotNull($payment);
+        $this->assertSame(PaymentMethod::CASH->value, $payment->payment_method instanceof \BackedEnum ? $payment->payment_method->value : (string) $payment->payment_method);
         $this->assertSame(PaymentStatus::COMPLETED->value, $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status);
         $this->assertSame(10.0, (float) $payment->amount);
         $this->assertSame(10.0, (float) $payment->base_amount);

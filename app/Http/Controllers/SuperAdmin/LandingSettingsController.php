@@ -136,6 +136,7 @@ class LandingSettingsController extends Controller
             'previewUrl' => route('home'),
             'heroFiles' => $heroFiles,
             'heroLocalizedFiles' => $this->heroLocalizedFiles($brandingSetting),
+            'featureFiles' => $this->featureCardFiles($brandingSetting),
             'mobileAppFiles' => $this->mobileAppFiles($brandingSetting),
         ]);
     }
@@ -232,6 +233,7 @@ class LandingSettingsController extends Controller
         $normalizedAiProvider = AiProviderSettings::mergeSecrets($currentAiProvider, $normalizedAiProvider);
 
         $this->syncHeroImageUpload($request, $landingSetting);
+        $this->syncFeatureCardUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
 
         SiteSetting::query()->updateOrCreate(
@@ -252,6 +254,7 @@ class LandingSettingsController extends Controller
         $normalized = $this->validatedLandingSettings($request);
         $landingSetting = $this->persistLandingSettings($normalized);
         $this->syncHeroImageUpload($request, $landingSetting);
+        $this->syncFeatureCardUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
 
         return back()->with('success', 'Landing page design updated successfully.');
@@ -709,6 +712,60 @@ class LandingSettingsController extends Controller
         $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
     }
 
+    private function syncFeatureCardUploads(Request $request, SiteSetting $landingSetting): void
+    {
+        $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
+        $cards = (array) data_get($settings, 'features_section.cards', []);
+        $tempFoldersByIndex = is_array($request->input('feature_card_temp_folders', []))
+            ? $request->input('feature_card_temp_folders', [])
+            : [];
+        $removedIdsByIndex = is_array($request->input('feature_card_removed_files', []))
+            ? $request->input('feature_card_removed_files', [])
+            : [];
+
+        foreach ($cards as $index => $card) {
+            if (!is_array($card)) {
+                continue;
+            }
+
+            $collection = $this->featureCardCollection((int) $index);
+            $tempFolders = is_array($tempFoldersByIndex[$index] ?? null)
+                ? array_values(array_filter($tempFoldersByIndex[$index]))
+                : [];
+            $removedIds = is_array($removedIdsByIndex[$index] ?? null)
+                ? array_values(array_unique(array_filter($removedIdsByIndex[$index])))
+                : [];
+
+            if (!empty($tempFolders)) {
+                $existingIds = $landingSetting->files()->where('collection', $collection)->pluck('id')->all();
+                $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+            }
+
+            $this->filePondService->handleFileUpdates(
+                $landingSetting,
+                $tempFolders,
+                $removedIds,
+                $collection
+            );
+
+            if (!empty($tempFolders)) {
+                $file = $landingSetting->files()
+                    ->where('collection', $collection)
+                    ->latest('id')
+                    ->first();
+
+                $cards[$index]['image_url'] = $file
+                    ? (SiteSetting::publicUrlFromPath($file->path) ?? '')
+                    : (string) ($cards[$index]['image_url'] ?? '');
+            } elseif (!empty($removedIds)) {
+                $cards[$index]['image_url'] = '';
+            }
+        }
+
+        data_set($settings, 'features_section.cards', $cards);
+        $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
+    }
+
     private function validatedLandingSettings(Request $request): array
     {
         $validated = $request->validate([
@@ -857,6 +914,22 @@ class LandingSettingsController extends Controller
     }
 
     /**
+     * @return array<int, array<int, array{id: int, url: string|null}>>
+     */
+    private function featureCardFiles(?SiteSetting $landingSetting): array
+    {
+        $settings = $this->landingSettings();
+        $cards = (array) data_get($settings, 'features_section.cards', []);
+        $files = [];
+
+        foreach (array_keys($cards) as $index) {
+            $files[(int) $index] = $this->landingFilesForCollection($landingSetting, $this->featureCardCollection((int) $index));
+        }
+
+        return $files;
+    }
+
+    /**
      * @return array<int, array{id: int, url: string|null}>
      */
     private function landingFilesForCollection(?SiteSetting $landingSetting, string $collection): array
@@ -877,6 +950,11 @@ class LandingSettingsController extends Controller
     private function mobileAppCollection(int $index, string $type): string
     {
         return 'mobile_app_' . max(0, $index) . '_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $type);
+    }
+
+    private function featureCardCollection(int $index): string
+    {
+        return 'feature_card_' . max(0, $index) . '_image';
     }
 
     private function heroLocaleCollection(string $locale): string

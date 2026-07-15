@@ -295,6 +295,8 @@ class AuthController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role instanceof UserRole ? $user->role->value : (string) $user->role,
+            'account_type' => $this->accountType($user, $tenant),
+            'account_type_label' => $this->accountTypeLabel($user, $tenant),
             'tenant_id' => $user->tenant_id,
             'branch_id' => $user->branch_id,
             'branch_name' => $branch?->name,
@@ -307,6 +309,42 @@ class AuthController extends Controller
                 'is_active' => (bool) $tenant->is_active,
             ] : null,
         ];
+    }
+
+    private function accountType(User $user, ?Tenant $tenant = null): string
+    {
+        if ($user->role === UserRole::ADMIN) {
+            return $this->isCompanyOwner($user, $tenant) ? 'company_owner' : 'employee';
+        }
+
+        return $user->role instanceof UserRole ? $user->role->value : (string) $user->role;
+    }
+
+    private function accountTypeLabel(User $user, ?Tenant $tenant = null): string
+    {
+        return match ($this->accountType($user, $tenant)) {
+            'company_owner' => 'صاحب الشركة',
+            'employee' => 'موظف',
+            'super_admin' => 'Super Admin',
+            'client' => 'Client',
+            default => 'User',
+        };
+    }
+
+    private function isCompanyOwner(User $user, ?Tenant $tenant = null): bool
+    {
+        if ($user->role !== UserRole::ADMIN || empty($user->tenant_id)) {
+            return false;
+        }
+
+        if (method_exists($user, 'hasRole') && $user->hasRole('tenant-owner')) {
+            return true;
+        }
+
+        $tenant ??= $this->resolveTenant($user);
+
+        return $tenant && !empty($tenant->email)
+            && strcasecmp((string) $tenant->email, (string) $user->email) === 0;
     }
 
     private function apiLoginRestriction(User $user): ?array
@@ -365,7 +403,7 @@ class AuthController extends Controller
         }
 
         return Tenant::query()
-            ->select('id', 'name', 'slug', 'domain', 'phone', 'plan_id', 'trial_ends_at', 'is_active')
+            ->select('id', 'name', 'email', 'slug', 'domain', 'phone', 'plan_id', 'trial_ends_at', 'is_active')
             ->with('subscriptionPlan:id,name,is_active')
             ->whereKey($user->tenant_id)
             ->first();
