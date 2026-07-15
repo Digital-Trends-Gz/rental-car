@@ -210,6 +210,18 @@ class LandingPageSettings
                 'enabled' => true,
                 'title' => 'Ready to streamline your workflow?',
                 'description' => 'Join teams who already save hours every week.',
+                'copyright_text' => 'All rights reserved.',
+                'show_social_links' => true,
+                'show_app_buttons' => true,
+                'android_label' => 'Android',
+                'android_url' => '',
+                'ios_label' => 'iOS',
+                'ios_url' => '',
+                'social_links' => [
+                    ['label' => 'Facebook', 'platform' => 'facebook', 'href' => ''],
+                    ['label' => 'Instagram', 'platform' => 'instagram', 'href' => ''],
+                    ['label' => 'LinkedIn', 'platform' => 'linkedin', 'href' => ''],
+                ],
             ],
             'enabled_locales' => $supportedLocales,
             'translations' => array_fill_keys($supportedLocales, []),
@@ -249,6 +261,9 @@ class LandingPageSettings
         $settings['faq_section']['items'] = self::normalizeFaqItems($settings['faq_section']['items'] ?? []);
         $settings['contact_section']['enabled'] = (bool) ($settings['contact_section']['enabled'] ?? true);
         $settings['footer']['enabled'] = (bool) ($settings['footer']['enabled'] ?? true);
+        $settings['footer']['show_social_links'] = (bool) ($settings['footer']['show_social_links'] ?? true);
+        $settings['footer']['show_app_buttons'] = (bool) ($settings['footer']['show_app_buttons'] ?? true);
+        $settings['footer']['social_links'] = self::normalizeSocialLinks($settings['footer']['social_links'] ?? []);
         $settings['enabled_locales'] = self::normalizeEnabledLocales($settings['enabled_locales'] ?? []);
         $settings['translations'] = self::normalizeTranslations($settings['translations'] ?? []);
 
@@ -270,7 +285,23 @@ class LandingPageSettings
             'mobile_apps_section.apps',
             'faq_section.items',
             'contact_section.quick_links',
+            'footer.social_links',
         ];
+    }
+
+    private static function normalizeSocialLinks(mixed $items): array
+    {
+        $items = is_array($items) ? $items : [];
+
+        return array_values(array_map(static function (mixed $item): array {
+            $item = is_array($item) ? $item : [];
+
+            return [
+                'label' => trim((string) ($item['label'] ?? '')),
+                'platform' => trim((string) ($item['platform'] ?? '')),
+                'href' => trim((string) ($item['href'] ?? '')),
+            ];
+        }, $items));
     }
 
     public static function localize(array $settings, ?string $locale): array

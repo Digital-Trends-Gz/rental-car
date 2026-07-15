@@ -322,13 +322,17 @@ class AuthController extends Controller
 
     private function accountTypeLabel(User $user, ?Tenant $tenant = null): string
     {
-        return match ($this->accountType($user, $tenant)) {
-            'company_owner' => 'صاحب الشركة',
-            'employee' => 'موظف',
+        $accountType = $this->accountType($user, $tenant);
+
+        $fallback = match ($accountType) {
+            'company_owner' => 'Company owner',
+            'employee' => 'Employee',
             'super_admin' => 'Super Admin',
             'client' => 'Client',
             default => 'User',
         };
+
+        return TenantTranslations::get("auth.api.account_types.{$accountType}", app()->getLocale(), $fallback, $tenant);
     }
 
     private function isCompanyOwner(User $user, ?Tenant $tenant = null): bool

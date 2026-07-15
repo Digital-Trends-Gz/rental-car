@@ -43,6 +43,7 @@ class LandingTranslationsControllerTest extends TestCase
                 ->component('SuperAdmin/Settings/LandingTranslations')
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('api.task_types.pickup'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('auth.api.account_not_found'))
+                ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('auth.api.account_types.company_owner'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('contracts.damage_catalog.damage_types.scratch'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('validation.required'))
             );
@@ -155,7 +156,7 @@ class LandingTranslationsControllerTest extends TestCase
             'Accept-Language' => 'ar',
         ])->assertOk()
             ->assertJsonPath('task_types.0.key', 'pickup')
-            ->assertJsonPath('task_types.0.label', 'استلام');
+            ->assertJsonPath('task_types.0.label', 'تسليم');
     }
 
     public function test_contract_damage_options_use_global_translation_overrides(): void

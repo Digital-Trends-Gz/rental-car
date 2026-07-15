@@ -26,7 +26,10 @@ import {
     ChevronDown,
     ChevronLeft,
     ChevronRight,
+    Facebook,
+    Instagram,
     Languages,
+    Linkedin,
     Menu,
     Search,
     Smartphone,
@@ -58,6 +61,12 @@ interface FaqItem {
 
 interface QuickLinkItem {
     label: string;
+    href: string;
+}
+
+interface SocialLinkItem {
+    label: string;
+    platform: string;
     href: string;
 }
 
@@ -180,6 +189,14 @@ interface LandingSettings {
         enabled: boolean;
         title: string;
         description: string;
+        copyright_text: string;
+        show_social_links: boolean;
+        show_app_buttons: boolean;
+        android_label: string;
+        android_url: string;
+        ios_label: string;
+        ios_url: string;
+        social_links: SocialLinkItem[];
     };
 }
 
@@ -411,6 +428,23 @@ const mobileAppStoreHref = (url?: string | null) => {
 
     return normalized || '#';
 };
+const footerSocialIcons = {
+    facebook: Facebook,
+    instagram: Instagram,
+    linkedin: Linkedin,
+};
+const footerSocialLinks = computed(() =>
+    (props.landingSettings.footer.social_links || [])
+        .map((link) => ({
+            ...link,
+            href: String(link.href || '').trim() || '#',
+            icon:
+                footerSocialIcons[
+                    String(link.platform || '').toLowerCase() as keyof typeof footerSocialIcons
+                ] || Facebook,
+        }))
+        .filter((link) => String(link.label || '').trim() !== ''),
+);
 const contactForm = useForm({
     name: '',
     email: '',
@@ -2013,18 +2047,91 @@ onUnmounted(() => {
 
         <footer
             v-if="landingSettings.footer.enabled"
-            class="border-t border-border py-10"
+            class="border-t border-border bg-background py-5"
         >
-            <div class="section-container text-center">
-                <h3 class="text-2xl font-bold text-foreground">
-                    {{ landingSettings.footer.title }}
-                </h3>
-                <p class="mx-auto mt-3 max-w-2xl text-muted-foreground">
-                    {{ landingSettings.footer.description }}
-                </p>
-                <p class="mt-6 text-sm text-muted-foreground">
+            <div class="section-container space-y-4">
+                <div
+                    class="grid items-center gap-5 md:grid-cols-[1fr_auto_1fr]"
+                >
+                    <Link
+                        href="/"
+                        class="inline-flex items-center justify-center justify-self-center px-4 transition md:justify-self-start"
+                        :aria-label="appName"
+                    >
+                        <AppLogoIcon class="h-9 w-auto" />
+                    </Link>
+
+                    <nav
+                        class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-medium text-foreground"
+                        :aria-label="t('landing.footer_navigation') || 'Footer navigation'"
+                    >
+                        <a
+                            v-for="link in navLinks"
+                            :key="`footer-${link.href}`"
+                            :href="link.href"
+                            class="whitespace-nowrap transition-colors hover:text-primary"
+                        >
+                            {{ link.label }}
+                        </a>
+                    </nav>
+
+                    <div class="flex items-center justify-center gap-8 md:justify-self-end">
+                        <div
+                            v-if="landingSettings.footer.show_social_links"
+                            class="flex items-center gap-2"
+                        >
+                            <a
+                                v-for="social in footerSocialLinks"
+                                :key="social.label"
+                                :href="social.href"
+                                class="inline-flex h-9 w-11 items-center justify-center rounded-md border border-border bg-white text-muted-foreground shadow-sm transition hover:border-primary/40 hover:text-primary"
+                                :aria-label="social.label"
+                            >
+                                <component :is="social.icon" class="h-4 w-4" />
+                            </a>
+                        </div>
+
+                        <div
+                            v-if="landingSettings.footer.show_app_buttons"
+                            class="flex flex-col gap-2"
+                        >
+                            <a
+                                :href="mobileAppStoreHref(landingSettings.footer.android_url)"
+                                class="inline-flex h-9 min-w-28 items-center justify-center gap-2 rounded-md border border-border bg-white px-3 text-xs font-semibold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+                                :class="{
+                                    'pointer-events-none opacity-60':
+                                        !landingSettings.footer.android_url,
+                                }"
+                                :aria-disabled="!landingSettings.footer.android_url"
+                            >
+                                <Smartphone class="h-4 w-4" />
+                                {{
+                                    landingSettings.footer.android_label ||
+                                    'Google Play'
+                                }}
+                            </a>
+                            <a
+                                :href="mobileAppStoreHref(landingSettings.footer.ios_url)"
+                                class="inline-flex h-9 min-w-28 items-center justify-center gap-2 rounded-md border border-border bg-white px-3 text-xs font-semibold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+                                :class="{
+                                    'pointer-events-none opacity-60':
+                                        !landingSettings.footer.ios_url,
+                                }"
+                                :aria-disabled="!landingSettings.footer.ios_url"
+                            >
+                                <Apple class="h-4 w-4" />
+                                {{
+                                    landingSettings.footer.ios_label ||
+                                    'App Store'
+                                }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-center text-xs text-muted-foreground">
                     &copy; {{ currentYear }} {{ appName }}.
-                    {{ t('landing.footer_rights') }}
+                    {{ landingSettings.footer.copyright_text }}
                 </p>
             </div>
         </footer>

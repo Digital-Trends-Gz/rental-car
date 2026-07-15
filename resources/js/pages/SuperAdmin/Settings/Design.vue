@@ -46,6 +46,12 @@ interface QuickLinkItem {
     href: string;
 }
 
+interface SocialLinkItem {
+    label: string;
+    platform: string;
+    href: string;
+}
+
 interface MobileAppCard {
     title: string;
     subtitle: string;
@@ -135,6 +141,14 @@ interface LandingSettings {
         enabled: boolean;
         title: string;
         description: string;
+        copyright_text: string;
+        show_social_links: boolean;
+        show_app_buttons: boolean;
+        android_label: string;
+        android_url: string;
+        ios_label: string;
+        ios_url: string;
+        social_links: SocialLinkItem[];
     };
     enabled_locales: string[];
 }
@@ -639,6 +653,15 @@ const addQuickLink = () => {
 };
 const removeQuickLink = (index: number) =>
     form.settings.contact_section.quick_links.splice(index, 1);
+const addFooterSocialLink = () => {
+    form.settings.footer.social_links.push({
+        label: '',
+        platform: 'facebook',
+        href: '',
+    });
+};
+const removeFooterSocialLink = (index: number) =>
+    form.settings.footer.social_links.splice(index, 1);
 const toggleSection = (
     key:
         | 'hero'
@@ -2727,6 +2750,95 @@ const toggleSection = (
                                     v-model="form.settings.footer.description"
                                     rows="3"
                                 />
+                            </div>
+                            <div class="space-y-2">
+                                <Label>{{
+                                    localize('Copyright Text', 'نص حقوق النشر')
+                                }}</Label>
+                                <Input
+                                    v-model="form.settings.footer.copyright_text"
+                                    placeholder="All rights reserved."
+                                />
+                            </div>
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div class="flex items-center justify-between rounded-lg border p-3">
+                                    <div>
+                                        <p class="text-sm font-medium">{{ localize('Show social icons', 'إظهار أيقونات السوشال') }}</p>
+                                        <p class="text-xs text-muted-foreground">{{ localize('Control footer social buttons.', 'تحكم بأزرار السوشال في الفوتر.') }}</p>
+                                    </div>
+                                    <Switch v-model:checked="form.settings.footer.show_social_links" />
+                                </div>
+                                <div class="flex items-center justify-between rounded-lg border p-3">
+                                    <div>
+                                        <p class="text-sm font-medium">{{ localize('Show app buttons', 'إظهار أزرار التطبيقات') }}</p>
+                                        <p class="text-xs text-muted-foreground">{{ localize('Use store links from the mobile apps section.', 'استخدم روابط المتاجر من قسم تطبيقات الموبايل.') }}</p>
+                                    </div>
+                                    <Switch v-model:checked="form.settings.footer.show_app_buttons" />
+                                </div>
+                            </div>
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div class="space-y-3 rounded-lg border p-3">
+                                    <Label>{{ localize('Android Button', 'زر Android') }}</Label>
+                                    <div class="space-y-2">
+                                        <Label class="text-xs">{{ localize('Label', 'النص') }}</Label>
+                                        <Input v-model="form.settings.footer.android_label" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-xs">{{ localize('URL', 'الرابط') }}</Label>
+                                        <Input v-model="form.settings.footer.android_url" placeholder="https://..." />
+                                    </div>
+                                </div>
+                                <div class="space-y-3 rounded-lg border p-3">
+                                    <Label>{{ localize('iOS Button', 'زر iOS') }}</Label>
+                                    <div class="space-y-2">
+                                        <Label class="text-xs">{{ localize('Label', 'النص') }}</Label>
+                                        <Input v-model="form.settings.footer.ios_label" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-xs">{{ localize('URL', 'الرابط') }}</Label>
+                                        <Input v-model="form.settings.footer.ios_url" placeholder="https://..." />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <Label>{{ localize('Footer Social Links', 'روابط السوشال في الفوتر') }}</Label>
+                                    <Button type="button" size="sm" variant="outline" @click="addFooterSocialLink">
+                                        {{ localize('Add Social Link', 'إضافة رابط سوشال') }}
+                                    </Button>
+                                </div>
+                                <div
+                                    v-for="(link, index) in form.settings.footer.social_links"
+                                    :key="`footer-social-${index}`"
+                                    class="grid gap-3 rounded-lg border p-3 md:grid-cols-[1fr_1fr_2fr_auto]"
+                                >
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Label', 'النص') }}</Label>
+                                        <Input v-model="link.label" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Platform', 'المنصة') }}</Label>
+                                        <Select v-model="link.platform">
+                                            <SelectTrigger>
+                                                <SelectValue :placeholder="localize('Select platform', 'اختر المنصة')" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="facebook">Facebook</SelectItem>
+                                                <SelectItem value="instagram">Instagram</SelectItem>
+                                                <SelectItem value="linkedin">LinkedIn</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('URL', 'الرابط') }}</Label>
+                                        <Input v-model="link.href" placeholder="https://..." />
+                                    </div>
+                                    <div class="flex items-end">
+                                        <Button type="button" size="sm" variant="destructive" @click="removeFooterSocialLink(index)">
+                                            {{ localize('Remove', 'حذف') }}
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

@@ -18,6 +18,7 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Reservation;
 use App\Models\Tenant;
+use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Services\Rentals\RentalStatusSyncService;
 use Laravel\Sanctum\Sanctum;
@@ -104,6 +105,46 @@ test('api rejects a second pending discount request for the same return report',
         ->assertJsonValidationErrors(['discount_request']);
 
     expect(DiscountRequest::query()->count())->toBe(1);
+});
+
+test('api automatically approves return report discount request within employee fixed discount limit', function () {
+    $fixtures = createDiscountRequestApiFixtures('RES-DISC-AUTO', 500);
+    TenantSiteSetting::query()->updateOrCreate(
+        ['tenant_id' => $fixtures['tenant']->id],
+        [
+            'reservation_settings' => [
+                'employee_discount_auto_approval' => [
+                    'enabled' => true,
+                    'type' => 'percentage',
+                    'value' => 5,
+                ],
+            ],
+        ]
+    );
+
+    Sanctum::actingAs($fixtures['admin'], ['*']);
+
+    $response = $this->postJson(route('api.contracts.return-report.discount-requests.store', [
+        'contract' => $fixtures['contract']->id,
+    ]), [
+        'discount_type' => 'percentage',
+        'discount_value' => 5,
+        'reason' => 'Within employee discount limit.',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('discount_request.status', DiscountRequestStatus::APPROVED->value)
+        ->assertJsonPath('discount_request.base_amount', 200)
+        ->assertJsonPath('discount_request.discount_amount', 10)
+        ->assertJsonPath('discount_request.final_amount', 190);
+
+    $discountRequest = DiscountRequest::query()->firstOrFail();
+    $returnReport = $fixtures['returnReport']->fresh();
+
+    expect($discountRequest->status)->toBe(DiscountRequestStatus::APPROVED);
+    expect($discountRequest->approved_at)->not->toBeNull();
+    expect((float) $returnReport->discount)->toBe(10.0);
+    expect((float) $returnReport->total_extra_charges)->toBe(190.0);
 });
 
 test('api can show latest return report discount request status by contract', function () {

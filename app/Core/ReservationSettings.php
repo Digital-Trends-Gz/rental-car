@@ -24,6 +24,11 @@ class ReservationSettings
                 'after_hours' => 0,
             ],
             'cleaning_fee' => 0,
+            'employee_discount_auto_approval' => [
+                'enabled' => false,
+                'type' => 'percentage',
+                'value' => 0,
+            ],
         ];
     }
 
@@ -46,6 +51,9 @@ class ReservationSettings
         $settings['fuel_pricing'] = self::normalizeFuelPricing($settings['fuel_pricing'] ?? []);
         $settings['late_return'] = self::normalizeLateReturn($settings['late_return'] ?? []);
         $settings['cleaning_fee'] = self::normalizeMoney($settings['cleaning_fee'] ?? 0);
+        $settings['employee_discount_auto_approval'] = self::normalizeEmployeeDiscountAutoApproval(
+            $settings['employee_discount_auto_approval'] ?? []
+        );
 
         return $settings;
     }
@@ -219,6 +227,21 @@ class ReservationSettings
         return self::normalizeMoney(is_array($lateReturn) ? ($lateReturn['hourly_fee'] ?? 0) : 0);
     }
 
+    public static function employeeDiscountAutoApprovalLimit(array $settings, float $baseAmount): float
+    {
+        $autoApproval = self::normalizeEmployeeDiscountAutoApproval($settings['employee_discount_auto_approval'] ?? []);
+
+        if (!$autoApproval['enabled'] || $autoApproval['value'] <= 0 || $baseAmount <= 0) {
+            return 0.0;
+        }
+
+        if ($autoApproval['type'] === 'percentage') {
+            return round(min($baseAmount, $baseAmount * (min($autoApproval['value'], 100) / 100)), 2);
+        }
+
+        return round(min($baseAmount, $autoApproval['value']), 2);
+    }
+
     private static function normalizeReturnTimePolicy(mixed $value): array
     {
         $data = is_array($value) ? $value : [];
@@ -383,6 +406,24 @@ class ReservationSettings
             'after_hours' => isset($data['after_hours']) && $data['after_hours'] !== ''
                 ? max(0, (int) $data['after_hours'])
                 : 0,
+        ];
+    }
+
+    private static function normalizeEmployeeDiscountAutoApproval(mixed $value): array
+    {
+        $data = is_array($value) ? $value : [];
+        $type = (string) ($data['type'] ?? 'percentage');
+
+        if (!in_array($type, ['fixed', 'percentage'], true)) {
+            $type = 'percentage';
+        }
+
+        $amount = self::normalizeMoney($data['value'] ?? 0);
+
+        return [
+            'enabled' => (bool) ($data['enabled'] ?? false),
+            'type' => $type,
+            'value' => $type === 'percentage' ? min($amount, 100.0) : $amount,
         ];
     }
 

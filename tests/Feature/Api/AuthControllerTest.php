@@ -4,6 +4,7 @@ use App\Core\TenantContext;
 use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Plan;
+use App\Models\SiteSetting;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
@@ -61,7 +62,7 @@ test('api login returns company owner account type for tenant owner', function (
 
     $response->assertOk()
         ->assertJsonPath('user.account_type', 'company_owner')
-        ->assertJsonPath('user.account_type_label', 'صاحب الشركة');
+        ->assertJsonPath('user.account_type_label', 'Company owner');
 });
 
 test('api login returns employee account type for tenant employee', function () {
@@ -87,7 +88,51 @@ test('api login returns employee account type for tenant employee', function () 
 
     $response->assertOk()
         ->assertJsonPath('user.account_type', 'employee')
-        ->assertJsonPath('user.account_type_label', 'موظف');
+        ->assertJsonPath('user.account_type_label', 'Employee');
+});
+
+test('api login account type label can use landing translation override', function () {
+    SiteSetting::query()->create([
+        'key' => 'landing_page',
+        'value' => [
+            'translations' => [
+                'ar' => [
+                    'auth' => [
+                        'api' => [
+                            'account_types' => [
+                                'company_owner' => 'CUSTOM_OWNER_LABEL',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $plan = Plan::factory()->create(['is_active' => true]);
+    $tenant = Tenant::factory()->create([
+        'email' => 'translated-owner-login@example.com',
+        'plan_id' => $plan->id,
+        'trial_ends_at' => now()->addMonth(),
+    ]);
+    $user = User::factory()->create([
+        'email' => 'translated-owner-login@example.com',
+        'password' => 'password',
+        'role' => UserRole::ADMIN,
+        'tenant_id' => $tenant->id,
+        'is_active' => true,
+    ]);
+
+    $response = $this
+        ->withHeader('Accept-Language', 'ar')
+        ->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+    $response->assertOk()
+        ->assertJsonPath('user.account_type', 'company_owner')
+        ->assertJsonPath('user.account_type_label', 'CUSTOM_OWNER_LABEL');
 });
 
 test('api me returns the assigned branch name', function () {

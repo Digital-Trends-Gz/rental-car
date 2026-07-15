@@ -70,6 +70,10 @@ class ReservationSettingsController extends Controller
             'settings.late_return.after_hours' => ['nullable', 'integer', 'min:0'],
 
             'settings.cleaning_fee' => ['nullable', 'numeric', 'min:0'],
+
+            'settings.employee_discount_auto_approval.enabled' => ['nullable', 'boolean'],
+            'settings.employee_discount_auto_approval.type' => ['required', 'string', Rule::in(['fixed', 'percentage'])],
+            'settings.employee_discount_auto_approval.value' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $kilometerPricing = data_get($validated, 'settings.kilometer_pricing', []);

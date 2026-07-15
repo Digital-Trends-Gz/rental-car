@@ -14,5 +14,11 @@ return [
         'password_reset_sent' => 'If the account exists, we sent a password reset link and OTP to the registered email.',
         'otp_verify_first' => 'Please verify the OTP first.',
         'password_reset_success' => 'Password reset successfully.',
+        'account_types' => [
+            'company_owner' => 'Company owner',
+            'employee' => 'Employee',
+            'super_admin' => 'Super Admin',
+            'client' => 'Client',
+        ],
     ],
 ];

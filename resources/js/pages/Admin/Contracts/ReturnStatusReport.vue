@@ -996,7 +996,11 @@ async function fetchExchangeRate(paymentCurrency: string, baseCurrency: string) 
         }
 
         const payload = await response.json();
-        const rate = Number(payload?.rates?.[baseCurrency]);
+        const singleRate = String(payload?.quote || '').toUpperCase() === baseCurrency ? payload?.rate : null;
+        const listRate = Array.isArray(payload)
+            ? payload.find((row) => String(row?.quote || '').toUpperCase() === baseCurrency)?.rate
+            : null;
+        const rate = Number(payload?.rates?.[baseCurrency] ?? singleRate ?? listRate);
 
         if (!Number.isFinite(rate) || rate <= 0) {
             throw new Error('Invalid exchange rate.');

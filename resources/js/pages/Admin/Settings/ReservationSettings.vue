@@ -11,6 +11,7 @@ import { useTrans } from '@/composables/useTrans';
 
 type ReturnTimeMode = 'fixed_time' | 'same_pickup' | 'set_during_reservation';
 type LateReturnMode = 'hourly' | 'daily_after_threshold';
+type DiscountAutoApprovalType = 'fixed' | 'percentage';
 
 type ReservationSettings = {
     return_time_policy: {
@@ -40,6 +41,11 @@ type ReservationSettings = {
         after_hours: number | string;
     };
     cleaning_fee: number | string;
+    employee_discount_auto_approval: {
+        enabled: boolean;
+        type: DiscountAutoApprovalType;
+        value: number | string;
+    };
 };
 
 const props = defineProps<{
@@ -65,6 +71,11 @@ const returnTimeModes = [
 const lateReturnModes = [
     { value: 'hourly', label: localize('Charge per hour', 'احتساب بالساعة') },
     { value: 'daily_after_threshold', label: localize('Charge one full day after threshold', 'احتساب يوم كامل بعد حد الساعات') },
+] as const;
+
+const discountAutoApprovalTypes = [
+    { value: 'percentage', label: localize('Percentage', 'نسبة مئوية') },
+    { value: 'fixed', label: localize('Fixed amount', 'مبلغ ثابت') },
 ] as const;
 
 const fuelLevelOptions = [
@@ -332,6 +343,71 @@ function submit() {
                                     <Input :id="`fuel-price-${index}`" v-model="rule.price" type="number" min="0" step="0.01" />
                                     <InputError :message="form.errors[`settings.fuel_pricing.${index}.price`]" />
                                 </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{{ localize('Employee Discount Auto Approval', 'الموافقة التلقائية على خصم الموظف') }}</CardTitle>
+                        <CardDescription>
+                            {{ localize('Approve employee discount requests automatically when the calculated discount is within this limit. Larger discounts stay pending for manager review.', 'وافق تلقائياً على طلبات خصم الموظفين عندما يكون الخصم المحسوب ضمن هذا الحد. الخصومات الأكبر تبقى بانتظار مراجعة المدير.') }}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent class="space-y-4">
+                        <div class="flex items-start gap-3 rounded-md border p-4">
+                            <input
+                                id="employee_discount_auto_approval_enabled"
+                                v-model="form.settings.employee_discount_auto_approval.enabled"
+                                type="checkbox"
+                                class="mt-1 h-4 w-4 rounded border-input"
+                            />
+                            <div>
+                                <Label for="employee_discount_auto_approval_enabled">
+                                    {{ localize('Enable automatic approval', 'تفعيل الموافقة التلقائية') }}
+                                </Label>
+                                <p class="text-xs text-muted-foreground">
+                                    {{ localize('When disabled, all employee discount requests require manager approval.', 'عند إيقافها، كل طلبات خصم الموظفين تحتاج موافقة المدير.') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div class="space-y-2">
+                                <Label for="employee_discount_auto_approval_type">{{ localize('Limit Type', 'نوع الحد') }}</Label>
+                                <select
+                                    id="employee_discount_auto_approval_type"
+                                    v-model="form.settings.employee_discount_auto_approval.type"
+                                    class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                >
+                                    <option
+                                        v-for="type in discountAutoApprovalTypes"
+                                        :key="type.value"
+                                        :value="type.value"
+                                    >
+                                        {{ type.label }}
+                                    </option>
+                                </select>
+                                <InputError :message="form.errors['settings.employee_discount_auto_approval.type']" />
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="employee_discount_auto_approval_value">
+                                    {{ form.settings.employee_discount_auto_approval.type === 'percentage' ? localize('Allowed Percentage', 'النسبة المسموحة') : localize('Allowed Amount', 'المبلغ المسموح') }}
+                                </Label>
+                                <Input
+                                    id="employee_discount_auto_approval_value"
+                                    v-model="form.settings.employee_discount_auto_approval.value"
+                                    type="number"
+                                    min="0"
+                                    :max="form.settings.employee_discount_auto_approval.type === 'percentage' ? 100 : undefined"
+                                    step="0.01"
+                                />
+                                <p class="text-xs text-muted-foreground">
+                                    {{ form.settings.employee_discount_auto_approval.type === 'percentage' ? localize('Example: 5 means requests up to 5% are approved automatically.', 'مثال: 5 يعني أن الطلبات حتى 5% تتم الموافقة عليها تلقائياً.') : localize('Requests whose calculated discount amount is within this amount are approved automatically.', 'الطلبات التي يكون مبلغ الخصم المحسوب فيها ضمن هذا المبلغ تتم الموافقة عليها تلقائياً.') }}
+                                </p>
+                                <InputError :message="form.errors['settings.employee_discount_auto_approval.value']" />
                             </div>
                         </div>
                     </CardContent>

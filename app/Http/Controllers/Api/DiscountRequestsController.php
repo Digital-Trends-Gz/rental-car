@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Core\ReservationSettings;
 use App\Enums\DiscountRequestStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\UserRole;
@@ -10,6 +11,7 @@ use App\Models\Contract;
 use App\Models\ContractReturnReport;
 use App\Models\DiscountRequest;
 use App\Models\Payment;
+use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Support\BranchAccess;
 use Illuminate\Http\JsonResponse;
@@ -116,11 +118,29 @@ class DiscountRequestsController extends Controller
             $discountType = (string) $validated['discount_type'];
             $discountValue = round((float) $validated['discount_value'], 2);
             $discountAmount = $this->calculateDiscountAmount($discountType, $discountValue, $baseAmount);
+            $autoApprovalLimit = ReservationSettings::employeeDiscountAutoApprovalLimit(
+                $this->reservationSettings((int) $lockedReport->tenant_id),
+                $baseAmount
+            );
+            $isAutoApproved = $autoApprovalLimit > 0 && $discountAmount <= $autoApprovalLimit;
 
             if ($discountAmount <= 0) {
                 throw ValidationException::withMessages([
                     'discount_value' => [$this->message('The discount value must produce a discount greater than zero.', 'يجب أن ينتج عن قيمة الخصم مبلغ أكبر من صفر.')],
                 ]);
+            }
+
+            $appliedDiscount = $isAutoApproved ? round(min($discountAmount, $baseAmount), 2) : $discountAmount;
+
+            if ($isAutoApproved) {
+                $newDiscountAmount = round((float) ($lockedReport->discount ?? 0) + $appliedDiscount, 2);
+                $newTotalExtraCharges = round(max(0, (float) $lockedReport->total_extra_charges - $appliedDiscount), 2);
+
+                $lockedReport->forceFill([
+                    'discount' => $newDiscountAmount,
+                    'total_extra_charges' => $newTotalExtraCharges,
+                    'payment_status' => $this->reportPaymentStatusAfterDiscount($lockedReport, $newTotalExtraCharges),
+                ])->save();
             }
 
             $discountRequest = DiscountRequest::create([
@@ -129,24 +149,37 @@ class DiscountRequestsController extends Controller
                 'contract_id' => $lockedReport->contract_id,
                 'contract_return_report_id' => $lockedReport->id,
                 'requested_by_user_id' => $user->id,
+                'reviewed_by_user_id' => $isAutoApproved ? $user->id : null,
                 'base_amount' => $baseAmount,
                 'discount_type' => $discountType,
                 'discount_value' => $discountValue,
-                'discount_amount' => $discountAmount,
-                'final_amount' => round(max(0, $baseAmount - $discountAmount), 2),
+                'discount_amount' => $appliedDiscount,
+                'final_amount' => round(max(0, $baseAmount - $appliedDiscount), 2),
                 'reason' => trim((string) $validated['reason']),
-                'status' => DiscountRequestStatus::PENDING,
+                'status' => $isAutoApproved ? DiscountRequestStatus::APPROVED : DiscountRequestStatus::PENDING,
+                'review_note' => $isAutoApproved
+                    ? sprintf('Automatically approved within configured employee discount limit (%.2f).', $autoApprovalLimit)
+                    : null,
+                'reviewed_at' => $isAutoApproved ? now() : null,
+                'approved_at' => $isAutoApproved ? now() : null,
             ]);
         });
 
+        $status = $discountRequest->status instanceof DiscountRequestStatus
+            ? $discountRequest->status
+            : DiscountRequestStatus::from((string) $discountRequest->status);
+
         return response()->json([
             'status' => 'success',
-            'message' => $this->message('Discount request sent for approval.', 'تم إرسال طلب الخصم للموافقة.'),
+            'message' => $status === DiscountRequestStatus::APPROVED
+                ? $this->message('Discount request approved automatically.', 'تمت الموافقة على طلب الخصم تلقائياً.')
+                : $this->message('Discount request sent for approval.', 'تم إرسال طلب الخصم للموافقة.'),
             'discount_request' => $this->discountRequestPayload($discountRequest->fresh([
                 'reservation:id,reservation_number',
                 'contract:id,contract_number',
                 'returnReport:id,report_number',
                 'requestedBy:id,name,email',
+                'reviewedBy:id,name,email',
             ])),
         ], 201);
     }
@@ -203,6 +236,29 @@ class DiscountRequestsController extends Controller
         }
 
         return round(min($baseAmount, $value), 2);
+    }
+
+    private function reportPaymentStatusAfterDiscount(ContractReturnReport $report, float $newTotalExtraCharges): string
+    {
+        $paid = $report->reservation?->payments
+            ? $report->reservation->payments
+                ->filter(fn (Payment $payment): bool => $this->paymentStatusValue($payment) === PaymentStatus::COMPLETED->value)
+                ->filter(fn (Payment $payment): bool => $this->isPaymentForReturnReport($payment, $report))
+                ->sum(fn (Payment $payment): float => (float) $payment->amount)
+            : 0;
+
+        return round(max(0, $newTotalExtraCharges - (float) $paid), 2) <= 0 ? 'paid' : 'not_paid';
+    }
+
+    private function reservationSettings(int $tenantId): array
+    {
+        $settings = TenantSiteSetting::query()
+            ->where('tenant_id', $tenantId)
+            ->value('reservation_settings');
+
+        $decoded = is_string($settings) ? json_decode($settings, true) : $settings;
+
+        return ReservationSettings::normalize(is_array($decoded) ? $decoded : null);
     }
 
     private function discountRequestPayload(DiscountRequest $discountRequest): array
