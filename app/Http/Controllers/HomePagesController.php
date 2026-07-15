@@ -642,6 +642,7 @@ class HomePagesController extends Controller
             'seo' => TenantSeoResolver::forPage(TenantContext::get(), str_replace('_', '-', $section)),
             'landingSettings' => $landingSettings,
             'availableLocales' => $availableLocales,
+            'available_locales' => $availableLocales,
         ]);
     }
 
@@ -685,7 +686,21 @@ class HomePagesController extends Controller
 
     private function localizedStaticPageTitle(string $section, string $locale): string
     {
-        $titles = self::STATIC_PAGE_TITLES[$section] ?? [];
+        $localizedTitles = [
+            'privacy_policy' => [
+                'ar' => 'سياسة الخصوصية',
+            ],
+            'terms_conditions' => [
+                'ar' => 'سياسة الاستخدام',
+            ],
+            'security_policy' => [
+                'ar' => 'سياسة الأمان',
+            ],
+        ];
+        $titles = array_replace(
+            self::STATIC_PAGE_TITLES[$section] ?? [],
+            $localizedTitles[$section] ?? []
+        );
         $baseLocale = strtolower(explode('-', $locale)[0] ?? $locale);
 
         return (string) ($titles[$locale] ?? $titles[$baseLocale] ?? $titles['en'] ?? $section);

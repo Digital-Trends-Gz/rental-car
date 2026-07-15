@@ -350,10 +350,10 @@ const filePondOptions = computed(() => ({
     credits: "none",
     disabled: props.disabled,
     required: props.required,
-    chunkUploads: true,
+    chunkUploads: false,
     chunkSize: chunkFileSize,
     chunkRetryDelays: [500, 1000, 3000],
-    chunkForce: false, // Only chunk files larger than chunkSize
+    chunkForce: false,
 }));
 
 // Watch for external modelValue changes - simplified

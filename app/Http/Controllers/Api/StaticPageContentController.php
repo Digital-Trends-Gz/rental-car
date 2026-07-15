@@ -148,7 +148,24 @@ class StaticPageContentController extends Controller
 
     private function localizedTitle(string $section, string $locale): string
     {
-        $titles = self::SECTIONS[$section]['titles'] ?? [];
+        $localizedTitles = [
+            'support' => [
+                'ar' => 'الدعم',
+            ],
+            'privacy_policy' => [
+                'ar' => 'سياسة الخصوصية',
+            ],
+            'terms_conditions' => [
+                'ar' => 'الشروط والأحكام',
+            ],
+            'security_policy' => [
+                'ar' => 'سياسة الأمان',
+            ],
+        ];
+        $titles = array_replace(
+            self::SECTIONS[$section]['titles'] ?? [],
+            $localizedTitles[$section] ?? []
+        );
         $baseLocale = strtolower(explode('-', $locale)[0] ?? $locale);
 
         return (string) ($titles[$locale] ?? $titles[$baseLocale] ?? $titles['en'] ?? $section);
