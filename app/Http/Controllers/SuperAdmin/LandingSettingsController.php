@@ -613,20 +613,25 @@ class LandingSettingsController extends Controller
 
     private function logLandingUploadRequest(Request $request, string $event): void
     {
+        $summarize = function ($val) use (&$summarize) {
+            if (is_array($val)) {
+                return collect($val)->map(fn ($item) => $summarize($item))->all();
+            }
+            if ($val instanceof UploadedFile) {
+                return ['type' => 'UploadedFile', 'name' => $val->getClientOriginalName(), 'size' => $val->getSize()];
+            }
+            if (is_string($val)) {
+                return ['type' => 'string', 'length' => strlen($val), 'preview' => substr($val, 0, 50)];
+            }
+            return ['type' => get_debug_type($val)];
+        };
+
         Log::info('Landing design upload request: ' . $event, [
             'method' => $request->method(),
             'content_type' => $request->headers->get('content-type'),
             'content_length' => $request->headers->get('content-length'),
             'raw_files_superglobal' => $_FILES,
-            'input_summary' => collect($request->all())->map(function ($value) {
-                if (is_string($value)) {
-                    return ['type' => 'string', 'length' => strlen($value), 'preview' => substr($value, 0, 100)];
-                }
-                if (is_array($value)) {
-                    return ['type' => 'array', 'count' => count($value)];
-                }
-                return ['type' => get_debug_type($value)];
-            })->all(),
+            'input_summary' => $summarize($request->all()),
             'has_files' => $request->hasFile('hero_direct_file')
                 || $request->hasFile('hero_locale_direct_files')
                 || $request->hasFile('feature_card_direct_files')
