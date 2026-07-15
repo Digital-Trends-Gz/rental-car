@@ -75,9 +75,30 @@ const page = usePage<any>();
 const files = ref<any[]>([]);
 const tempFolders = ref<string[]>([]);
 const filePondRef = ref<any>(null);
+const uploadError = ref("");
 
 const wrapperStyle = computed(() => ({
     width: props.width,
+}));
+
+const csrfToken = computed(() => {
+    const tokenFromProps = page.props.csrf_token;
+
+    if (tokenFromProps) {
+        return String(tokenFromProps);
+    }
+
+    return (
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute("content") || ""
+    );
+});
+
+const requestHeaders = computed(() => ({
+    "X-CSRF-TOKEN": csrfToken.value,
+    "X-Requested-With": "XMLHttpRequest",
+    Accept: "application/json",
 }));
 
 // Locale configuration
@@ -176,9 +197,35 @@ function parseUploadResponse(responseText: any) {
 
 // Add temporary folder to state
 function addTempFolder(folder: string, file: any) {
+    uploadError.value = "";
     tempFolders.value.push(folder);
     emit("fileAdded", { folder, file });
     emit("update:modelValue", [...tempFolders.value]);
+}
+
+function uploadErrorMessage(response: any, fallback: string) {
+    if (!response) {
+        return fallback;
+    }
+
+    if (typeof response === "string") {
+        return response;
+    }
+
+    if (response.responseText) {
+        try {
+            const parsed = JSON.parse(response.responseText);
+            return parsed.error || parsed.message || fallback;
+        } catch {
+            return response.responseText || fallback;
+        }
+    }
+
+    if (response.status) {
+        return `${fallback} (${response.status})`;
+    }
+
+    return fallback;
 }
 
 // Handle file revert (removal of temporary files)
@@ -201,10 +248,8 @@ function handleRevert(uniqueId: string, load: any, error: (msg: string) => void)
     // Send delete request to server
     fetch(routeOrFallback("filepond.revert", { folder: uniqueId }), {
         method: "DELETE",
-        headers: {
-            "X-CSRF-TOKEN": String(page.props.csrf_token),
-            Accept: "application/json",
-        },
+        credentials: "same-origin",
+        headers: requestHeaders.value,
     })
         .then((response) => {
             if (response.ok) {
@@ -262,9 +307,8 @@ const serverOptions: any = {
     process: {
         url: routeOrFallback("filepond.upload"),
         method: "POST",
-        headers: {
-            "X-CSRF-TOKEN": String(page.props.csrf_token),
-        },
+        withCredentials: true,
+        headers: requestHeaders.value,
         ondata: (formData: FormData) => {
             if (props.collection) {
                 formData.append("collection", props.collection);
@@ -289,15 +333,16 @@ const serverOptions: any = {
             return result;
         },
         onerror: (response) => {
+            uploadError.value = uploadErrorMessage(response, "Upload failed");
+            emit("error", uploadError.value);
             console.error("Upload error:", response);
         },
     },
     patch: {
         url: routeOrFallback("filepond.patch") + "?patch=",
         method: "PATCH",
-        headers: {
-            "X-CSRF-TOKEN": page.props.csrf_token,
-        },
+        withCredentials: true,
+        headers: requestHeaders.value,
         onload: (response) => {
             // Extract response text from XMLHttpRequest object
             let responseText = response;
@@ -327,6 +372,8 @@ const serverOptions: any = {
             return null;
         },
         onerror: (response) => {
+            uploadError.value = uploadErrorMessage(response, "Chunk upload failed");
+            emit("error", uploadError.value);
             console.error("Patch error:", response);
         },
     },
@@ -343,6 +390,7 @@ const serverOptions: any = {
 // FilePond component options - made reactive with computed
 const filePondOptions = computed(() => ({
     server: serverOptions,
+    name: "filepond",
     allowMultiple: props.allowMultiple,
     acceptedFileTypes: props.allowedFileTypes,
     maxFiles: props.maxFiles,
@@ -411,5 +459,8 @@ defineExpose({
             :value="tempFolders.length > 0 ? 'has-files' : ''"
             :required="required"
         />
+        <p v-if="uploadError" class="mt-2 text-xs text-red-600">
+            {{ uploadError }}
+        </p>
     </div>
 </template>
