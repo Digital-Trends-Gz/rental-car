@@ -1041,8 +1041,70 @@ class LandingSettingsController extends Controller
         $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
     }
 
+    private function sanitizeRequestFiles(Request $request): void
+    {
+        if ($request->has('hero_direct_file') && !($request->file('hero_direct_file') instanceof UploadedFile)) {
+            $request->request->remove('hero_direct_file');
+            if ($request->files->has('hero_direct_file')) {
+                $request->files->remove('hero_direct_file');
+            }
+        }
+
+        if ($request->has('hero_locale_direct_files')) {
+            $files = $request->input('hero_locale_direct_files');
+            if (is_array($files)) {
+                $sanitized = [];
+                foreach ($files as $locale => $val) {
+                    $file = $request->file("hero_locale_direct_files.$locale");
+                    if ($file instanceof UploadedFile) {
+                        $sanitized[$locale] = $file;
+                    }
+                }
+                $request->merge(['hero_locale_direct_files' => $sanitized]);
+                $request->files->set('hero_locale_direct_files', $sanitized);
+            }
+        }
+
+        if ($request->has('feature_card_direct_files')) {
+            $files = $request->input('feature_card_direct_files');
+            if (is_array($files)) {
+                $sanitized = [];
+                foreach ($files as $index => $val) {
+                    $file = $request->file("feature_card_direct_files.$index");
+                    if ($file instanceof UploadedFile) {
+                        $sanitized[$index] = $file;
+                    }
+                }
+                $request->merge(['feature_card_direct_files' => $sanitized]);
+                $request->files->set('feature_card_direct_files', $sanitized);
+            }
+        }
+
+        if ($request->has('mobile_app_direct_files')) {
+            $apps = $request->input('mobile_app_direct_files');
+            if (is_array($apps)) {
+                $sanitized = [];
+                foreach ($apps as $index => $app) {
+                    if (is_array($app)) {
+                        $sanitized[$index] = [];
+                        foreach (['image', 'icon'] as $type) {
+                            $file = $request->file("mobile_app_direct_files.$index.$type");
+                            if ($file instanceof UploadedFile) {
+                                $sanitized[$index][$type] = $file;
+                            }
+                        }
+                    }
+                }
+                $request->merge(['mobile_app_direct_files' => $sanitized]);
+                $request->files->set('mobile_app_direct_files', $sanitized);
+            }
+        }
+    }
+
     private function validatedLandingSettings(Request $request): array
     {
+        $this->sanitizeRequestFiles($request);
+
         $validated = $request->validate([
             'settings.hero.enabled' => ['nullable', 'boolean'],
             'settings.hero.title' => ['required', 'string', 'max:255'],
