@@ -13,6 +13,7 @@ use Google\Cloud\DocumentAI\V1\GetProcessorRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Arr;
@@ -266,12 +267,31 @@ class LandingSettingsController extends Controller
 
     public function updateDesign(Request $request): RedirectResponse
     {
+        $this->logLandingUploadRequest($request, 'design_update_started');
+
         $normalized = $this->validatedLandingSettings($request);
         $landingSetting = $this->persistLandingSettings($normalized);
+
+        Log::info('Landing design settings persisted before upload sync.', [
+            'site_setting_id' => $landingSetting->id,
+            'key' => $landingSetting->key,
+        ]);
+
         $this->syncHeroImageUpload($request, $landingSetting);
         $this->syncFeatureCardUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
         $this->refreshLandingImageUrls($landingSetting);
+
+        Log::info('Landing design upload sync completed.', [
+            'site_setting_id' => $landingSetting->id,
+            'files_count' => $landingSetting->files()->count(),
+            'collections' => $landingSetting->files()
+                ->select('collection')
+                ->distinct()
+                ->pluck('collection')
+                ->values()
+                ->all(),
+        ]);
 
         return back()->with('success', 'Landing page design updated successfully.');
     }
@@ -591,6 +611,54 @@ class LandingSettingsController extends Controller
         );
     }
 
+    private function logLandingUploadRequest(Request $request, string $event): void
+    {
+        Log::info('Landing design upload request: ' . $event, [
+            'method' => $request->method(),
+            'content_type' => $request->headers->get('content-type'),
+            'content_length' => $request->headers->get('content-length'),
+            'has_files' => $request->hasFile('hero_direct_file')
+                || $request->hasFile('hero_locale_direct_files')
+                || $request->hasFile('feature_card_direct_files')
+                || $request->hasFile('mobile_app_direct_files'),
+            'all_file_keys' => array_keys($request->allFiles()),
+            'files' => $this->summarizeUploadedFiles($request->allFiles()),
+            'hero_temp_folders' => $request->input('hero_temp_folders', []),
+            'hero_locale_temp_folders' => $request->input('hero_locale_temp_folders', []),
+            'feature_card_temp_folders' => $request->input('feature_card_temp_folders', []),
+            'mobile_app_temp_folders' => $request->input('mobile_app_temp_folders', []),
+            'post_max_size' => ini_get('post_max_size'),
+            'upload_max_filesize' => ini_get('upload_max_filesize'),
+            'max_file_uploads' => ini_get('max_file_uploads'),
+        ]);
+    }
+
+    private function summarizeUploadedFiles(array $files): array
+    {
+        $summary = [];
+
+        foreach ($files as $key => $value) {
+            if ($value instanceof UploadedFile) {
+                $summary[$key] = [
+                    'original_name' => $value->getClientOriginalName(),
+                    'mime_type' => $value->getMimeType(),
+                    'client_mime_type' => $value->getClientMimeType(),
+                    'size' => $value->getSize(),
+                    'is_valid' => $value->isValid(),
+                    'error' => $value->getError(),
+                    'error_message' => $value->getErrorMessage(),
+                ];
+                continue;
+            }
+
+            if (is_array($value)) {
+                $summary[$key] = $this->summarizeUploadedFiles($value);
+            }
+        }
+
+        return $summary;
+    }
+
     private function refreshLandingImageUrls(SiteSetting $landingSetting): void
     {
         $settings = $this->hydrateLandingImageUrls(
@@ -670,6 +738,18 @@ class LandingSettingsController extends Controller
         UploadedFile $file,
         string $collection
     ): string {
+        Log::info('Landing direct file upload started.', [
+            'site_setting_id' => $landingSetting->id,
+            'collection' => $collection,
+            'original_name' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType(),
+            'client_mime_type' => $file->getClientMimeType(),
+            'size' => $file->getSize(),
+            'is_valid' => $file->isValid(),
+            'error' => $file->getError(),
+            'error_message' => $file->getErrorMessage(),
+        ]);
+
         $landingSetting->files()
             ->where('collection', $collection)
             ->get()
@@ -682,6 +762,18 @@ class LandingSettingsController extends Controller
         $path = config('vilt-filepond.files_path') . '/' . $modelName . '/' . $landingSetting->id . '/' . $collection;
         $storedPath = $file->storeAs($path, $filename, config('vilt-filepond.storage_disk'));
 
+        if (!$storedPath) {
+            Log::error('Landing direct file upload failed to store file.', [
+                'site_setting_id' => $landingSetting->id,
+                'collection' => $collection,
+                'path' => $path,
+                'filename' => $filename,
+                'disk' => config('vilt-filepond.storage_disk'),
+            ]);
+
+            return '';
+        }
+
         $fileRecord = $landingSetting->files()->create([
             'original_name' => $file->getClientOriginalName(),
             'filename' => $filename,
@@ -692,7 +784,20 @@ class LandingSettingsController extends Controller
             'order' => 0,
         ]);
 
-        return SiteSetting::publicUrlFromPath($fileRecord->path) ?? '';
+        $url = SiteSetting::publicUrlFromPath($fileRecord->path) ?? '';
+
+        Log::info('Landing direct file upload stored.', [
+            'site_setting_id' => $landingSetting->id,
+            'file_id' => $fileRecord->id,
+            'collection' => $collection,
+            'stored_path' => $storedPath,
+            'database_path' => $fileRecord->path,
+            'public_url' => $url,
+            'disk' => config('vilt-filepond.storage_disk'),
+            'exists' => Storage::disk(config('vilt-filepond.storage_disk'))->exists($storedPath),
+        ]);
+
+        return $url;
     }
 
     private function syncHeroImageUpload(Request $request, SiteSetting $landingSetting): void

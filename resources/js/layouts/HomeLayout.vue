@@ -15,7 +15,7 @@ import { index as tenantAdminCarsIndex } from '@/routes/admin/cars/index';
 import { index as tenantClientReservationsIndex } from '@/routes/client/reservations/index';
 import { dashboard as superAdminDashboard } from '@/routes/superadmin/index';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Check, ChevronDown, Languages, Menu, X } from 'lucide-vue-next';
+import { Apple, Check, ChevronDown, Facebook, Instagram, Languages, Linkedin, Menu, Smartphone, X } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 const $page = usePage<any>();
@@ -157,10 +157,63 @@ const landingNavLinks = computed(() => {
     }));
 });
 const navigationCtaLabel = computed(() => landingSettings.value?.navigation?.cta_label || t('landing.start_free_trial'));
-const landingFooterTitle = computed(() => landingSettings.value?.footer?.title || appName.value);
-const landingFooterDescription = computed(() =>
-    landingSettings.value?.footer?.description || 'Premium car rental service providing luxury and reliable vehicles for your transportation needs.'
+const landingFooterEnabled = computed(() => landingSettings.value?.footer?.enabled !== false);
+const landingFooterCopyright = computed(() =>
+    landingSettings.value?.footer?.copyright_text || t('landing.footer_rights') || 'All rights reserved.'
 );
+const landingFooterNavLinks = computed(() =>
+    landingNavLinks.value.filter((link) => !String(link.href || '').includes('#clients'))
+);
+const landingFooterSocialLinks = computed(() => {
+    if (landingSettings.value?.footer?.show_social_links === false) {
+        return [];
+    }
+
+    const links = Array.isArray(landingSettings.value?.footer?.social_links)
+        ? landingSettings.value.footer.social_links
+        : [];
+
+    return links
+        .map((link: any) => ({
+            label: String(link?.label || link?.platform || 'Social'),
+            platform: String(link?.platform || '').toLowerCase(),
+            href: String(link?.href || '').trim(),
+        }))
+        .filter((link) => link.platform !== '');
+});
+const landingFooterAppButtons = computed(() => {
+    if (landingSettings.value?.footer?.show_app_buttons === false) {
+        return [];
+    }
+
+    return [
+        {
+            key: 'android',
+            label: landingSettings.value?.footer?.android_label || 'Android',
+            href: String(landingSettings.value?.footer?.android_url || '').trim(),
+            icon: Smartphone,
+        },
+        {
+            key: 'ios',
+            label: landingSettings.value?.footer?.ios_label || 'iOS',
+            href: String(landingSettings.value?.footer?.ios_url || '').trim(),
+            icon: Apple,
+        },
+    ];
+});
+const socialIcon = (platform: string) => {
+    const normalized = String(platform || '').toLowerCase();
+
+    if (normalized === 'instagram') {
+        return Instagram;
+    }
+
+    if (normalized === 'linkedin') {
+        return Linkedin;
+    }
+
+    return Facebook;
+};
 const toggleLandingMenu = () => {
     mobileOpen.value = !mobileOpen.value;
 };
