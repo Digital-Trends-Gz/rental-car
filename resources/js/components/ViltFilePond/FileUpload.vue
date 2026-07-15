@@ -61,6 +61,10 @@ const props = defineProps({
         type: String,
         default: "100%",
     },
+    instantUpload: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 const emit = defineEmits([
@@ -299,6 +303,14 @@ function handleFileAdd(error: any, file: any) {
     emit("localFileAdded", file.file);
 }
 
+function emitLocalFile(fileItem: any) {
+    const file = fileItem?.file || fileItem;
+
+    if (file instanceof File) {
+        emit("localFileAdded", file);
+    }
+}
+
 // Public method to reset component state
 function resetFiles() {
     files.value = [];
@@ -400,6 +412,17 @@ const serverOptions: any = {
 const filePondOptions = computed(() => ({
     server: serverOptions,
     name: "filepond",
+    instantUpload: props.instantUpload,
+    beforeAddFile: (fileItem: any) => {
+        emitLocalFile(fileItem);
+        return true;
+    },
+    onaddfile: (_error: any, fileItem: any) => {
+        emitLocalFile(fileItem);
+    },
+    oninitfile: (fileItem: any) => {
+        emitLocalFile(fileItem);
+    },
     allowMultiple: props.allowMultiple,
     acceptedFileTypes: props.allowedFileTypes,
     maxFiles: props.maxFiles,

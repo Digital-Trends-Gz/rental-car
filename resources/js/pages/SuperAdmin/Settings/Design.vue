@@ -973,6 +973,7 @@ const toggleSection = (
                                         :initial-files="heroFiles || []"
                                         :allow-multiple="false"
                                         :max-files="1"
+                                        :instant-upload="false"
                                         :max-file-size="1024 * 1024 * 50"
                                         :allowed-file-types="[
                                             'image/jpeg',
@@ -1005,6 +1006,7 @@ const toggleSection = (
                                         "
                                         :allow-multiple="false"
                                         :max-files="1"
+                                        :instant-upload="false"
                                         :max-file-size="1024 * 1024 * 50"
                                         :allowed-file-types="[
                                             'image/jpeg',
@@ -1417,6 +1419,7 @@ const toggleSection = (
                                                 "
                                                 :allow-multiple="false"
                                                 :max-files="1"
+                                                :instant-upload="false"
                                                 :max-file-size="1024 * 1024 * 10"
                                                 :allowed-file-types="[
                                                     'image/jpeg',
@@ -1473,6 +1476,7 @@ const toggleSection = (
                                                 "
                                                 :allow-multiple="false"
                                                 :max-files="1"
+                                                :instant-upload="false"
                                                 :max-file-size="1024 * 1024 * 2"
                                                 :allowed-file-types="[
                                                     'image/svg+xml',
@@ -1790,6 +1794,7 @@ const toggleSection = (
                                             "
                                             :allow-multiple="false"
                                             :max-files="1"
+                                            :instant-upload="false"
                                             :max-file-size="1024 * 1024 * 5"
                                             :allowed-file-types="[
                                                 'image/jpeg',

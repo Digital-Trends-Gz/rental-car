@@ -340,9 +340,9 @@ const themeVars = computed(() => ({
                 <slot />
             </main>
 
-            <footer v-if="landingFooterEnabled" class="border-t border-border bg-background py-8">
+            <footer v-if="landingFooterEnabled" class="border-t border-border bg-background py-6">
                 <div class="section-container max-w-7xl">
-                    <div class="grid items-start gap-8 md:grid-cols-[1fr_auto_1fr]">
+                    <div class="grid items-center gap-6 lg:grid-cols-[1fr_auto_1fr]">
                         <Link :href="landingHomeUrl" class="inline-flex justify-center md:justify-start">
                             <AppLogoIcon />
                         </Link>
@@ -358,8 +358,8 @@ const themeVars = computed(() => ({
                             </a>
                         </nav>
 
-                        <div class="flex flex-col items-center gap-3 md:items-end">
-                            <div v-if="landingFooterSocialLinks.length" class="flex items-center gap-3">
+                        <div class="flex flex-wrap items-center justify-center gap-3 lg:justify-end">
+                            <div v-if="landingFooterSocialLinks.length" class="flex items-center gap-2">
                                 <component
                                     :is="link.href ? 'a' : 'span'"
                                     v-for="link in landingFooterSocialLinks"
@@ -367,14 +367,14 @@ const themeVars = computed(() => ({
                                     :href="link.href || undefined"
                                     :target="link.href ? '_blank' : undefined"
                                     :rel="link.href ? 'noopener noreferrer' : undefined"
-                                    class="inline-flex h-11 w-14 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+                                    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:text-foreground"
                                     :aria-label="link.label"
                                 >
-                                    <component :is="socialIcon(link.platform)" class="h-5 w-5" />
+                                    <component :is="socialIcon(link.platform)" class="h-4 w-4" />
                                 </component>
                             </div>
 
-                            <div v-if="landingFooterAppButtons.length" class="grid w-full max-w-40 gap-3">
+                            <div v-if="landingFooterAppButtons.length" class="flex flex-wrap items-center justify-center gap-2">
                                 <component
                                     :is="button.href ? 'a' : 'span'"
                                     v-for="button in landingFooterAppButtons"
@@ -382,16 +382,16 @@ const themeVars = computed(() => ({
                                     :href="button.href || undefined"
                                     :target="button.href ? '_blank' : undefined"
                                     :rel="button.href ? 'noopener noreferrer' : undefined"
-                                    class="inline-flex h-12 items-center justify-center gap-3 rounded-md border border-border bg-background px-4 text-sm font-semibold text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+                                    class="inline-flex h-10 min-w-32 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-semibold text-muted-foreground shadow-sm transition-colors hover:text-foreground"
                                 >
-                                    <component :is="button.icon" class="h-5 w-5" />
+                                    <component :is="button.icon" class="h-4 w-4" />
                                     <span>{{ button.label }}</span>
                                 </component>
                             </div>
                         </div>
                     </div>
 
-                    <p class="mt-6 text-center text-sm text-muted-foreground">
+                    <p class="mt-5 text-center text-sm text-muted-foreground">
                         &copy; {{ currentYear }} {{ appName }}. {{ landingFooterCopyright }}
                     </p>
                 </div>
