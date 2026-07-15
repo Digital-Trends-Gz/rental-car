@@ -26,7 +26,24 @@ use Illuminate\Http\Response;
 class HomePagesController extends Controller
 {
     private const MAIN_SITE_SEO_KEY = 'main_site_seo';
-    private const STATIC_PAGES_CONTENT_KEY = 'main_static_pages_content';
+    private const WEB_PAGES_CONTENT_KEY = 'main_web_pages_content';
+    private const WEB_PAGE_TITLES = [
+        'privacy_policy' => [
+            'en' => 'Privacy Policy',
+            'ar' => 'سياسة الخصوصية',
+            'ur' => 'Privacy Policy',
+        ],
+        'terms_of_use' => [
+            'en' => 'Terms of Use',
+            'ar' => 'سياسة الاستخدام',
+            'ur' => 'Terms of Use',
+        ],
+        'security_policy' => [
+            'en' => 'Security Policy',
+            'ar' => 'سياسة الأمان',
+            'ur' => 'Security Policy',
+        ],
+    ];
     private const STATIC_PAGE_TITLES = [
         'privacy_policy' => [
             'en' => 'Privacy Policy',
@@ -608,7 +625,7 @@ class HomePagesController extends Controller
 
     public function termsOfUse()
     {
-        return $this->staticPage('terms_conditions');
+        return $this->staticPage('terms_of_use');
     }
 
     public function securityPolicy()
@@ -618,7 +635,7 @@ class HomePagesController extends Controller
 
     private function staticPage(string $section)
     {
-        abort_unless(array_key_exists($section, self::STATIC_PAGE_TITLES), 404);
+        abort_unless(array_key_exists($section, self::WEB_PAGE_TITLES), 404);
 
         $localization = LocalizationSettings::load();
         $locale = app()->getLocale();
@@ -649,7 +666,7 @@ class HomePagesController extends Controller
     private function staticPageSettings(): array
     {
         $stored = SiteSetting::query()
-            ->where('key', self::STATIC_PAGES_CONTENT_KEY)
+            ->where('key', self::WEB_PAGES_CONTENT_KEY)
             ->value('value');
 
         return is_array($stored) ? $stored : [];
@@ -690,7 +707,7 @@ class HomePagesController extends Controller
             'privacy_policy' => [
                 'ar' => 'سياسة الخصوصية',
             ],
-            'terms_conditions' => [
+            'terms_of_use' => [
                 'ar' => 'سياسة الاستخدام',
             ],
             'security_policy' => [
@@ -698,7 +715,7 @@ class HomePagesController extends Controller
             ],
         ];
         $titles = array_replace(
-            self::STATIC_PAGE_TITLES[$section] ?? [],
+            self::WEB_PAGE_TITLES[$section] ?? [],
             $localizedTitles[$section] ?? []
         );
         $baseLocale = strtolower(explode('-', $locale)[0] ?? $locale);

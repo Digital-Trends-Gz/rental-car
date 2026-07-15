@@ -24,6 +24,7 @@ use App\Http\Controllers\SuperAdmin\SecurityAccessSettingsController;
 use App\Http\Controllers\SuperAdmin\SupportController as SuperAdminSupportController;
 use App\Http\Controllers\SuperAdmin\MainSiteSeoSettingsController;
 use App\Http\Controllers\SuperAdmin\StaticPageContentSettingsController;
+use App\Http\Controllers\SuperAdmin\WebPageContentSettingsController;
 
 use App\Http\Controllers\SuperAdmin\Auth\LoginController;
 use App\Http\Controllers\SuperAdmin\LogViewerController;
@@ -135,6 +136,8 @@ Route::middleware(['auth', 'active', 'super_admin'])
             Route::put('settings/security-access', [SecurityAccessSettingsController::class, 'update'])->name('settings.security-access.update');
             Route::get('settings/seo', [MainSiteSeoSettingsController::class, 'edit'])->name('settings.seo');
             Route::put('settings/seo', [MainSiteSeoSettingsController::class, 'update'])->name('settings.seo.update');
+            Route::get('settings/web-pages-content', [WebPageContentSettingsController::class, 'edit'])->name('settings.web-pages-content');
+            Route::put('settings/web-pages-content', [WebPageContentSettingsController::class, 'update'])->name('settings.web-pages-content.update');
             Route::get('settings/static-pages-content', [StaticPageContentSettingsController::class, 'edit'])->name('settings.static-pages-content');
             Route::put('settings/static-pages-content', [StaticPageContentSettingsController::class, 'update'])->name('settings.static-pages-content.update');
         });

@@ -246,6 +246,7 @@ class LandingSettingsController extends Controller
         $this->syncHeroImageUpload($request, $landingSetting);
         $this->syncFeatureCardUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
+        $this->refreshLandingImageUrls($landingSetting);
 
         SiteSetting::query()->updateOrCreate(
             ['key' => AiAutomationSettings::KEY],
@@ -267,6 +268,7 @@ class LandingSettingsController extends Controller
         $this->syncHeroImageUpload($request, $landingSetting);
         $this->syncFeatureCardUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
+        $this->refreshLandingImageUrls($landingSetting);
 
         return back()->with('success', 'Landing page design updated successfully.');
     }
@@ -502,11 +504,16 @@ class LandingSettingsController extends Controller
 
     private function landingSettings(): array
     {
-        $stored = SiteSetting::query()
+        $landingSetting = SiteSetting::query()
+            ->with('files')
             ->where('key', LandingPageSettings::KEY)
-            ->value('value');
+            ->first();
+        $stored = $landingSetting?->value;
 
-        return LandingPageSettings::normalize(is_array($stored) ? $stored : null);
+        return $this->hydrateLandingImageUrls(
+            LandingPageSettings::normalize(is_array($stored) ? $stored : null),
+            $landingSetting
+        );
     }
 
     private function defaultTranslationRows(string $locale): array
@@ -579,6 +586,80 @@ class LandingSettingsController extends Controller
             ['key' => LandingPageSettings::KEY],
             ['value' => LandingPageSettings::normalize($merged)]
         );
+    }
+
+    private function refreshLandingImageUrls(SiteSetting $landingSetting): void
+    {
+        $settings = $this->hydrateLandingImageUrls(
+            LandingPageSettings::normalize(is_array($landingSetting->value) ? $landingSetting->value : null),
+            $landingSetting
+        );
+
+        $landingSetting->update(['value' => $settings]);
+    }
+
+    private function hydrateLandingImageUrls(array $settings, ?SiteSetting $landingSetting): array
+    {
+        if (!$landingSetting) {
+            return $settings;
+        }
+
+        $heroUrl = $this->latestLandingFileUrl($landingSetting, 'hero');
+        if ($heroUrl && trim((string) data_get($settings, 'hero.image_url', '')) === '') {
+            data_set($settings, 'hero.image_url', $heroUrl);
+        }
+
+        $localizedImages = (array) data_get($settings, 'hero.localized_images', []);
+        foreach ($this->supportedLocaleKeys() as $locale) {
+            $localeUrl = $this->latestLandingFileUrl($landingSetting, $this->heroLocaleCollection($locale));
+            if ($localeUrl && trim((string) ($localizedImages[$locale] ?? '')) === '') {
+                $localizedImages[$locale] = $localeUrl;
+            }
+        }
+        data_set($settings, 'hero.localized_images', $localizedImages);
+
+        $cards = (array) data_get($settings, 'features_section.cards', []);
+        foreach ($cards as $index => $card) {
+            if (!is_array($card)) {
+                continue;
+            }
+
+            $url = $this->latestLandingFileUrl($landingSetting, $this->featureCardCollection((int) $index));
+            if ($url && trim((string) ($card['image_url'] ?? '')) === '') {
+                $cards[$index]['image_url'] = $url;
+            }
+        }
+        data_set($settings, 'features_section.cards', $cards);
+
+        $apps = (array) data_get($settings, 'mobile_apps_section.apps', []);
+        foreach ($apps as $index => $app) {
+            if (!is_array($app)) {
+                continue;
+            }
+
+            $imageUrl = $this->latestLandingFileUrl($landingSetting, $this->mobileAppCollection((int) $index, 'image'));
+            if ($imageUrl && trim((string) ($app['image_url'] ?? '')) === '') {
+                $apps[$index]['image_url'] = $imageUrl;
+            }
+
+            $iconUrl = $this->latestLandingFileUrl($landingSetting, $this->mobileAppCollection((int) $index, 'icon'));
+            if ($iconUrl && trim((string) ($app['icon_url'] ?? '')) === '') {
+                $apps[$index]['icon_url'] = $iconUrl;
+            }
+        }
+        data_set($settings, 'mobile_apps_section.apps', $apps);
+
+        return LandingPageSettings::normalize($settings);
+    }
+
+    private function latestLandingFileUrl(SiteSetting $landingSetting, string $collection): ?string
+    {
+        $file = $landingSetting->files()
+            ->where('collection', $collection)
+            ->latest('id')
+            ->first();
+
+        return $file ? SiteSetting::publicUrlFromPath($file->path) : null;
     }
 
     private function syncHeroImageUpload(Request $request, SiteSetting $landingSetting): void
