@@ -26,6 +26,18 @@ const props = defineProps<{
             client?: { id: number; name: string; email: string } | null;
             employee?: { id: number; name: string; email: string } | null;
             reviewed_by?: { id: number; name: string; email: string } | null;
+            previous_approved_discounts?: Array<{
+                id: number;
+                discount_type: string;
+                discount_value: number;
+                discount_amount: number;
+                final_amount: number;
+                reason?: string | null;
+                employee?: { id: number; name: string; email: string } | null;
+                reviewed_by?: { id: number; name: string; email: string } | null;
+                created_at?: string | null;
+                approved_at?: string | null;
+            }>;
             car?: { name: string; license_plate: string } | null;
             branch_name?: string | null;
             approve_url: string;
@@ -215,6 +227,34 @@ function statusClass(value: string) {
                                 <div class="whitespace-pre-wrap">{{ request.reason }}</div>
                                 <div v-if="request.review_note" class="mt-2 text-xs text-muted-foreground">
                                     {{ localize('Review note', 'ملاحظة المراجعة') }}: {{ request.review_note }}
+                                </div>
+                                <div
+                                    v-if="request.previous_approved_discounts?.length"
+                                    class="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
+                                >
+                                    <div class="mb-2 font-semibold">
+                                        {{ localize('Previous approved discounts', 'خصومات سابقة تمت الموافقة عليها') }}
+                                    </div>
+                                    <div
+                                        v-for="previousDiscount in request.previous_approved_discounts"
+                                        :key="previousDiscount.id"
+                                        class="space-y-1 border-t border-amber-200 py-2 first:border-t-0 first:pt-0 last:pb-0"
+                                    >
+                                        <div>
+                                            <span class="font-medium">
+                                                {{ discountValue(previousDiscount.discount_type, previousDiscount.discount_value) }}
+                                            </span>
+                                            <span>- {{ money(previousDiscount.discount_amount) }}</span>
+                                        </div>
+                                        <div>
+                                            {{ localize('Employee', 'الموظف') }}:
+                                            {{ previousDiscount.employee?.name || '-' }}
+                                        </div>
+                                        <div>
+                                            {{ localize('Approved at', 'تاريخ الموافقة') }}:
+                                            {{ formatDate(previousDiscount.approved_at) }}
+                                        </div>
+                                    </div>
                                 </div>
                             </td>
                             <td class="px-4 py-3 align-top text-sm">

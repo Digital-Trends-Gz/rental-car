@@ -121,6 +121,7 @@ class DiscountRequestsController extends Controller
                     'name' => $discountRequest->reviewedBy->name,
                     'email' => $discountRequest->reviewedBy->email,
                 ] : null,
+                'previous_approved_discounts' => $this->previousApprovedDiscountsPayload($discountRequest, $canViewFinancialAmounts),
                 'car' => $discountRequest->reservation?->car ? [
                     'name' => trim(sprintf(
                         '%s %s %s',
@@ -266,6 +267,44 @@ class DiscountRequestsController extends Controller
             $request->user(),
             $discountRequest->reservation?->car?->branch_id ? (int) $discountRequest->reservation->car->branch_id : null
         );
+    }
+
+    private function previousApprovedDiscountsPayload(DiscountRequest $discountRequest, bool $canViewFinancialAmounts): array
+    {
+        if (!$discountRequest->contract_return_report_id) {
+            return [];
+        }
+
+        return DiscountRequest::query()
+            ->with(['requestedBy:id,name,email', 'reviewedBy:id,name,email'])
+            ->where('contract_return_report_id', $discountRequest->contract_return_report_id)
+            ->where('status', DiscountRequestStatus::APPROVED->value)
+            ->whereKeyNot($discountRequest->id)
+            ->orderByDesc('approved_at')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (DiscountRequest $previousRequest): array => [
+                'id' => $previousRequest->id,
+                'discount_type' => $previousRequest->discount_type,
+                'discount_value' => FinancialVisibility::numericAmount($previousRequest->discount_value, $canViewFinancialAmounts),
+                'discount_amount' => FinancialVisibility::numericAmount($previousRequest->discount_amount, $canViewFinancialAmounts),
+                'final_amount' => FinancialVisibility::numericAmount($previousRequest->final_amount, $canViewFinancialAmounts),
+                'reason' => $previousRequest->reason,
+                'employee' => $previousRequest->requestedBy ? [
+                    'id' => $previousRequest->requestedBy->id,
+                    'name' => $previousRequest->requestedBy->name,
+                    'email' => $previousRequest->requestedBy->email,
+                ] : null,
+                'reviewed_by' => $previousRequest->reviewedBy ? [
+                    'id' => $previousRequest->reviewedBy->id,
+                    'name' => $previousRequest->reviewedBy->name,
+                    'email' => $previousRequest->reviewedBy->email,
+                ] : null,
+                'created_at' => optional($previousRequest->created_at)->toDateTimeString(),
+                'approved_at' => optional($previousRequest->approved_at)->toDateTimeString(),
+            ])
+            ->values()
+            ->all();
     }
 
     private function returnReportBalance(ContractReturnReport $report): float

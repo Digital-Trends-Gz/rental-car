@@ -1797,19 +1797,19 @@ onUnmounted(() => {
                 id="faq"
                 class="section-padding"
             >
-                <div class="section-container mx-auto max-w-3xl">
-                    <div class="mb-12 text-center">
+                <div class="section-container">
+                    <div class="mx-auto mb-12 max-w-5xl text-center">
                         <h2
-                            class="text-3xl font-bold text-foreground sm:text-4xl"
+                            class="text-3xl font-bold text-foreground sm:text-4xl lg:whitespace-nowrap"
                         >
                             {{ landingSettings.faq_section.title }}
                         </h2>
-                        <p class="mt-4 text-lg text-muted-foreground">
+                        <p class="mx-auto mt-4 max-w-4xl text-lg text-muted-foreground">
                             {{ landingSettings.faq_section.description }}
                         </p>
                     </div>
 
-                    <div class="space-y-3">
+                    <div class="mx-auto max-w-3xl space-y-3">
                         <details
                             v-for="faq in landingSettings.faq_section.items"
                             :key="`${faq.question}-${faq.answer}`"

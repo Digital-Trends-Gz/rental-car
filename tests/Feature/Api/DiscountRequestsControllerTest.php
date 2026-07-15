@@ -147,6 +147,58 @@ test('api automatically approves return report discount request within employee 
     expect((float) $returnReport->total_extra_charges)->toBe(190.0);
 });
 
+test('api sends repeated employee discount request to manager with previous approved discount context', function () {
+    $fixtures = createDiscountRequestApiFixtures('RES-DISC-REPEAT', 500);
+    TenantSiteSetting::query()->updateOrCreate(
+        ['tenant_id' => $fixtures['tenant']->id],
+        [
+            'reservation_settings' => [
+                'employee_discount_auto_approval' => [
+                    'enabled' => true,
+                    'type' => 'percentage',
+                    'value' => 5,
+                ],
+            ],
+        ]
+    );
+
+    Sanctum::actingAs($fixtures['admin'], ['*']);
+
+    $firstResponse = $this->postJson(route('api.contracts.return-report.discount-requests.store', [
+        'contract' => $fixtures['contract']->id,
+    ]), [
+        'discount_type' => 'percentage',
+        'discount_value' => 4,
+        'reason' => 'First allowed employee discount.',
+    ]);
+
+    $firstResponse->assertCreated()
+        ->assertJsonPath('discount_request.status', DiscountRequestStatus::APPROVED->value)
+        ->assertJsonPath('discount_request.discount_amount', 8);
+
+    $secondResponse = $this->postJson(route('api.contracts.return-report.discount-requests.store', [
+        'contract' => $fixtures['contract']->id,
+    ]), [
+        'discount_type' => 'percentage',
+        'discount_value' => 4,
+        'reason' => 'Second discount must be reviewed.',
+    ]);
+
+    $secondResponse->assertCreated()
+        ->assertJsonPath('discount_request.status', DiscountRequestStatus::PENDING->value)
+        ->assertJsonPath('discount_request.discount_value', 4)
+        ->assertJsonPath('discount_request.previous_approved_discounts.0.discount_value', 4)
+        ->assertJsonPath('discount_request.previous_approved_discounts.0.discount_amount', 8);
+
+    $returnReport = $fixtures['returnReport']->fresh();
+
+    expect(DiscountRequest::query()->count())->toBe(2);
+    expect(DiscountRequest::query()->where('status', DiscountRequestStatus::APPROVED)->count())->toBe(1);
+    expect(DiscountRequest::query()->where('status', DiscountRequestStatus::PENDING)->count())->toBe(1);
+    expect((float) $returnReport->discount)->toBe(8.0);
+    expect((float) $returnReport->total_extra_charges)->toBe(192.0);
+});
+
 test('api can show latest return report discount request status by contract', function () {
     $fixtures = createDiscountRequestApiFixtures('RES-DISC-STATUS', 500);
     $discountRequest = DiscountRequest::create([

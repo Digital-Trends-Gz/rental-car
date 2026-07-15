@@ -118,11 +118,15 @@ class DiscountRequestsController extends Controller
             $discountType = (string) $validated['discount_type'];
             $discountValue = round((float) $validated['discount_value'], 2);
             $discountAmount = $this->calculateDiscountAmount($discountType, $discountValue, $baseAmount);
+            $hasPreviousApprovedDiscount = DiscountRequest::query()
+                ->where('contract_return_report_id', $lockedReport->id)
+                ->where('status', DiscountRequestStatus::APPROVED->value)
+                ->exists();
             $autoApprovalLimit = ReservationSettings::employeeDiscountAutoApprovalLimit(
                 $this->reservationSettings((int) $lockedReport->tenant_id),
                 $baseAmount
             );
-            $isAutoApproved = $autoApprovalLimit > 0 && $discountAmount <= $autoApprovalLimit;
+            $isAutoApproved = !$hasPreviousApprovedDiscount && $autoApprovalLimit > 0 && $discountAmount <= $autoApprovalLimit;
 
             if ($discountAmount <= 0) {
                 throw ValidationException::withMessages([
@@ -159,7 +163,7 @@ class DiscountRequestsController extends Controller
                 'status' => $isAutoApproved ? DiscountRequestStatus::APPROVED : DiscountRequestStatus::PENDING,
                 'review_note' => $isAutoApproved
                     ? sprintf('Automatically approved within configured employee discount limit (%.2f).', $autoApprovalLimit)
-                    : null,
+                    : ($hasPreviousApprovedDiscount ? 'Previous approved discount exists for this return report. Manager review is required.' : null),
                 'reviewed_at' => $isAutoApproved ? now() : null,
                 'approved_at' => $isAutoApproved ? now() : null,
             ]);
@@ -293,7 +297,47 @@ class DiscountRequestsController extends Controller
             'reviewed_at' => optional($discountRequest->reviewed_at)->toIso8601String(),
             'approved_at' => optional($discountRequest->approved_at)->toIso8601String(),
             'rejected_at' => optional($discountRequest->rejected_at)->toIso8601String(),
+            'previous_approved_discounts' => $this->previousApprovedDiscountsPayload($discountRequest),
         ];
+    }
+
+    private function previousApprovedDiscountsPayload(DiscountRequest $discountRequest): array
+    {
+        if (!$discountRequest->contract_return_report_id) {
+            return [];
+        }
+
+        return DiscountRequest::query()
+            ->with(['requestedBy:id,name,email', 'reviewedBy:id,name,email'])
+            ->where('contract_return_report_id', $discountRequest->contract_return_report_id)
+            ->where('status', DiscountRequestStatus::APPROVED->value)
+            ->whereKeyNot($discountRequest->id)
+            ->orderByDesc('approved_at')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (DiscountRequest $previousRequest): array => [
+                'id' => $previousRequest->id,
+                'requested_by' => $previousRequest->requestedBy ? [
+                    'id' => $previousRequest->requestedBy->id,
+                    'name' => $previousRequest->requestedBy->name,
+                    'email' => $previousRequest->requestedBy->email,
+                ] : null,
+                'reviewed_by' => $previousRequest->reviewedBy ? [
+                    'id' => $previousRequest->reviewedBy->id,
+                    'name' => $previousRequest->reviewedBy->name,
+                    'email' => $previousRequest->reviewedBy->email,
+                ] : null,
+                'base_amount' => (float) $previousRequest->base_amount,
+                'discount_type' => $previousRequest->discount_type,
+                'discount_value' => (float) $previousRequest->discount_value,
+                'discount_amount' => (float) $previousRequest->discount_amount,
+                'final_amount' => (float) $previousRequest->final_amount,
+                'reason' => $previousRequest->reason,
+                'created_at' => optional($previousRequest->created_at)->toIso8601String(),
+                'approved_at' => optional($previousRequest->approved_at)->toIso8601String(),
+            ])
+            ->values()
+            ->all();
     }
 
     private function paymentStatusValue(Payment $payment): string
