@@ -189,6 +189,13 @@ const form = useForm<{
         number,
         { image: number[]; icon: number[] }
     >;
+    hero_direct_file: File | null;
+    hero_locale_direct_files: Record<string, File | null>;
+    feature_card_direct_files: Record<number, File | null>;
+    mobile_app_direct_files: Record<
+        number,
+        { image: File | null; icon: File | null }
+    >;
 }>({
     settings: JSON.parse(JSON.stringify(props.settings)),
     hero_temp_folders: [] as string[],
@@ -199,6 +206,10 @@ const form = useForm<{
     feature_card_removed_files: {},
     mobile_app_temp_folders: {},
     mobile_app_removed_files: {},
+    hero_direct_file: null,
+    hero_locale_direct_files: {},
+    feature_card_direct_files: {},
+    mobile_app_direct_files: {},
 });
 
 const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
@@ -213,6 +224,12 @@ const mobileAppTempFolders = ref<
 >({});
 const mobileAppRemovedFileIds = ref<
     Record<number, { image: number[]; icon: number[] }>
+>({});
+const heroDirectFile = ref<File | null>(null);
+const heroLocaleDirectFiles = ref<Record<string, File | null>>({});
+const featureCardDirectFiles = ref<Record<number, File | null>>({});
+const mobileAppDirectFiles = ref<
+    Record<number, { image: File | null; icon: File | null }>
 >({});
 const enabledLocales = computed(() =>
     Array.isArray(form.settings.enabled_locales) &&
@@ -274,6 +291,7 @@ for (const localeCode of enabledLocales.value) {
         form.settings.hero.localized_images[localeCode] || '';
     heroLocaleTempFolders.value[localeCode] = [];
     heroLocaleRemovedFileIds.value[localeCode] = [];
+    heroLocaleDirectFiles.value[localeCode] = null;
 }
 
 form.settings.mobile_apps_section.apps.forEach((app, index) => {
@@ -283,11 +301,13 @@ form.settings.mobile_apps_section.apps.forEach((app, index) => {
 
     mobileAppTempFolders.value[index] = { image: [], icon: [] };
     mobileAppRemovedFileIds.value[index] = { image: [], icon: [] };
+    mobileAppDirectFiles.value[index] = { image: null, icon: null };
 });
 
 form.settings.features_section.cards.forEach((_card, index) => {
     featureCardTempFolders.value[index] = [];
     featureCardRemovedFileIds.value[index] = [];
+    featureCardDirectFiles.value[index] = null;
 });
 
 watch(
@@ -381,6 +401,17 @@ const handleHeroFileRemoved = (data: { type: string; fileId?: number }) => {
     }
 };
 
+const handleHeroLocalFileAdded = (file: File) => {
+    if (activeHeroUsesDefaultMedia.value) {
+        heroDirectFile.value = file;
+        form.hero_direct_file = file;
+        return;
+    }
+
+    heroLocaleDirectFiles.value[activeHeroLocale.value] = file;
+    form.hero_locale_direct_files = { ...heroLocaleDirectFiles.value };
+};
+
 const handleHeroLocaleFileRemoved = (
     localeCode: string,
     data: { type: string; fileId?: number },
@@ -420,6 +451,11 @@ const handleFeatureCardFileRemoved = (
     );
 };
 
+const handleFeatureCardLocalFileAdded = (index: number, file: File) => {
+    featureCardDirectFiles.value[index] = file;
+    form.feature_card_direct_files = { ...featureCardDirectFiles.value };
+};
+
 const handleMobileAppFileRemoved = (
     index: number,
     type: 'image' | 'icon',
@@ -444,6 +480,19 @@ const handleMobileAppFileRemoved = (
     );
 };
 
+const handleMobileAppLocalFileAdded = (
+    index: number,
+    type: 'image' | 'icon',
+    file: File,
+) => {
+    if (!mobileAppDirectFiles.value[index]) {
+        mobileAppDirectFiles.value[index] = { image: null, icon: null };
+    }
+
+    mobileAppDirectFiles.value[index][type] = file;
+    form.mobile_app_direct_files = { ...mobileAppDirectFiles.value };
+};
+
 const localeDisplayName = (localeCode: string) =>
     (
         {
@@ -464,6 +513,8 @@ const refreshPreview = () => {
 const syncUploadStateToForm = () => {
     form.hero_temp_folders = [...heroTempFolders.value];
     form.hero_removed_files = [...new Set(heroRemovedFileIds.value)];
+    form.hero_direct_file = heroDirectFile.value;
+    form.hero_locale_direct_files = { ...heroLocaleDirectFiles.value };
     form.hero_locale_temp_folders = JSON.parse(
         JSON.stringify(heroLocaleTempFolders.value),
     );
@@ -476,12 +527,14 @@ const syncUploadStateToForm = () => {
     form.feature_card_removed_files = JSON.parse(
         JSON.stringify(featureCardRemovedFileIds.value),
     );
+    form.feature_card_direct_files = { ...featureCardDirectFiles.value };
     form.mobile_app_temp_folders = JSON.parse(
         JSON.stringify(mobileAppTempFolders.value),
     );
     form.mobile_app_removed_files = JSON.parse(
         JSON.stringify(mobileAppRemovedFileIds.value),
     );
+    form.mobile_app_direct_files = { ...mobileAppDirectFiles.value };
 };
 
 const submit = () => {
@@ -504,11 +557,15 @@ const submit = () => {
             form.mobile_app_temp_folders = {};
             form.mobile_app_removed_files = {};
             heroRemovedFileIds.value = [];
+            heroDirectFile.value = null;
             heroLocaleTempFolders.value = Object.fromEntries(
                 enabledLocales.value.map((localeCode) => [localeCode, []]),
             );
             heroLocaleRemovedFileIds.value = Object.fromEntries(
                 enabledLocales.value.map((localeCode) => [localeCode, []]),
+            );
+            heroLocaleDirectFiles.value = Object.fromEntries(
+                enabledLocales.value.map((localeCode) => [localeCode, null]),
             );
             mobileAppTempFolders.value = Object.fromEntries(
                 form.settings.mobile_apps_section.apps.map((_app, index) => [
@@ -528,10 +585,22 @@ const submit = () => {
                     [],
                 ]),
             );
+            featureCardDirectFiles.value = Object.fromEntries(
+                form.settings.features_section.cards.map((_card, index) => [
+                    index,
+                    null,
+                ]),
+            );
             mobileAppRemovedFileIds.value = Object.fromEntries(
                 form.settings.mobile_apps_section.apps.map((_app, index) => [
                     index,
                     { image: [], icon: [] },
+                ]),
+            );
+            mobileAppDirectFiles.value = Object.fromEntries(
+                form.settings.mobile_apps_section.apps.map((_app, index) => [
+                    index,
+                    { image: null, icon: null },
                 ]),
             );
             fileUploadRef.value?.resetFiles();
@@ -558,6 +627,7 @@ const addFeatureCard = () => {
     const index = form.settings.features_section.cards.length - 1;
     featureCardTempFolders.value[index] = [];
     featureCardRemovedFileIds.value[index] = [];
+    featureCardDirectFiles.value[index] = null;
 };
 const removeFeatureCard = (index: number) => {
     form.settings.features_section.cards.splice(index, 1);
@@ -573,12 +643,19 @@ const removeFeatureCard = (index: number) => {
             featureCardRemovedFileIds.value[cardIndex >= index ? cardIndex + 1 : cardIndex] || [],
         ]),
     );
+    featureCardDirectFiles.value = Object.fromEntries(
+        form.settings.features_section.cards.map((_card, cardIndex) => [
+            cardIndex,
+            featureCardDirectFiles.value[cardIndex >= index ? cardIndex + 1 : cardIndex] || null,
+        ]),
+    );
     form.feature_card_temp_folders = JSON.parse(
         JSON.stringify(featureCardTempFolders.value),
     );
     form.feature_card_removed_files = JSON.parse(
         JSON.stringify(featureCardRemovedFileIds.value),
     );
+    form.feature_card_direct_files = { ...featureCardDirectFiles.value };
 };
 
 const addStepItem = () => {
@@ -603,8 +680,15 @@ const resetMobileAppUploadState = () => {
             { image: [], icon: [] },
         ]),
     );
+    mobileAppDirectFiles.value = Object.fromEntries(
+        form.settings.mobile_apps_section.apps.map((_app, index) => [
+            index,
+            { image: null, icon: null },
+        ]),
+    );
     form.mobile_app_temp_folders = {};
     form.mobile_app_removed_files = {};
+    form.mobile_app_direct_files = {};
 };
 
 const addMobileApp = () => {
@@ -622,6 +706,7 @@ const addMobileApp = () => {
     const index = form.settings.mobile_apps_section.apps.length - 1;
     mobileAppTempFolders.value[index] = { image: [], icon: [] };
     mobileAppRemovedFileIds.value[index] = { image: [], icon: [] };
+    mobileAppDirectFiles.value[index] = { image: null, icon: null };
 };
 const removeMobileApp = (index: number) => {
     form.settings.mobile_apps_section.apps.splice(index, 1);
@@ -902,6 +987,9 @@ const toggleSection = (
                                         collection="hero"
                                         theme="light"
                                         width="100%"
+                                        @local-file-added="
+                                            handleHeroLocalFileAdded
+                                        "
                                         @file-removed="handleHeroFileRemoved"
                                     />
                                     <FileUpload
@@ -937,6 +1025,9 @@ const toggleSection = (
                                                     activeHeroLocale,
                                                     data,
                                                 )
+                                        "
+                                        @local-file-added="
+                                            handleHeroLocalFileAdded
                                         "
                                     />
                                     <p class="text-xs text-muted-foreground">
@@ -1344,6 +1435,14 @@ const toggleSection = (
                                                             data,
                                                         )
                                                 "
+                                                @local-file-added="
+                                                    (file) =>
+                                                        handleMobileAppLocalFileAdded(
+                                                            appIndex,
+                                                            'image',
+                                                            file,
+                                                        )
+                                                "
                                             />
                                             <img
                                                 v-if="app.image_url"
@@ -1387,6 +1486,14 @@ const toggleSection = (
                                                             appIndex,
                                                             'icon',
                                                             data,
+                                                        )
+                                                "
+                                                @local-file-added="
+                                                    (file) =>
+                                                        handleMobileAppLocalFileAdded(
+                                                            appIndex,
+                                                            'icon',
+                                                            file,
                                                         )
                                                 "
                                             />
@@ -1698,6 +1805,13 @@ const toggleSection = (
                                                     handleFeatureCardFileRemoved(
                                                         index,
                                                         data,
+                                                    )
+                                            "
+                                            @local-file-added="
+                                                (file) =>
+                                                    handleFeatureCardLocalFileAdded(
+                                                        index,
+                                                        file,
                                                     )
                                             "
                                         />

@@ -66,6 +66,7 @@ const props = defineProps({
 const emit = defineEmits([
     "update:modelValue",
     "fileAdded",
+    "localFileAdded",
     "fileRemoved",
     "error",
 ]);
@@ -290,6 +291,14 @@ function handleFileRemove(error: any, file: any) {
     }
 }
 
+function handleFileAdd(error: any, file: any) {
+    if (error || !file?.file) {
+        return;
+    }
+
+    emit("localFileAdded", file.file);
+}
+
 // Public method to reset component state
 function resetFiles() {
     files.value = [];
@@ -451,6 +460,7 @@ defineExpose({
             v-model="files"
             v-bind="filePondOptions"
             :files="files"
+            @addfile="handleFileAdd"
             @removefile="handleFileRemove"
         />
         <input

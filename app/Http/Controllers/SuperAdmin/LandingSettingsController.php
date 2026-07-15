@@ -14,7 +14,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Arr;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -662,6 +665,36 @@ class LandingSettingsController extends Controller
         return $file ? SiteSetting::publicUrlFromPath($file->path) : null;
     }
 
+    private function storeDirectLandingFile(
+        SiteSetting $landingSetting,
+        UploadedFile $file,
+        string $collection
+    ): string {
+        $landingSetting->files()
+            ->where('collection', $collection)
+            ->get()
+            ->each
+            ->delete();
+
+        $modelName = strtolower(class_basename($landingSetting));
+        $extension = $file->getClientOriginalExtension() ?: $file->extension() ?: 'bin';
+        $filename = $modelName . '_' . $landingSetting->id . '_' . Str::uuid() . '.' . $extension;
+        $path = config('vilt-filepond.files_path') . '/' . $modelName . '/' . $landingSetting->id . '/' . $collection;
+        $storedPath = $file->storeAs($path, $filename, config('vilt-filepond.storage_disk'));
+
+        $fileRecord = $landingSetting->files()->create([
+            'original_name' => $file->getClientOriginalName(),
+            'filename' => $filename,
+            'path' => 'storage/' . $storedPath,
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'collection' => $collection,
+            'order' => 0,
+        ]);
+
+        return SiteSetting::publicUrlFromPath($fileRecord->path) ?? '';
+    }
+
     private function syncHeroImageUpload(Request $request, SiteSetting $landingSetting): void
     {
         $tempFolders = is_array($request->input('hero_temp_folders', []))
@@ -670,23 +703,24 @@ class LandingSettingsController extends Controller
         $removedIds = is_array($request->input('hero_removed_files', []))
             ? array_values(array_unique(array_filter($request->input('hero_removed_files', []))))
             : [];
+        $directFile = $request->file('hero_direct_file');
 
-        if (!empty($tempFolders)) {
+        if ($directFile instanceof UploadedFile) {
+            $heroImageUrl = $this->storeDirectLandingFile($landingSetting, $directFile, 'hero');
+            $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
+            data_set($settings, 'hero.image_url', $heroImageUrl);
+        } elseif (!empty($tempFolders)) {
             $existingIds = $landingSetting->files()->where('collection', 'hero')->pluck('id')->all();
             $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
-        }
 
-        $this->filePondService->handleFileUpdates(
-            $landingSetting,
-            $tempFolders,
-            $removedIds,
-            'hero'
-        );
-
-        $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
-        $heroImageUrl = trim((string) data_get($settings, 'hero.image_url', ''));
-
-        if (!empty($tempFolders)) {
+            $this->filePondService->handleFileUpdates(
+                $landingSetting,
+                $tempFolders,
+                $removedIds,
+                'hero'
+            );
+            $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
+            $heroImageUrl = trim((string) data_get($settings, 'hero.image_url', ''));
             $heroFile = $landingSetting->files()
                 ->where('collection', 'hero')
                 ->latest('id')
@@ -695,11 +729,19 @@ class LandingSettingsController extends Controller
             $heroImageUrl = $heroFile
                 ? (SiteSetting::publicUrlFromPath($heroFile->path) ?? '')
                 : $heroImageUrl;
+            data_set($settings, 'hero.image_url', $heroImageUrl);
         } elseif (!empty($removedIds)) {
-            $heroImageUrl = '';
+            $this->filePondService->handleFileUpdates(
+                $landingSetting,
+                [],
+                $removedIds,
+                'hero'
+            );
+            $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
+            data_set($settings, 'hero.image_url', '');
+        } else {
+            $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
         }
-
-        data_set($settings, 'hero.image_url', $heroImageUrl);
 
         $localizedImages = (array) data_get($settings, 'hero.localized_images', []);
         $tempFoldersByLocale = is_array($request->input('hero_locale_temp_folders', []))
@@ -717,6 +759,16 @@ class LandingSettingsController extends Controller
             $localeRemovedIds = is_array($removedIdsByLocale[$locale] ?? null)
                 ? array_values(array_unique(array_filter($removedIdsByLocale[$locale])))
                 : [];
+            $localeDirectFile = $request->file("hero_locale_direct_files.$locale");
+
+            if ($localeDirectFile instanceof UploadedFile) {
+                $localizedImages[$locale] = $this->storeDirectLandingFile(
+                    $landingSetting,
+                    $localeDirectFile,
+                    $collection
+                );
+                continue;
+            }
 
             if (!empty($localeTempFolders)) {
                 $existingIds = $landingSetting->files()->where('collection', $collection)->pluck('id')->all();
@@ -772,6 +824,16 @@ class LandingSettingsController extends Controller
                 $removedIds = is_array($removedIdsByIndex[$index][$type] ?? null)
                     ? array_values(array_unique(array_filter($removedIdsByIndex[$index][$type])))
                     : [];
+                $directFile = $request->file("mobile_app_direct_files.$index.$type");
+
+                if ($directFile instanceof UploadedFile) {
+                    $apps[$index][$urlKey] = $this->storeDirectLandingFile(
+                        $landingSetting,
+                        $directFile,
+                        $collection
+                    );
+                    continue;
+                }
 
                 if (!empty($tempFolders)) {
                     $existingIds = $landingSetting->files()->where('collection', $collection)->pluck('id')->all();
@@ -827,6 +889,16 @@ class LandingSettingsController extends Controller
             $removedIds = is_array($removedIdsByIndex[$index] ?? null)
                 ? array_values(array_unique(array_filter($removedIdsByIndex[$index])))
                 : [];
+            $directFile = $request->file("feature_card_direct_files.$index");
+
+            if ($directFile instanceof UploadedFile) {
+                $cards[$index]['image_url'] = $this->storeDirectLandingFile(
+                    $landingSetting,
+                    $directFile,
+                    $collection
+                );
+                continue;
+            }
 
             if (!empty($tempFolders)) {
                 $existingIds = $landingSetting->files()->where('collection', $collection)->pluck('id')->all();
@@ -968,12 +1040,17 @@ class LandingSettingsController extends Controller
             'hero_locale_removed_files' => ['nullable', 'array'],
             'hero_locale_removed_files.*' => ['array'],
             'hero_locale_removed_files.*.*' => ['integer'],
+            'hero_direct_file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg,mp4,webm,ogg,mov', 'max:51200'],
+            'hero_locale_direct_files' => ['nullable', 'array'],
+            'hero_locale_direct_files.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg,mp4,webm,ogg,mov', 'max:51200'],
             'feature_card_temp_folders' => ['nullable', 'array'],
             'feature_card_temp_folders.*' => ['array'],
             'feature_card_temp_folders.*.*' => ['string'],
             'feature_card_removed_files' => ['nullable', 'array'],
             'feature_card_removed_files.*' => ['array'],
             'feature_card_removed_files.*.*' => ['integer'],
+            'feature_card_direct_files' => ['nullable', 'array'],
+            'feature_card_direct_files.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
             'mobile_app_temp_folders' => ['nullable', 'array'],
             'mobile_app_temp_folders.*' => ['array'],
             'mobile_app_temp_folders.*.image' => ['nullable', 'array'],
@@ -986,6 +1063,10 @@ class LandingSettingsController extends Controller
             'mobile_app_removed_files.*.image.*' => ['integer'],
             'mobile_app_removed_files.*.icon' => ['nullable', 'array'],
             'mobile_app_removed_files.*.icon.*' => ['integer'],
+            'mobile_app_direct_files' => ['nullable', 'array'],
+            'mobile_app_direct_files.*' => ['array'],
+            'mobile_app_direct_files.*.image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
+            'mobile_app_direct_files.*.icon' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
         ]);
 
         return Arr::only(LandingPageSettings::normalize($validated['settings'] ?? []), [
