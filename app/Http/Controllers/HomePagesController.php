@@ -80,14 +80,7 @@ class HomePagesController extends Controller
             $this->recordSaasLandingVisit(request());
             $carSearch = trim((string) request()->string('car_search')->toString());
 
-            $stored = SiteSetting::query()
-                ->where('key', LandingPageSettings::KEY)
-                ->value('value');
-
-            $landingSettings = LandingPageSettings::localize(
-                LandingPageSettings::normalize(is_array($stored) ? $stored : null),
-                app()->getLocale()
-            );
+            $landingSettings = $this->localizedLandingSettings();
             $availableLocales = array_values(array_map('strval', array_filter(
                 (array) data_get($landingSettings, 'enabled_locales', []),
                 static fn ($value) => trim((string) $value) !== ''
@@ -387,14 +380,7 @@ class HomePagesController extends Controller
         $availableLocales = null;
 
         if (!$tenantId) {
-            $stored = SiteSetting::query()
-                ->where('key', LandingPageSettings::KEY)
-                ->value('value');
-
-            $landingSettings = LandingPageSettings::localize(
-                LandingPageSettings::normalize(is_array($stored) ? $stored : null),
-                app()->getLocale()
-            );
+            $landingSettings = $this->localizedLandingSettings();
             $availableLocales = array_values(array_map('strval', array_filter(
                 (array) data_get($landingSettings, 'enabled_locales', []),
                 static fn ($value) => trim((string) $value) !== ''
@@ -736,14 +722,7 @@ class HomePagesController extends Controller
 
     private function landingShellSettings(): array
     {
-        $stored = SiteSetting::query()
-            ->where('key', LandingPageSettings::KEY)
-            ->value('value');
-
-        $landingSettings = LandingPageSettings::localize(
-            LandingPageSettings::normalize(is_array($stored) ? $stored : null),
-            app()->getLocale()
-        );
+        $landingSettings = $this->localizedLandingSettings();
         $availableLocales = array_values(array_map('strval', array_filter(
             (array) data_get($landingSettings, 'enabled_locales', []),
             static fn ($value) => trim((string) $value) !== ''
@@ -754,6 +733,114 @@ class HomePagesController extends Controller
         }
 
         return [$landingSettings, $availableLocales];
+    }
+
+    private function localizedLandingSettings(): array
+    {
+        $landingSetting = SiteSetting::query()
+            ->with('files')
+            ->where('key', LandingPageSettings::KEY)
+            ->first();
+
+        return LandingPageSettings::localize(
+            $this->hydrateLandingImageUrls(
+                LandingPageSettings::normalize(is_array($landingSetting?->value) ? $landingSetting->value : null),
+                $landingSetting,
+            ),
+            app()->getLocale()
+        );
+    }
+
+    private function hydrateLandingImageUrls(array $settings, ?SiteSetting $landingSetting): array
+    {
+        if (!$landingSetting) {
+            return $settings;
+        }
+
+        $heroUrl = $this->latestLandingFileUrl($landingSetting, 'hero');
+        if ($this->shouldUseUploadedImageUrl(data_get($settings, 'hero.image_url'), $heroUrl)) {
+            data_set($settings, 'hero.image_url', $heroUrl);
+        }
+
+        $localizedImages = (array) data_get($settings, 'hero.localized_images', []);
+        foreach (LandingPageSettings::supportedLocaleKeys() as $locale) {
+            $localeUrl = $this->latestLandingFileUrl($landingSetting, 'hero_'.$locale);
+            if ($this->shouldUseUploadedImageUrl($localizedImages[$locale] ?? null, $localeUrl)) {
+                $localizedImages[$locale] = $localeUrl;
+            }
+        }
+        data_set($settings, 'hero.localized_images', $localizedImages);
+
+        $cards = (array) data_get($settings, 'features_section.cards', []);
+        foreach ($cards as $index => $card) {
+            if (!is_array($card)) {
+                continue;
+            }
+
+            $url = $this->latestLandingFileUrl($landingSetting, 'feature_card_'.max(0, (int) $index).'_image');
+            if ($this->shouldUseUploadedImageUrl($card['image_url'] ?? null, $url)) {
+                $cards[$index]['image_url'] = $url;
+            }
+        }
+        data_set($settings, 'features_section.cards', $cards);
+
+        $steps = (array) data_get($settings, 'getting_started.items', []);
+        foreach ($steps as $index => $step) {
+            if (!is_array($step)) {
+                continue;
+            }
+
+            $url = $this->latestLandingFileUrl($landingSetting, 'getting_started_step_'.max(0, (int) $index).'_image');
+            if ($this->shouldUseUploadedImageUrl($step['image_url'] ?? null, $url)) {
+                $steps[$index]['image_url'] = $url;
+            }
+        }
+        data_set($settings, 'getting_started.items', $steps);
+
+        $apps = (array) data_get($settings, 'mobile_apps_section.apps', []);
+        foreach ($apps as $index => $app) {
+            if (!is_array($app)) {
+                continue;
+            }
+
+            $imageUrl = $this->latestLandingFileUrl($landingSetting, 'mobile_app_'.max(0, (int) $index).'_image');
+            if ($this->shouldUseUploadedImageUrl($app['image_url'] ?? null, $imageUrl)) {
+                $apps[$index]['image_url'] = $imageUrl;
+            }
+
+            $iconUrl = $this->latestLandingFileUrl($landingSetting, 'mobile_app_'.max(0, (int) $index).'_icon');
+            if ($this->shouldUseUploadedImageUrl($app['icon_url'] ?? null, $iconUrl)) {
+                $apps[$index]['icon_url'] = $iconUrl;
+            }
+        }
+        data_set($settings, 'mobile_apps_section.apps', $apps);
+
+        return LandingPageSettings::normalize($settings);
+    }
+
+    private function latestLandingFileUrl(SiteSetting $landingSetting, string $collection): ?string
+    {
+        $file = $landingSetting->files()
+            ->where('collection', $collection)
+            ->latest('id')
+            ->first();
+
+        return $file ? SiteSetting::publicUrlFromPath($file->path) : null;
+    }
+
+    private function shouldUseUploadedImageUrl(mixed $currentUrl, ?string $uploadedUrl): bool
+    {
+        if (!$uploadedUrl) {
+            return false;
+        }
+
+        $current = trim((string) ($currentUrl ?? ''));
+        if ($current === '') {
+            return true;
+        }
+
+        return str_contains($current, '/storage/files/sitesetting/')
+            || str_starts_with(ltrim($current, '/'), 'storage/files/sitesetting/');
     }
 
     public function guestContact(Request $request)
