@@ -1263,7 +1263,7 @@ onUnmounted(() => {
                             >
                                 <div
                                     v-if="card.image_url"
-                                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+                                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                                     :style="{
                                         backgroundColor:
                                             card.icon_background_color ||
@@ -1273,7 +1273,7 @@ onUnmounted(() => {
                                     <img
                                         :src="card.image_url"
                                         :alt="card.title"
-                                        class="h-8 w-8 object-contain"
+                                        class="h-4 w-4 object-contain"
                                     />
                                 </div>
                                 <h3
@@ -1342,7 +1342,7 @@ onUnmounted(() => {
                                     >
                                         <div
                                             v-if="card.image_url"
-                                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                                             :style="{
                                                 backgroundColor:
                                                     card.icon_background_color ||
@@ -1352,7 +1352,7 @@ onUnmounted(() => {
                                             <img
                                                 :src="card.image_url"
                                                 :alt="card.title"
-                                                class="h-7 w-7 object-contain"
+                                                class="h-4 w-4 object-contain"
                                             />
                                         </div>
                                         <h3
