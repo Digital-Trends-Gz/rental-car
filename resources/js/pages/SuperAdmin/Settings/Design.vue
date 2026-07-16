@@ -35,6 +35,7 @@ interface FeatureCard {
 interface StepItem {
     title: string;
     image_url: string;
+    icon_background_color: string;
     description: string;
 }
 
@@ -329,6 +330,9 @@ form.settings.features_section.cards.forEach((card, index) => {
 form.settings.getting_started.items.forEach((item, index) => {
     if (!('image_url' in item)) {
         item.image_url = '';
+    }
+    if (!('icon_background_color' in item)) {
+        item.icon_background_color = '#f3f4f6';
     }
 
     gettingStartedTempFolders.value[index] = [];
@@ -760,6 +764,7 @@ const addStepItem = () => {
     form.settings.getting_started.items.push({
         title: '',
         image_url: '',
+        icon_background_color: '#f3f4f6',
         description: '',
     });
 
@@ -2179,6 +2184,29 @@ const toggleSection = (
                                             v-model="item.image_url"
                                             class="hidden"
                                         />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{
+                                            localize(
+                                                'Icon Background',
+                                                'خلفية الأيقونة',
+                                            )
+                                        }}</Label>
+                                        <div class="flex items-center gap-3">
+                                            <Input
+                                                v-model="
+                                                    item.icon_background_color
+                                                "
+                                                type="color"
+                                                class="h-10 w-16 cursor-pointer p-1"
+                                            />
+                                            <Input
+                                                v-model="
+                                                    item.icon_background_color
+                                                "
+                                                placeholder="#f3f4f6"
+                                            />
+                                        </div>
                                     </div>
                                     <div class="space-y-2">
                                         <Label>{{

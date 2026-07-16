@@ -99,16 +99,19 @@ class LandingPageSettings
                     [
                         'title' => 'Connect your account',
                         'image_url' => '',
+                        'icon_background_color' => '#f3f4f6',
                         'description' => 'Link your tenant and bring your cars online.',
                     ],
                     [
                         'title' => 'Publish your fleet',
                         'image_url' => '',
+                        'icon_background_color' => '#f3f4f6',
                         'description' => 'Add cars, pricing, and availability in one place.',
                     ],
                     [
                         'title' => 'Start receiving bookings',
                         'image_url' => '',
+                        'icon_background_color' => '#f3f4f6',
                         'description' => 'Track reservations and revenue from the dashboard.',
                     ],
                 ],
@@ -501,6 +504,11 @@ class LandingPageSettings
             $title = trim((string) ($item['title'] ?? ''));
             $imageUrl = trim((string) ($item['image_url'] ?? ''));
             $description = trim((string) ($item['description'] ?? ''));
+            $iconBackgroundColor = trim((string) ($item['icon_background_color'] ?? '#f3f4f6'));
+
+            if (!preg_match('/^#(?:[0-9a-fA-F]{3}){1,2}$/', $iconBackgroundColor)) {
+                $iconBackgroundColor = '#f3f4f6';
+            }
 
             if ($title === '' && $description === '' && $imageUrl === '') {
                 continue;
@@ -509,6 +517,7 @@ class LandingPageSettings
             $steps[] = [
                 'title' => $title,
                 'image_url' => $imageUrl,
+                'icon_background_color' => $iconBackgroundColor,
                 'description' => $description,
             ];
         }

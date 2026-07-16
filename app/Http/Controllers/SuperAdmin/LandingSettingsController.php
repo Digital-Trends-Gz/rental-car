@@ -176,6 +176,7 @@ class LandingSettingsController extends Controller
             'settings.getting_started.items' => ['nullable', 'array'],
             'settings.getting_started.items.*.title' => ['nullable', 'string', 'max:255'],
             'settings.getting_started.items.*.image_url' => ['nullable', 'string', 'max:2000'],
+            'settings.getting_started.items.*.icon_background_color' => ['nullable', 'string', 'max:20'],
             'settings.getting_started.items.*.description' => ['nullable', 'string', 'max:2000'],
 
             'settings.mobile_apps_section.enabled' => ['nullable', 'boolean'],
@@ -1246,6 +1247,7 @@ class LandingSettingsController extends Controller
             'settings.getting_started.items' => ['nullable', 'array'],
             'settings.getting_started.items.*.title' => ['nullable', 'string', 'max:255'],
             'settings.getting_started.items.*.image_url' => ['nullable', 'string', 'max:2000'],
+            'settings.getting_started.items.*.icon_background_color' => ['nullable', 'string', 'max:20'],
             'settings.getting_started.items.*.description' => ['nullable', 'string', 'max:2000'],
 
             'settings.mobile_apps_section.enabled' => ['nullable', 'boolean'],

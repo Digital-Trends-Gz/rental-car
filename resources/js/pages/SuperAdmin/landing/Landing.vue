@@ -53,6 +53,7 @@ interface FeatureCard {
 interface StepItem {
     title: string;
     image_url: string;
+    icon_background_color?: string;
     description: string;
 }
 
@@ -1195,12 +1196,17 @@ onUnmounted(() => {
                         >
                             <div
                                 v-if="item.image_url"
-                                class="mx-auto mb-5 h-20 w-20 overflow-hidden rounded-2xl bg-secondary shadow-sm"
+                                class="mx-auto mb-5 flex h-9 w-9 items-center justify-center rounded-lg shadow-sm"
+                                :style="{
+                                    backgroundColor:
+                                        item.icon_background_color ||
+                                        '#f3f4f6',
+                                }"
                             >
                                 <img
                                     :src="item.image_url"
                                     :alt="item.title"
-                                    class="h-full w-full object-cover"
+                                    class="h-5 w-5 object-contain"
                                 />
                             </div>
                             <div
@@ -1267,7 +1273,7 @@ onUnmounted(() => {
                                     <img
                                         :src="card.image_url"
                                         :alt="card.title"
-                                        class="h-7 w-7 object-contain"
+                                        class="h-8 w-8 object-contain"
                                     />
                                 </div>
                                 <h3
