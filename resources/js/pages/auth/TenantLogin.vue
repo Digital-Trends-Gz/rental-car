@@ -176,14 +176,7 @@ const landingUrl = computed(() => {
                     </Link>
                 </p>
 
-                <p class="text-center text-xs text-gray-500">
-                    <Link
-                        :href="landingUrl"
-                        class="font-medium text-gray-600 hover:underline"
-                    >
-                        {{ t('auth.back_to_landing') }}
-                    </Link>
-                </p>
+         
             </div>
         </div>
     </div>
