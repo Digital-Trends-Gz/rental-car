@@ -969,9 +969,10 @@ onUnmounted(() => {
                                 >
                                     <span
                                         class="text-lg leading-none font-extrabold text-white"
-                                        >{{ carCurrencySymbol(car) }}{{
+                                        >{{
                                             formatCarPrice(car.price_per_day)
-                                        }}</span
+                                        }}
+                                        {{ carCurrencySymbol(car) }}</span
                                     >
                                     <span
                                         class="ml-1 text-sm font-medium text-primary-foreground/90"
