@@ -169,6 +169,20 @@ const fuelTypeLabel = (fuelType: string): string => {
     return translatedOr(`fleet.fuel_types.${normalized}`, prettifyValue(String(fuelType || '')));
 };
 
+const paginationLabel = (label: string, index: number): string => {
+    const normalized = String(label || '').toLowerCase();
+
+    if (index === 0 || normalized.includes('previous')) {
+        return t('fleet.previous');
+    }
+
+    if (normalized.includes('next')) {
+        return t('fleet.next');
+    }
+
+    return String(label || '').replace(/&laquo;|&raquo;/g, '').trim();
+};
+
 </script>
 
 <template>
@@ -603,8 +617,9 @@ const fuelTypeLabel = (fuelType: string): string => {
                                                 !link.url,
                                         }"
                                         class="rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-200"
-                                        v-html="link.label"
-                                    ></button>
+                                    >
+                                        {{ paginationLabel(link.label, index) }}
+                                    </button>
                                 </div>
 
                                 <!-- Results info -->

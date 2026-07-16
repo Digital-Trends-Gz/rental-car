@@ -174,7 +174,7 @@ defineProps<Props>();
                 class="absolute right-4 top-4 rounded-2xl px-4 py-3 shadow-lg"
                 :style="{ background: 'var(--card-gradient)', boxShadow: '0 12px 24px -12px var(--card-primary)' }"
             >
-                <span class="text-lg font-extrabold leading-none text-white">{{ currencySymbol(car) }}{{ car.price_per_day }}</span>
+                <span class="text-lg font-extrabold leading-none text-white">{{ car.price_per_day }} {{ currencySymbol(car) }}</span>
                 <span class="ml-1 text-sm font-medium text-primary-foreground/90">{{ t('car_card.per_day') }}</span>
             </div>
 

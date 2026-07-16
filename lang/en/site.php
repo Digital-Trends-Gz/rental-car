@@ -389,6 +389,7 @@ return [
         'location_not_set' => 'Location not set',
         'statuses' => [
             'available' => 'Available',
+            'reserved' => 'Reserved',
             'rented' => 'Rented',
             'cleaning' => 'Cleaning',
             'maintenance' => 'Maintenance',

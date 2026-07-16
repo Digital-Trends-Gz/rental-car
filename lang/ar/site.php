@@ -422,6 +422,7 @@ return array (
     'statuses' => 
     array (
       'available' => 'متاحة',
+      'reserved' => 'محجوزة',
       'rented' => 'مؤجرة',
       'cleaning' => 'تنظيف',
       'maintenance' => 'صيانة',

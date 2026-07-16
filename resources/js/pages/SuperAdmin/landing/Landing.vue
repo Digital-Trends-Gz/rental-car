@@ -404,6 +404,7 @@ const clientsRail = ref<HTMLElement | null>(null);
 const clientsAutoplay = ref<number | null>(null);
 const brokenTenantLogos = ref<Record<number, boolean>>({});
 const brokenCarTenantLogos = ref<Record<number, boolean>>({});
+const brokenLandingImages = ref<Record<string, boolean>>({});
 const currentYear = new Date().getFullYear();
 const registerUrl = mainRegister().url;
 const navigationCtaLabel = computed(
@@ -542,6 +543,21 @@ const hasCarTenantLogo = (car: FeaturedCar) => {
 
 const markCarTenantLogoBroken = (carId: number) => {
     brokenCarTenantLogos.value[carId] = true;
+};
+
+const hasLandingImage = (url?: string | null) => {
+    const normalized = String(url || '').trim();
+
+    return normalized !== '' && !brokenLandingImages.value[normalized];
+};
+
+const markLandingImageBroken = (url?: string | null) => {
+    const normalized = String(url || '').trim();
+    if (normalized === '') {
+        return;
+    }
+
+    brokenLandingImages.value[normalized] = true;
 };
 
 const formatCarPrice = (value: string) => {
@@ -1196,7 +1212,7 @@ onUnmounted(() => {
                             class="text-center"
                         >
                             <div
-                                v-if="item.image_url"
+                                v-if="hasLandingImage(item.image_url)"
                                 class="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-lg shadow-sm"
                                 :style="{
                                     backgroundColor:
@@ -1208,6 +1224,9 @@ onUnmounted(() => {
                                     :src="item.image_url"
                                     :alt="item.title"
                                     class="h-9 w-9 object-contain"
+                                    @error="
+                                        markLandingImageBroken(item.image_url)
+                                    "
                                 />
                             </div>
                             <div
@@ -1263,7 +1282,7 @@ onUnmounted(() => {
                                 "
                             >
                                 <div
-                                    v-if="card.image_url"
+                                    v-if="hasLandingImage(card.image_url)"
                                     class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
                                     :style="{
                                         backgroundColor:
@@ -1275,6 +1294,11 @@ onUnmounted(() => {
                                         :src="card.image_url"
                                         :alt="card.title"
                                         class="h-7 w-7 object-contain"
+                                        @error="
+                                            markLandingImageBroken(
+                                                card.image_url,
+                                            )
+                                        "
                                     />
                                 </div>
                                 <h3
@@ -1342,8 +1366,10 @@ onUnmounted(() => {
                                         "
                                     >
                                         <div
-                                            v-if="card.image_url"
-                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                                            v-if="
+                                                hasLandingImage(card.image_url)
+                                            "
+                                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
                                             :style="{
                                                 backgroundColor:
                                                     card.icon_background_color ||
@@ -1353,7 +1379,12 @@ onUnmounted(() => {
                                             <img
                                                 :src="card.image_url"
                                                 :alt="card.title"
-                                                class="h-4 w-4 object-contain"
+                                                class="h-7 w-7 object-contain"
+                                                @error="
+                                                    markLandingImageBroken(
+                                                        card.image_url,
+                                                    )
+                                                "
                                             />
                                         </div>
                                         <h3
