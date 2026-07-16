@@ -188,6 +188,7 @@ const postJson = async (
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
+            'Accept-Language': String(page.props.locale || 'en'),
             'X-Requested-With': 'XMLHttpRequest',
         },
         credentials: 'same-origin',
@@ -230,7 +231,7 @@ const sendOtp = async (): Promise<void> => {
         activeStep.value = 2;
         otp.value = [];
         status.value =
-            data?.message ?? 'OTP sent. Check your email for the code.';
+            data?.message ?? forgotPasswordText('otp_sent_status');
         testOtp.value =
             data?.test_otp !== null && data?.test_otp !== undefined
                 ? String(data.test_otp)
@@ -257,7 +258,7 @@ const verifyOtp = async (): Promise<void> => {
 
         otpVerified.value = true;
         activeStep.value = 3;
-        status.value = data?.message ?? 'OTP verified successfully.';
+        status.value = data?.message ?? forgotPasswordText('otp_verified_status');
     } finally {
         loadingStep.value = null;
     }
@@ -279,7 +280,7 @@ const resetPassword = async (): Promise<void> => {
             password_confirmation: passwordConfirmation.value,
         });
 
-        status.value = data?.message ?? 'Password reset successfully.';
+        status.value = data?.message ?? forgotPasswordText('password_reset_status');
         router.visit(resolveHref(loginHref.value));
     } finally {
         loadingStep.value = null;
@@ -300,13 +301,13 @@ const restartWizard = (): void => {
 </script>
 
 <template>
-    <Head title="Reset password" />
+    <Head :title="forgotPasswordText('head_title')" />
 
     <div class="flex min-h-screen bg-white">
         <div class="relative hidden overflow-hidden lg:flex lg:w-1/2">
             <img
                 :src="authSideImage"
-                alt="Car4U background"
+                :alt="forgotPasswordText('hero_alt')"
                 class="absolute inset-0 h-full w-full object-cover object-center"
             />
         </div>
@@ -319,10 +320,10 @@ const restartWizard = (): void => {
             <div class="w-full max-w-lg space-y-6">
                 <div class="space-y-2">
                     <h1 class="text-3xl font-bold text-gray-900">
-                        Reset your password
+                        {{ forgotPasswordText('title') }}
                     </h1>
                     <p class="text-gray-500">
-                        Follow the three steps below to verify your email and create a new password.
+                        {{ forgotPasswordText('subtitle') }}
                     </p>
                 </div>
 
@@ -351,18 +352,18 @@ const restartWizard = (): void => {
                                 </div>
                                 <div>
                                     <p class="text-sm font-semibold text-gray-500">
-                                        Step {{ activeStep }} of 3
+                                        {{ t('auth.forgot_password_page.step_counter', { step: activeStep, total: 3 }) }}
                                     </p>
                                     <h2 class="text-lg font-semibold text-gray-900">
-                                        {{ activeStep === 1 ? 'Enter email' : activeStep === 2 ? 'Verify OTP' : 'Create password' }}
+                                        {{ activeStepTitle }}
                                     </h2>
                                 </div>
                             </div>
 
                             <div class="hidden text-right text-xs font-medium text-gray-500 sm:block">
-                                <p :class="activeStep >= 1 ? 'text-blue-700' : ''">Email</p>
-                                <p :class="activeStep >= 2 ? 'text-blue-700' : ''">OTP</p>
-                                <p :class="activeStep >= 3 ? 'text-blue-700' : ''">Password</p>
+                                <p :class="activeStep >= 1 ? 'text-blue-700' : ''">{{ forgotPasswordText('step_email_short') }}</p>
+                                <p :class="activeStep >= 2 ? 'text-blue-700' : ''">{{ forgotPasswordText('step_otp_short') }}</p>
+                                <p :class="activeStep >= 3 ? 'text-blue-700' : ''">{{ forgotPasswordText('step_password_short') }}</p>
                             </div>
                         </div>
 
@@ -376,13 +377,13 @@ const restartWizard = (): void => {
                         <div v-if="activeStep === 1" class="space-y-5 pt-2">
                             <div class="space-y-2">
                                 <Label for="email" class="text-sm font-semibold text-gray-800">
-                                    Email
+                                    {{ forgotPasswordText('email_label') }}
                                 </Label>
                                 <Input
                                     id="email"
                                     v-model="email"
                                     type="email"
-                                    placeholder="Email address..."
+                                    :placeholder="forgotPasswordText('email_placeholder')"
                                     autocomplete="email"
                                     class="h-11 border-gray-300"
                                 />
@@ -399,14 +400,14 @@ const restartWizard = (): void => {
                                     v-if="loadingStep === 'send'"
                                     class="mr-2 inline h-4 w-4 animate-spin"
                                 />
-                                Send OTP
+                                {{ loadingStep === 'send' ? forgotPasswordText('sending_otp') : forgotPasswordText('send_otp') }}
                             </button>
                         </div>
 
                         <div v-else-if="activeStep === 2" class="space-y-5 pt-2">
                             <div class="space-y-2">
                                 <Label for="otp" class="text-sm font-semibold text-gray-800">
-                                    OTP code
+                                    {{ forgotPasswordText('otp_label') }}
                                 </Label>
 
                                 <PinInput
@@ -438,7 +439,7 @@ const restartWizard = (): void => {
                                     v-if="loadingStep === 'verify'"
                                     class="mr-2 inline h-4 w-4 animate-spin"
                                 />
-                                Verify OTP
+                                {{ loadingStep === 'verify' ? forgotPasswordText('verifying_otp') : forgotPasswordText('verify_otp') }}
                             </button>
                         </div>
 
@@ -449,14 +450,14 @@ const restartWizard = (): void => {
                                         for="password"
                                         class="text-sm font-semibold text-gray-800"
                                     >
-                                        New password
+                                        {{ forgotPasswordText('new_password_label') }}
                                     </Label>
                                     <Input
                                         id="password"
                                         v-model="password"
                                         type="password"
                                         autocomplete="new-password"
-                                        placeholder="New password"
+                                        :placeholder="forgotPasswordText('new_password_placeholder')"
                                         :disabled="!otpVerified"
                                         class="h-11 border-gray-300"
                                     />
@@ -468,14 +469,14 @@ const restartWizard = (): void => {
                                         for="password_confirmation"
                                         class="text-sm font-semibold text-gray-800"
                                     >
-                                        Confirm password
+                                        {{ forgotPasswordText('confirm_password_label') }}
                                     </Label>
                                     <Input
                                         id="password_confirmation"
                                         v-model="passwordConfirmation"
                                         type="password"
                                         autocomplete="new-password"
-                                        placeholder="Confirm password"
+                                        :placeholder="forgotPasswordText('confirm_password_placeholder')"
                                         :disabled="!otpVerified"
                                         class="h-11 border-gray-300"
                                     />
@@ -493,7 +494,7 @@ const restartWizard = (): void => {
                                     v-if="loadingStep === 'reset'"
                                     class="mr-2 inline h-4 w-4 animate-spin"
                                 />
-                                Reset password
+                                {{ loadingStep === 'reset' ? forgotPasswordText('resetting_password') : forgotPasswordText('reset_password') }}
                             </button>
                         </div>
                     </div>
@@ -503,7 +504,7 @@ const restartWizard = (): void => {
                     v-if="testOtp"
                     class="rounded-2xl border border-dashed border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800"
                 >
-                    <span class="font-semibold">test_otp:</span>
+                    <span class="font-semibold">{{ forgotPasswordText('test_otp_label') }}</span>
                     <code class="ml-2 rounded bg-white px-2 py-0.5 font-mono text-xs">
                         {{ testOtp }}
                     </code>
@@ -514,14 +515,14 @@ const restartWizard = (): void => {
                         :href="resolveHref(loginHref)"
                         class="font-semibold text-blue-700 hover:underline"
                     >
-                        Back to log in
+                        {{ forgotPasswordText('back_to_login') }}
                     </Link>
                     <button
                         type="button"
                         class="font-medium text-gray-500 hover:text-gray-700"
                         @click="restartWizard"
                     >
-                        Start over
+                        {{ forgotPasswordText('start_over') }}
                     </button>
                 </div>
             </div>

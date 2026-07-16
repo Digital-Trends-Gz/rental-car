@@ -608,11 +608,6 @@ const searchCars = () => {
     );
 };
 
-const clearCarSearch = () => {
-    carSearch.value = '';
-    searchCars();
-};
-
 const startClientsAutoplay = () => {
     const rail = clientsRail.value;
     if (!rail || rail.scrollWidth <= rail.clientWidth) {
@@ -938,15 +933,6 @@ onUnmounted(() => {
                                 class="min-w-0 flex-1 bg-transparent px-1 text-base font-medium text-foreground outline-none placeholder:text-muted-foreground/65"
                                 @keyup.enter="searchCars"
                             />
-                            <button
-                                v-if="carSearch.trim()"
-                                type="button"
-                                :aria-label="t('landing.cars_clear')"
-                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-                                @click="clearCarSearch"
-                            >
-                                <X :size="17" />
-                            </button>
                             <Button
                                 type="button"
                                 class="gradient-button h-11 shrink-0 rounded-full px-6 text-base font-semibold"
