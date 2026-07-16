@@ -557,7 +557,7 @@ watch(
                             :href="loginUrl"
                             class="ml-1 font-semibold text-primary hover:underline"
                         >
-                            {{ t('auth.sign_in') }} ->
+                            {{ t('auth.sign_in') }} 
                         </Link>
                     </p>
                 </template>

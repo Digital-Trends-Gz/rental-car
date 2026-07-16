@@ -1947,12 +1947,13 @@ onUnmounted(() => {
                         class="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)]"
                     >
                         <Card class="border-border shadow-sm">
-                            <CardHeader class="border-b border-border/70 pb-4">
-                                <CardTitle>{{
-                                    contactSection.form_title
-                                }}</CardTitle>
+                            <CardHeader>
+                                <CardTitle
+                                    class="inline-block border-b-2 border-primary/70 pb-2"
+                                    >{{ contactSection.form_title }}</CardTitle
+                                >
                             </CardHeader>
-                            <CardContent class="pt-6">
+                            <CardContent>
                                 <form
                                     class="space-y-4"
                                     @submit.prevent="submitContact"
@@ -2073,13 +2074,14 @@ onUnmounted(() => {
 
                         <div class="space-y-6">
                             <Card class="border-border shadow-sm">
-                                <CardHeader class="border-b border-border/70 pb-4">
-                                    <CardTitle>{{
-                                        contactSection.direct_title
-                                    }}</CardTitle>
+                                <CardHeader>
+                                    <CardTitle
+                                        class="inline-block border-b-2 border-primary/70 pb-2"
+                                        >{{ contactSection.direct_title }}</CardTitle
+                                    >
                                 </CardHeader>
                                 <CardContent
-                                    class="space-y-4 pt-6 text-sm text-muted-foreground"
+                                    class="space-y-4 text-sm text-muted-foreground"
                                 >
                                     <div>
                                         <p class="font-medium text-foreground">
@@ -2117,12 +2119,13 @@ onUnmounted(() => {
                             </Card>
 
                             <Card class="border-border shadow-sm">
-                                <CardHeader class="border-b border-border/70 pb-4">
-                                    <CardTitle>{{
-                                        contactSection.quick_links_title
-                                    }}</CardTitle>
+                                <CardHeader>
+                                    <CardTitle
+                                        class="inline-block border-b-2 border-primary/70 pb-2"
+                                        >{{ contactSection.quick_links_title }}</CardTitle
+                                    >
                                 </CardHeader>
-                                <CardContent class="space-y-3 pt-6 text-sm">
+                                <CardContent class="space-y-3 text-sm">
                                     <a
                                         v-for="link in contactSection.quick_links"
                                         :key="`${link.label}-${link.href}`"
