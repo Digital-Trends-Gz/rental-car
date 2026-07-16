@@ -1420,15 +1420,9 @@ onUnmounted(() => {
                 class="section-padding bg-white"
             >
                 <div class="section-container">
-                    <div class="mx-auto mb-16 max-w-4xl text-center">
-                        <div
-                            class="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold tracking-[0.18em] text-primary uppercase"
-                        >
-                            <Smartphone class="h-4 w-4" />
-                            {{ landingSettings.mobile_apps_section.eyebrow }}
-                        </div>
+                    <div class="mx-auto mb-14 max-w-2xl text-center">
                         <h2
-                            class="text-4xl leading-[1.05] font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl"
+                            class="text-3xl font-bold text-foreground sm:text-4xl"
                         >
                             {{ mobileAppTitleParts.lead }}
                             <span
@@ -1439,7 +1433,7 @@ onUnmounted(() => {
                             </span>
                         </h2>
                         <p
-                            class="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-muted-foreground sm:text-xl"
+                            class="mt-4 text-lg text-muted-foreground"
                         >
                             {{
                                 landingSettings.mobile_apps_section.description
