@@ -304,6 +304,31 @@ const withOpacity = (color: string, alpha: number) => {
     return rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : color;
 };
 
+const translatedOr = (key: string, fallback: string): string => {
+    const value = t(key);
+
+    return value === key ? fallback : value;
+};
+
+const prettifyValue = (value: string): string =>
+    value
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const normalizedKey = (value: string): string =>
+    String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+const fuelTypeLabel = (fuelType: string): string => {
+    const normalized = normalizedKey(fuelType);
+
+    return translatedOr(
+        `fleet.fuel_types.${normalized}`,
+        prettifyValue(String(fuelType || '')),
+    );
+};
+
 const carTheme = () => {
     const primary = appBranding.value.primary_color || '#3b82f6';
     const secondary = appBranding.value.secondary_color || '#6d28d9';
@@ -1099,7 +1124,7 @@ onUnmounted(() => {
                                                 ></path>
                                             </svg>
                                             <span class="font-medium">{{
-                                                car.fuel_type
+                                                fuelTypeLabel(car.fuel_type)
                                             }}</span>
                                         </div>
                                         <div
@@ -1949,7 +1974,7 @@ onUnmounted(() => {
                         <Card class="border-border shadow-sm">
                             <CardHeader>
                                 <CardTitle
-                                    class="inline-block border-b-2 border-primary/70 pb-2"
+                                    class="inline-flex w-fit border-b-2 border-primary/70 pb-2"
                                     >{{ contactSection.form_title }}</CardTitle
                                 >
                             </CardHeader>
