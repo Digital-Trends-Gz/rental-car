@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Core\AppBrandingSettings;
+use App\Core\LandingPageSettings;
+use App\Models\SiteSetting;
 use App\Models\TenantSiteSetting;
 use App\Support\CurrencyCatalog;
 use Illuminate\Foundation\Inspiring;
@@ -76,6 +78,19 @@ class HandleInertiaRequests extends Middleware
             },
             'translations' => function () {
                 $base = __('site');
+                $locale = app()->getLocale();
+                $landingSettings = SiteSetting::query()
+                    ->where('key', LandingPageSettings::KEY)
+                    ->first()
+                    ?->value;
+                $landingOverrides = is_array($landingSettings)
+                    ? data_get(LandingPageSettings::normalize($landingSettings), "translations.$locale", [])
+                    : [];
+
+                if (is_array($landingOverrides) && !empty($landingOverrides)) {
+                    $base = array_replace_recursive($base, $landingOverrides);
+                }
+
                 $tenant = \App\Core\TenantContext::get();
 
                 if (!$tenant) {
@@ -83,7 +98,6 @@ class HandleInertiaRequests extends Middleware
                 }
 
                 $tenant->loadMissing('siteSetting');
-                $locale = app()->getLocale();
                 $overrides = data_get($tenant->siteSetting?->translations, $locale);
 
                 if (!is_array($overrides) || empty($overrides)) {
