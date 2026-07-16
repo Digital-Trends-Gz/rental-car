@@ -22,7 +22,7 @@ class LandingPageSettings
      */
     public static function contentKeys(): array
     {
-        return ['navigation', 'hero', 'features_section', 'getting_started', 'mobile_apps_section', 'plans_section', 'faq_section', 'contact_section', 'footer'];
+        return ['navigation', 'locale_switcher', 'hero', 'features_section', 'getting_started', 'mobile_apps_section', 'plans_section', 'faq_section', 'contact_section', 'footer'];
     }
 
     /**
@@ -42,6 +42,13 @@ class LandingPageSettings
                     ['label' => 'Clients', 'href' => '#clients'],
                     ['label' => 'Plans', 'href' => '#pricing'],
                     ['label' => 'Contact', 'href' => '#contact'],
+                ],
+            ],
+            'locale_switcher' => [
+                'language_names' => [
+                    'en' => 'English',
+                    'ar' => 'Arabic',
+                    'ur' => 'Urdu',
                 ],
             ],
             'hero' => [
@@ -230,8 +237,42 @@ class LandingPageSettings
                 ],
             ],
             'enabled_locales' => $supportedLocales,
-            'translations' => array_fill_keys($supportedLocales, []),
+            'translations' => self::defaultTranslations($supportedLocales),
         ];
+    }
+
+    /**
+     * @param array<int, string> $supportedLocales
+     */
+    private static function defaultTranslations(array $supportedLocales): array
+    {
+        $translations = array_fill_keys($supportedLocales, []);
+
+        if (in_array('ar', $supportedLocales, true)) {
+            $translations['ar'] = [
+                'locale_switcher' => [
+                    'language_names' => [
+                        'en' => 'الإنجليزية',
+                        'ar' => 'العربية',
+                        'ur' => 'الأردية',
+                    ],
+                ],
+            ];
+        }
+
+        if (in_array('ur', $supportedLocales, true)) {
+            $translations['ur'] = [
+                'locale_switcher' => [
+                    'language_names' => [
+                        'en' => 'انگریزی',
+                        'ar' => 'عربی',
+                        'ur' => 'اردو',
+                    ],
+                ],
+            ];
+        }
+
+        return $translations;
     }
 
     /**

@@ -125,6 +125,9 @@ interface LandingSettings {
     cars_section: {
         enabled: boolean;
     };
+    locale_switcher?: {
+        language_names?: Record<string, string>;
+    };
     features_section: {
         enabled: boolean;
         title: string;
@@ -253,12 +256,25 @@ const normalizedRedirectPath = computed(() => {
 const localeSwitcherUrl = (targetLocale: string) =>
     `/locale/${targetLocale}?redirect=${encodeURIComponent(normalizedRedirectPath.value)}`;
 
-const localeDisplayName = (localeCode: string) =>
-    ({
-        en: 'English',
-        ar: 'Arabic',
-        ur: 'Urdu',
-    })[String(localeCode || '').toLowerCase()] || String(localeCode || '').toUpperCase();
+const fallbackLocaleNames: Record<string, string> = {
+    en: 'English',
+    ar: 'Arabic',
+    ur: 'Urdu',
+};
+
+const localeDisplayName = (localeCode: string) => {
+    const normalizedLocale = String(localeCode || '').toLowerCase();
+    const configuredName =
+        props.landingSettings.locale_switcher?.language_names?.[
+            normalizedLocale
+        ];
+
+    return (
+        configuredName ||
+        fallbackLocaleNames[normalizedLocale] ||
+        normalizedLocale.toUpperCase()
+    );
+};
 
 
 
@@ -1241,7 +1257,7 @@ onUnmounted(() => {
                             >
                                 <div
                                     v-if="card.image_url"
-                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                                     :style="{
                                         backgroundColor:
                                             card.icon_background_color ||
@@ -1251,7 +1267,7 @@ onUnmounted(() => {
                                     <img
                                         :src="card.image_url"
                                         :alt="card.title"
-                                        class="h-6 w-6 object-contain"
+                                        class="h-[18px] w-[18px] object-contain"
                                     />
                                 </div>
                                 <h3
@@ -1320,7 +1336,7 @@ onUnmounted(() => {
                                     >
                                         <div
                                             v-if="card.image_url"
-                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                                             :style="{
                                                 backgroundColor:
                                                     card.icon_background_color ||
@@ -1330,7 +1346,7 @@ onUnmounted(() => {
                                             <img
                                                 :src="card.image_url"
                                                 :alt="card.title"
-                                                class="h-6 w-6 object-contain"
+                                                class="h-[18px] w-[18px] object-contain"
                                             />
                                         </div>
                                         <h3
