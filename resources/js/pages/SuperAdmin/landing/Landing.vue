@@ -46,6 +46,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 interface FeatureCard {
     title: string;
     image_url: string;
+    icon_background_color?: string;
     content: string;
 }
 
@@ -224,6 +225,9 @@ const page = usePage<any>();
 const { t } = useTrans();
 const appName = computed(() => page.props.name || 'Car4u');
 const locale = computed(() => String(page.props.locale || 'en'));
+const isRtlLocale = computed(() =>
+    ['ar', 'ur'].includes(locale.value.toLowerCase().split('-')[0]),
+);
 const availableLocales = computed<string[]>(() =>
     Array.isArray(page.props?.available_locales) &&
     page.props.available_locales.length
@@ -1226,21 +1230,41 @@ onUnmounted(() => {
                             v-for="card in landingSettings.features_section
                                 .cards"
                             :key="`desktop-${card.title}-${card.content}`"
-                            class="card-elevated relative flex h-full min-h-[190px] flex-col rounded-xl p-6"
+                            class="card-elevated flex h-full min-h-[190px] flex-col rounded-xl p-6"
+                            :dir="isRtlLocale ? 'rtl' : 'ltr'"
                         >
-                            <img
-                                v-if="card.image_url"
-                                :src="card.image_url"
-                                :alt="card.title"
-                                class="absolute top-6 right-6 h-14 w-14 object-contain"
-                            />
-                            <h3
-                                class="mb-3 max-w-[calc(100%-5rem)] text-xl font-semibold text-foreground"
+                            <div
+                                class="mb-3 flex items-start gap-3"
+                                :class="
+                                    isRtlLocale ? 'text-right' : 'text-left'
+                                "
                             >
-                                {{ card.title }}
-                            </h3>
+                                <div
+                                    v-if="card.image_url"
+                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                                    :style="{
+                                        backgroundColor:
+                                            card.icon_background_color ||
+                                            '#f3f4f6',
+                                    }"
+                                >
+                                    <img
+                                        :src="card.image_url"
+                                        :alt="card.title"
+                                        class="h-6 w-6 object-contain"
+                                    />
+                                </div>
+                                <h3
+                                    class="text-xl font-semibold text-foreground"
+                                >
+                                    {{ card.title }}
+                                </h3>
+                            </div>
                             <p
                                 class="text-base leading-relaxed text-muted-foreground"
+                                :class="
+                                    isRtlLocale ? 'text-right' : 'text-left'
+                                "
                             >
                                 {{ card.content }}
                             </p>
@@ -1283,21 +1307,45 @@ onUnmounted(() => {
                                 class="h-auto"
                             >
                                 <div
-                                    class="card-elevated relative flex h-full min-h-[190px] flex-col rounded-xl p-6"
+                                    class="card-elevated flex h-full min-h-[190px] flex-col rounded-xl p-6"
+                                    :dir="isRtlLocale ? 'rtl' : 'ltr'"
                                 >
-                                    <img
-                                        v-if="card.image_url"
-                                        :src="card.image_url"
-                                        :alt="card.title"
-                                        class="absolute top-6 right-6 h-14 w-14 object-contain"
-                                    />
-                                    <h3
-                                        class="mb-3 max-w-[calc(100%-5rem)] text-xl font-semibold text-foreground"
+                                    <div
+                                        class="mb-3 flex items-start gap-3"
+                                        :class="
+                                            isRtlLocale
+                                                ? 'text-right'
+                                                : 'text-left'
+                                        "
                                     >
-                                        {{ card.title }}
-                                    </h3>
+                                        <div
+                                            v-if="card.image_url"
+                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                                            :style="{
+                                                backgroundColor:
+                                                    card.icon_background_color ||
+                                                    '#f3f4f6',
+                                            }"
+                                        >
+                                            <img
+                                                :src="card.image_url"
+                                                :alt="card.title"
+                                                class="h-6 w-6 object-contain"
+                                            />
+                                        </div>
+                                        <h3
+                                            class="text-xl font-semibold text-foreground"
+                                        >
+                                            {{ card.title }}
+                                        </h3>
+                                    </div>
                                     <p
                                         class="text-base leading-relaxed text-muted-foreground"
+                                        :class="
+                                            isRtlLocale
+                                                ? 'text-right'
+                                                : 'text-left'
+                                        "
                                     >
                                         {{ card.content }}
                                     </p>

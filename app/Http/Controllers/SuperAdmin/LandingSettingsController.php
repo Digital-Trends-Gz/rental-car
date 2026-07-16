@@ -167,6 +167,7 @@ class LandingSettingsController extends Controller
             'settings.features_section.cards' => ['nullable', 'array'],
             'settings.features_section.cards.*.title' => ['nullable', 'string', 'max:255'],
             'settings.features_section.cards.*.image_url' => ['nullable', 'string', 'max:2000'],
+            'settings.features_section.cards.*.icon_background_color' => ['nullable', 'string', 'max:20'],
             'settings.features_section.cards.*.content' => ['nullable', 'string', 'max:2000'],
 
             'settings.getting_started.enabled' => ['nullable', 'boolean'],
@@ -1236,6 +1237,7 @@ class LandingSettingsController extends Controller
             'settings.features_section.cards' => ['nullable', 'array'],
             'settings.features_section.cards.*.title' => ['nullable', 'string', 'max:255'],
             'settings.features_section.cards.*.image_url' => ['nullable', 'string', 'max:2000'],
+            'settings.features_section.cards.*.icon_background_color' => ['nullable', 'string', 'max:20'],
             'settings.features_section.cards.*.content' => ['nullable', 'string', 'max:2000'],
 
             'settings.getting_started.enabled' => ['nullable', 'boolean'],

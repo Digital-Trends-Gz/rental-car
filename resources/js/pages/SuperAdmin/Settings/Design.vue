@@ -28,6 +28,7 @@ import { computed, ref, watch } from 'vue';
 interface FeatureCard {
     title: string;
     image_url: string;
+    icon_background_color: string;
     content: string;
 }
 
@@ -315,7 +316,11 @@ form.settings.mobile_apps_section.apps.forEach((app, index) => {
     mobileAppDirectFiles.value[index] = { image: null, icon: null };
 });
 
-form.settings.features_section.cards.forEach((_card, index) => {
+form.settings.features_section.cards.forEach((card, index) => {
+    if (!('icon_background_color' in card)) {
+        card.icon_background_color = '#f3f4f6';
+    }
+
     featureCardTempFolders.value[index] = [];
     featureCardRemovedFileIds.value[index] = [];
     featureCardDirectFiles.value[index] = null;
@@ -713,6 +718,7 @@ const addFeatureCard = () => {
     form.settings.features_section.cards.push({
         title: '',
         image_url: '',
+        icon_background_color: '#f3f4f6',
         content: '',
     });
 
@@ -1961,6 +1967,29 @@ const toggleSection = (
                                             class="hidden"
                                             placeholder="https://..."
                                         />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{
+                                            localize(
+                                                'Icon Background',
+                                                'خلفية الأيقونة',
+                                            )
+                                        }}</Label>
+                                        <div class="flex items-center gap-3">
+                                            <Input
+                                                v-model="
+                                                    card.icon_background_color
+                                                "
+                                                type="color"
+                                                class="h-10 w-16 cursor-pointer p-1"
+                                            />
+                                            <Input
+                                                v-model="
+                                                    card.icon_background_color
+                                                "
+                                                placeholder="#f3f4f6"
+                                            />
+                                        </div>
                                     </div>
                                     <div class="space-y-2">
                                         <Label>{{

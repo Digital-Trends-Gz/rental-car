@@ -67,16 +67,19 @@ class LandingPageSettings
                     [
                         'title' => 'Visual Workflow Builder',
                         'image_url' => '',
+                        'icon_background_color' => '#f3f4f6',
                         'content' => 'Drag-and-drop automations that connect your tools.',
                     ],
                     [
                         'title' => 'AI-Powered Suggestions',
                         'image_url' => '',
+                        'icon_background_color' => '#f3f4f6',
                         'content' => 'Smart recommendations that optimize your workflows.',
                     ],
                     [
                         'title' => 'Real-Time Analytics',
                         'image_url' => '',
+                        'icon_background_color' => '#f3f4f6',
                         'content' => 'Live dashboards to track performance instantly.',
                     ],
                 ],
@@ -420,6 +423,11 @@ class LandingPageSettings
             $title = trim((string) ($item['title'] ?? ''));
             $content = trim((string) ($item['content'] ?? ''));
             $imageUrl = trim((string) ($item['image_url'] ?? ''));
+            $iconBackgroundColor = trim((string) ($item['icon_background_color'] ?? '#f3f4f6'));
+
+            if (!preg_match('/^#(?:[0-9a-fA-F]{3}){1,2}$/', $iconBackgroundColor)) {
+                $iconBackgroundColor = '#f3f4f6';
+            }
 
             if ($title === '' && $content === '' && $imageUrl === '') {
                 continue;
@@ -428,6 +436,7 @@ class LandingPageSettings
             $cards[] = [
                 'title' => $title,
                 'image_url' => $imageUrl,
+                'icon_background_color' => $iconBackgroundColor,
                 'content' => $content,
             ];
         }
