@@ -4,18 +4,20 @@ import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
 import InputError from '@/components/InputError.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTrans } from '@/composables/useTrans';
 import {
     PinInput,
     PinInputGroup,
     PinInputSlot,
 } from '@/components/ui/pin-input';
-import { login as mainLogin } from '@/routes';
-import tenantLogin from '@/routes/tenant/login';
+import { tenantLogin as mainTenantLogin } from '@/routes';
+import { tenantLogin as tenantTenantLogin } from '@/routes/tenant';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { LoaderCircle, Mail } from 'lucide-vue-next';
 import { computed, reactive, ref } from 'vue';
 
 const page = usePage<any>();
+const { t } = useTrans();
 const currentTenant = computed(() => page.props.current_tenant);
 const authSideImage = computed(() => {
     const images = page.props.app_branding?.register_hero_images || {};
@@ -26,8 +28,8 @@ const authSideImage = computed(() => {
 
 const loginHref = computed(() =>
     currentTenant.value?.slug
-        ? tenantLogin(currentTenant.value.slug)
-        : mainLogin(),
+        ? tenantTenantLogin(currentTenant.value.slug)
+        : mainTenantLogin(),
 );
 
 const email = ref('');
@@ -55,6 +57,19 @@ const otpComplete = computed(() => otpValue.value.length === 6);
 const progressWidth = computed(() =>
     activeStep.value === 1 ? '0%' : activeStep.value === 2 ? '50%' : '100%',
 );
+const forgotPasswordText = (key: string): string =>
+    t(`auth.forgot_password_page.${key}`);
+const activeStepTitle = computed(() => {
+    if (activeStep.value === 1) {
+        return forgotPasswordText('step_email_title');
+    }
+
+    if (activeStep.value === 2) {
+        return forgotPasswordText('step_otp_title');
+    }
+
+    return forgotPasswordText('step_password_title');
+});
 
 const resolveHref = (href: unknown): string =>
     typeof href === 'string' ? href : (href as { url?: string } | null)?.url ?? '';
@@ -71,12 +86,12 @@ const validateEmail = (): boolean => {
     const value = email.value.trim();
 
     if (!value) {
-        errors.email = 'Email is required.';
+        errors.email = forgotPasswordText('email_required');
         return false;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        errors.email = 'Enter a valid email address.';
+        errors.email = forgotPasswordText('email_invalid');
         return false;
     }
 
@@ -85,12 +100,12 @@ const validateEmail = (): boolean => {
 
 const validateOtp = (): boolean => {
     if (!otpSent.value) {
-        errors.general = 'Send the OTP first.';
+        errors.general = forgotPasswordText('send_otp_first');
         return false;
     }
 
     if (!otpComplete.value) {
-        errors.otp = 'Enter the 6-digit OTP.';
+        errors.otp = forgotPasswordText('otp_required');
         return false;
     }
 
@@ -102,27 +117,27 @@ const validatePasswords = (): boolean => {
     const confirmation = passwordConfirmation.value.trim();
 
     if (!otpVerified.value) {
-        errors.general = 'Verify the OTP first.';
+        errors.general = forgotPasswordText('verify_otp_first');
         return false;
     }
 
     if (!currentPassword) {
-        errors.password = 'Password is required.';
+        errors.password = forgotPasswordText('password_required');
         return false;
     }
 
     if (currentPassword.length < 8) {
-        errors.password = 'Password must be at least 8 characters.';
+        errors.password = forgotPasswordText('password_min');
         return false;
     }
 
     if (!confirmation) {
-        errors.password_confirmation = 'Please confirm your password.';
+        errors.password_confirmation = forgotPasswordText('password_confirmation_required');
         return false;
     }
 
     if (currentPassword !== confirmation) {
-        errors.password_confirmation = 'Passwords do not match.';
+        errors.password_confirmation = forgotPasswordText('password_mismatch');
         return false;
     }
 
@@ -186,7 +201,7 @@ const postJson = async (
             setErrorBag(data);
         } else {
             clearErrors();
-            errors.general = data?.message ?? 'Request failed.';
+            errors.general = data?.message ?? forgotPasswordText('request_failed');
         }
 
         throw data;
