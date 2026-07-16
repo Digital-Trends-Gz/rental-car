@@ -12,7 +12,7 @@ import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { Home } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
-const { t } = useTrans();
+const { direction, t } = useTrans();
 const { themeVars } = useBrandTheme();
 
 const page = usePage<any>();
@@ -64,6 +64,7 @@ const homeUrl = computed(() =>
 );
 
 const isArabic = computed(() => page.props.locale === 'ar');
+const isRtl = computed(() => direction.value === 'rtl');
 const registerHeroImage = computed(() => {
     const images = page.props.app_branding?.register_hero_images || {};
     const locale = String(page.props.locale || 'en');
@@ -464,13 +465,17 @@ watch(
                             >
                                 {{ t('auth.phone_number') }}
                             </Label>
-                            <div class="flex gap-2">
+                            <div
+                                class="flex gap-2"
+                                :class="isRtl ? 'flex-row-reverse' : 'flex-row'"
+                            >
                                 <Input
                                     name="phone_country_code"
                                     :model-value="phoneCountryCode"
                                     readonly
                                     placeholder="+___"
-                                    class="h-11 w-28 border-gray-300 bg-gray-50"
+                                    class="h-11 w-28 shrink-0 border-gray-300 bg-gray-50 text-left"
+                                    dir="ltr"
                                 />
                                 <Input
                                     id="phone_national"
@@ -478,7 +483,8 @@ watch(
                                     v-model="phoneNational"
                                     type="tel"
                                     placeholder="e.g. 91234567"
-                                    class="h-11 border-gray-300"
+                                    class="h-11 min-w-0 flex-1 border-gray-300 text-left"
+                                    dir="ltr"
                                 />
                             </div>
                             <p class="text-xs text-gray-500">

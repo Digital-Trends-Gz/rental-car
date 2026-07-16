@@ -2076,7 +2076,7 @@ onUnmounted(() => {
                             <Card class="border-border shadow-sm">
                                 <CardHeader>
                                     <CardTitle
-                                        class="inline-block border-b-2 border-primary/70 pb-2"
+                                        class="inline-flex w-fit border-b-2 border-primary/70 pb-2"
                                         >{{ contactSection.direct_title }}</CardTitle
                                     >
                                 </CardHeader>
@@ -2121,7 +2121,7 @@ onUnmounted(() => {
                             <Card class="border-border shadow-sm">
                                 <CardHeader>
                                     <CardTitle
-                                        class="inline-block border-b-2 border-primary/70 pb-2"
+                                        class="inline-flex w-fit border-b-2 border-primary/70 pb-2"
                                         >{{ contactSection.quick_links_title }}</CardTitle
                                     >
                                 </CardHeader>
