@@ -1197,7 +1197,7 @@ onUnmounted(() => {
                         >
                             <div
                                 v-if="item.image_url"
-                                class="mx-auto mb-5 flex h-9 w-9 items-center justify-center rounded-lg shadow-sm"
+                                class="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-lg shadow-sm"
                                 :style="{
                                     backgroundColor:
                                         item.icon_background_color ||
@@ -1207,7 +1207,7 @@ onUnmounted(() => {
                                 <img
                                     :src="item.image_url"
                                     :alt="item.title"
-                                    class="h-5 w-5 object-contain"
+                                    class="h-9 w-9 object-contain"
                                 />
                             </div>
                             <div
