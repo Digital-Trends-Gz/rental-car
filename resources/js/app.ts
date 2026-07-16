@@ -10,6 +10,16 @@ import { setUrlDefaults } from './wayfinder';
 
 let appName = import.meta.env.VITE_APP_NAME || 'Car4u';
 
+const formatPageTitle = (title?: string): string => {
+    const cleanTitle = String(title || '').trim();
+
+    if (!cleanTitle || cleanTitle.toLowerCase() === 'laravel') {
+        return appName;
+    }
+
+    return `${cleanTitle} - ${appName}`;
+};
+
 const syncDocumentLocale = (props: any) => {
     const locale = props?.locale || 'en';
     const direction = props?.direction || 'ltr';
@@ -21,7 +31,7 @@ const syncDocumentLocale = (props: any) => {
 };
 
 createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    title: formatPageTitle,
     resolve: (name) =>
         resolvePageComponent(
             `./pages/${name}.vue`,

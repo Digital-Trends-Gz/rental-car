@@ -73,7 +73,7 @@ class LandingSettingsController extends Controller
         $keyPool = array_keys($defaultRows);
 
         foreach ($supportedLocales as $locale) {
-            $overrideRowsByLocale[$locale] = $this->flatten((array) data_get($settings, "translations.$locale", []));
+            $overrideRowsByLocale[$locale] = $this->normalizedTranslationRows((array) data_get($settings, "translations.$locale", []));
             $keyPool = array_merge($keyPool, array_keys($overrideRowsByLocale[$locale]));
         }
 
@@ -323,6 +323,10 @@ class LandingSettingsController extends Controller
 
         foreach ((array) ($validated['rows'] ?? []) as $row) {
             $key = trim((string) ($row['key'] ?? ''));
+            if (str_starts_with($key, 'site.')) {
+                $key = Str::after($key, 'site.');
+            }
+
             if ($key === '') {
                 continue;
             }
@@ -573,11 +577,27 @@ class LandingSettingsController extends Controller
             }
 
             if (is_array($translations)) {
-                $rows = array_merge($rows, $this->flatten([$group => $translations]));
+                $rows = array_merge(
+                    $rows,
+                    $group === 'site'
+                        ? $this->flatten($translations)
+                        : $this->flatten([$group => $translations])
+                );
             }
         }
 
         return $rows;
+    }
+
+    private function normalizedTranslationRows(array $rows): array
+    {
+        $normalized = [];
+
+        foreach ($this->flatten($rows) as $key => $value) {
+            $normalized[str_starts_with($key, 'site.') ? Str::after($key, 'site.') : $key] = $value;
+        }
+
+        return $normalized;
     }
 
     /**

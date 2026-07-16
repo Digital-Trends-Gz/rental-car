@@ -6,12 +6,22 @@ import { renderToString } from 'vue/server-renderer';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Car4u';
 
+const formatPageTitle = (title?: string): string => {
+    const cleanTitle = String(title || '').trim();
+
+    if (!cleanTitle || cleanTitle.toLowerCase() === 'laravel') {
+        return appName;
+    }
+
+    return `${cleanTitle} - ${appName}`;
+};
+
 createServer(
     (page) =>
         createInertiaApp({
             page,
             render: renderToString,
-            title: (title) => (title ? `${title} - ${appName}` : appName),
+            title: formatPageTitle,
             resolve: (name) =>
                 resolvePageComponent(
                     `./pages/${name}.vue`,
