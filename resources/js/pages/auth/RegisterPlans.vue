@@ -38,7 +38,7 @@ interface PricingMeta {
     } | null;
 }
 
-const { t, locale } = useTrans();
+const { t, locale, direction } = useTrans();
 
 const props = defineProps<{
     plans: PlanOption[];
@@ -64,6 +64,8 @@ const form = useForm<{
 const selectedPlan = computed(() => {
     return props.plans.find((plan) => plan.id === form.plan_id) ?? null;
 });
+
+const isRtl = computed(() => direction.value === 'rtl');
 
 const priceFor = (plan: PlanOption): number => {
     const pricing = pricingFor(plan);
@@ -112,13 +114,16 @@ const submit = () => {
 <template>
     <Head :title="t('plans_page.choose_plan')" />
 
-    <main class="relative min-h-screen bg-slate-50 py-10">
+    <main
+        class="relative min-h-screen bg-slate-50 py-10"
+        :dir="direction"
+    >
         <div class="absolute top-4 z-50 ltr:right-4 rtl:left-4">
             <AuthLanguageSwitcher />
         </div>
 
         <div class="mx-auto max-w-6xl px-4">
-            <div class="mb-6">
+            <div class="mb-6 text-start">
                 <Link
                     :href="urls.register"
                     class="text-sm font-medium text-slate-700 hover:underline"
@@ -127,7 +132,7 @@ const submit = () => {
                 </Link>
             </div>
 
-            <div class="mb-8">
+            <div class="mb-8 text-start">
                 <p class="text-sm font-semibold text-blue-700">
                     {{ t('plans_page.step_2_of_3') }}
                 </p>
@@ -140,7 +145,7 @@ const submit = () => {
             </div>
 
             <form @submit.prevent="submit">
-                <div class="mb-8 rounded-2xl border bg-white p-5">
+                <div class="mb-8 rounded-2xl border bg-white p-5 text-start">
                     <p class="mb-3 text-sm font-semibold text-slate-800">
                         {{ t('plans_page.billing_cycle') }}
                     </p>
@@ -189,7 +194,7 @@ const submit = () => {
                         v-for="plan in plans"
                         :key="plan.id"
                         type="button"
-                        class="rounded-2xl border bg-white p-5 text-left shadow-sm"
+                        class="rounded-2xl border bg-white p-5 text-start shadow-sm"
                         :class="[
                             form.plan_id === plan.id
                                 ? 'border-blue-600 ring-2 ring-blue-200'
@@ -207,7 +212,7 @@ const submit = () => {
                                 : form.plan_id
                         "
                     >
-                        <div class="mb-3 flex items-center justify-between">
+                        <div class="mb-3 flex items-center justify-between gap-3">
                             <h2 class="text-lg font-semibold text-slate-900">
                                 {{ plan.name }}
                             </h2>
@@ -267,11 +272,20 @@ const submit = () => {
                                 v-if="pricingFor(plan)?.has_discount"
                                 class="mt-1 text-xs font-medium text-emerald-700"
                             >
-                                {{ t('landing.discount_save') }}&nbsp;${{
-                                    Number(
-                                        pricingFor(plan)?.savings_amount || 0,
-                                    ).toFixed(2)
-                                }}
+                                <template v-if="isRtl">
+                                    {{ t('landing.discount_save') }}&nbsp;{{
+                                        Number(
+                                            pricingFor(plan)?.savings_amount || 0,
+                                        ).toFixed(2)
+                                    }}$
+                                </template>
+                                <template v-else>
+                                    {{ t('landing.discount_save') }}&nbsp;${{
+                                        Number(
+                                            pricingFor(plan)?.savings_amount || 0,
+                                        ).toFixed(2)
+                                    }}
+                                </template>
                                 <span v-if="pricingFor(plan)?.discount?.name"
                                     >&nbsp;{{ t('landing.discount_with') }}&nbsp;{{ pricingFor(plan)?.discount?.name }}</span
                                 >
@@ -296,7 +310,7 @@ const submit = () => {
                     </button>
                 </div>
 
-                <p v-if="form.errors.plan_id" class="mt-3 text-sm text-red-600">
+                <p v-if="form.errors.plan_id" class="mt-3 text-start text-sm text-red-600">
                     {{ form.errors.plan_id }}
                 </p>
 
