@@ -41,7 +41,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import { A11y, Autoplay, Navigation, Pagination } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/vue';
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 interface FeatureCard {
     title: string;
@@ -422,6 +422,54 @@ const navLinks = computed(() => {
     return normalizedLinks;
 });
 
+const localizedPath = (path: string) => {
+    const firstSegment = window.location.pathname.split('/').filter(Boolean)[0];
+
+    if (firstSegment && availableLocales.value.includes(firstSegment)) {
+        return `/${firstSegment}${path}`;
+    }
+
+    return path;
+};
+
+const translatedLabel = (key: string, fallback: string) => {
+    const value = t(key);
+
+    return value === key ? fallback : value;
+};
+
+const staticPageLinks = computed(() => [
+    {
+        label: translatedLabel('welcome.footer_privacy', 'Privacy'),
+        href: localizedPath('/privacy-policy'),
+    },
+    {
+        label: translatedLabel('welcome.footer_terms', 'Terms'),
+        href: localizedPath('/terms-of-use'),
+    },
+    {
+        label: isRtlLocale.value ? 'سياسة الأمان' : 'Security Policy',
+        href: localizedPath('/security-policy'),
+    },
+]);
+
+const footerLinks = computed(() => {
+    const links: QuickLinkItem[] = [];
+
+    if (props.landingSettings.mobile_apps_section?.enabled !== false) {
+        links.push({ label: 'Application', href: '#application' });
+    }
+
+    if (props.landingSettings.plans_section?.enabled !== false) {
+        links.push({ label: 'Plans', href: '#pricing' });
+    }
+
+    links.push(...staticPageLinks.value);
+
+    return links;
+});
+const footerDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));
+
 const mobileOpen = ref(false);
 const scrolled = ref(false);
 const yearly = ref(false);
@@ -620,11 +668,11 @@ const bookFeaturedCar = (car: FeaturedCar) => {
 };
 
 const searchCars = () => {
+    const trimmedSearch = carSearch.value.trim();
+
     router.get(
         window.location.pathname,
-        {
-            car_search: carSearch.value.trim() || null,
-        },
+        trimmedSearch === '' ? {} : { car_search: trimmedSearch },
         {
             preserveScroll: true,
             preserveState: true,
@@ -632,6 +680,12 @@ const searchCars = () => {
         },
     );
 };
+
+watch(carSearch, (value, oldValue) => {
+    if (value.trim() === '' && oldValue.trim() !== '') {
+        searchCars();
+    }
+});
 
 const startClientsAutoplay = () => {
     const rail = clientsRail.value;
@@ -897,15 +951,15 @@ onUnmounted(() => {
                     </div>
 
                     <div
-                        class="animate-reveal-up-delay mx-auto mt-16 max-w-5xl"
+                        class="animate-reveal-up-delay mx-auto mt-16 w-full max-w-[1200px]"
                     >
                         <div
-                            class="card-elevated overflow-hidden rounded-2xl p-1"
+                            class="card-elevated aspect-[1200/689] overflow-hidden rounded-2xl p-1"
                         >
                             <video
                                 v-if="heroIsVideo"
                                 :src="heroImage"
-                                class="w-full rounded-xl"
+                                class="h-full w-full rounded-xl object-cover"
                                 autoplay
                                 muted
                                 loop
@@ -915,7 +969,7 @@ onUnmounted(() => {
                                 v-else
                                 :src="heroImage"
                                 alt="Hero"
-                                class="w-full rounded-xl"
+                                class="h-full w-full rounded-xl object-cover"
                                 loading="eager"
                             />
                         </div>
@@ -1010,7 +1064,7 @@ onUnmounted(() => {
                             <CardContent class="flex h-full flex-col p-6">
                                 <div class="space-y-3">
                                     <h3
-                                        class="text-[1.7rem] font-bold tracking-tight text-foreground"
+                                        class="w-full truncate whitespace-nowrap text-[1.35rem] font-bold leading-tight tracking-tight text-foreground sm:text-[1.45rem]"
                                     >
                                         {{ car.make }} {{ car.model }} -
                                         {{ car.year }}
@@ -2188,7 +2242,7 @@ onUnmounted(() => {
                         :aria-label="t('landing.footer_navigation') || 'Footer navigation'"
                     >
                         <a
-                            v-for="link in navLinks"
+                            v-for="link in footerLinks"
                             :key="`footer-${link.href}`"
                             :href="link.href"
                             class="whitespace-nowrap transition-colors hover:text-primary"
@@ -2251,9 +2305,18 @@ onUnmounted(() => {
                     </div>
                 </div>
 
-                <p class="text-center text-xs text-muted-foreground">
-                    &copy; {{ currentYear }} {{ appName }}.
-                    {{ landingSettings.footer.copyright_text }}
+                <p
+                    class="text-center text-xs text-muted-foreground"
+                    :dir="footerDirection"
+                >
+                    <template v-if="isRtlLocale">
+                        {{ landingSettings.footer.copyright_text }}
+                        &copy; {{ currentYear }} {{ appName }}.
+                    </template>
+                    <template v-else>
+                        &copy; {{ currentYear }} {{ appName }}.
+                        {{ landingSettings.footer.copyright_text }}
+                    </template>
                 </p>
             </div>
         </footer>

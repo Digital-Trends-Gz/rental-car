@@ -133,7 +133,7 @@ class HomePagesController extends Controller
                 ->where('tenant_id', '>', 0)
                 ->with([
                     'tenant.siteSetting',
-                    'branch:id,tenant_id,address',
+                    'branch:id,tenant_id,country,city,address',
                     'files',
                 ])
                 ->select([
@@ -175,7 +175,7 @@ class HomePagesController extends Controller
         $homeCars = Car::whereIn('status', $this->publicFleetStatuses())
             ->with([
                 'tenant.siteSetting',
-                'branch:id,tenant_id,address',
+                'branch:id,tenant_id,country,city,address',
                 'files',
             ])
             ->select('id', 'tenant_id', 'branch_id', 'make', 'model', 'year', 'price_per_day', 'description', 'description_translations', 'fuel_type', 'status')
@@ -253,7 +253,7 @@ class HomePagesController extends Controller
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->with([
                 'tenant.siteSetting',
-                'branch:id,tenant_id,name,address',
+                'branch:id,tenant_id,name,country,city,address',
                 'files',
             ])
             ->select('id', 'tenant_id', 'branch_id', 'make', 'model', 'year', 'price_per_day', 'description', 'description_translations', 'fuel_type', 'status');
@@ -365,11 +365,13 @@ class HomePagesController extends Controller
             ->whereIn('id', $publicBranchIds)
             ->with(['tenant:id,name,slug'])
             ->orderBy('name')
-            ->get(['id', 'tenant_id', 'name', 'address'])
+            ->get(['id', 'tenant_id', 'name', 'country', 'city', 'address'])
             ->map(static fn (Branch $branch) => [
                 'id' => $branch->id,
                 'tenant_id' => $branch->tenant_id,
                 'name' => $branch->name,
+                'country' => $branch->country,
+                'city' => $branch->city,
                 'address' => $branch->address,
             ])
             ->values();
@@ -483,6 +485,14 @@ class HomePagesController extends Controller
 
     private function resolveCarLocation(Car $car): ?string
     {
+        $branchCountry = trim((string) ($car->branch?->country ?? ''));
+        $branchCity = trim((string) ($car->branch?->city ?? ''));
+        $branchLocation = implode(' - ', array_values(array_filter([$branchCountry, $branchCity])));
+
+        if ($branchLocation !== '') {
+            return $branchLocation;
+        }
+
         $marketLocation = $car->tenant?->siteSetting?->market_location;
         $country = trim((string) (
             data_get($marketLocation, 'country_name')

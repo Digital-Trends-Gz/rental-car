@@ -1176,7 +1176,7 @@ const toggleSection = (
                                     <p class="text-xs text-muted-foreground">
                                         {{
                                             localize(
-                                                'Upload one image or video for the hero section. A new upload replaces the previous file.',
+                                                'Upload one image or video for the hero section. Recommended image size: 1200 x 689 px. A new upload replaces the previous file.',
                                                 'ارفع صورة أو فيديو واحد للقسم الرئيسي. أي رفع جديد سيستبدل الملف السابق.',
                                             )
                                         }}

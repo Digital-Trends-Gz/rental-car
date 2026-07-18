@@ -19,7 +19,7 @@ import { Apple, Check, ChevronDown, Facebook, Instagram, Languages, Linkedin, Me
 import { computed, ref } from 'vue';
 
 const $page = usePage<any>();
-const { t, locale } = useTrans();
+const { t, locale, direction } = useTrans();
 const props = withDefaults(defineProps<{ shellVariant?: 'tenant' | 'landing'; showLocaleSwitcher?: boolean }>(), {
     shellVariant: 'tenant',
     showLocaleSwitcher: true,
@@ -117,6 +117,37 @@ const resolveLandingHref = (href: string) => {
 
     return value;
 };
+const localizedLandingPath = (path: string) => {
+    const localeCode = String(locale.value || '').trim();
+    const currentPath = String($page.url || '/');
+
+    if (localeCode && (currentPath === `/${localeCode}` || currentPath.startsWith(`/${localeCode}/`))) {
+        return `/${localeCode}${path}`;
+    }
+
+    return path;
+};
+const translatedLabel = (key: string, fallback: string) => {
+    const value = t(key);
+
+    return value === key ? fallback : value;
+};
+const landingStaticPageLinks = computed(() => [
+    {
+        label: translatedLabel('welcome.footer_privacy', 'Privacy'),
+        href: localizedLandingPath('/privacy-policy'),
+    },
+    {
+        label: translatedLabel('welcome.footer_terms', 'Terms'),
+        href: localizedLandingPath('/terms-of-use'),
+    },
+    {
+        label: ['ar', 'ur'].includes(String(locale.value || '').toLowerCase().split('-')[0])
+            ? 'سياسة الأمان'
+            : 'Security Policy',
+        href: localizedLandingPath('/security-policy'),
+    },
+]);
 const landingNavLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
@@ -161,9 +192,22 @@ const landingFooterEnabled = computed(() => landingSettings.value?.footer?.enabl
 const landingFooterCopyright = computed(() =>
     landingSettings.value?.footer?.copyright_text || t('landing.footer_rights') || 'All rights reserved.'
 );
-const landingFooterNavLinks = computed(() =>
-    landingNavLinks.value.filter((link) => !String(link.href || '').includes('#clients'))
-);
+const footerDirection = computed(() => (direction.value === 'rtl' ? 'rtl' : 'ltr'));
+const landingFooterNavLinks = computed(() => {
+    const links: Array<{ label: string; href: string }> = [];
+
+    if (landingSettings.value?.mobile_apps_section?.enabled !== false) {
+        links.push({ label: 'Application', href: resolveLandingHref('#application') });
+    }
+
+    if (landingSettings.value?.plans_section?.enabled !== false) {
+        links.push({ label: 'Plans', href: resolveLandingHref('#pricing') });
+    }
+
+    links.push(...landingStaticPageLinks.value);
+
+    return links;
+});
 const landingFooterSocialLinks = computed(() => {
     if (landingSettings.value?.footer?.show_social_links === false) {
         return [];
@@ -389,8 +433,16 @@ const themeVars = computed(() => ({
                         </div>
                     </div>
 
-                    <p class="mt-3 text-center text-sm text-muted-foreground">
-                        &copy; {{ currentYear }} {{ appName }}. {{ landingFooterCopyright }}
+                    <p
+                        class="mt-3 text-center text-sm text-muted-foreground"
+                        :dir="footerDirection"
+                    >
+                        <template v-if="footerDirection === 'rtl'">
+                            {{ landingFooterCopyright }} &copy; {{ currentYear }} {{ appName }}.
+                        </template>
+                        <template v-else>
+                            &copy; {{ currentYear }} {{ appName }}. {{ landingFooterCopyright }}
+                        </template>
                     </p>
                 </div>
             </footer>

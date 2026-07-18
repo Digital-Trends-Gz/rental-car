@@ -12,7 +12,7 @@ import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { Home } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
-const { direction, t } = useTrans();
+const { direction, locale, t } = useTrans();
 const { themeVars } = useBrandTheme();
 
 const page = usePage<any>();
@@ -52,16 +52,42 @@ const baseProtocol = computed(() =>
 );
 const buildUrl = (host: string, path: string) =>
     `${baseProtocol.value}//${host}${path}`;
+const localizedAuthPath = (path: string) => {
+    const locale = String(page.props.locale || '').trim();
+    const availableLocales = Array.isArray(page.props.available_locales)
+        ? page.props.available_locales.map(String)
+        : [];
+
+    return locale && availableLocales.includes(locale) ? `/${locale}${path}` : path;
+};
 
 const loginUrl = computed(() => {
     const slug = currentTenant.value?.slug;
+    const loginPath = localizedAuthPath('/tenant/login');
+
     return slug
-        ? buildUrl(`${slug}.${page.props.app_url_base}`, '/tenant/login')
-        : buildUrl(page.props.app_url_base, '/tenant/login');
+        ? buildUrl(`${slug}.${page.props.app_url_base}`, loginPath)
+        : buildUrl(page.props.app_url_base, loginPath);
 });
 const homeUrl = computed(() =>
     '/',
 );
+const localizedPublicPath = (path: string) => {
+    const localeCode = String(locale.value || '').trim();
+    const currentPath =
+        typeof window !== 'undefined' ? window.location.pathname : '';
+
+    if (
+        localeCode &&
+        (currentPath === `/${localeCode}` ||
+            currentPath.startsWith(`/${localeCode}/`))
+    ) {
+        return `/${localeCode}${path}`;
+    }
+
+    return path;
+};
+const termsUrl = computed(() => localizedPublicPath('/terms-of-use'));
 
 const isArabic = computed(() => page.props.locale === 'ar');
 const isRtl = computed(() => direction.value === 'rtl');
@@ -541,10 +567,10 @@ watch(
                                 class="h-4 w-4 rounded border-gray-300 text-blue-700 focus:ring-blue-600"
                             />
                             {{ t('auth.agree_to_terms') }}
-                            <a
-                                href="#"
+                            <Link
+                                :href="termsUrl"
                                 class="font-medium text-blue-700 hover:underline"
-                                >{{ t('auth.terms_of_use') }}</a
+                                >{{ t('auth.terms_of_use') }}</Link
                             >
                         </label>
 

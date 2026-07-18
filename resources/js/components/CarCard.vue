@@ -190,7 +190,7 @@ defineProps<Props>();
         <div class="flex flex-1 flex-col gap-4 p-5">
             <!-- Header -->
             <div class="space-y-3">
-                <h3 class="min-h-[3.25rem] text-[1.55rem] font-bold leading-tight tracking-tight text-foreground">
+                <h3 class="min-h-[2rem] w-full truncate whitespace-nowrap text-[1.35rem] font-bold leading-tight tracking-tight text-foreground">
                     {{ car.make }} {{ car.model }} - {{ car.year }}
                 </h3>
 
