@@ -29,6 +29,10 @@ class PlanPricing
 
     public static function resolveAmount(Plan $plan, string $billingCycle, ?CarbonInterface $now = null): float
     {
+        if ($plan->custom_pricing) {
+            return 0.0;
+        }
+
         return (float) data_get(
             self::pricingForCycle($plan, $billingCycle, $now),
             'final_amount',
@@ -38,6 +42,19 @@ class PlanPricing
 
     public static function pricingForCycle(Plan $plan, string $billingCycle, ?CarbonInterface $now = null): array
     {
+        if ($plan->custom_pricing) {
+            return [
+                'billing_cycle' => $billingCycle,
+                'original_amount' => null,
+                'final_amount' => null,
+                'savings_amount' => 0.0,
+                'savings_percentage' => 0.0,
+                'has_discount' => false,
+                'discount' => null,
+                'is_custom' => true,
+            ];
+        }
+
         $baseAmount = self::baseAmountForCycle($plan, $billingCycle);
 
         if ($baseAmount === null) {

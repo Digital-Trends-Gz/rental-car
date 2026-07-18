@@ -232,6 +232,11 @@ const locale = computed(() => String(page.props.locale || 'en'));
 const isRtlLocale = computed(() =>
     ['ar', 'ur'].includes(locale.value.toLowerCase().split('-')[0]),
 );
+const customPricingLabel = computed(() =>
+    locale.value.toLowerCase().startsWith('ar')
+        ? 'مخصص'
+        : t('plans_page.custom_pricing_label'),
+);
 const availableLocales = computed<string[]>(() =>
     Array.isArray(page.props?.available_locales) &&
     page.props.available_locales.length
@@ -571,6 +576,18 @@ const activePlanCycle = computed<'monthly' | 'yearly'>(() =>
 );
 
 const planPricing = (plan: Plan) => {
+    if (plan.custom_pricing) {
+        return {
+            original_amount: null,
+            final_amount: null,
+            savings_amount: 0,
+            savings_percentage: 0,
+            has_discount: false,
+            discount: null,
+            is_custom: true,
+        };
+    }
+
     const pricing = plan.pricing_meta?.[activePlanCycle.value];
     if (pricing?.final_amount != null) {
         return pricing;
@@ -1846,6 +1863,7 @@ onUnmounted(() => {
                                     <div class="mb-6">
                                         <div
                                             v-if="
+                                                !plan.custom_pricing &&
                                                 planPricing(plan).has_discount
                                             "
                                             class="mb-2 inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700"
@@ -1868,7 +1886,17 @@ onUnmounted(() => {
                                                 }}% {{ t('landing.discount_off') }}
                                             </template>
                                         </div>
-                                        <div class="flex items-end gap-2">
+                                        <div
+                                            v-if="plan.custom_pricing"
+                                            class="space-y-1"
+                                        >
+                                            <span
+                                                class="inline-block select-none bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-4xl font-extrabold text-transparent"
+                                            >
+                                                {{ customPricingLabel }}
+                                            </span>
+                                        </div>
+                                        <div v-else class="flex items-end gap-2">
                                             <span
                                                 class="text-4xl font-extrabold text-foreground"
                                                 >${{

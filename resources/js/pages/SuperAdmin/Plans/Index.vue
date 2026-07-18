@@ -5,11 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Tag, Edit, Trash2, CheckCircle, XCircle } from 'lucide-vue-next';
 import { type Plan } from '@/types';
 import { useTrans } from '@/composables/useTrans';
+import { computed } from 'vue';
 
 const props = defineProps<{
     plans: Plan[];
 }>();
 const { t, locale } = useTrans();
+
+const customPricingLabel = computed(() =>
+    locale.value.toLowerCase().startsWith('ar')
+        ? 'مخصص'
+        : t('plans_page.custom_pricing_label'),
+);
 
 const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString(locale === 'ar' ? 'ar' : 'en-US', {
@@ -86,7 +93,12 @@ const deletePlan = (planId: number, planName: string) => {
                                 {{ plan.sort_order }}
                             </td>
                             <td class="px-4 py-3">
-                                <div class="text-sm space-y-1">
+                                <div v-if="plan.custom_pricing">
+                                    <span class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700">
+                                        {{ customPricingLabel }}
+                                    </span>
+                                </div>
+                                <div v-else class="text-sm space-y-1">
                                     <div v-if="plan.monthly_price">
                                         <span class="font-medium text-xs uppercase text-gray-400">{{ t('dashboard.super_admin.plans.index.monthly') }}:</span>
                                         ${{ plan.monthly_price }}

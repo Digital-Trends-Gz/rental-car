@@ -56,6 +56,7 @@ export interface Plan {
     description: string | null;
     sort_order: number;
     features: string[] | null;
+    custom_pricing: boolean;
     feature_flags: Record<string, boolean> | null;
     monthly_price: number;
     monthly_price_id: string | null;
@@ -86,6 +87,7 @@ export interface PlanPricingMeta {
     savings_amount: number;
     savings_percentage: number;
     has_discount: boolean;
+    is_custom?: boolean;
     discount: {
         id: number;
         name: string;

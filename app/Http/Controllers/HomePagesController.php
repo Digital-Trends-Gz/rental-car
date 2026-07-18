@@ -101,6 +101,7 @@ class HomePagesController extends Controller
                         'description',
                         'sort_order',
                         'features',
+                        'custom_pricing',
                         'monthly_price',
                         'yearly_price',
                         'one_time_price',

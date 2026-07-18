@@ -208,6 +208,7 @@ class RegisteredUserController extends Controller
                     'description',
                     'sort_order',
                     'features',
+                    'custom_pricing',
                     'monthly_price',
                     'monthly_price_id',
                     'yearly_price',
@@ -251,6 +252,13 @@ class RegisteredUserController extends Controller
         ]);
 
         $plan = Plan::query()->findOrFail($validated['plan_id']);
+
+        if ($plan->custom_pricing) {
+            return back()->withErrors([
+                'plan_id' => 'This plan uses custom pricing. Please contact us to continue.',
+            ]);
+        }
+
         if ($validated['billing_cycle'] === 'one_time' && $plan->one_time_price === null) {
             return back()->withErrors([
                 'billing_cycle' => 'The selected plan does not support one-time billing.',

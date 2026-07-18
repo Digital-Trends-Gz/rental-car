@@ -66,6 +66,7 @@ const form = useForm({
     sort_order: props.plan.sort_order ?? 0,
     features: [...initialFeatures],
     translations: buildTranslations(),
+    custom_pricing: Boolean(props.plan.custom_pricing),
     feature_flags: buildFeatureFlags(),
     monthly_price: Number(props.plan.monthly_price),
     monthly_price_id: props.plan.monthly_price_id || '',
@@ -191,6 +192,17 @@ const submit = () => {
                                         id="is_active"
                                         :checked="form.is_active"
                                         @update:checked="(val: boolean) => form.is_active = val"
+                                    />
+                                </div>
+                                <div class="flex items-center justify-between space-x-2 py-2">
+                                    <div class="space-y-0.5">
+                                        <Label for="custom_pricing">Custom Pricing</Label>
+                                        <p class="text-xs text-muted-foreground">Show Custom instead of a price and require manual contact.</p>
+                                    </div>
+                                    <Switch
+                                        id="custom_pricing"
+                                        :checked="form.custom_pricing"
+                                        @update:checked="(val: boolean) => form.custom_pricing = val"
                                     />
                                 </div>
                             </CardContent>
@@ -353,12 +365,12 @@ const submit = () => {
                             <CardContent class="space-y-4">
                                 <div class="space-y-2">
                                     <Label for="monthly_price">Price *</Label>
-                                    <Input id="monthly_price" v-model.number="form.monthly_price" type="number" step="0.01" required />
+                                    <Input id="monthly_price" v-model.number="form.monthly_price" type="number" step="0.01" :required="!form.custom_pricing" :disabled="form.custom_pricing" />
                                     <div v-if="form.errors.monthly_price" class="text-sm text-red-600">{{ form.errors.monthly_price }}</div>
                                 </div>
                                 <div class="space-y-2">
                                     <Label for="monthly_price_id">Price ID (Stripe/Payment Link)</Label>
-                                    <Input id="monthly_price_id" v-model="form.monthly_price_id" placeholder="price_..." />
+                                    <Input id="monthly_price_id" v-model="form.monthly_price_id" placeholder="price_..." :disabled="form.custom_pricing" />
                                 </div>
                             </CardContent>
                         </Card>
@@ -371,12 +383,12 @@ const submit = () => {
                             <CardContent class="space-y-4">
                                 <div class="space-y-2">
                                     <Label for="yearly_price">Price *</Label>
-                                    <Input id="yearly_price" v-model.number="form.yearly_price" type="number" step="0.01" required />
+                                    <Input id="yearly_price" v-model.number="form.yearly_price" type="number" step="0.01" :required="!form.custom_pricing" :disabled="form.custom_pricing" />
                                     <div v-if="form.errors.yearly_price" class="text-sm text-red-600">{{ form.errors.yearly_price }}</div>
                                 </div>
                                 <div class="space-y-2">
                                     <Label for="yearly_price_id">Price ID (Stripe/Payment Link)</Label>
-                                    <Input id="yearly_price_id" v-model="form.yearly_price_id" placeholder="price_..." />
+                                    <Input id="yearly_price_id" v-model="form.yearly_price_id" placeholder="price_..." :disabled="form.custom_pricing" />
                                 </div>
                             </CardContent>
                         </Card>
@@ -389,12 +401,12 @@ const submit = () => {
                             <CardContent class="space-y-4">
                                 <div class="space-y-2">
                                     <Label for="one_time_price">Price</Label>
-                                    <Input id="one_time_price" v-model.number="form.one_time_price" type="number" step="0.01" />
+                                    <Input id="one_time_price" v-model.number="form.one_time_price" type="number" step="0.01" :disabled="form.custom_pricing" />
                                     <div v-if="form.errors.one_time_price" class="text-sm text-red-600">{{ form.errors.one_time_price }}</div>
                                 </div>
                                 <div class="space-y-2">
                                     <Label for="one_time_price_id">Price ID</Label>
-                                    <Input id="one_time_price_id" v-model="form.one_time_price_id" placeholder="price_..." />
+                                    <Input id="one_time_price_id" v-model="form.one_time_price_id" placeholder="price_..." :disabled="form.custom_pricing" />
                                 </div>
                             </CardContent>
                         </Card>

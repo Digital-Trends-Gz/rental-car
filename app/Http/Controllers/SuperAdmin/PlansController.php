@@ -78,6 +78,7 @@ class PlansController extends Controller
             'description' => 'nullable|string',
             'sort_order' => 'required|integer|min:0',
             'features' => 'nullable|array',
+            'custom_pricing' => 'nullable|boolean',
             'feature_flags' => 'nullable|array',
             'monthly_price' => 'required|numeric|min:0',
             'monthly_price_id' => 'nullable|string|max:255',
@@ -124,6 +125,7 @@ class PlansController extends Controller
             'description' => 'nullable|string',
             'sort_order' => 'required|integer|min:0',
             'features' => 'nullable|array',
+            'custom_pricing' => 'nullable|boolean',
             'translations' => 'nullable|array',
             'translations.*.name' => 'nullable|string|max:255',
             'translations.*.description' => 'nullable|string',
@@ -168,6 +170,17 @@ class PlansController extends Controller
 
     private function normalizePlanPayload(array $validated): array
     {
+        $validated['custom_pricing'] = (bool) ($validated['custom_pricing'] ?? false);
+
+        if ($validated['custom_pricing']) {
+            $validated['monthly_price'] = 0;
+            $validated['yearly_price'] = 0;
+            $validated['one_time_price'] = null;
+            $validated['monthly_price_id'] = null;
+            $validated['yearly_price_id'] = null;
+            $validated['one_time_price_id'] = null;
+        }
+
         foreach (self::LIMIT_FIELDS as $field) {
             $value = $validated[$field] ?? null;
             $validated[$field] = $value === '' ? null : $value;

@@ -331,6 +331,8 @@ return [
         'yearly' => 'Yearly',
         'one_time' => 'One time',
         'selected' => 'Selected',
+        'custom_pricing_label' => 'Custom',
+        'custom_pricing_help' => 'This plan uses custom pricing. Please contact us to continue.',
         'not_available' => 'This billing cycle is not available for this plan.',
         'saving' => 'Saving...',
         'continue_to_payment' => 'Continue to payment',

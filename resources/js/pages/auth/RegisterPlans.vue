@@ -12,6 +12,7 @@ interface PlanOption {
     name: string;
     description: string | null;
     features: string[] | null;
+    custom_pricing: boolean;
     monthly_price: number | string;
     monthly_price_id: string | null;
     yearly_price: number | string;
@@ -67,6 +68,20 @@ const selectedPlan = computed(() => {
 
 const isRtl = computed(() => direction.value === 'rtl');
 
+const isSelectedPlanCustom = computed(() => Boolean(selectedPlan.value?.custom_pricing));
+
+const customPricingLabel = computed(() =>
+    locale.value.toLowerCase().startsWith('ar')
+        ? 'مخصص'
+        : t('plans_page.custom_pricing_label'),
+);
+
+const customPricingHelp = computed(() =>
+    locale.value.toLowerCase().startsWith('ar')
+        ? 'هذه الخطة بتسعير مخصص. يرجى التواصل معنا للمتابعة.'
+        : t('plans_page.custom_pricing_help'),
+);
+
 const priceFor = (plan: PlanOption): number => {
     const pricing = pricingFor(plan);
     if (typeof pricing?.final_amount === 'number') {
@@ -91,6 +106,10 @@ const pricingFor = (plan: PlanOption): PricingMeta | undefined => {
 
 
 const supportsCycle = (plan: PlanOption, cycle: BillingCycle): boolean => {
+    if (plan.custom_pricing) {
+        return true;
+    }
+
     if (cycle === 'monthly') {
         return Number(plan.monthly_price) > 0;
     }
@@ -107,6 +126,10 @@ const supportsCycle = (plan: PlanOption, cycle: BillingCycle): boolean => {
 };
 
 const submit = () => {
+    if (isSelectedPlanCustom.value) {
+        return;
+    }
+
     form.post(props.urls.plansStore);
 };
 </script>
@@ -228,7 +251,7 @@ const submit = () => {
                         </p>
                         <div class="mb-4">
                             <div
-                                v-if="pricingFor(plan)?.has_discount"
+                                v-if="!plan.custom_pricing && pricingFor(plan)?.has_discount"
                                 class="mb-2 inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700"
                             >
                                 <template v-if="locale === 'ar'">
@@ -249,7 +272,12 @@ const submit = () => {
                                     }}% {{ t('landing.discount_off') }}
                                 </template>
                             </div>
-                            <div class="flex items-end gap-2">
+                            <div v-if="plan.custom_pricing" class="space-y-1">
+                                <p class="inline-block select-none bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-4xl font-extrabold text-transparent">
+                                    {{ customPricingLabel }}
+                                </p>
+                            </div>
+                            <div v-else class="flex items-end gap-2">
                                 <p class="text-3xl font-bold text-slate-900">
                                     ${{ priceFor(plan).toFixed(2) }}
                                 </p>
@@ -269,7 +297,7 @@ const submit = () => {
                                 </p>
                             </div>
                             <p
-                                v-if="pricingFor(plan)?.has_discount"
+                                v-if="!plan.custom_pricing && pricingFor(plan)?.has_discount"
                                 class="mt-1 text-xs font-medium text-emerald-700"
                             >
                                 <template v-if="isRtl">
@@ -317,7 +345,7 @@ const submit = () => {
                 <div class="mt-8 flex items-center gap-3">
                     <Button
                         type="submit"
-                        :disabled="form.processing || !selectedPlan"
+                        :disabled="form.processing || !selectedPlan || isSelectedPlanCustom"
                     >
                         {{
                             form.processing
@@ -332,6 +360,9 @@ const submit = () => {
                         {{ t('plans_page.edit_details') }}
                     </Link>
                 </div>
+                <p v-if="isSelectedPlanCustom" class="mt-3 text-start text-sm text-amber-700">
+                    {{ customPricingHelp }}
+                </p>
             </form>
         </div>
     </main>

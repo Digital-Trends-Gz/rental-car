@@ -39,6 +39,7 @@ class Plan extends Model
         'description',
         'sort_order',
         'features',
+        'custom_pricing',
         'feature_flags',
         'monthly_price',
         'monthly_price_id',
@@ -57,6 +58,7 @@ class Plan extends Model
     protected $casts = [
         'features' => 'array',
         'feature_flags' => 'array',
+        'custom_pricing' => 'boolean',
         'is_active' => 'boolean',
         'monthly_price' => 'decimal:2',
         'yearly_price' => 'decimal:2',
