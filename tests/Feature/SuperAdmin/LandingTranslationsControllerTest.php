@@ -46,6 +46,7 @@ class LandingTranslationsControllerTest extends TestCase
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('applications_page.roles.0.title'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('plans_page.custom_pricing_badge'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('plans_page.custom_pricing_caption'))
+                ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('landing.most_value'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('auth.api.account_not_found'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('auth.api.account_types.company_owner'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('contracts.damage_catalog.damage_types.scratch'))

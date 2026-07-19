@@ -259,6 +259,17 @@ const customPricingCaption = computed(() => {
         ? '\u0627\u0644\u0633\u0639\u0631 \u062d\u0633\u0628 \u0627\u0644\u0639\u0642\u062f \u0648\u062d\u062c\u0645 \u0627\u0644\u0634\u0631\u0643\u0629'
         : 'Pricing depends on contract and company size';
 });
+const mostValueLabel = computed(() => {
+    const value = t('landing.most_value');
+
+    if (value !== 'landing.most_value') {
+        return value;
+    }
+
+    return locale.value.toLowerCase().startsWith('ar')
+        ? '\u0627\u0644\u0623\u0643\u062b\u0631 \u0642\u064a\u0645\u0629'
+        : 'Most Value';
+});
 const availableLocales = computed<string[]>(() =>
     Array.isArray(page.props?.available_locales) &&
     page.props.available_locales.length
@@ -680,6 +691,12 @@ const planPricing = (plan: Plan) => {
 
 const planPrice = (plan: Plan) => {
     return Number(planPricing(plan).final_amount || 0);
+};
+
+const isProfessionalPlan = (plan: Plan) => {
+    const normalizedName = String(plan.name || '').trim().toLowerCase();
+
+    return normalizedName.includes('professional');
 };
 
 const money = (value: number) => {
@@ -1984,6 +2001,12 @@ onUnmounted(() => {
                                 <div
                                     class="card-elevated flex h-full flex-col rounded-xl p-6"
                                 >
+                                    <div
+                                        v-if="isProfessionalPlan(plan)"
+                                        class="mb-4 inline-flex w-fit rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white"
+                                    >
+                                        {{ mostValueLabel }}
+                                    </div>
                                     <h3
                                         class="text-lg font-semibold text-foreground"
                                     >

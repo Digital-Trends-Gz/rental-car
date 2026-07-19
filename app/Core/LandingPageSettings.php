@@ -65,6 +65,7 @@ class LandingPageSettings
             ],
             'cars_section' => [
                 'enabled' => true,
+                'fleet_button_icon_url' => '',
             ],
             'features_section' => [
                 'enabled' => true,
@@ -427,6 +428,7 @@ class LandingPageSettings
         $settings['hero']['localized_images'] = self::normalizeLocalizedImages($settings['hero']['localized_images'] ?? []);
 
         $settings['cars_section']['enabled'] = (bool) ($settings['cars_section']['enabled'] ?? true);
+        $settings['cars_section']['fleet_button_icon_url'] = (string) ($settings['cars_section']['fleet_button_icon_url'] ?? '');
         $settings['features_section']['enabled'] = (bool) ($settings['features_section']['enabled'] ?? true);
         $settings['features_section']['cards'] = self::normalizeCards($settings['features_section']['cards'] ?? []);
         $settings['getting_started']['enabled'] = (bool) ($settings['getting_started']['enabled'] ?? true);

@@ -140,6 +140,7 @@ class LandingSettingsController extends Controller
             'previewUrl' => route('home'),
             'heroFiles' => $heroFiles,
             'heroLocalizedFiles' => $this->heroLocalizedFiles($brandingSetting),
+            'carsFleetButtonIconFiles' => $this->landingFilesForCollection($brandingSetting, 'cars_fleet_button_icon'),
             'featureFiles' => $this->featureCardFiles($brandingSetting),
             'gettingStartedFiles' => $this->gettingStartedFiles($brandingSetting),
             'mobileAppFiles' => $this->mobileAppFiles($brandingSetting),
@@ -172,6 +173,7 @@ class LandingSettingsController extends Controller
             'settings.hero.localized_images.*' => ['nullable', 'string', 'max:2000'],
 
             'settings.cars_section.enabled' => ['nullable', 'boolean'],
+            'settings.cars_section.fleet_button_icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.features_section.enabled' => ['nullable', 'boolean'],
             'settings.features_section.title' => ['required', 'string', 'max:255'],
             'settings.features_section.description' => ['required', 'string', 'max:2000'],
@@ -266,6 +268,7 @@ class LandingSettingsController extends Controller
         $this->syncFeatureCardUploads($request, $landingSetting);
         $this->syncGettingStartedUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
+        $this->syncCarsFleetButtonIconUpload($request, $landingSetting);
         $this->refreshLandingImageUrls($landingSetting);
 
         SiteSetting::query()->updateOrCreate(
@@ -297,6 +300,7 @@ class LandingSettingsController extends Controller
         $this->syncFeatureCardUploads($request, $landingSetting);
         $this->syncGettingStartedUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
+        $this->syncCarsFleetButtonIconUpload($request, $landingSetting);
         $this->refreshLandingImageUrls($landingSetting);
 
         Log::info('Landing design upload sync completed.', [
