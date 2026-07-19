@@ -20,6 +20,7 @@ type Plan = {
     name: string;
     description?: string | null;
     custom_pricing?: boolean;
+    is_most_value?: boolean;
     monthly_price?: string | number | null;
     max_employees?: number | null;
     max_branches?: number | null;
@@ -103,7 +104,7 @@ const showFooter = computed(() => props.plansPage.footer_enabled !== false);
 
 const money = (value: unknown) => Number(value || 0).toFixed(2);
 const pricingFor = (plan: Plan) => plan.pricing_meta?.monthly || {};
-const isPopular = (plan: Plan) => String(plan.name || '').toLowerCase().includes('professional');
+const isPopular = (plan: Plan) => Boolean(plan.is_most_value);
 
 const formatNumber = (value: number) => new Intl.NumberFormat(locale.value).format(value);
 

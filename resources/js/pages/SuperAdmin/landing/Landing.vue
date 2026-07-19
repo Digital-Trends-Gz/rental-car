@@ -1410,7 +1410,7 @@ onUnmounted(() => {
                                         .fleet_button_icon_url
                                 "
                                 alt=""
-                                class="h-5 w-5 shrink-0 object-contain"
+                                class="h-6 w-6 shrink-0 object-contain brightness-0 invert"
                             />
                             {{ t('landing.cars_view_complete_fleet') }}
                         </a>
