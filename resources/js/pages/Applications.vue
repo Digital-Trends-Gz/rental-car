@@ -11,6 +11,7 @@ type ApplicationRole = {
     label: string;
     title: string;
     description: string;
+    image_url?: string;
     note_title: string;
     note: string;
     floating_one_title: string;
@@ -36,6 +37,7 @@ type ApplicationsPage = {
     hero_title: string;
     hero_highlight: string;
     hero_description: string;
+    hero_image_url?: string;
     primary_cta_label: string;
     secondary_cta_label: string;
     owner_employee_note: string;
@@ -150,6 +152,13 @@ const roleTone = (index: number) =>
                     </div>
 
                     <div class="relative min-h-[31rem]">
+                        <img
+                            v-if="applicationsPage.hero_image_url"
+                            :src="applicationsPage.hero_image_url"
+                            :alt="applicationsPage.hero_title"
+                            class="h-[31rem] w-full rounded-lg border border-border object-cover shadow-2xl shadow-slate-900/10"
+                        />
+                        <template v-else>
                         <div class="absolute inset-10 rounded-full bg-gradient-to-br from-primary/10 to-indigo-500/10"></div>
                         <div class="phone-mock phone-owner">
                             <div class="phone-screen">
@@ -191,6 +200,7 @@ const roleTone = (index: number) =>
                                 <div class="screen-task">Track rental status</div>
                             </div>
                         </div>
+                        </template>
                     </div>
                 </div>
             </section>
@@ -220,7 +230,13 @@ const roleTone = (index: number) =>
                             <strong>{{ role.floating_one_title }}</strong>
                             <span>{{ role.floating_one_text }}</span>
                         </div>
-                        <div class="big-phone">
+                        <img
+                            v-if="role.image_url"
+                            :src="role.image_url"
+                            :alt="role.title"
+                            class="absolute left-1/2 top-1/2 z-[2] h-[28rem] max-w-[76%] -translate-x-1/2 -translate-y-1/2 rounded-[1.5rem] object-cover shadow-2xl shadow-slate-900/20"
+                        />
+                        <div v-else class="big-phone">
                             <div class="phone-screen">
                                 <div class="phone-notch"></div>
                                 <p class="screen-muted">{{ role.screen_label }}</p>
