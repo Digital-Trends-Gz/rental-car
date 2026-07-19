@@ -745,6 +745,11 @@ class LandingSettingsController extends Controller
             data_set($settings, 'hero.image_url', $heroUrl);
         }
 
+        $fleetButtonIconUrl = $this->latestLandingFileUrl($landingSetting, 'cars_fleet_button_icon');
+        if ($fleetButtonIconUrl && trim((string) data_get($settings, 'cars_section.fleet_button_icon_url', '')) === '') {
+            data_set($settings, 'cars_section.fleet_button_icon_url', $fleetButtonIconUrl);
+        }
+
         $localizedImages = (array) data_get($settings, 'hero.localized_images', []);
         foreach ($this->supportedLocaleKeys() as $locale) {
             $localeUrl = $this->latestLandingFileUrl($landingSetting, $this->heroLocaleCollection($locale));
@@ -983,6 +988,60 @@ class LandingSettingsController extends Controller
         $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
     }
 
+    private function syncCarsFleetButtonIconUpload(Request $request, SiteSetting $landingSetting): void
+    {
+        $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
+        $collection = 'cars_fleet_button_icon';
+        $tempFolders = is_array($request->input('cars_fleet_button_icon_temp_folders', []))
+            ? array_values(array_filter($request->input('cars_fleet_button_icon_temp_folders', [])))
+            : [];
+        $removedIds = is_array($request->input('cars_fleet_button_icon_removed_files', []))
+            ? array_values(array_unique(array_filter($request->input('cars_fleet_button_icon_removed_files', []))))
+            : [];
+        $directFile = $request->file('cars_fleet_button_icon_direct_file');
+
+        if ($directFile instanceof UploadedFile) {
+            data_set(
+                $settings,
+                'cars_section.fleet_button_icon_url',
+                $this->storeDirectLandingFile($landingSetting, $directFile, $collection)
+            );
+
+            $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
+
+            return;
+        }
+
+        if (!empty($tempFolders)) {
+            $existingIds = $landingSetting->files()->where('collection', $collection)->pluck('id')->all();
+            $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+        }
+
+        $this->filePondService->handleFileUpdates(
+            $landingSetting,
+            $tempFolders,
+            $removedIds,
+            $collection
+        );
+
+        if (!empty($tempFolders)) {
+            $file = $landingSetting->files()
+                ->where('collection', $collection)
+                ->latest('id')
+                ->first();
+
+            data_set(
+                $settings,
+                'cars_section.fleet_button_icon_url',
+                $file ? (SiteSetting::publicUrlFromPath($file->path) ?? '') : (string) data_get($settings, 'cars_section.fleet_button_icon_url', '')
+            );
+        } elseif (!empty($removedIds)) {
+            data_set($settings, 'cars_section.fleet_button_icon_url', '');
+        }
+
+        $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
+    }
+
     private function syncMobileAppUploads(Request $request, SiteSetting $landingSetting): void
     {
         $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
@@ -1186,6 +1245,13 @@ class LandingSettingsController extends Controller
             }
         }
 
+        if ($request->has('cars_fleet_button_icon_direct_file') && !($request->file('cars_fleet_button_icon_direct_file') instanceof UploadedFile)) {
+            $request->request->remove('cars_fleet_button_icon_direct_file');
+            if ($request->files->has('cars_fleet_button_icon_direct_file')) {
+                $request->files->remove('cars_fleet_button_icon_direct_file');
+            }
+        }
+
         if ($request->has('hero_locale_direct_files')) {
             $files = $request->input('hero_locale_direct_files');
             if (is_array($files)) {
@@ -1267,6 +1333,7 @@ class LandingSettingsController extends Controller
             'settings.hero.localized_images.*' => ['nullable', 'string', 'max:2000'],
 
             'settings.cars_section.enabled' => ['nullable', 'boolean'],
+            'settings.cars_section.fleet_button_icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.features_section.enabled' => ['nullable', 'boolean'],
             'settings.features_section.title' => ['required', 'string', 'max:255'],
             'settings.features_section.description' => ['required', 'string', 'max:2000'],
@@ -1368,6 +1435,11 @@ class LandingSettingsController extends Controller
             'hero_locale_removed_files.*' => ['array'],
             'hero_locale_removed_files.*.*' => ['integer'],
             'hero_direct_file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg,mp4,webm,ogg,mov', 'max:51200'],
+            'cars_fleet_button_icon_temp_folders' => ['nullable', 'array'],
+            'cars_fleet_button_icon_temp_folders.*' => ['string'],
+            'cars_fleet_button_icon_removed_files' => ['nullable', 'array'],
+            'cars_fleet_button_icon_removed_files.*' => ['integer'],
+            'cars_fleet_button_icon_direct_file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
             'hero_locale_direct_files' => ['nullable', 'array'],
             'hero_locale_direct_files.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg,mp4,webm,ogg,mov', 'max:51200'],
             'feature_card_temp_folders' => ['nullable', 'array'],

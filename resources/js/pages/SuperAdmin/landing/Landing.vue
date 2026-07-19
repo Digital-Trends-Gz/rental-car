@@ -125,6 +125,7 @@ interface LandingSettings {
     };
     cars_section: {
         enabled: boolean;
+        fleet_button_icon_url?: string;
     };
     locale_switcher?: {
         language_names?: Record<string, string>;
@@ -1349,8 +1350,20 @@ onUnmounted(() => {
                     <div class="mt-14 flex justify-center">
                         <a
                             :href="fleetUrl"
-                            class="gradient-button inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-semibold"
+                            class="gradient-button inline-flex items-center justify-center gap-2 rounded-2xl px-8 py-4 text-base font-semibold"
                         >
+                            <img
+                                v-if="
+                                    landingSettings.cars_section
+                                        .fleet_button_icon_url
+                                "
+                                :src="
+                                    landingSettings.cars_section
+                                        .fleet_button_icon_url
+                                "
+                                alt=""
+                                class="h-5 w-5 shrink-0 object-contain"
+                            />
                             {{ t('landing.cars_view_complete_fleet') }}
                         </a>
                     </div>
@@ -1999,11 +2012,13 @@ onUnmounted(() => {
                                 class="!h-auto"
                             >
                                 <div
-                                    class="card-elevated flex h-full flex-col rounded-xl p-6"
+                                    class="card-elevated relative flex h-full flex-col rounded-xl p-6"
+                                    :class="{ 'pt-16': isProfessionalPlan(plan) }"
                                 >
                                     <div
                                         v-if="isProfessionalPlan(plan)"
-                                        class="mb-4 inline-flex w-fit rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white"
+                                        class="absolute top-4 inline-flex w-fit rounded-full bg-blue-600/10 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-600/15"
+                                        :class="isRtlLocale ? 'right-4' : 'left-4'"
                                     >
                                         {{ mostValueLabel }}
                                     </div>
@@ -2046,13 +2061,13 @@ onUnmounted(() => {
                                         </div>
                                         <div
                                             v-if="plan.custom_pricing"
-                                            class="space-y-3"
+                                            class="flex flex-col items-start gap-3"
                                         >
                                             <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold leading-none text-emerald-800">
                                                 {{ customPricingBadge }}
                                             </span>
                                             <span
-                                                class="inline-block select-none text-lg font-bold text-slate-950"
+                                                class="block select-none text-4xl font-extrabold text-slate-950"
                                             >
                                                 {{ customPricingLabel }}
                                             </span>

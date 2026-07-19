@@ -295,11 +295,11 @@ const submit = () => {
                                     }}% {{ t('landing.discount_off') }}
                                 </template>
                             </div>
-                            <div v-if="plan.custom_pricing" class="space-y-3">
+                            <div v-if="plan.custom_pricing" class="flex flex-col items-start gap-3">
                                 <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold leading-none text-emerald-800">
                                     {{ customPricingBadge }}
                                 </span>
-                                <p class="inline-block select-none text-lg font-bold text-slate-950">
+                                <p class="block select-none text-3xl font-bold text-slate-950">
                                     {{ customPricingLabel }}
                                 </p>
                                 <p class="text-sm font-medium text-slate-500">

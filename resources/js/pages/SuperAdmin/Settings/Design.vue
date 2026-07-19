@@ -77,6 +77,7 @@ interface LandingSettings {
     };
     cars_section: {
         enabled: boolean;
+        fleet_button_icon_url: string;
     };
     features_section: {
         enabled: boolean;
@@ -163,6 +164,7 @@ const props = defineProps<{
     heroLocalizedFiles: Record<string, Array<{ id: number; url: string }>>;
     featureFiles: Record<number, Array<{ id: number; url: string }>>;
     gettingStartedFiles: Record<number, Array<{ id: number; url: string }>>;
+    carsFleetButtonIconFiles: Array<{ id: number; url: string }>;
     mobileAppFiles: Record<
         number,
         {
@@ -187,6 +189,8 @@ const form = useForm<{
     feature_card_removed_files: Record<number, number[]>;
     getting_started_temp_folders: Record<number, string[]>;
     getting_started_removed_files: Record<number, number[]>;
+    cars_fleet_button_icon_temp_folders: string[];
+    cars_fleet_button_icon_removed_files: number[];
     mobile_app_temp_folders: Record<
         number,
         { image: string[]; icon: string[] }
@@ -199,6 +203,7 @@ const form = useForm<{
     hero_locale_direct_files: Record<string, File | null>;
     feature_card_direct_files: Record<number, File | null>;
     getting_started_direct_files: Record<number, File | null>;
+    cars_fleet_button_icon_direct_file: File | null;
     mobile_app_direct_files: Record<
         number,
         { image: File | null; icon: File | null }
@@ -213,12 +218,15 @@ const form = useForm<{
     feature_card_removed_files: {},
     getting_started_temp_folders: {},
     getting_started_removed_files: {},
+    cars_fleet_button_icon_temp_folders: [],
+    cars_fleet_button_icon_removed_files: [],
     mobile_app_temp_folders: {},
     mobile_app_removed_files: {},
     hero_direct_file: null,
     hero_locale_direct_files: {},
     feature_card_direct_files: {},
     getting_started_direct_files: {},
+    cars_fleet_button_icon_direct_file: null,
     mobile_app_direct_files: {},
 });
 
@@ -231,6 +239,8 @@ const featureCardTempFolders = ref<Record<number, string[]>>({});
 const featureCardRemovedFileIds = ref<Record<number, number[]>>({});
 const gettingStartedTempFolders = ref<Record<number, string[]>>({});
 const gettingStartedRemovedFileIds = ref<Record<number, number[]>>({});
+const carsFleetButtonIconTempFolders = ref<string[]>([]);
+const carsFleetButtonIconRemovedFileIds = ref<number[]>([]);
 const mobileAppTempFolders = ref<
     Record<number, { image: string[]; icon: string[] }>
 >({});
@@ -241,6 +251,7 @@ const heroDirectFile = ref<File | null>(null);
 const heroLocaleDirectFiles = ref<Record<string, File | null>>({});
 const featureCardDirectFiles = ref<Record<number, File | null>>({});
 const gettingStartedDirectFiles = ref<Record<number, File | null>>({});
+const carsFleetButtonIconDirectFile = ref<File | null>(null);
 const mobileAppDirectFiles = ref<
     Record<number, { image: File | null; icon: File | null }>
 >({});
@@ -297,6 +308,10 @@ const heroIsVideo = computed(() => isVideoUrl(previewHeroUrl.value));
 
 if (!form.settings.hero.localized_images) {
     form.settings.hero.localized_images = {};
+}
+
+if (!('fleet_button_icon_url' in form.settings.cars_section)) {
+    form.settings.cars_section.fleet_button_icon_url = '';
 }
 
 for (const localeCode of enabledLocales.value) {
@@ -376,6 +391,14 @@ watch(
     gettingStartedTempFolders,
     (value) => {
         form.getting_started_temp_folders = JSON.parse(JSON.stringify(value));
+    },
+    { deep: true },
+);
+
+watch(
+    carsFleetButtonIconTempFolders,
+    (value) => {
+        form.cars_fleet_button_icon_temp_folders = [...value];
     },
     { deep: true },
 );
@@ -475,6 +498,27 @@ const featureCardFileList = (index: number) =>
 
 const gettingStartedFileList = (index: number) =>
     props.gettingStartedFiles?.[index] || [];
+
+const handleCarsFleetButtonIconFileRemoved = (data: {
+    type: string;
+    fileId?: number;
+}) => {
+    if (data.type !== 'existing' || !data.fileId) {
+        return;
+    }
+
+    carsFleetButtonIconRemovedFileIds.value = [
+        ...new Set([...carsFleetButtonIconRemovedFileIds.value, data.fileId]),
+    ];
+    form.cars_fleet_button_icon_removed_files = [
+        ...carsFleetButtonIconRemovedFileIds.value,
+    ];
+};
+
+const handleCarsFleetButtonIconLocalFileAdded = (file: File) => {
+    carsFleetButtonIconDirectFile.value = file;
+    form.cars_fleet_button_icon_direct_file = file;
+};
 
 const handleFeatureCardFileRemoved = (
     index: number,
@@ -597,6 +641,13 @@ const syncUploadStateToForm = () => {
         JSON.stringify(gettingStartedRemovedFileIds.value),
     );
     form.getting_started_direct_files = { ...gettingStartedDirectFiles.value };
+    form.cars_fleet_button_icon_temp_folders = [
+        ...carsFleetButtonIconTempFolders.value,
+    ];
+    form.cars_fleet_button_icon_removed_files = [
+        ...new Set(carsFleetButtonIconRemovedFileIds.value),
+    ];
+    form.cars_fleet_button_icon_direct_file = carsFleetButtonIconDirectFile.value;
     form.mobile_app_temp_folders = JSON.parse(
         JSON.stringify(mobileAppTempFolders.value),
     );
@@ -637,10 +688,16 @@ const submit = () => {
             form.getting_started_temp_folders = {};
             form.getting_started_removed_files = {};
             form.getting_started_direct_files = {};
+            form.cars_fleet_button_icon_temp_folders = [];
+            form.cars_fleet_button_icon_removed_files = [];
+            form.cars_fleet_button_icon_direct_file = null;
             form.mobile_app_temp_folders = {};
             form.mobile_app_removed_files = {};
             heroRemovedFileIds.value = [];
             heroDirectFile.value = null;
+            carsFleetButtonIconTempFolders.value = [];
+            carsFleetButtonIconRemovedFileIds.value = [];
+            carsFleetButtonIconDirectFile.value = null;
             heroLocaleTempFolders.value = Object.fromEntries(
                 enabledLocales.value.map((localeCode) => [localeCode, []]),
             );
@@ -1329,6 +1386,79 @@ const toggleSection = (
                                               )
                                     }}
                                 </Button>
+                            </div>
+
+                            <div class="space-y-3 rounded-lg border p-4">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <Label>{{
+                                            localize(
+                                                'View Complete Fleet Button Icon',
+                                                'أيقونة زر عرض الأسطول الكامل',
+                                            )
+                                        }}</Label>
+                                        <p class="mt-1 text-sm text-muted-foreground">
+                                            {{
+                                                localize(
+                                                    'Upload the optional icon shown inside the fleet button.',
+                                                    'ارفع الأيقونة الاختيارية التي تظهر داخل زر عرض الأسطول.',
+                                                )
+                                            }}
+                                        </p>
+                                    </div>
+                                    <img
+                                        v-if="
+                                            form.settings.cars_section
+                                                .fleet_button_icon_url
+                                        "
+                                        :src="
+                                            form.settings.cars_section
+                                                .fleet_button_icon_url
+                                        "
+                                        alt=""
+                                        class="h-8 w-8 rounded-md border bg-white object-contain p-1"
+                                    />
+                                </div>
+                                <FileUpload
+                                    v-model="carsFleetButtonIconTempFolders"
+                                    :initial-files="
+                                        carsFleetButtonIconFiles || []
+                                    "
+                                    :allow-multiple="false"
+                                    :max-files="1"
+                                    :instant-upload="false"
+                                    :max-file-size="1024 * 1024 * 5"
+                                    :allowed-file-types="[
+                                        'image/svg+xml',
+                                        'image/jpeg',
+                                        'image/png',
+                                        'image/webp',
+                                        'image/gif',
+                                    ]"
+                                    collection="cars_fleet_button_icon"
+                                    theme="light"
+                                    width="100%"
+                                    @file-removed="
+                                        handleCarsFleetButtonIconFileRemoved
+                                    "
+                                    @local-file-added="
+                                        handleCarsFleetButtonIconLocalFileAdded
+                                    "
+                                />
+                                <p
+                                    v-if="
+                                        form.errors[
+                                            'cars_fleet_button_icon_direct_file'
+                                        ]
+                                    "
+                                    class="text-sm text-red-600"
+                                >
+                                    {{
+                                        form.errors[
+                                            'cars_fleet_button_icon_direct_file'
+                                        ]
+                                    }}
+                                </p>
                             </div>
 
                             <div
