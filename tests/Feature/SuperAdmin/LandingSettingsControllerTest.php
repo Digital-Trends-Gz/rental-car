@@ -116,4 +116,33 @@ class LandingSettingsControllerTest extends TestCase
         $this->assertEmpty($value['hero']['image_url']);
         $this->assertEmpty($value['features_section']['cards'][0]['image_url']);
     }
+
+    public function test_applications_page_visibility_flags_normalize_string_false_values(): void
+    {
+        $settings = LandingPageSettings::normalize([
+            'applications_page' => [
+                'enabled' => 'false',
+                'hero_enabled' => 'false',
+                'apps_enabled' => 'false',
+                'comparison_enabled' => 'false',
+                'ecosystem_enabled' => 'false',
+                'roles' => [
+                    ['enabled' => 'false', 'title' => 'Owner'],
+                ],
+            ],
+            'plans_comparison_page' => [
+                'enabled' => 'false',
+                'hero_enabled' => 'false',
+            ],
+        ]);
+
+        $this->assertFalse($settings['applications_page']['enabled']);
+        $this->assertFalse($settings['applications_page']['hero_enabled']);
+        $this->assertFalse($settings['applications_page']['apps_enabled']);
+        $this->assertFalse($settings['applications_page']['comparison_enabled']);
+        $this->assertFalse($settings['applications_page']['ecosystem_enabled']);
+        $this->assertFalse($settings['applications_page']['roles'][0]['enabled']);
+        $this->assertFalse($settings['plans_comparison_page']['enabled']);
+        $this->assertFalse($settings['plans_comparison_page']['hero_enabled']);
+    }
 }

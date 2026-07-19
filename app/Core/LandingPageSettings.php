@@ -579,6 +579,24 @@ class LandingPageSettings
         $settings['mobile_apps_section']['enabled'] = (bool) ($settings['mobile_apps_section']['enabled'] ?? true);
         $settings['mobile_apps_section']['apps'] = self::normalizeAppCards($settings['mobile_apps_section']['apps'] ?? []);
         $settings['navigation']['links'] = self::ensureLandingPageNavigationLinks($settings);
+        $settings['applications_page']['enabled'] = self::normalizeBoolean($settings['applications_page']['enabled'] ?? true);
+        $settings['applications_page']['hero_enabled'] = self::normalizeBoolean($settings['applications_page']['hero_enabled'] ?? true);
+        $settings['applications_page']['apps_enabled'] = self::normalizeBoolean($settings['applications_page']['apps_enabled'] ?? true);
+        $settings['applications_page']['comparison_enabled'] = self::normalizeBoolean($settings['applications_page']['comparison_enabled'] ?? true);
+        $settings['applications_page']['ecosystem_enabled'] = self::normalizeBoolean($settings['applications_page']['ecosystem_enabled'] ?? true);
+        $settings['applications_page']['roles'] = array_values(array_map(static function (mixed $role): array {
+            $role = is_array($role) ? $role : [];
+            $role['enabled'] = self::normalizeBoolean($role['enabled'] ?? true);
+
+            return $role;
+        }, (array) ($settings['applications_page']['roles'] ?? [])));
+        $settings['plans_comparison_page']['enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['enabled'] ?? true);
+        $settings['plans_comparison_page']['hero_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['hero_enabled'] ?? true);
+        $settings['plans_comparison_page']['summary_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['summary_enabled'] ?? true);
+        $settings['plans_comparison_page']['comparison_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['comparison_enabled'] ?? true);
+        $settings['plans_comparison_page']['addons_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['addons_enabled'] ?? true);
+        $settings['plans_comparison_page']['policy_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['policy_enabled'] ?? true);
+        $settings['plans_comparison_page']['footer_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['footer_enabled'] ?? true);
         $settings['clients_section']['enabled'] = (bool) ($settings['clients_section']['enabled'] ?? true);
         $settings['plans_section']['enabled'] = (bool) ($settings['plans_section']['enabled'] ?? true);
         $settings['faq_section']['enabled'] = (bool) ($settings['faq_section']['enabled'] ?? true);
@@ -753,6 +771,19 @@ class LandingPageSettings
         return array_values(array_filter(array_map(static function ($item) {
             return trim((string) $item);
         }, $items), static fn ($item) => $item !== ''));
+    }
+
+    private static function normalizeBoolean(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        return (bool) $value;
     }
 
     private static function normalizeCards(mixed $items): array
