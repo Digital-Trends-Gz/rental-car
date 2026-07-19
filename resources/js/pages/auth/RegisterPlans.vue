@@ -12,6 +12,7 @@ interface PlanOption {
     name: string;
     description: string | null;
     features: string[] | null;
+    feature_flags: Record<string, boolean> | null;
     custom_pricing: boolean;
     monthly_price: number | string;
     monthly_price_id: string | null;
@@ -69,6 +70,54 @@ const selectedPlan = computed(() => {
 const isRtl = computed(() => direction.value === 'rtl');
 
 const isSelectedPlanCustom = computed(() => Boolean(selectedPlan.value?.custom_pricing));
+
+const featureFlagLabels: Record<string, string> = {
+    client_portal: 'Client Portal',
+    booking_calendar: 'Booking Calendar',
+    cash_payments: 'Cash Payments',
+    extension_request: 'Extension Requests',
+    force_extend_contract: 'Force Extend Contract',
+    car_documents: 'Car Documents',
+    maintenance_module: 'Maintenance Module',
+    violations_module: 'Violations Module',
+    damage_reports: 'Damage Reports',
+    reports_module: 'Reports Module',
+    pdf_export: 'PDF Export',
+    ai_contract_extraction: 'AI Contract Extraction',
+    whatsapp_notifications: 'WhatsApp Notifications',
+    sms_notifications: 'SMS Notifications',
+    email_notifications: 'Email Notifications',
+    custom_branding: 'Custom Branding',
+    custom_domain: 'Custom Domain',
+    stripe_connect: 'Stripe Connect',
+    coupon_system: 'Coupon System',
+    auto_discounts: 'Auto Discounts',
+    roles_and_permissions: 'Roles and Permissions',
+};
+
+const displayPlanFeatures = (plan: PlanOption) => {
+    const explicitFeatures = (plan.features || [])
+        .map((feature) => String(feature || '').trim())
+        .filter((feature) => feature !== '');
+    const onlyGenericUnlimited =
+        explicitFeatures.length > 0 &&
+        explicitFeatures.every((feature) => feature.toLowerCase() === 'unlimited');
+
+    if (explicitFeatures.length > 0 && !onlyGenericUnlimited) {
+        return explicitFeatures;
+    }
+
+    const flagEntries = Object.entries(plan.feature_flags || {});
+
+    if (flagEntries.length === 0) {
+        return Object.values(featureFlagLabels).slice(0, 6);
+    }
+
+    return flagEntries
+        .filter(([, enabled]) => Boolean(enabled))
+        .map(([key]) => featureFlagLabels[key] || key.replaceAll('_', ' '))
+        .slice(0, 6);
+};
 
 const customPricingLabel = computed(() =>
     locale.value.toLowerCase().startsWith('ar')
@@ -351,7 +400,7 @@ const submit = () => {
 
                         <ul class="space-y-2 text-sm text-slate-700">
                             <li
-                                v-for="feature in plan.features || []"
+                                v-for="feature in displayPlanFeatures(plan)"
                                 :key="feature"
                             >
                                 - {{ feature }}

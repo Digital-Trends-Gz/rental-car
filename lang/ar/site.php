@@ -513,6 +513,7 @@ return array (
     'monthly' => 'شهري',
     'yearly' => 'سنوي',
     'save_20' => 'وفّر 20%',
+    'most_value' => 'الأكثر قيمة',
     'most_popular' => 'الأكثر شيوعًا',
     'per_month' => '/شهر',
     'compare_plans' => 'مقارنة الباقات',

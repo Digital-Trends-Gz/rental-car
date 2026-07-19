@@ -208,6 +208,7 @@ class RegisteredUserController extends Controller
                     'description',
                     'sort_order',
                     'features',
+                    'feature_flags',
                     'custom_pricing',
                     'monthly_price',
                     'monthly_price_id',

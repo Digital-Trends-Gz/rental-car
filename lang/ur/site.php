@@ -408,6 +408,7 @@ return [
         'monthly' => 'Monthly',
         'yearly' => 'Yearly',
         'save_20' => 'Save 20%',
+        'most_value' => 'سب سے زیادہ قدر',
         'most_popular' => 'Most Popular',
         'per_month' => '/mo',
         'compare_plans' => 'Compare plans',
