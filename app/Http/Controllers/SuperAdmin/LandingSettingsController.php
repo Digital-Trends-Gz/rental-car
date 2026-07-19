@@ -2109,13 +2109,16 @@ class LandingSettingsController extends Controller
             return $settings;
         }
 
-        foreach ($links as $link) {
-            if (is_array($link) && in_array(($link['href'] ?? null), ['/applications', '#application'], true)) {
+        foreach ($links as $index => $link) {
+            if (is_array($link) && in_array(($link['href'] ?? null), ['/applications', '/car-rental-apps', '#application'], true)) {
+                $links[$index]['href'] = '/car-rental-apps';
+                data_set($settings, 'navigation.links', array_values($links));
+
                 return $settings;
             }
         }
 
-        $applicationLink = ['label' => 'Application', 'href' => '/applications'];
+        $applicationLink = ['label' => 'Application', 'href' => '/car-rental-apps'];
         $featuresIndex = null;
 
         foreach ($links as $index => $link) {

@@ -156,7 +156,7 @@ const landingNavLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
         { label: 'Features', href: '#features' },
-        { label: 'Application', href: '/applications' },
+        { label: 'Application', href: '/car-rental-apps' },
         { label: 'Clients', href: '#clients' },
         { label: 'Plans', href: '/plans' },
         { label: 'Contact', href: '#contact' },
@@ -174,10 +174,10 @@ const landingNavLinks = computed(() => {
 
     if (
         landingSettings.value?.mobile_apps_section?.enabled !== false &&
-        !normalizedLinks.some((link) => ['/applications', '#application'].includes(link.href))
+        !normalizedLinks.some((link) => ['/applications', '/car-rental-apps', '#application'].includes(link.href))
     ) {
         const featuresIndex = normalizedLinks.findIndex((link) => link.href === '#features');
-        const applicationLink = { label: 'Application', href: '/applications' };
+        const applicationLink = { label: 'Application', href: '/car-rental-apps' };
 
         if (featuresIndex >= 0) {
             normalizedLinks.splice(featuresIndex + 1, 0, applicationLink);
@@ -201,7 +201,7 @@ const landingFooterNavLinks = computed(() => {
     const links: Array<{ label: string; href: string }> = [];
 
     if (landingSettings.value?.mobile_apps_section?.enabled !== false) {
-        links.push({ label: 'Application', href: resolveLandingHref('/applications') });
+        links.push({ label: 'Application', href: resolveLandingHref('/car-rental-apps') });
     }
 
     if (landingSettings.value?.plans_comparison_page?.enabled !== false) {

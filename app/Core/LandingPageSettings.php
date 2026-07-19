@@ -38,7 +38,7 @@ class LandingPageSettings
                 'links' => [
                     ['label' => 'Cars', 'href' => '#cars'],
                     ['label' => 'Features', 'href' => '#features'],
-                    ['label' => 'Application', 'href' => '/applications'],
+                    ['label' => 'Application', 'href' => '/car-rental-apps'],
                     ['label' => 'Clients', 'href' => '#clients'],
                     ['label' => 'Plans', 'href' => '/plans'],
                     ['label' => 'Contact', 'href' => '#contact'],
@@ -718,15 +718,15 @@ class LandingPageSettings
         if (($settings['mobile_apps_section']['enabled'] ?? true) !== false) {
             $hasApplicationLink = false;
 
-            foreach ($links as $link) {
-                if (is_array($link) && in_array(($link['href'] ?? null), ['/applications', '#application'], true)) {
+            foreach ($links as $index => $link) {
+                if (is_array($link) && in_array(($link['href'] ?? null), ['/applications', '/car-rental-apps', '#application'], true)) {
+                    $links[$index]['href'] = '/car-rental-apps';
                     $hasApplicationLink = true;
-                    break;
                 }
             }
 
             if (!$hasApplicationLink) {
-                $applicationLink = ['label' => 'Application', 'href' => '/applications'];
+                $applicationLink = ['label' => 'Application', 'href' => '/car-rental-apps'];
                 $featuresIndex = null;
 
                 foreach ($links as $index => $link) {

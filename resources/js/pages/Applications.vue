@@ -129,47 +129,47 @@ const roleTone = (index: number) =>
     <Head v-else :title="applicationsPage.hero_title || 'Applications'" />
 
     <HomeLayout shell-variant="landing">
-        <div class="applications-page bg-background text-foreground" :dir="isRtl ? 'rtl' : 'ltr'">
-            <section v-if="showHero" class="relative overflow-hidden border-b border-border bg-white">
-                <div class="section-container grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-12 py-14 md:grid-cols-[1fr_0.92fr] md:py-20">
+        <div class="applications-page bg-white text-slate-950" :dir="isRtl ? 'rtl' : 'ltr'">
+            <section v-if="showHero" class="apps-hero relative overflow-hidden">
+                <div class="section-container grid max-w-7xl items-center gap-12 py-16 md:grid-cols-[1.05fr_0.95fr] md:gap-[60px] md:py-[86px]">
                     <div class="max-w-3xl">
-                        <div class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-2 text-xs font-black uppercase tracking-wider text-primary">
+                        <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-blue-700">
                             <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
                             {{ applicationsPage.hero_eyebrow }}
                         </div>
-                        <h1 class="mt-5 text-4xl font-black leading-tight tracking-normal text-slate-950 sm:text-5xl lg:text-6xl">
+                        <h1 class="mt-5 text-[43px] font-black leading-[1.04] tracking-normal text-slate-950 sm:text-[58px]">
                             <span>{{ titleLead }}</span>
                             <br v-if="titleHighlight" />
-                            <span v-if="titleHighlight" class="bg-gradient-to-r from-primary to-indigo-700 bg-clip-text text-transparent">
+                            <span v-if="titleHighlight" class="bg-gradient-to-r from-blue-500 to-purple-700 bg-clip-text text-transparent">
                                 {{ titleHighlight }}
                             </span>
                         </h1>
-                        <p class="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
+                        <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-500">
                             {{ applicationsPage.hero_description }}
                         </p>
                         <div class="mt-8 flex flex-wrap gap-3">
-                            <a v-if="showApps" href="#apps" class="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90">
+                            <a v-if="showApps" href="#apps" class="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-700 px-5 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(79,70,229,0.18)] transition hover:-translate-y-0.5">
                                 {{ applicationsPage.primary_cta_label }}
                                 <ArrowRight class="h-4 w-4 rtl:rotate-180" />
                             </a>
-                            <a v-if="showComparison" href="#compare" class="inline-flex h-12 items-center justify-center rounded-md border border-border bg-white px-6 text-sm font-extrabold text-slate-800 shadow-sm transition hover:border-primary/40 hover:text-primary">
+                            <a v-if="showComparison" href="#compare" class="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-extrabold text-slate-800 transition hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700">
                                 {{ applicationsPage.secondary_cta_label }}
                             </a>
                         </div>
-                        <p class="mt-4 max-w-xl text-sm text-muted-foreground">
+                        <p class="mt-4 max-w-xl text-sm text-slate-400">
                             {{ applicationsPage.owner_employee_note }}
                         </p>
                     </div>
 
-                    <div class="relative min-h-[31rem]">
+                    <div class="relative min-h-[510px]">
                         <img
                             v-if="applicationsPage.hero_image_url"
                             :src="applicationsPage.hero_image_url"
                             :alt="applicationsPage.hero_title"
-                            class="h-[31rem] w-full rounded-lg border border-border object-cover shadow-2xl shadow-slate-900/10"
+                            class="h-[510px] w-full rounded-[30px] border border-slate-200 object-cover shadow-2xl shadow-slate-900/10"
                         />
                         <template v-else>
-                        <div class="absolute inset-10 rounded-full bg-gradient-to-br from-primary/10 to-indigo-500/10"></div>
+                        <div class="absolute inset-[40px_0_0_40px] rounded-full bg-gradient-to-br from-blue-500/10 to-purple-700/10"></div>
                         <div class="phone-mock phone-owner">
                             <div class="phone-screen">
                                 <div class="phone-notch"></div>
@@ -215,16 +215,16 @@ const roleTone = (index: number) =>
                 </div>
             </section>
 
-            <section v-if="showApps" id="apps" class="section-container max-w-7xl py-16 md:py-24">
+            <section v-if="showApps" id="apps" class="section-container max-w-7xl py-20 md:py-24">
                 <div class="mx-auto mb-14 max-w-3xl text-center">
-                    <div class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-2 text-xs font-black uppercase tracking-wider text-primary">
+                    <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-blue-700">
                         <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
                         {{ applicationsPage.section_eyebrow }}
                     </div>
-                    <h2 class="mt-4 text-3xl font-black tracking-normal text-slate-950 sm:text-4xl">
+                    <h2 class="mt-4 text-3xl font-black tracking-normal text-slate-950 sm:text-[44px]">
                         {{ applicationsPage.section_title }}
                     </h2>
-                    <p class="mt-4 text-base leading-7 text-muted-foreground">
+                    <p class="mt-4 text-base leading-7 text-slate-500">
                         {{ applicationsPage.section_description }}
                     </p>
                 </div>
@@ -232,9 +232,9 @@ const roleTone = (index: number) =>
                 <article
                     v-for="(role, index) in visibleRoles"
                     :key="`${role.key || role.title}-${index}`"
-                    class="grid items-center gap-10 py-10 md:grid-cols-2 md:gap-16"
+                    class="mb-20 grid items-center gap-10 last:mb-0 md:grid-cols-[0.9fr_1.1fr] md:gap-16"
                 >
-                    <div class="relative min-h-[29rem] overflow-hidden rounded-lg border border-border bg-gradient-to-br p-8 shadow-xl shadow-slate-900/5" :class="[roleTone(index), index % 2 === 1 ? 'md:order-2' : '']">
+                    <div class="relative grid min-h-[500px] place-items-center overflow-hidden rounded-[30px] border border-slate-200 bg-gradient-to-br p-8 shadow-[0_24px_55px_rgba(16,24,40,0.08)]" :class="[roleTone(index), index % 2 === 1 ? 'md:order-2' : '']">
                         <div class="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-cyan-300/15"></div>
                         <div class="float-card left-6 top-16">
                             <strong>{{ role.floating_one_title }}</strong>
@@ -271,24 +271,24 @@ const roleTone = (index: number) =>
 
                     <div>
                         <div class="inline-flex items-center gap-3 text-xs font-black uppercase tracking-wider text-slate-600">
-                            <span class="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">
+                            <span class="grid h-[38px] w-[38px] place-items-center rounded-[11px] bg-gradient-to-br from-blue-50 to-purple-50 text-indigo-600">
                                 <component :is="roleIcon(role.key)" class="h-5 w-5" />
                             </span>
                             {{ role.label }}
                         </div>
-                        <h3 class="mt-5 text-3xl font-black tracking-normal text-slate-950">
+                        <h3 class="mt-5 text-3xl font-black tracking-normal text-slate-950 sm:text-[38px]">
                             {{ role.title }}
                         </h3>
-                        <p class="mt-4 text-base leading-8 text-muted-foreground">
+                        <p class="mt-4 text-base leading-8 text-slate-500">
                             {{ role.description }}
                         </p>
-                        <div class="mt-5 rounded-lg border border-primary/15 bg-primary/5 p-4 text-sm leading-6 text-slate-700">
+                        <div class="mt-5 rounded-[13px] border border-blue-100 bg-blue-50/70 p-4 text-sm leading-6 text-slate-700">
                             <strong>{{ role.note_title }}</strong>
                             {{ role.note }}
                         </div>
                         <ul class="mt-6 grid gap-3 sm:grid-cols-2">
                             <li v-for="feature in role.features" :key="feature" class="flex gap-2 text-sm leading-6 text-slate-700">
-                                <Check class="mt-1 h-4 w-4 shrink-0 text-primary" />
+                                <Check class="mt-1 h-4 w-4 shrink-0 text-blue-600" />
                                 <span>{{ feature }}</span>
                             </li>
                         </ul>
@@ -306,26 +306,26 @@ const roleTone = (index: number) =>
                 </article>
             </section>
 
-            <section v-if="showComparison" id="compare" class="bg-slate-50 py-16 md:py-24">
+            <section v-if="showComparison" id="compare" class="bg-[#f7f8fc] py-20 md:py-24">
                 <div class="section-container max-w-7xl">
-                    <div class="rounded-lg border border-border bg-white p-6 shadow-xl shadow-slate-900/5 md:p-10">
+                    <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_20px_50px_rgba(16,24,40,0.06)] md:p-[42px]">
                         <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                             <div>
                                 <h2 class="text-3xl font-black tracking-normal text-slate-950">
                                     {{ applicationsPage.compare_title }}
                                 </h2>
-                                <p class="mt-3 max-w-3xl leading-7 text-muted-foreground">
+                                <p class="mt-3 max-w-3xl leading-7 text-slate-500">
                                     {{ applicationsPage.compare_description }}
                                 </p>
                             </div>
-                            <span class="w-fit rounded-full bg-primary/10 px-3 py-2 text-xs font-black uppercase tracking-wider text-primary">
+                            <span class="w-fit rounded-full bg-blue-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-blue-700">
                                 {{ applicationsPage.compare_badge }}
                             </span>
                         </div>
-                        <div class="grid overflow-hidden rounded-lg border border-border md:grid-cols-3">
-                            <div v-for="item in applicationsPage.comparison" :key="item.title" class="border-b border-border p-6 last:border-b-0 md:border-b-0 md:border-e">
+                        <div class="grid overflow-hidden rounded-[18px] border border-slate-200 md:grid-cols-3">
+                            <div v-for="item in applicationsPage.comparison" :key="item.title" class="border-b border-slate-200 p-6 last:border-b-0 md:border-b-0 md:border-e">
                                 <h3 class="text-lg font-black text-slate-950">{{ item.title }}</h3>
-                                <p class="mt-2 text-sm leading-6 text-muted-foreground">{{ item.description }}</p>
+                                <p class="mt-2 text-sm leading-6 text-slate-500">{{ item.description }}</p>
                                 <ul class="mt-5">
                                     <li v-for="feature in item.items" :key="feature" class="border-t border-slate-100 py-3 text-sm text-slate-700">
                                         {{ feature }}
@@ -337,7 +337,7 @@ const roleTone = (index: number) =>
                 </div>
             </section>
 
-            <section v-if="showEcosystem" class="bg-gradient-to-r from-primary to-indigo-700 py-16 text-white">
+            <section v-if="showEcosystem" class="bg-gradient-to-br from-blue-600 to-purple-700 py-[76px] text-white">
                 <div class="section-container grid max-w-7xl items-center gap-8 md:grid-cols-[1fr_auto]">
                     <div>
                         <h2 class="text-3xl font-black tracking-normal sm:text-4xl">
@@ -347,7 +347,7 @@ const roleTone = (index: number) =>
                             {{ applicationsPage.ecosystem_description }}
                         </p>
                     </div>
-                    <Link :href="registerUrl" class="inline-flex h-12 items-center justify-center rounded-md bg-white px-6 text-sm font-extrabold text-primary shadow-lg transition hover:bg-white/90">
+                    <Link :href="registerUrl" class="inline-flex min-h-[46px] items-center justify-center rounded-xl bg-white px-5 text-sm font-extrabold text-indigo-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-white/90">
                         {{ applicationsPage.ecosystem_cta_label }}
                     </Link>
                 </div>
@@ -357,6 +357,13 @@ const roleTone = (index: number) =>
 </template>
 
 <style scoped>
+.apps-hero {
+    background:
+        radial-gradient(circle at 15% 10%, rgba(59, 130, 246, 0.13), transparent 27%),
+        radial-gradient(circle at 88% 18%, rgba(109, 40, 217, 0.12), transparent 29%),
+        linear-gradient(#fff, #fbfbfe);
+}
+
 .phone-mock,
 .big-phone {
     position: absolute;
@@ -428,7 +435,7 @@ const roleTone = (index: number) =>
 .screen-stat {
     margin-top: 1rem;
     border-radius: 0.9rem;
-    background: linear-gradient(135deg, hsl(var(--primary)), #4338ca);
+    background: linear-gradient(135deg, #3b82f6, #6d28d9);
     padding: 0.8rem;
     color: white;
 }
@@ -515,8 +522,8 @@ const roleTone = (index: number) =>
     align-items: center;
     justify-content: center;
     gap: 0.6rem;
-    border-radius: 0.5rem;
-    border: 1px solid hsl(var(--border));
+    border-radius: 13px;
+    border: 1px solid #dfe3eb;
     background: white;
     padding: 0.5rem 0.95rem;
     font-size: 0.82rem;

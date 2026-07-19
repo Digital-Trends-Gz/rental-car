@@ -399,7 +399,7 @@ const visibleNavHrefs = computed(() => {
     }
 
     if (props.landingSettings.mobile_apps_section?.enabled !== false) {
-        hrefs.add('/applications');
+        hrefs.add('/car-rental-apps');
         hrefs.add('#application');
     }
 
@@ -419,7 +419,7 @@ const navLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
         { label: 'Features', href: '#features' },
-        { label: 'Application', href: '/applications' },
+        { label: 'Application', href: '/car-rental-apps' },
         { label: 'Clients', href: '#clients' },
         { label: 'Plans', href: '/plans' },
         { label: 'Contact', href: '#contact' },
@@ -445,15 +445,15 @@ const navLinks = computed(() => {
         );
 
     if (
-        (visibleNavHrefs.value.has('/applications') || visibleNavHrefs.value.has('#application')) &&
-        !normalizedLinks.some((link) => ['/applications', '#application'].includes(link.href))
+        (visibleNavHrefs.value.has('/applications') || visibleNavHrefs.value.has('/car-rental-apps') || visibleNavHrefs.value.has('#application')) &&
+        !normalizedLinks.some((link) => ['/applications', '/car-rental-apps', '#application'].includes(link.href))
     ) {
         const featuresIndex = normalizedLinks.findIndex(
             (link) => link.href === '#features',
         );
         const applicationLink = {
             label: 'Application',
-            href: '/applications',
+            href: '/car-rental-apps',
         };
 
         if (featuresIndex >= 0) {
@@ -504,7 +504,7 @@ const footerLinks = computed(() => {
     const links: QuickLinkItem[] = [];
 
     if (props.landingSettings.mobile_apps_section?.enabled !== false) {
-        links.push({ label: 'Application', href: localizedPath('/applications') });
+        links.push({ label: 'Application', href: localizedPath('/car-rental-apps') });
     }
 
     if (props.landingSettings.plans_comparison_page?.enabled !== false) {
