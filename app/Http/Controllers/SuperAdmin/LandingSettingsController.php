@@ -171,6 +171,7 @@ class LandingSettingsController extends Controller
 
         $validated = $request->validate([
             'applications_page.enabled' => ['nullable', 'boolean'],
+            'applications_page.hero_enabled' => ['nullable', 'boolean'],
             'applications_page.hero_eyebrow' => ['required', 'string', 'max:255'],
             'applications_page.hero_title' => ['required', 'string', 'max:255'],
             'applications_page.hero_highlight' => ['nullable', 'string', 'max:255'],
@@ -179,6 +180,7 @@ class LandingSettingsController extends Controller
             'applications_page.primary_cta_label' => ['required', 'string', 'max:255'],
             'applications_page.secondary_cta_label' => ['required', 'string', 'max:255'],
             'applications_page.owner_employee_note' => ['nullable', 'string', 'max:1000'],
+            'applications_page.apps_enabled' => ['nullable', 'boolean'],
             'applications_page.section_eyebrow' => ['required', 'string', 'max:255'],
             'applications_page.section_title' => ['required', 'string', 'max:255'],
             'applications_page.section_description' => ['required', 'string', 'max:2000'],
@@ -187,6 +189,7 @@ class LandingSettingsController extends Controller
             'applications_page.store_android_label' => ['required', 'string', 'max:255'],
             'applications_page.store_android_caption' => ['required', 'string', 'max:255'],
             'applications_page.roles' => ['required', 'array', 'min:1'],
+            'applications_page.roles.*.enabled' => ['nullable', 'boolean'],
             'applications_page.roles.*.key' => ['nullable', 'string', 'max:50'],
             'applications_page.roles.*.label' => ['required', 'string', 'max:255'],
             'applications_page.roles.*.title' => ['required', 'string', 'max:255'],
@@ -204,6 +207,7 @@ class LandingSettingsController extends Controller
             'applications_page.roles.*.screen_stat_value' => ['nullable', 'string', 'max:255'],
             'applications_page.roles.*.features' => ['nullable', 'array'],
             'applications_page.roles.*.features.*' => ['nullable', 'string', 'max:255'],
+            'applications_page.comparison_enabled' => ['nullable', 'boolean'],
             'applications_page.compare_title' => ['required', 'string', 'max:255'],
             'applications_page.compare_description' => ['required', 'string', 'max:2000'],
             'applications_page.compare_badge' => ['required', 'string', 'max:255'],
@@ -212,6 +216,7 @@ class LandingSettingsController extends Controller
             'applications_page.comparison.*.description' => ['nullable', 'string', 'max:1000'],
             'applications_page.comparison.*.items' => ['nullable', 'array'],
             'applications_page.comparison.*.items.*' => ['nullable', 'string', 'max:255'],
+            'applications_page.ecosystem_enabled' => ['nullable', 'boolean'],
             'applications_page.ecosystem_title' => ['required', 'string', 'max:255'],
             'applications_page.ecosystem_description' => ['required', 'string', 'max:2000'],
             'applications_page.ecosystem_cta_label' => ['required', 'string', 'max:255'],
@@ -2068,6 +2073,8 @@ class LandingSettingsController extends Controller
     private function isLandingTranslationKey(string $key): bool
     {
         foreach ([
+            '.enabled',
+            '_enabled',
             '.image_url',
             '.icon_url',
             '.app_store_url',

@@ -2017,8 +2017,7 @@ onUnmounted(() => {
                                 >
                                     <div
                                         v-if="isProfessionalPlan(plan)"
-                                        class="absolute top-4 inline-flex w-fit rounded-full bg-blue-600/10 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-600/15"
-                                        :class="isRtlLocale ? 'right-4' : 'left-4'"
+                                        class="absolute top-4 inline-flex w-fit rounded-full bg-blue-600/10 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-600/15 ltr:left-4 rtl:right-4"
                                     >
                                         {{ mostValueLabel }}
                                     </div>
@@ -2063,7 +2062,7 @@ onUnmounted(() => {
                                             v-if="plan.custom_pricing"
                                             class="flex flex-col items-start gap-3"
                                         >
-                                            <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold leading-none text-emerald-800">
+                                            <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-[10px] font-bold leading-none text-emerald-800">
                                                 {{ customPricingBadge }}
                                             </span>
                                             <span

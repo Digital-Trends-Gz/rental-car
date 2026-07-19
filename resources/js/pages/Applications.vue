@@ -7,6 +7,7 @@ import { Apple, ArrowRight, BriefcaseBusiness, Building2, Check, Play, Smartphon
 import { computed } from 'vue';
 
 type ApplicationRole = {
+    enabled?: boolean;
     key?: string;
     label: string;
     title: string;
@@ -33,6 +34,7 @@ type ComparisonItem = {
 
 type ApplicationsPage = {
     enabled?: boolean;
+    hero_enabled?: boolean;
     hero_eyebrow: string;
     hero_title: string;
     hero_highlight: string;
@@ -41,6 +43,7 @@ type ApplicationsPage = {
     primary_cta_label: string;
     secondary_cta_label: string;
     owner_employee_note: string;
+    apps_enabled?: boolean;
     section_eyebrow: string;
     section_title: string;
     section_description: string;
@@ -49,10 +52,12 @@ type ApplicationsPage = {
     store_android_label: string;
     store_android_caption: string;
     roles: ApplicationRole[];
+    comparison_enabled?: boolean;
     compare_title: string;
     compare_description: string;
     compare_badge: string;
     comparison: ComparisonItem[];
+    ecosystem_enabled?: boolean;
     ecosystem_title: string;
     ecosystem_description: string;
     ecosystem_cta_label: string;
@@ -77,6 +82,11 @@ const page = usePage<any>();
 const locale = computed(() => String(page.props.locale || 'en'));
 const isRtl = computed(() => ['ar', 'ur'].includes(locale.value.toLowerCase().split('-')[0]));
 const registerUrl = mainRegister().url;
+const showHero = computed(() => props.applicationsPage.hero_enabled !== false);
+const showApps = computed(() => props.applicationsPage.apps_enabled !== false);
+const showComparison = computed(() => props.applicationsPage.comparison_enabled !== false);
+const showEcosystem = computed(() => props.applicationsPage.ecosystem_enabled !== false);
+const visibleRoles = computed(() => (props.applicationsPage.roles || []).filter((role) => role.enabled !== false));
 const titleLead = computed(() => {
     const title = props.applicationsPage.hero_title || '';
     const highlight = props.applicationsPage.hero_highlight || '';
@@ -120,7 +130,7 @@ const roleTone = (index: number) =>
 
     <HomeLayout shell-variant="landing">
         <div class="applications-page bg-background text-foreground" :dir="isRtl ? 'rtl' : 'ltr'">
-            <section class="relative overflow-hidden border-b border-border bg-white">
+            <section v-if="showHero" class="relative overflow-hidden border-b border-border bg-white">
                 <div class="section-container grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-12 py-14 md:grid-cols-[1fr_0.92fr] md:py-20">
                     <div class="max-w-3xl">
                         <div class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-2 text-xs font-black uppercase tracking-wider text-primary">
@@ -138,11 +148,11 @@ const roleTone = (index: number) =>
                             {{ applicationsPage.hero_description }}
                         </p>
                         <div class="mt-8 flex flex-wrap gap-3">
-                            <a href="#apps" class="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90">
+                            <a v-if="showApps" href="#apps" class="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90">
                                 {{ applicationsPage.primary_cta_label }}
                                 <ArrowRight class="h-4 w-4 rtl:rotate-180" />
                             </a>
-                            <a href="#compare" class="inline-flex h-12 items-center justify-center rounded-md border border-border bg-white px-6 text-sm font-extrabold text-slate-800 shadow-sm transition hover:border-primary/40 hover:text-primary">
+                            <a v-if="showComparison" href="#compare" class="inline-flex h-12 items-center justify-center rounded-md border border-border bg-white px-6 text-sm font-extrabold text-slate-800 shadow-sm transition hover:border-primary/40 hover:text-primary">
                                 {{ applicationsPage.secondary_cta_label }}
                             </a>
                         </div>
@@ -205,7 +215,7 @@ const roleTone = (index: number) =>
                 </div>
             </section>
 
-            <section id="apps" class="section-container max-w-7xl py-16 md:py-24">
+            <section v-if="showApps" id="apps" class="section-container max-w-7xl py-16 md:py-24">
                 <div class="mx-auto mb-14 max-w-3xl text-center">
                     <div class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-2 text-xs font-black uppercase tracking-wider text-primary">
                         <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
@@ -220,7 +230,7 @@ const roleTone = (index: number) =>
                 </div>
 
                 <article
-                    v-for="(role, index) in applicationsPage.roles"
+                    v-for="(role, index) in visibleRoles"
                     :key="`${role.key || role.title}-${index}`"
                     class="grid items-center gap-10 py-10 md:grid-cols-2 md:gap-16"
                 >
@@ -296,7 +306,7 @@ const roleTone = (index: number) =>
                 </article>
             </section>
 
-            <section id="compare" class="bg-slate-50 py-16 md:py-24">
+            <section v-if="showComparison" id="compare" class="bg-slate-50 py-16 md:py-24">
                 <div class="section-container max-w-7xl">
                     <div class="rounded-lg border border-border bg-white p-6 shadow-xl shadow-slate-900/5 md:p-10">
                         <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -327,7 +337,7 @@ const roleTone = (index: number) =>
                 </div>
             </section>
 
-            <section class="bg-gradient-to-r from-primary to-indigo-700 py-16 text-white">
+            <section v-if="showEcosystem" class="bg-gradient-to-r from-primary to-indigo-700 py-16 text-white">
                 <div class="section-container grid max-w-7xl items-center gap-8 md:grid-cols-[1fr_auto]">
                     <div>
                         <h2 class="text-3xl font-black tracking-normal sm:text-4xl">

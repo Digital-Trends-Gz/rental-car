@@ -402,6 +402,7 @@ class HomePagesController extends Controller
         abort_if(TenantContext::get(), 404);
 
         [$landingSettings, $availableLocales] = $this->landingShellSettings();
+        abort_if(data_get($landingSettings, 'applications_page.enabled') === false, 404);
 
         return inertia('Applications', [
             'landingSettings' => $landingSettings,

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
@@ -11,6 +12,7 @@ import { ExternalLink, Languages, Plus, Save, Trash2 } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 type ApplicationRole = {
+    enabled?: boolean;
     key?: string;
     label: string;
     title: string;
@@ -37,6 +39,7 @@ type ComparisonItem = {
 
 type ApplicationsPage = {
     enabled?: boolean;
+    hero_enabled?: boolean;
     hero_eyebrow: string;
     hero_title: string;
     hero_highlight?: string;
@@ -45,6 +48,7 @@ type ApplicationsPage = {
     primary_cta_label: string;
     secondary_cta_label: string;
     owner_employee_note?: string;
+    apps_enabled?: boolean;
     section_eyebrow: string;
     section_title: string;
     section_description: string;
@@ -54,10 +58,12 @@ type ApplicationsPage = {
     store_android_caption: string;
     roles: ApplicationRole[];
     compare_title: string;
+    comparison_enabled?: boolean;
     compare_description: string;
     compare_badge: string;
     comparison: ComparisonItem[];
     ecosystem_title: string;
+    ecosystem_enabled?: boolean;
     ecosystem_description: string;
     ecosystem_cta_label: string;
 };
@@ -83,8 +89,13 @@ const form = useForm<{
     applications_page: {
         ...props.applicationsPage,
         enabled: props.applicationsPage.enabled !== false,
+        hero_enabled: props.applicationsPage.hero_enabled !== false,
+        apps_enabled: props.applicationsPage.apps_enabled !== false,
+        comparison_enabled: props.applicationsPage.comparison_enabled !== false,
+        ecosystem_enabled: props.applicationsPage.ecosystem_enabled !== false,
         roles: (props.applicationsPage.roles || []).map((role) => ({
             ...role,
+            enabled: role.enabled !== false,
             image_url: role.image_url || '',
             features: [...(role.features || [])],
         })),
@@ -180,7 +191,11 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                         Edit the public applications page content, role blocks, comparison copy, and uploaded images.
                     </p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2 rounded-md border px-3 py-2">
+                        <Switch v-model:checked="form.applications_page.enabled" />
+                        <span class="text-sm font-medium">{{ form.applications_page.enabled ? 'Page Shown' : 'Page Hidden' }}</span>
+                    </div>
                     <Button as-child variant="outline">
                         <a :href="previewUrl" target="_blank" rel="noopener noreferrer">
                             <ExternalLink class="h-4 w-4" />
@@ -214,9 +229,15 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
             </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Hero</CardTitle>
-                    <CardDescription>Main headline, intro copy, calls to action, and hero image.</CardDescription>
+                <CardHeader class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <CardTitle>Hero</CardTitle>
+                        <CardDescription>Main headline, intro copy, calls to action, and hero image.</CardDescription>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Switch v-model:checked="form.applications_page.hero_enabled" />
+                        <span class="text-sm font-medium">{{ form.applications_page.hero_enabled ? 'Shown' : 'Hidden' }}</span>
+                    </div>
                 </CardHeader>
                 <CardContent class="grid gap-4 lg:grid-cols-2">
                     <div class="space-y-2">
@@ -267,9 +288,15 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Applications Section</CardTitle>
-                    <CardDescription>Section heading and store button labels.</CardDescription>
+                <CardHeader class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <CardTitle>Applications Section</CardTitle>
+                        <CardDescription>Section heading, role blocks, and store button labels.</CardDescription>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Switch v-model:checked="form.applications_page.apps_enabled" />
+                        <span class="text-sm font-medium">{{ form.applications_page.apps_enabled ? 'Shown' : 'Hidden' }}</span>
+                    </div>
                 </CardHeader>
                 <CardContent class="grid gap-4 lg:grid-cols-2">
                     <div class="space-y-2">
@@ -319,7 +346,13 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                                 <p class="text-xs font-semibold uppercase text-muted-foreground">{{ role.key || `Role ${roleIndex + 1}` }}</p>
                                 <h3 class="font-semibold">{{ role.title || role.label }}</h3>
                             </div>
-                            <img v-if="role.image_url" :src="role.image_url" alt="" class="h-16 w-24 rounded-md border object-cover" />
+                            <div class="flex items-center gap-3">
+                                <img v-if="role.image_url" :src="role.image_url" alt="" class="h-16 w-24 rounded-md border object-cover" />
+                                <div class="flex items-center gap-2">
+                                    <Switch v-model:checked="role.enabled" />
+                                    <span class="text-sm font-medium">{{ role.enabled ? 'Shown' : 'Hidden' }}</span>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="grid gap-4 lg:grid-cols-2">
@@ -413,9 +446,15 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Comparison</CardTitle>
-                    <CardDescription>Comparison section content and table items.</CardDescription>
+                <CardHeader class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <CardTitle>Comparison</CardTitle>
+                        <CardDescription>Comparison section content and table items.</CardDescription>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Switch v-model:checked="form.applications_page.comparison_enabled" />
+                        <span class="text-sm font-medium">{{ form.applications_page.comparison_enabled ? 'Shown' : 'Hidden' }}</span>
+                    </div>
                 </CardHeader>
                 <CardContent class="space-y-5">
                     <div class="grid gap-4 lg:grid-cols-2">
@@ -466,9 +505,15 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Ecosystem CTA</CardTitle>
-                    <CardDescription>Bottom call to action section.</CardDescription>
+                <CardHeader class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <CardTitle>Ecosystem CTA</CardTitle>
+                        <CardDescription>Bottom call to action section.</CardDescription>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Switch v-model:checked="form.applications_page.ecosystem_enabled" />
+                        <span class="text-sm font-medium">{{ form.applications_page.ecosystem_enabled ? 'Shown' : 'Hidden' }}</span>
+                    </div>
                 </CardHeader>
                 <CardContent class="grid gap-4 lg:grid-cols-2">
                     <div class="space-y-2">

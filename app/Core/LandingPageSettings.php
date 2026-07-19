@@ -171,6 +171,7 @@ class LandingPageSettings
             ],
             'applications_page' => [
                 'enabled' => true,
+                'hero_enabled' => true,
                 'hero_eyebrow' => 'Car4u mobile ecosystem',
                 'hero_title' => 'Three experiences. One rental platform.',
                 'hero_highlight' => 'One rental platform.',
@@ -179,6 +180,7 @@ class LandingPageSettings
                 'primary_cta_label' => 'Explore the apps',
                 'secondary_cta_label' => 'Compare experiences',
                 'owner_employee_note' => 'Owner and employee experiences are delivered through the same management application with role-based permissions.',
+                'apps_enabled' => true,
                 'section_eyebrow' => 'Applications',
                 'section_title' => 'Designed around every role',
                 'section_description' => 'Each experience focuses on the tasks, information, and decisions that matter most to its user.',
@@ -188,6 +190,7 @@ class LandingPageSettings
                 'store_android_caption' => 'Get it on',
                 'roles' => [
                     [
+                        'enabled' => true,
                         'key' => 'owner',
                         'label' => 'Owner experience',
                         'title' => 'See the entire business from your phone',
@@ -213,6 +216,7 @@ class LandingPageSettings
                         ],
                     ],
                     [
+                        'enabled' => true,
                         'key' => 'employee',
                         'label' => 'Employee experience',
                         'title' => 'Complete daily rental operations anywhere',
@@ -238,6 +242,7 @@ class LandingPageSettings
                         ],
                     ],
                     [
+                        'enabled' => true,
                         'key' => 'renter',
                         'label' => 'Renter application',
                         'title' => 'A complete rental journey for your customers',
@@ -263,6 +268,7 @@ class LandingPageSettings
                         ],
                     ],
                 ],
+                'comparison_enabled' => true,
                 'compare_title' => 'Three experiences, two applications',
                 'compare_description' => 'The owner and employee workspaces share one secure management application, while renters use a fully independent customer application.',
                 'compare_badge' => 'Role-based access',
@@ -298,6 +304,7 @@ class LandingPageSettings
                         ],
                     ],
                 ],
+                'ecosystem_enabled' => true,
                 'ecosystem_title' => 'Connected to the same rental ecosystem',
                 'ecosystem_description' => 'Every reservation, vehicle update, contract, payment, and customer action stays synchronized with the Car4u SaaS platform.',
                 'ecosystem_cta_label' => 'Start with Car4u',

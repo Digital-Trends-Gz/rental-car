@@ -296,7 +296,7 @@ const submit = () => {
                                 </template>
                             </div>
                             <div v-if="plan.custom_pricing" class="flex flex-col items-start gap-3">
-                                <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold leading-none text-emerald-800">
+                                <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-[10px] font-bold leading-none text-emerald-800">
                                     {{ customPricingBadge }}
                                 </span>
                                 <p class="block select-none text-3xl font-bold text-slate-950">
@@ -394,7 +394,7 @@ const submit = () => {
                     class="mt-3 flex flex-wrap items-center gap-3 text-start text-sm text-slate-500"
                 >
                     <span>{{ customPricingHelp }}</span>
-                    <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-1.5 font-bold text-emerald-800">
+                    <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-1.5 text-[10px] font-bold text-emerald-800">
                         {{ customPricingBadge }}
                     </span>
                 </div>
