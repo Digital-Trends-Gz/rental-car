@@ -159,6 +159,9 @@ interface LandingSettings {
         title: string;
         description: string;
     };
+    plans_comparison_page?: {
+        enabled?: boolean;
+    };
     faq_section: {
         enabled: boolean;
         title: string;
@@ -417,7 +420,7 @@ const navLinks = computed(() => {
         { label: 'Features', href: '#features' },
         { label: 'Application', href: '/applications' },
         { label: 'Clients', href: '#clients' },
-        { label: 'Plans', href: '#pricing' },
+        { label: 'Plans', href: '/plans' },
         { label: 'Contact', href: '#contact' },
     ];
 
@@ -503,8 +506,8 @@ const footerLinks = computed(() => {
         links.push({ label: 'Application', href: localizedPath('/applications') });
     }
 
-    if (props.landingSettings.plans_section?.enabled !== false) {
-        links.push({ label: 'Plans', href: '#pricing' });
+    if (props.landingSettings.plans_comparison_page?.enabled !== false) {
+        links.push({ label: 'Plans', href: '/plans' });
     }
 
     links.push(...staticPageLinks.value);
@@ -2012,33 +2015,36 @@ onUnmounted(() => {
                                 class="!h-auto"
                             >
                                 <div
-                                    class="card-elevated relative flex h-full flex-col rounded-xl p-6"
-                                    :class="{ 'pt-16': isProfessionalPlan(plan) }"
+                                    class="card-elevated relative flex h-full min-h-[560px] flex-col rounded-xl p-6 sm:p-7"
                                 >
-                                    <div
-                                        v-if="isProfessionalPlan(plan)"
-                                        class="absolute top-4 inline-flex w-fit rounded-full bg-blue-600/10 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-600/15 ltr:left-4 rtl:right-4"
-                                    >
-                                        {{ mostValueLabel }}
+                                    <div class="flex min-h-[108px] items-start justify-between gap-4">
+                                        <div class="min-w-0">
+                                            <h3
+                                                class="text-xl font-bold leading-tight text-foreground"
+                                            >
+                                                {{ plan.name }}
+                                            </h3>
+                                            <p
+                                                class="mt-2 text-base leading-7 text-muted-foreground"
+                                            >
+                                                {{ plan.description || '' }}
+                                            </p>
+                                        </div>
+                                        <span
+                                            v-if="isProfessionalPlan(plan)"
+                                            class="inline-flex shrink-0 rounded-full bg-blue-600/10 px-4 py-2 text-xs font-bold leading-none text-blue-700 ring-1 ring-blue-600/15"
+                                        >
+                                            {{ mostValueLabel }}
+                                        </span>
                                     </div>
-                                    <h3
-                                        class="text-lg font-semibold text-foreground"
-                                    >
-                                        {{ plan.name }}
-                                    </h3>
-                                    <p
-                                        class="mb-4 text-sm text-muted-foreground"
-                                    >
-                                        {{ plan.description || '' }}
-                                    </p>
 
-                                    <div class="mb-6">
+                                    <div class="mb-6 min-h-[135px]">
                                         <div
                                             v-if="
                                                 !plan.custom_pricing &&
                                                 planPricing(plan).has_discount
                                             "
-                                            class="mb-2 inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+                                            class="mb-3 inline-flex rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold leading-none text-emerald-700"
                                         >
                                             <template v-if="locale === 'ar'">
                                                 {{ t('landing.discount_off') }}
@@ -2060,7 +2066,7 @@ onUnmounted(() => {
                                         </div>
                                         <div
                                             v-if="plan.custom_pricing"
-                                            class="flex flex-col items-start gap-3"
+                                            class="flex flex-col items-start gap-4"
                                         >
                                             <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-[10px] font-bold leading-none text-emerald-800">
                                                 {{ customPricingBadge }}
@@ -2070,19 +2076,19 @@ onUnmounted(() => {
                                             >
                                                 {{ customPricingLabel }}
                                             </span>
-                                            <p class="text-sm font-medium text-slate-500">
+                                            <p class="text-base font-medium text-slate-500">
                                                 {{ customPricingCaption }}
                                             </p>
                                         </div>
                                         <div v-else class="flex items-end gap-2">
                                             <span
-                                                class="text-4xl font-extrabold text-foreground"
+                                                class="text-5xl font-extrabold tracking-tight text-foreground"
                                                 >${{
                                                     money(planPrice(plan))
                                                 }}</span
                                             >
                                             <span
-                                                class="text-sm text-muted-foreground"
+                                                class="pb-1 text-base text-muted-foreground"
                                                 >/{{
                                                     yearly
                                                         ? t('landing.yearly')
@@ -2097,7 +2103,7 @@ onUnmounted(() => {
                                                 planPricing(plan)
                                                     .original_amount
                                             "
-                                            class="mt-1 text-sm text-muted-foreground"
+                                            class="mt-2 text-base text-muted-foreground"
                                         >
                                             <span class="line-through">
                                                 ${{
@@ -2123,16 +2129,16 @@ onUnmounted(() => {
                                         </p>
                                     </div>
 
-                                    <ul class="mb-8 flex-1 space-y-3">
+                                    <ul class="mb-8 flex-1 space-y-4">
                                         <li
                                             v-for="feature in plan.features ||
                                             []"
                                             :key="feature"
-                                            class="flex items-start gap-2 text-sm text-muted-foreground"
+                                            class="flex items-start gap-3 text-base text-muted-foreground"
                                         >
                                             <Check
-                                                :size="16"
-                                                class="mt-0.5 shrink-0 text-primary"
+                                                :size="18"
+                                                class="mt-0.5 shrink-0 text-foreground"
                                             />
                                             {{ feature }}
                                         </li>
@@ -2140,7 +2146,7 @@ onUnmounted(() => {
 
                                     <Button
                                         as-child
-                                        class="gradient-button w-full rounded-full"
+                                        class="gradient-button h-12 w-full rounded-2xl text-base font-semibold"
                                     >
                                         <Link :href="registerUrl">{{
                                             navigationCtaLabel

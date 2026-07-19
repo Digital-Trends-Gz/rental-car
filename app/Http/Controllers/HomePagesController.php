@@ -413,6 +413,46 @@ class HomePagesController extends Controller
         ]);
     }
 
+    public function plans()
+    {
+        abort_if(TenantContext::get(), 404);
+
+        [$landingSettings, $availableLocales] = $this->landingShellSettings();
+        abort_if(data_get($landingSettings, 'plans_comparison_page.enabled') === false, 404);
+
+        $plans = PlanPricing::decorateCollection(
+            PlanTranslations::localizeCollection(Plan::query()
+                ->with('discounts')
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get([
+                    'id',
+                    'name',
+                    'description',
+                    'sort_order',
+                    'features',
+                    'custom_pricing',
+                    'monthly_price',
+                    'yearly_price',
+                    'one_time_price',
+                    'max_employees',
+                    'max_branches',
+                    'max_cars',
+                    'max_contracts',
+                ]), app()->getLocale())
+        )->values();
+
+        return inertia('PlansComparison', [
+            'landingSettings' => $landingSettings,
+            'plansPage' => data_get($landingSettings, 'plans_comparison_page', []),
+            'plans' => $plans,
+            'availableLocales' => $availableLocales,
+            'available_locales' => $availableLocales,
+            'seo' => TenantSeoResolver::forPage(null, 'plans'),
+        ]);
+    }
+
     private function applyTenantFleetScope($query, int $tenantId)
     {
         return $query->where('tenant_id', $tenantId);

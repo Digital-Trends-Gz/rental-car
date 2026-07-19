@@ -22,7 +22,7 @@ class LandingPageSettings
      */
     public static function contentKeys(): array
     {
-        return ['navigation', 'locale_switcher', 'hero', 'features_section', 'getting_started', 'mobile_apps_section', 'applications_page', 'plans_section', 'faq_section', 'contact_section', 'footer'];
+        return ['navigation', 'locale_switcher', 'hero', 'features_section', 'getting_started', 'mobile_apps_section', 'applications_page', 'plans_comparison_page', 'plans_section', 'faq_section', 'contact_section', 'footer'];
     }
 
     /**
@@ -40,7 +40,7 @@ class LandingPageSettings
                     ['label' => 'Features', 'href' => '#features'],
                     ['label' => 'Application', 'href' => '/applications'],
                     ['label' => 'Clients', 'href' => '#clients'],
-                    ['label' => 'Plans', 'href' => '#pricing'],
+                    ['label' => 'Plans', 'href' => '/plans'],
                     ['label' => 'Contact', 'href' => '#contact'],
                 ],
             ],
@@ -309,6 +309,138 @@ class LandingPageSettings
                 'ecosystem_description' => 'Every reservation, vehicle update, contract, payment, and customer action stays synchronized with the Car4u SaaS platform.',
                 'ecosystem_cta_label' => 'Start with Car4u',
             ],
+            'plans_comparison_page' => [
+                'enabled' => true,
+                'hero_enabled' => true,
+                'summary_enabled' => true,
+                'comparison_enabled' => true,
+                'addons_enabled' => true,
+                'policy_enabled' => true,
+                'footer_enabled' => true,
+                'hero_badge' => 'SaaS Pricing Plans for Car Rental Offices',
+                'hero_title' => 'Subscription plans comparison for rental offices',
+                'hero_description' => 'Clear subscription plans for car rental offices based on office size, number of cars, users, bookings, and required features. Current prices include a limited launch discount.',
+                'monthly_label' => 'monthly',
+                'current_price_label' => 'Now',
+                'official_price_label' => 'Official price later',
+                'launch_discount_label' => 'Launch discount around 25%',
+                'most_value_label' => 'Most Value',
+                'custom_price_label' => 'Custom',
+                'custom_price_caption' => 'Pricing depends on contract and company size',
+                'custom_price_badge' => 'Custom solution for companies',
+                'unlimited_label' => 'Unlimited',
+                'not_available_label' => 'No',
+                'included_label' => 'Yes',
+                'table_title' => 'Detailed comparison between plans',
+                'table_description' => 'The table below explains the main differences between plans and the features available for each office size.',
+                'table_note' => 'Launch Offer: save up to 25%',
+                'feature_column_label' => 'Feature',
+                'comparison_sections' => [
+                    [
+                        'title' => 'Basic limits',
+                        'rows' => [
+                            ['label' => 'Number of cars', 'values' => ['Up to 10', 'Up to 30', 'Up to 100', 'Unlimited / by contract'], 'tone' => 'custom'],
+                            ['label' => 'Number of users', 'values' => ['Up to 2', 'Up to 5', 'Up to 15', 'Unlimited / by contract'], 'tone' => 'custom'],
+                            ['label' => 'Monthly bookings', 'values' => ['Up to 100', 'Up to 500', 'Up to 2,000', 'Unlimited'], 'tone' => 'custom'],
+                            ['label' => 'Branches', 'values' => ['One branch', 'One branch', 'Up to 3 branches', 'Multiple branches'], 'tone' => 'custom'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Operations management',
+                        'rows' => [
+                            ['label' => 'Car management', 'values' => ['Yes', 'Yes', 'Yes', 'Yes'], 'tone' => 'yes'],
+                            ['label' => 'Booking management', 'values' => ['Yes', 'Yes', 'Yes', 'Yes'], 'tone' => 'yes'],
+                            ['label' => 'Customer management', 'values' => ['Yes', 'Yes', 'Yes', 'Yes'], 'tone' => 'yes'],
+                            ['label' => 'Additional services management', 'values' => ['No', 'Yes', 'Yes', 'Yes'], 'tone' => 'mixed'],
+                            ['label' => 'Handover and return workflow', 'values' => ['Basic', 'Yes', 'Yes', 'Yes'], 'tone' => 'mixed'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Revenue and payments',
+                        'rows' => [
+                            ['label' => 'Revenue dashboard', 'values' => ['Limited', 'Yes', 'Advanced', 'Very advanced'], 'tone' => 'mixed'],
+                            ['label' => 'Payment recording', 'values' => ['Basic', 'Yes', 'Yes', 'Yes'], 'tone' => 'mixed'],
+                            ['label' => 'Partial payments', 'values' => ['No', 'Yes', 'Yes', 'Yes'], 'tone' => 'mixed'],
+                            ['label' => 'Debt tracking', 'values' => ['Limited', 'Yes', 'Advanced', 'Very advanced'], 'tone' => 'mixed'],
+                            ['label' => 'Payment providers', 'values' => ['No', 'Limited', 'Yes', 'Custom'], 'tone' => 'mixed'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Reports and analytics',
+                        'rows' => [
+                            ['label' => 'Main dashboard', 'values' => ['Simple', 'Medium', 'Advanced', 'Very advanced'], 'tone' => 'mixed'],
+                            ['label' => 'Booking reports', 'values' => ['Basic', 'Yes', 'Advanced', 'Very advanced'], 'tone' => 'mixed'],
+                            ['label' => 'Car analytics', 'values' => ['No', 'Limited', 'Yes', 'Yes'], 'tone' => 'mixed'],
+                            ['label' => 'Customer analytics', 'values' => ['No', 'Limited', 'Yes', 'Yes'], 'tone' => 'mixed'],
+                            ['label' => 'PDF / Excel export', 'values' => ['No', 'Limited', 'Yes', 'Yes'], 'tone' => 'mixed'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Damage and maintenance',
+                        'rows' => [
+                            ['label' => 'Damage management', 'values' => ['No', 'Limited', 'Yes', 'Advanced'], 'tone' => 'mixed'],
+                            ['label' => 'Damage photos upload', 'values' => ['No', 'Limited', 'Yes', 'Yes'], 'tone' => 'mixed'],
+                            ['label' => 'AI damage detection', 'values' => ['No', 'Add-on', 'Add-on / included by plan', 'By contract'], 'tone' => 'mixed'],
+                            ['label' => 'Maintenance management', 'values' => ['No', 'No', 'Yes', 'Advanced'], 'tone' => 'mixed'],
+                            ['label' => 'Maintenance alerts', 'values' => ['No', 'No', 'Yes', 'Yes'], 'tone' => 'mixed'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Users and permissions',
+                        'rows' => [
+                            ['label' => 'User management', 'values' => ['No', 'Yes', 'Yes', 'Advanced'], 'tone' => 'mixed'],
+                            ['label' => 'Role-based permissions', 'values' => ['No', 'Simple', 'Yes', 'Very advanced'], 'tone' => 'mixed'],
+                            ['label' => 'Security access', 'values' => ['No', 'Limited', 'Yes', 'Advanced'], 'tone' => 'mixed'],
+                            ['label' => 'Employee activity log', 'values' => ['No', 'Limited', 'Yes', 'Yes'], 'tone' => 'mixed'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Settings and customization',
+                        'rows' => [
+                            ['label' => 'Branding', 'values' => ['Logo and name', 'Basic', 'Medium', 'Full customization'], 'tone' => 'mixed'],
+                            ['label' => 'Languages', 'values' => ['Basic language', 'Limited multilingual', 'Multilingual', 'Fully multilingual'], 'tone' => 'mixed'],
+                            ['label' => 'Emails', 'values' => ['Basic', 'Yes', 'Yes', 'Custom'], 'tone' => 'mixed'],
+                            ['label' => 'SEO settings', 'values' => ['No', 'No', 'Limited', 'Yes'], 'tone' => 'mixed'],
+                            ['label' => 'Custom domain', 'values' => ['No', 'No', 'Add-on', 'Yes'], 'tone' => 'mixed'],
+                        ],
+                    ],
+                    [
+                        'title' => 'Support and integration',
+                        'rows' => [
+                            ['label' => 'Support', 'values' => ['Email', 'Support tickets', 'Priority', 'Account manager'], 'tone' => 'mixed'],
+                            ['label' => 'API integration', 'values' => ['No', 'No', 'No', 'Yes'], 'tone' => 'mixed'],
+                            ['label' => 'Training session', 'values' => ['No', 'Add-on', 'Add-on', 'By contract'], 'tone' => 'mixed'],
+                        ],
+                    ],
+                ],
+                'addons_title' => 'Suggested paid add-ons',
+                'addons' => [
+                    'Additional car: from $1 to $2 monthly per car.',
+                    'Additional user: $5 monthly per user.',
+                    'Additional branch: from $15 to $25 monthly per branch.',
+                    'AI Damage Detection: from $29 monthly or based on inspection volume.',
+                    'Custom Branding: $49 monthly or one-time setup fee.',
+                    'Custom Domain: $20 monthly or included in Enterprise.',
+                    'SMS / WhatsApp: based on message volume and usage.',
+                ],
+                'trial_title' => 'Suggested free trial',
+                'trial_items' => [
+                    '14-day free trial.',
+                    'Up to 5 cars.',
+                    'Up to 2 users.',
+                    'Up to 20 bookings.',
+                    'Without payment providers.',
+                    'Without API.',
+                    'Without advanced reports export.',
+                ],
+                'policy_title' => 'Launch pricing policy',
+                'policy_paragraphs' => [
+                    'Current prices are launch prices with a discount of up to 25% for a limited period of 3 to 6 months.',
+                    'After the launch period ends, official prices become $39 for Starter, $79 for Growth, and $129 for Professional monthly.',
+                    'Customers who subscribe yearly during the launch period can lock the discounted price for the duration of the yearly subscription.',
+                ],
+                'footer_text' => 'Car Rental SaaS Pricing Comparison - Launch Pricing Version',
+            ],
             'clients_section' => [
                 'enabled' => true,
             ],
@@ -477,6 +609,10 @@ class LandingPageSettings
             'mobile_apps_section.apps',
             'applications_page.roles',
             'applications_page.comparison',
+            'plans_comparison_page.comparison_sections',
+            'plans_comparison_page.addons',
+            'plans_comparison_page.trial_items',
+            'plans_comparison_page.policy_paragraphs',
             'faq_section.items',
             'contact_section.quick_links',
             'footer.social_links',

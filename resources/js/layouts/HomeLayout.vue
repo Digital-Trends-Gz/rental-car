@@ -158,7 +158,7 @@ const landingNavLinks = computed(() => {
         { label: 'Features', href: '#features' },
         { label: 'Application', href: '/applications' },
         { label: 'Clients', href: '#clients' },
-        { label: 'Plans', href: '#pricing' },
+        { label: 'Plans', href: '/plans' },
         { label: 'Contact', href: '#contact' },
     ];
     const configuredLinks = Array.isArray(landingSettings.value?.navigation?.links)
@@ -204,8 +204,8 @@ const landingFooterNavLinks = computed(() => {
         links.push({ label: 'Application', href: resolveLandingHref('/applications') });
     }
 
-    if (landingSettings.value?.plans_section?.enabled !== false) {
-        links.push({ label: 'Plans', href: resolveLandingHref('#pricing') });
+    if (landingSettings.value?.plans_comparison_page?.enabled !== false) {
+        links.push({ label: 'Plans', href: resolveLandingHref('/plans') });
     }
 
     links.push(...landingStaticPageLinks.value);

@@ -239,6 +239,72 @@ class LandingSettingsController extends Controller
         return back()->with('success', 'Applications page settings updated successfully.');
     }
 
+    public function plansPage(): Response
+    {
+        $settings = $this->landingSettings();
+
+        return Inertia::render('SuperAdmin/Settings/PlansPage', [
+            'plansPage' => data_get($settings, 'plans_comparison_page', []),
+            'previewUrl' => route('plans'),
+            'translationsUrl' => route('superadmin.settings.landing-translations'),
+            'updateUrl' => route('superadmin.settings.plans-page.update'),
+        ]);
+    }
+
+    public function updatePlansPage(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'plans_comparison_page.enabled' => ['nullable', 'boolean'],
+            'plans_comparison_page.hero_enabled' => ['nullable', 'boolean'],
+            'plans_comparison_page.summary_enabled' => ['nullable', 'boolean'],
+            'plans_comparison_page.comparison_enabled' => ['nullable', 'boolean'],
+            'plans_comparison_page.addons_enabled' => ['nullable', 'boolean'],
+            'plans_comparison_page.policy_enabled' => ['nullable', 'boolean'],
+            'plans_comparison_page.footer_enabled' => ['nullable', 'boolean'],
+            'plans_comparison_page.hero_badge' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.hero_title' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.hero_description' => ['required', 'string', 'max:2000'],
+            'plans_comparison_page.monthly_label' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.current_price_label' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.official_price_label' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.launch_discount_label' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.most_value_label' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.custom_price_label' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.custom_price_caption' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.custom_price_badge' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.unlimited_label' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.not_available_label' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.included_label' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.table_title' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.table_description' => ['required', 'string', 'max:2000'],
+            'plans_comparison_page.table_note' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.feature_column_label' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.comparison_sections' => ['nullable', 'array'],
+            'plans_comparison_page.comparison_sections.*.title' => ['nullable', 'string', 'max:255'],
+            'plans_comparison_page.comparison_sections.*.rows' => ['nullable', 'array'],
+            'plans_comparison_page.comparison_sections.*.rows.*.label' => ['nullable', 'string', 'max:255'],
+            'plans_comparison_page.comparison_sections.*.rows.*.tone' => ['nullable', 'string', 'max:50'],
+            'plans_comparison_page.comparison_sections.*.rows.*.values' => ['nullable', 'array'],
+            'plans_comparison_page.comparison_sections.*.rows.*.values.*' => ['nullable', 'string', 'max:255'],
+            'plans_comparison_page.addons_title' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.addons' => ['nullable', 'array'],
+            'plans_comparison_page.addons.*' => ['nullable', 'string', 'max:255'],
+            'plans_comparison_page.trial_title' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.trial_items' => ['nullable', 'array'],
+            'plans_comparison_page.trial_items.*' => ['nullable', 'string', 'max:255'],
+            'plans_comparison_page.policy_title' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.policy_paragraphs' => ['nullable', 'array'],
+            'plans_comparison_page.policy_paragraphs.*' => ['nullable', 'string', 'max:1000'],
+            'plans_comparison_page.footer_text' => ['required', 'string', 'max:255'],
+        ]);
+
+        $this->persistLandingSettings([
+            'plans_comparison_page' => $validated['plans_comparison_page'],
+        ]);
+
+        return back()->with('success', 'Plans page settings updated successfully.');
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $this->normalizeAiProviderPayload($request);
