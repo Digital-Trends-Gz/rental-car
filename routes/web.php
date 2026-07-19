@@ -90,6 +90,7 @@ Route::domain($baseDomain)->group(function () use ($localizedGroup) {
         Route::middleware('tenant.seo.redirects')->group(function () {
             Route::get('/', [HomePagesController::class, 'index'])->name('home');
             Route::get('/fleet', [HomePagesController::class, 'fleet'])->name('fleet');
+            Route::get('/applications', [HomePagesController::class, 'applications'])->name('applications');
             Route::get('/about', [HomePagesController::class, 'about'])->name('about');
             Route::get('/contact', [HomePagesController::class, 'contact'])->name('contact');
             Route::get('/privacy-policy', [HomePagesController::class, 'privacyPolicy'])->name('privacy-policy');

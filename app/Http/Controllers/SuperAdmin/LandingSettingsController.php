@@ -146,6 +146,17 @@ class LandingSettingsController extends Controller
         ]);
     }
 
+    public function applicationsPage(): Response
+    {
+        $settings = $this->landingSettings();
+
+        return Inertia::render('SuperAdmin/Settings/ApplicationsPage', [
+            'applicationsPage' => data_get($settings, 'applications_page', []),
+            'previewUrl' => route('applications'),
+            'translationsUrl' => route('superadmin.settings.landing-translations'),
+        ]);
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $this->normalizeAiProviderPayload($request);
@@ -1763,12 +1774,12 @@ class LandingSettingsController extends Controller
         }
 
         foreach ($links as $link) {
-            if (is_array($link) && ($link['href'] ?? null) === '#application') {
+            if (is_array($link) && in_array(($link['href'] ?? null), ['/applications', '#application'], true)) {
                 return $settings;
             }
         }
 
-        $applicationLink = ['label' => 'Application', 'href' => '#application'];
+        $applicationLink = ['label' => 'Application', 'href' => '/applications'];
         $featuresIndex = null;
 
         foreach ($links as $index => $link) {

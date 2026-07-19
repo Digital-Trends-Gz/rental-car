@@ -111,6 +111,7 @@ Route::middleware(['auth', 'active', 'super_admin'])
             Route::get('settings/design', [LandingSettingsController::class, 'design'])->name('settings.design');
             Route::put('settings/design', [LandingSettingsController::class, 'updateDesign'])->name('settings.design.update');
             Route::post('settings/design', [LandingSettingsController::class, 'updateDesign'])->name('settings.design.update.post');
+            Route::get('settings/applications-page', [LandingSettingsController::class, 'applicationsPage'])->name('settings.applications-page');
             Route::get('settings/landing-translations', [LandingSettingsController::class, 'translations'])->name('settings.landing-translations');
             Route::put('settings/landing-translations', [LandingSettingsController::class, 'updateTranslations'])->name('settings.landing-translations.update');
             Route::post('settings/landing-translations/auto-translate', [LandingSettingsController::class, 'autoTranslateTranslations'])->name('settings.landing-translations.auto-translate');

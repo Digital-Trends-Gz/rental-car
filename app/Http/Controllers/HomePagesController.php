@@ -397,6 +397,21 @@ class HomePagesController extends Controller
         return inertia('Fleet', compact('cars', 'makes', 'fuelTypes', 'years', 'filters', 'tenants', 'branches', 'seo', 'landingSettings', 'availableLocales'));
     }
 
+    public function applications()
+    {
+        abort_if(TenantContext::get(), 404);
+
+        [$landingSettings, $availableLocales] = $this->landingShellSettings();
+
+        return inertia('Applications', [
+            'landingSettings' => $landingSettings,
+            'applicationsPage' => data_get($landingSettings, 'applications_page', []),
+            'availableLocales' => $availableLocales,
+            'available_locales' => $availableLocales,
+            'seo' => TenantSeoResolver::forPage(null, 'applications'),
+        ]);
+    }
+
     private function applyTenantFleetScope($query, int $tenantId)
     {
         return $query->where('tenant_id', $tenantId);

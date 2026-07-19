@@ -396,6 +396,7 @@ return [
         'cars_view_complete_fleet' => 'View Complete Fleet',
         'clients_label' => 'Our clients',
         'clients_title' => 'Trusted by teams worldwide',
+        'mobile_apps_connected_note' => 'Both applications stay connected to the same Car4u rental platform and live business data.',
         'see_pricing' => 'See Pricing',
         'features_title' => 'Everything you need to move faster',
         'features_subtitle' => 'Powerful features that replace your entire tool stack with one intuitive platform.',

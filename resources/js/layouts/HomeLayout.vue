@@ -115,6 +115,10 @@ const resolveLandingHref = (href: string) => {
         return `${landingHomeUrl.value}${value.slice(1)}`;
     }
 
+    if (value.startsWith('/')) {
+        return localizedLandingPath(value);
+    }
+
     return value;
 };
 const localizedLandingPath = (path: string) => {
@@ -152,7 +156,7 @@ const landingNavLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
         { label: 'Features', href: '#features' },
-        { label: 'Application', href: '#application' },
+        { label: 'Application', href: '/applications' },
         { label: 'Clients', href: '#clients' },
         { label: 'Plans', href: '#pricing' },
         { label: 'Contact', href: '#contact' },
@@ -170,10 +174,10 @@ const landingNavLinks = computed(() => {
 
     if (
         landingSettings.value?.mobile_apps_section?.enabled !== false &&
-        !normalizedLinks.some((link) => link.href === '#application')
+        !normalizedLinks.some((link) => ['/applications', '#application'].includes(link.href))
     ) {
         const featuresIndex = normalizedLinks.findIndex((link) => link.href === '#features');
-        const applicationLink = { label: 'Application', href: '#application' };
+        const applicationLink = { label: 'Application', href: '/applications' };
 
         if (featuresIndex >= 0) {
             normalizedLinks.splice(featuresIndex + 1, 0, applicationLink);
@@ -197,7 +201,7 @@ const landingFooterNavLinks = computed(() => {
     const links: Array<{ label: string; href: string }> = [];
 
     if (landingSettings.value?.mobile_apps_section?.enabled !== false) {
-        links.push({ label: 'Application', href: resolveLandingHref('#application') });
+        links.push({ label: 'Application', href: resolveLandingHref('/applications') });
     }
 
     if (landingSettings.value?.plans_section?.enabled !== false) {

@@ -42,6 +42,10 @@ class LandingTranslationsControllerTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('SuperAdmin/Settings/LandingTranslations')
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('api.task_types.pickup'))
+                ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('applications_page.hero_title'))
+                ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('applications_page.roles.0.title'))
+                ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('plans_page.custom_pricing_badge'))
+                ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('plans_page.custom_pricing_caption'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('auth.api.account_not_found'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('auth.api.account_types.company_owner'))
                 ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('contracts.damage_catalog.damage_types.scratch'))

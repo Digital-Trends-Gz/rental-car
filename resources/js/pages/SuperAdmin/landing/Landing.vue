@@ -237,6 +237,28 @@ const customPricingLabel = computed(() =>
         ? 'مخصص'
         : t('plans_page.custom_pricing_label'),
 );
+const customPricingBadge = computed(() => {
+    const value = t('plans_page.custom_pricing_badge');
+
+    if (value !== 'plans_page.custom_pricing_badge') {
+        return value;
+    }
+
+    return locale.value.toLowerCase().startsWith('ar')
+        ? '\u062d\u0644 \u0645\u062e\u0635\u0635 \u0644\u0644\u0634\u0631\u0643\u0627\u062a'
+        : 'Custom solution for companies';
+});
+const customPricingCaption = computed(() => {
+    const value = t('plans_page.custom_pricing_caption');
+
+    if (value !== 'plans_page.custom_pricing_caption') {
+        return value;
+    }
+
+    return locale.value.toLowerCase().startsWith('ar')
+        ? '\u0627\u0644\u0633\u0639\u0631 \u062d\u0633\u0628 \u0627\u0644\u0639\u0642\u062f \u0648\u062d\u062c\u0645 \u0627\u0644\u0634\u0631\u0643\u0629'
+        : 'Pricing depends on contract and company size';
+});
 const availableLocales = computed<string[]>(() =>
     Array.isArray(page.props?.available_locales) &&
     page.props.available_locales.length
@@ -362,6 +384,7 @@ const visibleNavHrefs = computed(() => {
     }
 
     if (props.landingSettings.mobile_apps_section?.enabled !== false) {
+        hrefs.add('/applications');
         hrefs.add('#application');
     }
 
@@ -380,7 +403,7 @@ const navLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
         { label: 'Features', href: '#features' },
-        { label: 'Application', href: '#application' },
+        { label: 'Application', href: '/applications' },
         { label: 'Clients', href: '#clients' },
         { label: 'Plans', href: '#pricing' },
         { label: 'Contact', href: '#contact' },
@@ -406,15 +429,15 @@ const navLinks = computed(() => {
         );
 
     if (
-        visibleNavHrefs.value.has('#application') &&
-        !normalizedLinks.some((link) => link.href === '#application')
+        (visibleNavHrefs.value.has('/applications') || visibleNavHrefs.value.has('#application')) &&
+        !normalizedLinks.some((link) => ['/applications', '#application'].includes(link.href))
     ) {
         const featuresIndex = normalizedLinks.findIndex(
             (link) => link.href === '#features',
         );
         const applicationLink = {
             label: 'Application',
-            href: '#application',
+            href: '/applications',
         };
 
         if (featuresIndex >= 0) {
@@ -424,7 +447,10 @@ const navLinks = computed(() => {
         }
     }
 
-    return normalizedLinks;
+    return normalizedLinks.map((link) => ({
+        ...link,
+        href: link.href.startsWith('/') ? localizedPath(link.href) : link.href,
+    }));
 });
 
 const localizedPath = (path: string) => {
@@ -462,7 +488,7 @@ const footerLinks = computed(() => {
     const links: QuickLinkItem[] = [];
 
     if (props.landingSettings.mobile_apps_section?.enabled !== false) {
-        links.push({ label: 'Application', href: '#application' });
+        links.push({ label: 'Application', href: localizedPath('/applications') });
     }
 
     if (props.landingSettings.plans_section?.enabled !== false) {
@@ -510,6 +536,51 @@ const mobileAppBackgrounds = [
     'linear-gradient(135deg, #ede9fe 0%, #f8fafc 100%)',
     'linear-gradient(135deg, #f3e8ff 0%, #f8fafc 100%)',
 ];
+const mobileApps = computed<MobileAppCard[]>(
+    () => props.landingSettings.mobile_apps_section?.apps || [],
+);
+const clientMobileApp = computed<MobileAppCard | null>(
+    () => mobileApps.value[0] || null,
+);
+const employeeMobileApp = computed<MobileAppCard | null>(
+    () => mobileApps.value[1] || null,
+);
+const tenantMobileApp = computed<MobileAppCard | null>(
+    () => mobileApps.value[2] || null,
+);
+const managementMobileApp = computed<MobileAppCard | null>(
+    () =>
+        tenantMobileApp.value ||
+        employeeMobileApp.value ||
+        mobileApps.value[0] ||
+        null,
+);
+const managementFeatures = computed(() => {
+    const features = [
+        ...(tenantMobileApp.value?.features || []),
+        ...(employeeMobileApp.value?.features || []),
+        ...(managementMobileApp.value?.features || []),
+    ]
+        .map((feature) => String(feature || '').trim())
+        .filter(Boolean);
+
+    return Array.from(new Set(features)).slice(0, 4);
+});
+const clientJourneySteps = computed(() => {
+    const features = (clientMobileApp.value?.features || [])
+        .map((feature) => String(feature || '').trim())
+        .filter(Boolean);
+
+    return features.length ? features.slice(0, 4) : ['Browse', 'Book', 'Pay', 'Track'];
+});
+const mobileAppsConnectedNote = computed(() => {
+    const key = 'landing.mobile_apps_connected_note';
+    const value = t(key);
+
+    return value === key
+        ? 'Both applications stay connected to the same Car4u rental platform and live business data.'
+        : value;
+});
 const mobileAppTitleParts = computed(() => {
     const title = props.landingSettings.mobile_apps_section?.title || '';
     const marker = 'One connected platform';
@@ -1516,194 +1587,258 @@ onUnmounted(() => {
                 class="section-padding bg-white"
             >
                 <div class="section-container">
-                    <div class="mx-auto mb-14 max-w-2xl text-center">
-                        <h2
-                            class="text-3xl font-bold text-foreground sm:text-4xl"
+                    <div
+                        class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(16,24,40,0.06)] sm:p-8 lg:p-10"
+                    >
+                        <div
+                            class="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
                         >
-                            {{ mobileAppTitleParts.lead }}
-                            <span
-                                v-if="mobileAppTitleParts.highlight"
-                                class="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent"
-                            >
-                                {{ mobileAppTitleParts.highlight }}
-                            </span>
-                        </h2>
-                        <p
-                            class="mt-4 text-lg text-muted-foreground"
-                        >
-                            {{
-                                landingSettings.mobile_apps_section.description
-                            }}
-                        </p>
-                    </div>
-
-                    <div class="grid gap-8 lg:grid-cols-3">
-                        <article
-                            v-for="(app, index) in landingSettings
-                                .mobile_apps_section.apps"
-                            :key="`${app.title}-${index}`"
-                            class="group overflow-hidden rounded-2xl border border-border bg-white shadow-[0_18px_55px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(15,23,42,0.13)]"
-                        >
-                            <div
-                                class="relative flex h-80 items-center justify-center overflow-hidden"
-                                :style="{
-                                    background:
-                                        mobileAppBackgrounds[
-                                            index %
-                                                mobileAppBackgrounds.length
-                                        ],
-                                }"
-                            >
+                            <div class="max-w-3xl">
                                 <div
-                                    class="absolute inset-8 rounded-full bg-white/45 blur-3xl"
-                                ></div>
-                                <img
-                                    v-if="app.image_url"
-                                    :src="app.image_url"
-                                    :alt="app.title"
-                                    class="relative h-52 w-auto rotate-[-12deg] object-contain drop-shadow-[0_24px_28px_rgba(15,23,42,0.20)] transition-transform duration-300 group-hover:rotate-[-8deg] group-hover:scale-105"
-                                    loading="lazy"
-                                />
-                                <div
-                                    v-else
-                                    class="relative h-52 w-28 rotate-[-12deg] rounded-[2rem] border-[6px] border-slate-900 bg-slate-950 p-1 shadow-[0_24px_34px_rgba(15,23,42,0.24)] transition-transform duration-300 group-hover:rotate-[-8deg] group-hover:scale-105"
+                                    class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-extrabold tracking-[0.12em] text-blue-700 uppercase"
                                 >
-                                    <div
-                                        class="h-full rounded-[1.55rem] bg-white p-2"
+                                    <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
+                                    {{ landingSettings.mobile_apps_section.eyebrow }}
+                                </div>
+                                <h2
+                                    class="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-slate-950 sm:text-4xl lg:text-[2.4rem]"
+                                >
+                                    {{ mobileAppTitleParts.lead }}
+                                    <span
+                                        v-if="mobileAppTitleParts.highlight"
+                                        class="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent"
                                     >
-                                        <div
-                                            class="mx-auto mb-2 h-2 w-10 rounded-full bg-slate-900"
-                                        ></div>
-                                        <div
-                                            class="rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 p-2 text-white"
+                                        {{ mobileAppTitleParts.highlight }}
+                                    </span>
+                                </h2>
+                                <p class="mt-3 max-w-2xl text-base leading-relaxed text-slate-500">
+                                    {{ landingSettings.mobile_apps_section.description }}
+                                </p>
+                            </div>
+                            <p class="max-w-xs text-sm leading-relaxed text-slate-500 lg:text-right rtl:lg:text-left">
+                                {{ mobileAppsConnectedNote }}
+                            </p>
+                        </div>
+
+                        <div class="grid gap-5 lg:grid-cols-[1.35fr_0.85fr]">
+                            <article
+                                v-if="managementMobileApp"
+                                class="grid overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white lg:min-h-[370px] lg:grid-cols-[1.15fr_0.85fr]"
+                            >
+                                <div class="flex flex-col p-6 sm:p-7">
+                                    <div
+                                        class="flex items-center gap-2 text-xs font-extrabold tracking-wide text-slate-500 uppercase"
+                                    >
+                                        <span
+                                            class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-blue-50 to-violet-50 text-indigo-600"
                                         >
-                                            <div
-                                                class="h-2 w-12 rounded-full bg-white/80"
-                                            ></div>
-                                            <div
-                                                class="mt-3 h-8 rounded-lg bg-white/25"
-                                            ></div>
-                                        </div>
-                                        <div class="mt-3 space-y-2">
-                                            <div
-                                                class="h-3 rounded-full bg-slate-200"
-                                            ></div>
-                                            <div
-                                                class="h-3 w-3/4 rounded-full bg-slate-200"
-                                            ></div>
-                                            <div
-                                                class="grid grid-cols-2 gap-1 pt-1"
-                                            >
-                                                <div
-                                                    class="h-8 rounded-lg bg-blue-100"
-                                                ></div>
-                                                <div
-                                                    class="h-8 rounded-lg bg-violet-100"
-                                                ></div>
+                                            <img
+                                                v-if="managementMobileApp.icon_url"
+                                                :src="managementMobileApp.icon_url"
+                                                :alt="`${managementMobileApp.title} icon`"
+                                                class="h-5 w-5 object-contain"
+                                                loading="lazy"
+                                            />
+                                            <BriefcaseBusiness v-else class="h-5 w-5" />
+                                        </span>
+                                        <span>{{ managementMobileApp.title }}</span>
+                                    </div>
+
+                                    <h3 class="mt-4 text-2xl font-extrabold tracking-tight text-slate-950">
+                                        {{ managementMobileApp.subtitle || 'One app, different permissions' }}
+                                    </h3>
+                                    <p class="mt-2 text-sm leading-relaxed text-slate-500">
+                                        {{ managementMobileApp.description || employeeMobileApp?.description }}
+                                    </p>
+
+                                    <div class="my-5 flex w-max gap-1.5 rounded-xl bg-slate-100 p-1">
+                                        <span class="rounded-lg bg-white px-5 py-2 text-sm font-extrabold text-slate-950 shadow-sm">
+                                            {{ tenantMobileApp?.title || 'Owner' }}
+                                        </span>
+                                        <span class="rounded-lg px-5 py-2 text-sm font-extrabold text-slate-500">
+                                            {{ employeeMobileApp?.title || 'Employee' }}
+                                        </span>
+                                    </div>
+
+                                    <div class="mb-3 flex items-center justify-between gap-4">
+                                        <strong class="text-sm font-extrabold text-slate-950">
+                                            {{ tenantMobileApp?.subtitle || managementMobileApp.title }}
+                                        </strong>
+                                        <span class="rounded-full bg-blue-50 px-2.5 py-1 text-[0.65rem] font-extrabold text-blue-600">
+                                            Full visibility
+                                        </span>
+                                    </div>
+
+                                    <ul class="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+                                        <li
+                                            v-for="feature in managementFeatures"
+                                            :key="feature"
+                                            class="flex items-start gap-2 text-sm leading-snug text-slate-700"
+                                        >
+                                            <Check class="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                                            <span>{{ feature }}</span>
+                                        </li>
+                                    </ul>
+
+                                    <div class="mt-auto grid gap-2 pt-6 sm:grid-cols-2">
+                                        <a
+                                            :href="mobileAppStoreHref(managementMobileApp.app_store_url)"
+                                            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_8px_18px_rgba(59,130,246,0.10)]"
+                                            :class="{ 'pointer-events-none opacity-60': !managementMobileApp.app_store_url }"
+                                            :aria-disabled="!managementMobileApp.app_store_url"
+                                        >
+                                            <Apple class="h-5 w-5" />
+                                            {{ landingSettings.mobile_apps_section.ios_label }}
+                                        </a>
+                                        <a
+                                            :href="mobileAppStoreHref(managementMobileApp.google_play_url)"
+                                            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_8px_18px_rgba(59,130,246,0.10)]"
+                                            :class="{ 'pointer-events-none opacity-60': !managementMobileApp.google_play_url }"
+                                            :aria-disabled="!managementMobileApp.google_play_url"
+                                        >
+                                            <Smartphone class="h-5 w-5" />
+                                            {{ landingSettings.mobile_apps_section.android_label }}
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="relative grid min-h-[340px] place-items-center overflow-hidden bg-gradient-to-br from-blue-50 to-violet-50">
+                                    <div class="absolute -top-20 -right-16 h-44 w-44 rounded-full bg-cyan-300/15"></div>
+                                    <div class="absolute top-14 left-5 z-10 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-[0_10px_24px_rgba(16,24,40,0.10)]">
+                                        <strong class="block text-xs font-extrabold text-slate-950">
+                                            Owner mode
+                                        </strong>
+                                        <span class="text-[0.65rem] text-slate-500">
+                                            Analytics & control
+                                        </span>
+                                    </div>
+                                    <img
+                                        v-if="managementMobileApp.image_url"
+                                        :src="managementMobileApp.image_url"
+                                        :alt="managementMobileApp.title"
+                                        class="relative z-10 h-[19rem] w-auto rotate-[-4deg] object-contain drop-shadow-[0_24px_36px_rgba(15,23,42,0.22)]"
+                                        loading="lazy"
+                                    />
+                                    <div
+                                        v-else
+                                        class="relative z-10 h-[19rem] w-[9.5rem] rotate-[-4deg] rounded-[2rem] bg-slate-950 p-2 shadow-[0_24px_36px_rgba(15,23,42,0.22)]"
+                                    >
+                                        <div class="h-full rounded-[1.55rem] bg-slate-50 p-3">
+                                            <div class="mx-auto mb-3 h-3 w-14 rounded-full bg-slate-950"></div>
+                                            <div class="rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 p-3 text-white">
+                                                <div class="h-2 w-14 rounded-full bg-white/80"></div>
+                                                <div class="mt-4 h-10 rounded-lg bg-white/25"></div>
+                                            </div>
+                                            <div class="mt-4 grid grid-cols-2 gap-2">
+                                                <div class="h-12 rounded-xl bg-blue-100"></div>
+                                                <div class="h-12 rounded-xl bg-violet-100"></div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div class="p-7">
-                                <div class="mb-5 flex items-center gap-4">
-                                    <div
-                                        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
-                                    >
-                                        <img
-                                            v-if="app.icon_url"
-                                            :src="app.icon_url"
-                                            :alt="`${app.title} icon`"
-                                            class="h-7 w-7 object-contain"
-                                            loading="lazy"
-                                        />
-                                        <Users
-                                            v-else-if="index === 0"
-                                            class="h-6 w-6"
-                                        />
-                                        <BriefcaseBusiness
-                                            v-else-if="index === 1"
-                                            class="h-6 w-6"
-                                        />
-                                        <Building2
-                                            v-else
-                                            class="h-6 w-6"
-                                        />
-                                    </div>
-                                    <div>
-                                        <h3
-                                            class="text-xl font-bold text-foreground"
-                                        >
-                                            {{ app.title }}
-                                        </h3>
-                                        <p
-                                            class="text-sm text-muted-foreground"
-                                        >
-                                            {{ app.subtitle }}
-                                        </p>
+                                    <div class="absolute right-4 bottom-14 z-10 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-[0_10px_24px_rgba(16,24,40,0.10)]">
+                                        <strong class="block text-xs font-extrabold text-slate-950">
+                                            Employee mode
+                                        </strong>
+                                        <span class="text-[0.65rem] text-slate-500">
+                                            Tasks & handovers
+                                        </span>
                                     </div>
                                 </div>
+                            </article>
 
-                                <p
-                                    class="min-h-[72px] text-base leading-relaxed text-muted-foreground"
+                            <article
+                                v-if="clientMobileApp"
+                                class="flex min-h-[370px] flex-col overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white"
+                            >
+                                <div
+                                    class="relative grid h-40 place-items-center overflow-hidden"
+                                    :style="{ background: mobileAppBackgrounds[0] }"
                                 >
-                                    {{ app.description }}
-                                </p>
-
-                                <ul class="mt-6 space-y-3">
-                                    <li
-                                        v-for="feature in app.features"
-                                        :key="feature"
-                                        class="flex items-center gap-3 text-sm font-medium text-foreground"
+                                    <img
+                                        v-if="clientMobileApp.image_url"
+                                        :src="clientMobileApp.image_url"
+                                        :alt="clientMobileApp.title"
+                                        class="mt-10 h-48 w-auto rotate-[5deg] object-contain drop-shadow-[0_18px_28px_rgba(15,23,42,0.20)]"
+                                        loading="lazy"
+                                    />
+                                    <div
+                                        v-else
+                                        class="mt-10 h-48 w-24 rotate-[5deg] rounded-[1.4rem] bg-slate-950 p-1.5 shadow-[0_18px_28px_rgba(15,23,42,0.20)]"
                                     >
-                                        <Check class="h-4 w-4 text-primary" />
-                                        <span>{{ feature }}</span>
-                                    </li>
-                                </ul>
-
-                                <div class="mt-8 grid grid-cols-2 gap-3">
-                                    <a
-                                        :href="
-                                            mobileAppStoreHref(
-                                                app.app_store_url,
-                                            )
-                                        "
-                                        class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-white px-4 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:bg-primary/5"
-                                        :class="{
-                                            'pointer-events-none opacity-60':
-                                                !app.app_store_url,
-                                        }"
-                                        :aria-disabled="!app.app_store_url"
-                                    >
-                                        <Apple class="h-4 w-4" />
-                                        {{
-                                            landingSettings.mobile_apps_section
-                                                .ios_label
-                                        }}
-                                    </a>
-                                    <a
-                                        :href="
-                                            mobileAppStoreHref(
-                                                app.google_play_url,
-                                            )
-                                        "
-                                        class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-white px-4 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:bg-primary/5"
-                                        :class="{
-                                            'pointer-events-none opacity-60':
-                                                !app.google_play_url,
-                                        }"
-                                        :aria-disabled="!app.google_play_url"
-                                    >
-                                        <Smartphone class="h-4 w-4" />
-                                        {{
-                                            landingSettings.mobile_apps_section
-                                                .android_label
-                                        }}
-                                    </a>
+                                        <div class="h-full rounded-[1rem] bg-white p-2">
+                                            <div class="mx-auto mb-3 h-2 w-9 rounded-full bg-slate-950"></div>
+                                            <div class="h-5 rounded-lg bg-slate-100"></div>
+                                            <div class="mt-2 h-14 rounded-lg bg-gradient-to-br from-blue-50 to-violet-50"></div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </article>
+
+                                <div class="flex flex-1 flex-col p-6">
+                                    <div class="mb-5 flex items-center gap-4">
+                                        <span class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-900">
+                                            <img
+                                                v-if="clientMobileApp.icon_url"
+                                                :src="clientMobileApp.icon_url"
+                                                :alt="`${clientMobileApp.title} icon`"
+                                                class="h-6 w-6 object-contain"
+                                                loading="lazy"
+                                            />
+                                            <Users v-else class="h-6 w-6" />
+                                        </span>
+                                        <div>
+                                            <h3 class="text-2xl font-extrabold text-slate-950">
+                                                {{ clientMobileApp.title }}
+                                            </h3>
+                                            <p class="text-sm text-slate-500">
+                                                {{ clientMobileApp.subtitle }}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <p class="text-base leading-relaxed text-slate-500">
+                                        {{ clientMobileApp.description }}
+                                    </p>
+
+                                    <div class="my-5 flex flex-wrap items-center gap-2 text-xs font-extrabold text-slate-600">
+                                        <template
+                                            v-for="(step, stepIndex) in clientJourneySteps"
+                                            :key="step"
+                                        >
+                                            <span class="rounded-lg bg-slate-50 px-3 py-2">
+                                                {{ step }}
+                                            </span>
+                                            <span
+                                                v-if="stepIndex < clientJourneySteps.length - 1"
+                                                class="text-slate-300"
+                                            >
+                                                ->
+                                            </span>
+                                        </template>
+                                    </div>
+
+                                    <div class="mt-auto grid grid-cols-2 gap-3 pt-4">
+                                        <a
+                                            :href="mobileAppStoreHref(clientMobileApp.app_store_url)"
+                                            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_8px_18px_rgba(59,130,246,0.10)]"
+                                            :class="{ 'pointer-events-none opacity-60': !clientMobileApp.app_store_url }"
+                                            :aria-disabled="!clientMobileApp.app_store_url"
+                                        >
+                                            <Apple class="h-4 w-4" />
+                                            {{ landingSettings.mobile_apps_section.ios_label }}
+                                        </a>
+                                        <a
+                                            :href="mobileAppStoreHref(clientMobileApp.google_play_url)"
+                                            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_8px_18px_rgba(59,130,246,0.10)]"
+                                            :class="{ 'pointer-events-none opacity-60': !clientMobileApp.google_play_url }"
+                                            :aria-disabled="!clientMobileApp.google_play_url"
+                                        >
+                                            <Smartphone class="h-4 w-4" />
+                                            {{ landingSettings.mobile_apps_section.android_label }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1888,13 +2023,19 @@ onUnmounted(() => {
                                         </div>
                                         <div
                                             v-if="plan.custom_pricing"
-                                            class="space-y-1"
+                                            class="space-y-3"
                                         >
+                                            <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold leading-none text-emerald-800">
+                                                {{ customPricingBadge }}
+                                            </span>
                                             <span
-                                                class="inline-block select-none bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-4xl font-extrabold text-transparent"
+                                                class="inline-block select-none text-lg font-bold text-slate-950"
                                             >
                                                 {{ customPricingLabel }}
                                             </span>
+                                            <p class="text-sm font-medium text-slate-500">
+                                                {{ customPricingCaption }}
+                                            </p>
                                         </div>
                                         <div v-else class="flex items-end gap-2">
                                             <span

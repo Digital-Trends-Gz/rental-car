@@ -22,7 +22,7 @@ class LandingPageSettings
      */
     public static function contentKeys(): array
     {
-        return ['navigation', 'locale_switcher', 'hero', 'features_section', 'getting_started', 'mobile_apps_section', 'plans_section', 'faq_section', 'contact_section', 'footer'];
+        return ['navigation', 'locale_switcher', 'hero', 'features_section', 'getting_started', 'mobile_apps_section', 'applications_page', 'plans_section', 'faq_section', 'contact_section', 'footer'];
     }
 
     /**
@@ -38,7 +38,7 @@ class LandingPageSettings
                 'links' => [
                     ['label' => 'Cars', 'href' => '#cars'],
                     ['label' => 'Features', 'href' => '#features'],
-                    ['label' => 'Application', 'href' => '#application'],
+                    ['label' => 'Application', 'href' => '/applications'],
                     ['label' => 'Clients', 'href' => '#clients'],
                     ['label' => 'Plans', 'href' => '#pricing'],
                     ['label' => 'Contact', 'href' => '#contact'],
@@ -167,6 +167,135 @@ class LandingPageSettings
                         ],
                     ],
                 ],
+            ],
+            'applications_page' => [
+                'enabled' => true,
+                'hero_eyebrow' => 'Car4u mobile ecosystem',
+                'hero_title' => 'Three experiences. One rental platform.',
+                'hero_highlight' => 'One rental platform.',
+                'hero_description' => 'Give owners full business visibility, help employees complete daily operations, and offer renters a smooth mobile journey from vehicle discovery to rental follow-up.',
+                'primary_cta_label' => 'Explore the apps',
+                'secondary_cta_label' => 'Compare experiences',
+                'owner_employee_note' => 'Owner and employee experiences are delivered through the same management application with role-based permissions.',
+                'section_eyebrow' => 'Applications',
+                'section_title' => 'Designed around every role',
+                'section_description' => 'Each experience focuses on the tasks, information, and decisions that matter most to its user.',
+                'store_ios_label' => 'App Store',
+                'store_ios_caption' => 'Download on the',
+                'store_android_label' => 'Google Play',
+                'store_android_caption' => 'Get it on',
+                'roles' => [
+                    [
+                        'key' => 'owner',
+                        'label' => 'Owner experience',
+                        'title' => 'See the entire business from your phone',
+                        'description' => 'The owner workspace brings together performance, fleet activity, branches, reservations, contracts, payments, and team oversight in one clear mobile dashboard.',
+                        'note_title' => 'Part of the management app:',
+                        'note' => 'owners download the same application as employees. Their account automatically unlocks owner-level dashboards and controls.',
+                        'floating_one_title' => 'Live revenue',
+                        'floating_one_text' => 'Across all branches',
+                        'floating_two_title' => 'Full control',
+                        'floating_two_text' => 'Fleet, branches and team',
+                        'screen_label' => 'Good morning',
+                        'screen_title' => 'Owner dashboard',
+                        'screen_stat_label' => 'Revenue this month',
+                        'screen_stat_value' => '$42,860',
+                        'features' => [
+                            'Revenue and performance insights',
+                            'Fleet availability and utilization',
+                            'Reservations and contract activity',
+                            'Multi-branch monitoring',
+                            'Employee and permission management',
+                            'Alerts and approval requests',
+                        ],
+                    ],
+                    [
+                        'key' => 'employee',
+                        'label' => 'Employee experience',
+                        'title' => 'Complete daily rental operations anywhere',
+                        'description' => 'The employee workspace is designed for fast field execution, from vehicle preparation and customer handover to inspections, returns, photos, payments, and contract updates.',
+                        'note_title' => 'Same management app:',
+                        'note' => 'the employee sees only the tools and information permitted by their assigned role and branch.',
+                        'floating_one_title' => 'Daily workflow',
+                        'floating_one_text' => 'Tasks in one place',
+                        'floating_two_title' => 'Role-based access',
+                        'floating_two_text' => 'Only allowed actions',
+                        'screen_label' => 'Employee workspace',
+                        'screen_title' => 'Today operations',
+                        'screen_stat_label' => 'Active tasks',
+                        'screen_stat_value' => '12',
+                        'features' => [
+                            'Daily task and booking management',
+                            'Vehicle handover and return flow',
+                            'Digital vehicle inspections',
+                            'Damage and condition photos',
+                            'Payments and expense entries',
+                            'Contracts and rental updates',
+                        ],
+                    ],
+                    [
+                        'key' => 'renter',
+                        'label' => 'Renter application',
+                        'title' => 'A complete rental journey for your customers',
+                        'description' => 'The renter app is a fully separate application with its own design, navigation, and services. It gives customers a simple way to discover cars, book, submit documents, pay, and follow their rental.',
+                        'note_title' => 'Independent customer app:',
+                        'note' => 'this application has a separate APK and a completely different experience from the management app.',
+                        'floating_one_title' => 'Easy booking',
+                        'floating_one_text' => 'Browse and reserve',
+                        'floating_two_title' => 'Separate app',
+                        'floating_two_text' => 'Customer-first experience',
+                        'screen_label' => 'Renter app',
+                        'screen_title' => 'Choose your vehicle',
+                        'screen_stat_label' => 'Available cars',
+                        'screen_stat_value' => '120+',
+                        'features' => [
+                            'Browse available vehicles',
+                            'Search and filter by category',
+                            'Create and track bookings',
+                            'Upload required documents',
+                            'Payments and rental extension',
+                            'Offers, notifications, and support',
+                        ],
+                    ],
+                ],
+                'compare_title' => 'Three experiences, two applications',
+                'compare_description' => 'The owner and employee workspaces share one secure management application, while renters use a fully independent customer application.',
+                'compare_badge' => 'Role-based access',
+                'comparison' => [
+                    [
+                        'title' => 'Owner',
+                        'description' => 'Strategic visibility and control.',
+                        'items' => [
+                            'Management application',
+                            'Owner-level permissions',
+                            'Business-wide dashboards',
+                            'Branches, team, and approvals',
+                        ],
+                    ],
+                    [
+                        'title' => 'Employee',
+                        'description' => 'Operational execution and field tasks.',
+                        'items' => [
+                            'Same management application',
+                            'Role and branch permissions',
+                            'Handover, return, and inspection',
+                            'Contracts, photos, and payments',
+                        ],
+                    ],
+                    [
+                        'title' => 'Renter',
+                        'description' => 'A customer-first rental journey.',
+                        'items' => [
+                            'Separate customer application',
+                            'Independent design and APK',
+                            'Browse, book, pay, and track',
+                            'Documents, offers, and support',
+                        ],
+                    ],
+                ],
+                'ecosystem_title' => 'Connected to the same rental ecosystem',
+                'ecosystem_description' => 'Every reservation, vehicle update, contract, payment, and customer action stays synchronized with the Car4u SaaS platform.',
+                'ecosystem_cta_label' => 'Start with Car4u',
             ],
             'clients_section' => [
                 'enabled' => true,
@@ -333,6 +462,8 @@ class LandingPageSettings
             'features_section.cards',
             'getting_started.items',
             'mobile_apps_section.apps',
+            'applications_page.roles',
+            'applications_page.comparison',
             'faq_section.items',
             'contact_section.quick_links',
             'footer.social_links',
@@ -416,12 +547,12 @@ class LandingPageSettings
         }
 
         foreach ($links as $link) {
-            if (is_array($link) && ($link['href'] ?? null) === '#application') {
+            if (is_array($link) && in_array(($link['href'] ?? null), ['/applications', '#application'], true)) {
                 return array_values($links);
             }
         }
 
-        $applicationLink = ['label' => 'Application', 'href' => '#application'];
+        $applicationLink = ['label' => 'Application', 'href' => '/applications'];
         $featuresIndex = null;
 
         foreach ($links as $index => $link) {

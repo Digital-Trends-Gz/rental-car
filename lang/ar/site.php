@@ -501,6 +501,7 @@ return array (
     'cars_view_complete_fleet' => 'عرض الأسطول الكامل',
     'clients_label' => 'عملاؤنا',
     'clients_title' => 'موثوق به من قبل فرق حول العالم',
+    'mobile_apps_connected_note' => 'يبقى التطبيقان متصلين بنفس منصة Car4u وبيانات العمل المباشرة.',
     'see_pricing' => 'عرض الأسعار',
     'features_title' => 'كل ما تحتاجه للعمل بسرعة أكبر',
     'features_subtitle' => 'مميزات قوية تستبدل أدواتك المتعددة بمنصة واحدة سهلة.',

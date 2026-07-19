@@ -82,6 +82,29 @@ const customPricingHelp = computed(() =>
         : t('plans_page.custom_pricing_help'),
 );
 
+const customPricingBadge = computed(() => {
+    const value = t('plans_page.custom_pricing_badge');
+
+    if (value !== 'plans_page.custom_pricing_badge') {
+        return value;
+    }
+
+    return locale.value.toLowerCase().startsWith('ar')
+        ? '\u062d\u0644 \u0645\u062e\u0635\u0635 \u0644\u0644\u0634\u0631\u0643\u0627\u062a'
+        : 'Custom solution for companies';
+});
+const customPricingCaption = computed(() => {
+    const value = t('plans_page.custom_pricing_caption');
+
+    if (value !== 'plans_page.custom_pricing_caption') {
+        return value;
+    }
+
+    return locale.value.toLowerCase().startsWith('ar')
+        ? '\u0627\u0644\u0633\u0639\u0631 \u062d\u0633\u0628 \u0627\u0644\u0639\u0642\u062f \u0648\u062d\u062c\u0645 \u0627\u0644\u0634\u0631\u0643\u0629'
+        : 'Pricing depends on contract and company size';
+});
+
 const priceFor = (plan: PlanOption): number => {
     const pricing = pricingFor(plan);
     if (typeof pricing?.final_amount === 'number') {
@@ -272,9 +295,15 @@ const submit = () => {
                                     }}% {{ t('landing.discount_off') }}
                                 </template>
                             </div>
-                            <div v-if="plan.custom_pricing" class="space-y-1">
-                                <p class="inline-block select-none bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-4xl font-extrabold text-transparent">
+                            <div v-if="plan.custom_pricing" class="space-y-3">
+                                <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold leading-none text-emerald-800">
+                                    {{ customPricingBadge }}
+                                </span>
+                                <p class="inline-block select-none text-lg font-bold text-slate-950">
                                     {{ customPricingLabel }}
+                                </p>
+                                <p class="text-sm font-medium text-slate-500">
+                                    {{ customPricingCaption }}
                                 </p>
                             </div>
                             <div v-else class="flex items-end gap-2">
@@ -360,9 +389,15 @@ const submit = () => {
                         {{ t('plans_page.edit_details') }}
                     </Link>
                 </div>
-                <p v-if="isSelectedPlanCustom" class="mt-3 text-start text-sm text-amber-700">
-                    {{ customPricingHelp }}
-                </p>
+                <div
+                    v-if="isSelectedPlanCustom"
+                    class="mt-3 flex flex-wrap items-center gap-3 text-start text-sm text-slate-500"
+                >
+                    <span>{{ customPricingHelp }}</span>
+                    <span class="inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-1.5 font-bold text-emerald-800">
+                        {{ customPricingBadge }}
+                    </span>
+                </div>
             </form>
         </div>
     </main>
