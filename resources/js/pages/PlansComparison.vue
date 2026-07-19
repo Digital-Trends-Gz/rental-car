@@ -221,11 +221,11 @@ const cellClass = (value: string) => {
                     </div>
                 </section>
 
-                <section v-if="showSummary" class="mt-7 grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <section v-if="showSummary" class="mt-7 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-4">
                     <article
                         v-for="(plan, planIndex) in visiblePlans"
                         :key="plan.id"
-                        class="relative flex min-h-[560px] flex-col overflow-hidden rounded-xl border bg-white p-6 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:p-7"
+                        class="relative flex h-full min-h-[560px] flex-col overflow-hidden rounded-xl border bg-white p-6 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:p-7"
                         :class="isPopular(plan) ? 'border-2 border-blue-600' : 'border-slate-200'"
                     >
                         <div class="min-h-[108px]">
