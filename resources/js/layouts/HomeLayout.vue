@@ -15,7 +15,7 @@ import { index as tenantAdminCarsIndex } from '@/routes/admin/cars/index';
 import { index as tenantClientReservationsIndex } from '@/routes/client/reservations/index';
 import { dashboard as superAdminDashboard } from '@/routes/superadmin/index';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Apple, Check, ChevronDown, Facebook, Instagram, Languages, Linkedin, Menu, Smartphone, X } from 'lucide-vue-next';
+import { Apple, Check, ChevronDown, Facebook, Instagram, Languages, Linkedin, Menu, Play, Smartphone, X } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 const $page = usePage<any>();
@@ -234,16 +234,21 @@ const landingFooterAppButtons = computed(() => {
         return [];
     }
 
+    const androidLabel = String(landingSettings.value?.footer?.android_label || '').trim();
+    const iosLabel = String(landingSettings.value?.footer?.ios_label || '').trim();
+
     return [
         {
             key: 'android',
-            label: landingSettings.value?.footer?.android_label || 'Android',
+            caption: 'GET IT ON',
+            label: !androidLabel || androidLabel.toLowerCase() === 'android' ? 'Google Play' : androidLabel,
             href: String(landingSettings.value?.footer?.android_url || '').trim(),
-            icon: Smartphone,
+            icon: Play,
         },
         {
             key: 'ios',
-            label: landingSettings.value?.footer?.ios_label || 'iOS',
+            caption: 'DOWNLOAD ON THE',
+            label: !iosLabel || iosLabel.toLowerCase() === 'ios' ? 'App Store' : iosLabel,
             href: String(landingSettings.value?.footer?.ios_url || '').trim(),
             icon: Apple,
         },
@@ -429,10 +434,18 @@ const themeVars = computed(() => ({
                                 :href="button.href || undefined"
                                 :target="button.href ? '_blank' : undefined"
                                 :rel="button.href ? 'noopener noreferrer' : undefined"
-                                class="inline-flex h-11 w-36 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-semibold text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+                                class="inline-flex h-16 w-44 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
+                                dir="ltr"
                             >
-                                <component :is="button.icon" class="h-4 w-4" />
-                                <span>{{ button.label }}</span>
+                                <span class="text-left leading-tight">
+                                    <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                        {{ button.caption }}
+                                    </span>
+                                    <span class="block text-base font-black">
+                                        {{ button.label }}
+                                    </span>
+                                </span>
+                                <component :is="button.icon" class="h-5 w-5 shrink-0 text-slate-950" />
                             </component>
                         </div>
                     </div>

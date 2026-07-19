@@ -31,6 +31,7 @@ import {
     Languages,
     Linkedin,
     Menu,
+    Play,
     Search,
     Smartphone,
     Users,
@@ -615,6 +616,21 @@ const mobileAppStoreHref = (url?: string | null) => {
     const normalized = String(url || '').trim();
 
     return normalized || '#';
+};
+const mobileAppStoreCaption = (store: 'ios' | 'android') =>
+    store === 'ios' ? 'DOWNLOAD ON THE' : 'GET IT ON';
+const mobileAppStoreLabel = (
+    store: 'ios' | 'android',
+    configuredLabel?: string | null,
+) => {
+    const label = String(configuredLabel || '').trim();
+    const normalized = label.toLowerCase();
+
+    if (store === 'ios') {
+        return !label || normalized === 'ios' ? 'App Store' : label;
+    }
+
+    return !label || normalized === 'android' ? 'Google Play' : label;
 };
 const footerSocialIcons = {
     facebook: Facebook,
@@ -1761,21 +1777,37 @@ onUnmounted(() => {
                                     <div class="mt-auto grid gap-2 pt-6 sm:grid-cols-2">
                                         <a
                                             :href="mobileAppStoreHref(managementMobileApp.app_store_url)"
-                                            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_8px_18px_rgba(59,130,246,0.10)]"
+                                            class="inline-flex h-16 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
                                             :class="{ 'pointer-events-none opacity-60': !managementMobileApp.app_store_url }"
                                             :aria-disabled="!managementMobileApp.app_store_url"
+                                            dir="ltr"
                                         >
-                                            <Apple class="h-5 w-5" />
-                                            {{ landingSettings.mobile_apps_section.ios_label }}
+                                            <span class="text-left leading-tight">
+                                                <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                                    {{ mobileAppStoreCaption('ios') }}
+                                                </span>
+                                                <span class="block text-base font-black">
+                                                    {{ mobileAppStoreLabel('ios', landingSettings.mobile_apps_section.ios_label) }}
+                                                </span>
+                                            </span>
+                                            <Apple class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
                                         <a
                                             :href="mobileAppStoreHref(managementMobileApp.google_play_url)"
-                                            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_8px_18px_rgba(59,130,246,0.10)]"
+                                            class="inline-flex h-16 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
                                             :class="{ 'pointer-events-none opacity-60': !managementMobileApp.google_play_url }"
                                             :aria-disabled="!managementMobileApp.google_play_url"
+                                            dir="ltr"
                                         >
-                                            <Smartphone class="h-5 w-5" />
-                                            {{ landingSettings.mobile_apps_section.android_label }}
+                                            <span class="text-left leading-tight">
+                                                <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                                    {{ mobileAppStoreCaption('android') }}
+                                                </span>
+                                                <span class="block text-base font-black">
+                                                    {{ mobileAppStoreLabel('android', landingSettings.mobile_apps_section.android_label) }}
+                                                </span>
+                                            </span>
+                                            <Play class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
                                     </div>
                                 </div>
@@ -1897,21 +1929,37 @@ onUnmounted(() => {
                                     <div class="mt-auto grid grid-cols-2 gap-3 pt-4">
                                         <a
                                             :href="mobileAppStoreHref(clientMobileApp.app_store_url)"
-                                            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_8px_18px_rgba(59,130,246,0.10)]"
+                                            class="inline-flex h-16 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
                                             :class="{ 'pointer-events-none opacity-60': !clientMobileApp.app_store_url }"
                                             :aria-disabled="!clientMobileApp.app_store_url"
+                                            dir="ltr"
                                         >
-                                            <Apple class="h-4 w-4" />
-                                            {{ landingSettings.mobile_apps_section.ios_label }}
+                                            <span class="text-left leading-tight">
+                                                <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                                    {{ mobileAppStoreCaption('ios') }}
+                                                </span>
+                                                <span class="block text-base font-black">
+                                                    {{ mobileAppStoreLabel('ios', landingSettings.mobile_apps_section.ios_label) }}
+                                                </span>
+                                            </span>
+                                            <Apple class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
                                         <a
                                             :href="mobileAppStoreHref(clientMobileApp.google_play_url)"
-                                            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-700 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_8px_18px_rgba(59,130,246,0.10)]"
+                                            class="inline-flex h-16 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
                                             :class="{ 'pointer-events-none opacity-60': !clientMobileApp.google_play_url }"
                                             :aria-disabled="!clientMobileApp.google_play_url"
+                                            dir="ltr"
                                         >
-                                            <Smartphone class="h-4 w-4" />
-                                            {{ landingSettings.mobile_apps_section.android_label }}
+                                            <span class="text-left leading-tight">
+                                                <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                                    {{ mobileAppStoreCaption('android') }}
+                                                </span>
+                                                <span class="block text-base font-black">
+                                                    {{ mobileAppStoreLabel('android', landingSettings.mobile_apps_section.android_label) }}
+                                                </span>
+                                            </span>
+                                            <Play class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
                                     </div>
                                 </div>
@@ -2532,33 +2580,43 @@ onUnmounted(() => {
                         >
                             <a
                                 :href="mobileAppStoreHref(landingSettings.footer.android_url)"
-                                class="inline-flex h-9 min-w-28 items-center justify-center gap-2 rounded-md border border-border bg-white px-3 text-xs font-semibold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+                                class="inline-flex h-16 w-44 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
                                 :class="{
                                     'pointer-events-none opacity-60':
                                         !landingSettings.footer.android_url,
                                 }"
                                 :aria-disabled="!landingSettings.footer.android_url"
+                                dir="ltr"
                             >
-                                <Smartphone class="h-4 w-4" />
-                                {{
-                                    landingSettings.footer.android_label ||
-                                    'Google Play'
-                                }}
+                                <span class="text-left leading-tight">
+                                    <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                        {{ mobileAppStoreCaption('android') }}
+                                    </span>
+                                    <span class="block text-base font-black">
+                                        {{ mobileAppStoreLabel('android', landingSettings.footer.android_label) }}
+                                    </span>
+                                </span>
+                                <Play class="h-5 w-5 shrink-0 text-slate-950" />
                             </a>
                             <a
                                 :href="mobileAppStoreHref(landingSettings.footer.ios_url)"
-                                class="inline-flex h-9 min-w-28 items-center justify-center gap-2 rounded-md border border-border bg-white px-3 text-xs font-semibold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+                                class="inline-flex h-16 w-44 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
                                 :class="{
                                     'pointer-events-none opacity-60':
                                         !landingSettings.footer.ios_url,
                                 }"
                                 :aria-disabled="!landingSettings.footer.ios_url"
+                                dir="ltr"
                             >
-                                <Apple class="h-4 w-4" />
-                                {{
-                                    landingSettings.footer.ios_label ||
-                                    'App Store'
-                                }}
+                                <span class="text-left leading-tight">
+                                    <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                        {{ mobileAppStoreCaption('ios') }}
+                                    </span>
+                                    <span class="block text-base font-black">
+                                        {{ mobileAppStoreLabel('ios', landingSettings.footer.ios_label) }}
+                                    </span>
+                                </span>
+                                <Apple class="h-5 w-5 shrink-0 text-slate-950" />
                             </a>
                         </div>
                     </div>

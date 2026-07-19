@@ -103,6 +103,22 @@ const titleHighlight = computed(() => {
 
     return highlight && title.toLowerCase().includes(highlight.toLowerCase()) ? highlight : '';
 });
+const sectionTitleLead = computed(() => {
+    const title = props.applicationsPage.section_title || '';
+    const highlight = props.applicationsPage.hero_highlight || '';
+
+    if (!highlight || !title.toLowerCase().includes(highlight.toLowerCase())) {
+        return title;
+    }
+
+    return title.slice(0, title.toLowerCase().indexOf(highlight.toLowerCase())).trim();
+});
+const sectionTitleHighlight = computed(() => {
+    const title = props.applicationsPage.section_title || '';
+    const highlight = props.applicationsPage.hero_highlight || '';
+
+    return highlight && title.toLowerCase().includes(highlight.toLowerCase()) ? highlight : '';
+});
 const roleIcon = (key?: string) => {
     const normalized = String(key || '').toLowerCase();
 
@@ -221,11 +237,18 @@ const roleTone = (index: number) =>
                         <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
                         {{ applicationsPage.section_eyebrow }}
                     </div>
-                    <h2 class="mt-4 text-3xl font-black tracking-normal text-slate-950 sm:text-[44px]">
-                        {{ applicationsPage.section_title }}
+                    <h2 class="mt-4 text-3xl font-black leading-tight tracking-normal text-slate-950 sm:text-[44px]">
+                        <span>{{ sectionTitleLead }}</span>
+                        <br v-if="sectionTitleHighlight" />
+                        <span v-if="sectionTitleHighlight" class="bg-gradient-to-r from-blue-500 to-purple-700 bg-clip-text text-transparent">
+                            {{ sectionTitleHighlight }}
+                        </span>
                     </h2>
                     <p class="mt-4 text-base leading-7 text-slate-500">
                         {{ applicationsPage.section_description }}
+                    </p>
+                    <p class="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-500">
+                            {{ applicationsPage.owner_employee_note }}
                     </p>
                 </div>
 
@@ -518,18 +541,34 @@ const roleTone = (index: number) =>
 .store-button {
     display: inline-flex;
     min-height: 3.2rem;
-    min-width: 10rem;
+    min-width: 11.5rem;
     align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
+    justify-content: space-between;
+    flex-direction: row-reverse;
+    gap: 1rem;
     border-radius: 13px;
-    border: 1px solid #dfe3eb;
+    border: 1px solid #f1f5f9;
     background: white;
-    padding: 0.5rem 0.95rem;
+    padding: 0.65rem 1.1rem;
     font-size: 0.82rem;
     font-weight: 900;
     color: #111827;
-    box-shadow: 0 0.5rem 1.4rem rgba(16, 24, 40, 0.05);
+    box-shadow: 0 0.75rem 1.8rem rgba(16, 24, 40, 0.06);
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.store-button:hover {
+    transform: translateY(-2px);
+    border-color: #bfdbfe;
+    box-shadow: 0 1rem 2.1rem rgba(59, 130, 246, 0.12);
+}
+
+.store-button span {
+    text-align: left;
+    line-height: 1.1;
 }
 
 .store-button small {
