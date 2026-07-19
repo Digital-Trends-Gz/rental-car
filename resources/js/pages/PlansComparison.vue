@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SeoHead from '@/components/SeoHead.vue';
+import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { register as mainRegister } from '@/routes';
 import { Head, Link, usePage } from '@inertiajs/vue3';
@@ -19,6 +20,8 @@ type Plan = {
     id: number;
     name: string;
     description?: string | null;
+    features?: string[] | null;
+    feature_flags?: Record<string, boolean> | null;
     custom_pricing?: boolean;
     is_most_value?: boolean;
     monthly_price?: string | number | null;
@@ -91,6 +94,7 @@ const props = defineProps<{
 }>();
 
 const page = usePage<any>();
+const { t } = useTrans();
 const locale = computed(() => String(page.props.locale || 'en'));
 const isRtl = computed(() => ['ar', 'ur'].includes(locale.value.toLowerCase().split('-')[0]));
 const registerUrl = mainRegister().url;
@@ -162,17 +166,34 @@ const comparisonBranchLimit = (planIndex: number) => {
     return value;
 };
 
-const planLimits = (plan: Plan, planIndex: number) => [
-    comparisonLimit(planIndex, 0, 'cars') || limitWithPrefix(plan.max_cars, 'car', 'cars'),
-    comparisonLimit(planIndex, 1, 'users') || limitWithPrefix(plan.max_employees, 'user', 'users'),
-    comparisonLimit(planIndex, 2, 'monthly bookings') || bookingLimit(plan.max_contracts),
-    comparisonBranchLimit(planIndex) || branchLimit(plan.max_branches),
-];
+const planLimits = (plan: Plan, planIndex: number) => {
+    const explicitFeatures = (plan.features || [])
+        .map((feature) => String(feature || '').trim())
+        .filter((feature) => feature !== '');
+    const onlyGenericUnlimited =
+        explicitFeatures.length > 0 &&
+        explicitFeatures.every((feature) => feature.toLowerCase() === 'unlimited');
+
+    if (explicitFeatures.length > 0 && !onlyGenericUnlimited) {
+        return explicitFeatures;
+    }
+
+    return [
+        comparisonLimit(planIndex, 0, 'cars') || limitWithPrefix(plan.max_cars, 'car', 'cars'),
+        comparisonLimit(planIndex, 1, 'users') || limitWithPrefix(plan.max_employees, 'user', 'users'),
+        comparisonLimit(planIndex, 2, 'monthly bookings') || bookingLimit(plan.max_contracts),
+        comparisonBranchLimit(planIndex) || branchLimit(plan.max_branches),
+    ];
+};
 
 const discountLabel = (plan: Plan) => {
     const percentage = Math.round(Number(pricingFor(plan).savings_percentage || 0));
 
-    return percentage > 0 ? `${percentage}% OFF` : props.plansPage.current_price_label;
+    if (percentage <= 0) {
+        return props.plansPage.current_price_label;
+    }
+
+    return isRtl.value ? `${t('landing.discount_off')} ${percentage}%` : `${percentage}% ${t('landing.discount_off')}`;
 };
 
 const cellClass = (value: string) => {
@@ -259,11 +280,11 @@ const cellClass = (value: string) => {
                             </span>
                             <div class="flex items-end gap-2">
                                 <span class="text-5xl font-extrabold tracking-tight text-slate-950">${{ money(pricingFor(plan).final_amount) }}</span>
-                                <span class="pb-1 text-base text-slate-500">/{{ plansPage.monthly_label }}</span>
+                                <span class="pb-1 text-base text-slate-500">/{{ t('landing.monthly') }}</span>
                             </div>
                             <p v-if="pricingFor(plan).has_discount && pricingFor(plan).original_amount" class="mt-2 text-base text-slate-500">
                                 <span class="line-through">${{ money(pricingFor(plan).original_amount || plan.monthly_price) }}</span>
-                                <span class="ms-2 font-medium text-emerald-700">Save ${{ money(pricingFor(plan).savings_amount || 0) }}</span>
+                                <span class="ms-2 font-medium text-emerald-700">{{ t('landing.discount_save') }} ${{ money(pricingFor(plan).savings_amount || 0) }}</span>
                             </p>
                         </div>
 
@@ -278,7 +299,7 @@ const cellClass = (value: string) => {
                             :href="registerUrl"
                             class="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-purple-700 px-6 text-base font-semibold text-white shadow-lg shadow-blue-600/15 transition hover:translate-y-[-1px] hover:shadow-xl"
                         >
-                            Get Started
+                            {{ t('nav.get_started') }}
                         </Link>
                     </article>
                 </section>
