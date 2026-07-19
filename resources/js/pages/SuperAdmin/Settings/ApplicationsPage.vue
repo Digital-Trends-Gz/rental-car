@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ExternalLink, Languages, Plus, Save, Trash2 } from 'lucide-vue-next';
@@ -66,11 +67,19 @@ const props = defineProps<{
     previewUrl: string;
     translationsUrl: string;
     updateUrl: string;
+    heroFiles: Array<{ id: number; url: string }>;
+    roleFiles: Record<number, Array<{ id: number; url: string }>>;
 }>();
 
 const page = usePage<any>();
 
-const form = useForm<{ applications_page: ApplicationsPage }>({
+const form = useForm<{
+    applications_page: ApplicationsPage;
+    application_hero_direct_file: File | null;
+    application_hero_removed_files: number[];
+    application_role_direct_files: Record<number, File | null>;
+    application_role_removed_files: Record<number, number[]>;
+}>({
     applications_page: {
         ...props.applicationsPage,
         enabled: props.applicationsPage.enabled !== false,
@@ -84,6 +93,10 @@ const form = useForm<{ applications_page: ApplicationsPage }>({
             items: [...(item.items || [])],
         })),
     },
+    application_hero_direct_file: null,
+    application_hero_removed_files: [],
+    application_role_direct_files: {},
+    application_role_removed_files: {},
 });
 
 const flashSuccess = computed(() => page.props.flash?.success ?? null);
@@ -93,9 +106,49 @@ const formErrors = computed(() =>
 );
 
 function submit(): void {
-    form.put(props.updateUrl, {
+    form.transform((data) => ({
+        ...data,
+        _method: 'put',
+    })).post(props.updateUrl, {
         preserveScroll: true,
+        forceFormData: true,
     });
+}
+
+function handleHeroLocalFileAdded(file: File): void {
+    form.application_hero_direct_file = file;
+}
+
+function handleHeroFileRemoved(data: { type: string; fileId?: number }): void {
+    if (data.type !== 'existing' || !data.fileId) {
+        return;
+    }
+
+    form.application_hero_removed_files = [...new Set([...form.application_hero_removed_files, data.fileId])];
+    form.applications_page.hero_image_url = '';
+}
+
+function roleFileList(index: number): Array<{ id: number; url: string }> {
+    return props.roleFiles?.[index] || [];
+}
+
+function handleRoleLocalFileAdded(index: number, file: File): void {
+    form.application_role_direct_files = {
+        ...form.application_role_direct_files,
+        [index]: file,
+    };
+}
+
+function handleRoleFileRemoved(index: number, data: { type: string; fileId?: number }): void {
+    if (data.type !== 'existing' || !data.fileId) {
+        return;
+    }
+
+    form.application_role_removed_files = {
+        ...form.application_role_removed_files,
+        [index]: [...new Set([...(form.application_role_removed_files[index] || []), data.fileId])],
+    };
+    form.applications_page.roles[index].image_url = '';
 }
 
 function addRoleFeature(role: ApplicationRole): void {
@@ -124,7 +177,7 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                 <div>
                     <h1 class="text-2xl font-semibold">Applications Page</h1>
                     <p class="text-sm text-muted-foreground">
-                        Edit the public applications page content, role blocks, comparison copy, and image URLs.
+                        Edit the public applications page content, role blocks, comparison copy, and uploaded images.
                     </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
@@ -163,7 +216,7 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
             <Card>
                 <CardHeader>
                     <CardTitle>Hero</CardTitle>
-                    <CardDescription>Main headline, intro copy, calls to action, and optional hero image URL.</CardDescription>
+                    <CardDescription>Main headline, intro copy, calls to action, and hero image.</CardDescription>
                 </CardHeader>
                 <CardContent class="grid gap-4 lg:grid-cols-2">
                     <div class="space-y-2">
@@ -171,8 +224,20 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                         <Input v-model="form.applications_page.hero_eyebrow" />
                     </div>
                     <div class="space-y-2">
-                        <Label>Hero Image URL</Label>
-                        <Input v-model="form.applications_page.hero_image_url" placeholder="https://..." />
+                        <Label>Hero Image</Label>
+                        <FileUpload
+                            :initial-files="heroFiles"
+                            :allow-multiple="false"
+                            :max-files="1"
+                            :instant-upload="false"
+                            :max-file-size="1024 * 1024 * 50"
+                            :allowed-file-types="['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']"
+                            collection="applications_page_hero"
+                            theme="light"
+                            width="100%"
+                            @local-file-added="handleHeroLocalFileAdded"
+                            @file-removed="handleHeroFileRemoved"
+                        />
                     </div>
                     <div class="space-y-2">
                         <Label>Title</Label>
@@ -198,12 +263,6 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                         <Label>Owner / Employee Note</Label>
                         <Textarea v-model="form.applications_page.owner_employee_note" rows="2" />
                     </div>
-                    <img
-                        v-if="form.applications_page.hero_image_url"
-                        :src="form.applications_page.hero_image_url"
-                        alt=""
-                        class="max-h-56 rounded-md border object-contain lg:col-span-2"
-                    />
                 </CardContent>
             </Card>
 
@@ -247,7 +306,7 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
             <Card>
                 <CardHeader>
                     <CardTitle>Role Experiences</CardTitle>
-                    <CardDescription>Edit owner, employee, and renter blocks. Image URLs appear in the public page visual area.</CardDescription>
+                    <CardDescription>Edit owner, employee, and renter blocks. Uploaded images appear in the public page visual area.</CardDescription>
                 </CardHeader>
                 <CardContent class="space-y-5">
                     <div
@@ -269,8 +328,20 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                                 <Input v-model="role.label" />
                             </div>
                             <div class="space-y-2">
-                                <Label>Image URL</Label>
-                                <Input v-model="role.image_url" placeholder="https://..." />
+                                <Label>Image</Label>
+                                <FileUpload
+                                    :initial-files="roleFileList(roleIndex)"
+                                    :allow-multiple="false"
+                                    :max-files="1"
+                                    :instant-upload="false"
+                                    :max-file-size="1024 * 1024 * 50"
+                                    :allowed-file-types="['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']"
+                                    :collection="`applications_page_role_${roleIndex}_image`"
+                                    theme="light"
+                                    width="100%"
+                                    @local-file-added="(file) => handleRoleLocalFileAdded(roleIndex, file)"
+                                    @file-removed="(data) => handleRoleFileRemoved(roleIndex, data)"
+                                />
                             </div>
                             <div class="space-y-2 lg:col-span-2">
                                 <Label>Title</Label>

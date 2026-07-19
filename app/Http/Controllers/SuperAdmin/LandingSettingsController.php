@@ -150,17 +150,25 @@ class LandingSettingsController extends Controller
     public function applicationsPage(): Response
     {
         $settings = $this->landingSettings();
+        $landingSetting = SiteSetting::query()
+            ->with('files')
+            ->where('key', LandingPageSettings::KEY)
+            ->first();
 
         return Inertia::render('SuperAdmin/Settings/ApplicationsPage', [
             'applicationsPage' => data_get($settings, 'applications_page', []),
             'previewUrl' => route('applications'),
             'translationsUrl' => route('superadmin.settings.landing-translations'),
             'updateUrl' => route('superadmin.settings.applications-page.update'),
+            'heroFiles' => $this->landingFilesForCollection($landingSetting, 'applications_page_hero'),
+            'roleFiles' => $this->applicationRoleFiles($landingSetting),
         ]);
     }
 
     public function updateApplicationsPage(Request $request): RedirectResponse
     {
+        $this->sanitizeApplicationsPageFiles($request);
+
         $validated = $request->validate([
             'applications_page.enabled' => ['nullable', 'boolean'],
             'applications_page.hero_eyebrow' => ['required', 'string', 'max:255'],
@@ -207,11 +215,21 @@ class LandingSettingsController extends Controller
             'applications_page.ecosystem_title' => ['required', 'string', 'max:255'],
             'applications_page.ecosystem_description' => ['required', 'string', 'max:2000'],
             'applications_page.ecosystem_cta_label' => ['required', 'string', 'max:255'],
+            'application_hero_direct_file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
+            'application_hero_removed_files' => ['nullable', 'array'],
+            'application_hero_removed_files.*' => ['integer'],
+            'application_role_direct_files' => ['nullable', 'array'],
+            'application_role_direct_files.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
+            'application_role_removed_files' => ['nullable', 'array'],
+            'application_role_removed_files.*' => ['array'],
+            'application_role_removed_files.*.*' => ['integer'],
         ]);
 
-        $this->persistLandingSettings([
+        $landingSetting = $this->persistLandingSettings([
             'applications_page' => $validated['applications_page'],
         ]);
+
+        $this->syncApplicationsPageUploads($request, $landingSetting);
 
         return back()->with('success', 'Applications page settings updated successfully.');
     }
@@ -1294,6 +1312,73 @@ class LandingSettingsController extends Controller
         $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
     }
 
+    private function syncApplicationsPageUploads(Request $request, SiteSetting $landingSetting): void
+    {
+        $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
+        $applicationsPage = (array) data_get($settings, 'applications_page', []);
+
+        $heroRemovedIds = is_array($request->input('application_hero_removed_files', []))
+            ? array_values(array_unique(array_filter($request->input('application_hero_removed_files', []))))
+            : [];
+        $heroDirectFile = $request->file('application_hero_direct_file');
+
+        if ($heroDirectFile instanceof UploadedFile) {
+            $applicationsPage['hero_image_url'] = $this->storeDirectLandingFile(
+                $landingSetting,
+                $heroDirectFile,
+                'applications_page_hero'
+            );
+        } elseif (!empty($heroRemovedIds)) {
+            $this->filePondService->handleFileUpdates(
+                $landingSetting,
+                [],
+                $heroRemovedIds,
+                'applications_page_hero'
+            );
+            $applicationsPage['hero_image_url'] = '';
+        }
+
+        $roles = (array) ($applicationsPage['roles'] ?? []);
+        $removedIdsByIndex = is_array($request->input('application_role_removed_files', []))
+            ? $request->input('application_role_removed_files', [])
+            : [];
+
+        foreach ($roles as $index => $role) {
+            if (!is_array($role)) {
+                continue;
+            }
+
+            $collection = $this->applicationRoleCollection((int) $index);
+            $removedIds = is_array($removedIdsByIndex[$index] ?? null)
+                ? array_values(array_unique(array_filter($removedIdsByIndex[$index])))
+                : [];
+            $directFile = $request->file("application_role_direct_files.$index");
+
+            if ($directFile instanceof UploadedFile) {
+                $roles[$index]['image_url'] = $this->storeDirectLandingFile(
+                    $landingSetting,
+                    $directFile,
+                    $collection
+                );
+                continue;
+            }
+
+            if (!empty($removedIds)) {
+                $this->filePondService->handleFileUpdates(
+                    $landingSetting,
+                    [],
+                    $removedIds,
+                    $collection
+                );
+                $roles[$index]['image_url'] = '';
+            }
+        }
+
+        $applicationsPage['roles'] = $roles;
+        data_set($settings, 'applications_page', $applicationsPage);
+        $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
+    }
+
     private function sanitizeRequestFiles(Request $request): void
     {
         if ($request->has('hero_direct_file') && !($request->file('hero_direct_file') instanceof UploadedFile)) {
@@ -1372,6 +1457,31 @@ class LandingSettingsController extends Controller
                 }
                 $request->merge(['mobile_app_direct_files' => $sanitized]);
                 $request->files->set('mobile_app_direct_files', $sanitized);
+            }
+        }
+    }
+
+    private function sanitizeApplicationsPageFiles(Request $request): void
+    {
+        if ($request->has('application_hero_direct_file') && !($request->file('application_hero_direct_file') instanceof UploadedFile)) {
+            $request->request->remove('application_hero_direct_file');
+            if ($request->files->has('application_hero_direct_file')) {
+                $request->files->remove('application_hero_direct_file');
+            }
+        }
+
+        if ($request->has('application_role_direct_files')) {
+            $files = $request->input('application_role_direct_files');
+            if (is_array($files)) {
+                $sanitized = [];
+                foreach ($files as $index => $val) {
+                    $file = $request->file("application_role_direct_files.$index");
+                    if ($file instanceof UploadedFile) {
+                        $sanitized[$index] = $file;
+                    }
+                }
+                $request->merge(['application_role_direct_files' => $sanitized]);
+                $request->files->set('application_role_direct_files', $sanitized);
             }
         }
     }
@@ -1624,6 +1734,22 @@ class LandingSettingsController extends Controller
     }
 
     /**
+     * @return array<int, array<int, array{id: int, url: string|null}>>
+     */
+    private function applicationRoleFiles(?SiteSetting $landingSetting): array
+    {
+        $settings = $this->landingSettings();
+        $roles = (array) data_get($settings, 'applications_page.roles', []);
+        $files = [];
+
+        foreach (array_keys($roles) as $index) {
+            $files[(int) $index] = $this->landingFilesForCollection($landingSetting, $this->applicationRoleCollection((int) $index));
+        }
+
+        return $files;
+    }
+
+    /**
      * @return array<int, array{id: int, url: string|null}>
      */
     private function landingFilesForCollection(?SiteSetting $landingSetting, string $collection): array
@@ -1654,6 +1780,11 @@ class LandingSettingsController extends Controller
     private function gettingStartedStepCollection(int $index): string
     {
         return 'getting_started_step_' . max(0, $index) . '_image';
+    }
+
+    private function applicationRoleCollection(int $index): string
+    {
+        return 'applications_page_role_' . max(0, $index) . '_image';
     }
 
     private function heroLocaleCollection(string $locale): string
