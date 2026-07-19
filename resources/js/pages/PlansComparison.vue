@@ -100,9 +100,6 @@ const showComparison = computed(() => props.plansPage.comparison_enabled !== fal
 const showAddons = computed(() => props.plansPage.addons_enabled !== false);
 const showPolicy = computed(() => props.plansPage.policy_enabled !== false);
 const showFooter = computed(() => props.plansPage.footer_enabled !== false);
-const customPriceBadge = computed(() =>
-    props.plansPage.custom_price_badge === 'Custom solution for companies' ? 'Custom Plan' : props.plansPage.custom_price_badge,
-);
 
 const money = (value: unknown) => Number(value || 0).toFixed(2);
 const pricingFor = (plan: Plan) => plan.pricing_meta?.monthly || {};
@@ -134,23 +131,42 @@ const branchLimit = (value: number | null | undefined) => {
     return `Up to ${formatNumber(value)} branches`;
 };
 
-const planLimits = (plan: Plan, planIndex: number) => {
-    const comparisonLimits = props.plansPage.comparison_sections?.[0]?.rows
-        ?.slice(0, 4)
-        .map((row) => row.values?.[planIndex])
-        .filter((value): value is string => Boolean(value));
+const comparisonValue = (planIndex: number, rowIndex: number) => props.plansPage.comparison_sections?.[0]?.rows?.[rowIndex]?.values?.[planIndex];
 
-    if (comparisonLimits?.length) {
-        return comparisonLimits;
+const comparisonLimit = (planIndex: number, rowIndex: number, suffix: string) => {
+    const value = comparisonValue(planIndex, rowIndex);
+
+    if (!value) {
+        return null;
     }
 
-    return [
-        limitWithPrefix(plan.max_cars, 'car', 'cars'),
-        limitWithPrefix(plan.max_employees, 'user', 'users'),
-        bookingLimit(plan.max_contracts),
-        branchLimit(plan.max_branches),
-    ];
+    if (value.toLowerCase().includes('unlimited')) {
+        return `${props.plansPage.unlimited_label} ${suffix}`;
+    }
+
+    return `${value} ${suffix}`;
 };
+
+const comparisonBranchLimit = (planIndex: number) => {
+    const value = comparisonValue(planIndex, 3);
+
+    if (!value) {
+        return null;
+    }
+
+    if (value.toLowerCase().includes('unlimited')) {
+        return 'Multiple branches';
+    }
+
+    return value;
+};
+
+const planLimits = (plan: Plan, planIndex: number) => [
+    comparisonLimit(planIndex, 0, 'cars') || limitWithPrefix(plan.max_cars, 'car', 'cars'),
+    comparisonLimit(planIndex, 1, 'users') || limitWithPrefix(plan.max_employees, 'user', 'users'),
+    comparisonLimit(planIndex, 2, 'monthly bookings') || bookingLimit(plan.max_contracts),
+    comparisonBranchLimit(planIndex) || branchLimit(plan.max_branches),
+];
 
 const discountLabel = (plan: Plan) => {
     const percentage = Math.round(Number(pricingFor(plan).savings_percentage || 0));
@@ -209,57 +225,57 @@ const cellClass = (value: string) => {
                     <article
                         v-for="(plan, planIndex) in visiblePlans"
                         :key="plan.id"
-                        class="relative flex flex-col overflow-hidden rounded-xl border bg-white p-7 shadow-[0_10px_28px_rgba(15,23,42,0.08)]"
+                        class="relative flex min-h-[560px] flex-col overflow-hidden rounded-xl border bg-white p-6 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:p-7"
                         :class="isPopular(plan) ? 'border-2 border-blue-600' : 'border-slate-200'"
                     >
-                        <div class="relative mb-5">
-                            <h2 class="text-2xl font-black leading-tight text-slate-950" :class="isPopular(plan) ? 'ltr:pr-32 rtl:pl-32' : ''">
+                        <div class="min-h-[108px]">
+                            <h2 class="text-xl font-bold leading-tight text-slate-950" :class="isPopular(plan) ? 'ltr:pr-32 rtl:pl-32' : ''">
                                 {{ plan.name }}
                             </h2>
                             <span
                                 v-if="isPopular(plan)"
-                                class="absolute top-0 inline-flex rounded-full bg-blue-600/10 px-5 py-2 text-sm font-bold leading-none text-blue-700 ring-1 ring-blue-600/15 ltr:right-0 rtl:left-0"
+                                class="absolute top-7 inline-flex rounded-full bg-blue-600/10 px-4 py-2 text-xs font-bold leading-none text-blue-700 ring-1 ring-blue-600/15 ltr:right-7 rtl:left-7"
                             >
                                 {{ plansPage.most_value_label }}
                             </span>
+                            <p class="mt-2 text-base leading-7 text-slate-500">{{ plan.description }}</p>
                         </div>
-                        <p class="min-h-[78px] text-lg leading-8 text-slate-500">{{ plan.description }}</p>
 
-                        <div v-if="plan.custom_pricing" class="mb-5 min-h-[125px]">
-                            <span class="mb-5 inline-flex max-w-full shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-5 py-2 text-[10px] font-bold leading-none text-emerald-800">
+                        <div v-if="plan.custom_pricing" class="mb-6 min-h-[135px]">
+                            <span class="mb-4 inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-[10px] font-bold leading-none text-emerald-800">
                                 {{ customPriceBadge }}
                             </span>
-                            <div class="text-5xl font-extrabold leading-none text-slate-950">{{ plansPage.custom_price_label }}</div>
-                            <p class="mt-6 text-lg font-medium text-blue-950/75">{{ plansPage.custom_price_caption }}</p>
+                            <div class="text-4xl font-extrabold leading-none text-slate-950">{{ plansPage.custom_price_label }}</div>
+                            <p class="mt-5 text-base font-medium text-slate-500">{{ plansPage.custom_price_caption }}</p>
                         </div>
 
-                        <div v-else class="mb-5 min-h-[125px]">
+                        <div v-else class="mb-6 min-h-[135px]">
                             <span
                                 v-if="pricingFor(plan).has_discount"
-                                class="mb-5 inline-flex rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold leading-none text-emerald-700"
+                                class="mb-3 inline-flex rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold leading-none text-emerald-700"
                             >
                                 {{ discountLabel(plan) }}
                             </span>
                             <div class="flex items-end gap-2">
-                                <span class="text-5xl font-extrabold tracking-normal text-slate-950">${{ money(pricingFor(plan).final_amount) }}</span>
-                                <span class="pb-1 text-lg text-slate-500">/{{ plansPage.monthly_label }}</span>
+                                <span class="text-5xl font-extrabold tracking-tight text-slate-950">${{ money(pricingFor(plan).final_amount) }}</span>
+                                <span class="pb-1 text-base text-slate-500">/{{ plansPage.monthly_label }}</span>
                             </div>
-                            <p v-if="pricingFor(plan).has_discount && pricingFor(plan).original_amount" class="mt-3 text-base text-slate-500">
+                            <p v-if="pricingFor(plan).has_discount && pricingFor(plan).original_amount" class="mt-2 text-base text-slate-500">
                                 <span class="line-through">${{ money(pricingFor(plan).original_amount || plan.monthly_price) }}</span>
                                 <span class="ms-2 font-medium text-emerald-700">Save ${{ money(pricingFor(plan).savings_amount || 0) }}</span>
                             </p>
                         </div>
 
-                        <ul class="mt-4 space-y-5 text-lg text-slate-500">
-                            <li v-for="limit in planLimits(plan, planIndex)" :key="`${plan.id}-${limit}`" class="flex items-start gap-4">
-                                <Check :size="20" class="mt-1 shrink-0 text-slate-950" />
+                        <ul class="mb-8 flex-1 space-y-4">
+                            <li v-for="limit in planLimits(plan, planIndex)" :key="`${plan.id}-${limit}`" class="flex items-start gap-3 text-base text-slate-500">
+                                <Check :size="18" class="mt-0.5 shrink-0 text-slate-950" />
                                 <span>{{ limit }}</span>
                             </li>
                         </ul>
 
                         <Link
                             :href="registerUrl"
-                            class="mt-10 inline-flex h-14 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-purple-700 px-6 text-base font-bold text-white shadow-lg shadow-blue-600/15 transition hover:translate-y-[-1px] hover:shadow-xl"
+                            class="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-purple-700 px-6 text-base font-semibold text-white shadow-lg shadow-blue-600/15 transition hover:translate-y-[-1px] hover:shadow-xl"
                         >
                             Get Started
                         </Link>
