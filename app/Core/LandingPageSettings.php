@@ -327,7 +327,7 @@ class LandingPageSettings
                 'most_value_label' => 'Most Value',
                 'custom_price_label' => 'Custom',
                 'custom_price_caption' => 'Pricing depends on contract and company size',
-                'custom_price_badge' => 'Custom solution for companies',
+                'custom_price_badge' => 'Custom Plan',
                 'unlimited_label' => 'Unlimited',
                 'not_available_label' => 'No',
                 'included_label' => 'Yes',
