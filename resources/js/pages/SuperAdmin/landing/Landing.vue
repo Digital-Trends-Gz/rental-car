@@ -746,11 +746,7 @@ const planPrice = (plan: Plan) => {
     return Number(planPricing(plan).final_amount || 0);
 };
 
-const isProfessionalPlan = (plan: Plan) => {
-    const normalizedName = String(plan.name || '').trim().toLowerCase();
-
-    return normalizedName.includes('professional');
-};
+const isMostValuePlan = (plan: Plan) => Boolean(plan.is_most_value);
 
 const money = (value: number) => {
     return Number(value).toFixed(2);
@@ -2070,7 +2066,7 @@ onUnmounted(() => {
                                         <h3
                                             class="text-xl font-bold leading-tight text-foreground"
                                             :class="
-                                                isProfessionalPlan(plan)
+                                                isMostValuePlan(plan)
                                                     ? 'ltr:pr-32 rtl:pl-32'
                                                     : ''
                                             "
@@ -2083,7 +2079,7 @@ onUnmounted(() => {
                                             {{ plan.description || '' }}
                                         </p>
                                         <span
-                                            v-if="isProfessionalPlan(plan)"
+                                            v-if="isMostValuePlan(plan)"
                                             class="absolute top-7 inline-flex rounded-full bg-blue-600/10 px-4 py-2 text-xs font-bold leading-none text-blue-700 ring-1 ring-blue-600/15 ltr:right-7 rtl:left-7"
                                         >
                                             {{ mostValueLabel }}

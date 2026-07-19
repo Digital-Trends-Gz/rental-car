@@ -76,6 +76,7 @@ export interface Plan {
     openai_requests_per_day: number | null;
     tenants_count?: number;
     is_active: boolean;
+    is_most_value: boolean;
     created_at: string;
     updated_at: string;
 }

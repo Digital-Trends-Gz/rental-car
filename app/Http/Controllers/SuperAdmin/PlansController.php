@@ -92,9 +92,11 @@ class PlansController extends Controller
             'max_contracts' => 'nullable|integer|min:1',
             'openai_requests_per_day' => 'nullable|integer|min:1',
             'is_active' => 'required|boolean',
+            'is_most_value' => 'nullable|boolean',
         ], $this->featureFlagValidationRules()));
 
-        Plan::create($this->normalizePlanPayload($validated));
+        $plan = Plan::create($this->normalizePlanPayload($validated));
+        $this->syncMostValuePlan($plan);
 
         return redirect()->route('superadmin.plans.index')
             ->with('success', 'Plan created successfully.');
@@ -145,12 +147,14 @@ class PlansController extends Controller
             'max_contracts' => 'nullable|integer|min:1',
             'openai_requests_per_day' => 'nullable|integer|min:1',
             'is_active' => 'required|boolean',
+            'is_most_value' => 'nullable|boolean',
         ], $this->featureFlagValidationRules()));
 
         $translations = $validated['translations'] ?? [];
         unset($validated['translations']);
 
         $plan->update($this->normalizePlanPayload($validated));
+        $this->syncMostValuePlan($plan->fresh());
         $this->syncPlanTranslations($plan->fresh(), $translations);
 
         return redirect()->route('superadmin.plans.index')
@@ -171,6 +175,7 @@ class PlansController extends Controller
     private function normalizePlanPayload(array $validated): array
     {
         $validated['custom_pricing'] = (bool) ($validated['custom_pricing'] ?? false);
+        $validated['is_most_value'] = (bool) ($validated['is_most_value'] ?? false);
 
         if ($validated['custom_pricing']) {
             $validated['monthly_price'] = 0;
@@ -192,6 +197,17 @@ class PlansController extends Controller
             ->all();
 
         return $validated;
+    }
+
+    private function syncMostValuePlan(?Plan $plan): void
+    {
+        if (!$plan?->is_most_value) {
+            return;
+        }
+
+        Plan::query()
+            ->whereKeyNot($plan->getKey())
+            ->update(['is_most_value' => false]);
     }
 
     private function featureFlags(): array

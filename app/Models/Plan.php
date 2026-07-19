@@ -53,6 +53,7 @@ class Plan extends Model
         'max_contracts',
         'openai_requests_per_day',
         'is_active',
+        'is_most_value',
     ];
 
     protected $casts = [
@@ -60,6 +61,7 @@ class Plan extends Model
         'feature_flags' => 'array',
         'custom_pricing' => 'boolean',
         'is_active' => 'boolean',
+        'is_most_value' => 'boolean',
         'monthly_price' => 'decimal:2',
         'yearly_price' => 'decimal:2',
         'one_time_price' => 'decimal:2',

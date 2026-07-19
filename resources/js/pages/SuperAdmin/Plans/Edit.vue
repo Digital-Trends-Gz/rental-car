@@ -80,6 +80,7 @@ const form = useForm({
     max_contracts: props.plan.max_contracts ?? null,
     openai_requests_per_day: props.plan.openai_requests_per_day ?? null,
     is_active: props.plan.is_active,
+    is_most_value: Boolean(props.plan.is_most_value),
 });
 
 const limitFields = [
@@ -192,6 +193,17 @@ const submit = () => {
                                         id="is_active"
                                         :checked="form.is_active"
                                         @update:checked="(val: boolean) => form.is_active = val"
+                                    />
+                                </div>
+                                <div class="flex items-center justify-between space-x-2 py-2">
+                                    <div class="space-y-0.5">
+                                        <Label for="is_most_value">Most Value Badge</Label>
+                                        <p class="text-xs text-muted-foreground">Show the Most Value badge for this plan on the landing page.</p>
+                                    </div>
+                                    <Switch
+                                        id="is_most_value"
+                                        :checked="form.is_most_value"
+                                        @update:checked="(val: boolean) => form.is_most_value = val"
                                     />
                                 </div>
                                 <div class="flex items-center justify-between space-x-2 py-2">
