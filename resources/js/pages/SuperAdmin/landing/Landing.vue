@@ -403,7 +403,8 @@ const visibleNavHrefs = computed(() => {
         hrefs.add('#application');
     }
 
-    if (props.landingSettings.plans_section?.enabled !== false) {
+    if (props.landingSettings.plans_comparison_page?.enabled !== false) {
+        hrefs.add('/plans');
         hrefs.add('#pricing');
     }
 
@@ -434,7 +435,7 @@ const navLinks = computed(() => {
     const normalizedLinks = links
         .map((link, index) => ({
             label: String(link?.label || fallback[index]?.label || ''),
-            href: String(link?.href || fallback[index]?.href || '#'),
+            href: String(link?.href || fallback[index]?.href || '#') === '#pricing' ? '/plans' : String(link?.href || fallback[index]?.href || '#'),
         }))
         .filter(
             (link) =>
@@ -2017,22 +2018,25 @@ onUnmounted(() => {
                                 <div
                                     class="card-elevated relative flex h-full min-h-[560px] flex-col rounded-xl p-6 sm:p-7"
                                 >
-                                    <div class="flex min-h-[108px] items-start justify-between gap-4">
-                                        <div class="min-w-0">
-                                            <h3
-                                                class="text-xl font-bold leading-tight text-foreground"
-                                            >
-                                                {{ plan.name }}
-                                            </h3>
-                                            <p
-                                                class="mt-2 text-base leading-7 text-muted-foreground"
-                                            >
-                                                {{ plan.description || '' }}
-                                            </p>
-                                        </div>
+                                    <div class="min-h-[108px]">
+                                        <h3
+                                            class="text-xl font-bold leading-tight text-foreground"
+                                            :class="
+                                                isProfessionalPlan(plan)
+                                                    ? 'ltr:pr-32 rtl:pl-32'
+                                                    : ''
+                                            "
+                                        >
+                                            {{ plan.name }}
+                                        </h3>
+                                        <p
+                                            class="mt-2 text-base leading-7 text-muted-foreground"
+                                        >
+                                            {{ plan.description || '' }}
+                                        </p>
                                         <span
                                             v-if="isProfessionalPlan(plan)"
-                                            class="inline-flex shrink-0 rounded-full bg-blue-600/10 px-4 py-2 text-xs font-bold leading-none text-blue-700 ring-1 ring-blue-600/15"
+                                            class="absolute top-7 inline-flex rounded-full bg-blue-600/10 px-4 py-2 text-xs font-bold leading-none text-blue-700 ring-1 ring-blue-600/15 ltr:right-7 rtl:left-7"
                                         >
                                             {{ mostValueLabel }}
                                         </span>

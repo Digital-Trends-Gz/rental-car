@@ -491,7 +491,7 @@ class LandingPageSettings
                 'quick_links_title' => 'Quick links',
                 'quick_links' => [
                     ['label' => 'Browse tenant cars', 'href' => '#cars'],
-                    ['label' => 'View plans', 'href' => '#pricing'],
+                    ['label' => 'View plans', 'href' => '/plans'],
                     ['label' => 'Read the FAQ', 'href' => '#faq'],
                 ],
             ],
@@ -578,7 +578,7 @@ class LandingPageSettings
         $settings['getting_started']['items'] = self::normalizeStepItems($settings['getting_started']['items'] ?? []);
         $settings['mobile_apps_section']['enabled'] = (bool) ($settings['mobile_apps_section']['enabled'] ?? true);
         $settings['mobile_apps_section']['apps'] = self::normalizeAppCards($settings['mobile_apps_section']['apps'] ?? []);
-        $settings['navigation']['links'] = self::ensureApplicationNavigationLink($settings);
+        $settings['navigation']['links'] = self::ensureLandingPageNavigationLinks($settings);
         $settings['clients_section']['enabled'] = (bool) ($settings['clients_section']['enabled'] ?? true);
         $settings['plans_section']['enabled'] = (bool) ($settings['plans_section']['enabled'] ?? true);
         $settings['faq_section']['enabled'] = (bool) ($settings['faq_section']['enabled'] ?? true);
@@ -683,7 +683,7 @@ class LandingPageSettings
         return $normalized;
     }
 
-    private static function ensureApplicationNavigationLink(array $settings): array
+    private static function ensureLandingPageNavigationLinks(array $settings): array
     {
         $links = $settings['navigation']['links'] ?? [];
 
@@ -691,30 +691,54 @@ class LandingPageSettings
             return [];
         }
 
-        if (($settings['mobile_apps_section']['enabled'] ?? true) === false) {
-            return array_values($links);
-        }
-
-        foreach ($links as $link) {
-            if (is_array($link) && in_array(($link['href'] ?? null), ['/applications', '#application'], true)) {
-                return array_values($links);
-            }
-        }
-
-        $applicationLink = ['label' => 'Application', 'href' => '/applications'];
-        $featuresIndex = null;
-
         foreach ($links as $index => $link) {
-            if (is_array($link) && ($link['href'] ?? null) === '#features') {
-                $featuresIndex = $index;
-                break;
+            if (is_array($link) && ($link['href'] ?? null) === '#pricing') {
+                $links[$index]['href'] = '/plans';
             }
         }
 
-        if ($featuresIndex === null) {
-            $links[] = $applicationLink;
-        } else {
-            array_splice($links, $featuresIndex + 1, 0, [$applicationLink]);
+        if (($settings['mobile_apps_section']['enabled'] ?? true) !== false) {
+            $hasApplicationLink = false;
+
+            foreach ($links as $link) {
+                if (is_array($link) && in_array(($link['href'] ?? null), ['/applications', '#application'], true)) {
+                    $hasApplicationLink = true;
+                    break;
+                }
+            }
+
+            if (!$hasApplicationLink) {
+                $applicationLink = ['label' => 'Application', 'href' => '/applications'];
+                $featuresIndex = null;
+
+                foreach ($links as $index => $link) {
+                    if (is_array($link) && ($link['href'] ?? null) === '#features') {
+                        $featuresIndex = $index;
+                        break;
+                    }
+                }
+
+                if ($featuresIndex === null) {
+                    $links[] = $applicationLink;
+                } else {
+                    array_splice($links, $featuresIndex + 1, 0, [$applicationLink]);
+                }
+            }
+        }
+
+        if (($settings['plans_comparison_page']['enabled'] ?? true) !== false) {
+            $hasPlansLink = false;
+
+            foreach ($links as $link) {
+                if (is_array($link) && ($link['href'] ?? null) === '/plans') {
+                    $hasPlansLink = true;
+                    break;
+                }
+            }
+
+            if (!$hasPlansLink) {
+                $links[] = ['label' => 'Plans', 'href' => '/plans'];
+            }
         }
 
         return array_values($links);

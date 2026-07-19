@@ -168,7 +168,7 @@ const landingNavLinks = computed(() => {
     const normalizedLinks = links
         .map((link: any, index: number) => ({
             label: String(link?.label || fallback[index]?.label || ''),
-            href: String(link?.href || fallback[index]?.href || '#'),
+            href: String(link?.href || fallback[index]?.href || '#') === '#pricing' ? '/plans' : String(link?.href || fallback[index]?.href || '#'),
         }))
         .filter((link) => link.label !== '' && !hiddenLandingNavHrefs.has(link.href))
 
