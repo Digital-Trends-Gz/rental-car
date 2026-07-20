@@ -31,6 +31,8 @@ import {
     Languages,
     Linkedin,
     Menu,
+    ArrowUp,
+    MessageCircle,
     Play,
     Search,
     Smartphone,
@@ -521,6 +523,7 @@ const footerDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));
 
 const mobileOpen = ref(false);
 const scrolled = ref(false);
+const showScrollTop = ref(false);
 const yearly = ref(false);
 const clientsRail = ref<HTMLElement | null>(null);
 const clientsAutoplay = ref<number | null>(null);
@@ -529,8 +532,12 @@ const brokenCarTenantLogos = ref<Record<number, boolean>>({});
 const brokenLandingImages = ref<Record<string, boolean>>({});
 const currentYear = new Date().getFullYear();
 const registerUrl = mainRegister().url;
+const plansUrl = computed(() => localizedPath('/plans'));
 const navigationCtaLabel = computed(
     () => props.landingSettings.navigation?.cta_label || 'Start Free Trial',
+);
+const plansDetailsLabel = computed(() =>
+    translatedLabel('landing.plans_view_details', 'View Details'),
 );
 const heroImage = computed(
     () => props.landingSettings.hero.image_url || heroMockup,
@@ -544,6 +551,17 @@ const heroIsVideo = computed(() =>
 const contactSection = computed(() => props.landingSettings.contact_section);
 const contactRecipient = computed(
     () => contactSection.value.direct_email || 'info@car4u.net',
+);
+const normalizeWhatsAppNumber = (value: unknown) => {
+    const digits = String(value || '').replace(/\D/g, '');
+
+    return digits.startsWith('00') ? digits.slice(2) : digits;
+};
+const whatsappNumber = computed(() =>
+    normalizeWhatsAppNumber(contactSection.value.direct_phone),
+);
+const whatsappHref = computed(() =>
+    whatsappNumber.value ? `https://wa.me/${whatsappNumber.value}` : null,
 );
 const carSearch = ref(props.carSearch ?? '');
 const fleetUrl = mainFleet().url;
@@ -664,6 +682,11 @@ const contactNoticeTone = ref<'success' | 'error' | null>(null);
 
 const onScroll = () => {
     scrolled.value = window.scrollY > 10;
+    showScrollTop.value = window.scrollY > 420;
+};
+
+const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 const toggleMenu = () => {
@@ -2278,6 +2301,16 @@ onUnmounted(() => {
                             class="plans-swiper-pagination mt-2 flex justify-center"
                         ></div>
                     </div>
+
+                    <div class="mt-10 flex justify-center">
+                        <Button
+                            as-child
+                            variant="outline"
+                            class="h-12 rounded-2xl border-border bg-white px-8 text-base font-semibold text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-white hover:text-primary hover:shadow-md"
+                        >
+                            <Link :href="plansUrl">{{ plansDetailsLabel }}</Link>
+                        </Button>
+                    </div>
                 </div>
             </section>
 
@@ -2539,22 +2572,22 @@ onUnmounted(() => {
 
         <footer
             v-if="landingSettings.footer.enabled"
-            class="border-t border-border bg-background py-5"
+            class="border-t border-border bg-background py-4"
         >
-            <div class="section-container space-y-4">
+            <div class="section-container space-y-3">
                 <div
-                    class="grid items-center gap-5 md:grid-cols-[1fr_auto_1fr]"
+                    class="grid items-center gap-5 md:grid-cols-[auto_1fr_auto_auto]"
                 >
                     <Link
                         href="/"
-                        class="inline-flex items-center justify-center justify-self-center px-4 transition md:justify-self-start"
+                        class="inline-flex items-center justify-center justify-self-center transition md:justify-self-start"
                         :aria-label="appName"
                     >
-                        <AppLogoIcon class="h-9 w-auto" />
+                        <AppLogoIcon class="h-10 w-auto" />
                     </Link>
 
                     <nav
-                        class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-medium text-foreground"
+                        class="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 text-sm font-medium text-foreground md:justify-start"
                         :aria-label="t('landing.footer_navigation') || 'Footer navigation'"
                     >
                         <a
@@ -2567,67 +2600,65 @@ onUnmounted(() => {
                         </a>
                     </nav>
 
-                    <div class="flex items-center justify-center gap-8 md:justify-self-end">
-                        <div
-                            v-if="landingSettings.footer.show_social_links"
-                            class="flex items-center gap-2"
+                    <div
+                        v-if="landingSettings.footer.show_social_links"
+                        class="flex items-center justify-center gap-2"
+                    >
+                        <a
+                            v-for="social in footerSocialLinks"
+                            :key="social.label"
+                            :href="social.href"
+                            class="inline-flex h-8 w-14 items-center justify-center rounded-md border border-border bg-white text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+                            :aria-label="social.label"
                         >
-                            <a
-                                v-for="social in footerSocialLinks"
-                                :key="social.label"
-                                :href="social.href"
-                                class="inline-flex h-9 w-11 items-center justify-center rounded-md border border-border bg-white text-muted-foreground shadow-sm transition hover:border-primary/40 hover:text-primary"
-                                :aria-label="social.label"
-                            >
-                                <component :is="social.icon" class="h-4 w-4" />
-                            </a>
-                        </div>
+                            <component :is="social.icon" class="h-4 w-4" />
+                        </a>
+                    </div>
 
-                        <div
-                            v-if="landingSettings.footer.show_app_buttons"
-                            class="flex flex-col gap-2"
+                    <div
+                        v-if="landingSettings.footer.show_app_buttons"
+                        class="flex flex-col items-center gap-2 md:items-end"
+                    >
+                        <a
+                            :href="mobileAppStoreHref(landingSettings.footer.android_url)"
+                            class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-3 text-slate-950 transition hover:border-blue-200"
+                            :class="{
+                                'pointer-events-none opacity-60':
+                                    !landingSettings.footer.android_url,
+                            }"
+                            :aria-disabled="!landingSettings.footer.android_url"
+                            dir="ltr"
                         >
-                            <a
-                                :href="mobileAppStoreHref(landingSettings.footer.android_url)"
-                                class="inline-flex h-16 w-44 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
-                                :class="{
-                                    'pointer-events-none opacity-60':
-                                        !landingSettings.footer.android_url,
-                                }"
-                                :aria-disabled="!landingSettings.footer.android_url"
-                                dir="ltr"
-                            >
-                                <span class="text-left leading-tight">
-                                    <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
-                                        {{ mobileAppStoreCaption('android') }}
-                                    </span>
-                                    <span class="block text-base font-black">
-                                        {{ mobileAppStoreLabel('android', landingSettings.footer.android_label) }}
-                                    </span>
+                            <span class="text-left leading-tight">
+                                <span class="block text-[0.5rem] font-bold uppercase tracking-wide text-slate-500">
+                                    {{ mobileAppStoreCaption('android') }}
                                 </span>
-                                <Play class="h-5 w-5 shrink-0 text-slate-950" />
-                            </a>
-                            <a
-                                :href="mobileAppStoreHref(landingSettings.footer.ios_url)"
-                                class="inline-flex h-16 w-44 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
-                                :class="{
-                                    'pointer-events-none opacity-60':
-                                        !landingSettings.footer.ios_url,
-                                }"
-                                :aria-disabled="!landingSettings.footer.ios_url"
-                                dir="ltr"
-                            >
-                                <span class="text-left leading-tight">
-                                    <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
-                                        {{ mobileAppStoreCaption('ios') }}
-                                    </span>
-                                    <span class="block text-base font-black">
-                                        {{ mobileAppStoreLabel('ios', landingSettings.footer.ios_label) }}
-                                    </span>
+                                <span class="block text-xs font-extrabold">
+                                    {{ mobileAppStoreLabel('android', landingSettings.footer.android_label) }}
                                 </span>
-                                <Apple class="h-5 w-5 shrink-0 text-slate-950" />
-                            </a>
-                        </div>
+                            </span>
+                            <Play class="h-4 w-4 shrink-0 text-slate-950" />
+                        </a>
+                        <a
+                            :href="mobileAppStoreHref(landingSettings.footer.ios_url)"
+                            class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-3 text-slate-950 transition hover:border-blue-200"
+                            :class="{
+                                'pointer-events-none opacity-60':
+                                    !landingSettings.footer.ios_url,
+                            }"
+                            :aria-disabled="!landingSettings.footer.ios_url"
+                            dir="ltr"
+                        >
+                            <span class="text-left leading-tight">
+                                <span class="block text-[0.5rem] font-bold uppercase tracking-wide text-slate-500">
+                                    {{ mobileAppStoreCaption('ios') }}
+                                </span>
+                                <span class="block text-xs font-extrabold">
+                                    {{ mobileAppStoreLabel('ios', landingSettings.footer.ios_label) }}
+                                </span>
+                            </span>
+                            <Apple class="h-4 w-4 shrink-0 text-slate-950" />
+                        </a>
                     </div>
                 </div>
 
@@ -2646,6 +2677,28 @@ onUnmounted(() => {
                 </p>
             </div>
         </footer>
+
+        <div class="fixed bottom-5 right-4 z-[60] flex flex-col items-center gap-3 sm:right-6">
+            <a
+                v-if="whatsappHref"
+                :href="whatsappHref"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-emerald-700/20 transition hover:-translate-y-0.5 hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
+                aria-label="WhatsApp"
+            >
+                <MessageCircle class="h-6 w-6" />
+            </a>
+            <button
+                v-show="showScrollTop"
+                type="button"
+                class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-950 text-white shadow-lg shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                aria-label="Scroll to top"
+                @click="scrollToTop"
+            >
+                <ArrowUp class="h-5 w-5" />
+            </button>
+        </div>
     </div>
 </template>
 

@@ -394,6 +394,7 @@ return [
         'cars_empty_title' => 'No cars matched your search.',
         'cars_empty_description' => 'Try a different make, model, or tenant name.',
         'cars_view_complete_fleet' => 'View Complete Fleet',
+        'plans_view_details' => 'View Details',
         'clients_label' => 'Our clients',
         'clients_title' => 'Trusted by teams worldwide',
         'mobile_apps_connected_note' => 'Both applications stay connected to the same Car4u rental platform and live business data.',

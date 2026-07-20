@@ -91,9 +91,10 @@ Route::domain($baseDomain)->group(function () use ($localizedGroup) {
             Route::get('/', [HomePagesController::class, 'index'])->name('home');
             Route::post('/', [HomePagesController::class, 'index'])->name('home.search');
             Route::get('/fleet', [HomePagesController::class, 'fleet'])->name('fleet');
-            Route::get('/applications', [HomePagesController::class, 'applications'])->name('applications');
+            Route::redirect('/applications', '/car-rental-apps')->name('applications');
             Route::get('/car-rental-apps', [HomePagesController::class, 'applications'])->name('car-rental-apps');
-            Route::get('/plans', [HomePagesController::class, 'plans'])->name('plans');
+            Route::redirect('/plans', '/pricing-plans')->name('plans');
+            Route::get('/pricing-plans', [HomePagesController::class, 'plans'])->name('pricing-plans');
             Route::get('/about', [HomePagesController::class, 'about'])->name('about');
             Route::get('/contact', [HomePagesController::class, 'contact'])->name('contact');
             Route::get('/privacy-policy', [HomePagesController::class, 'privacyPolicy'])->name('privacy-policy');

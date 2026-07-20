@@ -499,6 +499,7 @@ return array (
     'cars_empty_title' => 'لا توجد سيارات مطابقة لبحثك.',
     'cars_empty_description' => 'جرب اسم شركة أو موديل أو مستأجر آخر.',
     'cars_view_complete_fleet' => 'عرض الأسطول الكامل',
+    'plans_view_details' => 'عرض التفاصيل',
     'clients_label' => 'عملاؤنا',
     'clients_title' => 'موثوق به من قبل فرق حول العالم',
     'mobile_apps_connected_note' => 'يبقى التطبيقان متصلين بنفس منصة Car4u وبيانات العمل المباشرة.',

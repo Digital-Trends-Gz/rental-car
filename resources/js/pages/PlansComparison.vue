@@ -109,6 +109,9 @@ const showFooter = computed(() => props.plansPage.footer_enabled !== false);
 const money = (value: unknown) => Number(value || 0).toFixed(2);
 const pricingFor = (plan: Plan) => plan.pricing_meta?.monthly || {};
 const isPopular = (plan: Plan) => Boolean(plan.is_most_value);
+const customPriceBadge = computed(
+    () => props.plansPage.custom_price_badge || t('plans_page.custom_pricing_badge'),
+);
 
 const formatNumber = (value: number) => new Intl.NumberFormat(locale.value).format(value);
 
@@ -224,26 +227,22 @@ const cellClass = (value: string) => {
     <Head v-else :title="plansPage.hero_title || 'Plans'" />
 
     <HomeLayout shell-variant="landing">
-        <main class="plans-comparison bg-slate-50 text-slate-950" :dir="isRtl ? 'rtl' : 'ltr'">
-            <div class="mx-auto max-w-7xl px-4 py-10 md:py-14">
-                <section v-if="showHero" class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-950 via-blue-900 to-blue-600 p-7 text-white shadow-2xl shadow-slate-900/10 md:p-11">
-                    <div class="absolute -left-20 -top-28 h-72 w-72 rounded-full bg-white/10"></div>
-                    <div class="absolute bottom-[-5rem] right-28 h-44 w-44 rounded-full bg-white/10"></div>
-                    <div class="relative max-w-4xl">
-                        <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-4 py-2 text-sm font-bold">
-                            <Sparkles class="h-4 w-4" />
+        <main class="plans-comparison bg-[#f5f7fb] text-slate-950" :dir="isRtl ? 'rtl' : 'ltr'">
+            <div class="mx-auto max-w-7xl px-4 py-14 md:py-16">
+                <section v-if="showHero" class="mx-auto max-w-4xl text-center">
+                    <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-extrabold text-blue-700 ring-1 ring-blue-100">
+                        <Sparkles class="h-4 w-4" />
                             {{ plansPage.hero_badge }}
-                        </div>
-                        <h1 class="mt-5 text-3xl font-black tracking-normal sm:text-5xl">
-                            {{ plansPage.hero_title }}
-                        </h1>
-                        <p class="mt-4 max-w-3xl text-base leading-8 text-white/85">
-                            {{ plansPage.hero_description }}
-                        </p>
                     </div>
+                    <h1 class="mt-5 text-4xl font-black tracking-normal text-slate-950 sm:text-5xl">
+                        {{ plansPage.hero_title }}
+                    </h1>
+                    <p class="mx-auto mt-4 max-w-3xl text-base leading-8 text-slate-500">
+                        {{ plansPage.hero_description }}
+                    </p>
                 </section>
 
-                <section v-if="showSummary" class="mt-7 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <section v-if="showSummary" class="mt-10 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-4">
                     <article
                         v-for="(plan, planIndex) in visiblePlans"
                         :key="plan.id"

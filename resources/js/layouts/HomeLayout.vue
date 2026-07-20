@@ -15,8 +15,8 @@ import { index as tenantAdminCarsIndex } from '@/routes/admin/cars/index';
 import { index as tenantClientReservationsIndex } from '@/routes/client/reservations/index';
 import { dashboard as superAdminDashboard } from '@/routes/superadmin/index';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Apple, Check, ChevronDown, Facebook, Instagram, Languages, Linkedin, Menu, Play, Smartphone, X } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { Apple, ArrowUp, Check, ChevronDown, Facebook, Instagram, Languages, Linkedin, Menu, MessageCircle, Play, Smartphone, X } from 'lucide-vue-next';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const $page = usePage<any>();
 const { t, locale, direction } = useTrans();
@@ -35,6 +35,7 @@ const isTenant = computed(() => !!currentTenant.value);
 const isLandingShell = computed(() => props.shellVariant === 'landing');
 const role = computed(() => $page.props.auth.user?.role);
 const mobileOpen = ref(false);
+const showScrollTop = ref(false);
 const appBranding = computed(() => $page.props.app_branding ?? {});
 const landingSettings = computed(() => $page.props.landingSettings ?? {});
 const hiddenLandingNavHrefs = new Set(['#how-it-works', '#faq']);
@@ -273,12 +274,58 @@ const toggleLandingMenu = () => {
 const closeLandingMenu = () => {
     mobileOpen.value = false;
 };
+const handleWindowScroll = () => {
+    showScrollTop.value = typeof window !== 'undefined' && window.scrollY > 420;
+};
+const scrollToTop = () => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+const normalizeWhatsAppNumber = (value: unknown) => {
+    const digits = String(value || '').replace(/\D/g, '');
+
+    return digits.startsWith('00') ? digits.slice(2) : digits;
+};
+const whatsappNumber = computed(() => {
+    if (isLandingShell.value) {
+        return normalizeWhatsAppNumber(landingSettings.value?.contact_section?.direct_phone);
+    }
+
+    return normalizeWhatsAppNumber(
+        tenantSiteSettings.value?.contact?.whatsapp ||
+            tenantSiteSettings.value?.contact?.phone ||
+            currentTenant.value?.phone,
+    );
+});
+const whatsappHref = computed(() =>
+    whatsappNumber.value ? `https://wa.me/${whatsappNumber.value}` : null,
+);
 const themeVars = computed(() => ({
     ...globalThemeVars.value,
     '--tenant-primary': primaryColor.value,
     '--tenant-secondary': secondaryColor.value,
     '--tenant-gradient': `linear-gradient(90deg, ${primaryColor.value}, ${secondaryColor.value})`,
 }));
+
+onMounted(() => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    handleWindowScroll();
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+});
+
+onBeforeUnmount(() => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    window.removeEventListener('scroll', handleWindowScroll);
+});
 </script>
 
 <template>
@@ -755,6 +802,28 @@ const themeVars = computed(() => ({
         </footer>
     </div>
 </template>
+
+    <div class="fixed bottom-5 right-4 z-[60] flex flex-col items-center gap-3 sm:right-6">
+        <a
+            v-if="whatsappHref"
+            :href="whatsappHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-emerald-700/20 transition hover:-translate-y-0.5 hover:bg-[#20bd5a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
+            aria-label="WhatsApp"
+        >
+            <MessageCircle class="h-6 w-6" />
+        </a>
+        <button
+            v-show="showScrollTop"
+            type="button"
+            class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-950 text-white shadow-lg shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+            aria-label="Scroll to top"
+            @click="scrollToTop"
+        >
+            <ArrowUp class="h-5 w-5" />
+        </button>
+    </div>
 </template>
 
 <style>
