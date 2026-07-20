@@ -1688,7 +1688,7 @@ onUnmounted(() => {
             >
                 <div class="section-container">
                     <div
-                        class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(16,24,40,0.06)] sm:p-8 lg:p-10"
+                        class="bg-white p-5 sm:p-8 lg:p-10"
                     >
                         <div class="mx-auto mb-8 max-w-3xl text-center">
                             <div>

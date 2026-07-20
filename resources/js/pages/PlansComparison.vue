@@ -268,7 +268,7 @@ const cellClass = (value: string) => {
                                 {{ customPriceBadge }}
                             </span>
                             <div class="text-4xl font-extrabold leading-none text-slate-950">{{ plansPage.custom_price_label }}</div>
-                            <p class="mt-5 text-base font-medium text-slate-500">{{ plansPage.custom_price_caption }}</p>
+                            <p class="mt-5 text-[13px] font-medium text-[#737373]">{{ plansPage.custom_price_caption }}</p>
                         </div>
 
                         <div v-else class="mb-6 min-h-[135px]">
