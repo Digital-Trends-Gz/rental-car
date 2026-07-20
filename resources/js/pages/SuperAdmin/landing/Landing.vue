@@ -1125,27 +1125,29 @@ onUnmounted(() => {
                     </div>
 
                     <div
-                        class="animate-reveal-up-delay mx-auto mt-16 w-full max-w-[1200px]"
+                        class="animate-reveal-up-delay mx-auto mt-14 w-full max-w-[1120px]"
                     >
                         <div
-                            class="card-elevated aspect-[1200/689] overflow-hidden rounded-2xl p-1"
+                            class="rounded-[1.5rem] border border-sky-100 bg-sky-100/75 p-4 shadow-[0_22px_70px_rgba(15,23,42,0.08)] sm:p-6 lg:p-8"
                         >
-                            <video
-                                v-if="heroIsVideo"
-                                :src="heroImage"
-                                class="h-full w-full rounded-xl object-cover"
-                                autoplay
-                                muted
-                                loop
-                                playsinline
-                            />
-                            <img
-                                v-else
-                                :src="heroImage"
-                                alt="Hero"
-                                class="h-full w-full rounded-xl object-cover"
-                                loading="eager"
-                            />
+                            <div class="aspect-[1200/689] overflow-hidden rounded-xl bg-slate-950 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
+                                <video
+                                    v-if="heroIsVideo"
+                                    :src="heroImage"
+                                    class="h-full w-full object-cover"
+                                    autoplay
+                                    muted
+                                    loop
+                                    playsinline
+                                />
+                                <img
+                                    v-else
+                                    :src="heroImage"
+                                    alt="Hero"
+                                    class="h-full w-full object-cover"
+                                    loading="eager"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1430,7 +1432,7 @@ onUnmounted(() => {
                                         .fleet_button_icon_url
                                 "
                                 alt=""
-                                class="h-6 w-6 shrink-0 object-contain brightness-0 invert"
+                                class="h-8 w-8 shrink-0 object-contain brightness-0 invert"
                             />
                             {{ t('landing.cars_view_complete_fleet') }}
                         </a>
