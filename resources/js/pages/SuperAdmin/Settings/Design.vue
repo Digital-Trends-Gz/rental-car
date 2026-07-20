@@ -63,6 +63,7 @@ interface MobileAppCard {
     icon_url: string;
     app_store_url: string;
     google_play_url: string;
+    badge: string;
     features: string[];
 }
 
@@ -325,6 +326,10 @@ for (const localeCode of enabledLocales.value) {
 form.settings.mobile_apps_section.apps.forEach((app, index) => {
     if (!('icon_url' in app)) {
         app.icon_url = '';
+    }
+
+    if (!('badge' in app)) {
+        app.badge = '';
     }
 
     mobileAppTempFolders.value[index] = { image: [], icon: [] };
@@ -898,6 +903,7 @@ const addMobileApp = () => {
         icon_url: '',
         app_store_url: '',
         google_play_url: '',
+        badge: '',
         features: [''],
     });
 
@@ -1781,7 +1787,7 @@ const toggleSection = (
                                         </div>
                                     </div>
 
-                                    <div class="grid gap-3 md:grid-cols-2">
+                                    <div class="grid gap-3 md:grid-cols-3">
                                         <div class="space-y-2">
                                             <Label>{{
                                                 localize(
@@ -1799,6 +1805,18 @@ const toggleSection = (
                                                 )
                                             }}</Label>
                                             <Input v-model="app.subtitle" />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label>{{
+                                                localize(
+                                                    'Badge',
+                                                    'الشارة',
+                                                )
+                                            }}</Label>
+                                            <Input
+                                                v-model="app.badge"
+                                                placeholder="Full visibility"
+                                            />
                                         </div>
                                     </div>
 

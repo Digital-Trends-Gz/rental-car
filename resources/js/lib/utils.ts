@@ -23,6 +23,39 @@ export function toUrl(href: NonNullable<InertiaLinkProps['href']>) {
     return typeof href === 'string' ? href : href?.url;
 }
 
+export function withLocalePrefix(
+    url: string,
+    locale: string | null | undefined,
+    availableLocales: unknown,
+): string {
+    const localeCode = String(locale || '').trim();
+    const locales = Array.isArray(availableLocales)
+        ? availableLocales.map(String).filter(Boolean)
+        : [];
+
+    if (!localeCode || !locales.includes(localeCode)) {
+        return url;
+    }
+
+    const localeRegex = new RegExp(`^/(${locales.map(escapeRegExp).join('|')})(?=/|$)`);
+
+    try {
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://localhost';
+        const parsedUrl = new URL(url, baseUrl);
+        const path = parsedUrl.pathname.replace(localeRegex, '') || '/';
+
+        parsedUrl.pathname = `/${localeCode}${path}`;
+
+        return typeof window !== 'undefined' && parsedUrl.origin === window.location.origin
+            ? `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`
+            : parsedUrl.toString();
+    } catch {
+        const path = (url.startsWith('/') ? url : `/${url}`).replace(localeRegex, '') || '/';
+
+        return `/${localeCode}${path}`;
+    }
+}
+
 function normalizeUrlPath(url: string): string {
     if (!url) return '/';
 

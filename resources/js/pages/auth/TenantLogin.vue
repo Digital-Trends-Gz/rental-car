@@ -4,6 +4,7 @@ import InputError from '@/components/InputError.vue';
 import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
 import { useBrandTheme } from '@/composables/useBrandTheme';
 import { useTrans } from '@/composables/useTrans';
+import { withLocalePrefix } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,18 +42,21 @@ const loginAction = computed(() => {
     ) as any;
 });
 
+const localizedAuthUrl = (url: string) =>
+    withLocalePrefix(url, page.props.locale, page.props.available_locales);
+
 const registerUrl = computed(() => {
-    return mainRegister().url;
+    return localizedAuthUrl(mainRegister().url);
 });
 
 const forgotPasswordUrl = computed(() => {
     const slug = currentTenant.value?.slug;
-    return slug ? tenantPasswordRequest(slug).url : mainPasswordRequest().url;
+    return localizedAuthUrl(slug ? tenantPasswordRequest(slug).url : mainPasswordRequest().url);
 });
 
 const landingUrl = computed(() => {
     const slug = currentTenant.value?.slug;
-    return slug ? tenantAuthLanding(slug).url : mainAuthLanding().url;
+    return localizedAuthUrl(slug ? tenantAuthLanding(slug).url : mainAuthLanding().url);
 });
 </script>
 

@@ -22,7 +22,7 @@ class LandingPageSettings
      */
     public static function contentKeys(): array
     {
-        return ['navigation', 'locale_switcher', 'hero', 'features_section', 'getting_started', 'mobile_apps_section', 'applications_page', 'plans_comparison_page', 'plans_section', 'faq_section', 'contact_section', 'footer'];
+        return ['navigation', 'locale_switcher', 'hero', 'features_section', 'getting_started', 'mobile_apps_section', 'applications_page', 'plans_comparison_page', 'plans_section', 'faq_section', 'contact_section', 'auth_verify_email', 'footer'];
     }
 
     /**
@@ -126,17 +126,19 @@ class LandingPageSettings
                 'android_label' => 'Android',
                 'apps' => [
                     [
-                        'title' => 'Client App',
-                        'subtitle' => 'For your customers',
-                        'description' => 'Browse the fleet, book cars in seconds, and manage rentals from their pocket.',
+                        'title' => 'Tenant App',
+                        'subtitle' => 'For fleet owners',
+                        'description' => 'Real-time analytics, revenue insights, and full control over your entire fleet.',
                         'image_url' => '',
                         'icon_url' => '',
                         'app_store_url' => '',
                         'google_play_url' => '',
+                        'badge' => 'Full visibility',
                         'features' => [
-                            'Instant booking',
-                            'Live availability',
-                            'Trip history',
+                            'Revenue analytics',
+                            'Fleet overview',
+                            'Multi-branch control',
+                            'Task assignments',
                         ],
                     ],
                     [
@@ -147,6 +149,7 @@ class LandingPageSettings
                         'icon_url' => '',
                         'app_store_url' => '',
                         'google_play_url' => '',
+                        'badge' => 'Tasks & handovers',
                         'features' => [
                             'Task assignments',
                             'Vehicle inspections',
@@ -154,17 +157,18 @@ class LandingPageSettings
                         ],
                     ],
                     [
-                        'title' => 'Tenant App',
-                        'subtitle' => 'For fleet owners',
-                        'description' => 'Real-time analytics, revenue insights, and full control over your entire fleet.',
+                        'title' => 'Client App',
+                        'subtitle' => 'For your customers',
+                        'description' => 'Browse the fleet, book cars in seconds, and manage rentals from their pocket.',
                         'image_url' => '',
                         'icon_url' => '',
                         'app_store_url' => '',
                         'google_play_url' => '',
+                        'badge' => 'Customer experience',
                         'features' => [
-                            'Revenue analytics',
-                            'Fleet overview',
-                            'Multi-branch control',
+                            'Instant booking',
+                            'Live availability',
+                            'Trip history',
                         ],
                     ],
                 ],
@@ -512,6 +516,15 @@ class LandingPageSettings
                     ['label' => 'LinkedIn', 'platform' => 'linkedin', 'href' => ''],
                 ],
             ],
+            'auth_verify_email' => [
+                'head_title' => 'Email verification',
+                'title' => 'Verify email',
+                'description' => 'Please verify your email address by clicking on the link we just emailed to you.',
+                'status_message' => 'A new verification link has been sent to the email address you provided during registration.',
+                'resend_button' => 'Resend verification email',
+                'resending_button' => 'Sending...',
+                'logout_link' => 'Log out',
+            ],
             'enabled_locales' => $supportedLocales,
             'translations' => self::defaultTranslations($supportedLocales),
         ];
@@ -526,6 +539,15 @@ class LandingPageSettings
 
         if (in_array('ar', $supportedLocales, true)) {
             $translations['ar'] = [
+                'auth_verify_email' => [
+                    'head_title' => 'تأكيد البريد الإلكتروني',
+                    'title' => 'تأكيد البريد الإلكتروني',
+                    'description' => 'يرجى تأكيد بريدك الإلكتروني من خلال الضغط على الرابط الذي أرسلناه إليك.',
+                    'status_message' => 'تم إرسال رابط تحقق جديد إلى البريد الإلكتروني الذي أدخلته أثناء التسجيل.',
+                    'resend_button' => 'إعادة إرسال رسالة التحقق',
+                    'resending_button' => 'جارٍ الإرسال...',
+                    'logout_link' => 'تسجيل الخروج',
+                ],
                 'locale_switcher' => [
                     'language_names' => [
                         'en' => 'الإنجليزية',
@@ -538,6 +560,15 @@ class LandingPageSettings
 
         if (in_array('ur', $supportedLocales, true)) {
             $translations['ur'] = [
+                'auth_verify_email' => [
+                    'head_title' => 'ای میل کی تصدیق',
+                    'title' => 'ای میل کی تصدیق کریں',
+                    'description' => 'براہ کرم اپنے ای میل پتے کی تصدیق اس لنک پر کلک کر کے کریں جو ہم نے آپ کو بھیجا ہے۔',
+                    'status_message' => 'آپ کے رجسٹریشن ای میل پر نیا تصدیقی لنک بھیج دیا گیا ہے۔',
+                    'resend_button' => 'تصدیقی ای میل دوبارہ بھیجیں',
+                    'resending_button' => 'بھیجا جا رہا ہے...',
+                    'logout_link' => 'لاگ آؤٹ',
+                ],
                 'locale_switcher' => [
                     'language_names' => [
                         'en' => 'انگریزی',
@@ -909,6 +940,8 @@ class LandingPageSettings
             $iconUrl = trim((string) ($item['icon_url'] ?? ''));
             $appStoreUrl = trim((string) ($item['app_store_url'] ?? ''));
             $googlePlayUrl = trim((string) ($item['google_play_url'] ?? ''));
+            $badge = trim((string) ($item['badge'] ?? ''));
+            $badge = $badge !== '' ? $badge : self::defaultAppBadge($title, $subtitle);
             $features = self::normalizeStringList($item['features'] ?? []);
 
             if ($title === '' && $subtitle === '' && $description === '' && $imageUrl === '' && $appStoreUrl === '' && $googlePlayUrl === '' && empty($features)) {
@@ -923,11 +956,54 @@ class LandingPageSettings
                 'icon_url' => $iconUrl,
                 'app_store_url' => $appStoreUrl,
                 'google_play_url' => $googlePlayUrl,
+                'badge' => $badge,
                 'features' => $features,
             ];
         }
 
+        usort($cards, static function (array $first, array $second): int {
+            return self::appSortOrder($first) <=> self::appSortOrder($second);
+        });
+
         return $cards;
+    }
+
+    private static function defaultAppBadge(string $title, string $subtitle): string
+    {
+        $value = strtolower($title . ' ' . $subtitle);
+
+        if (str_contains($value, 'tenant') || str_contains($value, 'owner')) {
+            return 'Full visibility';
+        }
+
+        if (str_contains($value, 'employee') || str_contains($value, 'team') || str_contains($value, 'staff')) {
+            return 'Tasks & handovers';
+        }
+
+        if (str_contains($value, 'client') || str_contains($value, 'customer') || str_contains($value, 'renter')) {
+            return 'Customer experience';
+        }
+
+        return '';
+    }
+
+    private static function appSortOrder(array $app): int
+    {
+        $value = strtolower(($app['title'] ?? '') . ' ' . ($app['subtitle'] ?? ''));
+
+        if (str_contains($value, 'tenant') || str_contains($value, 'owner')) {
+            return 0;
+        }
+
+        if (str_contains($value, 'employee') || str_contains($value, 'team') || str_contains($value, 'staff')) {
+            return 1;
+        }
+
+        if (str_contains($value, 'client') || str_contains($value, 'customer') || str_contains($value, 'renter')) {
+            return 2;
+        }
+
+        return 10;
     }
 
     private static function normalizeEnabledLocales(mixed $value): array

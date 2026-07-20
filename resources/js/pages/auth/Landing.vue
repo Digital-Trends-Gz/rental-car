@@ -10,25 +10,28 @@ import {
     register as tenantRegister,
     tenantLogin as tenantTenantLogin,
 } from '@/routes/tenant';
+import { withLocalePrefix } from '@/lib/utils';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const page = usePage<any>();
 const currentTenant = computed(() => page.props.current_tenant);
+const localizedUrl = (url: string) =>
+    withLocalePrefix(url, page.props.locale, page.props.available_locales);
 
 const homeUrl = computed(() => {
     const slug = currentTenant.value?.slug;
-    return slug ? tenantHome(slug).url : mainHome().url;
+    return localizedUrl(slug ? tenantHome(slug).url : mainHome().url);
 });
 
 const loginUrl = computed(() => {
     const slug = currentTenant.value?.slug;
-    return slug ? tenantTenantLogin(slug).url : mainTenantLogin().url;
+    return localizedUrl(slug ? tenantTenantLogin(slug).url : mainTenantLogin().url);
 });
 
 const registerUrl = computed(() => {
     const slug = currentTenant.value?.slug;
-    return slug ? tenantRegister(slug).url : mainRegister().url;
+    return localizedUrl(slug ? tenantRegister(slug).url : mainRegister().url);
 });
 </script>
 

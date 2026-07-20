@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
+import { withLocalePrefix } from '@/lib/utils';
 import { register as mainRegister } from '@/routes';
 import { store as mainLoginStore } from '@/routes/login';
 import { request as mainPasswordRequest } from '@/routes/password';
@@ -38,13 +39,15 @@ const loginAction = computed(() => {
     const slug = currentTenant.value?.slug;
     return (slug ? tenantLoginStore.form(slug) : mainLoginStore.form()) as any;
 });
+const localizedAuthUrl = (url: string) =>
+    withLocalePrefix(url, page.props.locale, page.props.available_locales);
 const registerUrl = computed(() => {
     const slug = currentTenant.value?.slug;
-    return slug ? tenantRegister(slug).url : mainRegister().url;
+    return localizedAuthUrl(slug ? tenantRegister(slug).url : mainRegister().url);
 });
 const forgotPasswordUrl = computed(() => {
     const slug = currentTenant.value?.slug;
-    return slug ? tenantPasswordRequest(slug).url : mainPasswordRequest().url;
+    return localizedAuthUrl(slug ? tenantPasswordRequest(slug).url : mainPasswordRequest().url);
 });
 
 </script>

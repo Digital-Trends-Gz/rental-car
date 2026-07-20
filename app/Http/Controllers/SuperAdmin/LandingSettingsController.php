@@ -353,6 +353,7 @@ class LandingSettingsController extends Controller
             'settings.mobile_apps_section.apps.*.icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.app_store_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.google_play_url' => ['nullable', 'string', 'max:2000'],
+            'settings.mobile_apps_section.apps.*.badge' => ['nullable', 'string', 'max:255'],
             'settings.mobile_apps_section.apps.*.features' => ['nullable', 'array'],
             'settings.mobile_apps_section.apps.*.features.*' => ['nullable', 'string', 'max:255'],
 
@@ -1605,6 +1606,7 @@ class LandingSettingsController extends Controller
             'settings.mobile_apps_section.apps.*.icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.app_store_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.google_play_url' => ['nullable', 'string', 'max:2000'],
+            'settings.mobile_apps_section.apps.*.badge' => ['nullable', 'string', 'max:255'],
             'settings.mobile_apps_section.apps.*.features' => ['nullable', 'array'],
             'settings.mobile_apps_section.apps.*.features.*' => ['nullable', 'string', 'max:255'],
 

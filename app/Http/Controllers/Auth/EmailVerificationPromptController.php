@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Core\LandingPageSettings;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\SiteSetting;
 use App\Models\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +21,10 @@ class EmailVerificationPromptController extends Controller
     {
         return $request->user()->hasVerifiedEmail()
                     ? redirect()->to($this->redirectUrlFor($request->user()))
-                    : Inertia::render('auth/VerifyEmail', ['status' => $request->session()->get('status')]);
+                    : Inertia::render('auth/VerifyEmail', [
+                        'status' => $request->session()->get('status'),
+                        'content' => $this->verifyEmailContent(),
+                    ]);
     }
 
     private function redirectUrlFor(object $user): string
@@ -41,5 +46,26 @@ class EmailVerificationPromptController extends Controller
         }
 
         return route('dashboard');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function verifyEmailContent(): array
+    {
+        $stored = SiteSetting::query()
+            ->where('key', LandingPageSettings::KEY)
+            ->first()
+            ?->value;
+
+        $settings = LandingPageSettings::localize(
+            LandingPageSettings::normalize(is_array($stored) ? $stored : null),
+            app()->getLocale()
+        );
+
+        return array_map(
+            static fn (mixed $value): string => (string) $value,
+            (array) data_get($settings, 'auth_verify_email', [])
+        );
     }
 }

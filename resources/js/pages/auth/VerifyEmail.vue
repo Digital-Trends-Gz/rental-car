@@ -6,9 +6,12 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 
-defineProps<{
+const props = withDefaults(defineProps<{
     status?: string;
-}>();
+    content?: Record<string, string>;
+}>(), {
+    content: () => ({}),
+});
 
 const page = usePage<any>();
 
@@ -34,27 +37,32 @@ const form = useForm({});
 const resendVerificationEmail = () => {
     form.post(verificationNotificationPath.value);
 };
+
+const text = (key: string, fallback: string): string => {
+    const value = props.content?.[key];
+
+    return typeof value === 'string' && value.trim() !== '' ? value : fallback;
+};
 </script>
 
 <template>
     <AuthLayout
-        title="Verify email"
-        description="Please verify your email address by clicking on the link we just emailed to you."
+        :title="text('title', 'Verify email')"
+        :description="text('description', 'Please verify your email address by clicking on the link we just emailed to you.')"
     >
-        <Head title="Email verification" />
+        <Head :title="text('head_title', 'Email verification')" />
 
         <div
             v-if="status === 'verification-link-sent'"
             class="mb-4 text-center text-sm font-medium text-green-600"
         >
-            A new verification link has been sent to the email address you
-            provided during registration.
+            {{ text('status_message', 'A new verification link has been sent to the email address you provided during registration.') }}
         </div>
 
         <div class="space-y-6 text-center">
             <Button :disabled="form.processing" variant="secondary" @click="resendVerificationEmail">
                 <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
-                Resend verification email
+                {{ form.processing ? text('resending_button', 'Sending...') : text('resend_button', 'Resend verification email') }}
             </Button>
 
             <TextLink
@@ -63,7 +71,7 @@ const resendVerificationEmail = () => {
                 as="button"
                 class="mx-auto block text-sm"
             >
-                Log out
+                {{ text('logout_link', 'Log out') }}
             </TextLink>
         </div>
     </AuthLayout>

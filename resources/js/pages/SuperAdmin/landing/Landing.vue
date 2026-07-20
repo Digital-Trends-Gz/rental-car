@@ -82,6 +82,7 @@ interface MobileAppCard {
     icon_url: string;
     app_store_url: string;
     google_play_url: string;
+    badge?: string;
     features: string[];
 }
 
@@ -556,14 +557,22 @@ const mobileAppBackgrounds = [
 const mobileApps = computed<MobileAppCard[]>(
     () => props.landingSettings.mobile_apps_section?.apps || [],
 );
+const activeManagementApp = ref<'tenant' | 'employee'>('tenant');
+const findMobileApp = (patterns: string[]) =>
+    mobileApps.value.find((app) => {
+        const title = String(app.title || '').toLowerCase();
+        const subtitle = String(app.subtitle || '').toLowerCase();
+
+        return patterns.some((pattern) => title.includes(pattern) || subtitle.includes(pattern));
+    }) || null;
 const clientMobileApp = computed<MobileAppCard | null>(
-    () => mobileApps.value[0] || null,
+    () => findMobileApp(['client', 'customer', 'renter']) || mobileApps.value[2] || null,
 );
 const employeeMobileApp = computed<MobileAppCard | null>(
-    () => mobileApps.value[1] || null,
+    () => findMobileApp(['employee', 'team', 'staff']) || mobileApps.value[1] || null,
 );
 const tenantMobileApp = computed<MobileAppCard | null>(
-    () => mobileApps.value[2] || null,
+    () => findMobileApp(['tenant', 'owner', 'fleet owner']) || mobileApps.value[0] || null,
 );
 const managementMobileApp = computed<MobileAppCard | null>(
     () =>
@@ -572,12 +581,15 @@ const managementMobileApp = computed<MobileAppCard | null>(
         mobileApps.value[0] ||
         null,
 );
+const selectedManagementMobileApp = computed<MobileAppCard | null>(() => {
+    if (activeManagementApp.value === 'employee') {
+        return employeeMobileApp.value || tenantMobileApp.value || managementMobileApp.value;
+    }
+
+    return tenantMobileApp.value || employeeMobileApp.value || managementMobileApp.value;
+});
 const managementFeatures = computed(() => {
-    const features = [
-        ...(tenantMobileApp.value?.features || []),
-        ...(employeeMobileApp.value?.features || []),
-        ...(managementMobileApp.value?.features || []),
-    ]
+    const features = (selectedManagementMobileApp.value?.features || [])
         .map((feature) => String(feature || '').trim())
         .filter(Boolean);
 
@@ -589,14 +601,6 @@ const clientJourneySteps = computed(() => {
         .filter(Boolean);
 
     return features.length ? features.slice(0, 4) : ['Browse', 'Book', 'Pay', 'Track'];
-});
-const mobileAppsConnectedNote = computed(() => {
-    const key = 'landing.mobile_apps_connected_note';
-    const value = t(key);
-
-    return value === key
-        ? 'Both applications stay connected to the same Car4u rental platform and live business data.'
-        : value;
 });
 const mobileAppTitleParts = computed(() => {
     const title = props.landingSettings.mobile_apps_section?.title || '';
@@ -840,7 +844,7 @@ const bookFeaturedCar = (car: FeaturedCar) => {
 const searchCars = () => {
     const trimmedSearch = carSearch.value.trim();
 
-    router.get(
+    router.post(
         window.location.pathname,
         trimmedSearch === '' ? {} : { car_search: trimmedSearch },
         {
@@ -1684,18 +1688,10 @@ onUnmounted(() => {
                     <div
                         class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(16,24,40,0.06)] sm:p-8 lg:p-10"
                     >
-                        <div
-                            class="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
-                        >
-                            <div class="max-w-3xl">
-                                <div
-                                    class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-extrabold tracking-[0.12em] text-blue-700 uppercase"
-                                >
-                                    <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
-                                    {{ landingSettings.mobile_apps_section.eyebrow }}
-                                </div>
+                        <div class="mx-auto mb-8 max-w-3xl text-center">
+                            <div>
                                 <h2
-                                    class="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-slate-950 sm:text-4xl lg:text-[2.4rem]"
+                                    class="text-3xl font-extrabold leading-[1.12] tracking-tight text-slate-950 sm:text-4xl lg:text-[2.4rem]"
                                 >
                                     {{ mobileAppTitleParts.lead }}
                                     <span
@@ -1705,18 +1701,15 @@ onUnmounted(() => {
                                         {{ mobileAppTitleParts.highlight }}
                                     </span>
                                 </h2>
-                                <p class="mt-3 max-w-2xl text-base leading-relaxed text-slate-500">
+                                <p class="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-slate-500">
                                     {{ landingSettings.mobile_apps_section.description }}
                                 </p>
                             </div>
-                            <p class="max-w-xs text-sm leading-relaxed text-slate-500 lg:text-right rtl:lg:text-left">
-                                {{ mobileAppsConnectedNote }}
-                            </p>
                         </div>
 
                         <div class="grid gap-5 lg:grid-cols-[1.35fr_0.85fr]">
                             <article
-                                v-if="managementMobileApp"
+                                v-if="selectedManagementMobileApp"
                                 class="grid overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white lg:min-h-[370px] lg:grid-cols-[1.15fr_0.85fr]"
                             >
                                 <div class="flex flex-col p-6 sm:p-7">
@@ -1725,41 +1718,55 @@ onUnmounted(() => {
                                     >
                                         <span
                                             class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-blue-50 to-violet-50 text-indigo-600"
-                                        >
+                                            >
                                             <img
-                                                v-if="managementMobileApp.icon_url"
-                                                :src="managementMobileApp.icon_url"
-                                                :alt="`${managementMobileApp.title} icon`"
+                                                v-if="selectedManagementMobileApp.icon_url"
+                                                :src="selectedManagementMobileApp.icon_url"
+                                                :alt="`${selectedManagementMobileApp.title} icon`"
                                                 class="h-5 w-5 object-contain"
                                                 loading="lazy"
                                             />
                                             <BriefcaseBusiness v-else class="h-5 w-5" />
                                         </span>
-                                        <span>{{ managementMobileApp.title }}</span>
+                                        <span>{{ selectedManagementMobileApp.title }}</span>
                                     </div>
 
                                     <h3 class="mt-4 text-2xl font-extrabold tracking-tight text-slate-950">
-                                        {{ managementMobileApp.subtitle || 'One app, different permissions' }}
+                                        {{ selectedManagementMobileApp.subtitle || 'One app, different permissions' }}
                                     </h3>
                                     <p class="mt-2 text-sm leading-relaxed text-slate-500">
-                                        {{ managementMobileApp.description || employeeMobileApp?.description }}
+                                        {{ selectedManagementMobileApp.description }}
                                     </p>
 
                                     <div class="my-5 flex w-max gap-1.5 rounded-xl bg-slate-100 p-1">
-                                        <span class="rounded-lg bg-white px-5 py-2 text-sm font-extrabold text-slate-950 shadow-sm">
+                                        <button
+                                            type="button"
+                                            class="rounded-lg px-5 py-2 text-sm font-extrabold transition"
+                                            :class="activeManagementApp === 'tenant'
+                                                ? 'bg-white text-slate-950 shadow-sm'
+                                                : 'text-slate-500 hover:text-slate-950'"
+                                            @click="activeManagementApp = 'tenant'"
+                                        >
                                             {{ tenantMobileApp?.title || 'Owner' }}
-                                        </span>
-                                        <span class="rounded-lg px-5 py-2 text-sm font-extrabold text-slate-500">
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="rounded-lg px-5 py-2 text-sm font-extrabold transition"
+                                            :class="activeManagementApp === 'employee'
+                                                ? 'bg-white text-slate-950 shadow-sm'
+                                                : 'text-slate-500 hover:text-slate-950'"
+                                            @click="activeManagementApp = 'employee'"
+                                        >
                                             {{ employeeMobileApp?.title || 'Employee' }}
-                                        </span>
+                                        </button>
                                     </div>
 
                                     <div class="mb-3 flex items-center justify-between gap-4">
                                         <strong class="text-sm font-extrabold text-slate-950">
-                                            {{ tenantMobileApp?.subtitle || managementMobileApp.title }}
+                                            {{ selectedManagementMobileApp.subtitle || selectedManagementMobileApp.title }}
                                         </strong>
                                         <span class="rounded-full bg-blue-50 px-2.5 py-1 text-[0.65rem] font-extrabold text-blue-600">
-                                            Full visibility
+                                            {{ selectedManagementMobileApp.badge || 'Full visibility' }}
                                         </span>
                                     </div>
 
@@ -1776,34 +1783,34 @@ onUnmounted(() => {
 
                                     <div class="mt-auto grid gap-2 pt-6 sm:grid-cols-2">
                                         <a
-                                            :href="mobileAppStoreHref(managementMobileApp.app_store_url)"
+                                            :href="mobileAppStoreHref(selectedManagementMobileApp.app_store_url)"
                                             class="inline-flex h-16 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
-                                            :class="{ 'pointer-events-none opacity-60': !managementMobileApp.app_store_url }"
-                                            :aria-disabled="!managementMobileApp.app_store_url"
+                                            :class="{ 'pointer-events-none opacity-60': !selectedManagementMobileApp.app_store_url }"
+                                            :aria-disabled="!selectedManagementMobileApp.app_store_url"
                                             dir="ltr"
                                         >
                                             <span class="text-left leading-tight">
-                                                <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                                <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
                                                     {{ mobileAppStoreCaption('ios') }}
                                                 </span>
-                                                <span class="block text-base font-black">
+                                                <span class="block text-sm font-extrabold">
                                                     {{ mobileAppStoreLabel('ios', landingSettings.mobile_apps_section.ios_label) }}
                                                 </span>
                                             </span>
                                             <Apple class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
                                         <a
-                                            :href="mobileAppStoreHref(managementMobileApp.google_play_url)"
+                                            :href="mobileAppStoreHref(selectedManagementMobileApp.google_play_url)"
                                             class="inline-flex h-16 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
-                                            :class="{ 'pointer-events-none opacity-60': !managementMobileApp.google_play_url }"
-                                            :aria-disabled="!managementMobileApp.google_play_url"
+                                            :class="{ 'pointer-events-none opacity-60': !selectedManagementMobileApp.google_play_url }"
+                                            :aria-disabled="!selectedManagementMobileApp.google_play_url"
                                             dir="ltr"
                                         >
                                             <span class="text-left leading-tight">
-                                                <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                                <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
                                                     {{ mobileAppStoreCaption('android') }}
                                                 </span>
-                                                <span class="block text-base font-black">
+                                                <span class="block text-sm font-extrabold">
                                                     {{ mobileAppStoreLabel('android', landingSettings.mobile_apps_section.android_label) }}
                                                 </span>
                                             </span>
@@ -1823,9 +1830,9 @@ onUnmounted(() => {
                                         </span>
                                     </div>
                                     <img
-                                        v-if="managementMobileApp.image_url"
-                                        :src="managementMobileApp.image_url"
-                                        :alt="managementMobileApp.title"
+                                        v-if="selectedManagementMobileApp.image_url"
+                                        :src="selectedManagementMobileApp.image_url"
+                                        :alt="selectedManagementMobileApp.title"
                                         class="relative z-10 h-[19rem] w-auto rotate-[-4deg] object-contain drop-shadow-[0_24px_36px_rgba(15,23,42,0.22)]"
                                         loading="lazy"
                                     />
@@ -1935,10 +1942,10 @@ onUnmounted(() => {
                                             dir="ltr"
                                         >
                                             <span class="text-left leading-tight">
-                                                <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                                <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
                                                     {{ mobileAppStoreCaption('ios') }}
                                                 </span>
-                                                <span class="block text-base font-black">
+                                                <span class="block text-sm font-extrabold">
                                                     {{ mobileAppStoreLabel('ios', landingSettings.mobile_apps_section.ios_label) }}
                                                 </span>
                                             </span>
@@ -1952,10 +1959,10 @@ onUnmounted(() => {
                                             dir="ltr"
                                         >
                                             <span class="text-left leading-tight">
-                                                <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                                <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
                                                     {{ mobileAppStoreCaption('android') }}
                                                 </span>
-                                                <span class="block text-base font-black">
+                                                <span class="block text-sm font-extrabold">
                                                     {{ mobileAppStoreLabel('android', landingSettings.mobile_apps_section.android_label) }}
                                                 </span>
                                             </span>
