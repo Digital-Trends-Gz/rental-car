@@ -213,6 +213,19 @@ const landingFooterNavLinks = computed(() => {
 
     return links;
 });
+const landingFooterNavColumns = computed(() => [
+    landingStaticPageLinks.value.slice(0, 1),
+    landingStaticPageLinks.value.slice(1, 2),
+    landingStaticPageLinks.value.slice(2, 3),
+    [
+        { label: 'Cars', href: resolveLandingHref('#cars') },
+        { label: 'Features', href: resolveLandingHref('#features') },
+    ],
+    [
+        { label: 'Application', href: resolveLandingHref('/car-rental-apps') },
+        { label: 'Plans', href: resolveLandingHref('/plans') },
+    ],
+]);
 const landingFooterSocialLinks = computed(() => {
     if (landingSettings.value?.footer?.show_social_links === false) {
         return [];
@@ -442,23 +455,29 @@ onBeforeUnmount(() => {
 
             <footer v-if="landingFooterEnabled" class="border-t border-border bg-background py-4">
                 <div class="section-container max-w-7xl">
-                    <div class="grid items-center gap-6 lg:grid-cols-[1fr_auto_1fr_10rem]">
-                        <Link :href="landingHomeUrl" class="inline-flex justify-center md:justify-start">
-                            <AppLogoIcon />
+                    <div class="grid items-center gap-5 md:grid-cols-[8rem_minmax(0,1fr)_auto_8rem]">
+                        <Link :href="landingHomeUrl" class="inline-flex items-center justify-center md:justify-start">
+                            <AppLogoIcon class="h-16 w-auto" />
                         </Link>
 
-                        <nav class="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-base font-semibold text-foreground">
-                            <a
-                                v-for="link in landingFooterNavLinks"
-                                :key="`footer-${link.href}`"
-                                :href="link.href"
-                                class="transition-colors hover:text-primary"
+                        <nav class="grid grid-cols-2 items-center justify-center gap-x-7 gap-y-2 text-sm font-medium text-foreground sm:grid-cols-5">
+                            <div
+                                v-for="(column, columnIndex) in landingFooterNavColumns"
+                                :key="`footer-column-${columnIndex}`"
+                                class="flex min-h-16 flex-col items-center justify-center gap-2 md:items-start"
                             >
-                                {{ link.label }}
-                            </a>
+                                <a
+                                    v-for="link in column"
+                                    :key="`footer-${link.href}`"
+                                    :href="link.href"
+                                    class="whitespace-nowrap transition-colors hover:text-primary"
+                                >
+                                    {{ link.label }}
+                                </a>
+                            </div>
                         </nav>
 
-                        <div v-if="landingFooterSocialLinks.length" class="flex items-center justify-center gap-3 lg:justify-end">
+                        <div v-if="landingFooterSocialLinks.length" class="flex items-center justify-center gap-2 md:justify-end">
                             <component
                                 :is="link.href ? 'a' : 'span'"
                                 v-for="link in landingFooterSocialLinks"
@@ -466,14 +485,14 @@ onBeforeUnmount(() => {
                                 :href="link.href || undefined"
                                 :target="link.href ? '_blank' : undefined"
                                 :rel="link.href ? 'noopener noreferrer' : undefined"
-                                class="inline-flex h-10 w-12 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+                                class="inline-flex h-8 w-14 items-center justify-center rounded-md border border-border bg-white text-muted-foreground transition hover:border-primary/40 hover:text-primary"
                                 :aria-label="link.label"
                             >
                                 <component :is="socialIcon(link.platform)" class="h-4 w-4" />
                             </component>
                         </div>
 
-                        <div v-if="landingFooterAppButtons.length" class="grid justify-center gap-2 lg:justify-end">
+                        <div v-if="landingFooterAppButtons.length" class="grid justify-center gap-2 md:justify-end">
                             <component
                                 :is="button.href ? 'a' : 'span'"
                                 v-for="button in landingFooterAppButtons"
@@ -481,18 +500,18 @@ onBeforeUnmount(() => {
                                 :href="button.href || undefined"
                                 :target="button.href ? '_blank' : undefined"
                                 :rel="button.href ? 'noopener noreferrer' : undefined"
-                                class="inline-flex h-16 w-44 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
+                                class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-3 text-slate-950 transition hover:border-blue-200"
                                 dir="ltr"
                             >
                                 <span class="text-left leading-tight">
-                                    <span class="block text-[0.62rem] font-extrabold uppercase tracking-wide text-slate-500">
+                                    <span class="block text-[0.5rem] font-bold uppercase tracking-wide text-slate-500">
                                         {{ button.caption }}
                                     </span>
-                                    <span class="block text-base font-black">
+                                    <span class="block text-xs font-extrabold">
                                         {{ button.label }}
                                     </span>
                                 </span>
-                                <component :is="button.icon" class="h-5 w-5 shrink-0 text-slate-950" />
+                                <component :is="button.icon" class="h-4 w-4 shrink-0 text-slate-950" />
                             </component>
                         </div>
                     </div>

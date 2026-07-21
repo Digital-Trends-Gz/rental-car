@@ -519,6 +519,19 @@ const footerLinks = computed(() => {
 
     return links;
 });
+const footerLinkColumns = computed(() => [
+    staticPageLinks.value.slice(0, 1),
+    staticPageLinks.value.slice(1, 2),
+    staticPageLinks.value.slice(2, 3),
+    [
+        { label: 'Cars', href: '#cars' },
+        { label: 'Features', href: '#features' },
+    ],
+    [
+        { label: 'Application', href: localizedPath('/car-rental-apps') },
+        { label: 'Plans', href: localizedPath('/plans') },
+    ],
+]);
 const footerDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));
 
 const mobileOpen = ref(false);
@@ -2303,13 +2316,12 @@ onUnmounted(() => {
                     </div>
 
                     <div class="mt-10 flex justify-center">
-                        <Button
-                            as-child
-                            variant="outline"
-                            class="h-12 rounded-2xl border-border bg-white px-8 text-base font-semibold text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-white hover:text-primary hover:shadow-md"
+                        <Link
+                            :href="plansUrl"
+                            class="gradient-button inline-flex min-w-[250px] items-center justify-center gap-2 rounded-2xl px-8 py-4 text-base font-semibold"
                         >
-                            <Link :href="plansUrl">{{ plansDetailsLabel }}</Link>
-                        </Button>
+                            {{ plansDetailsLabel }}
+                        </Link>
                     </div>
                 </div>
             </section>
@@ -2576,7 +2588,7 @@ onUnmounted(() => {
         >
             <div class="section-container space-y-3">
                 <div
-                    class="grid items-center gap-5 md:grid-cols-[auto_1fr_auto_auto]"
+                    class="grid items-center gap-5 md:grid-cols-[6rem_minmax(0,1fr)_auto_8rem]"
                 >
                     <Link
                         href="/"
@@ -2587,17 +2599,23 @@ onUnmounted(() => {
                     </Link>
 
                     <nav
-                        class="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 text-sm font-medium text-foreground md:justify-start"
+                        class="grid grid-cols-2 items-start justify-center gap-x-7 gap-y-2 text-sm font-medium text-foreground sm:grid-cols-5"
                         :aria-label="t('landing.footer_navigation') || 'Footer navigation'"
                     >
-                        <a
-                            v-for="link in footerLinks"
-                            :key="`footer-${link.href}`"
-                            :href="link.href"
-                            class="whitespace-nowrap transition-colors hover:text-primary"
+                        <div
+                            v-for="(column, columnIndex) in footerLinkColumns"
+                            :key="`footer-column-${columnIndex}`"
+                            class="flex flex-col items-center gap-2 md:items-start"
                         >
-                            {{ link.label }}
-                        </a>
+                            <a
+                                v-for="link in column"
+                                :key="`footer-${link.href}`"
+                                :href="link.href"
+                                class="whitespace-nowrap transition-colors hover:text-primary"
+                            >
+                                {{ link.label }}
+                            </a>
+                        </div>
                     </nav>
 
                     <div
