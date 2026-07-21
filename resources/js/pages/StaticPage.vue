@@ -32,9 +32,7 @@ const seoPayload = computed(() => props.seo as any);
                 class="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10"
                 :dir="page.direction"
             >
-                <p class="text-sm font-semibold uppercase tracking-wide text-primary">
-                    {{ sectionLabel }}
-                </p>
+     
                 <h1 class="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                     {{ page.title }}
                 </h1>

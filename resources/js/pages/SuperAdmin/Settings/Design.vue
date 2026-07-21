@@ -2000,27 +2000,23 @@ const toggleSection = (
                                                 'صور حسب اللغة',
                                             )
                                         }}</Label>
-                                        <div class="grid gap-3 md:grid-cols-2">
-                                            <div
-                                                v-for="localeCode in enabledLocales"
-                                                :key="`mobile-app-${appIndex}-locale-${localeCode}`"
-                                                class="space-y-2"
-                                            >
+                                        <div class="grid gap-3">
+                                            <div class="space-y-2">
                                                 <Label>
-                                                    {{ localeDisplayName(localeCode) }}
+                                                    {{ localeDisplayName(activeMobileAppLocale) }}
                                                 </Label>
                                                 <FileUpload
                                                     v-model="
                                                         mobileAppTempFolders[
                                                             appIndex
                                                         ].image_locales[
-                                                            localeCode
+                                                            activeMobileAppLocale
                                                         ]
                                                     "
                                                     :initial-files="
                                                         mobileAppLocaleImageFileList(
                                                             appIndex,
-                                                            localeCode,
+                                                            activeMobileAppLocale,
                                                         )
                                                     "
                                                     :allow-multiple="false"
@@ -2033,14 +2029,14 @@ const toggleSection = (
                                                         'image/png',
                                                         'image/svg+xml',
                                                     ]"
-                                                    :collection="`mobile_app_${appIndex}_image_${localeCode}`"
+                                                    :collection="`mobile_app_${appIndex}_image_${activeMobileAppLocale}`"
                                                     theme="light"
                                                     width="100%"
                                                     @file-removed="
                                                         (data) =>
                                                             handleMobileAppLocaleImageFileRemoved(
                                                                 appIndex,
-                                                                localeCode,
+                                                                activeMobileAppLocale,
                                                                 data,
                                                             )
                                                     "
@@ -2048,7 +2044,7 @@ const toggleSection = (
                                                         (file) =>
                                                             handleMobileAppLocaleImageLocalFileAdded(
                                                                 appIndex,
-                                                                localeCode,
+                                                                activeMobileAppLocale,
                                                                 file,
                                                             )
                                                     "
@@ -2056,15 +2052,15 @@ const toggleSection = (
                                                 <img
                                                     v-if="
                                                         app.localized_images?.[
-                                                            localeCode
+                                                            activeMobileAppLocale
                                                         ]
                                                     "
                                                     :src="
                                                         app.localized_images[
-                                                            localeCode
+                                                            activeMobileAppLocale
                                                         ]
                                                     "
-                                                    :alt="`${localeDisplayName(localeCode)} app image preview`"
+                                                    :alt="`${localeDisplayName(activeMobileAppLocale)} app image preview`"
                                                     class="h-20 w-full rounded-lg border object-contain p-2"
                                                 />
                                             </div>
