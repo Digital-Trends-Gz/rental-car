@@ -81,7 +81,21 @@ const props = defineProps<{
 const page = usePage<any>();
 const locale = computed(() => String(page.props.locale || 'en'));
 const isRtl = computed(() => ['ar', 'ur'].includes(locale.value.toLowerCase().split('-')[0]));
-const registerUrl = mainRegister().url;
+const availableLocales = computed<string[]>(() =>
+    Array.isArray(page.props?.available_locales) && page.props.available_locales.length
+        ? page.props.available_locales
+            : ['en'],
+);
+const localizedPath = (path: string) => {
+    const firstSegment = window.location.pathname.split('/').filter(Boolean)[0];
+
+    if (firstSegment && availableLocales.value.includes(firstSegment)) {
+        return `/${firstSegment}${path}`;
+    }
+
+    return path;
+};
+const registerUrl = computed(() => localizedPath(mainRegister().url));
 const showHero = computed(() => props.applicationsPage.hero_enabled !== false);
 const showApps = computed(() => props.applicationsPage.apps_enabled !== false);
 const showComparison = computed(() => props.applicationsPage.comparison_enabled !== false);

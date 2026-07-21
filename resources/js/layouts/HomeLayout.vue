@@ -150,14 +150,22 @@ const resolveLandingHref = (href: string) => {
     return value;
 };
 const localizedLandingPath = (path: string) => {
-    const localeCode = String(locale.value || '').trim();
+    const normalizedPath = String(path || '/').startsWith('/') ? String(path || '/') : `/${path}`;
     const currentPath = String($page.url || '/');
+    const currentFirstSegment = currentPath.split('/').filter(Boolean)[0] || '';
+    const normalizedLocales = availableLocales.value.map((item) => String(item || '').toLowerCase());
+    const urlLocale = normalizedLocales.includes(currentFirstSegment.toLowerCase()) ? currentFirstSegment : '';
+    const activeLocale = urlLocale || String(locale.value || '').trim().toLowerCase().split('-')[0];
 
-    if (localeCode && (currentPath === `/${localeCode}` || currentPath.startsWith(`/${localeCode}/`))) {
-        return `/${localeCode}${path}`;
+    if (activeLocale && normalizedLocales.includes(activeLocale) && normalizedPath.startsWith(`/${activeLocale}/`)) {
+        return normalizedPath;
     }
 
-    return path;
+    if (activeLocale && activeLocale !== 'en' && normalizedLocales.includes(activeLocale)) {
+        return `/${activeLocale}${normalizedPath}`;
+    }
+
+    return normalizedPath;
 };
 const translatedLabel = (key: string, fallback: string) => {
     const value = t(key);
@@ -291,6 +299,7 @@ const landingNavLinks = computed(() => {
     }));
 });
 const navigationCtaLabel = computed(() => landingSettings.value?.navigation?.cta_label || t('landing.start_free_trial'));
+const landingRegisterUrl = computed(() => localizedLandingPath(mainRegister().url));
 const landingFooterEnabled = computed(() => landingSettings.value?.footer?.enabled !== false);
 const landingFooterCopyright = computed(() =>
     landingSettings.value?.footer?.copyright_text || t('landing.footer_rights') || 'All rights reserved.'
@@ -484,9 +493,9 @@ onBeforeUnmount(() => {
                                         </a>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
-                            </DropdownMenu>
+                        </DropdownMenu>
                         <Button as-child class="gradient-button rounded-full px-5" size="sm">
-                            <Link :href="mainRegister().url">{{ navigationCtaLabel }}</Link>
+                            <Link :href="landingRegisterUrl">{{ navigationCtaLabel }}</Link>
                         </Button>
                         </div>
                     </div>
@@ -540,7 +549,7 @@ onBeforeUnmount(() => {
                     </DropdownMenu>
                     <Button as-child class="gradient-button mt-2 w-full rounded-full" size="sm">
                         <Link
-                            :href="mainRegister().url"
+                            :href="landingRegisterUrl"
                             @click="closeLandingMenu"
                         >
                             {{ navigationCtaLabel }}

@@ -487,13 +487,35 @@ const navLinks = computed(() => {
 });
 
 const localizedPath = (path: string) => {
-    const firstSegment = window.location.pathname.split('/').filter(Boolean)[0];
+    const normalizedPath = String(path || '/').startsWith('/') ? String(path || '/') : `/${path}`;
+    const firstSegment = window.location.pathname.split('/').filter(Boolean)[0] || '';
+    const normalizedLocales = availableLocales.value.map((item) => String(item || '').toLowerCase());
+    const urlLocale = normalizedLocales.includes(firstSegment.toLowerCase()) ? firstSegment : '';
+    const activeLocale = urlLocale || locale.value.toLowerCase().split('-')[0];
 
-    if (firstSegment && availableLocales.value.includes(firstSegment)) {
-        return `/${firstSegment}${path}`;
+    if (activeLocale && normalizedLocales.includes(activeLocale) && normalizedPath.startsWith(`/${activeLocale}/`)) {
+        return normalizedPath;
     }
 
-    return path;
+    if (activeLocale && activeLocale !== 'en' && normalizedLocales.includes(activeLocale)) {
+        return `/${activeLocale}${normalizedPath}`;
+    }
+
+    return normalizedPath;
+};
+const localizedInternalHref = (href?: string | null) => {
+    const value = String(href || '').trim();
+
+    if (
+        value === '' ||
+        value.startsWith('#') ||
+        /^[a-z][a-z0-9+.-]*:/i.test(value) ||
+        value.startsWith('//')
+    ) {
+        return value || '#';
+    }
+
+    return value.startsWith('/') ? localizedPath(value) : value;
 };
 
 const translatedLabel = (key: string, fallback: string) => {
@@ -559,7 +581,7 @@ const brokenTenantLogos = ref<Record<number, boolean>>({});
 const brokenCarTenantLogos = ref<Record<number, boolean>>({});
 const brokenLandingImages = ref<Record<string, boolean>>({});
 const currentYear = new Date().getFullYear();
-const registerUrl = mainRegister().url;
+const registerUrl = computed(() => localizedPath(mainRegister().url));
 const plansUrl = computed(() => localizedPath('/pricing-plans'));
 const navigationCtaLabel = computed(
     () => props.landingSettings.navigation?.cta_label || 'Start Free Trial',
@@ -571,7 +593,7 @@ const heroImage = computed(
     () => props.landingSettings.hero.image_url || heroMockup,
 );
 const browseCarsHref = computed(() =>
-    props.landingSettings.cars_section?.enabled === false ? fleetUrl : '#cars',
+    props.landingSettings.cars_section?.enabled === false ? fleetUrl.value : '#cars',
 );
 const heroIsVideo = computed(() =>
     /\.(mp4|webm|ogg|mov)(?:$|[?#])/i.test(heroImage.value),
@@ -592,7 +614,7 @@ const whatsappHref = computed(() =>
     whatsappNumber.value ? `https://wa.me/${whatsappNumber.value}` : null,
 );
 const carSearch = ref(props.carSearch ?? '');
-const fleetUrl = mainFleet().url;
+const fleetUrl = computed(() => localizedPath(mainFleet().url));
 const featureSwiperModules = [Navigation, Pagination, Autoplay, A11y];
 const planSwiperModules = [Navigation, Pagination, Autoplay, A11y];
 const mobileAppBackgrounds = [
@@ -876,7 +898,7 @@ const formatStatus = (status?: string) => {
 
 const featuredCarUrl = (car: FeaturedCar) => {
     if (!car.tenant_slug) {
-        return fleetUrl;
+        return fleetUrl.value;
     }
 
     return tenantFleetShow.url({
@@ -993,7 +1015,7 @@ onUnmounted(() => {
                 class="section-container relative flex h-16 max-w-7xl items-center justify-center"
             >
                 <Link
-                    href="/"
+                    :href="localizedPath('/')"
                     class="absolute left-4 inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground sm:left-6 lg:left-8"
                 >
                     <AppLogoIcon class="h-6 w-6" />
@@ -2597,7 +2619,7 @@ onUnmounted(() => {
                                     <a
                                         v-for="link in contactSection.quick_links"
                                         :key="`${link.label}-${link.href}`"
-                                        :href="link.href"
+                                        :href="localizedInternalHref(link.href)"
                                         class="block font-medium text-primary hover:underline"
                                     >
                                         {{ link.label }}
