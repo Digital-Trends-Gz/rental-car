@@ -530,8 +530,8 @@ const footerLinkColumns = computed(() => [
         { label: 'Features', href: '#features' },
     ],
     [
-        { label: 'Application', href: localizedPath('/car-rental-apps') },
-        { label: 'Plans', href: localizedPath('/plans') },
+        { label: 'Application', href: '#application' },
+        { label: 'Plans', href: '#pricing' },
     ],
 ]);
 const footerDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));

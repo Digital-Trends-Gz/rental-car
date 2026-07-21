@@ -250,8 +250,8 @@ const landingFooterNavColumns = computed(() => [
         { label: 'Features', href: resolveLandingHref('#features') },
     ],
     [
-        { label: 'Application', href: resolveLandingHref('/car-rental-apps') },
-        { label: 'Plans', href: resolveLandingHref('/plans') },
+        { label: 'Application', href: resolveLandingHref('#application') },
+        { label: 'Plans', href: resolveLandingHref('#pricing') },
     ],
 ]);
 const landingFooterSocialLinks = computed(() => {
