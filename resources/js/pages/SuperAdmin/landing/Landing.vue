@@ -1893,7 +1893,7 @@ onUnmounted(() => {
                                         >
                                             <span class="text-left leading-tight">
                                                 <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
-                                                    {{ mobileAppStoreCaption('ios') }}
+                                                    {{ mobileAppStoreCaption('ios', landingSettings.footer.ios_caption) }}
                                                 </span>
                                                 <span class="block text-sm font-extrabold">
                                                     {{ mobileAppStoreLabel('ios', landingSettings.mobile_apps_section.ios_label) }}
@@ -1916,7 +1916,7 @@ onUnmounted(() => {
                                         >
                                             <span class="text-left leading-tight">
                                                 <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
-                                                    {{ mobileAppStoreCaption('android') }}
+                                                    {{ mobileAppStoreCaption('android', landingSettings.footer.android_caption) }}
                                                 </span>
                                                 <span class="block text-sm font-extrabold">
                                                     {{ mobileAppStoreLabel('android', landingSettings.mobile_apps_section.android_label) }}
@@ -2057,7 +2057,7 @@ onUnmounted(() => {
                                         >
                                             <span class="text-left leading-tight">
                                                 <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
-                                                    {{ mobileAppStoreCaption('ios') }}
+                                                    {{ mobileAppStoreCaption('ios', landingSettings.footer.ios_caption) }}
                                                 </span>
                                                 <span class="block text-sm font-extrabold">
                                                     {{ mobileAppStoreLabel('ios', landingSettings.mobile_apps_section.ios_label) }}
@@ -2080,7 +2080,7 @@ onUnmounted(() => {
                                         >
                                             <span class="text-left leading-tight">
                                                 <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
-                                                    {{ mobileAppStoreCaption('android') }}
+                                                    {{ mobileAppStoreCaption('android', landingSettings.footer.android_caption) }}
                                                 </span>
                                                 <span class="block text-sm font-extrabold">
                                                     {{ mobileAppStoreLabel('android', landingSettings.mobile_apps_section.android_label) }}
