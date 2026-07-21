@@ -2215,7 +2215,7 @@ onUnmounted(() => {
                                                 {{ customPricingBadge }}
                                             </span>
                                             <span
-                                                class="block select-none text-4xl font-extrabold text-slate-950"
+                                                class="block select-none text-[14px] font-normal leading-5 text-[#737373]"
                                             >
                                                 {{ customPricingLabel }}
                                             </span>

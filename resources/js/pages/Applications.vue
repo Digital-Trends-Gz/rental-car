@@ -149,14 +149,10 @@ const roleTone = (index: number) =>
             <section v-if="showHero" class="apps-hero relative overflow-hidden">
                 <div class="section-container grid max-w-7xl items-center gap-12 py-16 md:grid-cols-[1.05fr_0.95fr] md:gap-[60px] md:py-[86px]">
                     <div class="max-w-3xl">
-                        <h1 class="mt-5 text-[43px] font-black leading-[1.04] tracking-normal text-slate-950 sm:text-[58px]">
-                            <span>{{ titleLead }}</span>
-                            <br v-if="titleHighlight" />
-                            <span v-if="titleHighlight">
-                                {{ titleHighlight }}
-                            </span>
+                        <h1 class="mt-5 text-3xl font-bold text-slate-950 sm:text-4xl">
+                            {{ applicationsPage.hero_title }}
                         </h1>
-                        <p class="mt-5 max-w-2xl text-lg leading-8 text-slate-500">
+                        <p class="mt-4 max-w-2xl text-lg text-slate-500">
                             {{ applicationsPage.hero_description }}
                         </p>
                         <div class="mt-8 flex flex-wrap gap-3">
@@ -229,14 +225,10 @@ const roleTone = (index: number) =>
 
             <section v-if="showApps" id="apps" class="section-container max-w-7xl py-20 md:py-24">
                 <div class="mx-auto mb-14 max-w-3xl text-center">
-                    <h2 class="mt-4 text-3xl font-black leading-tight tracking-normal text-slate-950 sm:text-[44px]">
-                        <span>{{ sectionTitleLead }}</span>
-                        <br v-if="sectionTitleHighlight" />
-                        <span v-if="sectionTitleHighlight">
-                            {{ sectionTitleHighlight }}
-                        </span>
+                    <h2 class="mt-4 text-3xl font-bold text-slate-950 sm:text-4xl">
+                        {{ applicationsPage.section_title }}
                     </h2>
-                    <p class="mt-4 text-base leading-7 text-slate-500">
+                    <p class="mt-4 text-lg text-slate-500">
                         {{ applicationsPage.section_description }}
                     </p>
                 </div>
