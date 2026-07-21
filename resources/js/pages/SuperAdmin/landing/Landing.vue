@@ -412,12 +412,10 @@ const visibleNavHrefs = computed(() => {
     }
 
     if (props.landingSettings.mobile_apps_section?.enabled !== false) {
-        hrefs.add('/car-rental-apps');
         hrefs.add('#application');
     }
 
     if (props.landingSettings.plans_comparison_page?.enabled !== false) {
-        hrefs.add('/plans');
         hrefs.add('#pricing');
     }
 
@@ -432,9 +430,9 @@ const navLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
         { label: 'Features', href: '#features' },
-        { label: 'Application', href: '/car-rental-apps' },
+        { label: 'Application', href: '#application' },
         { label: 'Clients', href: '#clients' },
-        { label: 'Plans', href: '/plans' },
+        { label: 'Plans', href: '#pricing' },
         { label: 'Contact', href: '#contact' },
     ];
 
@@ -448,7 +446,10 @@ const navLinks = computed(() => {
     const normalizedLinks = links
         .map((link, index) => ({
             label: String(link?.label || fallback[index]?.label || ''),
-            href: String(link?.href || fallback[index]?.href || '#') === '#pricing' ? '/plans' : String(link?.href || fallback[index]?.href || '#'),
+            href: String(link?.href || fallback[index]?.href || '#')
+                .replace(/^\/(?:applications|car-rental-apps)$/, '#application')
+                .replace(/^\/plans$/, '#pricing')
+                .replace(/^\/pricing-plans$/, '#pricing'),
         }))
         .filter(
             (link) =>
@@ -466,7 +467,7 @@ const navLinks = computed(() => {
         );
         const applicationLink = {
             label: 'Application',
-            href: '/car-rental-apps',
+            href: '#application',
         };
 
         if (featuresIndex >= 0) {
@@ -519,11 +520,11 @@ const footerLinks = computed(() => {
     const links: QuickLinkItem[] = [];
 
     if (props.landingSettings.mobile_apps_section?.enabled !== false) {
-        links.push({ label: 'Application', href: localizedPath('/car-rental-apps') });
+        links.push({ label: 'Application', href: '#application' });
     }
 
     if (props.landingSettings.plans_comparison_page?.enabled !== false) {
-        links.push({ label: 'Plans', href: '/plans' });
+        links.push({ label: 'Plans', href: '#pricing' });
     }
 
     links.push(...staticPageLinks.value);
@@ -664,6 +665,12 @@ const mobileAppStoreLabel = (
 
     return !label || normalized === 'android' ? 'Google Play' : label;
 };
+const mobileAppIconUrl = (store: 'ios' | 'android') =>
+    String(
+        store === 'ios'
+            ? props.landingSettings.footer.ios_icon_url
+            : props.landingSettings.footer.android_icon_url,
+    ).trim();
 const footerSocialIcons = {
     facebook: Facebook,
     instagram: Instagram,
@@ -1824,7 +1831,13 @@ onUnmounted(() => {
                                                     {{ mobileAppStoreLabel('ios', landingSettings.mobile_apps_section.ios_label) }}
                                                 </span>
                                             </span>
-                                            <Apple class="h-5 w-5 shrink-0 text-slate-950" />
+                                            <img
+                                                v-if="mobileAppIconUrl('ios')"
+                                                :src="mobileAppIconUrl('ios')"
+                                                alt=""
+                                                class="h-5 w-5 shrink-0 object-contain"
+                                            />
+                                            <Apple v-else class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
                                         <a
                                             :href="mobileAppStoreHref(selectedManagementMobileApp.google_play_url)"
@@ -1841,7 +1854,13 @@ onUnmounted(() => {
                                                     {{ mobileAppStoreLabel('android', landingSettings.mobile_apps_section.android_label) }}
                                                 </span>
                                             </span>
-                                            <Play class="h-5 w-5 shrink-0 text-slate-950" />
+                                            <img
+                                                v-if="mobileAppIconUrl('android')"
+                                                :src="mobileAppIconUrl('android')"
+                                                alt=""
+                                                class="h-5 w-5 shrink-0 object-contain"
+                                            />
+                                            <Play v-else class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
                                     </div>
                                 </div>
@@ -1976,7 +1995,13 @@ onUnmounted(() => {
                                                     {{ mobileAppStoreLabel('ios', landingSettings.mobile_apps_section.ios_label) }}
                                                 </span>
                                             </span>
-                                            <Apple class="h-5 w-5 shrink-0 text-slate-950" />
+                                            <img
+                                                v-if="mobileAppIconUrl('ios')"
+                                                :src="mobileAppIconUrl('ios')"
+                                                alt=""
+                                                class="h-5 w-5 shrink-0 object-contain"
+                                            />
+                                            <Apple v-else class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
                                         <a
                                             :href="mobileAppStoreHref(clientMobileApp.google_play_url)"
@@ -1993,7 +2018,13 @@ onUnmounted(() => {
                                                     {{ mobileAppStoreLabel('android', landingSettings.mobile_apps_section.android_label) }}
                                                 </span>
                                             </span>
-                                            <Play class="h-5 w-5 shrink-0 text-slate-950" />
+                                            <img
+                                                v-if="mobileAppIconUrl('android')"
+                                                :src="mobileAppIconUrl('android')"
+                                                alt=""
+                                                class="h-5 w-5 shrink-0 object-contain"
+                                            />
+                                            <Play v-else class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
                                     </div>
                                 </div>

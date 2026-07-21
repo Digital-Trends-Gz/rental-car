@@ -87,6 +87,7 @@ const showApps = computed(() => props.applicationsPage.apps_enabled !== false);
 const showComparison = computed(() => props.applicationsPage.comparison_enabled !== false);
 const showEcosystem = computed(() => props.applicationsPage.ecosystem_enabled !== false);
 const visibleRoles = computed(() => (props.applicationsPage.roles || []).filter((role) => role.enabled !== false));
+const footerSettings = computed(() => (props.landingSettings?.footer || {}) as Record<string, unknown>);
 const titleLead = computed(() => {
     const title = props.applicationsPage.hero_title || '';
     const highlight = props.applicationsPage.hero_highlight || '';
@@ -138,6 +139,8 @@ const roleTone = (index: number) =>
         'from-indigo-50 via-white to-violet-50',
         'from-cyan-50 via-white to-fuchsia-50',
     ][index % 3];
+const storeIconUrl = (store: 'ios' | 'android') =>
+    String(footerSettings.value[store === 'ios' ? 'ios_icon_url' : 'android_icon_url'] || '').trim();
 </script>
 
 <template>
@@ -298,11 +301,23 @@ const roleTone = (index: number) =>
                         </ul>
                         <div class="mt-7 flex flex-wrap gap-3">
                             <a href="#" class="store-button">
-                                <Apple class="h-5 w-5" />
+                                <img
+                                    v-if="storeIconUrl('ios')"
+                                    :src="storeIconUrl('ios')"
+                                    alt=""
+                                    class="h-5 w-5 object-contain"
+                                />
+                                <Apple v-else class="h-5 w-5" />
                                 <span><small>{{ applicationsPage.store_ios_caption }}</small>{{ applicationsPage.store_ios_label }}</span>
                             </a>
                             <a href="#" class="store-button">
-                                <Play class="h-5 w-5" />
+                                <img
+                                    v-if="storeIconUrl('android')"
+                                    :src="storeIconUrl('android')"
+                                    alt=""
+                                    class="h-5 w-5 object-contain"
+                                />
+                                <Play v-else class="h-5 w-5" />
                                 <span><small>{{ applicationsPage.store_android_caption }}</small>{{ applicationsPage.store_android_label }}</span>
                             </a>
                         </div>

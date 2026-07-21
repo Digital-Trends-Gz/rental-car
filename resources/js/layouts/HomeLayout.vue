@@ -183,9 +183,9 @@ const landingNavLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
         { label: 'Features', href: '#features' },
-        { label: 'Application', href: '/car-rental-apps' },
+        { label: 'Application', href: '#application' },
         { label: 'Clients', href: '#clients' },
-        { label: 'Plans', href: '/plans' },
+        { label: 'Plans', href: '#pricing' },
         { label: 'Contact', href: '#contact' },
     ];
     const configuredLinks = Array.isArray(landingSettings.value?.navigation?.links)
@@ -195,7 +195,10 @@ const landingNavLinks = computed(() => {
     const normalizedLinks = links
         .map((link: any, index: number) => ({
             label: String(link?.label || fallback[index]?.label || ''),
-            href: String(link?.href || fallback[index]?.href || '#') === '#pricing' ? '/plans' : String(link?.href || fallback[index]?.href || '#'),
+            href: String(link?.href || fallback[index]?.href || '#')
+                .replace(/^\/(?:applications|car-rental-apps)$/, '#application')
+                .replace(/^\/plans$/, '#pricing')
+                .replace(/^\/pricing-plans$/, '#pricing'),
         }))
         .filter((link) =>
             link.label !== '' &&
@@ -208,7 +211,7 @@ const landingNavLinks = computed(() => {
         !normalizedLinks.some((link) => ['/applications', '/car-rental-apps', '#application'].includes(link.href))
     ) {
         const featuresIndex = normalizedLinks.findIndex((link) => link.href === '#features');
-        const applicationLink = { label: 'Application', href: '/car-rental-apps' };
+        const applicationLink = { label: 'Application', href: '#application' };
 
         if (featuresIndex >= 0) {
             normalizedLinks.splice(featuresIndex + 1, 0, applicationLink);
@@ -232,11 +235,11 @@ const landingFooterNavLinks = computed(() => {
     const links: Array<{ label: string; href: string }> = [];
 
     if (landingSettings.value?.mobile_apps_section?.enabled !== false) {
-        links.push({ label: 'Application', href: resolveLandingHref('/car-rental-apps') });
+        links.push({ label: 'Application', href: resolveLandingHref('#application') });
     }
 
     if (landingSettings.value?.plans_comparison_page?.enabled !== false) {
-        links.push({ label: 'Plans', href: resolveLandingHref('/plans') });
+        links.push({ label: 'Plans', href: resolveLandingHref('#pricing') });
     }
 
     links.push(...landingStaticPageLinks.value);
