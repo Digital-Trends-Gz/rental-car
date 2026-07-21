@@ -239,9 +239,6 @@ const roleTone = (index: number) =>
                     <p class="mt-4 text-base leading-7 text-slate-500">
                         {{ applicationsPage.section_description }}
                     </p>
-                    <p class="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-500">
-                            {{ applicationsPage.owner_employee_note }}
-                    </p>
                 </div>
 
                 <article
