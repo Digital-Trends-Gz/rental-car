@@ -512,6 +512,13 @@ class LandingPageSettings
                 'ios_label' => 'iOS',
                 'ios_url' => '',
                 'ios_icon_url' => '',
+                'nav_privacy' => 'Privacy',
+                'nav_terms' => 'Terms',
+                'nav_security_policy' => 'Security Policy',
+                'nav_cars' => 'Cars',
+                'nav_features' => 'Features',
+                'nav_application' => 'Application',
+                'nav_plans' => 'Plans',
                 'social_links' => [
                     ['label' => 'Facebook', 'platform' => 'facebook', 'href' => ''],
                     ['label' => 'Instagram', 'platform' => 'instagram', 'href' => ''],

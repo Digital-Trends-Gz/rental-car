@@ -148,6 +148,8 @@ const translatedLabel = (key: string, fallback: string) => {
 
     return value === key ? fallback : value;
 };
+const footerNavLabel = (key: string, fallback: string) =>
+    String(landingSettings.value?.footer?.[key] || '').trim() || fallback;
 const normalizedLandingPathOnly = computed(() => {
     const path = String(normalizedRedirectPath.value || '/').split(/[?#]/)[0] || '/';
 
@@ -163,11 +165,11 @@ const isClientsNavLink = (link: { label: string; href: string }) => {
 };
 const landingStaticPageLinks = computed(() => [
     {
-        label: translatedLabel('welcome.footer_privacy', 'Privacy'),
+        label: footerNavLabel('nav_privacy', translatedLabel('welcome.footer_privacy', 'Privacy')),
         href: localizedLandingPath('/privacy-policy'),
     },
     {
-        label: translatedLabel('welcome.footer_terms', 'Terms'),
+        label: footerNavLabel('nav_terms', translatedLabel('welcome.footer_terms', 'Terms')),
         href: localizedLandingPath('/terms-of-use'),
     },
     {
@@ -242,16 +244,16 @@ const landingFooterNavLinks = computed(() => {
     return links;
 });
 const landingFooterNavColumns = computed(() => [
-    landingStaticPageLinks.value.slice(0, 1),
-    landingStaticPageLinks.value.slice(1, 2),
-    landingStaticPageLinks.value.slice(2, 3),
+    [{ label: footerNavLabel('nav_privacy', 'Privacy'), href: localizedLandingPath('/privacy-policy') }],
+    [{ label: footerNavLabel('nav_terms', 'Terms'), href: localizedLandingPath('/terms-of-use') }],
+    [{ label: footerNavLabel('nav_security_policy', 'Security Policy'), href: localizedLandingPath('/security-policy') }],
     [
-        { label: 'Cars', href: resolveLandingHref('#cars') },
-        { label: 'Features', href: resolveLandingHref('#features') },
+        { label: footerNavLabel('nav_cars', 'Cars'), href: resolveLandingHref('#cars') },
+        { label: footerNavLabel('nav_features', 'Features'), href: resolveLandingHref('#features') },
     ],
     [
-        { label: 'Application', href: resolveLandingHref('#application') },
-        { label: 'Plans', href: resolveLandingHref('#pricing') },
+        { label: footerNavLabel('nav_application', 'Application'), href: resolveLandingHref('#application') },
+        { label: footerNavLabel('nav_plans', 'Plans'), href: resolveLandingHref('#pricing') },
     ],
 ]);
 const landingFooterSocialLinks = computed(() => {

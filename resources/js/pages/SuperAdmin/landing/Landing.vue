@@ -212,6 +212,13 @@ interface LandingSettings {
         ios_label: string;
         ios_url: string;
         ios_icon_url?: string;
+        nav_privacy?: string;
+        nav_terms?: string;
+        nav_security_policy?: string;
+        nav_cars?: string;
+        nav_features?: string;
+        nav_application?: string;
+        nav_plans?: string;
         social_links: SocialLinkItem[];
     };
 }
@@ -490,6 +497,8 @@ const translatedLabel = (key: string, fallback: string) => {
 
     return value === key ? fallback : value;
 };
+const footerNavLabel = (key: keyof LandingSettings['footer'], fallback: string) =>
+    String(props.landingSettings.footer?.[key] || '').trim() || fallback;
 
 const staticPageLinks = computed(() => [
     {
@@ -522,16 +531,16 @@ const footerLinks = computed(() => {
     return links;
 });
 const footerLinkColumns = computed(() => [
-    staticPageLinks.value.slice(0, 1),
-    staticPageLinks.value.slice(1, 2),
-    staticPageLinks.value.slice(2, 3),
+    [{ label: footerNavLabel('nav_privacy', 'Privacy'), href: localizedPath('/privacy-policy') }],
+    [{ label: footerNavLabel('nav_terms', 'Terms'), href: localizedPath('/terms-of-use') }],
+    [{ label: footerNavLabel('nav_security_policy', 'Security Policy'), href: localizedPath('/security-policy') }],
     [
-        { label: 'Cars', href: '#cars' },
-        { label: 'Features', href: '#features' },
+        { label: footerNavLabel('nav_cars', 'Cars'), href: '#cars' },
+        { label: footerNavLabel('nav_features', 'Features'), href: '#features' },
     ],
     [
-        { label: 'Application', href: '#application' },
-        { label: 'Plans', href: '#pricing' },
+        { label: footerNavLabel('nav_application', 'Application'), href: '#application' },
+        { label: footerNavLabel('nav_plans', 'Plans'), href: '#pricing' },
     ],
 ]);
 const footerDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));
@@ -634,20 +643,6 @@ const clientJourneySteps = computed(() => {
         .filter(Boolean);
 
     return features.length ? features.slice(0, 4) : ['Browse', 'Book', 'Pay', 'Track'];
-});
-const mobileAppTitleParts = computed(() => {
-    const title = props.landingSettings.mobile_apps_section?.title || '';
-    const marker = 'One connected platform';
-    const index = title.toLowerCase().indexOf(marker.toLowerCase());
-
-    if (index === -1) {
-        return { lead: title, highlight: '' };
-    }
-
-    return {
-        lead: title.slice(0, index),
-        highlight: title.slice(index),
-    };
 });
 const mobileAppStoreHref = (url?: string | null) => {
     const normalized = String(url || '').trim();
@@ -1730,18 +1725,10 @@ onUnmounted(() => {
                     >
                         <div class="mx-auto mb-8 max-w-3xl text-center">
                             <div>
-                                <h2
-                                    class="text-3xl font-extrabold leading-[1.12] tracking-tight text-slate-950 sm:text-4xl lg:text-[2.4rem]"
-                                >
-                                    {{ mobileAppTitleParts.lead }}
-                                    <span
-                                        v-if="mobileAppTitleParts.highlight"
-                                        class="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent"
-                                    >
-                                        {{ mobileAppTitleParts.highlight }}
-                                    </span>
+                                <h2 class="text-3xl font-bold text-slate-950 sm:text-4xl">
+                                    {{ landingSettings.mobile_apps_section.title }}
                                 </h2>
-                                <p class="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-slate-500">
+                                <p class="mx-auto mt-4 max-w-2xl text-lg text-slate-500">
                                     {{ landingSettings.mobile_apps_section.description }}
                                 </p>
                             </div>
