@@ -292,11 +292,11 @@ const landingFooterNavLinks = computed(() => {
     const links: Array<{ label: string; href: string }> = [];
 
     if (landingSettings.value?.mobile_apps_section?.enabled !== false) {
-        links.push({ label: footerNavLabel('nav_application', 'Application'), href: resolveLandingHref('#application') });
+        links.push({ label: 'Application', href: resolveLandingHref('#application') });
     }
 
     if (landingSettings.value?.plans_comparison_page?.enabled !== false) {
-        links.push({ label: footerNavLabel('nav_plans', 'Plans'), href: resolveLandingHref('#pricing') });
+        links.push({ label: 'Plans', href: resolveLandingHref('#pricing') });
     }
 
     links.push(...landingStaticPageLinks.value);

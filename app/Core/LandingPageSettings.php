@@ -35,8 +35,6 @@ class LandingPageSettings
         return [
             'navigation' => [
                 'cta_label' => 'Start Free Trial',
-                'nav_clients' => 'Clients',
-                'nav_contact' => 'Contact',
                 'links' => [
                     ['label' => 'Cars', 'href' => '#cars'],
                     ['label' => 'Features', 'href' => '#features'],

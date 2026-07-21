@@ -135,12 +135,6 @@ interface LandingSettings {
     locale_switcher?: {
         language_names?: Record<string, string>;
     };
-    navigation?: {
-        cta_label?: string;
-        nav_clients?: string;
-        nav_contact?: string;
-        links?: QuickLinkItem[];
-    };
     features_section: {
         enabled: boolean;
         title: string;
@@ -435,55 +429,6 @@ const visibleNavHrefs = computed(() => {
     return hrefs;
 });
 
-const landingFooterNavLabel = (key: keyof LandingSettings['footer'], fallback: string) =>
-    String(props.landingSettings.footer?.[key] || '').trim() || fallback;
-const landingNavigationNavLabel = (key: 'nav_clients' | 'nav_contact', fallback: string) =>
-    String(props.landingSettings.navigation?.[key] || '').trim() || fallback;
-const landingNavLabel = (href: string, fallback: string) => {
-    const normalizedHref = String(href || '').trim().toLowerCase();
-    const baseHref = normalizedHref.replace(/^\/(?:applications|car-rental-apps)$/, '#application')
-        .replace(/^\/plans$/, '#pricing')
-        .replace(/^\/pricing-plans$/, '#pricing');
-
-    if (baseHref === '#cars' || baseHref === '/#cars') {
-        return landingFooterNavLabel('nav_cars', fallback);
-    }
-
-    if (baseHref === '#features' || baseHref === '/#features') {
-        return landingFooterNavLabel('nav_features', fallback);
-    }
-
-    if (baseHref === '#application' || baseHref === '/#application') {
-        return landingFooterNavLabel('nav_application', fallback);
-    }
-
-    if (baseHref === '#pricing' || baseHref === '/#pricing') {
-        return landingFooterNavLabel('nav_plans', fallback);
-    }
-
-    if (baseHref === '#clients' || baseHref === '/#clients') {
-        return landingNavigationNavLabel('nav_clients', fallback);
-    }
-
-    if (baseHref === '#contact' || baseHref === '/#contact') {
-        return landingNavigationNavLabel('nav_contact', fallback);
-    }
-
-    if (baseHref === '/privacy-policy') {
-        return landingFooterNavLabel('nav_privacy', fallback);
-    }
-
-    if (baseHref === '/terms-of-use' || baseHref === '/terms-conditions') {
-        return landingFooterNavLabel('nav_terms', fallback);
-    }
-
-    if (baseHref === '/security-policy') {
-        return landingFooterNavLabel('nav_security_policy', fallback);
-    }
-
-    return fallback;
-};
-
 const navLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
@@ -503,10 +448,7 @@ const navLinks = computed(() => {
     const links = configuredLinks.length ? configuredLinks : fallback;
     const normalizedLinks = links
         .map((link, index) => ({
-            label: landingNavLabel(
-                String(link?.href || fallback[index]?.href || '#'),
-                String(link?.label || fallback[index]?.label || ''),
-            ),
+            label: String(link?.label || fallback[index]?.label || ''),
             href: String(link?.href || fallback[index]?.href || '#')
                 .replace(/^\/(?:applications|car-rental-apps)$/, '#application')
                 .replace(/^\/plans$/, '#pricing')
@@ -527,7 +469,7 @@ const navLinks = computed(() => {
             (link) => link.href === '#features',
         );
         const applicationLink = {
-            label: landingFooterNavLabel('nav_application', 'Application'),
+            label: 'Application',
             href: '#application',
         };
 
@@ -560,7 +502,7 @@ const translatedLabel = (key: string, fallback: string) => {
     return value === key ? fallback : value;
 };
 const footerNavLabel = (key: keyof LandingSettings['footer'], fallback: string) =>
-    landingFooterNavLabel(key, fallback);
+    String(props.landingSettings.footer?.[key] || '').trim() || fallback;
 
 const staticPageLinks = computed(() => [
     {
@@ -581,11 +523,11 @@ const footerLinks = computed(() => {
     const links: QuickLinkItem[] = [];
 
     if (props.landingSettings.mobile_apps_section?.enabled !== false) {
-        links.push({ label: footerNavLabel('nav_application', 'Application'), href: '#application' });
+        links.push({ label: 'Application', href: '#application' });
     }
 
     if (props.landingSettings.plans_comparison_page?.enabled !== false) {
-        links.push({ label: footerNavLabel('nav_plans', 'Plans'), href: '#pricing' });
+        links.push({ label: 'Plans', href: '#pricing' });
     }
 
     links.push(...staticPageLinks.value);
