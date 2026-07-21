@@ -38,9 +38,9 @@ class LandingPageSettings
                 'links' => [
                     ['label' => 'Cars', 'href' => '#cars'],
                     ['label' => 'Features', 'href' => '#features'],
-                    ['label' => 'Application', 'href' => '/car-rental-apps'],
+                    ['label' => 'Application', 'href' => '#application'],
                     ['label' => 'Clients', 'href' => '#clients'],
-                    ['label' => 'Plans', 'href' => '/plans'],
+                    ['label' => 'Plans', 'href' => '#pricing'],
                     ['label' => 'Contact', 'href' => '#contact'],
                 ],
             ],
@@ -752,8 +752,16 @@ class LandingPageSettings
         }
 
         foreach ($links as $index => $link) {
-            if (is_array($link) && ($link['href'] ?? null) === '#pricing') {
-                $links[$index]['href'] = '/plans';
+            if (!is_array($link)) {
+                continue;
+            }
+
+            if (in_array(($link['href'] ?? null), ['/applications', '/car-rental-apps'], true)) {
+                $links[$index]['href'] = '#application';
+            }
+
+            if (in_array(($link['href'] ?? null), ['/plans', '/pricing-plans'], true)) {
+                $links[$index]['href'] = '#pricing';
             }
         }
 
@@ -762,13 +770,13 @@ class LandingPageSettings
 
             foreach ($links as $index => $link) {
                 if (is_array($link) && in_array(($link['href'] ?? null), ['/applications', '/car-rental-apps', '#application'], true)) {
-                    $links[$index]['href'] = '/car-rental-apps';
+                    $links[$index]['href'] = '#application';
                     $hasApplicationLink = true;
                 }
             }
 
             if (!$hasApplicationLink) {
-                $applicationLink = ['label' => 'Application', 'href' => '/car-rental-apps'];
+                $applicationLink = ['label' => 'Application', 'href' => '#application'];
                 $featuresIndex = null;
 
                 foreach ($links as $index => $link) {
@@ -790,14 +798,14 @@ class LandingPageSettings
             $hasPlansLink = false;
 
             foreach ($links as $link) {
-                if (is_array($link) && ($link['href'] ?? null) === '/plans') {
+                if (is_array($link) && in_array(($link['href'] ?? null), ['/plans', '/pricing-plans', '#pricing'], true)) {
                     $hasPlansLink = true;
                     break;
                 }
             }
 
             if (!$hasPlansLink) {
-                $links[] = ['label' => 'Plans', 'href' => '/plans'];
+                $links[] = ['label' => 'Plans', 'href' => '#pricing'];
             }
         }
 

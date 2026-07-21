@@ -535,7 +535,7 @@ onBeforeUnmount(() => {
                                 :href="button.href || undefined"
                                 :target="button.href ? '_blank' : undefined"
                                 :rel="button.href ? 'noopener noreferrer' : undefined"
-                                class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-3 text-slate-950 transition hover:border-blue-200"
+                                class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-1 text-slate-950 transition hover:border-blue-200"
                                 dir="ltr"
                             >
                                 <span class="text-left leading-tight">

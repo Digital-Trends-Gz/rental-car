@@ -266,8 +266,8 @@ const cellClass = (value: string) => {
                             <span class="mb-4 inline-flex min-w-max shrink-0 whitespace-nowrap rounded-full bg-emerald-100 px-4 py-2 text-[10px] font-bold leading-none text-emerald-800">
                                 {{ customPriceBadge }}
                             </span>
-                            <div class="text-[14px] font-normal leading-5 text-[#737373]">{{ plansPage.custom_price_label }}</div>
-                            <p class="mt-5 text-[13px] font-medium text-[#737373]">{{ plansPage.custom_price_caption }}</p>
+                            <div class="text-4xl font-extrabold tracking-tight text-foreground">{{ plansPage.custom_price_label }}</div>
+                            <p class="mt-5 text-[14px] font-normal leading-5 text-[#737373]">{{ plansPage.custom_price_caption }}</p>
                         </div>
 
                         <div v-else class="mb-6 min-h-[135px]">

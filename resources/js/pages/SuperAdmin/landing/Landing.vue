@@ -1196,7 +1196,7 @@ onUnmounted(() => {
             <section
                 v-if="landingSettings.cars_section.enabled"
                 id="cars"
-                class="section-padding border-b border-border"
+                class="section-padding"
             >
                 <div class="section-container">
                     <div class="mx-auto mb-10 max-w-3xl text-center">
@@ -2233,11 +2233,11 @@ onUnmounted(() => {
                                                 {{ customPricingBadge }}
                                             </span>
                                             <span
-                                                class="block select-none text-[14px] font-normal leading-5 text-[#737373]"
+                                                class="text-4xl font-extrabold tracking-tight text-foreground"
                                             >
                                                 {{ customPricingLabel }}
                                             </span>
-                                            <p class="text-base font-medium text-slate-500">
+                                            <p class="text-[14px] font-normal leading-5 text-[#737373]">
                                                 {{ customPricingCaption }}
                                             </p>
                                         </div>
@@ -2659,7 +2659,7 @@ onUnmounted(() => {
                     >
                         <a
                             :href="mobileAppStoreHref(landingSettings.footer.android_url)"
-                            class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-3 text-slate-950 transition hover:border-blue-200"
+                            class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-1 text-slate-950 transition hover:border-blue-200"
                             :class="{
                                 'pointer-events-none opacity-60':
                                     !landingSettings.footer.android_url,
@@ -2685,7 +2685,7 @@ onUnmounted(() => {
                         </a>
                         <a
                             :href="mobileAppStoreHref(landingSettings.footer.ios_url)"
-                            class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-3 text-slate-950 transition hover:border-blue-200"
+                            class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-1 text-slate-950 transition hover:border-blue-200"
                             :class="{
                                 'pointer-events-none opacity-60':
                                     !landingSettings.footer.ios_url,
