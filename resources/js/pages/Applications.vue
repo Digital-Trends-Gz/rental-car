@@ -152,7 +152,7 @@ const roleTone = (index: number) =>
                         <h1 class="mt-5 text-[43px] font-black leading-[1.04] tracking-normal text-slate-950 sm:text-[58px]">
                             <span>{{ titleLead }}</span>
                             <br v-if="titleHighlight" />
-                            <span v-if="titleHighlight" class="bg-gradient-to-r from-blue-500 to-purple-700 bg-clip-text text-transparent">
+                            <span v-if="titleHighlight">
                                 {{ titleHighlight }}
                             </span>
                         </h1>
@@ -232,7 +232,7 @@ const roleTone = (index: number) =>
                     <h2 class="mt-4 text-3xl font-black leading-tight tracking-normal text-slate-950 sm:text-[44px]">
                         <span>{{ sectionTitleLead }}</span>
                         <br v-if="sectionTitleHighlight" />
-                        <span v-if="sectionTitleHighlight" class="bg-gradient-to-r from-blue-500 to-purple-700 bg-clip-text text-transparent">
+                        <span v-if="sectionTitleHighlight">
                             {{ sectionTitleHighlight }}
                         </span>
                     </h2>

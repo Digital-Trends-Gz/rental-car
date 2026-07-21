@@ -39,6 +39,17 @@ const showScrollTop = ref(false);
 const appBranding = computed(() => $page.props.app_branding ?? {});
 const landingSettings = computed(() => $page.props.landingSettings ?? {});
 const hiddenLandingNavHrefs = new Set(['#how-it-works', '#faq']);
+const landingPagesWithoutClientsNav = new Set([
+    '/applications',
+    '/car-rental-apps',
+    '/fleet',
+    '/plans',
+    '/pricing-plans',
+    '/privacy-policy',
+    '/security-policy',
+    '/terms-conditions',
+    '/terms-of-use',
+]);
 const currentYear = new Date().getFullYear();
 
 const normalizedRedirectPath = computed(() => {
@@ -137,6 +148,19 @@ const translatedLabel = (key: string, fallback: string) => {
 
     return value === key ? fallback : value;
 };
+const normalizedLandingPathOnly = computed(() => {
+    const path = String(normalizedRedirectPath.value || '/').split(/[?#]/)[0] || '/';
+
+    return path.startsWith('/') ? path : `/${path}`;
+});
+const shouldHideClientsNav = computed(() =>
+    landingPagesWithoutClientsNav.has(normalizedLandingPathOnly.value),
+);
+const isClientsNavLink = (link: { label: string; href: string }) => {
+    const href = String(link.href || '').trim().toLowerCase();
+
+    return href === '#clients' || href === '/#clients';
+};
 const landingStaticPageLinks = computed(() => [
     {
         label: translatedLabel('welcome.footer_privacy', 'Privacy'),
@@ -171,7 +195,11 @@ const landingNavLinks = computed(() => {
             label: String(link?.label || fallback[index]?.label || ''),
             href: String(link?.href || fallback[index]?.href || '#') === '#pricing' ? '/plans' : String(link?.href || fallback[index]?.href || '#'),
         }))
-        .filter((link) => link.label !== '' && !hiddenLandingNavHrefs.has(link.href))
+        .filter((link) =>
+            link.label !== '' &&
+            !hiddenLandingNavHrefs.has(link.href) &&
+            !(shouldHideClientsNav.value && isClientsNavLink(link))
+        )
 
     if (
         landingSettings.value?.mobile_apps_section?.enabled !== false &&
@@ -257,6 +285,7 @@ const landingFooterAppButtons = computed(() => {
             caption: 'GET IT ON',
             label: !androidLabel || androidLabel.toLowerCase() === 'android' ? 'Google Play' : androidLabel,
             href: String(landingSettings.value?.footer?.android_url || '').trim(),
+            iconUrl: String(landingSettings.value?.footer?.android_icon_url || '').trim(),
             icon: Play,
         },
         {
@@ -264,6 +293,7 @@ const landingFooterAppButtons = computed(() => {
             caption: 'DOWNLOAD ON THE',
             label: !iosLabel || iosLabel.toLowerCase() === 'ios' ? 'App Store' : iosLabel,
             href: String(landingSettings.value?.footer?.ios_url || '').trim(),
+            iconUrl: String(landingSettings.value?.footer?.ios_icon_url || '').trim(),
             icon: Apple,
         },
     ];
@@ -511,7 +541,13 @@ onBeforeUnmount(() => {
                                         {{ button.label }}
                                     </span>
                                 </span>
-                                <component :is="button.icon" class="h-4 w-4 shrink-0 text-slate-950" />
+                                <img
+                                    v-if="button.iconUrl"
+                                    :src="button.iconUrl"
+                                    alt=""
+                                    class="h-4 w-4 shrink-0 object-contain"
+                                />
+                                <component v-else :is="button.icon" class="h-4 w-4 shrink-0 text-slate-950" />
                             </component>
                         </div>
                     </div>

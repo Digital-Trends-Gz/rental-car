@@ -141,6 +141,10 @@ class LandingSettingsController extends Controller
             'heroFiles' => $heroFiles,
             'heroLocalizedFiles' => $this->heroLocalizedFiles($brandingSetting),
             'carsFleetButtonIconFiles' => $this->landingFilesForCollection($brandingSetting, 'cars_fleet_button_icon'),
+            'footerAppIconFiles' => [
+                'android' => $this->landingFilesForCollection($brandingSetting, 'footer_android_icon'),
+                'ios' => $this->landingFilesForCollection($brandingSetting, 'footer_ios_icon'),
+            ],
             'featureFiles' => $this->featureCardFiles($brandingSetting),
             'gettingStartedFiles' => $this->gettingStartedFiles($brandingSetting),
             'mobileAppFiles' => $this->mobileAppFiles($brandingSetting),
@@ -377,8 +381,10 @@ class LandingSettingsController extends Controller
             'settings.footer.show_app_buttons' => ['nullable', 'boolean'],
             'settings.footer.android_label' => ['required', 'string', 'max:255'],
             'settings.footer.android_url' => ['nullable', 'string', 'max:2000'],
+            'settings.footer.android_icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.footer.ios_label' => ['required', 'string', 'max:255'],
             'settings.footer.ios_url' => ['nullable', 'string', 'max:2000'],
+            'settings.footer.ios_icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.footer.social_links' => ['nullable', 'array'],
             'settings.footer.social_links.*.label' => ['nullable', 'string', 'max:255'],
             'settings.footer.social_links.*.platform' => ['nullable', 'string', 'max:50'],
@@ -417,6 +423,7 @@ class LandingSettingsController extends Controller
         $this->syncGettingStartedUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
         $this->syncCarsFleetButtonIconUpload($request, $landingSetting);
+        $this->syncFooterAppIconUploads($request, $landingSetting);
         $this->refreshLandingImageUrls($landingSetting);
 
         SiteSetting::query()->updateOrCreate(
@@ -449,6 +456,7 @@ class LandingSettingsController extends Controller
         $this->syncGettingStartedUploads($request, $landingSetting);
         $this->syncMobileAppUploads($request, $landingSetting);
         $this->syncCarsFleetButtonIconUpload($request, $landingSetting);
+        $this->syncFooterAppIconUploads($request, $landingSetting);
         $this->refreshLandingImageUrls($landingSetting);
 
         Log::info('Landing design upload sync completed.', [
@@ -898,6 +906,16 @@ class LandingSettingsController extends Controller
             data_set($settings, 'cars_section.fleet_button_icon_url', $fleetButtonIconUrl);
         }
 
+        $androidIconUrl = $this->latestLandingFileUrl($landingSetting, 'footer_android_icon');
+        if ($androidIconUrl && trim((string) data_get($settings, 'footer.android_icon_url', '')) === '') {
+            data_set($settings, 'footer.android_icon_url', $androidIconUrl);
+        }
+
+        $iosIconUrl = $this->latestLandingFileUrl($landingSetting, 'footer_ios_icon');
+        if ($iosIconUrl && trim((string) data_get($settings, 'footer.ios_icon_url', '')) === '') {
+            data_set($settings, 'footer.ios_icon_url', $iosIconUrl);
+        }
+
         $localizedImages = (array) data_get($settings, 'hero.localized_images', []);
         foreach ($this->supportedLocaleKeys() as $locale) {
             $localeUrl = $this->latestLandingFileUrl($landingSetting, $this->heroLocaleCollection($locale));
@@ -1190,6 +1208,68 @@ class LandingSettingsController extends Controller
         $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
     }
 
+    private function syncFooterAppIconUploads(Request $request, SiteSetting $landingSetting): void
+    {
+        $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
+        $tempFoldersByType = is_array($request->input('footer_app_icon_temp_folders', []))
+            ? $request->input('footer_app_icon_temp_folders', [])
+            : [];
+        $removedIdsByType = is_array($request->input('footer_app_icon_removed_files', []))
+            ? $request->input('footer_app_icon_removed_files', [])
+            : [];
+
+        foreach ([
+            'android' => ['collection' => 'footer_android_icon', 'setting' => 'footer.android_icon_url'],
+            'ios' => ['collection' => 'footer_ios_icon', 'setting' => 'footer.ios_icon_url'],
+        ] as $type => $config) {
+            $tempFolders = is_array($tempFoldersByType[$type] ?? null)
+                ? array_values(array_filter($tempFoldersByType[$type]))
+                : [];
+            $removedIds = is_array($removedIdsByType[$type] ?? null)
+                ? array_values(array_unique(array_filter($removedIdsByType[$type])))
+                : [];
+            $directFile = $request->file("footer_app_icon_direct_files.$type");
+
+            if ($directFile instanceof UploadedFile) {
+                data_set(
+                    $settings,
+                    $config['setting'],
+                    $this->storeDirectLandingFile($landingSetting, $directFile, $config['collection'])
+                );
+                continue;
+            }
+
+            if (!empty($tempFolders)) {
+                $existingIds = $landingSetting->files()->where('collection', $config['collection'])->pluck('id')->all();
+                $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+            }
+
+            $this->filePondService->handleFileUpdates(
+                $landingSetting,
+                $tempFolders,
+                $removedIds,
+                $config['collection']
+            );
+
+            if (!empty($tempFolders)) {
+                $file = $landingSetting->files()
+                    ->where('collection', $config['collection'])
+                    ->latest('id')
+                    ->first();
+
+                data_set(
+                    $settings,
+                    $config['setting'],
+                    $file ? (SiteSetting::publicUrlFromPath($file->path) ?? '') : (string) data_get($settings, $config['setting'], '')
+                );
+            } elseif (!empty($removedIds)) {
+                data_set($settings, $config['setting'], '');
+            }
+        }
+
+        $landingSetting->update(['value' => LandingPageSettings::normalize($settings)]);
+    }
+
     private function syncMobileAppUploads(Request $request, SiteSetting $landingSetting): void
     {
         $settings = is_array($landingSetting->value) ? $landingSetting->value : $this->landingSettings();
@@ -1467,6 +1547,21 @@ class LandingSettingsController extends Controller
             }
         }
 
+        if ($request->has('footer_app_icon_direct_files')) {
+            $files = $request->input('footer_app_icon_direct_files');
+            if (is_array($files)) {
+                $sanitized = [];
+                foreach (['android', 'ios'] as $type) {
+                    $file = $request->file("footer_app_icon_direct_files.$type");
+                    if ($file instanceof UploadedFile) {
+                        $sanitized[$type] = $file;
+                    }
+                }
+                $request->merge(['footer_app_icon_direct_files' => $sanitized]);
+                $request->files->set('footer_app_icon_direct_files', $sanitized);
+            }
+        }
+
         if ($request->has('hero_locale_direct_files')) {
             $files = $request->input('hero_locale_direct_files');
             if (is_array($files)) {
@@ -1658,8 +1753,10 @@ class LandingSettingsController extends Controller
             'settings.footer.show_app_buttons' => ['nullable', 'boolean'],
             'settings.footer.android_label' => ['required', 'string', 'max:255'],
             'settings.footer.android_url' => ['nullable', 'string', 'max:2000'],
+            'settings.footer.android_icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.footer.ios_label' => ['required', 'string', 'max:255'],
             'settings.footer.ios_url' => ['nullable', 'string', 'max:2000'],
+            'settings.footer.ios_icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.footer.social_links' => ['nullable', 'array'],
             'settings.footer.social_links.*.label' => ['nullable', 'string', 'max:255'],
             'settings.footer.social_links.*.platform' => ['nullable', 'string', 'max:50'],
@@ -1681,6 +1778,14 @@ class LandingSettingsController extends Controller
             'cars_fleet_button_icon_removed_files' => ['nullable', 'array'],
             'cars_fleet_button_icon_removed_files.*' => ['integer'],
             'cars_fleet_button_icon_direct_file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
+            'footer_app_icon_temp_folders' => ['nullable', 'array'],
+            'footer_app_icon_temp_folders.*' => ['array'],
+            'footer_app_icon_temp_folders.*.*' => ['string'],
+            'footer_app_icon_removed_files' => ['nullable', 'array'],
+            'footer_app_icon_removed_files.*' => ['array'],
+            'footer_app_icon_removed_files.*.*' => ['integer'],
+            'footer_app_icon_direct_files' => ['nullable', 'array'],
+            'footer_app_icon_direct_files.*' => ['nullable', 'file', 'mimes:svg', 'max:5120'],
             'hero_locale_direct_files' => ['nullable', 'array'],
             'hero_locale_direct_files.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg,mp4,webm,ogg,mov', 'max:51200'],
             'feature_card_temp_folders' => ['nullable', 'array'],

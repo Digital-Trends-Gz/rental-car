@@ -508,8 +508,10 @@ class LandingPageSettings
                 'show_app_buttons' => true,
                 'android_label' => 'Android',
                 'android_url' => '',
+                'android_icon_url' => '',
                 'ios_label' => 'iOS',
                 'ios_url' => '',
+                'ios_icon_url' => '',
                 'social_links' => [
                     ['label' => 'Facebook', 'platform' => 'facebook', 'href' => ''],
                     ['label' => 'Instagram', 'platform' => 'instagram', 'href' => ''],
@@ -636,6 +638,8 @@ class LandingPageSettings
         $settings['footer']['enabled'] = (bool) ($settings['footer']['enabled'] ?? true);
         $settings['footer']['show_social_links'] = (bool) ($settings['footer']['show_social_links'] ?? true);
         $settings['footer']['show_app_buttons'] = (bool) ($settings['footer']['show_app_buttons'] ?? true);
+        $settings['footer']['android_icon_url'] = trim((string) ($settings['footer']['android_icon_url'] ?? ''));
+        $settings['footer']['ios_icon_url'] = trim((string) ($settings['footer']['ios_icon_url'] ?? ''));
         $settings['footer']['social_links'] = self::normalizeSocialLinks($settings['footer']['social_links'] ?? []);
         $settings['enabled_locales'] = self::normalizeEnabledLocales($settings['enabled_locales'] ?? []);
         $settings['translations'] = self::normalizeTranslations($settings['translations'] ?? []);

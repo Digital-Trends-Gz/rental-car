@@ -208,8 +208,10 @@ interface LandingSettings {
         show_app_buttons: boolean;
         android_label: string;
         android_url: string;
+        android_icon_url?: string;
         ios_label: string;
         ios_url: string;
+        ios_icon_url?: string;
         social_links: SocialLinkItem[];
     };
 }
@@ -2655,7 +2657,13 @@ onUnmounted(() => {
                                     {{ mobileAppStoreLabel('android', landingSettings.footer.android_label) }}
                                 </span>
                             </span>
-                            <Play class="h-4 w-4 shrink-0 text-slate-950" />
+                            <img
+                                v-if="landingSettings.footer.android_icon_url"
+                                :src="landingSettings.footer.android_icon_url"
+                                alt=""
+                                class="h-4 w-4 shrink-0 object-contain"
+                            />
+                            <Play v-else class="h-4 w-4 shrink-0 text-slate-950" />
                         </a>
                         <a
                             :href="mobileAppStoreHref(landingSettings.footer.ios_url)"
@@ -2675,7 +2683,13 @@ onUnmounted(() => {
                                     {{ mobileAppStoreLabel('ios', landingSettings.footer.ios_label) }}
                                 </span>
                             </span>
-                            <Apple class="h-4 w-4 shrink-0 text-slate-950" />
+                            <img
+                                v-if="landingSettings.footer.ios_icon_url"
+                                :src="landingSettings.footer.ios_icon_url"
+                                alt=""
+                                class="h-4 w-4 shrink-0 object-contain"
+                            />
+                            <Apple v-else class="h-4 w-4 shrink-0 text-slate-950" />
                         </a>
                     </div>
                 </div>

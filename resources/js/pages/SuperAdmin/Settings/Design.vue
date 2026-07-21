@@ -151,8 +151,10 @@ interface LandingSettings {
         show_app_buttons: boolean;
         android_label: string;
         android_url: string;
+        android_icon_url: string;
         ios_label: string;
         ios_url: string;
+        ios_icon_url: string;
         social_links: SocialLinkItem[];
     };
     enabled_locales: string[];
@@ -166,6 +168,10 @@ const props = defineProps<{
     featureFiles: Record<number, Array<{ id: number; url: string }>>;
     gettingStartedFiles: Record<number, Array<{ id: number; url: string }>>;
     carsFleetButtonIconFiles: Array<{ id: number; url: string }>;
+    footerAppIconFiles: {
+        android: Array<{ id: number; url: string }>;
+        ios: Array<{ id: number; url: string }>;
+    };
     mobileAppFiles: Record<
         number,
         {
@@ -192,6 +198,8 @@ const form = useForm<{
     getting_started_removed_files: Record<number, number[]>;
     cars_fleet_button_icon_temp_folders: string[];
     cars_fleet_button_icon_removed_files: number[];
+    footer_app_icon_temp_folders: Record<'android' | 'ios', string[]>;
+    footer_app_icon_removed_files: Record<'android' | 'ios', number[]>;
     mobile_app_temp_folders: Record<
         number,
         { image: string[]; icon: string[] }
@@ -205,6 +213,7 @@ const form = useForm<{
     feature_card_direct_files: Record<number, File | null>;
     getting_started_direct_files: Record<number, File | null>;
     cars_fleet_button_icon_direct_file: File | null;
+    footer_app_icon_direct_files: Record<'android' | 'ios', File | null>;
     mobile_app_direct_files: Record<
         number,
         { image: File | null; icon: File | null }
@@ -221,6 +230,8 @@ const form = useForm<{
     getting_started_removed_files: {},
     cars_fleet_button_icon_temp_folders: [],
     cars_fleet_button_icon_removed_files: [],
+    footer_app_icon_temp_folders: { android: [], ios: [] },
+    footer_app_icon_removed_files: { android: [], ios: [] },
     mobile_app_temp_folders: {},
     mobile_app_removed_files: {},
     hero_direct_file: null,
@@ -228,6 +239,7 @@ const form = useForm<{
     feature_card_direct_files: {},
     getting_started_direct_files: {},
     cars_fleet_button_icon_direct_file: null,
+    footer_app_icon_direct_files: { android: null, ios: null },
     mobile_app_direct_files: {},
 });
 
@@ -253,6 +265,18 @@ const heroLocaleDirectFiles = ref<Record<string, File | null>>({});
 const featureCardDirectFiles = ref<Record<number, File | null>>({});
 const gettingStartedDirectFiles = ref<Record<number, File | null>>({});
 const carsFleetButtonIconDirectFile = ref<File | null>(null);
+const footerAppIconTempFolders = ref<Record<'android' | 'ios', string[]>>({
+    android: [],
+    ios: [],
+});
+const footerAppIconRemovedFileIds = ref<Record<'android' | 'ios', number[]>>({
+    android: [],
+    ios: [],
+});
+const footerAppIconDirectFiles = ref<Record<'android' | 'ios', File | null>>({
+    android: null,
+    ios: null,
+});
 const mobileAppDirectFiles = ref<
     Record<number, { image: File | null; icon: File | null }>
 >({});
@@ -313,6 +337,14 @@ if (!form.settings.hero.localized_images) {
 
 if (!('fleet_button_icon_url' in form.settings.cars_section)) {
     form.settings.cars_section.fleet_button_icon_url = '';
+}
+
+if (!('android_icon_url' in form.settings.footer)) {
+    form.settings.footer.android_icon_url = '';
+}
+
+if (!('ios_icon_url' in form.settings.footer)) {
+    form.settings.footer.ios_icon_url = '';
 }
 
 for (const localeCode of enabledLocales.value) {
@@ -404,6 +436,14 @@ watch(
     carsFleetButtonIconTempFolders,
     (value) => {
         form.cars_fleet_button_icon_temp_folders = [...value];
+    },
+    { deep: true },
+);
+
+watch(
+    footerAppIconTempFolders,
+    (value) => {
+        form.footer_app_icon_temp_folders = JSON.parse(JSON.stringify(value));
     },
     { deep: true },
 );
@@ -523,6 +563,30 @@ const handleCarsFleetButtonIconFileRemoved = (data: {
 const handleCarsFleetButtonIconLocalFileAdded = (file: File) => {
     carsFleetButtonIconDirectFile.value = file;
     form.cars_fleet_button_icon_direct_file = file;
+};
+
+const handleFooterAppIconFileRemoved = (
+    type: 'android' | 'ios',
+    data: { type: string; fileId?: number },
+) => {
+    if (data.type !== 'existing' || !data.fileId) {
+        return;
+    }
+
+    footerAppIconRemovedFileIds.value[type] = [
+        ...new Set([...footerAppIconRemovedFileIds.value[type], data.fileId]),
+    ];
+    form.footer_app_icon_removed_files = JSON.parse(
+        JSON.stringify(footerAppIconRemovedFileIds.value),
+    );
+};
+
+const handleFooterAppIconLocalFileAdded = (
+    type: 'android' | 'ios',
+    file: File,
+) => {
+    footerAppIconDirectFiles.value[type] = file;
+    form.footer_app_icon_direct_files = { ...footerAppIconDirectFiles.value };
 };
 
 const handleFeatureCardFileRemoved = (
@@ -653,6 +717,13 @@ const syncUploadStateToForm = () => {
         ...new Set(carsFleetButtonIconRemovedFileIds.value),
     ];
     form.cars_fleet_button_icon_direct_file = carsFleetButtonIconDirectFile.value;
+    form.footer_app_icon_temp_folders = JSON.parse(
+        JSON.stringify(footerAppIconTempFolders.value),
+    );
+    form.footer_app_icon_removed_files = JSON.parse(
+        JSON.stringify(footerAppIconRemovedFileIds.value),
+    );
+    form.footer_app_icon_direct_files = { ...footerAppIconDirectFiles.value };
     form.mobile_app_temp_folders = JSON.parse(
         JSON.stringify(mobileAppTempFolders.value),
     );
@@ -696,6 +767,9 @@ const submit = () => {
             form.cars_fleet_button_icon_temp_folders = [];
             form.cars_fleet_button_icon_removed_files = [];
             form.cars_fleet_button_icon_direct_file = null;
+            form.footer_app_icon_temp_folders = { android: [], ios: [] };
+            form.footer_app_icon_removed_files = { android: [], ios: [] };
+            form.footer_app_icon_direct_files = { android: null, ios: null };
             form.mobile_app_temp_folders = {};
             form.mobile_app_removed_files = {};
             heroRemovedFileIds.value = [];
@@ -703,6 +777,9 @@ const submit = () => {
             carsFleetButtonIconTempFolders.value = [];
             carsFleetButtonIconRemovedFileIds.value = [];
             carsFleetButtonIconDirectFile.value = null;
+            footerAppIconTempFolders.value = { android: [], ios: [] };
+            footerAppIconRemovedFileIds.value = { android: [], ios: [] };
+            footerAppIconDirectFiles.value = { android: null, ios: null };
             heroLocaleTempFolders.value = Object.fromEntries(
                 enabledLocales.value.map((localeCode) => [localeCode, []]),
             );
@@ -3178,6 +3255,35 @@ const toggleSection = (
                                         <Label class="text-xs">{{ localize('URL', 'الرابط') }}</Label>
                                         <Input v-model="form.settings.footer.android_url" placeholder="https://..." />
                                     </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-xs">{{ localize('Icon URL', 'Icon URL') }}</Label>
+                                        <FileUpload
+                                            v-model="footerAppIconTempFolders.android"
+                                            :initial-files="props.footerAppIconFiles?.android || []"
+                                            :allow-multiple="false"
+                                            :max-files="1"
+                                            :instant-upload="false"
+                                            :max-file-size="1024 * 1024 * 5"
+                                            :allowed-file-types="['image/svg+xml']"
+                                            collection="footer_android_icon"
+                                            theme="light"
+                                            width="100%"
+                                            @file-removed="
+                                                (data) =>
+                                                    handleFooterAppIconFileRemoved(
+                                                        'android',
+                                                        data,
+                                                    )
+                                            "
+                                            @local-file-added="
+                                                (file) =>
+                                                    handleFooterAppIconLocalFileAdded(
+                                                        'android',
+                                                        file,
+                                                    )
+                                            "
+                                        />
+                                    </div>
                                 </div>
                                 <div class="space-y-3 rounded-lg border p-3">
                                     <Label>{{ localize('iOS Button', 'زر iOS') }}</Label>
@@ -3188,6 +3294,35 @@ const toggleSection = (
                                     <div class="space-y-2">
                                         <Label class="text-xs">{{ localize('URL', 'الرابط') }}</Label>
                                         <Input v-model="form.settings.footer.ios_url" placeholder="https://..." />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-xs">{{ localize('Icon URL', 'Icon URL') }}</Label>
+                                        <FileUpload
+                                            v-model="footerAppIconTempFolders.ios"
+                                            :initial-files="props.footerAppIconFiles?.ios || []"
+                                            :allow-multiple="false"
+                                            :max-files="1"
+                                            :instant-upload="false"
+                                            :max-file-size="1024 * 1024 * 5"
+                                            :allowed-file-types="['image/svg+xml']"
+                                            collection="footer_ios_icon"
+                                            theme="light"
+                                            width="100%"
+                                            @file-removed="
+                                                (data) =>
+                                                    handleFooterAppIconFileRemoved(
+                                                        'ios',
+                                                        data,
+                                                    )
+                                            "
+                                            @local-file-added="
+                                                (file) =>
+                                                    handleFooterAppIconLocalFileAdded(
+                                                        'ios',
+                                                        file,
+                                                    )
+                                            "
+                                        />
                                     </div>
                                 </div>
                             </div>
