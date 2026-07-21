@@ -2588,24 +2588,24 @@ onUnmounted(() => {
         >
             <div class="section-container space-y-3">
                 <div
-                    class="grid items-center gap-5 md:grid-cols-[6rem_minmax(0,1fr)_auto_8rem]"
+                    class="grid items-center gap-5 md:grid-cols-[8rem_minmax(0,1fr)_auto_8rem]"
                 >
                     <Link
                         href="/"
                         class="inline-flex items-center justify-center justify-self-center transition md:justify-self-start"
                         :aria-label="appName"
                     >
-                        <AppLogoIcon class="h-10 w-auto" />
+                        <AppLogoIcon class="h-16 w-auto" />
                     </Link>
 
                     <nav
-                        class="grid grid-cols-2 items-start justify-center gap-x-7 gap-y-2 text-sm font-medium text-foreground sm:grid-cols-5"
+                        class="grid grid-cols-2 items-center justify-center gap-x-7 gap-y-2 text-sm font-medium text-foreground sm:grid-cols-5"
                         :aria-label="t('landing.footer_navigation') || 'Footer navigation'"
                     >
                         <div
                             v-for="(column, columnIndex) in footerLinkColumns"
                             :key="`footer-column-${columnIndex}`"
-                            class="flex flex-col items-center gap-2 md:items-start"
+                            class="flex min-h-16 flex-col items-center justify-center gap-2 md:items-start"
                         >
                             <a
                                 v-for="link in column"
