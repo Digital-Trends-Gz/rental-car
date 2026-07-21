@@ -741,6 +741,8 @@ class LandingSettingsController extends Controller
         ));
         $rows = array_merge($rows, $this->flatten(PlanTranslations::defaultTranslationTree()));
         $rows = array_merge($rows, [
+            'navigation.nav_clients' => 'Clients',
+            'navigation.nav_contact' => 'Contact',
             'static_pages.privacy_policy.title' => 'Privacy Policy',
             'static_pages.terms_of_use.title' => 'Terms of Use',
             'static_pages.security_policy.title' => 'Security Policy',

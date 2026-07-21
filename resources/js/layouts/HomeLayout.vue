@@ -64,12 +64,20 @@ const normalizedRedirectPath = computed(() => {
 const localeSwitcherUrl = (targetLocale: string) =>
     `/locale/${targetLocale}?redirect=${encodeURIComponent(normalizedRedirectPath.value)}`;
 
-const localeDisplayName = (localeCode: string) =>
-    ({
-        en: 'English',
-        ar: 'Arabic',
-        ur: 'Urdu',
-    })[String(localeCode || '').toLowerCase()] || String(localeCode || '').toUpperCase();
+const fallbackLocaleNames: Record<string, string> = {
+    en: 'English',
+    ar: 'Arabic',
+    ur: 'Urdu',
+};
+
+const localeDisplayName = (localeCode: string) => {
+    const normalizedLocale = String(localeCode || '').toLowerCase();
+    const configuredName = String(
+        landingSettings.value?.locale_switcher?.language_names?.[normalizedLocale] || '',
+    ).trim();
+
+    return configuredName || fallbackLocaleNames[normalizedLocale] || normalizedLocale.toUpperCase();
+};
 
 const routeHelpers = computed(() => {
     if (isTenant.value) {
@@ -150,6 +158,52 @@ const translatedLabel = (key: string, fallback: string) => {
 };
 const footerNavLabel = (key: string, fallback: string) =>
     String(landingSettings.value?.footer?.[key] || '').trim() || fallback;
+const navigationNavLabel = (key: string, fallback: string) =>
+    String(landingSettings.value?.navigation?.[key] || '').trim() || fallback;
+const landingNavLabel = (href: string, fallback: string) => {
+    const normalizedHref = String(href || '').trim().toLowerCase();
+    const baseHref = normalizedHref.replace(/^\/(?:applications|car-rental-apps)$/, '#application')
+        .replace(/^\/plans$/, '#pricing')
+        .replace(/^\/pricing-plans$/, '#pricing');
+
+    if (baseHref === '#cars' || baseHref === '/#cars') {
+        return footerNavLabel('nav_cars', fallback);
+    }
+
+    if (baseHref === '#features' || baseHref === '/#features') {
+        return footerNavLabel('nav_features', fallback);
+    }
+
+    if (baseHref === '#application' || baseHref === '/#application') {
+        return footerNavLabel('nav_application', fallback);
+    }
+
+    if (baseHref === '#pricing' || baseHref === '/#pricing') {
+        return footerNavLabel('nav_plans', fallback);
+    }
+
+    if (baseHref === '#clients' || baseHref === '/#clients') {
+        return navigationNavLabel('nav_clients', fallback);
+    }
+
+    if (baseHref === '#contact' || baseHref === '/#contact') {
+        return navigationNavLabel('nav_contact', fallback);
+    }
+
+    if (baseHref === '/privacy-policy') {
+        return footerNavLabel('nav_privacy', fallback);
+    }
+
+    if (baseHref === '/terms-of-use' || baseHref === '/terms-conditions') {
+        return footerNavLabel('nav_terms', fallback);
+    }
+
+    if (baseHref === '/security-policy') {
+        return footerNavLabel('nav_security_policy', fallback);
+    }
+
+    return fallback;
+};
 const normalizedLandingPathOnly = computed(() => {
     const path = String(normalizedRedirectPath.value || '/').split(/[?#]/)[0] || '/';
 
@@ -194,7 +248,10 @@ const landingNavLinks = computed(() => {
     const links = configuredLinks.length ? configuredLinks : fallback;
     const normalizedLinks = links
         .map((link: any, index: number) => ({
-            label: String(link?.label || fallback[index]?.label || ''),
+            label: landingNavLabel(
+                String(link?.href || fallback[index]?.href || '#'),
+                String(link?.label || fallback[index]?.label || ''),
+            ),
             href: String(link?.href || fallback[index]?.href || '#')
                 .replace(/^\/(?:applications|car-rental-apps)$/, '#application')
                 .replace(/^\/plans$/, '#pricing')
@@ -211,7 +268,7 @@ const landingNavLinks = computed(() => {
         !normalizedLinks.some((link) => ['/applications', '/car-rental-apps', '#application'].includes(link.href))
     ) {
         const featuresIndex = normalizedLinks.findIndex((link) => link.href === '#features');
-        const applicationLink = { label: 'Application', href: '#application' };
+        const applicationLink = { label: footerNavLabel('nav_application', 'Application'), href: '#application' };
 
         if (featuresIndex >= 0) {
             normalizedLinks.splice(featuresIndex + 1, 0, applicationLink);
@@ -235,11 +292,11 @@ const landingFooterNavLinks = computed(() => {
     const links: Array<{ label: string; href: string }> = [];
 
     if (landingSettings.value?.mobile_apps_section?.enabled !== false) {
-        links.push({ label: 'Application', href: resolveLandingHref('#application') });
+        links.push({ label: footerNavLabel('nav_application', 'Application'), href: resolveLandingHref('#application') });
     }
 
     if (landingSettings.value?.plans_comparison_page?.enabled !== false) {
-        links.push({ label: 'Plans', href: resolveLandingHref('#pricing') });
+        links.push({ label: footerNavLabel('nav_plans', 'Plans'), href: resolveLandingHref('#pricing') });
     }
 
     links.push(...landingStaticPageLinks.value);

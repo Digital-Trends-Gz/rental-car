@@ -3407,7 +3407,11 @@ const toggleSection = (
                                 <div class="space-y-3 rounded-lg border p-3">
                                     <Label>{{ localize('Android Button', 'زر Android') }}</Label>
                                     <div class="space-y-2">
-                                        <Label class="text-xs">{{ localize('Label', 'النص') }}</Label>
+                                        <Label class="text-xs">{{ localize('Caption', 'Caption') }}</Label>
+                                        <Input v-model="form.settings.footer.android_caption" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-xs">{{ localize('Label', 'Label') }}</Label>
                                         <Input v-model="form.settings.footer.android_label" />
                                     </div>
                                     <div class="space-y-2">
@@ -3447,7 +3451,11 @@ const toggleSection = (
                                 <div class="space-y-3 rounded-lg border p-3">
                                     <Label>{{ localize('iOS Button', 'زر iOS') }}</Label>
                                     <div class="space-y-2">
-                                        <Label class="text-xs">{{ localize('Label', 'النص') }}</Label>
+                                        <Label class="text-xs">{{ localize('Caption', 'Caption') }}</Label>
+                                        <Input v-model="form.settings.footer.ios_caption" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-xs">{{ localize('Label', 'Label') }}</Label>
                                         <Input v-model="form.settings.footer.ios_label" />
                                     </div>
                                     <div class="space-y-2">
