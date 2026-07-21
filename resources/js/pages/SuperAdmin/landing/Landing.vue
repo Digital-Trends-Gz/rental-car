@@ -486,19 +486,57 @@ const navLinks = computed(() => {
     }));
 });
 
+const normalizeInternalPath = (path: string) => {
+    let rawPath = String(path || '/').trim() || '/';
+
+    const mainDomain = 'real-rent-car-main.test';
+    const mainDomainRegex = new RegExp(`^(?:https?:)?//(?:www\\.)?${mainDomain.replace('.', '\\.')}`, 'i');
+    
+    if (mainDomainRegex.test(rawPath)) {
+        rawPath = rawPath.replace(mainDomainRegex, '');
+    }
+
+    if (/^[a-z][a-z0-9+.-]*:/i.test(rawPath) || rawPath.startsWith('//')) {
+        try {
+            const origin = typeof window !== 'undefined' ? window.location.origin : '';
+            if (origin) {
+                const parsedUrl = new URL(rawPath, origin);
+                if (parsedUrl.origin === origin) {
+                    return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}` || '/';
+                }
+            }
+        } catch {
+            return rawPath;
+        }
+
+        return rawPath;
+    }
+
+    return rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+};
 const localizedPath = (path: string) => {
-    const normalizedPath = String(path || '/').startsWith('/') ? String(path || '/') : `/${path}`;
-    const firstSegment = window.location.pathname.split('/').filter(Boolean)[0] || '';
+    const normalizedPath = normalizeInternalPath(path);
+
+    if (/^[a-z][a-z0-9+.-]*:/i.test(normalizedPath) || normalizedPath.startsWith('//')) {
+        return normalizedPath;
+    }
+
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : String(page.url || '/');
+    const firstSegment = currentPath.split('/').filter(Boolean)[0] || '';
     const normalizedLocales = availableLocales.value.map((item) => String(item || '').toLowerCase());
     const urlLocale = normalizedLocales.includes(firstSegment.toLowerCase()) ? firstSegment : '';
     const activeLocale = urlLocale || locale.value.toLowerCase().split('-')[0];
 
-    if (activeLocale && normalizedLocales.includes(activeLocale) && normalizedPath.startsWith(`/${activeLocale}/`)) {
+    if (
+        activeLocale &&
+        normalizedLocales.includes(activeLocale) &&
+        (normalizedPath === `/${activeLocale}` || normalizedPath.startsWith(`/${activeLocale}/`))
+    ) {
         return normalizedPath;
     }
 
     if (activeLocale && activeLocale !== 'en' && normalizedLocales.includes(activeLocale)) {
-        return `/${activeLocale}${normalizedPath}`;
+        return normalizedPath === '/' ? `/${activeLocale}` : `/${activeLocale}${normalizedPath}`;
     }
 
     return normalizedPath;
