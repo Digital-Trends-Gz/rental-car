@@ -207,9 +207,11 @@ interface LandingSettings {
         copyright_text: string;
         show_social_links: boolean;
         show_app_buttons: boolean;
+        android_caption: string;
         android_label: string;
         android_url: string;
         android_icon_url?: string;
+        ios_caption: string;
         ios_label: string;
         ios_url: string;
         ios_icon_url?: string;
@@ -653,8 +655,11 @@ const mobileAppStoreHref = (url?: string | null) => {
 
     return normalized || '#';
 };
-const mobileAppStoreCaption = (store: 'ios' | 'android') =>
-    store === 'ios' ? 'DOWNLOAD ON THE' : 'GET IT ON';
+const mobileAppStoreCaption = (store: 'ios' | 'android', configuredCaption?: string | null) => {
+    const caption = String(configuredCaption || '').trim();
+
+    return caption || (store === 'ios' ? 'Download on the' : 'Get it on');
+};
 const mobileAppStoreLabel = (
     store: 'ios' | 'android',
     configuredLabel?: string | null,
@@ -2672,7 +2677,7 @@ onUnmounted(() => {
                         >
                             <span class="text-left leading-tight">
                                 <span class="block text-[0.5rem] font-bold uppercase tracking-wide text-slate-500">
-                                    {{ mobileAppStoreCaption('android') }}
+                                    {{ mobileAppStoreCaption('android', landingSettings.footer.android_caption) }}
                                 </span>
                                 <span class="block text-xs font-extrabold">
                                     {{ mobileAppStoreLabel('android', landingSettings.footer.android_label) }}
@@ -2698,7 +2703,7 @@ onUnmounted(() => {
                         >
                             <span class="text-left leading-tight">
                                 <span class="block text-[0.5rem] font-bold uppercase tracking-wide text-slate-500">
-                                    {{ mobileAppStoreCaption('ios') }}
+                                    {{ mobileAppStoreCaption('ios', landingSettings.footer.ios_caption) }}
                                 </span>
                                 <span class="block text-xs font-extrabold">
                                     {{ mobileAppStoreLabel('ios', landingSettings.footer.ios_label) }}

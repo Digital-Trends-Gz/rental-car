@@ -381,9 +381,11 @@ class LandingSettingsController extends Controller
             'settings.footer.copyright_text' => ['required', 'string', 'max:255'],
             'settings.footer.show_social_links' => ['nullable', 'boolean'],
             'settings.footer.show_app_buttons' => ['nullable', 'boolean'],
+            'settings.footer.android_caption' => ['required', 'string', 'max:255'],
             'settings.footer.android_label' => ['required', 'string', 'max:255'],
             'settings.footer.android_url' => ['nullable', 'string', 'max:2000'],
             'settings.footer.android_icon_url' => ['nullable', 'string', 'max:2000'],
+            'settings.footer.ios_caption' => ['required', 'string', 'max:255'],
             'settings.footer.ios_label' => ['required', 'string', 'max:255'],
             'settings.footer.ios_url' => ['nullable', 'string', 'max:2000'],
             'settings.footer.ios_icon_url' => ['nullable', 'string', 'max:2000'],
@@ -738,6 +740,14 @@ class LandingSettingsController extends Controller
             LandingPageSettings::contentKeys()
         ));
         $rows = array_merge($rows, $this->flatten(PlanTranslations::defaultTranslationTree()));
+        $rows = array_merge($rows, [
+            'static_pages.privacy_policy.title' => 'Privacy Policy',
+            'static_pages.terms_of_use.title' => 'Terms of Use',
+            'static_pages.security_policy.title' => 'Security Policy',
+            'validation.letters_only' => 'This field must contain letters only and cannot include numbers.',
+            'validation.password.mixed' => 'The password field must contain at least one uppercase and one lowercase letter.',
+            'validation.confirmed' => 'The password field confirmation does not match.',
+        ]);
 
         foreach ($this->translationGroups() as $group) {
             $translations = trans($group, [], $locale);
@@ -1830,9 +1840,11 @@ class LandingSettingsController extends Controller
             'settings.footer.copyright_text' => ['required', 'string', 'max:255'],
             'settings.footer.show_social_links' => ['nullable', 'boolean'],
             'settings.footer.show_app_buttons' => ['nullable', 'boolean'],
+            'settings.footer.android_caption' => ['required', 'string', 'max:255'],
             'settings.footer.android_label' => ['required', 'string', 'max:255'],
             'settings.footer.android_url' => ['nullable', 'string', 'max:2000'],
             'settings.footer.android_icon_url' => ['nullable', 'string', 'max:2000'],
+            'settings.footer.ios_caption' => ['required', 'string', 'max:255'],
             'settings.footer.ios_label' => ['required', 'string', 'max:255'],
             'settings.footer.ios_url' => ['nullable', 'string', 'max:2000'],
             'settings.footer.ios_icon_url' => ['nullable', 'string', 'max:2000'],

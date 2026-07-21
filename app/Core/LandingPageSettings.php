@@ -506,9 +506,11 @@ class LandingPageSettings
                 'copyright_text' => 'All rights reserved.',
                 'show_social_links' => true,
                 'show_app_buttons' => true,
+                'android_caption' => 'Get it on',
                 'android_label' => 'Android',
                 'android_url' => '',
                 'android_icon_url' => '',
+                'ios_caption' => 'Download on the',
                 'ios_label' => 'iOS',
                 'ios_url' => '',
                 'ios_icon_url' => '',
@@ -645,6 +647,8 @@ class LandingPageSettings
         $settings['footer']['enabled'] = (bool) ($settings['footer']['enabled'] ?? true);
         $settings['footer']['show_social_links'] = (bool) ($settings['footer']['show_social_links'] ?? true);
         $settings['footer']['show_app_buttons'] = (bool) ($settings['footer']['show_app_buttons'] ?? true);
+        $settings['footer']['android_caption'] = trim((string) ($settings['footer']['android_caption'] ?? 'Get it on'));
+        $settings['footer']['ios_caption'] = trim((string) ($settings['footer']['ios_caption'] ?? 'Download on the'));
         $settings['footer']['android_icon_url'] = trim((string) ($settings['footer']['android_icon_url'] ?? ''));
         $settings['footer']['ios_icon_url'] = trim((string) ($settings['footer']['ios_icon_url'] ?? ''));
         $settings['footer']['social_links'] = self::normalizeSocialLinks($settings['footer']['social_links'] ?? []);

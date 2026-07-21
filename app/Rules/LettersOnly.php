@@ -23,11 +23,9 @@ class LettersOnly implements ValidationRule
             return;
         }
 
-        $messages = [
-            'ar' => 'This field must contain letters only and cannot include numbers.',
-            'ur' => 'This field must contain letters only and cannot include numbers.',
-        ];
+        $key = 'validation.letters_only';
+        $message = trans($key);
 
-        $fail($messages[app()->getLocale()] ?? 'This field must contain letters only and cannot include numbers.');
+        $fail($message === $key ? 'This field must contain letters only and cannot include numbers.' : $message);
     }
 }

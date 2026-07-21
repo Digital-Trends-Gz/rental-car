@@ -90,7 +90,7 @@ class RegisteredUserController extends Controller
                 'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
                 'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            ]);
+            ], $this->registrationValidationMessages());
 
             $user = User::create([
                 'name' => $validated['name'],
@@ -145,7 +145,7 @@ class RegisteredUserController extends Controller
             'tax_number' => ['required', 'string', 'max:255', new DigitsOnly()],
             'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        ], $this->registrationValidationMessages());
 
         [$phoneE164, $phoneCountryCode, $phoneNational] = $this->normalizeRegistrationPhone(
             $validated['country_iso2'] ?? null,
@@ -180,6 +180,29 @@ class RegisteredUserController extends Controller
         $request->session()->forget(self::PLAN_SELECTION_SESSION_KEY);
 
         return to_route($this->authRouteName('register.plans'));
+    }
+
+    private function registrationValidationMessages(): array
+    {
+        return [
+            'password.confirmed' => $this->translationLine(
+                'validation.confirmed',
+                'The password field confirmation does not match.',
+                ['attribute' => 'password'],
+            ),
+            'password.mixed' => $this->translationLine(
+                'validation.password.mixed',
+                'The password field must contain at least one uppercase and one lowercase letter.',
+                ['attribute' => 'password'],
+            ),
+        ];
+    }
+
+    private function translationLine(string $key, string $fallback, array $replace = []): string
+    {
+        $line = trans($key, $replace);
+
+        return $line === $key ? $fallback : $line;
     }
 
     public function plans(Request $request): Response|RedirectResponse

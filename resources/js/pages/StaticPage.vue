@@ -32,7 +32,6 @@ const seoPayload = computed(() => props.seo as any);
                 class="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10"
                 :dir="page.direction"
             >
-     
                 <h1 class="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                     {{ page.title }}
                 </h1>
@@ -110,6 +109,15 @@ const seoPayload = computed(() => props.seo as any);
     margin: 2rem 0;
     border: 0;
     border-top: 1px solid rgb(226 232 240);
-} 
-ul{list-style-type: disc !important; list-style: disc !important;} ol{list-style-type: decimal;}
+}
+
+.static-page-content :deep(ul) {
+    list-style: disc !important;
+    list-style-type: disc !important;
+}
+
+.static-page-content :deep(ol) {
+    list-style: decimal !important;
+    list-style-type: decimal !important;
+}
 </style>

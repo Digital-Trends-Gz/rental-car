@@ -287,7 +287,7 @@ const landingFooterAppButtons = computed(() => {
     return [
         {
             key: 'android',
-            caption: 'GET IT ON',
+            caption: String(landingSettings.value?.footer?.android_caption || 'Get it on').trim(),
             label: !androidLabel || androidLabel.toLowerCase() === 'android' ? 'Google Play' : androidLabel,
             href: String(landingSettings.value?.footer?.android_url || '').trim(),
             iconUrl: String(landingSettings.value?.footer?.android_icon_url || '').trim(),
@@ -295,7 +295,7 @@ const landingFooterAppButtons = computed(() => {
         },
         {
             key: 'ios',
-            caption: 'DOWNLOAD ON THE',
+            caption: String(landingSettings.value?.footer?.ios_caption || 'Download on the').trim(),
             label: !iosLabel || iosLabel.toLowerCase() === 'ios' ? 'App Store' : iosLabel,
             href: String(landingSettings.value?.footer?.ios_url || '').trim(),
             iconUrl: String(landingSettings.value?.footer?.ios_icon_url || '').trim(),

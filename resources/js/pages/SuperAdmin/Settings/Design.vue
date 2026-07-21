@@ -168,9 +168,11 @@ interface LandingSettings {
         copyright_text: string;
         show_social_links: boolean;
         show_app_buttons: boolean;
+        android_caption: string;
         android_label: string;
         android_url: string;
         android_icon_url: string;
+        ios_caption: string;
         ios_label: string;
         ios_url: string;
         ios_icon_url: string;

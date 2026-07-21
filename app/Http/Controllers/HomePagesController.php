@@ -760,6 +760,13 @@ class HomePagesController extends Controller
 
     private function localizedStaticPageTitle(string $section, string $locale): string
     {
+        $translationKey = "static_pages.{$section}.title";
+        $translatedTitle = trans($translationKey, [], $locale);
+
+        if (is_string($translatedTitle) && $translatedTitle !== $translationKey && trim($translatedTitle) !== '') {
+            return $translatedTitle;
+        }
+
         $localizedTitles = [
             'privacy_policy' => [
                 'ar' => 'سياسة الخصوصية',
