@@ -152,7 +152,7 @@ const storeIconUrl = (store: 'ios' | 'android') =>
             <section v-if="showHero" class="apps-hero relative overflow-hidden">
                 <div class="section-container grid max-w-7xl items-center gap-12 py-16 md:grid-cols-[1.05fr_0.95fr] md:gap-[60px] md:py-[86px]">
                     <div class="max-w-3xl">
-                        <h1 class="mt-5 text-3xl font-bold text-slate-950 sm:text-4xl">
+                        <h1 class="mt-5 text-5xl font-bold text-slate-950 sm:text-5xl">
                             {{ applicationsPage.hero_title }}
                         </h1>
                         <p class="mt-4 max-w-2xl text-lg text-slate-500">

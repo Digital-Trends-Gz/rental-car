@@ -81,6 +81,7 @@ interface MobileAppCard {
     subtitle: string;
     description: string;
     image_url: string;
+    localized_images?: Record<string, string>;
     icon_url: string;
     app_store_url: string;
     google_play_url: string;
@@ -600,6 +601,8 @@ const mobileAppBackgrounds = [
 const mobileApps = computed<MobileAppCard[]>(
     () => props.landingSettings.mobile_apps_section?.apps || [],
 );
+const mobileAppImageUrl = (app?: MobileAppCard | null) =>
+    app?.localized_images?.[locale.value] || app?.image_url || '';
 const activeManagementApp = ref<'tenant' | 'employee'>('tenant');
 const findMobileApp = (patterns: string[]) =>
     mobileApps.value.find((app) => {
@@ -1876,8 +1879,8 @@ onUnmounted(() => {
                                         </span>
                                     </div>
                                     <img
-                                        v-if="selectedManagementMobileApp.image_url"
-                                        :src="selectedManagementMobileApp.image_url"
+                                        v-if="mobileAppImageUrl(selectedManagementMobileApp)"
+                                        :src="mobileAppImageUrl(selectedManagementMobileApp)"
                                         :alt="selectedManagementMobileApp.title"
                                         class="relative z-10 h-[19rem] w-auto rotate-[-4deg] object-contain drop-shadow-[0_24px_36px_rgba(15,23,42,0.22)]"
                                         loading="lazy"
@@ -1918,8 +1921,8 @@ onUnmounted(() => {
                                     :style="{ background: mobileAppBackgrounds[0] }"
                                 >
                                     <img
-                                        v-if="clientMobileApp.image_url"
-                                        :src="clientMobileApp.image_url"
+                                        v-if="mobileAppImageUrl(clientMobileApp)"
+                                        :src="mobileAppImageUrl(clientMobileApp)"
                                         :alt="clientMobileApp.title"
                                         class="mt-10 h-48 w-auto rotate-[5deg] object-contain drop-shadow-[0_18px_28px_rgba(15,23,42,0.20)]"
                                         loading="lazy"

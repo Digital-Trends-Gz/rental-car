@@ -354,6 +354,8 @@ class LandingSettingsController extends Controller
             'settings.mobile_apps_section.apps.*.subtitle' => ['nullable', 'string', 'max:255'],
             'settings.mobile_apps_section.apps.*.description' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.image_url' => ['nullable', 'string', 'max:2000'],
+            'settings.mobile_apps_section.apps.*.localized_images' => ['nullable', 'array'],
+            'settings.mobile_apps_section.apps.*.localized_images.*' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.app_store_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.google_play_url' => ['nullable', 'string', 'max:2000'],
@@ -969,6 +971,18 @@ class LandingSettingsController extends Controller
                 $apps[$index]['image_url'] = $imageUrl;
             }
 
+            $localizedImages = is_array($app['localized_images'] ?? null) ? $app['localized_images'] : [];
+            foreach ($this->supportedLocaleKeys() as $locale) {
+                $localizedImageUrl = $this->latestLandingFileUrl(
+                    $landingSetting,
+                    $this->mobileAppLocaleImageCollection((int) $index, $locale)
+                );
+                if ($localizedImageUrl && trim((string) ($localizedImages[$locale] ?? '')) === '') {
+                    $localizedImages[$locale] = $localizedImageUrl;
+                }
+            }
+            $apps[$index]['localized_images'] = $localizedImages;
+
             $iconUrl = $this->latestLandingFileUrl($landingSetting, $this->mobileAppCollection((int) $index, 'icon'));
             if ($iconUrl && trim((string) ($app['icon_url'] ?? '')) === '') {
                 $apps[$index]['icon_url'] = $iconUrl;
@@ -1337,6 +1351,53 @@ class LandingSettingsController extends Controller
                     $apps[$index][$urlKey] = '';
                 }
             }
+
+            $localizedImages = is_array($app['localized_images'] ?? null) ? $app['localized_images'] : [];
+            foreach ($this->supportedLocaleKeys() as $locale) {
+                $collection = $this->mobileAppLocaleImageCollection((int) $index, $locale);
+                $tempFolders = is_array($tempFoldersByIndex[$index]['image_locales'][$locale] ?? null)
+                    ? array_values(array_filter($tempFoldersByIndex[$index]['image_locales'][$locale]))
+                    : [];
+                $removedIds = is_array($removedIdsByIndex[$index]['image_locales'][$locale] ?? null)
+                    ? array_values(array_unique(array_filter($removedIdsByIndex[$index]['image_locales'][$locale])))
+                    : [];
+                $directFile = $request->file("mobile_app_direct_files.$index.image_locales.$locale");
+
+                if ($directFile instanceof UploadedFile) {
+                    $localizedImages[$locale] = $this->storeDirectLandingFile(
+                        $landingSetting,
+                        $directFile,
+                        $collection
+                    );
+                    continue;
+                }
+
+                if (!empty($tempFolders)) {
+                    $existingIds = $landingSetting->files()->where('collection', $collection)->pluck('id')->all();
+                    $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+                }
+
+                $this->filePondService->handleFileUpdates(
+                    $landingSetting,
+                    $tempFolders,
+                    $removedIds,
+                    $collection
+                );
+
+                if (!empty($tempFolders)) {
+                    $file = $landingSetting->files()
+                        ->where('collection', $collection)
+                        ->latest('id')
+                        ->first();
+
+                    $localizedImages[$locale] = $file
+                        ? (SiteSetting::publicUrlFromPath($file->path) ?? '')
+                        : (string) ($localizedImages[$locale] ?? '');
+                } elseif (!empty($removedIds)) {
+                    $localizedImages[$locale] = '';
+                }
+            }
+            $apps[$index]['localized_images'] = $localizedImages;
         }
 
         data_set($settings, 'mobile_apps_section.apps', $apps);
@@ -1627,6 +1688,15 @@ class LandingSettingsController extends Controller
                                 $sanitized[$index][$type] = $file;
                             }
                         }
+                        if (is_array($app['image_locales'] ?? null)) {
+                            $sanitized[$index]['image_locales'] = [];
+                            foreach ($app['image_locales'] as $locale => $value) {
+                                $file = $request->file("mobile_app_direct_files.$index.image_locales.$locale");
+                                if ($file instanceof UploadedFile) {
+                                    $sanitized[$index]['image_locales'][$locale] = $file;
+                                }
+                            }
+                        }
                     }
                 }
                 $request->merge(['mobile_app_direct_files' => $sanitized]);
@@ -1705,6 +1775,8 @@ class LandingSettingsController extends Controller
             'settings.mobile_apps_section.apps.*.subtitle' => ['nullable', 'string', 'max:255'],
             'settings.mobile_apps_section.apps.*.description' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.image_url' => ['nullable', 'string', 'max:2000'],
+            'settings.mobile_apps_section.apps.*.localized_images' => ['nullable', 'array'],
+            'settings.mobile_apps_section.apps.*.localized_images.*' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.icon_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.app_store_url' => ['nullable', 'string', 'max:2000'],
             'settings.mobile_apps_section.apps.*.google_play_url' => ['nullable', 'string', 'max:2000'],
@@ -1822,17 +1894,25 @@ class LandingSettingsController extends Controller
             'mobile_app_temp_folders.*' => ['array'],
             'mobile_app_temp_folders.*.image' => ['nullable', 'array'],
             'mobile_app_temp_folders.*.image.*' => ['string'],
+            'mobile_app_temp_folders.*.image_locales' => ['nullable', 'array'],
+            'mobile_app_temp_folders.*.image_locales.*' => ['nullable', 'array'],
+            'mobile_app_temp_folders.*.image_locales.*.*' => ['string'],
             'mobile_app_temp_folders.*.icon' => ['nullable', 'array'],
             'mobile_app_temp_folders.*.icon.*' => ['string'],
             'mobile_app_removed_files' => ['nullable', 'array'],
             'mobile_app_removed_files.*' => ['array'],
             'mobile_app_removed_files.*.image' => ['nullable', 'array'],
             'mobile_app_removed_files.*.image.*' => ['integer'],
+            'mobile_app_removed_files.*.image_locales' => ['nullable', 'array'],
+            'mobile_app_removed_files.*.image_locales.*' => ['nullable', 'array'],
+            'mobile_app_removed_files.*.image_locales.*.*' => ['integer'],
             'mobile_app_removed_files.*.icon' => ['nullable', 'array'],
             'mobile_app_removed_files.*.icon.*' => ['integer'],
             'mobile_app_direct_files' => ['nullable', 'array'],
             'mobile_app_direct_files.*' => ['array'],
             'mobile_app_direct_files.*.image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
+            'mobile_app_direct_files.*.image_locales' => ['nullable', 'array'],
+            'mobile_app_direct_files.*.image_locales.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
             'mobile_app_direct_files.*.icon' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
         ]);
 
@@ -1875,7 +1955,7 @@ class LandingSettingsController extends Controller
     }
 
     /**
-     * @return array<int, array{image: array<int, array{id: int, url: string|null}>, icon: array<int, array{id: int, url: string|null}>}>
+     * @return array<int, array{image: array<int, array{id: int, url: string|null}>, image_locales: array<string, array<int, array{id: int, url: string|null}>>, icon: array<int, array{id: int, url: string|null}>}>
      */
     private function mobileAppFiles(?SiteSetting $landingSetting): array
     {
@@ -1884,8 +1964,17 @@ class LandingSettingsController extends Controller
         $files = [];
 
         foreach (array_keys($apps) as $index) {
+            $localizedImages = [];
+            foreach ($this->supportedLocaleKeys() as $locale) {
+                $localizedImages[$locale] = $this->landingFilesForCollection(
+                    $landingSetting,
+                    $this->mobileAppLocaleImageCollection((int) $index, $locale)
+                );
+            }
+
             $files[(int) $index] = [
                 'image' => $this->landingFilesForCollection($landingSetting, $this->mobileAppCollection((int) $index, 'image')),
+                'image_locales' => $localizedImages,
                 'icon' => $this->landingFilesForCollection($landingSetting, $this->mobileAppCollection((int) $index, 'icon')),
             ];
         }
@@ -1962,6 +2051,11 @@ class LandingSettingsController extends Controller
     private function mobileAppCollection(int $index, string $type): string
     {
         return 'mobile_app_' . max(0, $index) . '_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $type);
+    }
+
+    private function mobileAppLocaleImageCollection(int $index, string $locale): string
+    {
+        return $this->mobileAppCollection($index, 'image_' . $locale);
     }
 
     private function featureCardCollection(int $index): string

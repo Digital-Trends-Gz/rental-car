@@ -60,12 +60,31 @@ interface MobileAppCard {
     subtitle: string;
     description: string;
     image_url: string;
+    localized_images?: Record<string, string>;
     icon_url: string;
     app_store_url: string;
     google_play_url: string;
     badge: string;
     features: string[];
 }
+
+type MobileAppUploadState = {
+    image: string[];
+    image_locales: Record<string, string[]>;
+    icon: string[];
+};
+
+type MobileAppRemovedState = {
+    image: number[];
+    image_locales: Record<string, number[]>;
+    icon: number[];
+};
+
+type MobileAppDirectState = {
+    image: File | null;
+    image_locales: Record<string, File | null>;
+    icon: File | null;
+};
 
 interface LandingSettings {
     hero: {
@@ -176,6 +195,7 @@ const props = defineProps<{
         number,
         {
             image: Array<{ id: number; url: string }>;
+            image_locales: Record<string, Array<{ id: number; url: string }>>;
             icon: Array<{ id: number; url: string }>;
         }
     >;
@@ -200,24 +220,15 @@ const form = useForm<{
     cars_fleet_button_icon_removed_files: number[];
     footer_app_icon_temp_folders: Record<'android' | 'ios', string[]>;
     footer_app_icon_removed_files: Record<'android' | 'ios', number[]>;
-    mobile_app_temp_folders: Record<
-        number,
-        { image: string[]; icon: string[] }
-    >;
-    mobile_app_removed_files: Record<
-        number,
-        { image: number[]; icon: number[] }
-    >;
+    mobile_app_temp_folders: Record<number, MobileAppUploadState>;
+    mobile_app_removed_files: Record<number, MobileAppRemovedState>;
     hero_direct_file: File | null;
     hero_locale_direct_files: Record<string, File | null>;
     feature_card_direct_files: Record<number, File | null>;
     getting_started_direct_files: Record<number, File | null>;
     cars_fleet_button_icon_direct_file: File | null;
     footer_app_icon_direct_files: Record<'android' | 'ios', File | null>;
-    mobile_app_direct_files: Record<
-        number,
-        { image: File | null; icon: File | null }
-    >;
+    mobile_app_direct_files: Record<number, MobileAppDirectState>;
 }>({
     settings: JSON.parse(JSON.stringify(props.settings)),
     hero_temp_folders: [] as string[],
@@ -255,10 +266,10 @@ const gettingStartedRemovedFileIds = ref<Record<number, number[]>>({});
 const carsFleetButtonIconTempFolders = ref<string[]>([]);
 const carsFleetButtonIconRemovedFileIds = ref<number[]>([]);
 const mobileAppTempFolders = ref<
-    Record<number, { image: string[]; icon: string[] }>
+    Record<number, MobileAppUploadState>
 >({});
 const mobileAppRemovedFileIds = ref<
-    Record<number, { image: number[]; icon: number[] }>
+    Record<number, MobileAppRemovedState>
 >({});
 const heroDirectFile = ref<File | null>(null);
 const heroLocaleDirectFiles = ref<Record<string, File | null>>({});
@@ -278,7 +289,7 @@ const footerAppIconDirectFiles = ref<Record<'android' | 'ios', File | null>>({
     ios: null,
 });
 const mobileAppDirectFiles = ref<
-    Record<number, { image: File | null; icon: File | null }>
+    Record<number, MobileAppDirectState>
 >({});
 const enabledLocales = computed(() =>
     Array.isArray(form.settings.enabled_locales) &&
@@ -299,6 +310,21 @@ const defaultHeroLocale = computed(() =>
 const activeHeroUsesDefaultMedia = computed(
     () => activeHeroLocale.value === defaultHeroLocale.value,
 );
+const emptyMobileAppTempState = (): MobileAppUploadState => ({
+    image: [],
+    image_locales: Object.fromEntries(enabledLocales.value.map((localeCode) => [localeCode, []])),
+    icon: [],
+});
+const emptyMobileAppRemovedState = (): MobileAppRemovedState => ({
+    image: [],
+    image_locales: Object.fromEntries(enabledLocales.value.map((localeCode) => [localeCode, []])),
+    icon: [],
+});
+const emptyMobileAppDirectState = (): MobileAppDirectState => ({
+    image: null,
+    image_locales: Object.fromEntries(enabledLocales.value.map((localeCode) => [localeCode, null])),
+    icon: null,
+});
 const heroSourceMode = ref<'upload' | 'url'>(
     activeHeroUsesDefaultMedia.value
         ? props.heroFiles?.length
@@ -360,13 +386,21 @@ form.settings.mobile_apps_section.apps.forEach((app, index) => {
         app.icon_url = '';
     }
 
+    if (!app.localized_images) {
+        app.localized_images = {};
+    }
+
+    for (const localeCode of enabledLocales.value) {
+        app.localized_images[localeCode] = app.localized_images[localeCode] || '';
+    }
+
     if (!('badge' in app)) {
         app.badge = '';
     }
 
-    mobileAppTempFolders.value[index] = { image: [], icon: [] };
-    mobileAppRemovedFileIds.value[index] = { image: [], icon: [] };
-    mobileAppDirectFiles.value[index] = { image: null, icon: null };
+    mobileAppTempFolders.value[index] = emptyMobileAppTempState();
+    mobileAppRemovedFileIds.value[index] = emptyMobileAppRemovedState();
+    mobileAppDirectFiles.value[index] = emptyMobileAppDirectState();
 });
 
 form.settings.features_section.cards.forEach((card, index) => {
@@ -537,6 +571,8 @@ const handleHeroLocaleFileRemoved = (
 
 const mobileAppFileList = (index: number, type: 'image' | 'icon') =>
     props.mobileAppFiles?.[index]?.[type] || [];
+const mobileAppLocaleImageFileList = (index: number, localeCode: string) =>
+    props.mobileAppFiles?.[index]?.image_locales?.[localeCode] || [];
 
 const featureCardFileList = (index: number) =>
     props.featureFiles?.[index] || [];
@@ -641,12 +677,36 @@ const handleMobileAppFileRemoved = (
     }
 
     if (!mobileAppRemovedFileIds.value[index]) {
-        mobileAppRemovedFileIds.value[index] = { image: [], icon: [] };
+        mobileAppRemovedFileIds.value[index] = emptyMobileAppRemovedState();
     }
 
     mobileAppRemovedFileIds.value[index][type] = [
         ...new Set([
             ...(mobileAppRemovedFileIds.value[index][type] || []),
+            data.fileId,
+        ]),
+    ];
+    form.mobile_app_removed_files = JSON.parse(
+        JSON.stringify(mobileAppRemovedFileIds.value),
+    );
+};
+
+const handleMobileAppLocaleImageFileRemoved = (
+    index: number,
+    localeCode: string,
+    data: { type: string; fileId?: number },
+) => {
+    if (data.type !== 'existing' || !data.fileId) {
+        return;
+    }
+
+    if (!mobileAppRemovedFileIds.value[index]) {
+        mobileAppRemovedFileIds.value[index] = emptyMobileAppRemovedState();
+    }
+
+    mobileAppRemovedFileIds.value[index].image_locales[localeCode] = [
+        ...new Set([
+            ...(mobileAppRemovedFileIds.value[index].image_locales[localeCode] || []),
             data.fileId,
         ]),
     ];
@@ -661,10 +721,23 @@ const handleMobileAppLocalFileAdded = (
     file: File,
 ) => {
     if (!mobileAppDirectFiles.value[index]) {
-        mobileAppDirectFiles.value[index] = { image: null, icon: null };
+        mobileAppDirectFiles.value[index] = emptyMobileAppDirectState();
     }
 
     mobileAppDirectFiles.value[index][type] = file;
+    form.mobile_app_direct_files = { ...mobileAppDirectFiles.value };
+};
+
+const handleMobileAppLocaleImageLocalFileAdded = (
+    index: number,
+    localeCode: string,
+    file: File,
+) => {
+    if (!mobileAppDirectFiles.value[index]) {
+        mobileAppDirectFiles.value[index] = emptyMobileAppDirectState();
+    }
+
+    mobileAppDirectFiles.value[index].image_locales[localeCode] = file;
     form.mobile_app_direct_files = { ...mobileAppDirectFiles.value };
 };
 
@@ -680,6 +753,15 @@ const localeDisplayName = (localeCode: string) =>
 
 const heroLocaleFiles = (localeCode: string) =>
     props.heroLocalizedFiles?.[localeCode] || [];
+const activeMobileAppLocale = computed(() => {
+    const currentLocale = String(locale.value || '');
+
+    return enabledLocales.value.includes(currentLocale)
+        ? currentLocale
+        : enabledLocales.value[0] || 'en';
+});
+const mobileAppPreviewImage = (app: MobileAppCard) =>
+    app.localized_images?.[activeMobileAppLocale.value] || app.image_url;
 
 const refreshPreview = () => {
     previewNonce.value = Date.now();
@@ -792,7 +874,7 @@ const submit = () => {
             mobileAppTempFolders.value = Object.fromEntries(
                 form.settings.mobile_apps_section.apps.map((_app, index) => [
                     index,
-                    { image: [], icon: [] },
+                    emptyMobileAppTempState(),
                 ]),
             );
             featureCardTempFolders.value = Object.fromEntries(
@@ -834,13 +916,13 @@ const submit = () => {
             mobileAppRemovedFileIds.value = Object.fromEntries(
                 form.settings.mobile_apps_section.apps.map((_app, index) => [
                     index,
-                    { image: [], icon: [] },
+                    emptyMobileAppRemovedState(),
                 ]),
             );
             mobileAppDirectFiles.value = Object.fromEntries(
                 form.settings.mobile_apps_section.apps.map((_app, index) => [
                     index,
-                    { image: null, icon: null },
+                    emptyMobileAppDirectState(),
                 ]),
             );
             fileUploadRef.value?.resetFiles();
@@ -951,19 +1033,19 @@ const resetMobileAppUploadState = () => {
     mobileAppTempFolders.value = Object.fromEntries(
         form.settings.mobile_apps_section.apps.map((_app, index) => [
             index,
-            { image: [], icon: [] },
+            emptyMobileAppTempState(),
         ]),
     );
     mobileAppRemovedFileIds.value = Object.fromEntries(
         form.settings.mobile_apps_section.apps.map((_app, index) => [
             index,
-            { image: [], icon: [] },
+            emptyMobileAppRemovedState(),
         ]),
     );
     mobileAppDirectFiles.value = Object.fromEntries(
         form.settings.mobile_apps_section.apps.map((_app, index) => [
             index,
-            { image: null, icon: null },
+            emptyMobileAppDirectState(),
         ]),
     );
     form.mobile_app_temp_folders = {};
@@ -977,6 +1059,7 @@ const addMobileApp = () => {
         subtitle: '',
         description: '',
         image_url: '',
+        localized_images: Object.fromEntries(enabledLocales.value.map((localeCode) => [localeCode, ''])),
         icon_url: '',
         app_store_url: '',
         google_play_url: '',
@@ -985,9 +1068,9 @@ const addMobileApp = () => {
     });
 
     const index = form.settings.mobile_apps_section.apps.length - 1;
-    mobileAppTempFolders.value[index] = { image: [], icon: [] };
-    mobileAppRemovedFileIds.value[index] = { image: [], icon: [] };
-    mobileAppDirectFiles.value[index] = { image: null, icon: null };
+    mobileAppTempFolders.value[index] = emptyMobileAppTempState();
+    mobileAppRemovedFileIds.value[index] = emptyMobileAppRemovedState();
+    mobileAppDirectFiles.value[index] = emptyMobileAppDirectState();
 };
 const removeMobileApp = (index: number) => {
     form.settings.mobile_apps_section.apps.splice(index, 1);
@@ -1802,8 +1885,8 @@ const toggleSection = (
                                                 "
                                             />
                                             <img
-                                                v-if="app.image_url"
-                                                :src="app.image_url"
+                                                v-if="mobileAppPreviewImage(app)"
+                                                :src="mobileAppPreviewImage(app)"
                                                 alt="app image preview"
                                                 class="h-28 w-full rounded-lg border object-contain p-2"
                                             />
@@ -1908,6 +1991,84 @@ const toggleSection = (
                                             v-model="app.image_url"
                                             placeholder="https://..."
                                         />
+                                    </div>
+
+                                    <div class="space-y-3 rounded-lg border border-dashed p-3">
+                                        <Label>{{
+                                            localize(
+                                                'Language Specific Images',
+                                                'صور حسب اللغة',
+                                            )
+                                        }}</Label>
+                                        <div class="grid gap-3 md:grid-cols-2">
+                                            <div
+                                                v-for="localeCode in enabledLocales"
+                                                :key="`mobile-app-${appIndex}-locale-${localeCode}`"
+                                                class="space-y-2"
+                                            >
+                                                <Label>
+                                                    {{ localeDisplayName(localeCode) }}
+                                                </Label>
+                                                <FileUpload
+                                                    v-model="
+                                                        mobileAppTempFolders[
+                                                            appIndex
+                                                        ].image_locales[
+                                                            localeCode
+                                                        ]
+                                                    "
+                                                    :initial-files="
+                                                        mobileAppLocaleImageFileList(
+                                                            appIndex,
+                                                            localeCode,
+                                                        )
+                                                    "
+                                                    :allow-multiple="false"
+                                                    :max-files="1"
+                                                    :instant-upload="false"
+                                                    :max-file-size="1024 * 1024 * 10"
+                                                    :allowed-file-types="[
+                                                        'image/jpeg',
+                                                        'image/jpg',
+                                                        'image/png',
+                                                        'image/svg+xml',
+                                                    ]"
+                                                    :collection="`mobile_app_${appIndex}_image_${localeCode}`"
+                                                    theme="light"
+                                                    width="100%"
+                                                    @file-removed="
+                                                        (data) =>
+                                                            handleMobileAppLocaleImageFileRemoved(
+                                                                appIndex,
+                                                                localeCode,
+                                                                data,
+                                                            )
+                                                    "
+                                                    @local-file-added="
+                                                        (file) =>
+                                                            handleMobileAppLocaleImageLocalFileAdded(
+                                                                appIndex,
+                                                                localeCode,
+                                                                file,
+                                                            )
+                                                    "
+                                                />
+                                                <img
+                                                    v-if="
+                                                        app.localized_images?.[
+                                                            localeCode
+                                                        ]
+                                                    "
+                                                    :src="
+                                                        app.localized_images[
+                                                            localeCode
+                                                        ]
+                                                    "
+                                                    :alt="`${localeDisplayName(localeCode)} app image preview`"
+                                                    class="h-20 w-full rounded-lg border object-contain p-2"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="grid gap-3 md:grid-cols-2">

@@ -956,6 +956,7 @@ class LandingPageSettings
             $subtitle = trim((string) ($item['subtitle'] ?? ''));
             $description = trim((string) ($item['description'] ?? ''));
             $imageUrl = trim((string) ($item['image_url'] ?? ''));
+            $localizedImages = self::normalizeLocalizedImages($item['localized_images'] ?? []);
             $iconUrl = trim((string) ($item['icon_url'] ?? ''));
             $appStoreUrl = trim((string) ($item['app_store_url'] ?? ''));
             $googlePlayUrl = trim((string) ($item['google_play_url'] ?? ''));
@@ -972,6 +973,7 @@ class LandingPageSettings
                 'subtitle' => $subtitle,
                 'description' => $description,
                 'image_url' => $imageUrl,
+                'localized_images' => $localizedImages,
                 'icon_url' => $iconUrl,
                 'app_store_url' => $appStoreUrl,
                 'google_play_url' => $googlePlayUrl,

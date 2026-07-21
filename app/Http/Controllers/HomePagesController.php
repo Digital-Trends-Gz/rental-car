@@ -879,6 +879,18 @@ class HomePagesController extends Controller
                 $apps[$index]['image_url'] = $imageUrl;
             }
 
+            $localizedImages = is_array($app['localized_images'] ?? null) ? $app['localized_images'] : [];
+            foreach (LandingPageSettings::supportedLocaleKeys() as $locale) {
+                $localizedImageUrl = $this->latestLandingFileUrl(
+                    $landingSetting,
+                    'mobile_app_'.max(0, (int) $index).'_image_'.preg_replace('/[^A-Za-z0-9_-]/', '_', $locale)
+                );
+                if ($this->shouldUseUploadedImageUrl($localizedImages[$locale] ?? null, $localizedImageUrl)) {
+                    $localizedImages[$locale] = $localizedImageUrl;
+                }
+            }
+            $apps[$index]['localized_images'] = $localizedImages;
+
             $iconUrl = $this->latestLandingFileUrl($landingSetting, 'mobile_app_'.max(0, (int) $index).'_icon');
             if ($this->shouldUseUploadedImageUrl($app['icon_url'] ?? null, $iconUrl)) {
                 $apps[$index]['icon_url'] = $iconUrl;
