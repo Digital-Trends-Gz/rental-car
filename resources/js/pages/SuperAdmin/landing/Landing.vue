@@ -557,7 +557,7 @@ const brokenCarTenantLogos = ref<Record<number, boolean>>({});
 const brokenLandingImages = ref<Record<string, boolean>>({});
 const currentYear = new Date().getFullYear();
 const registerUrl = mainRegister().url;
-const plansUrl = computed(() => localizedPath('/plans'));
+const plansUrl = computed(() => localizedPath('/pricing-plans'));
 const navigationCtaLabel = computed(
     () => props.landingSettings.navigation?.cta_label || 'Start Free Trial',
 );
