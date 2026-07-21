@@ -110,5 +110,6 @@ const seoPayload = computed(() => props.seo as any);
     margin: 2rem 0;
     border: 0;
     border-top: 1px solid rgb(226 232 240);
-} ul{list-style-type: disc !important;} ol{list-style-type: decimal;}
+} 
+ul{list-style-type: disc !important; list-style: disc !important;} ol{list-style-type: decimal;}
 </style>
