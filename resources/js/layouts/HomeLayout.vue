@@ -29,7 +29,9 @@ const tenantSiteSettings = computed(() => $page.props.tenant_site_settings ?? nu
 const availableLocales = computed<string[]>(() =>
     Array.isArray($page.props?.available_locales) && $page.props.available_locales.length
         ? $page.props.available_locales
-        : ['en']
+        : Array.isArray($page.props?.availableLocales) && $page.props.availableLocales.length
+            ? $page.props.availableLocales
+            : ['en']
 );
 const isTenant = computed(() => !!currentTenant.value);
 const isLandingShell = computed(() => props.shellVariant === 'landing');
@@ -38,6 +40,11 @@ const mobileOpen = ref(false);
 const showScrollTop = ref(false);
 const appBranding = computed(() => $page.props.app_branding ?? {});
 const landingSettings = computed(() => $page.props.landingSettings ?? {});
+const translatedLandingValue = (key: string, fallback = '') => {
+    const value = t(key);
+
+    return value === key ? fallback : value;
+};
 const hiddenLandingNavHrefs = new Set(['#how-it-works', '#faq']);
 const landingPagesWithoutClientsNav = new Set([
     '/applications',
@@ -72,11 +79,12 @@ const fallbackLocaleNames: Record<string, string> = {
 
 const localeDisplayName = (localeCode: string) => {
     const normalizedLocale = String(localeCode || '').toLowerCase();
+    const translatedName = translatedLandingValue(`locale_switcher.language_names.${normalizedLocale}`);
     const configuredName = String(
         landingSettings.value?.locale_switcher?.language_names?.[normalizedLocale] || '',
     ).trim();
 
-    return configuredName || fallbackLocaleNames[normalizedLocale] || normalizedLocale.toUpperCase();
+    return translatedName || configuredName || fallbackLocaleNames[normalizedLocale] || normalizedLocale.toUpperCase();
 };
 
 const routeHelpers = computed(() => {

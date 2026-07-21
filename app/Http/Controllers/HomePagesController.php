@@ -396,7 +396,24 @@ class HomePagesController extends Controller
             }
         }
 
-        return inertia('Fleet', compact('cars', 'makes', 'fuelTypes', 'years', 'filters', 'tenants', 'branches', 'seo', 'landingSettings', 'availableLocales'));
+        $props = [
+            'cars' => $cars,
+            'makes' => $makes,
+            'fuelTypes' => $fuelTypes,
+            'years' => $years,
+            'filters' => $filters,
+            'tenants' => $tenants,
+            'branches' => $branches,
+            'seo' => $seo,
+            'landingSettings' => $landingSettings,
+        ];
+
+        if ($availableLocales !== null) {
+            $props['availableLocales'] = $availableLocales;
+            $props['available_locales'] = $availableLocales;
+        }
+
+        return inertia('Fleet', $props);
     }
 
     public function applications()
@@ -705,7 +722,7 @@ class HomePagesController extends Controller
             ? [null, null]
             : $this->landingShellSettings();
 
-        return inertia('StaticPage', [
+        $props = [
             'page' => [
                 'section' => $section,
                 'title' => $this->localizedStaticPageTitle($section, $locale),
@@ -714,10 +731,18 @@ class HomePagesController extends Controller
                 'direction' => $this->staticPageDirection($locale, $localization),
             ],
             'seo' => TenantSeoResolver::forPage(TenantContext::get(), str_replace('_', '-', $section)),
-            'landingSettings' => $landingSettings,
-            'availableLocales' => $availableLocales,
-            'available_locales' => $availableLocales,
-        ]);
+        ];
+
+        if ($landingSettings !== null) {
+            $props['landingSettings'] = $landingSettings;
+        }
+
+        if ($availableLocales !== null) {
+            $props['availableLocales'] = $availableLocales;
+            $props['available_locales'] = $availableLocales;
+        }
+
+        return inertia('StaticPage', $props);
     }
 
     private function staticPageSettings(): array
