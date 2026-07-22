@@ -1650,10 +1650,9 @@ class LandingSettingsController extends Controller
                     $directFile,
                     $collection
                 );
-                continue;
             }
 
-            if (!empty($removedIds)) {
+            if (!$directFile instanceof UploadedFile && !empty($removedIds)) {
                 $this->filePondService->handleFileUpdates(
                     $landingSetting,
                     [],

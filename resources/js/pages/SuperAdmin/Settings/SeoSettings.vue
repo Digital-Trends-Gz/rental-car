@@ -284,7 +284,7 @@ function seoPageLabel(pageKey: SeoPageKey): string {
 }
 
 function seoPageFallbackLabel(pageKey: SeoPageKey): string {
-    const labels: Record<Exclude<SeoPageKey, 'home' | 'fleet'>, { en: string; ar: string }> = {
+    const labels: Partial<Record<SeoPageKey, { en: string; ar: string }>> = {
         applications: { en: 'Applications Page', ar: '\u0635\u0641\u062d\u0629 \u0627\u0644\u062a\u0637\u0628\u064a\u0642\u0627\u062a' },
         plans: { en: 'Pricing Plans Page', ar: '\u0635\u0641\u062d\u0629 \u0627\u0644\u062e\u0637\u0637 \u0648\u0627\u0644\u0623\u0633\u0639\u0627\u0631' },
         about: { en: 'About Page', ar: '\u0635\u0641\u062d\u0629 \u0645\u0646 \u0646\u062d\u0646' },
@@ -294,7 +294,9 @@ function seoPageFallbackLabel(pageKey: SeoPageKey): string {
         'security-policy': { en: 'Security Policy', ar: '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u0623\u0645\u0627\u0646' },
     };
 
-    return localize(labels[pageKey].en, labels[pageKey].ar);
+    const label = labels[pageKey] || { en: pageKey.replace(/-/g, ' '), ar: pageKey.replace(/-/g, ' ') };
+
+    return localize(label.en, label.ar);
 }
 
 function seoPageDefaultTitle(pageKey: SeoPageKey, localeKey = selectedSeoLocale.value): string {
@@ -317,7 +319,7 @@ function seoPageDefaultDescription(pageKey: SeoPageKey, localeKey = selectedSeoL
     }
 
     if (pageKey !== 'home' && pageKey !== 'fleet') {
-        const descriptions: Record<Exclude<SeoPageKey, 'home' | 'fleet'>, { en: string; ar: string }> = {
+        const descriptions: Partial<Record<SeoPageKey, { en: string; ar: string }>> = {
             applications: {
                 en: 'Explore the mobile apps connected to the Car4U rental platform.',
                 ar: '\u062a\u0639\u0631\u0641 \u0639\u0644\u0649 \u062a\u0637\u0628\u064a\u0642\u0627\u062a \u0627\u0644\u0645\u0648\u0628\u0627\u064a\u0644 \u0627\u0644\u0645\u0631\u062a\u0628\u0637\u0629 \u0628\u0645\u0646\u0635\u0629 Car4U \u0644\u0644\u062a\u0623\u062c\u064a\u0631.',
@@ -348,7 +350,12 @@ function seoPageDefaultDescription(pageKey: SeoPageKey, localeKey = selectedSeoL
             },
         };
 
-        return localize(descriptions[pageKey].en, descriptions[pageKey].ar);
+        const description = descriptions[pageKey] || {
+            en: `Manage SEO content for ${seoPageLabel(pageKey)}.`,
+            ar: `Manage SEO content for ${seoPageLabel(pageKey)}.`,
+        };
+
+        return localize(description.en, description.ar);
     }
 
     return pageKey === 'home'
@@ -366,7 +373,7 @@ function seoPageDefaultFocusKeyword(pageKey: SeoPageKey, localeKey = selectedSeo
 }
 
 function seoPageFallbackFocusKeyword(pageKey: SeoPageKey, localeKey = selectedSeoLocale.value): string {
-    const values: Record<Exclude<SeoPageKey, 'home' | 'fleet'>, string> = {
+    const values: Partial<Record<SeoPageKey, string>> = {
         applications: localeKey === 'ar' ? '\u062a\u0637\u0628\u064a\u0642\u0627\u062a \u062a\u0623\u062c\u064a\u0631 \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a' : 'car rental apps',
         plans: localeKey === 'ar' ? '\u062e\u0637\u0637 \u062a\u0623\u062c\u064a\u0631 \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a' : 'car rental pricing',
         about: localeKey === 'ar' ? '\u0645\u0646\u0635\u0629 \u062a\u0623\u062c\u064a\u0631 \u0633\u064a\u0627\u0631\u0627\u062a' : 'car rental platform',
@@ -376,7 +383,7 @@ function seoPageFallbackFocusKeyword(pageKey: SeoPageKey, localeKey = selectedSe
         'security-policy': localeKey === 'ar' ? '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u0623\u0645\u0627\u0646' : 'security policy',
     };
 
-    return values[pageKey];
+    return values[pageKey] || pageKey.replace(/-/g, ' ');
 }
 
 function seoPageDefaultSlug(pageKey: SeoPageKey): string {
