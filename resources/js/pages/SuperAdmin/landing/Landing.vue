@@ -608,6 +608,8 @@ const footerLinkColumns = computed(() => [
     ],
 ]);
 const footerDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));
+const appStoreButtonDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));
+const appStoreButtonTextClass = computed(() => (isRtlLocale.value ? 'text-right' : 'text-left'));
 
 const mobileOpen = ref(false);
 const scrolled = ref(false);

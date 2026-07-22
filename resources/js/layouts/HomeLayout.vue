@@ -209,8 +209,33 @@ const translatedLabel = (key: string, fallback: string) => {
 
     return value === key ? fallback : value;
 };
-const footerNavLabel = (key: string, fallback: string) =>
-    String(landingSettings.value?.footer?.[key] || '').trim() || fallback;
+const activeLocaleBase = computed(() => String(locale.value || 'en').toLowerCase().split('-')[0]);
+const localizedFallback = (fallback: string, localized: Partial<Record<string, string>> = {}) =>
+    localized[activeLocaleBase.value] || fallback;
+const translatedLandingLabel = (key: string, fallback: string, localized: Partial<Record<string, string>> = {}) => {
+    const localizedValue = localized[activeLocaleBase.value];
+    if (localizedValue) {
+        return localizedValue;
+    }
+
+    const translated = translatedLabel(`welcome.${key}`, '');
+
+    return translated || fallback;
+};
+const footerNavLabel = (key: string, fallback: string, localized: Partial<Record<string, string>> = {}) => {
+    const translated = translatedLandingLabel(`footer_${key.replace(/^nav_/, '')}`, fallback, localized);
+
+    return translated || String(landingSettings.value?.footer?.[key] || '').trim() || fallback;
+};
+const footerLabels = {
+    cars: () => footerNavLabel('nav_cars', 'Cars', { ar: '\u0645\u0639\u0631\u0636 \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a' }),
+    features: () => footerNavLabel('nav_features', 'Features', { ar: '\u0627\u0644\u0645\u0645\u064a\u0632\u0627\u062a' }),
+    application: () => footerNavLabel('nav_application', 'Application', { ar: '\u062a\u0637\u0628\u064a\u0642\u0627\u062a \u0627\u0644\u0645\u0648\u0628\u0627\u064a\u0644' }),
+    plans: () => footerNavLabel('nav_plans', 'Plans', { ar: '\u062e\u0637\u0637 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643' }),
+    privacy: () => footerNavLabel('nav_privacy', 'Privacy', { ar: '\u0627\u0644\u062e\u0635\u0648\u0635\u064a\u0629' }),
+    terms: () => footerNavLabel('nav_terms', 'Terms', { ar: '\u0627\u0644\u0634\u0631\u0648\u0637' }),
+    securityPolicy: () => footerNavLabel('nav_security_policy', 'Security Policy', { ar: '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u0623\u0645\u0627\u0646' }),
+};
 const navigationNavLabel = (key: string, fallback: string) =>
     String(landingSettings.value?.navigation?.[key] || '').trim() || fallback;
 const landingNavLabel = (href: string, fallback: string) => {
@@ -220,19 +245,19 @@ const landingNavLabel = (href: string, fallback: string) => {
         .replace(/^\/pricing-plans$/, '#pricing');
 
     if (baseHref === '#cars' || baseHref === '/#cars') {
-        return footerNavLabel('nav_cars', fallback);
+        return footerLabels.cars();
     }
 
     if (baseHref === '#features' || baseHref === '/#features') {
-        return footerNavLabel('nav_features', fallback);
+        return footerLabels.features();
     }
 
     if (baseHref === '#application' || baseHref === '/#application') {
-        return footerNavLabel('nav_application', fallback);
+        return footerLabels.application();
     }
 
     if (baseHref === '#pricing' || baseHref === '/#pricing') {
-        return footerNavLabel('nav_plans', fallback);
+        return footerLabels.plans();
     }
 
     if (baseHref === '#clients' || baseHref === '/#clients') {
@@ -244,15 +269,15 @@ const landingNavLabel = (href: string, fallback: string) => {
     }
 
     if (baseHref === '/privacy-policy') {
-        return footerNavLabel('nav_privacy', fallback);
+        return footerLabels.privacy();
     }
 
     if (baseHref === '/terms-of-use' || baseHref === '/terms-conditions') {
-        return footerNavLabel('nav_terms', fallback);
+        return footerLabels.terms();
     }
 
     if (baseHref === '/security-policy') {
-        return footerNavLabel('nav_security_policy', fallback);
+        return footerLabels.securityPolicy();
     }
 
     return fallback;
@@ -272,17 +297,15 @@ const isClientsNavLink = (link: { label: string; href: string }) => {
 };
 const landingStaticPageLinks = computed(() => [
     {
-        label: footerNavLabel('nav_privacy', translatedLabel('welcome.footer_privacy', 'Privacy')),
+        label: footerLabels.privacy(),
         href: localizedLandingPath('/privacy-policy'),
     },
     {
-        label: footerNavLabel('nav_terms', translatedLabel('welcome.footer_terms', 'Terms')),
+        label: footerLabels.terms(),
         href: localizedLandingPath('/terms-of-use'),
     },
     {
-        label: ['ar', 'ur'].includes(String(locale.value || '').toLowerCase().split('-')[0])
-            ? 'سياسة الأمان'
-            : 'Security Policy',
+        label: footerLabels.securityPolicy(),
         href: localizedLandingPath('/security-policy'),
     },
 ]);
@@ -321,7 +344,7 @@ const landingNavLinks = computed(() => {
         !normalizedLinks.some((link) => ['/applications', '/car-rental-apps', '#application'].includes(link.href))
     ) {
         const featuresIndex = normalizedLinks.findIndex((link) => link.href === '#features');
-        const applicationLink = { label: footerNavLabel('nav_application', 'Application'), href: '#application' };
+        const applicationLink = { label: footerLabels.application(), href: '#application' };
 
         if (featuresIndex >= 0) {
             normalizedLinks.splice(featuresIndex + 1, 0, applicationLink);
@@ -346,11 +369,11 @@ const landingFooterNavLinks = computed(() => {
     const links: Array<{ label: string; href: string }> = [];
 
     if (landingSettings.value?.mobile_apps_section?.enabled !== false) {
-        links.push({ label: 'Application', href: resolveLandingHref('#application') });
+        links.push({ label: footerLabels.application(), href: resolveLandingHref('#application') });
     }
 
     if (landingSettings.value?.plans_comparison_page?.enabled !== false) {
-        links.push({ label: 'Plans', href: resolveLandingHref('#pricing') });
+        links.push({ label: footerLabels.plans(), href: resolveLandingHref('#pricing') });
     }
 
     links.push(...landingStaticPageLinks.value);
@@ -358,16 +381,16 @@ const landingFooterNavLinks = computed(() => {
     return links;
 });
 const landingFooterNavColumns = computed(() => [
-    [{ label: footerNavLabel('nav_privacy', 'Privacy'), href: localizedLandingPath('/privacy-policy') }],
-    [{ label: footerNavLabel('nav_terms', 'Terms'), href: localizedLandingPath('/terms-of-use') }],
-    [{ label: footerNavLabel('nav_security_policy', 'Security Policy'), href: localizedLandingPath('/security-policy') }],
+    [{ label: footerLabels.privacy(), href: localizedLandingPath('/privacy-policy') }],
+    [{ label: footerLabels.terms(), href: localizedLandingPath('/terms-of-use') }],
+    [{ label: footerLabels.securityPolicy(), href: localizedLandingPath('/security-policy') }],
     [
-        { label: footerNavLabel('nav_cars', 'Cars'), href: resolveLandingHref('#cars') },
-        { label: footerNavLabel('nav_features', 'Features'), href: resolveLandingHref('#features') },
+        { label: footerLabels.cars(), href: resolveLandingHref('#cars') },
+        { label: footerLabels.features(), href: resolveLandingHref('#features') },
     ],
     [
-        { label: footerNavLabel('nav_application', 'Application'), href: resolveLandingHref('#application') },
-        { label: footerNavLabel('nav_plans', 'Plans'), href: resolveLandingHref('#pricing') },
+        { label: footerLabels.application(), href: resolveLandingHref('#application') },
+        { label: footerLabels.plans(), href: resolveLandingHref('#pricing') },
     ],
 ]);
 const landingFooterSocialLinks = computed(() => {
@@ -398,7 +421,7 @@ const landingFooterAppButtons = computed(() => {
     return [
         {
             key: 'android',
-            caption: String(landingSettings.value?.footer?.android_caption || 'Get it on').trim(),
+            caption: localizedFallback('Get it on', { ar: '\u062d\u0645\u0644\u0647 \u0645\u0646' }),
             label: !androidLabel || androidLabel.toLowerCase() === 'android' ? 'Google Play' : androidLabel,
             href: String(landingSettings.value?.footer?.android_url || '').trim(),
             iconUrl: String(landingSettings.value?.footer?.android_icon_url || '').trim(),
@@ -406,7 +429,7 @@ const landingFooterAppButtons = computed(() => {
         },
         {
             key: 'ios',
-            caption: String(landingSettings.value?.footer?.ios_caption || 'Download on the').trim(),
+            caption: localizedFallback('Download on the', { ar: '\u0642\u0645 \u0628\u0627\u0644\u062a\u0646\u0632\u064a\u0644 \u0645\u0646' }),
             label: !iosLabel || iosLabel.toLowerCase() === 'ios' ? 'App Store' : iosLabel,
             href: String(landingSettings.value?.footer?.ios_url || '').trim(),
             iconUrl: String(landingSettings.value?.footer?.ios_icon_url || '').trim(),
