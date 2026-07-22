@@ -712,8 +712,8 @@ onBeforeUnmount(() => {
                         class="mt-5 border-t border-slate-200 pt-4 text-center text-xs text-muted-foreground md:mt-3 md:border-0 md:pt-0 md:text-sm"
                     >
                         <span class="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
-                            <span dir="ltr">&copy; {{ currentYear }} {{ appName }}.</span>
                             <span :dir="footerDirection">{{ landingFooterCopyright }}</span>
+                            <span dir="ltr">&copy; {{ currentYear }} {{ appName }}.</span>
                         </span>
                     </p>
                 </div>

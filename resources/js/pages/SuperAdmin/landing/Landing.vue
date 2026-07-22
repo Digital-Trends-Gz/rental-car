@@ -2832,8 +2832,8 @@ onUnmounted(() => {
                     class="border-t border-slate-200 pt-4 text-center text-xs text-muted-foreground md:border-0 md:pt-0"
                 >
                     <span class="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
-                        <span dir="ltr">&copy; {{ currentYear }} {{ appName }}.</span>
                         <span :dir="footerDirection">{{ footerCopyrightText }}</span>
+                        <span dir="ltr">&copy; {{ currentYear }} {{ appName }}.</span>
                     </span>
                 </p>
             </div>
