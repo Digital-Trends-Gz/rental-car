@@ -706,21 +706,15 @@ const mobileApps = computed<MobileAppCard[]>(
 const mobileAppImageUrl = (app?: MobileAppCard | null) =>
     app?.localized_images?.[locale.value] || app?.image_url || '';
 const activeManagementApp = ref<'tenant' | 'employee'>('tenant');
-const findMobileApp = (patterns: string[]) =>
-    mobileApps.value.find((app) => {
-        const title = String(app.title || '').toLowerCase();
-        const subtitle = String(app.subtitle || '').toLowerCase();
-
-        return patterns.some((pattern) => title.includes(pattern) || subtitle.includes(pattern));
-    }) || null;
+const mobileAppByIndex = (index: number) => mobileApps.value[index] || null;
 const clientMobileApp = computed<MobileAppCard | null>(
-    () => findMobileApp(['client', 'customer', 'renter']) || mobileApps.value[2] || null,
+    () => mobileAppByIndex(2),
 );
 const employeeMobileApp = computed<MobileAppCard | null>(
-    () => findMobileApp(['employee', 'team', 'staff']) || mobileApps.value[1] || null,
+    () => mobileAppByIndex(1),
 );
 const tenantMobileApp = computed<MobileAppCard | null>(
-    () => findMobileApp(['tenant', 'owner', 'fleet owner']) || mobileApps.value[0] || null,
+    () => mobileAppByIndex(0),
 );
 const managementMobileApp = computed<MobileAppCard | null>(
     () =>
@@ -743,6 +737,9 @@ const managementFeatures = computed(() => {
 
     return Array.from(new Set(features)).slice(0, 4);
 });
+const managementModeTitle = (app?: MobileAppCard | null) => app?.title || '';
+const managementModeText = (app?: MobileAppCard | null) =>
+    app?.badge || app?.subtitle || '';
 const clientJourneySteps = computed(() => {
     const features = (clientMobileApp.value?.features || [])
         .map((feature) => String(feature || '').trim())
@@ -1977,10 +1974,10 @@ onUnmounted(() => {
                                     <div class="absolute -top-20 -right-16 h-44 w-44 rounded-full bg-cyan-300/15"></div>
                                     <div class="absolute top-14 left-5 z-10 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-[0_10px_24px_rgba(16,24,40,0.10)]">
                                         <strong class="block text-xs font-extrabold text-slate-950">
-                                            Owner mode
+                                            {{ managementModeTitle(tenantMobileApp) }}
                                         </strong>
                                         <span class="text-[0.65rem] text-slate-500">
-                                            Analytics & control
+                                            {{ managementModeText(tenantMobileApp) }}
                                         </span>
                                     </div>
                                     <img
@@ -2008,10 +2005,10 @@ onUnmounted(() => {
                                     </div>
                                     <div class="absolute right-4 bottom-14 z-10 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-[0_10px_24px_rgba(16,24,40,0.10)]">
                                         <strong class="block text-xs font-extrabold text-slate-950">
-                                            Employee mode
+                                            {{ managementModeTitle(employeeMobileApp) }}
                                         </strong>
                                         <span class="text-[0.65rem] text-slate-500">
-                                            Tasks & handovers
+                                            {{ managementModeText(employeeMobileApp) }}
                                         </span>
                                     </div>
                                 </div>

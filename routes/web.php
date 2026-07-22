@@ -38,7 +38,7 @@ Route::domain('{subdomain}.' . $baseDomain)->group(function () use ($localizedGr
             Route::get('/contact', [HomePagesController::class, 'contact'])->name('tenant.contact');
             Route::get('/privacy-policy', [HomePagesController::class, 'privacyPolicy'])->name('tenant.privacy-policy');
             Route::get('/terms-of-use', [HomePagesController::class, 'termsOfUse'])->name('tenant.terms-of-use');
-            Route::get('/terms-conditions', [HomePagesController::class, 'termsOfUse'])->name('tenant.terms-conditions');
+            Route::get('/terms-conditions', [HomePagesController::class, 'termsConditionsRedirect'])->name('tenant.terms-conditions');
             Route::get('/security-policy', [HomePagesController::class, 'securityPolicy'])->name('tenant.security-policy');
             Route::post('/contact/guestContact', [HomePagesController::class, 'guestContact'])->name('tenant.contact.guestContact');
 
@@ -99,7 +99,7 @@ Route::domain($baseDomain)->group(function () use ($localizedGroup) {
             Route::get('/contact', [HomePagesController::class, 'contact'])->name('contact');
             Route::get('/privacy-policy', [HomePagesController::class, 'privacyPolicy'])->name('privacy-policy');
             Route::get('/terms-of-use', [HomePagesController::class, 'termsOfUse'])->name('terms-of-use');
-            Route::get('/terms-conditions', [HomePagesController::class, 'termsOfUse'])->name('terms-conditions');
+            Route::get('/terms-conditions', [HomePagesController::class, 'termsConditionsRedirect'])->name('terms-conditions');
             Route::get('/security-policy', [HomePagesController::class, 'securityPolicy'])->name('security-policy');
         });
         Route::post('/contact/guestContact', [HomePagesController::class, 'landingContact'])->name('contact.guestContact');
