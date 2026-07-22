@@ -675,10 +675,43 @@ const contactQuickLinksTitle = computed(() => {
         ? translated
         : localizedFallback('Quick Links', { ar: '\u0631\u0648\u0627\u0628\u0637 \u0645\u0641\u064a\u062f\u0629' });
 });
-const contactQuickLinkLabel = (link: QuickLinkItem) => {
-    const href = String(link.href || '').trim().toLowerCase();
+const comparableQuickLinkHref = (href: string) => {
+    const value = String(href || '').trim();
 
-    if (href === '#cars' || href === '/fleet' || href.endsWith('/fleet')) {
+    if (!value) {
+        return '';
+    }
+
+    if (value.startsWith('#')) {
+        return value.toLowerCase();
+    }
+
+    let path = value;
+
+    try {
+        const parsed = new URL(value, typeof window !== 'undefined' ? window.location.origin : 'https://car4u.net');
+        path = parsed.hash && (!parsed.pathname || parsed.pathname === '/') ? parsed.hash : parsed.pathname;
+    } catch {
+        path = value;
+    }
+
+    const [pathOnly] = path.toLowerCase().split(/[?#]/);
+    const trimmedPath = pathOnly.replace(/\/+$/, '') || '/';
+    const firstSegment = trimmedPath.split('/').filter(Boolean)[0] || '';
+    const normalizedLocales = availableLocales.value.map((item) => String(item || '').toLowerCase());
+
+    if (normalizedLocales.includes(firstSegment)) {
+        const withoutLocale = trimmedPath.replace(new RegExp(`^/${firstSegment}(?=/|$)`), '') || '/';
+
+        return withoutLocale === '/' ? withoutLocale : withoutLocale.replace(/\/+$/, '');
+    }
+
+    return trimmedPath;
+};
+const contactQuickLinkLabel = (link: QuickLinkItem) => {
+    const href = comparableQuickLinkHref(link.href);
+
+    if (href === '#cars' || href === '/fleet') {
         return footerLabels.cars();
     }
 
