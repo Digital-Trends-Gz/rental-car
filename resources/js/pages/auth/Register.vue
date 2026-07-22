@@ -7,7 +7,7 @@ import { useTrans } from '@/composables/useTrans';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { store as mainRegisterStore } from '@/routes/register';
-import { store as tenantRegisterStore } from '@/routes/tenant/register';
+import { store as tenantRegisterStore } from '@/routes/tenant/register/index.ts';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { Home } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';

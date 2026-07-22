@@ -325,7 +325,7 @@ const storeIconUrl = (store: 'ios' | 'android') =>
                                 <span>{{ feature }}</span>
                             </li>
                         </ul>
-                        <div class="mt-7 flex flex-wrap gap-3">
+                        <div class="mt-7 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
                             <a href="#" class="store-button">
                                 <img
                                     v-if="storeIconUrl('ios')"
@@ -563,11 +563,12 @@ const storeIconUrl = (store: 'ios' | 'android') =>
 .store-button {
     display: inline-flex;
     min-height: 3.2rem;
-    min-width: 11.5rem;
+    min-width: 0;
+    width: 100%;
     align-items: center;
     justify-content: space-between;
     flex-direction: row-reverse;
-    gap: 1rem;
+    gap: 0.65rem;
     border-radius: 13px;
     border: 1px solid #f1f5f9;
     background: white;
@@ -591,6 +592,7 @@ const storeIconUrl = (store: 'ios' | 'android') =>
 .store-button span {
     text-align: start;
     line-height: 1.1;
+    min-width: 0;
 }
 
 .store-button small {
@@ -599,6 +601,28 @@ const storeIconUrl = (store: 'ios' | 'android') =>
     font-weight: 700;
     color: #818899;
     text-transform: uppercase;
+}
+
+@media (min-width: 640px) {
+    .store-button {
+        min-width: 11.5rem;
+        width: auto;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .store-button {
+        padding-inline: 0.75rem;
+    }
+
+    .store-button span {
+        font-size: 0.76rem;
+    }
+
+    .store-button small {
+        font-size: 0.48rem;
+    }
 }
 
 @media (max-width: 767px) {

@@ -5,7 +5,7 @@ import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { usePage } from '@inertiajs/vue3';
 import { about as mainAbout, fleet as mainFleet } from '@/routes';
-import { about as tenantAbout, fleet as tenantFleet } from '@/routes/tenant';
+import { about as tenantAbout, fleet as tenantFleet } from '@/routes/tenant/index.ts';
 import { computed } from 'vue';
 
 interface Car {

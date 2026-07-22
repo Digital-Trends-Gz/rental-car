@@ -4,8 +4,8 @@ import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { useForm } from '@inertiajs/vue3';
 import { fleet as mainFleet, about as mainAbout } from '@/routes';
-import { about as tenantAbout, fleet as tenantFleet } from '@/routes/tenant';
-import { guestContact } from '@/routes/tenant/contact';
+import { about as tenantAbout, fleet as tenantFleet } from '@/routes/tenant/index.ts';
+import { guestContact } from '@/routes/tenant/contact/index.ts';
 import { ref, computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 

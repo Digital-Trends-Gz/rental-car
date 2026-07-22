@@ -3,7 +3,7 @@ import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { Button } from '@/components/ui/button';
 import { useBrandTheme } from '@/composables/useBrandTheme';
 import { login as mainLogin, register as mainRegister, home as mainHome, fleet as mainFleet, about as mainAbout, contact as mainContact } from '@/routes';
-import { login as tenantLogin, register as tenantRegister, home as tenantHome, fleet as tenantFleet, about as tenantAbout, contact as tenantContact } from '@/routes/tenant';
+import { login as tenantLogin, register as tenantRegister, home as tenantHome, fleet as tenantFleet, about as tenantAbout, contact as tenantContact } from '@/routes/tenant/index.ts';
 import { useTrans } from '@/composables/useTrans';
 import {
     DropdownMenu,

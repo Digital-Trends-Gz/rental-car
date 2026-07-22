@@ -21,6 +21,41 @@ const inertiaPage = usePage<any>();
 const isTenant = computed(() => Boolean(inertiaPage.props.current_tenant));
 const sectionLabel = computed(() => props.page.section.replace(/_/g, ' '));
 const seoPayload = computed(() => props.seo as any);
+const phoneNumberPattern = /(^|[^\w@])(\+?\d[\d\s().-]{5,}\d)(?![\w@])/g;
+const isolatePhoneNumbersInText = (value: string): string =>
+    value.replace(phoneNumberPattern, (_match, prefix: string, phone: string) => {
+        return `${prefix}<bdi class="static-ltr-value" dir="ltr">${phone}</bdi>`;
+    });
+const formattedContentHtml = computed(() => {
+    const html = props.page.content_html || '';
+
+    if (!html || typeof DOMParser === 'undefined') {
+        return isolatePhoneNumbersInText(html);
+    }
+
+    const document = new DOMParser().parseFromString(html, 'text/html');
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const textNodes: Text[] = [];
+
+    while (walker.nextNode()) {
+        const node = walker.currentNode as Text;
+        const parentTag = node.parentElement?.tagName.toLowerCase();
+
+        if (parentTag !== 'script' && parentTag !== 'style' && phoneNumberPattern.test(node.nodeValue || '')) {
+            textNodes.push(node);
+        }
+
+        phoneNumberPattern.lastIndex = 0;
+    }
+
+    textNodes.forEach((node) => {
+        const wrapper = document.createElement('span');
+        wrapper.innerHTML = isolatePhoneNumbersInText(node.nodeValue || '');
+        node.replaceWith(...Array.from(wrapper.childNodes));
+    });
+
+    return document.body.innerHTML;
+});
 </script>
 
 <template>
@@ -39,7 +74,7 @@ const seoPayload = computed(() => props.seo as any);
                 <article
                     v-if="page.content_html"
                     class="static-page-content mt-8"
-                    v-html="page.content_html"
+                    v-html="formattedContentHtml"
                 />
                 <div
                     v-else
@@ -103,6 +138,12 @@ const seoPayload = computed(() => props.seo as any);
     color: rgb(37 99 235);
     font-weight: 600;
     text-decoration: underline;
+}
+
+.static-page-content :deep(.static-ltr-value) {
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: inline-block;
 }
 
 .static-page-content :deep(hr) {

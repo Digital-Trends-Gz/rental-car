@@ -3,7 +3,7 @@ import SeoHead from '@/components/SeoHead.vue';
 import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { usePage } from '@inertiajs/vue3';
-import { fleet } from '@/routes/tenant';
+import { fleet } from '@/routes/tenant/index.ts';
 import { index as reservationsIndex } from '@/routes/client/reservations';
 import { computed } from 'vue';
 

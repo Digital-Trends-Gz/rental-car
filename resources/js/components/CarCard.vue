@@ -2,7 +2,7 @@
 import { useTrans } from '@/composables/useTrans';
 import { usePage } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
-import { show as tenantFleetShow } from '@/routes/tenant/fleet';
+import { show as tenantFleetShow } from '@/routes/tenant/fleet/index.ts';
 import { Calendar, MapPin } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 

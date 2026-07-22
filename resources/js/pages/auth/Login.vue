@@ -12,9 +12,9 @@ import { withLocalePrefix } from '@/lib/utils';
 import { register as mainRegister } from '@/routes';
 import { store as mainLoginStore } from '@/routes/login';
 import { request as mainPasswordRequest } from '@/routes/password';
-import { register as tenantRegister } from '@/routes/tenant';
-import { store as tenantLoginStore } from '@/routes/tenant/login';
-import { request as tenantPasswordRequest } from '@/routes/tenant/password';
+import { register as tenantRegister } from '@/routes/tenant/index.ts';
+import { store as tenantLoginStore } from '@/routes/tenant/login/index.ts';
+import { request as tenantPasswordRequest } from '@/routes/tenant/password/index.ts';
 import { Form, Head, usePage } from '@inertiajs/vue3';
 import {
     LoaderCircle,

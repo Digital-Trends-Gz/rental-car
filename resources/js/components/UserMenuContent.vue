@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { logout } from '@/routes';
 import { logout as superadminLogout } from '@/routes/superadmin';
-import { logout as tenantLogout } from '@/routes/tenant';
+import { logout as tenantLogout } from '@/routes/tenant/index.ts';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 import { Link, router, usePage } from '@inertiajs/vue3';

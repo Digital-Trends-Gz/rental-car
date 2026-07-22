@@ -11,10 +11,10 @@ import { Label } from '@/components/ui/label';
 import { register as mainRegister } from '@/routes';
 import { landing as mainAuthLanding } from '@/routes/auth';
 import { request as mainPasswordRequest } from '@/routes/password';
-import { store as mainTenantLoginStore } from '@/routes/tenant-login';
-import { landing as tenantAuthLanding } from '@/routes/tenant/auth';
-import { request as tenantPasswordRequest } from '@/routes/tenant/password';
-import { store as tenantTenantLoginStore } from '@/routes/tenant/tenant-login';
+import { store as mainTenantLoginStore } from '@/routes/tenant-login/index.ts';
+import { landing as tenantAuthLanding } from '@/routes/tenant/auth/index.ts';
+import { request as tenantPasswordRequest } from '@/routes/tenant/password/index.ts';
+import { store as tenantTenantLoginStore } from '@/routes/tenant/tenant-login/index.ts';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 

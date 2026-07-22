@@ -9,7 +9,7 @@ import {
     home as tenantHome,
     register as tenantRegister,
     tenantLogin as tenantTenantLogin,
-} from '@/routes/tenant';
+} from '@/routes/tenant/index.ts';
 import { withLocalePrefix } from '@/lib/utils';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';

@@ -11,10 +11,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import HomeLayout from '@/layouts/HomeLayout.vue';
-import { book } from '@/routes/tenant/fleet';
+import { book } from '@/routes/tenant/fleet/index.ts';
 import { router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
-import { login } from '@/routes/tenant';
+import { login } from '@/routes/tenant/index.ts';
 
 interface Car {
     id: number;

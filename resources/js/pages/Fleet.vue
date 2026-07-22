@@ -226,9 +226,9 @@ const paginationLabel = (label: string, index: number): string => {
                                 @click="showFilters = !showFilters"
                                 class="group flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white px-6 py-4 text-left font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:border-orange-200 hover:shadow-md"
                             >
-                                <span class="flex items-center">
+                                <span class="flex items-center gap-2">
                                     <div
-                                        class="mr-3 rounded-lg bg-orange-100 p-2 transition-colors group-hover:bg-orange-200"
+                                        class="me-3 rounded-lg bg-orange-100 p-2 transition-colors group-hover:bg-orange-200"
                                     >
                                         <svg
                                             class="h-5 w-5 text-orange-600"
@@ -247,7 +247,7 @@ const paginationLabel = (label: string, index: number): string => {
                                     {{ t('fleet.filters_and_search') }}
                                     <span
                                         v-if="hasActiveFilters"
-                                        class="ml-2 rounded-full bg-orange-500 px-2 py-1 text-xs text-white"
+                                        class="inline-flex min-w-6 justify-center rounded-full bg-orange-500 px-2 py-1 text-xs text-white"
                                         >{{
                                             Object.values({
                                                 searchQuery: searchQuery.trim(),

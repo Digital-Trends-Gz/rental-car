@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useTrans } from '@/composables/useTrans';
 import { fleet as mainFleet, register as mainRegister } from '@/routes';
-import { show as tenantFleetShow } from '@/routes/tenant/fleet';
+import { show as tenantFleetShow } from '@/routes/tenant/fleet/index.ts';
 import { type Plan } from '@/types';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {

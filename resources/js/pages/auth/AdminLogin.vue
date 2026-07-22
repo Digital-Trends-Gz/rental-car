@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { store as mainAdminLoginStore } from '@/routes/admin-login';
-import { store as tenantAdminLoginStore } from '@/routes/tenant/admin-login';
+import { store as tenantAdminLoginStore } from '@/routes/tenant/admin-login/index.ts';
 import { computed } from 'vue';
 import { Form, Head, usePage } from '@inertiajs/vue3';
 import { LoaderCircle, Lock, Shield } from 'lucide-vue-next';

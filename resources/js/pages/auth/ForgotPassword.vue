@@ -11,7 +11,7 @@ import {
     PinInputSlot,
 } from '@/components/ui/pin-input';
 import { tenantLogin as mainTenantLogin } from '@/routes';
-import { tenantLogin as tenantTenantLogin } from '@/routes/tenant';
+import { tenantLogin as tenantTenantLogin } from '@/routes/tenant/index.ts';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { LoaderCircle, Mail } from 'lucide-vue-next';
 import { computed, reactive, ref } from 'vue';
@@ -179,10 +179,17 @@ const parseResponse = async (response: Response): Promise<any> => {
     };
 };
 
+const csrfToken = (): string =>
+    String(page.props.csrf_token || '')
+    || (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content
+    || '';
+
 const postJson = async (
     path: 'forgot-password' | 'verify-otp' | 'reset-password',
     payload: Record<string, unknown>,
 ): Promise<any> => {
+    const token = csrfToken();
+
     const response = await fetch(`/api/auth/${path}`, {
         method: 'POST',
         headers: {
@@ -190,6 +197,7 @@ const postJson = async (
             'Content-Type': 'application/json',
             'Accept-Language': String(page.props.locale || 'en'),
             'X-Requested-With': 'XMLHttpRequest',
+            ...(token ? { 'X-CSRF-TOKEN': token } : {}),
         },
         credentials: 'same-origin',
         body: JSON.stringify(payload),

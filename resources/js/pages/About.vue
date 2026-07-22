@@ -5,7 +5,7 @@ import HomeLayout from '@/layouts/HomeLayout.vue';
 import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { contact as mainContact, fleet as mainFleet } from '@/routes';
-import { contact as tenantContact, fleet as tenantFleet } from '@/routes/tenant';
+import { contact as tenantContact, fleet as tenantFleet } from '@/routes/tenant/index.ts';
 
 const page = usePage<any>();
 const { t, locale } = useTrans();
