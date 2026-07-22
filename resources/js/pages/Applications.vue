@@ -13,6 +13,7 @@ type ApplicationRole = {
     title: string;
     description: string;
     image_url?: string;
+    localized_images?: Record<string, string>;
     note_title: string;
     note: string;
     floating_one_title: string;
@@ -40,6 +41,7 @@ type ApplicationsPage = {
     hero_highlight: string;
     hero_description: string;
     hero_image_url?: string;
+    hero_localized_images?: Record<string, string>;
     primary_cta_label: string;
     secondary_cta_label: string;
     owner_employee_note: string;
@@ -102,6 +104,16 @@ const showComparison = computed(() => props.applicationsPage.comparison_enabled 
 const showEcosystem = computed(() => props.applicationsPage.ecosystem_enabled !== false);
 const visibleRoles = computed(() => (props.applicationsPage.roles || []).filter((role) => role.enabled !== false));
 const footerSettings = computed(() => (props.landingSettings?.footer || {}) as Record<string, unknown>);
+const localizedImage = (fallback: string | undefined, localizedImages?: Record<string, string>) => {
+    const localeCode = locale.value;
+    const baseLocale = localeCode.toLowerCase().split('-')[0];
+
+    return String(localizedImages?.[localeCode] || localizedImages?.[baseLocale] || fallback || '').trim();
+};
+const heroImageUrl = computed(() =>
+    localizedImage(props.applicationsPage.hero_image_url, props.applicationsPage.hero_localized_images),
+);
+const roleImageUrl = (role: ApplicationRole) => localizedImage(role.image_url, role.localized_images);
 const titleLead = computed(() => {
     const title = props.applicationsPage.hero_title || '';
     const highlight = props.applicationsPage.hero_highlight || '';
@@ -188,8 +200,8 @@ const storeIconUrl = (store: 'ios' | 'android') =>
 
                     <div class="relative min-h-[510px]">
                         <img
-                            v-if="applicationsPage.hero_image_url"
-                            :src="applicationsPage.hero_image_url"
+                            v-if="heroImageUrl"
+                            :src="heroImageUrl"
                             :alt="applicationsPage.hero_title"
                             class="h-[510px] w-full rounded-[30px] border border-slate-200 object-cover shadow-2xl shadow-slate-900/10"
                         />
@@ -262,8 +274,8 @@ const storeIconUrl = (store: 'ios' | 'android') =>
                             <span>{{ role.floating_one_text }}</span>
                         </div>
                         <img
-                            v-if="role.image_url"
-                            :src="role.image_url"
+                            v-if="roleImageUrl(role)"
+                            :src="roleImageUrl(role)"
                             :alt="role.title"
                             class="absolute left-1/2 top-1/2 z-[2] h-[28rem] max-w-[76%] -translate-x-1/2 -translate-y-1/2 rounded-[1.5rem] object-cover shadow-2xl shadow-slate-900/20"
                         />

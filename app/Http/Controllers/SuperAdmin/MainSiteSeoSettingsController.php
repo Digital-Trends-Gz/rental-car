@@ -98,10 +98,6 @@ class MainSiteSeoSettingsController extends Controller
             'seo_og_image_removed_files' => ['array'],
             'seo_og_image_removed_files.*' => ['integer'],
             'seo.defaults.robots' => ['nullable', 'string', 'max:255'],
-            'seo.pages.home.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.home.robots' => ['nullable', 'string', 'max:255'],
-            'seo.pages.fleet.canonical_url' => ['nullable', 'string', 'max:1000'],
-            'seo.pages.fleet.robots' => ['nullable', 'string', 'max:255'],
             'seo.technical.sitemap.pages' => ['nullable', 'array'],
             'seo.technical.sitemap.pages.*.path' => ['nullable', 'string', 'max:500'],
             'seo.technical.sitemap.pages.*.priority' => ['nullable', 'numeric', 'min:0.1', 'max:1.0'],
@@ -129,6 +125,9 @@ class MainSiteSeoSettingsController extends Controller
         }
 
         foreach ($this->seoPageKeys() as $pageKey) {
+            $rules["seo.pages.{$pageKey}.canonical_url"] = ['nullable', 'string', 'max:1000'];
+            $rules["seo.pages.{$pageKey}.robots"] = ['nullable', 'string', 'max:255'];
+
             foreach ($supportedLocales as $locale) {
                 $rules["seo.pages.{$pageKey}.title.{$locale}"] = ['nullable', 'string', 'max:255'];
                 $rules["seo.pages.{$pageKey}.description.{$locale}"] = ['nullable', 'string', 'max:500'];
@@ -151,10 +150,11 @@ class MainSiteSeoSettingsController extends Controller
                 'og_image_alt' => $this->localizedPayload($validated, 'seo.defaults.og_image_alt', $supportedLocales, $existing, 'defaults.og_image_alt'),
                 'robots' => $this->nullableString(data_get($validated, 'seo.defaults.robots')) ?: 'index,follow',
             ],
-            'pages' => [
-                'home' => $this->pagePayload($validated, 'home', $supportedLocales, $existing),
-                'fleet' => $this->pagePayload($validated, 'fleet', $supportedLocales, $existing),
-            ],
+            'pages' => collect($this->seoPageKeys())
+                ->mapWithKeys(fn (string $pageKey) => [
+                    $pageKey => $this->pagePayload($validated, $pageKey, $supportedLocales, $existing),
+                ])
+                ->all(),
             'technical' => [
                 'sitemap' => [
                     'pages' => collect((array) data_get($validated, 'seo.technical.sitemap.pages', data_get($existing, 'technical.sitemap.pages', [])))
@@ -224,7 +224,17 @@ class MainSiteSeoSettingsController extends Controller
      */
     private function seoPageKeys(): array
     {
-        return ['home', 'fleet'];
+        return [
+            'home',
+            'fleet',
+            'applications',
+            'plans',
+            'about',
+            'contact',
+            'privacy-policy',
+            'terms-of-use',
+            'security-policy',
+        ];
     }
 
     /**

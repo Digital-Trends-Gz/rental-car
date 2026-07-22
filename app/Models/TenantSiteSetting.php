@@ -214,6 +214,20 @@ class TenantSiteSetting extends Model
                         'robots' => null,
                         'focus_keyword' => self::localizedNullMap($supportedLocales),
                     ],
+                    'applications' => [
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
+                        'canonical_url' => null,
+                        'robots' => null,
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
+                    ],
+                    'plans' => [
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
+                        'canonical_url' => null,
+                        'robots' => null,
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
+                    ],
                     'about' => [
                         'title' => self::localizedNullMap($supportedLocales),
                         'description' => self::localizedNullMap($supportedLocales),
@@ -222,6 +236,27 @@ class TenantSiteSetting extends Model
                         'focus_keyword' => self::localizedNullMap($supportedLocales),
                     ],
                     'contact' => [
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
+                        'canonical_url' => null,
+                        'robots' => null,
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
+                    ],
+                    'privacy-policy' => [
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
+                        'canonical_url' => null,
+                        'robots' => null,
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
+                    ],
+                    'terms-of-use' => [
+                        'title' => self::localizedNullMap($supportedLocales),
+                        'description' => self::localizedNullMap($supportedLocales),
+                        'canonical_url' => null,
+                        'robots' => null,
+                        'focus_keyword' => self::localizedNullMap($supportedLocales),
+                    ],
+                    'security-policy' => [
                         'title' => self::localizedNullMap($supportedLocales),
                         'description' => self::localizedNullMap($supportedLocales),
                         'canonical_url' => null,
@@ -255,8 +290,13 @@ class TenantSiteSetting extends Model
                         'pages' => [
                             ['path' => '/', 'priority' => 1.0, 'changeFreq' => 'weekly', 'lastmod' => null],
                             ['path' => '/fleet', 'priority' => 0.9, 'changeFreq' => 'weekly', 'lastmod' => null],
+                            ['path' => '/car-rental-apps', 'priority' => 0.8, 'changeFreq' => 'monthly', 'lastmod' => null],
+                            ['path' => '/pricing-plans', 'priority' => 0.8, 'changeFreq' => 'monthly', 'lastmod' => null],
                             ['path' => '/about', 'priority' => 0.8, 'changeFreq' => 'monthly', 'lastmod' => null],
                             ['path' => '/contact', 'priority' => 0.8, 'changeFreq' => 'monthly', 'lastmod' => null],
+                            ['path' => '/privacy-policy', 'priority' => 0.5, 'changeFreq' => 'yearly', 'lastmod' => null],
+                            ['path' => '/terms-of-use', 'priority' => 0.5, 'changeFreq' => 'yearly', 'lastmod' => null],
+                            ['path' => '/security-policy', 'priority' => 0.5, 'changeFreq' => 'yearly', 'lastmod' => null],
                         ],
                     ],
                     'robots' => [

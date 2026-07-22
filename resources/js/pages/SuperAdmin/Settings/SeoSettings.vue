@@ -24,7 +24,16 @@ type LocaleRow = {
     script?: string;
     direction: 'ltr' | 'rtl';
 };
-type SeoPageKey = 'home' | 'fleet';
+type SeoPageKey =
+    | 'home'
+    | 'fleet'
+    | 'applications'
+    | 'plans'
+    | 'about'
+    | 'contact'
+    | 'privacy-policy'
+    | 'terms-of-use'
+    | 'security-policy';
 type ActiveTab = 'overview' | 'general' | 'pages' | 'previews' | 'analysis' | 'social' | 'technical';
 type SitemapPage = {
     path: string;
@@ -39,6 +48,7 @@ type SeoPageSettings = {
     canonical_url: string | null;
     robots?: string | null;
 };
+type SeoPages = Partial<Record<SeoPageKey, SeoPageSettings>>;
 type PreviewCard = {
     key: SeoPageKey;
     label: string;
@@ -65,7 +75,7 @@ const props = defineProps<{
             og_image_alt: LocalizedText;
             robots: string | null;
         };
-        pages: Record<SeoPageKey, SeoPageSettings>;
+        pages: SeoPages;
         technical?: {
             sitemap?: {
                 pages?: SitemapPage[];
@@ -97,6 +107,30 @@ const props = defineProps<{
 
 const { locale } = useTrans();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+
+const SEO_PAGE_KEYS: SeoPageKey[] = [
+    'home',
+    'fleet',
+    'applications',
+    'plans',
+    'about',
+    'contact',
+    'privacy-policy',
+    'terms-of-use',
+    'security-policy',
+];
+
+const SEO_PAGE_PATHS: Record<SeoPageKey, string> = {
+    home: '/',
+    fleet: '/fleet',
+    applications: '/car-rental-apps',
+    plans: '/pricing-plans',
+    about: '/about',
+    contact: '/contact',
+    'privacy-policy': '/privacy-policy',
+    'terms-of-use': '/terms-of-use',
+    'security-policy': '/security-policy',
+};
 
 const fallbackLocales: LocaleRow[] = [
     { code: 'en', name: 'English', native: 'English', direction: 'ltr' },
@@ -130,6 +164,29 @@ function createPageState(pageSettings?: SeoPageSettings): SeoPageSettings {
         canonical_url: pageSettings?.canonical_url ?? '',
         robots: pageSettings?.robots ?? '',
     };
+}
+
+function createPageStates(pages?: SeoPages): Record<SeoPageKey, SeoPageSettings> {
+    return SEO_PAGE_KEYS.reduce((result, pageKey) => {
+        result[pageKey] = createPageState(pages?.[pageKey]);
+        return result;
+    }, {} as Record<SeoPageKey, SeoPageSettings>);
+}
+
+function defaultSitemapPages(): SitemapPage[] {
+    const today = new Date().toISOString().split('T')[0];
+
+    return SEO_PAGE_KEYS.map((pageKey) => {
+        const isPrimaryPage = pageKey === 'home' || pageKey === 'fleet';
+        const isPolicyPage = ['privacy-policy', 'terms-of-use', 'security-policy'].includes(pageKey);
+
+        return {
+            path: SEO_PAGE_PATHS[pageKey],
+            priority: pageKey === 'home' ? 1.0 : (isPrimaryPage ? 0.9 : (isPolicyPage ? 0.5 : 0.8)),
+            changeFreq: isPolicyPage ? 'yearly' : (isPrimaryPage ? 'weekly' : 'monthly'),
+            lastmod: today,
+        };
+    });
 }
 
 const activeTab = ref<ActiveTab>('overview');
@@ -173,18 +230,12 @@ const form = useForm({
             og_image_alt: createLocalizedState(props.settings.defaults?.og_image_alt),
             robots: props.settings.defaults?.robots ?? 'index,follow',
         },
-        pages: {
-            home: createPageState(props.settings.pages.home),
-            fleet: createPageState(props.settings.pages.fleet),
-        },
+        pages: createPageStates(props.settings.pages),
         technical: {
             sitemap: {
                 pages: Array.isArray(props.settings.technical?.sitemap?.pages) && props.settings.technical?.sitemap?.pages?.length
-                    ? props.settings.technical.sitemap.pages.filter((page) => ['/', '/fleet'].includes(page.path))
-                    : [
-                        { path: '/', priority: 1.0, changeFreq: 'weekly', lastmod: new Date().toISOString().split('T')[0] },
-                        { path: '/fleet', priority: 0.9, changeFreq: 'weekly', lastmod: new Date().toISOString().split('T')[0] },
-                    ],
+                    ? props.settings.technical.sitemap.pages.filter((page) => Object.values(SEO_PAGE_PATHS).includes(page.path))
+                    : defaultSitemapPages(),
             },
             robots: {
                 allowAll: props.settings.technical?.robots?.allowAll ?? true,

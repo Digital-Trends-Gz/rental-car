@@ -164,8 +164,11 @@ class LandingSettingsController extends Controller
             'previewUrl' => route('applications'),
             'translationsUrl' => route('superadmin.settings.landing-translations'),
             'updateUrl' => route('superadmin.settings.applications-page.update'),
+            'availableLocales' => $this->landingEnabledLocales($settings),
             'heroFiles' => $this->landingFilesForCollection($landingSetting, 'applications_page_hero'),
+            'heroLocalizedFiles' => $this->applicationHeroLocalizedFiles($landingSetting),
             'roleFiles' => $this->applicationRoleFiles($landingSetting),
+            'roleLocalizedFiles' => $this->applicationRoleLocalizedFiles($landingSetting),
         ]);
     }
 
@@ -181,6 +184,8 @@ class LandingSettingsController extends Controller
             'applications_page.hero_highlight' => ['nullable', 'string', 'max:255'],
             'applications_page.hero_description' => ['required', 'string', 'max:2000'],
             'applications_page.hero_image_url' => ['nullable', 'string', 'max:2000'],
+            'applications_page.hero_localized_images' => ['nullable', 'array'],
+            'applications_page.hero_localized_images.*' => ['nullable', 'string', 'max:2000'],
             'applications_page.primary_cta_label' => ['required', 'string', 'max:255'],
             'applications_page.secondary_cta_label' => ['required', 'string', 'max:255'],
             'applications_page.owner_employee_note' => ['nullable', 'string', 'max:1000'],
@@ -199,6 +204,8 @@ class LandingSettingsController extends Controller
             'applications_page.roles.*.title' => ['required', 'string', 'max:255'],
             'applications_page.roles.*.description' => ['required', 'string', 'max:2000'],
             'applications_page.roles.*.image_url' => ['nullable', 'string', 'max:2000'],
+            'applications_page.roles.*.localized_images' => ['nullable', 'array'],
+            'applications_page.roles.*.localized_images.*' => ['nullable', 'string', 'max:2000'],
             'applications_page.roles.*.note_title' => ['nullable', 'string', 'max:255'],
             'applications_page.roles.*.note' => ['nullable', 'string', 'max:1000'],
             'applications_page.roles.*.floating_one_title' => ['nullable', 'string', 'max:255'],
@@ -227,11 +234,23 @@ class LandingSettingsController extends Controller
             'application_hero_direct_file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
             'application_hero_removed_files' => ['nullable', 'array'],
             'application_hero_removed_files.*' => ['integer'],
+            'application_hero_locale_direct_files' => ['nullable', 'array'],
+            'application_hero_locale_direct_files.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
+            'application_hero_locale_removed_files' => ['nullable', 'array'],
+            'application_hero_locale_removed_files.*' => ['array'],
+            'application_hero_locale_removed_files.*.*' => ['integer'],
             'application_role_direct_files' => ['nullable', 'array'],
             'application_role_direct_files.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
             'application_role_removed_files' => ['nullable', 'array'],
             'application_role_removed_files.*' => ['array'],
             'application_role_removed_files.*.*' => ['integer'],
+            'application_role_locale_direct_files' => ['nullable', 'array'],
+            'application_role_locale_direct_files.*' => ['nullable', 'array'],
+            'application_role_locale_direct_files.*.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:51200'],
+            'application_role_locale_removed_files' => ['nullable', 'array'],
+            'application_role_locale_removed_files.*' => ['nullable', 'array'],
+            'application_role_locale_removed_files.*.*' => ['nullable', 'array'],
+            'application_role_locale_removed_files.*.*.*' => ['integer'],
         ]);
 
         $landingSetting = $this->persistLandingSettings([
@@ -1570,9 +1589,48 @@ class LandingSettingsController extends Controller
             $applicationsPage['hero_image_url'] = '';
         }
 
+        $heroLocalizedImages = is_array($applicationsPage['hero_localized_images'] ?? null)
+            ? $applicationsPage['hero_localized_images']
+            : [];
+        $heroLocaleRemovedIds = is_array($request->input('application_hero_locale_removed_files', []))
+            ? $request->input('application_hero_locale_removed_files', [])
+            : [];
+
+        foreach ($this->supportedLocaleKeys() as $locale) {
+            $collection = $this->applicationHeroLocaleCollection($locale);
+            $removedIds = is_array($heroLocaleRemovedIds[$locale] ?? null)
+                ? array_values(array_unique(array_filter($heroLocaleRemovedIds[$locale])))
+                : [];
+            $directFile = $request->file("application_hero_locale_direct_files.$locale");
+
+            if ($directFile instanceof UploadedFile) {
+                $heroLocalizedImages[$locale] = $this->storeDirectLandingFile(
+                    $landingSetting,
+                    $directFile,
+                    $collection
+                );
+                continue;
+            }
+
+            if (!empty($removedIds)) {
+                $this->filePondService->handleFileUpdates(
+                    $landingSetting,
+                    [],
+                    $removedIds,
+                    $collection
+                );
+                $heroLocalizedImages[$locale] = '';
+            }
+        }
+
+        $applicationsPage['hero_localized_images'] = $heroLocalizedImages;
+
         $roles = (array) ($applicationsPage['roles'] ?? []);
         $removedIdsByIndex = is_array($request->input('application_role_removed_files', []))
             ? $request->input('application_role_removed_files', [])
+            : [];
+        $localeRemovedIdsByIndex = is_array($request->input('application_role_locale_removed_files', []))
+            ? $request->input('application_role_locale_removed_files', [])
             : [];
 
         foreach ($roles as $index => $role) {
@@ -1604,6 +1662,39 @@ class LandingSettingsController extends Controller
                 );
                 $roles[$index]['image_url'] = '';
             }
+
+            $localizedImages = is_array($roles[$index]['localized_images'] ?? null)
+                ? $roles[$index]['localized_images']
+                : [];
+
+            foreach ($this->supportedLocaleKeys() as $locale) {
+                $localeCollection = $this->applicationRoleLocaleCollection((int) $index, $locale);
+                $localeRemovedIds = is_array($localeRemovedIdsByIndex[$index][$locale] ?? null)
+                    ? array_values(array_unique(array_filter($localeRemovedIdsByIndex[$index][$locale])))
+                    : [];
+                $localeDirectFile = $request->file("application_role_locale_direct_files.$index.$locale");
+
+                if ($localeDirectFile instanceof UploadedFile) {
+                    $localizedImages[$locale] = $this->storeDirectLandingFile(
+                        $landingSetting,
+                        $localeDirectFile,
+                        $localeCollection
+                    );
+                    continue;
+                }
+
+                if (!empty($localeRemovedIds)) {
+                    $this->filePondService->handleFileUpdates(
+                        $landingSetting,
+                        [],
+                        $localeRemovedIds,
+                        $localeCollection
+                    );
+                    $localizedImages[$locale] = '';
+                }
+            }
+
+            $roles[$index]['localized_images'] = $localizedImages;
         }
 
         $applicationsPage['roles'] = $roles;
@@ -1726,6 +1817,21 @@ class LandingSettingsController extends Controller
             }
         }
 
+        if ($request->has('application_hero_locale_direct_files')) {
+            $files = $request->input('application_hero_locale_direct_files');
+            if (is_array($files)) {
+                $sanitized = [];
+                foreach ($files as $locale => $val) {
+                    $file = $request->file("application_hero_locale_direct_files.$locale");
+                    if ($file instanceof UploadedFile) {
+                        $sanitized[$locale] = $file;
+                    }
+                }
+                $request->merge(['application_hero_locale_direct_files' => $sanitized]);
+                $request->files->set('application_hero_locale_direct_files', $sanitized);
+            }
+        }
+
         if ($request->has('application_role_direct_files')) {
             $files = $request->input('application_role_direct_files');
             if (is_array($files)) {
@@ -1738,6 +1844,27 @@ class LandingSettingsController extends Controller
                 }
                 $request->merge(['application_role_direct_files' => $sanitized]);
                 $request->files->set('application_role_direct_files', $sanitized);
+            }
+        }
+
+        if ($request->has('application_role_locale_direct_files')) {
+            $files = $request->input('application_role_locale_direct_files');
+            if (is_array($files)) {
+                $sanitized = [];
+                foreach ($files as $index => $locales) {
+                    if (!is_array($locales)) {
+                        continue;
+                    }
+
+                    foreach ($locales as $locale => $val) {
+                        $file = $request->file("application_role_locale_direct_files.$index.$locale");
+                        if ($file instanceof UploadedFile) {
+                            $sanitized[$index][$locale] = $file;
+                        }
+                    }
+                }
+                $request->merge(['application_role_locale_direct_files' => $sanitized]);
+                $request->files->set('application_role_locale_direct_files', $sanitized);
             }
         }
     }
@@ -2045,6 +2172,41 @@ class LandingSettingsController extends Controller
     }
 
     /**
+     * @return array<string, array<int, array{id: int, url: string|null}>>
+     */
+    private function applicationHeroLocalizedFiles(?SiteSetting $landingSetting): array
+    {
+        $files = [];
+
+        foreach ($this->supportedLocaleKeys() as $locale) {
+            $files[$locale] = $this->landingFilesForCollection($landingSetting, $this->applicationHeroLocaleCollection($locale));
+        }
+
+        return $files;
+    }
+
+    /**
+     * @return array<int, array<string, array<int, array{id: int, url: string|null}>>>
+     */
+    private function applicationRoleLocalizedFiles(?SiteSetting $landingSetting): array
+    {
+        $settings = $this->landingSettings();
+        $roles = (array) data_get($settings, 'applications_page.roles', []);
+        $files = [];
+
+        foreach (array_keys($roles) as $index) {
+            foreach ($this->supportedLocaleKeys() as $locale) {
+                $files[(int) $index][$locale] = $this->landingFilesForCollection(
+                    $landingSetting,
+                    $this->applicationRoleLocaleCollection((int) $index, $locale)
+                );
+            }
+        }
+
+        return $files;
+    }
+
+    /**
      * @return array<int, array{id: int, url: string|null}>
      */
     private function landingFilesForCollection(?SiteSetting $landingSetting, string $collection): array
@@ -2087,6 +2249,16 @@ class LandingSettingsController extends Controller
         return 'applications_page_role_' . max(0, $index) . '_image';
     }
 
+    private function applicationHeroLocaleCollection(string $locale): string
+    {
+        return 'applications_page_hero_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $locale);
+    }
+
+    private function applicationRoleLocaleCollection(int $index, string $locale): string
+    {
+        return $this->applicationRoleCollection($index) . '_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $locale);
+    }
+
     private function heroLocaleCollection(string $locale): string
     {
         return 'hero_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $locale);
@@ -2105,6 +2277,19 @@ class LandingSettingsController extends Controller
         $supported = array_values(array_unique(array_map('strval', $supported)));
 
         return empty($supported) ? ['en'] : $supported;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function landingEnabledLocales(array $settings): array
+    {
+        $locales = array_values(array_filter(
+            array_map('strval', (array) data_get($settings, 'enabled_locales', [])),
+            static fn (string $locale) => trim($locale) !== ''
+        ));
+
+        return empty($locales) ? $this->supportedLocaleKeys() : $locales;
     }
 
     /**

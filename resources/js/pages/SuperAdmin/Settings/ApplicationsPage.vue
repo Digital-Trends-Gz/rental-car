@@ -18,6 +18,7 @@ type ApplicationRole = {
     title: string;
     description: string;
     image_url?: string;
+    localized_images?: Record<string, string>;
     note_title?: string;
     note?: string;
     floating_one_title?: string;
@@ -45,6 +46,7 @@ type ApplicationsPage = {
     hero_highlight?: string;
     hero_description: string;
     hero_image_url?: string;
+    hero_localized_images?: Record<string, string>;
     primary_cta_label: string;
     secondary_cta_label: string;
     owner_employee_note?: string;
@@ -73,8 +75,11 @@ const props = defineProps<{
     previewUrl: string;
     translationsUrl: string;
     updateUrl: string;
+    availableLocales: string[];
     heroFiles: Array<{ id: number; url: string }>;
+    heroLocalizedFiles: Record<string, Array<{ id: number; url: string }>>;
     roleFiles: Record<number, Array<{ id: number; url: string }>>;
+    roleLocalizedFiles: Record<number, Record<string, Array<{ id: number; url: string }>>>;
 }>();
 
 const page = usePage<any>();
@@ -83,11 +88,16 @@ const form = useForm<{
     applications_page: ApplicationsPage;
     application_hero_direct_file: File | null;
     application_hero_removed_files: number[];
+    application_hero_locale_direct_files: Record<string, File | null>;
+    application_hero_locale_removed_files: Record<string, number[]>;
     application_role_direct_files: Record<number, File | null>;
     application_role_removed_files: Record<number, number[]>;
+    application_role_locale_direct_files: Record<number, Record<string, File | null>>;
+    application_role_locale_removed_files: Record<number, Record<string, number[]>>;
 }>({
     applications_page: {
         ...props.applicationsPage,
+        hero_localized_images: { ...(props.applicationsPage.hero_localized_images || {}) },
         enabled: props.applicationsPage.enabled !== false,
         hero_enabled: props.applicationsPage.hero_enabled !== false,
         apps_enabled: props.applicationsPage.apps_enabled !== false,
@@ -97,6 +107,7 @@ const form = useForm<{
             ...role,
             enabled: role.enabled !== false,
             image_url: role.image_url || '',
+            localized_images: { ...(role.localized_images || {}) },
             features: [...(role.features || [])],
         })),
         comparison: (props.applicationsPage.comparison || []).map((item) => ({
@@ -106,15 +117,55 @@ const form = useForm<{
     },
     application_hero_direct_file: null,
     application_hero_removed_files: [],
+    application_hero_locale_direct_files: {},
+    application_hero_locale_removed_files: {},
     application_role_direct_files: {},
     application_role_removed_files: {},
+    application_role_locale_direct_files: {},
+    application_role_locale_removed_files: {},
 });
 
+const availableLocales = computed(() => props.availableLocales?.length ? props.availableLocales : ['en']);
 const flashSuccess = computed(() => page.props.flash?.success ?? null);
 const flashError = computed(() => page.props.flash?.error ?? null);
 const formErrors = computed(() =>
     Object.values(form.errors ?? {}).filter((value): value is string => typeof value === 'string' && value.length > 0),
 );
+
+const localeDisplayName = (localeCode: string) =>
+    (
+        {
+            en: 'English',
+            ar: 'Arabic',
+            ur: 'Urdu',
+        } as Record<string, string>
+    )[localeCode] || localeCode.toUpperCase();
+
+if (!form.applications_page.hero_localized_images) {
+    form.applications_page.hero_localized_images = {};
+}
+
+for (const localeCode of availableLocales.value) {
+    form.applications_page.hero_localized_images[localeCode] =
+        form.applications_page.hero_localized_images[localeCode] || '';
+    form.application_hero_locale_direct_files[localeCode] = null;
+    form.application_hero_locale_removed_files[localeCode] = [];
+}
+
+form.applications_page.roles.forEach((role, index) => {
+    if (!role.localized_images) {
+        role.localized_images = {};
+    }
+
+    form.application_role_locale_direct_files[index] = {};
+    form.application_role_locale_removed_files[index] = {};
+
+    for (const localeCode of availableLocales.value) {
+        role.localized_images[localeCode] = role.localized_images[localeCode] || '';
+        form.application_role_locale_direct_files[index][localeCode] = null;
+        form.application_role_locale_removed_files[index][localeCode] = [];
+    }
+});
 
 function submit(): void {
     form.transform((data) => ({
@@ -139,8 +190,37 @@ function handleHeroFileRemoved(data: { type: string; fileId?: number }): void {
     form.applications_page.hero_image_url = '';
 }
 
+function heroLocaleFileList(localeCode: string): Array<{ id: number; url: string }> {
+    return props.heroLocalizedFiles?.[localeCode] || [];
+}
+
+function handleHeroLocaleLocalFileAdded(localeCode: string, file: File): void {
+    form.application_hero_locale_direct_files = {
+        ...form.application_hero_locale_direct_files,
+        [localeCode]: file,
+    };
+}
+
+function handleHeroLocaleFileRemoved(localeCode: string, data: { type: string; fileId?: number }): void {
+    if (data.type !== 'existing' || !data.fileId) {
+        return;
+    }
+
+    form.application_hero_locale_removed_files = {
+        ...form.application_hero_locale_removed_files,
+        [localeCode]: [...new Set([...(form.application_hero_locale_removed_files[localeCode] || []), data.fileId])],
+    };
+    if (form.applications_page.hero_localized_images) {
+        form.applications_page.hero_localized_images[localeCode] = '';
+    }
+}
+
 function roleFileList(index: number): Array<{ id: number; url: string }> {
     return props.roleFiles?.[index] || [];
+}
+
+function roleLocaleFileList(index: number, localeCode: string): Array<{ id: number; url: string }> {
+    return props.roleLocalizedFiles?.[index]?.[localeCode] || [];
 }
 
 function handleRoleLocalFileAdded(index: number, file: File): void {
@@ -160,6 +240,35 @@ function handleRoleFileRemoved(index: number, data: { type: string; fileId?: num
         [index]: [...new Set([...(form.application_role_removed_files[index] || []), data.fileId])],
     };
     form.applications_page.roles[index].image_url = '';
+}
+
+function handleRoleLocaleLocalFileAdded(index: number, localeCode: string, file: File): void {
+    form.application_role_locale_direct_files = {
+        ...form.application_role_locale_direct_files,
+        [index]: {
+            ...(form.application_role_locale_direct_files[index] || {}),
+            [localeCode]: file,
+        },
+    };
+}
+
+function handleRoleLocaleFileRemoved(index: number, localeCode: string, data: { type: string; fileId?: number }): void {
+    if (data.type !== 'existing' || !data.fileId) {
+        return;
+    }
+
+    form.application_role_locale_removed_files = {
+        ...form.application_role_locale_removed_files,
+        [index]: {
+            ...(form.application_role_locale_removed_files[index] || {}),
+            [localeCode]: [
+                ...new Set([...(form.application_role_locale_removed_files[index]?.[localeCode] || []), data.fileId]),
+            ],
+        },
+    };
+    if (form.applications_page.roles[index].localized_images) {
+        form.applications_page.roles[index].localized_images[localeCode] = '';
+    }
 }
 
 function addRoleFeature(role: ApplicationRole): void {
@@ -259,6 +368,33 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                             @local-file-added="handleHeroLocalFileAdded"
                             @file-removed="handleHeroFileRemoved"
                         />
+                    </div>
+                    <div class="space-y-3 rounded-lg border border-dashed p-3 lg:col-span-2">
+                        <Label>Hero Images By Language</Label>
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            <div v-for="localeCode in availableLocales" :key="`application-hero-locale-${localeCode}`" class="space-y-2">
+                                <Label>{{ localeDisplayName(localeCode) }}</Label>
+                                <FileUpload
+                                    :initial-files="heroLocaleFileList(localeCode)"
+                                    :allow-multiple="false"
+                                    :max-files="1"
+                                    :instant-upload="false"
+                                    :max-file-size="1024 * 1024 * 50"
+                                    :allowed-file-types="['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']"
+                                    :collection="`applications_page_hero_${localeCode}`"
+                                    theme="light"
+                                    width="100%"
+                                    @local-file-added="(file) => handleHeroLocaleLocalFileAdded(localeCode, file)"
+                                    @file-removed="(data) => handleHeroLocaleFileRemoved(localeCode, data)"
+                                />
+                                <img
+                                    v-if="form.applications_page.hero_localized_images?.[localeCode]"
+                                    :src="form.applications_page.hero_localized_images[localeCode]"
+                                    alt=""
+                                    class="h-20 w-full rounded-md border object-cover"
+                                />
+                            </div>
+                        </div>
                     </div>
                     <div class="space-y-2">
                         <Label>Title</Label>
@@ -375,6 +511,33 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                                     @local-file-added="(file) => handleRoleLocalFileAdded(roleIndex, file)"
                                     @file-removed="(data) => handleRoleFileRemoved(roleIndex, data)"
                                 />
+                            </div>
+                            <div class="space-y-3 rounded-lg border border-dashed p-3 lg:col-span-2">
+                                <Label>Role Images By Language</Label>
+                                <div class="grid gap-4 lg:grid-cols-3">
+                                    <div v-for="localeCode in availableLocales" :key="`application-role-${roleIndex}-${localeCode}`" class="space-y-2">
+                                        <Label>{{ localeDisplayName(localeCode) }}</Label>
+                                        <FileUpload
+                                            :initial-files="roleLocaleFileList(roleIndex, localeCode)"
+                                            :allow-multiple="false"
+                                            :max-files="1"
+                                            :instant-upload="false"
+                                            :max-file-size="1024 * 1024 * 50"
+                                            :allowed-file-types="['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']"
+                                            :collection="`applications_page_role_${roleIndex}_image_${localeCode}`"
+                                            theme="light"
+                                            width="100%"
+                                            @local-file-added="(file) => handleRoleLocaleLocalFileAdded(roleIndex, localeCode, file)"
+                                            @file-removed="(data) => handleRoleLocaleFileRemoved(roleIndex, localeCode, data)"
+                                        />
+                                        <img
+                                            v-if="role.localized_images?.[localeCode]"
+                                            :src="role.localized_images[localeCode]"
+                                            alt=""
+                                            class="h-20 w-full rounded-md border object-cover"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                             <div class="space-y-2 lg:col-span-2">
                                 <Label>Title</Label>

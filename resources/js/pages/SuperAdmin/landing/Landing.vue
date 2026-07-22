@@ -668,73 +668,8 @@ const heroIsVideo = computed(() =>
     /\.(mp4|webm|ogg|mov)(?:$|[?#])/i.test(heroImage.value),
 );
 const contactSection = computed(() => props.landingSettings.contact_section);
-const contactQuickLinksTitle = computed(() => {
-    const translated = t('contact.quick_links');
-
-    return translated !== 'contact.quick_links'
-        ? translated
-        : localizedFallback('Quick Links', { ar: '\u0631\u0648\u0627\u0628\u0637 \u0645\u0641\u064a\u062f\u0629' });
-});
-const comparableQuickLinkHref = (href: string) => {
-    const value = String(href || '').trim();
-
-    if (!value) {
-        return '';
-    }
-
-    if (value.startsWith('#')) {
-        return value.toLowerCase();
-    }
-
-    let path = value;
-
-    try {
-        const parsed = new URL(value, typeof window !== 'undefined' ? window.location.origin : 'https://car4u.net');
-        path = parsed.hash && (!parsed.pathname || parsed.pathname === '/') ? parsed.hash : parsed.pathname;
-    } catch {
-        path = value;
-    }
-
-    const [pathOnly] = path.toLowerCase().split(/[?#]/);
-    const trimmedPath = pathOnly.replace(/\/+$/, '') || '/';
-    const firstSegment = trimmedPath.split('/').filter(Boolean)[0] || '';
-    const normalizedLocales = availableLocales.value.map((item) => String(item || '').toLowerCase());
-
-    if (normalizedLocales.includes(firstSegment)) {
-        const withoutLocale = trimmedPath.replace(new RegExp(`^/${firstSegment}(?=/|$)`), '') || '/';
-
-        return withoutLocale === '/' ? withoutLocale : withoutLocale.replace(/\/+$/, '');
-    }
-
-    return trimmedPath;
-};
-const contactQuickLinkLabel = (link: QuickLinkItem) => {
-    const href = comparableQuickLinkHref(link.href);
-
-    if (href === '#cars' || href === '/fleet') {
-        return footerLabels.cars();
-    }
-
-    if (href === '/plans' || href === '/pricing-plans' || href === '#pricing') {
-        return footerLabels.plans();
-    }
-
-    if (href === '#application' || href === '/applications' || href === '/car-rental-apps') {
-        return footerLabels.application();
-    }
-
-    if (href === '#faq') {
-        return translatedLabel('welcome.faq_title', link.label || 'FAQ');
-    }
-
-    return String(link.label || '').trim();
-};
 const contactQuickLinks = computed(() =>
     (contactSection.value.quick_links || [])
-        .map((link) => ({
-            ...link,
-            label: contactQuickLinkLabel(link),
-        }))
         .filter((link) => String(link.label || '').trim() !== ''),
 );
 const contactRecipient = computed(
@@ -2750,7 +2685,7 @@ onUnmounted(() => {
                                 <CardHeader>
                                     <CardTitle
                                         class="inline-flex w-fit border-b-2 border-primary/70 pb-2"
-                                        >{{ contactQuickLinksTitle }}</CardTitle
+                                        >{{ contactSection.quick_links_title }}</CardTitle
                                     >
                                 </CardHeader>
                                 <CardContent class="space-y-3 text-sm">

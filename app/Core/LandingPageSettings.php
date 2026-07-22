@@ -181,6 +181,7 @@ class LandingPageSettings
                 'hero_highlight' => 'One rental platform.',
                 'hero_description' => 'Give owners full business visibility, help employees complete daily operations, and offer renters a smooth mobile journey from vehicle discovery to rental follow-up.',
                 'hero_image_url' => '',
+                'hero_localized_images' => array_fill_keys($supportedLocales, ''),
                 'primary_cta_label' => 'Explore the apps',
                 'secondary_cta_label' => 'Compare experiences',
                 'owner_employee_note' => 'Owner and employee experiences are delivered through the same management application with role-based permissions.',
@@ -200,6 +201,7 @@ class LandingPageSettings
                         'title' => 'See the entire business from your phone',
                         'description' => 'The owner workspace brings together performance, fleet activity, branches, reservations, contracts, payments, and team oversight in one clear mobile dashboard.',
                         'image_url' => '',
+                        'localized_images' => array_fill_keys($supportedLocales, ''),
                         'note_title' => 'Part of the management app:',
                         'note' => 'owners download the same application as employees. Their account automatically unlocks owner-level dashboards and controls.',
                         'floating_one_title' => 'Live revenue',
@@ -226,6 +228,7 @@ class LandingPageSettings
                         'title' => 'Complete daily rental operations anywhere',
                         'description' => 'The employee workspace is designed for fast field execution, from vehicle preparation and customer handover to inspections, returns, photos, payments, and contract updates.',
                         'image_url' => '',
+                        'localized_images' => array_fill_keys($supportedLocales, ''),
                         'note_title' => 'Same management app:',
                         'note' => 'the employee sees only the tools and information permitted by their assigned role and branch.',
                         'floating_one_title' => 'Daily workflow',
@@ -252,6 +255,7 @@ class LandingPageSettings
                         'title' => 'A complete rental journey for your customers',
                         'description' => 'The renter app is a fully separate application with its own design, navigation, and services. It gives customers a simple way to discover cars, book, submit documents, pay, and follow their rental.',
                         'image_url' => '',
+                        'localized_images' => array_fill_keys($supportedLocales, ''),
                         'note_title' => 'Independent customer app:',
                         'note' => 'this application has a separate APK and a completely different experience from the management app.',
                         'floating_one_title' => 'Easy booking',
@@ -623,12 +627,14 @@ class LandingPageSettings
         $settings['navigation']['links'] = self::ensureLandingPageNavigationLinks($settings);
         $settings['applications_page']['enabled'] = self::normalizeBoolean($settings['applications_page']['enabled'] ?? true);
         $settings['applications_page']['hero_enabled'] = self::normalizeBoolean($settings['applications_page']['hero_enabled'] ?? true);
+        $settings['applications_page']['hero_localized_images'] = self::normalizeLocalizedImages($settings['applications_page']['hero_localized_images'] ?? []);
         $settings['applications_page']['apps_enabled'] = self::normalizeBoolean($settings['applications_page']['apps_enabled'] ?? true);
         $settings['applications_page']['comparison_enabled'] = self::normalizeBoolean($settings['applications_page']['comparison_enabled'] ?? true);
         $settings['applications_page']['ecosystem_enabled'] = self::normalizeBoolean($settings['applications_page']['ecosystem_enabled'] ?? true);
         $settings['applications_page']['roles'] = array_values(array_map(static function (mixed $role): array {
             $role = is_array($role) ? $role : [];
             $role['enabled'] = self::normalizeBoolean($role['enabled'] ?? true);
+            $role['localized_images'] = self::normalizeLocalizedImages($role['localized_images'] ?? []);
 
             return $role;
         }, (array) ($settings['applications_page']['roles'] ?? [])));
@@ -710,7 +716,7 @@ class LandingPageSettings
         $defaultLocale = in_array('en', $normalized['enabled_locales'] ?? [], true)
             ? 'en'
             : (string) (($normalized['enabled_locales'] ?? [])[0] ?? 'en');
-        $applyLocalizedHeroImage = static function (array $settings) use ($normalized, $locale, $defaultLocale): array {
+        $applyLocalizedImages = static function (array $settings) use ($normalized, $locale, $defaultLocale): array {
             if ($locale === $defaultLocale) {
                 return $settings;
             }
@@ -721,17 +727,31 @@ class LandingPageSettings
                 data_set($settings, 'hero.image_url', $localizedImageUrl);
             }
 
+            $applicationHeroImageUrl = trim((string) data_get($normalized, "applications_page.hero_localized_images.$locale", ''));
+            if ($applicationHeroImageUrl !== '') {
+                data_set($settings, 'applications_page.hero_image_url', $applicationHeroImageUrl);
+            }
+
+            $roles = (array) data_get($settings, 'applications_page.roles', []);
+            foreach ($roles as $index => $role) {
+                $roleImageUrl = trim((string) data_get($normalized, "applications_page.roles.$index.localized_images.$locale", ''));
+                if ($roleImageUrl !== '') {
+                    $roles[$index]['image_url'] = $roleImageUrl;
+                }
+            }
+            data_set($settings, 'applications_page.roles', $roles);
+
             return $settings;
         };
 
         $overrides = data_get($normalized, "translations.$locale", []);
         if (!is_array($overrides) || empty($overrides)) {
-            return $applyLocalizedHeroImage($normalized);
+            return $applyLocalizedImages($normalized);
         }
 
         $localized = array_replace_recursive($normalized, $overrides);
 
-        return $applyLocalizedHeroImage($localized);
+        return $applyLocalizedImages($localized);
     }
 
     private static function normalizeLocalizedImages(mixed $value): array
