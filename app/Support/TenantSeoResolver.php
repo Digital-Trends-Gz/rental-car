@@ -40,16 +40,27 @@ class TenantSeoResolver
             data_get($pageSettings, 'canonical_url'),
             url()->current()
         );
+        $ogImage = self::cleanUrl(
+            data_get($pageSettings, 'og_image') ?: data_get($seoSettings, 'defaults.og_image'),
+            $settings['logo_url'] ?? null
+        );
 
         return [
             'title' => $title,
             'description' => $description,
             'canonical_url' => $canonicalUrl,
             'robots' => self::resolvePageRobots($pageSettings, $seoSettings, 'index,follow'),
+            'og_type' => 'website',
+            'og_url' => $canonicalUrl,
+            'og_locale' => self::openGraphLocale(),
             'og_title' => $title,
             'og_description' => $description,
-            'og_image' => self::cleanUrl(data_get($seoSettings, 'defaults.og_image'), $settings['logo_url'] ?? null),
+            'og_image' => $ogImage,
             'og_image_alt' => self::localized(data_get($seoSettings, 'defaults.og_image_alt')),
+            'twitter_card' => $ogImage ? 'summary_large_image' : 'summary',
+            'twitter_title' => $title,
+            'twitter_description' => $description,
+            'twitter_image' => $ogImage,
             'alternates' => self::alternateUrls($enabledLocales),
             'schemas' => self::pageSchemas($tenant, $settings, $pageKey, $title, $description, $canonicalUrl),
         ];
@@ -86,16 +97,27 @@ class TenantSeoResolver
             data_get($pageSettings, 'canonical_url'),
             url()->current()
         );
+        $ogImage = self::cleanUrl(
+            $car->image_url ?: data_get($pageSettings, 'og_image') ?: data_get($seoSettings, 'defaults.og_image'),
+            $settings['logo_url'] ?? null
+        );
 
         return [
             'title' => $title,
             'description' => $description,
             'canonical_url' => $canonicalUrl,
             'robots' => self::resolvePageRobots($pageSettings, $seoSettings, 'index,follow'),
+            'og_type' => 'product',
+            'og_url' => $canonicalUrl,
+            'og_locale' => self::openGraphLocale(),
             'og_title' => $title,
             'og_description' => $description,
-            'og_image' => self::cleanUrl($car->image_url ?: data_get($seoSettings, 'defaults.og_image'), $settings['logo_url'] ?? null),
+            'og_image' => $ogImage,
             'og_image_alt' => self::localized(data_get($seoSettings, 'defaults.og_image_alt')),
+            'twitter_card' => $ogImage ? 'summary_large_image' : 'summary',
+            'twitter_title' => $title,
+            'twitter_description' => $description,
+            'twitter_image' => $ogImage,
             'alternates' => self::alternateUrls($enabledLocales),
             'schemas' => self::carSchemas($tenant, $settings, $car, $title, $description, $canonicalUrl),
         ];
@@ -129,16 +151,27 @@ class TenantSeoResolver
             data_get($pageSettings, 'canonical_url'),
             url()->current()
         );
+        $ogImage = self::cleanUrl(
+            $reservation->car?->image_url ?: data_get($pageSettings, 'og_image') ?: data_get($seoSettings, 'defaults.og_image'),
+            $settings['logo_url'] ?? null
+        );
 
         return [
             'title' => $title,
             'description' => $description,
             'canonical_url' => $canonicalUrl,
             'robots' => self::resolvePageRobots($pageSettings, $seoSettings, 'noindex,nofollow'),
+            'og_type' => 'website',
+            'og_url' => $canonicalUrl,
+            'og_locale' => self::openGraphLocale(),
             'og_title' => $title,
             'og_description' => $description,
-            'og_image' => self::cleanUrl($reservation->car?->image_url ?: data_get($seoSettings, 'defaults.og_image'), $settings['logo_url'] ?? null),
+            'og_image' => $ogImage,
             'og_image_alt' => self::localized(data_get($seoSettings, 'defaults.og_image_alt')),
+            'twitter_card' => $ogImage ? 'summary_large_image' : 'summary',
+            'twitter_title' => $title,
+            'twitter_description' => $description,
+            'twitter_image' => $ogImage,
             'alternates' => self::alternateUrls($enabledLocales),
             'schemas' => self::reservationSchemas($tenant, $settings, $reservation, $pageKey, $title, $description, $canonicalUrl),
         ];
@@ -713,5 +746,14 @@ class TenantSeoResolver
         }
 
         return $alternates;
+    }
+
+    private static function openGraphLocale(): string
+    {
+        return match (strtolower((string) app()->getLocale())) {
+            'ar' => 'ar_AR',
+            'ur' => 'ur_PK',
+            default => 'en_US',
+        };
     }
 }

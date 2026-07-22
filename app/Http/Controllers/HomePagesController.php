@@ -702,6 +702,20 @@ class HomePagesController extends Controller
         return $this->staticPage('terms_of_use');
     }
 
+    public function termsConditionsRedirect()
+    {
+        $params = [];
+        $subdomain = request()->route('subdomain');
+
+        if ($subdomain) {
+            $params['subdomain'] = $subdomain;
+        }
+
+        $route = request()->routeIs('tenant.*') ? 'tenant.terms-of-use' : 'terms-of-use';
+
+        return redirect()->route($route, $params, 301);
+    }
+
     public function securityPolicy()
     {
         return $this->staticPage('security_policy');

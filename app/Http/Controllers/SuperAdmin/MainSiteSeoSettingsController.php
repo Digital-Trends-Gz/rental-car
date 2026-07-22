@@ -126,6 +126,7 @@ class MainSiteSeoSettingsController extends Controller
 
         foreach ($this->seoPageKeys() as $pageKey) {
             $rules["seo.pages.{$pageKey}.canonical_url"] = ['nullable', 'string', 'max:1000'];
+            $rules["seo.pages.{$pageKey}.og_image"] = ['nullable', 'string', 'max:1000'];
             $rules["seo.pages.{$pageKey}.robots"] = ['nullable', 'string', 'max:255'];
 
             foreach ($supportedLocales as $locale) {
@@ -247,6 +248,7 @@ class MainSiteSeoSettingsController extends Controller
             'description' => $this->localizedPayload($validated, "seo.pages.{$key}.description", $supportedLocales, $existing, "pages.{$key}.description"),
             'focus_keyword' => $this->localizedPayload($validated, "seo.pages.{$key}.focus_keyword", $supportedLocales, $existing, "pages.{$key}.focus_keyword"),
             'canonical_url' => $this->nullableString(data_get($validated, "seo.pages.{$key}.canonical_url")),
+            'og_image' => $this->nullableString(data_get($validated, "seo.pages.{$key}.og_image")),
             'robots' => $this->nullableString(data_get($validated, "seo.pages.{$key}.robots")),
         ];
     }

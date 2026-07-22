@@ -744,6 +744,10 @@ class LandingPageSettings
             return $settings;
         };
 
+        if ($locale === $defaultLocale) {
+            return $applyLocalizedImages($normalized);
+        }
+
         $overrides = data_get($normalized, "translations.$locale", []);
         if (!is_array($overrides) || empty($overrides)) {
             return $applyLocalizedImages($normalized);
