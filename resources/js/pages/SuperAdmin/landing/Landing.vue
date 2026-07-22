@@ -561,20 +561,49 @@ const translatedLabel = (key: string, fallback: string) => {
 
     return value === key ? fallback : value;
 };
-const footerNavLabel = (key: keyof LandingSettings['footer'], fallback: string) =>
-    String(props.landingSettings.footer?.[key] || '').trim() || fallback;
+const activeLocaleBase = computed(() => locale.value.toLowerCase().split('-')[0]);
+const localizedFallback = (fallback: string, localized: Partial<Record<string, string>> = {}) =>
+    localized[activeLocaleBase.value] || fallback;
+const translatedLandingLabel = (key: string, fallback: string, localized: Partial<Record<string, string>> = {}) => {
+    const localizedValue = localized[activeLocaleBase.value];
+    if (localizedValue) {
+        return localizedValue;
+    }
+
+    const translated = translatedLabel(`welcome.${key}`, '');
+
+    return translated || fallback;
+};
+const footerNavLabel = (
+    key: keyof LandingSettings['footer'],
+    fallback: string,
+    localized: Partial<Record<string, string>> = {},
+) => {
+    const translated = translatedLandingLabel(`footer_${String(key).replace(/^nav_/, '')}`, fallback, localized);
+
+    return translated || String(props.landingSettings.footer?.[key] || '').trim() || fallback;
+};
+const footerLabels = {
+    cars: () => footerNavLabel('nav_cars', 'Cars', { ar: '\u0645\u0639\u0631\u0636 \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a' }),
+    features: () => footerNavLabel('nav_features', 'Features', { ar: '\u0627\u0644\u0645\u0645\u064a\u0632\u0627\u062a' }),
+    application: () => footerNavLabel('nav_application', 'Application', { ar: '\u062a\u0637\u0628\u064a\u0642\u0627\u062a \u0627\u0644\u0645\u0648\u0628\u0627\u064a\u0644' }),
+    plans: () => footerNavLabel('nav_plans', 'Plans', { ar: '\u062e\u0637\u0637 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643' }),
+    privacy: () => footerNavLabel('nav_privacy', 'Privacy', { ar: '\u0627\u0644\u062e\u0635\u0648\u0635\u064a\u0629' }),
+    terms: () => footerNavLabel('nav_terms', 'Terms', { ar: '\u0627\u0644\u0634\u0631\u0648\u0637' }),
+    securityPolicy: () => footerNavLabel('nav_security_policy', 'Security Policy', { ar: '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u0623\u0645\u0627\u0646' }),
+};
 
 const staticPageLinks = computed(() => [
     {
-        label: translatedLabel('welcome.footer_privacy', 'Privacy'),
+        label: footerLabels.privacy(),
         href: localizedPath('/privacy-policy'),
     },
     {
-        label: translatedLabel('welcome.footer_terms', 'Terms'),
+        label: footerLabels.terms(),
         href: localizedPath('/terms-of-use'),
     },
     {
-        label: isRtlLocale.value ? 'سياسة الأمان' : 'Security Policy',
+        label: footerLabels.securityPolicy(),
         href: localizedPath('/security-policy'),
     },
 ]);
@@ -583,11 +612,11 @@ const footerLinks = computed(() => {
     const links: QuickLinkItem[] = [];
 
     if (props.landingSettings.mobile_apps_section?.enabled !== false) {
-        links.push({ label: 'Application', href: '#application' });
+        links.push({ label: footerLabels.application(), href: '#application' });
     }
 
     if (props.landingSettings.plans_comparison_page?.enabled !== false) {
-        links.push({ label: 'Plans', href: '#pricing' });
+        links.push({ label: footerLabels.plans(), href: '#pricing' });
     }
 
     links.push(...staticPageLinks.value);
@@ -595,16 +624,16 @@ const footerLinks = computed(() => {
     return links;
 });
 const footerLinkColumns = computed(() => [
-    [{ label: footerNavLabel('nav_privacy', 'Privacy'), href: localizedPath('/privacy-policy') }],
-    [{ label: footerNavLabel('nav_terms', 'Terms'), href: localizedPath('/terms-of-use') }],
-    [{ label: footerNavLabel('nav_security_policy', 'Security Policy'), href: localizedPath('/security-policy') }],
+    [{ label: footerLabels.privacy(), href: localizedPath('/privacy-policy') }],
+    [{ label: footerLabels.terms(), href: localizedPath('/terms-of-use') }],
+    [{ label: footerLabels.securityPolicy(), href: localizedPath('/security-policy') }],
     [
-        { label: footerNavLabel('nav_cars', 'Cars'), href: '#cars' },
-        { label: footerNavLabel('nav_features', 'Features'), href: '#features' },
+        { label: footerLabels.cars(), href: '#cars' },
+        { label: footerLabels.features(), href: '#features' },
     ],
     [
-        { label: footerNavLabel('nav_application', 'Application'), href: '#application' },
-        { label: footerNavLabel('nav_plans', 'Plans'), href: '#pricing' },
+        { label: footerLabels.application(), href: '#application' },
+        { label: footerLabels.plans(), href: '#pricing' },
     ],
 ]);
 const footerDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));
@@ -639,6 +668,42 @@ const heroIsVideo = computed(() =>
     /\.(mp4|webm|ogg|mov)(?:$|[?#])/i.test(heroImage.value),
 );
 const contactSection = computed(() => props.landingSettings.contact_section);
+const contactQuickLinksTitle = computed(() => {
+    const translated = t('contact.quick_links');
+
+    return translated !== 'contact.quick_links'
+        ? translated
+        : localizedFallback('Quick Links', { ar: '\u0631\u0648\u0627\u0628\u0637 \u0645\u0641\u064a\u062f\u0629' });
+});
+const contactQuickLinkLabel = (link: QuickLinkItem) => {
+    const href = String(link.href || '').trim().toLowerCase();
+
+    if (href === '#cars' || href === '/fleet' || href.endsWith('/fleet')) {
+        return footerLabels.cars();
+    }
+
+    if (href === '/plans' || href === '/pricing-plans' || href === '#pricing') {
+        return footerLabels.plans();
+    }
+
+    if (href === '#application' || href === '/applications' || href === '/car-rental-apps') {
+        return footerLabels.application();
+    }
+
+    if (href === '#faq') {
+        return translatedLabel('welcome.faq_title', link.label || 'FAQ');
+    }
+
+    return String(link.label || '').trim();
+};
+const contactQuickLinks = computed(() =>
+    (contactSection.value.quick_links || [])
+        .map((link) => ({
+            ...link,
+            label: contactQuickLinkLabel(link),
+        }))
+        .filter((link) => String(link.label || '').trim() !== ''),
+);
 const contactRecipient = computed(
     () => contactSection.value.direct_email || 'info@car4u.net',
 );
@@ -1891,9 +1956,9 @@ onUnmounted(() => {
                                             class="inline-flex h-16 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
                                             :class="{ 'pointer-events-none opacity-60': !selectedManagementMobileApp.app_store_url }"
                                             :aria-disabled="!selectedManagementMobileApp.app_store_url"
-                                            dir="ltr"
+                                            :dir="appStoreButtonDirection"
                                         >
-                                            <span class="text-left leading-tight">
+                                            <span class="leading-tight" :class="appStoreButtonTextClass">
                                                 <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
                                                     {{ mobileAppStoreCaption('ios', landingSettings.footer.ios_caption) }}
                                                 </span>
@@ -1914,9 +1979,9 @@ onUnmounted(() => {
                                             class="inline-flex h-16 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
                                             :class="{ 'pointer-events-none opacity-60': !selectedManagementMobileApp.google_play_url }"
                                             :aria-disabled="!selectedManagementMobileApp.google_play_url"
-                                            dir="ltr"
+                                            :dir="appStoreButtonDirection"
                                         >
-                                            <span class="text-left leading-tight">
+                                            <span class="leading-tight" :class="appStoreButtonTextClass">
                                                 <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
                                                     {{ mobileAppStoreCaption('android', landingSettings.footer.android_caption) }}
                                                 </span>
@@ -2055,9 +2120,9 @@ onUnmounted(() => {
                                             class="inline-flex h-16 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
                                             :class="{ 'pointer-events-none opacity-60': !clientMobileApp.app_store_url }"
                                             :aria-disabled="!clientMobileApp.app_store_url"
-                                            dir="ltr"
+                                            :dir="appStoreButtonDirection"
                                         >
-                                            <span class="text-left leading-tight">
+                                            <span class="leading-tight" :class="appStoreButtonTextClass">
                                                 <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
                                                     {{ mobileAppStoreCaption('ios', landingSettings.footer.ios_caption) }}
                                                 </span>
@@ -2078,9 +2143,9 @@ onUnmounted(() => {
                                             class="inline-flex h-16 items-center justify-between gap-4 rounded-xl border border-slate-100 bg-white px-5 text-slate-950 shadow-[0_12px_30px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_16px_34px_rgba(59,130,246,0.12)]"
                                             :class="{ 'pointer-events-none opacity-60': !clientMobileApp.google_play_url }"
                                             :aria-disabled="!clientMobileApp.google_play_url"
-                                            dir="ltr"
+                                            :dir="appStoreButtonDirection"
                                         >
-                                            <span class="text-left leading-tight">
+                                            <span class="leading-tight" :class="appStoreButtonTextClass">
                                                 <span class="block text-[0.58rem] font-bold uppercase tracking-wide text-slate-500">
                                                     {{ mobileAppStoreCaption('android', landingSettings.footer.android_caption) }}
                                                 </span>
@@ -2652,12 +2717,12 @@ onUnmounted(() => {
                                 <CardHeader>
                                     <CardTitle
                                         class="inline-flex w-fit border-b-2 border-primary/70 pb-2"
-                                        >{{ contactSection.quick_links_title }}</CardTitle
+                                        >{{ contactQuickLinksTitle }}</CardTitle
                                     >
                                 </CardHeader>
                                 <CardContent class="space-y-3 text-sm">
                                     <a
-                                        v-for="link in contactSection.quick_links"
+                                        v-for="link in contactQuickLinks"
                                         :key="`${link.label}-${link.href}`"
                                         :href="localizedInternalHref(link.href)"
                                         class="block font-medium text-primary hover:underline"
@@ -2735,9 +2800,9 @@ onUnmounted(() => {
                                     !landingSettings.footer.android_url,
                             }"
                             :aria-disabled="!landingSettings.footer.android_url"
-                            dir="ltr"
+                            :dir="appStoreButtonDirection"
                         >
-                            <span class="text-left leading-tight">
+                            <span class="leading-tight" :class="appStoreButtonTextClass">
                                 <span class="block text-[0.5rem] font-bold uppercase tracking-wide text-slate-500">
                                     {{ mobileAppStoreCaption('android', landingSettings.footer.android_caption) }}
                                 </span>
@@ -2761,9 +2826,9 @@ onUnmounted(() => {
                                     !landingSettings.footer.ios_url,
                             }"
                             :aria-disabled="!landingSettings.footer.ios_url"
-                            dir="ltr"
+                            :dir="appStoreButtonDirection"
                         >
-                            <span class="text-left leading-tight">
+                            <span class="leading-tight" :class="appStoreButtonTextClass">
                                 <span class="block text-[0.5rem] font-bold uppercase tracking-wide text-slate-500">
                                     {{ mobileAppStoreCaption('ios', landingSettings.footer.ios_caption) }}
                                 </span>

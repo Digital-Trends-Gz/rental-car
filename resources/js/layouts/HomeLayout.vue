@@ -365,6 +365,8 @@ const landingFooterCopyright = computed(() =>
     landingSettings.value?.footer?.copyright_text || t('landing.footer_rights') || 'All rights reserved.'
 );
 const footerDirection = computed(() => (direction.value === 'rtl' ? 'rtl' : 'ltr'));
+const appStoreButtonDirection = computed(() => (footerDirection.value === 'rtl' ? 'rtl' : 'ltr'));
+const appStoreButtonTextClass = computed(() => (footerDirection.value === 'rtl' ? 'text-right' : 'text-left'));
 const landingFooterNavLinks = computed(() => {
     const links: Array<{ label: string; href: string }> = [];
 
@@ -417,11 +419,13 @@ const landingFooterAppButtons = computed(() => {
 
     const androidLabel = String(landingSettings.value?.footer?.android_label || '').trim();
     const iosLabel = String(landingSettings.value?.footer?.ios_label || '').trim();
+    const androidCaption = String(landingSettings.value?.footer?.android_caption || '').trim();
+    const iosCaption = String(landingSettings.value?.footer?.ios_caption || '').trim();
 
     return [
         {
             key: 'android',
-            caption: localizedFallback('Get it on', { ar: '\u062d\u0645\u0644\u0647 \u0645\u0646' }),
+            caption: androidCaption || localizedFallback('Get it on', { ar: '\u062d\u0645\u0644\u0647 \u0645\u0646' }),
             label: !androidLabel || androidLabel.toLowerCase() === 'android' ? 'Google Play' : androidLabel,
             href: String(landingSettings.value?.footer?.android_url || '').trim(),
             iconUrl: String(landingSettings.value?.footer?.android_icon_url || '').trim(),
@@ -429,7 +433,7 @@ const landingFooterAppButtons = computed(() => {
         },
         {
             key: 'ios',
-            caption: localizedFallback('Download on the', { ar: '\u0642\u0645 \u0628\u0627\u0644\u062a\u0646\u0632\u064a\u0644 \u0645\u0646' }),
+            caption: iosCaption || localizedFallback('Download on the', { ar: '\u0642\u0645 \u0628\u0627\u0644\u062a\u0646\u0632\u064a\u0644 \u0645\u0646' }),
             label: !iosLabel || iosLabel.toLowerCase() === 'ios' ? 'App Store' : iosLabel,
             href: String(landingSettings.value?.footer?.ios_url || '').trim(),
             iconUrl: String(landingSettings.value?.footer?.ios_icon_url || '').trim(),
@@ -670,9 +674,9 @@ onBeforeUnmount(() => {
                                 :target="button.href ? '_blank' : undefined"
                                 :rel="button.href ? 'noopener noreferrer' : undefined"
                                 class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-1 text-slate-950 transition hover:border-blue-200"
-                                dir="ltr"
+                                :dir="appStoreButtonDirection"
                             >
-                                <span class="text-left leading-tight">
+                                <span class="leading-tight" :class="appStoreButtonTextClass">
                                     <span class="block text-[0.5rem] font-bold uppercase tracking-wide text-slate-500">
                                         {{ button.caption }}
                                     </span>

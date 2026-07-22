@@ -577,7 +577,7 @@ const storeIconUrl = (store: 'ios' | 'android') =>
 }
 
 .store-button span {
-    text-align: left;
+    text-align: start;
     line-height: 1.1;
 }
 
