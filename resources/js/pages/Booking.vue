@@ -85,6 +85,8 @@ const fallbackLocationOptions = [
 
 const normalizeLocationName = (value: string | null | undefined): string => String(value ?? '').trim();
 const formatMoney = (value: number): string => (Number.isFinite(value) ? Math.max(0, value).toFixed(2) : '0.00');
+const moneyWithCurrency = (value: number | string): string => `${value} ${currencySymbol.value}`;
+const discountWithCurrency = (value: number | string): string => `- ${value} ${currencySymbol.value}`;
 const toMoneyNumber = (value: unknown): number => {
     const parsed = Number(value ?? 0);
     return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
@@ -693,7 +695,7 @@ watch(
                                             class="inline-flex w-full items-center justify-between gap-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 text-white sm:block sm:w-auto sm:py-2"
                                         >
                                             <span class="text-2xl font-bold sm:text-3xl"
-                                                >{{ currencySymbol }}{{ car.price_per_day }}</span
+                                                >{{ moneyWithCurrency(car.price_per_day) }}</span
                                             >
                                             <span
                                                 class="text-sm text-orange-100 sm:block"
@@ -1133,7 +1135,7 @@ watch(
                                             >{{ rateSummary.label }}</span
                                         >
                                         <span class="shrink-0 font-bold text-gray-900"
-                                            >{{ currencySymbol }}{{ formatMoney(rateSummary.amount) }}</span
+                                            >{{ moneyWithCurrency(formatMoney(rateSummary.amount)) }}</span
                                         >
                                     </div>
                                 </div>
@@ -1148,10 +1150,12 @@ watch(
                                         <span
                                             class="shrink-0 text-base font-bold text-gray-900 sm:text-lg"
                                         >
-                                            {{ currencySymbol }}{{
+                                            {{
+                                                moneyWithCurrency(
                                                 rentalDays > 0
                                                     ? subtotal.toFixed(2)
-                                                    : '0.00'
+                                                    : '0.00',
+                                                )
                                             }}
                                         </span>
                                     </div>
@@ -1166,10 +1170,12 @@ watch(
                                         <span
                                             class="shrink-0 text-base font-bold text-gray-900 sm:text-lg"
                                         >
-                                            {{ currencySymbol }}{{
+                                            {{
+                                                moneyWithCurrency(
                                                 rentalDays > 0
                                                     ? tax.toFixed(2)
-                                                    : '0.00'
+                                                    : '0.00',
+                                                )
                                             }}
                                         </span>
                                     </div>
@@ -1186,10 +1192,12 @@ watch(
                                         <span
                                             class="shrink-0 text-base font-bold text-gray-900 sm:text-lg"
                                         >
-                                            {{ currencySymbol }}{{
+                                            {{
+                                                moneyWithCurrency(
                                                 rentalDays > 0
                                                     ? returnLocationFee.toFixed(2)
-                                                    : '0.00'
+                                                    : '0.00',
+                                                )
                                             }}
                                         </span>
                                     </div>
@@ -1204,10 +1212,12 @@ watch(
                                         <span
                                             class="shrink-0 text-base font-bold text-emerald-600 sm:text-lg"
                                         >
-                                            -{{ currencySymbol }}{{
+                                            {{
+                                                discountWithCurrency(
                                                 rentalDays > 0
                                                     ? autoDiscount.toFixed(2)
-                                                    : '0.00'
+                                                    : '0.00',
+                                                )
                                             }}
                                         </span>
                                     </div>
@@ -1220,10 +1230,12 @@ watch(
                                         <span
                                             class="shrink-0 text-base font-bold text-emerald-600 sm:text-lg"
                                         >
-                                            -{{ currencySymbol }}{{
+                                            {{
+                                                discountWithCurrency(
                                                 rentalDays > 0
                                                     ? couponDiscount.toFixed(2)
-                                                    : '0.00'
+                                                    : '0.00',
+                                                )
                                             }}
                                         </span>
                                     </div>
@@ -1241,10 +1253,12 @@ watch(
                                             <span
                                                 class="shrink-0 text-xl font-bold text-orange-500 sm:text-2xl"
                                             >
-                                                {{ currencySymbol }}{{
+                                                {{
+                                                    moneyWithCurrency(
                                                     rentalDays > 0
                                                         ? total.toFixed(2)
-                                                        : '0.00'
+                                                        : '0.00',
+                                                    )
                                                 }}
                                             </span>
                                         </div>
