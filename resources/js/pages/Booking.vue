@@ -542,13 +542,13 @@ watch(
     <HomeLayout>
         <SeoHead :seo="seo" />
         <div
-            class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8"
+            class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-5 sm:py-8"
         >
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <!--  Header -->
-                <div class="mb-8">
+                <div class="mb-5 sm:mb-8">
                     <nav
-                        class="mb-6 flex items-center space-x-2 text-sm text-gray-500"
+                        class="mb-5 flex flex-wrap items-center gap-2 text-sm text-gray-500 sm:mb-6"
                     >
                         <a
                             href="/fleet"
@@ -568,13 +568,13 @@ watch(
                                 d="M9 5l7 7-7 7"
                             ></path>
                         </svg>
-                        <span class="font-medium text-gray-900"
+                        <span class="min-w-0 break-words font-medium text-gray-900"
                             >{{ car.make }} {{ car.model }}</span
                         >
                     </nav>
-                    <div class="flex items-center space-x-4">
+                    <div class="flex items-start gap-3 sm:items-center sm:gap-4">
                         <div
-                            class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-orange-600"
+                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 sm:h-12 sm:w-12"
                         >
                             <svg
                                 class="h-6 w-6 text-white"
@@ -590,28 +590,28 @@ watch(
                                 ></path>
                             </svg>
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <h1
-                                class="text-4xl leading-tight font-bold text-gray-900"
+                                class="text-2xl leading-tight font-bold text-gray-900 sm:text-4xl"
                             >
                                 {{ t('booking.book_car', { make: car.make, model: car.model }) }}
                             </h1>
-                            <p class="mt-1 text-gray-600">
+                            <p class="mt-1 text-sm leading-6 text-gray-600 sm:text-base">
                                 {{ t('booking.subtitle') }}
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid gap-8 lg:grid-cols-3">
+                <div class="grid gap-5 lg:grid-cols-3 lg:gap-8">
                     <!--  Car Details Section -->
-                    <div class="space-y-8 lg:col-span-2">
+                    <div class="space-y-5 sm:space-y-8 lg:col-span-2">
                         <!--  Car Images -->
                         <div
                             class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg"
                         >
                             <div
-                                class="relative h-72 bg-gradient-to-br from-gray-100 to-gray-200 sm:h-96"
+                                class="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200 sm:h-96"
                             >
                                 <img
                                     :src="currentImage?.url"
@@ -619,7 +619,7 @@ watch(
                                     class="h-full w-full object-cover transition-all duration-500"
                                 />
                             </div>
-                            <div v-if="images.length > 1" class="grid grid-cols-4 gap-3 border-t border-gray-100 p-4 sm:grid-cols-5">
+                            <div v-if="images.length > 1" class="grid grid-cols-4 gap-2 border-t border-gray-100 p-3 sm:grid-cols-5 sm:gap-3 sm:p-4">
                                 <button
                                     v-for="(image, index) in images"
                                     :key="`${image.url}-${index}`"
@@ -631,30 +631,30 @@ watch(
                                     <img
                                         :src="image.url"
                                         :alt="image.alt"
-                                        class="h-16 w-full object-cover"
+                                        class="h-14 w-full object-cover sm:h-16"
                                     />
                                 </button>
                             </div>
 
                             <!--  Car Info -->
-                            <div class="p-8">
+                            <div class="p-4 sm:p-8">
                                 <div
-                                    class="mb-6 flex items-start justify-between"
+                                    class="mb-5 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-start sm:justify-between"
                                 >
-                                    <div>
+                                    <div class="min-w-0">
                                         <h2
-                                            class="mb-2 text-3xl font-bold text-gray-900"
+                                            class="mb-3 text-2xl font-bold text-gray-900 sm:mb-2 sm:text-3xl"
                                         >
                                             {{ car.make }} {{ car.model }}
                                         </h2>
                                         <div
-                                            class="flex items-center space-x-6 text-sm text-gray-500"
+                                            class="flex flex-wrap items-center gap-2 text-sm text-gray-500 sm:gap-3"
                                         >
                                             <span
                                                 class="flex items-center rounded-full bg-gray-100 px-3 py-1"
                                             >
                                                 <svg
-                                                    class="mr-2 h-4 w-4"
+                                                    class="me-2 h-4 w-4"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
@@ -672,7 +672,7 @@ watch(
                                                 class="flex items-center rounded-full bg-gray-100 px-3 py-1 capitalize"
                                             >
                                                 <svg
-                                                    class="mr-2 h-4 w-4"
+                                                    class="me-2 h-4 w-4"
                                                     fill="none"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
@@ -688,22 +688,22 @@ watch(
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="text-right">
+                                    <div class="w-full text-start sm:w-auto sm:text-end">
                                         <div
-                                            class="rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 text-white"
+                                            class="inline-flex w-full items-center justify-between gap-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 text-white sm:block sm:w-auto sm:py-2"
                                         >
-                                            <span class="text-3xl font-bold"
+                                            <span class="text-2xl font-bold sm:text-3xl"
                                                 >{{ currencySymbol }}{{ car.price_per_day }}</span
                                             >
                                             <span
-                                                class="block text-sm text-orange-100"
+                                                class="text-sm text-orange-100 sm:block"
                                                 >{{ t('booking.per_day') }}</span
                                             >
                                         </div>
                                     </div>
                                 </div>
 
-                                <p class="leading-relaxed text-gray-600">
+                                <p class="text-sm leading-7 text-gray-600 sm:text-base sm:leading-relaxed">
                                     {{ car.description }}
                                 </p>
                             </div>
@@ -711,11 +711,11 @@ watch(
 
                         <div
                             v-if="availabilityCalendar"
-                            class="rounded-2xl border border-gray-100 bg-white p-8 shadow-lg"
+                            class="rounded-2xl border border-gray-100 bg-white p-4 shadow-lg sm:p-8"
                         >
-                            <div class="mb-6 flex items-center space-x-3">
+                            <div class="mb-5 flex items-start gap-3 sm:mb-6 sm:items-center">
                                 <div
-                                    class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600"
+                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600"
                                 >
                                     <svg
                                         class="h-5 w-5 text-white"
@@ -732,10 +732,10 @@ watch(
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-2xl font-bold text-gray-900">
+                                    <h3 class="text-xl font-bold text-gray-900 sm:text-2xl">
                                         Availability Calendar
                                     </h3>
-                                    <p class="text-sm text-gray-500">
+                                    <p class="text-sm leading-6 text-gray-500">
                                         Green days are free. Red days are already booked. Click a free day to fill your rental dates.
                                     </p>
                                 </div>
@@ -758,14 +758,14 @@ watch(
 
                             <div class="space-y-4">
                                 <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                    <div class="flex items-center gap-2">
-                                        <Button variant="outline" @click="openAvailabilityWindow(availabilityCalendar.window.previous)">
+                                    <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                                        <Button variant="outline" class="px-3 text-xs sm:text-sm" @click="openAvailabilityWindow(availabilityCalendar.window.previous)">
                                             Previous
                                         </Button>
-                                        <div class="min-w-40 text-center text-lg font-semibold text-gray-900">
+                                        <div class="min-w-0 text-center text-sm font-semibold text-gray-900 sm:min-w-40 sm:text-lg">
                                             {{ availabilityCalendar.window.label }}
                                         </div>
-                                        <Button variant="outline" @click="openAvailabilityWindow(availabilityCalendar.window.next)">
+                                        <Button variant="outline" class="px-3 text-xs sm:text-sm" @click="openAvailabilityWindow(availabilityCalendar.window.next)">
                                             Next
                                         </Button>
                                     </div>
@@ -773,7 +773,7 @@ watch(
                                     <input
                                         type="date"
                                         :value="availabilityCalendar.window.starts_at"
-                                        class="h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                                        class="h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm md:w-auto"
                                         @change="openAvailabilityWindow(($event.target as HTMLInputElement).value)"
                                     >
                                 </div>
@@ -783,7 +783,7 @@ watch(
                                         v-for="day in availabilityDays"
                                         :key="day.iso"
                                         type="button"
-                                        class="min-h-20 rounded-xl border px-3 py-3 text-left text-sm transition-all duration-200"
+                                        class="min-h-20 rounded-xl border px-3 py-3 text-start text-sm transition-all duration-200"
                                         :class="{
                                             'border-gray-200 bg-white text-gray-400': day.isPast,
                                             'border-red-200 bg-red-50 text-red-600': day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd,
@@ -810,9 +810,9 @@ watch(
 
                         <!--  Booking Form -->
                         <div
-                            class="rounded-2xl border border-gray-100 bg-white p-8 shadow-lg"
+                            class="rounded-2xl border border-gray-100 bg-white p-4 shadow-lg sm:p-8"
                         >
-                            <div class="mb-8 flex items-center space-x-3">
+                            <div class="mb-6 flex items-center gap-3 sm:mb-8">
                                 <div
                                     class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600"
                                 >
@@ -830,19 +830,19 @@ watch(
                                         ></path>
                                     </svg>
                                 </div>
-                                <h3 class="text-2xl font-bold text-gray-900">
+                                <h3 class="text-xl font-bold text-gray-900 sm:text-2xl">
                                     {{ t('booking.details_title') }}
                                 </h3>
                             </div>
 
-                            <form class="space-y-8">
+                            <form class="space-y-6 sm:space-y-8">
                                 <!--  Rental Dates -->
                                 <div class="space-y-4">
                                     <h4
                                         class="flex items-center text-lg font-semibold text-gray-900"
                                     >
                                         <svg
-                                            class="mr-2 h-5 w-5 text-orange-500"
+                                            class="me-2 h-5 w-5 text-orange-500"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -856,7 +856,7 @@ watch(
                                         </svg>
                                         {{ t('booking.rental_period') }}
                                     </h4>
-                                    <div class="grid gap-6 md:grid-cols-2">
+                                    <div class="grid gap-4 md:grid-cols-2 md:gap-6">
                                         <div class="space-y-2">
                                             <label
                                                 class="block text-sm font-semibold text-gray-700"
@@ -869,7 +869,7 @@ watch(
                                                 :min="$page.props.minDate"
                                                 :max="$page.props.maxDate"
                                                 required
-                                                class="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-lg transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
+                                                class="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 sm:py-4 sm:text-lg"
                                                 :class="{
                                                     'border-red-500 focus:border-red-500 focus:ring-red-500':
                                                         form.errors.start_date,
@@ -898,7 +898,7 @@ watch(
                                                 "
                                                 :max="$page.props.maxDate"
                                                 required
-                                                class="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-lg transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
+                                                class="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 sm:py-4 sm:text-lg"
                                                 :class="{
                                                     'border-red-500 focus:border-red-500 focus:ring-red-500':
                                                         form.errors.end_date,
@@ -920,7 +920,7 @@ watch(
                                         class="flex items-center text-lg font-semibold text-gray-900"
                                     >
                                         <svg
-                                            class="mr-2 h-5 w-5 text-orange-500"
+                                            class="me-2 h-5 w-5 text-orange-500"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -940,7 +940,7 @@ watch(
                                         </svg>
                                         {{ t('booking.pickup_return_locations') }}
                                     </h4>
-                                    <div class="grid gap-6 md:grid-cols-2">
+                                    <div class="grid gap-4 md:grid-cols-2 md:gap-6">
                                         <div class="space-y-2">
                                             <label
                                                 class="block text-sm font-semibold text-gray-700"
@@ -950,7 +950,7 @@ watch(
                                             <select
                                                 v-model="form.pickup_location"
                                                 required
-                                                class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-4 text-lg transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
+                                                class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-base transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 sm:py-4 sm:text-lg"
                                                 :class="{
                                                     'border-red-500 focus:border-red-500 focus:ring-red-500':
                                                         form.errors
@@ -989,7 +989,7 @@ watch(
                                             <select
                                                 v-model="form.return_location"
                                                 required
-                                                class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-4 text-lg transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
+                                                class="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-base transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 sm:py-4 sm:text-lg"
                                                 :class="{
                                                     'border-red-500 focus:border-red-500 focus:ring-red-500':
                                                         form.errors
@@ -1027,7 +1027,7 @@ watch(
                                         class="flex items-center text-lg font-semibold text-gray-900"
                                     >
                                         <svg
-                                            class="mr-2 h-5 w-5 text-orange-500"
+                                            class="me-2 h-5 w-5 text-orange-500"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -1046,7 +1046,7 @@ watch(
                                             v-model="form.coupon_code"
                                             type="text"
                                             placeholder="e.g. SAVE10"
-                                            class="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-lg uppercase transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500"
+                                            class="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base uppercase transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 sm:text-lg"
                                         />
                                         <button
                                             type="button"
@@ -1077,9 +1077,9 @@ watch(
                     <!--  Price Summary Sidebar -->
                     <div class="lg:col-span-1">
                         <div
-                            class="sticky top-4 rounded-2xl border border-gray-100 bg-white p-8 shadow-lg"
+                            class="rounded-2xl border border-gray-100 bg-white p-4 shadow-lg sm:p-8 lg:sticky lg:top-4"
                         >
-                            <div class="mb-6 flex items-center space-x-3">
+                            <div class="mb-5 flex items-center gap-3 sm:mb-6">
                                 <div
                                     class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600"
                                 >
@@ -1097,22 +1097,22 @@ watch(
                                         ></path>
                                     </svg>
                                 </div>
-                                <h3 class="text-2xl font-bold text-gray-900">
+                                <h3 class="text-xl font-bold text-gray-900 sm:text-2xl">
                                     {{ t('booking.summary_title') }}
                                 </h3>
                             </div>
 
-                            <div class="mb-8 space-y-6">
+                            <div class="mb-6 space-y-5 sm:mb-8 sm:space-y-6">
                                 <div
                                     class="space-y-4 rounded-xl bg-gray-50 p-4"
                                 >
                                     <div
-                                        class="flex items-center justify-between"
+                                        class="flex items-center justify-between gap-4"
                                     >
-                                        <span class="font-medium text-gray-600"
+                                        <span class="text-sm font-medium text-gray-600 sm:text-base"
                                             >{{ t('booking.rental_period') }}</span
                                         >
-                                        <span class="font-bold text-gray-900">
+                                        <span class="shrink-0 font-bold text-gray-900">
                                             {{
                                                 rentalDays > 0
                                                     ? t(
@@ -1127,12 +1127,12 @@ watch(
                                     </div>
 
                                     <div
-                                        class="flex items-center justify-between"
+                                        class="flex items-center justify-between gap-4"
                                     >
-                                        <span class="font-medium text-gray-600"
+                                        <span class="text-sm font-medium text-gray-600 sm:text-base"
                                             >{{ rateSummary.label }}</span
                                         >
-                                        <span class="font-bold text-gray-900"
+                                        <span class="shrink-0 font-bold text-gray-900"
                                             >{{ currencySymbol }}{{ formatMoney(rateSummary.amount) }}</span
                                         >
                                     </div>
@@ -1140,13 +1140,13 @@ watch(
 
                                 <div class="space-y-4">
                                     <div
-                                        class="flex items-center justify-between py-2"
+                                        class="flex items-center justify-between gap-4 py-2"
                                     >
-                                        <span class="font-medium text-gray-600"
+                                        <span class="text-sm font-medium text-gray-600 sm:text-base"
                                             >{{ t('booking.subtotal') }}</span
                                         >
                                         <span
-                                            class="text-lg font-bold text-gray-900"
+                                            class="shrink-0 text-base font-bold text-gray-900 sm:text-lg"
                                         >
                                             {{ currencySymbol }}{{
                                                 rentalDays > 0
@@ -1158,13 +1158,13 @@ watch(
 
                                     <div
                                         v-if="showTax"
-                                        class="flex items-center justify-between py-2"
+                                        class="flex items-center justify-between gap-4 py-2"
                                     >
-                                        <span class="font-medium text-gray-600"
+                                        <span class="text-sm font-medium text-gray-600 sm:text-base"
                                             >Tax ({{ formattedTaxPercentage }}%)</span
                                         >
                                         <span
-                                            class="text-lg font-bold text-gray-900"
+                                            class="shrink-0 text-base font-bold text-gray-900 sm:text-lg"
                                         >
                                             {{ currencySymbol }}{{
                                                 rentalDays > 0
@@ -1175,16 +1175,16 @@ watch(
                                     </div>
 
                                     <div
-                                        class="flex items-center justify-between py-2"
+                                        class="flex items-center justify-between gap-4 py-2"
                                     >
-                                        <span class="font-medium text-gray-600">
+                                        <span class="min-w-0 text-sm font-medium text-gray-600 sm:text-base">
                                             {{ t('booking.return_location_fee') }}
                                             <span v-if="form.return_location" class="text-xs text-gray-500">
                                                 ({{ form.return_location }})
                                             </span>
                                         </span>
                                         <span
-                                            class="text-lg font-bold text-gray-900"
+                                            class="shrink-0 text-base font-bold text-gray-900 sm:text-lg"
                                         >
                                             {{ currencySymbol }}{{
                                                 rentalDays > 0
@@ -1195,14 +1195,14 @@ watch(
                                     </div>
 
                                     <div
-                                        class="flex items-center justify-between py-2"
+                                        class="flex items-center justify-between gap-4 py-2"
                                     >
-                                        <span class="font-medium text-gray-600">
+                                        <span class="min-w-0 text-sm font-medium text-gray-600 sm:text-base">
                                             Auto Discount
                                             <span v-if="autoDiscountName" class="text-xs text-gray-500">({{ autoDiscountName }})</span>
                                         </span>
                                         <span
-                                            class="text-lg font-bold text-emerald-600"
+                                            class="shrink-0 text-base font-bold text-emerald-600 sm:text-lg"
                                         >
                                             -{{ currencySymbol }}{{
                                                 rentalDays > 0
@@ -1214,11 +1214,11 @@ watch(
 
                                     <div
                                         v-if="hasCoupons"
-                                        class="flex items-center justify-between py-2"
+                                        class="flex items-center justify-between gap-4 py-2"
                                     >
-                                        <span class="font-medium text-gray-600">Coupon Discount</span>
+                                        <span class="text-sm font-medium text-gray-600 sm:text-base">Coupon Discount</span>
                                         <span
-                                            class="text-lg font-bold text-emerald-600"
+                                            class="shrink-0 text-base font-bold text-emerald-600 sm:text-lg"
                                         >
                                             -{{ currencySymbol }}{{
                                                 rentalDays > 0
@@ -1232,14 +1232,14 @@ watch(
                                         class="border-t-2 border-gray-200 pt-4"
                                     >
                                         <div
-                                            class="flex items-center justify-between"
+                                            class="flex items-center justify-between gap-4"
                                         >
                                             <span
-                                                class="text-xl font-bold text-gray-900"
+                                                class="text-lg font-bold text-gray-900 sm:text-xl"
                                                 >{{ t('booking.total') }}</span
                                             >
                                             <span
-                                                class="text-2xl font-bold text-orange-500"
+                                                class="shrink-0 text-xl font-bold text-orange-500 sm:text-2xl"
                                             >
                                                 {{ currencySymbol }}{{
                                                     rentalDays > 0
@@ -1262,14 +1262,14 @@ watch(
                                     'cursor-not-allowed bg-gray-300 text-gray-500':
                                         !canSubmit || form.processing,
                                 }"
-                                class="w-full rounded-xl px-6 py-5 text-lg font-bold transition-all duration-300"
+                                class="w-full rounded-xl px-5 py-4 text-base font-bold transition-all duration-300 sm:px-6 sm:py-5 sm:text-lg"
                             >
                                 <span
                                     v-if="form.processing"
                                     class="flex items-center justify-center"
                                 >
                                     <svg
-                                        class="mr-3 -ml-1 h-6 w-6 animate-spin text-white"
+                                        class="me-3 -ms-1 h-6 w-6 animate-spin text-white"
                                         fill="none"
                                         viewBox="0 0 24 24"
                                     >
@@ -1294,7 +1294,7 @@ watch(
                                     class="flex items-center justify-center"
                                 >
                                     <svg
-                                        class="mr-2 h-5 w-5"
+                                        class="me-2 h-5 w-5"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -1313,7 +1313,7 @@ watch(
                                     class="flex items-center justify-center"
                                 >
                                     <svg
-                                        class="mr-2 h-5 w-5 fill-white"
+                                        class="me-2 h-5 w-5 fill-white"
                                         xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 640 640"
                                     >
