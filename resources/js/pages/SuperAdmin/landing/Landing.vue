@@ -642,6 +642,17 @@ const footerLinkColumns = computed(() => [
     ],
 ]);
 const footerDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));
+const footerCopyrightText = computed(() => {
+    const configured = String(props.landingSettings.footer?.copyright_text || '').trim();
+    const translated = t('landing.footer_rights');
+    const fallback = translated === 'landing.footer_rights' ? '' : translated;
+
+    if (footerDirection.value === 'rtl' && configured.toLowerCase() === 'all rights reserved.') {
+        return fallback || configured;
+    }
+
+    return configured || fallback || 'All rights reserved.';
+});
 const appStoreButtonDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));
 const appStoreButtonTextClass = computed(() => (isRtlLocale.value ? 'text-right' : 'text-left'));
 
@@ -2819,16 +2830,11 @@ onUnmounted(() => {
 
                 <p
                     class="border-t border-slate-200 pt-4 text-center text-xs text-muted-foreground md:border-0 md:pt-0"
-                    :dir="footerDirection"
                 >
-                    <template v-if="isRtlLocale">
-                        {{ landingSettings.footer.copyright_text }}
-                        &copy; {{ currentYear }} {{ appName }}.
-                    </template>
-                    <template v-else>
-                        &copy; {{ currentYear }} {{ appName }}.
-                        {{ landingSettings.footer.copyright_text }}
-                    </template>
+                    <span class="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
+                        <span dir="ltr">&copy; {{ currentYear }} {{ appName }}.</span>
+                        <span :dir="footerDirection">{{ footerCopyrightText }}</span>
+                    </span>
                 </p>
             </div>
         </footer>

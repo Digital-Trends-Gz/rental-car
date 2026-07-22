@@ -366,10 +366,18 @@ const landingNavLinks = computed(() => {
 const navigationCtaLabel = computed(() => landingSettings.value?.navigation?.cta_label || t('landing.start_free_trial'));
 const landingRegisterUrl = computed(() => localizedLandingPath(mainRegister().url));
 const landingFooterEnabled = computed(() => landingSettings.value?.footer?.enabled !== false);
-const landingFooterCopyright = computed(() =>
-    landingSettings.value?.footer?.copyright_text || t('landing.footer_rights') || 'All rights reserved.'
-);
 const footerDirection = computed(() => (direction.value === 'rtl' ? 'rtl' : 'ltr'));
+const landingFooterCopyright = computed(() => {
+    const configured = String(landingSettings.value?.footer?.copyright_text || '').trim();
+    const translated = t('landing.footer_rights');
+    const fallback = translated === 'landing.footer_rights' ? '' : translated;
+
+    if (footerDirection.value === 'rtl' && configured.toLowerCase() === 'all rights reserved.') {
+        return fallback || configured;
+    }
+
+    return configured || fallback || 'All rights reserved.';
+});
 const appStoreButtonDirection = computed(() => (footerDirection.value === 'rtl' ? 'rtl' : 'ltr'));
 const appStoreButtonTextClass = computed(() => (footerDirection.value === 'rtl' ? 'text-right' : 'text-left'));
 const landingFooterNavLinks = computed(() => {
@@ -702,14 +710,11 @@ onBeforeUnmount(() => {
 
                     <p
                         class="mt-5 border-t border-slate-200 pt-4 text-center text-xs text-muted-foreground md:mt-3 md:border-0 md:pt-0 md:text-sm"
-                        :dir="footerDirection"
                     >
-                        <template v-if="footerDirection === 'rtl'">
-                            {{ landingFooterCopyright }} &copy; {{ currentYear }} {{ appName }}.
-                        </template>
-                        <template v-else>
-                            &copy; {{ currentYear }} {{ appName }}. {{ landingFooterCopyright }}
-                        </template>
+                        <span class="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
+                            <span dir="ltr">&copy; {{ currentYear }} {{ appName }}.</span>
+                            <span :dir="footerDirection">{{ landingFooterCopyright }}</span>
+                        </span>
                     </p>
                 </div>
             </footer>
