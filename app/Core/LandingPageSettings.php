@@ -342,6 +342,7 @@ class LandingPageSettings
                 'table_title' => 'Detailed comparison between plans',
                 'table_description' => 'The table below explains the main differences between plans and the features available for each office size.',
                 'table_note' => 'Launch Offer: save up to 25%',
+                'comparison_scroll_hint' => 'Swipe sideways to compare plans',
                 'feature_column_label' => 'Feature',
                 'comparison_sections' => [
                     [

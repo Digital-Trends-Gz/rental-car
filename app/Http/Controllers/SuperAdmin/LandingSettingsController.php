@@ -301,6 +301,7 @@ class LandingSettingsController extends Controller
             'plans_comparison_page.table_title' => ['required', 'string', 'max:255'],
             'plans_comparison_page.table_description' => ['required', 'string', 'max:2000'],
             'plans_comparison_page.table_note' => ['required', 'string', 'max:255'],
+            'plans_comparison_page.comparison_scroll_hint' => ['required', 'string', 'max:255'],
             'plans_comparison_page.feature_column_label' => ['required', 'string', 'max:255'],
             'plans_comparison_page.comparison_sections' => ['nullable', 'array'],
             'plans_comparison_page.comparison_sections.*.title' => ['nullable', 'string', 'max:255'],

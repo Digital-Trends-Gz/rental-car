@@ -46,6 +46,7 @@ type PlansPage = {
     table_title: string;
     table_description: string;
     table_note: string;
+    comparison_scroll_hint: string;
     feature_column_label: string;
     comparison_sections: ComparisonSection[];
     addons_title: string;
@@ -235,6 +236,7 @@ function removeListItem(key: 'addons' | 'trial_items' | 'policy_paragraphs', ind
                     <div class="grid gap-4 lg:grid-cols-2">
                         <div class="space-y-2"><Label>Title</Label><Input v-model="form.plans_comparison_page.table_title" /></div>
                         <div class="space-y-2"><Label>Note</Label><Input v-model="form.plans_comparison_page.table_note" /></div>
+                        <div class="space-y-2"><Label>Mobile Scroll Hint</Label><Input v-model="form.plans_comparison_page.comparison_scroll_hint" /></div>
                         <div class="space-y-2"><Label>Feature Column Label</Label><Input v-model="form.plans_comparison_page.feature_column_label" /></div>
                         <div class="space-y-2 lg:col-span-2"><Label>Description</Label><Textarea v-model="form.plans_comparison_page.table_description" rows="2" /></div>
                     </div>

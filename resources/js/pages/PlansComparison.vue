@@ -4,7 +4,7 @@ import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { register as mainRegister } from '@/routes';
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { Check, Sparkles } from 'lucide-vue-next';
+import { ArrowLeftRight, Check, CheckCircle2, Sparkles, XCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 type PricingMeta = {
@@ -66,6 +66,7 @@ type PlansPage = {
     table_title: string;
     table_description: string;
     table_note: string;
+    comparison_scroll_hint?: string;
     feature_column_label: string;
     comparison_sections: ComparisonSection[];
     addons_title: string;
@@ -121,6 +122,25 @@ const showComparison = computed(() => props.plansPage.comparison_enabled !== fal
 const showAddons = computed(() => props.plansPage.addons_enabled !== false);
 const showPolicy = computed(() => props.plansPage.policy_enabled !== false);
 const showFooter = computed(() => props.plansPage.footer_enabled !== false);
+const comparisonScrollHint = computed(() => {
+    const configuredHint = String(props.plansPage.comparison_scroll_hint || '').trim();
+
+    if (configuredHint !== '') {
+        return configuredHint;
+    }
+
+    const language = locale.value.toLowerCase().split('-')[0];
+
+    if (language === 'ar') {
+        return 'اسحب الجدول يميناً ويساراً للمقارنة بين الخطط';
+    }
+
+    if (language === 'ur') {
+        return 'منصوبوں کا موازنہ کرنے کے لیے جدول کو دائیں بائیں سوائپ کریں';
+    }
+
+    return 'Swipe sideways to compare plans';
+});
 
 const money = (value: unknown) => Number(value || 0).toFixed(2);
 const pricingFor = (plan: Plan) => plan.pricing_meta?.monthly || {};
@@ -215,8 +235,31 @@ const discountLabel = (plan: Plan) => {
     return isRtl.value ? `${t('landing.discount_off')} ${percentage}%` : `${percentage}% ${t('landing.discount_off')}`;
 };
 
+const comparisonBooleanKind = (value: string) => {
+    const normalized = String(value || '').trim().toLowerCase();
+
+    if (['yes', 'true', '1', '✓', '✔', 'نعم', 'بله', 'ہاں'].includes(normalized)) {
+        return 'yes';
+    }
+
+    if (['no', 'false', '0', 'x', '✕', '×', 'لا', 'كلا', 'نہیں'].includes(normalized)) {
+        return 'no';
+    }
+
+    return null;
+};
+
 const cellClass = (value: string) => {
     const normalized = String(value || '').toLowerCase();
+    const booleanKind = comparisonBooleanKind(value);
+
+    if (booleanKind === 'yes') {
+        return 'text-emerald-600 font-black';
+    }
+
+    if (booleanKind === 'no') {
+        return 'text-red-500 font-black';
+    }
 
     if (['yes', '✓'].includes(normalized) || normalized.startsWith('yes ')) {
         return 'text-emerald-600 font-black';
@@ -329,39 +372,65 @@ const cellClass = (value: string) => {
                             {{ plansPage.table_note }}
                         </span>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full min-w-[980px] border-collapse text-sm">
-                            <thead>
-                                <tr>
-                                    <th class="w-64 border-b border-slate-200 bg-slate-50 p-4 text-start text-slate-900">{{ plansPage.feature_column_label }}</th>
-                                    <th v-for="plan in visiblePlans" :key="plan.id" class="border-b border-slate-200 bg-slate-50 p-4 text-center text-slate-900">
-                                        <div class="font-black">{{ plan.name }}</div>
-                                        <small v-if="plan.custom_pricing">{{ plansPage.custom_price_label }}</small>
-                                        <small v-else>${{ money(pricingFor(plan).final_amount) }} {{ plansPage.current_price_label }}</small>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template v-for="section in plansPage.comparison_sections" :key="section.title">
+                    <div class="border-b border-slate-100 px-4 py-3 md:hidden">
+                        <div class="flex items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-bold text-blue-800">
+                            <span>{{ comparisonScrollHint }}</span>
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-blue-700 shadow-sm" dir="ltr">
+                                <ArrowLeftRight class="h-4 w-4" />
+                            </span>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white via-white/80 to-transparent md:hidden"></div>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white via-white/80 to-transparent md:hidden"></div>
+                        <div class="comparison-scroll overflow-x-auto">
+                            <table class="w-full min-w-[980px] border-collapse text-sm">
+                                <thead>
                                     <tr>
-                                        <td :colspan="visiblePlans.length + 1" class="bg-blue-50 p-4 text-center text-base font-black text-blue-900">
-                                            {{ section.title }}
-                                        </td>
+                                        <th class="w-64 border-b border-slate-200 bg-slate-50 p-4 text-start text-slate-900">{{ plansPage.feature_column_label }}</th>
+                                        <th v-for="plan in visiblePlans" :key="plan.id" class="border-b border-slate-200 bg-slate-50 p-4 text-center text-slate-900">
+                                            <div class="font-black">{{ plan.name }}</div>
+                                            <small v-if="plan.custom_pricing">{{ plansPage.custom_price_label }}</small>
+                                            <small v-else>${{ money(pricingFor(plan).final_amount) }} {{ plansPage.current_price_label }}</small>
+                                        </th>
                                     </tr>
-                                    <tr v-for="row in section.rows" :key="`${section.title}-${row.label}`">
-                                        <td class="border-b border-slate-200 bg-slate-50/60 p-4 text-start font-bold text-slate-800">{{ row.label }}</td>
-                                        <td
-                                            v-for="(plan, index) in visiblePlans"
-                                            :key="`${row.label}-${plan.id}`"
-                                            class="border-b border-slate-200 p-4 text-center"
-                                            :class="cellClass(row.values?.[index] || '')"
-                                        >
-                                            {{ row.values?.[index] || '-' }}
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    <template v-for="section in plansPage.comparison_sections" :key="section.title">
+                                        <tr>
+                                            <td :colspan="visiblePlans.length + 1" class="bg-blue-50 p-4 text-center text-base font-black text-blue-900">
+                                                {{ section.title }}
+                                            </td>
+                                        </tr>
+                                        <tr v-for="row in section.rows" :key="`${section.title}-${row.label}`">
+                                            <td class="border-b border-slate-200 bg-slate-50/60 p-4 text-start font-bold text-slate-800">{{ row.label }}</td>
+                                            <td
+                                                v-for="(plan, index) in visiblePlans"
+                                                :key="`${row.label}-${plan.id}`"
+                                                class="border-b border-slate-200 p-4 text-center"
+                                                :class="cellClass(row.values?.[index] || '')"
+                                            >
+                                                <span
+                                                    v-if="comparisonBooleanKind(row.values?.[index] || '') === 'yes'"
+                                                    class="inline-flex items-center justify-center text-emerald-600"
+                                                    :aria-label="row.values?.[index] || 'Yes'"
+                                                >
+                                                    <CheckCircle2 class="h-5 w-5" />
+                                                </span>
+                                                <span
+                                                    v-else-if="comparisonBooleanKind(row.values?.[index] || '') === 'no'"
+                                                    class="inline-flex items-center justify-center text-red-500"
+                                                    :aria-label="row.values?.[index] || 'No'"
+                                                >
+                                                    <XCircle class="h-5 w-5" />
+                                                </span>
+                                                <span v-else>{{ row.values?.[index] || '-' }}</span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
 
@@ -403,3 +472,23 @@ const cellClass = (value: string) => {
         </main>
     </HomeLayout>
 </template>
+
+<style scoped>
+.comparison-scroll {
+    scrollbar-color: #2563eb #dbeafe;
+    scrollbar-width: thin;
+}
+
+.comparison-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.comparison-scroll::-webkit-scrollbar-track {
+    background: #dbeafe;
+}
+
+.comparison-scroll::-webkit-scrollbar-thumb {
+    background: #2563eb;
+    border-radius: 999px;
+}
+</style>

@@ -1237,12 +1237,12 @@ onUnmounted(() => {
                             {{ landingSettings.hero.description }}
                         </p>
                         <div
-                            class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
+                            class="mt-8 grid grid-cols-2 items-center justify-center gap-3 sm:inline-flex sm:flex-row"
                         >
                             <Button
                                 as-child
                                 size="lg"
-                                class="gradient-button h-12 rounded-full px-8 text-base"
+                                class="gradient-button h-12 min-w-0 rounded-full px-4 text-sm sm:px-8 sm:text-base"
                             >
                                 <Link :href="registerUrl">{{
                                     navigationCtaLabel
@@ -1250,7 +1250,7 @@ onUnmounted(() => {
                             </Button>
                             <a
                                 :href="browseCarsHref"
-                                class="inline-flex h-12 items-center justify-center rounded-full border border-input px-8 text-base font-medium hover:bg-accent"
+                                class="inline-flex h-12 min-w-0 items-center justify-center rounded-full border border-input px-4 text-sm font-medium hover:bg-accent sm:px-8 sm:text-base"
                             >
                                 {{ t('landing.browse_cars') }}
                             </a>
