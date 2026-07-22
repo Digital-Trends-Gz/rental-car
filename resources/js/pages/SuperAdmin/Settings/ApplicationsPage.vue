@@ -126,6 +126,13 @@ const form = useForm<{
 });
 
 const availableLocales = computed(() => props.availableLocales?.length ? props.availableLocales : ['en']);
+const activeLocale = computed(() => {
+    const currentLocale = String(page.props.locale || '');
+
+    return availableLocales.value.includes(currentLocale)
+        ? currentLocale
+        : availableLocales.value[0] || 'en';
+});
 const flashSuccess = computed(() => page.props.flash?.success ?? null);
 const flashError = computed(() => page.props.flash?.error ?? null);
 const formErrors = computed(() =>
@@ -370,9 +377,10 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                         />
                     </div>
                     <div class="space-y-3 rounded-lg border border-dashed p-3 lg:col-span-2">
-                        <Label>Hero Images By Language</Label>
-                        <div class="grid gap-4 lg:grid-cols-2">
-                            <div v-for="localeCode in availableLocales" :key="`application-hero-locale-${localeCode}`" class="space-y-2">
+                        <Label>Hero Image For Current Language</Label>
+                        <div class="grid gap-4">
+                            <div :key="`application-hero-locale-${activeLocale}`" class="space-y-2">
+                                <template v-for="localeCode in [activeLocale]" :key="localeCode">
                                 <Label>{{ localeDisplayName(localeCode) }}</Label>
                                 <FileUpload
                                     :initial-files="heroLocaleFileList(localeCode)"
@@ -393,6 +401,7 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                                     alt=""
                                     class="h-20 w-full rounded-md border object-cover"
                                 />
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -513,9 +522,10 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                                 />
                             </div>
                             <div class="space-y-3 rounded-lg border border-dashed p-3 lg:col-span-2">
-                                <Label>Role Images By Language</Label>
-                                <div class="grid gap-4 lg:grid-cols-3">
-                                    <div v-for="localeCode in availableLocales" :key="`application-role-${roleIndex}-${localeCode}`" class="space-y-2">
+                                <Label>Role Image For Current Language</Label>
+                                <div class="grid gap-4">
+                                    <div :key="`application-role-${roleIndex}-${activeLocale}`" class="space-y-2">
+                                        <template v-for="localeCode in [activeLocale]" :key="localeCode">
                                         <Label>{{ localeDisplayName(localeCode) }}</Label>
                                         <FileUpload
                                             :initial-files="roleLocaleFileList(roleIndex, localeCode)"
@@ -536,6 +546,7 @@ function removeComparisonItem(item: ComparisonItem, index: number): void {
                                             alt=""
                                             class="h-20 w-full rounded-md border object-cover"
                                         />
+                                        </template>
                                     </div>
                                 </div>
                             </div>

@@ -223,9 +223,14 @@ const translatedLandingLabel = (key: string, fallback: string, localized: Partia
     return translated || fallback;
 };
 const footerNavLabel = (key: string, fallback: string, localized: Partial<Record<string, string>> = {}) => {
+    const configured = String(landingSettings.value?.footer?.[key] || '').trim();
+    if (configured) {
+        return configured;
+    }
+
     const translated = translatedLandingLabel(`footer_${key.replace(/^nav_/, '')}`, fallback, localized);
 
-    return translated || String(landingSettings.value?.footer?.[key] || '').trim() || fallback;
+    return translated || fallback;
 };
 const footerLabels = {
     cars: () => footerNavLabel('nav_cars', 'Cars', { ar: '\u0645\u0639\u0631\u0636 \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a' }),
