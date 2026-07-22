@@ -631,24 +631,24 @@ onBeforeUnmount(() => {
                 <slot />
             </main>
 
-            <footer v-if="landingFooterEnabled" class="border-t border-border bg-background py-4">
+            <footer v-if="landingFooterEnabled" class="border-t border-border bg-slate-50/70 py-7 md:bg-background md:py-4">
                 <div class="section-container max-w-7xl">
                     <div class="grid items-center gap-5 md:grid-cols-[8rem_minmax(0,1fr)_auto_8rem]">
                         <Link :href="landingHomeUrl" class="inline-flex items-center justify-center md:justify-start">
-                            <AppLogoIcon class="h-16 w-auto" />
+                            <AppLogoIcon class="h-14 w-auto md:h-16" />
                         </Link>
 
-                        <nav class="grid grid-cols-2 items-center justify-center gap-x-7 gap-y-2 text-sm font-medium text-foreground sm:grid-cols-5">
+                        <nav class="flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-foreground md:grid md:grid-cols-5 md:gap-x-7 md:gap-y-2 md:font-medium">
                             <div
                                 v-for="(column, columnIndex) in landingFooterNavColumns"
                                 :key="`footer-column-${columnIndex}`"
-                                class="flex min-h-16 flex-col items-center justify-center gap-2 md:items-start"
+                                class="contents md:flex md:min-h-16 md:flex-col md:items-start md:justify-center md:gap-2"
                             >
                                 <a
                                     v-for="link in column"
                                     :key="`footer-${link.href}`"
                                     :href="link.href"
-                                    class="whitespace-nowrap transition-colors hover:text-primary"
+                                    class="inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-full border border-slate-200 bg-white px-4 text-center shadow-sm transition-colors hover:border-primary/30 hover:text-primary md:min-h-0 md:rounded-none md:border-0 md:bg-transparent md:px-0 md:shadow-none"
                                 >
                                     {{ link.label }}
                                 </a>
@@ -663,14 +663,14 @@ onBeforeUnmount(() => {
                                 :href="link.href || undefined"
                                 :target="link.href ? '_blank' : undefined"
                                 :rel="link.href ? 'noopener noreferrer' : undefined"
-                                class="inline-flex h-8 w-14 items-center justify-center rounded-md border border-border bg-white text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+                                class="inline-flex h-10 w-12 items-center justify-center rounded-full border border-slate-200 bg-white text-muted-foreground shadow-sm transition hover:border-primary/40 hover:text-primary md:h-8 md:w-14 md:rounded-md md:border-border md:shadow-none"
                                 :aria-label="link.label"
                             >
                                 <component :is="socialIcon(link.platform)" class="h-4 w-4" />
                             </component>
                         </div>
 
-                        <div v-if="landingFooterAppButtons.length" class="grid justify-center gap-2 md:justify-end">
+                        <div v-if="landingFooterAppButtons.length" class="grid grid-cols-2 justify-center gap-2 md:grid-cols-1 md:justify-end">
                             <component
                                 :is="button.href ? 'a' : 'span'"
                                 v-for="button in landingFooterAppButtons"
@@ -678,7 +678,7 @@ onBeforeUnmount(() => {
                                 :href="button.href || undefined"
                                 :target="button.href ? '_blank' : undefined"
                                 :rel="button.href ? 'noopener noreferrer' : undefined"
-                                class="inline-flex h-9 w-[7.75rem] items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-1 text-slate-950 transition hover:border-blue-200"
+                                class="inline-flex h-11 w-[8.5rem] items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 text-slate-950 shadow-sm transition hover:border-blue-200 md:h-9 md:w-[7.75rem] md:rounded-md md:border-slate-100 md:px-1 md:shadow-none"
                                 :dir="appStoreButtonDirection"
                             >
                                 <span class="leading-tight" :class="appStoreButtonTextClass">
@@ -701,7 +701,7 @@ onBeforeUnmount(() => {
                     </div>
 
                     <p
-                        class="mt-3 text-center text-sm text-muted-foreground"
+                        class="mt-5 border-t border-slate-200 pt-4 text-center text-xs text-muted-foreground md:mt-3 md:border-0 md:pt-0 md:text-sm"
                         :dir="footerDirection"
                     >
                         <template v-if="footerDirection === 'rtl'">

@@ -178,7 +178,7 @@ const storeIconUrl = (store: 'ios' | 'android') =>
             <section v-if="showHero" class="apps-hero relative overflow-hidden">
                 <div class="section-container grid max-w-7xl items-center gap-12 py-16 md:grid-cols-[1.05fr_0.95fr] md:gap-[60px] md:py-[86px]">
                     <div class="max-w-3xl">
-                        <h1 class="mt-5 text-5xl font-bold text-slate-950 sm:text-5xl">
+                        <h1 class="mt-5 text-3xl font-bold leading-tight text-slate-950 sm:text-4xl sm:leading-tight lg:text-5xl">
                             {{ applicationsPage.hero_title }}
                         </h1>
                         <p class="mt-4 max-w-2xl text-lg text-slate-500">
@@ -198,12 +198,12 @@ const storeIconUrl = (store: 'ios' | 'android') =>
                         </p>
                     </div>
 
-                    <div class="relative min-h-[510px]">
+                    <div class="relative md:min-h-[510px]">
                         <img
                             v-if="heroImageUrl"
                             :src="heroImageUrl"
                             :alt="applicationsPage.hero_title"
-                            class="h-[510px] w-full rounded-[30px] border border-slate-200 object-cover shadow-2xl shadow-slate-900/10"
+                            class="h-auto max-h-[72vh] w-full rounded-[24px] border border-slate-200 bg-slate-50 object-contain shadow-2xl shadow-slate-900/10 md:h-[510px] md:max-h-none md:rounded-[30px] md:object-cover"
                         />
                         <template v-else>
                         <div class="absolute inset-[40px_0_0_40px] rounded-full bg-gradient-to-br from-blue-500/10 to-purple-700/10"></div>
