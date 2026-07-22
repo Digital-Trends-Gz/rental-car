@@ -29,8 +29,6 @@ type SeoPageKey =
     | 'fleet'
     | 'applications'
     | 'plans'
-    | 'about'
-    | 'contact'
     | 'privacy-policy'
     | 'terms-of-use'
     | 'security-policy';
@@ -46,6 +44,7 @@ type SeoPageSettings = {
     description: LocalizedText;
     focus_keyword?: LocalizedText;
     canonical_url: string | null;
+    og_image?: string | null;
     robots?: string | null;
 };
 type SeoPages = Partial<Record<SeoPageKey, SeoPageSettings>>;
@@ -113,8 +112,6 @@ const SEO_PAGE_KEYS: SeoPageKey[] = [
     'fleet',
     'applications',
     'plans',
-    'about',
-    'contact',
     'privacy-policy',
     'terms-of-use',
     'security-policy',
@@ -125,8 +122,6 @@ const SEO_PAGE_PATHS: Record<SeoPageKey, string> = {
     fleet: '/fleet',
     applications: '/car-rental-apps',
     plans: '/pricing-plans',
-    about: '/about',
-    contact: '/contact',
     'privacy-policy': '/privacy-policy',
     'terms-of-use': '/terms-of-use',
     'security-policy': '/security-policy',
@@ -162,6 +157,7 @@ function createPageState(pageSettings?: SeoPageSettings): SeoPageSettings {
         description: createLocalizedState(pageSettings?.description),
         focus_keyword: createLocalizedState(pageSettings?.focus_keyword),
         canonical_url: pageSettings?.canonical_url ?? '',
+        og_image: pageSettings?.og_image ?? '',
         robots: pageSettings?.robots ?? '',
     };
 }
@@ -287,8 +283,6 @@ function seoPageFallbackLabel(pageKey: SeoPageKey): string {
     const labels: Partial<Record<SeoPageKey, { en: string; ar: string }>> = {
         applications: { en: 'Applications Page', ar: '\u0635\u0641\u062d\u0629 \u0627\u0644\u062a\u0637\u0628\u064a\u0642\u0627\u062a' },
         plans: { en: 'Pricing Plans Page', ar: '\u0635\u0641\u062d\u0629 \u0627\u0644\u062e\u0637\u0637 \u0648\u0627\u0644\u0623\u0633\u0639\u0627\u0631' },
-        about: { en: 'About Page', ar: '\u0635\u0641\u062d\u0629 \u0645\u0646 \u0646\u062d\u0646' },
-        contact: { en: 'Contact Page', ar: '\u0635\u0641\u062d\u0629 \u062a\u0648\u0627\u0635\u0644 \u0645\u0639\u0646\u0627' },
         'privacy-policy': { en: 'Privacy Policy', ar: '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u062e\u0635\u0648\u0635\u064a\u0629' },
         'terms-of-use': { en: 'Terms of Use', ar: '\u0634\u0631\u0648\u0637 \u0627\u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645' },
         'security-policy': { en: 'Security Policy', ar: '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u0623\u0645\u0627\u0646' },
@@ -327,14 +321,6 @@ function seoPageDefaultDescription(pageKey: SeoPageKey, localeKey = selectedSeoL
             plans: {
                 en: 'Compare Car4U pricing plans and choose the right package for your rental office.',
                 ar: '\u0642\u0627\u0631\u0646 \u062e\u0637\u0637 Car4U \u0648\u0627\u062e\u062a\u0631 \u0627\u0644\u0628\u0627\u0642\u0629 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0629 \u0644\u0645\u0643\u062a\u0628 \u0627\u0644\u062a\u0623\u062c\u064a\u0631.',
-            },
-            about: {
-                en: `Learn more about ${previewName.value} and the rental platform experience.`,
-                ar: `\u062a\u0639\u0631\u0641 \u0623\u0643\u062b\u0631 \u0639\u0644\u0649 ${previewName.value} \u0648\u062a\u062c\u0631\u0628\u0629 \u0645\u0646\u0635\u0629 \u0627\u0644\u062a\u0623\u062c\u064a\u0631.`,
-            },
-            contact: {
-                en: `Contact ${previewName.value} for rental platform support and sales questions.`,
-                ar: `\u062a\u0648\u0627\u0635\u0644 \u0645\u0639 ${previewName.value} \u0644\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u062f\u0639\u0645 \u0648\u0627\u0644\u0645\u0628\u064a\u0639\u0627\u062a.`,
             },
             'privacy-policy': {
                 en: 'Read the privacy policy for Car4U website and platform services.',
@@ -376,8 +362,6 @@ function seoPageFallbackFocusKeyword(pageKey: SeoPageKey, localeKey = selectedSe
     const values: Partial<Record<SeoPageKey, string>> = {
         applications: localeKey === 'ar' ? '\u062a\u0637\u0628\u064a\u0642\u0627\u062a \u062a\u0623\u062c\u064a\u0631 \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a' : 'car rental apps',
         plans: localeKey === 'ar' ? '\u062e\u0637\u0637 \u062a\u0623\u062c\u064a\u0631 \u0627\u0644\u0633\u064a\u0627\u0631\u0627\u062a' : 'car rental pricing',
-        about: localeKey === 'ar' ? '\u0645\u0646\u0635\u0629 \u062a\u0623\u062c\u064a\u0631 \u0633\u064a\u0627\u0631\u0627\u062a' : 'car rental platform',
-        contact: localeKey === 'ar' ? '\u062a\u0648\u0627\u0635\u0644 \u0645\u0643\u062a\u0628 \u062a\u0623\u062c\u064a\u0631' : 'car rental contact',
         'privacy-policy': localeKey === 'ar' ? '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u062e\u0635\u0648\u0635\u064a\u0629' : 'privacy policy',
         'terms-of-use': localeKey === 'ar' ? '\u0634\u0631\u0648\u0637 \u0627\u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645' : 'terms of use',
         'security-policy': localeKey === 'ar' ? '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u0623\u0645\u0627\u0646' : 'security policy',
@@ -433,7 +417,9 @@ function buildPreviewCards(localeKey: string): PreviewCard[] {
         const slugLooksValid = normalizedSlug === '' || /^[a-z0-9/_-]+$/i.test(normalizedSlug);
         const titleHasKeyword = includesNormalized(title, focusKeyword);
         const descriptionHasKeyword = includesNormalized(description, focusKeyword);
-        const ogImageSet = String(form.seo.defaults.og_image || '').trim() !== '';
+        const pageOgImage = String(form.seo.pages[pageKey].og_image || '').trim();
+        const ogImage = pageOgImage || String(form.seo.defaults.og_image || '').trim();
+        const ogImageSet = ogImage !== '';
 
         const checks = [
             {
@@ -480,7 +466,7 @@ function buildPreviewCards(localeKey: string): PreviewCard[] {
             focusKeyword,
             path,
             robots,
-            ogImage: form.seo.defaults.og_image || '',
+            ogImage,
             ogImageAlt,
             twitterCardType: ogImageSet ? 'summary_large_image' : 'summary',
             alternates,
@@ -585,7 +571,7 @@ function submit() {
                 <div>
                     <h1 class="text-2xl font-semibold">{{ localize('Main Site SEO', 'SEO الموقع الرئيسي') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        {{ localize('Manage SEO for landing and fleet only.', 'أدر SEO للصفحة الرئيسية والأسطول فقط.') }}
+                        {{ localize('Manage SEO for all public landing pages.', 'أدر SEO لكل صفحات الموقع العامة.') }}
                     </p>
                 </div>
                 <div class="flex gap-2">
@@ -720,7 +706,7 @@ function submit() {
                         <div>
                             <h2 class="text-lg font-semibold">{{ localize('Page SEO Fields', 'حقول SEO للصفحات') }}</h2>
                             <p class="text-sm text-muted-foreground">
-                                {{ localize('Manage title, description, focus keyword, canonical URL, and robots for Landing and Fleet.', 'أدر العنوان والوصف والكلمة المفتاحية والرابط القانوني وrobots للصفحة الرئيسية والأسطول.') }}
+                                {{ localize('Manage title, description, focus keyword, canonical URL, Open Graph image, and robots for every public page.', 'أدر العنوان والوصف والكلمة المفتاحية والرابط القانوني وصورة Open Graph وrobots لكل صفحة عامة.') }}
                             </p>
                         </div>
 
@@ -749,7 +735,7 @@ function submit() {
                                 <Input
                                     v-model="selectedPage.title[selectedSeoLocale]"
                                     :dir="selectedSeoLocaleDirection"
-                                    :placeholder="activePageTab === 'home' ? previewName : localize('Fleet page title', 'عنوان صفحة الأسطول')"
+                                    :placeholder="activePageTab === 'home' ? previewName : `${seoPageLabel(activePageTab)} title`"
                                 />
                                 <p v-if="form.errors[`seo.pages.${activePageTab}.title.${selectedSeoLocale}`]" class="text-sm text-red-600">
                                     {{ form.errors[`seo.pages.${activePageTab}.title.${selectedSeoLocale}`] }}
@@ -787,6 +773,17 @@ function submit() {
                                 <Input v-model="selectedPage.canonical_url" :placeholder="`${seoPreviewBaseUrl}${seoPagePath(activePageTab)}`" />
                                 <p v-if="form.errors[`seo.pages.${activePageTab}.canonical_url`]" class="text-sm text-red-600">
                                     {{ form.errors[`seo.pages.${activePageTab}.canonical_url`] }}
+                                </p>
+                            </div>
+
+                            <div class="space-y-2 md:col-span-2">
+                                <Label>{{ localize('Page Open Graph Image URL', 'Page Open Graph Image URL') }}</Label>
+                                <Input v-model="selectedPage.og_image" placeholder="https://example.com/page-og-image.jpg" />
+                                <p class="text-xs text-muted-foreground">
+                                    {{ localize('Leave empty to use the global Open Graph image.', 'Leave empty to use the global Open Graph image.') }}
+                                </p>
+                                <p v-if="form.errors[`seo.pages.${activePageTab}.og_image`]" class="text-sm text-red-600">
+                                    {{ form.errors[`seo.pages.${activePageTab}.og_image`] }}
                                 </p>
                             </div>
 

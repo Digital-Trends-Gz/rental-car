@@ -312,8 +312,8 @@ const restartWizard = (): void => {
             />
         </div>
 
-        <div class="relative flex w-full items-center justify-center p-6 sm:p-8 lg:w-1/2">
-            <div class="absolute top-4 ltr:right-4 rtl:left-4 z-50">
+        <div class="relative flex w-full flex-col items-center justify-center px-6 py-8 pt-14 sm:px-8 sm:pt-16 lg:w-1/2">
+            <div class="absolute top-4 z-50 ltr:right-4 sm:ltr:right-8 rtl:left-4 sm:rtl:left-8">
                 <AuthLanguageSwitcher />
             </div>
 

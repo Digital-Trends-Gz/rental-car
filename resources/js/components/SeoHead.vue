@@ -10,6 +10,7 @@ type SeoAlternate = {
 type SeoPayload = {
     title: string;
     description?: string | null;
+    site_name?: string | null;
     canonical_url?: string | null;
     robots?: string | null;
     og_title?: string | null;
@@ -19,6 +20,7 @@ type SeoPayload = {
     og_type?: string | null;
     og_url?: string | null;
     og_locale?: string | null;
+    og_site_name?: string | null;
     twitter_card?: string | null;
     twitter_title?: string | null;
     twitter_description?: string | null;
@@ -45,11 +47,13 @@ const twitterImage = computed(() => props.seo?.twitter_image || props.seo?.og_im
         <meta v-if="seo.og_type" head-key="og:type" property="og:type" :content="seo.og_type" />
         <meta v-if="seo.og_url || seo.canonical_url" head-key="og:url" property="og:url" :content="seo.og_url || seo.canonical_url" />
         <meta v-if="seo.og_locale" head-key="og:locale" property="og:locale" :content="seo.og_locale" />
+        <meta v-if="seo.og_site_name || seo.site_name" head-key="og:site_name" property="og:site_name" :content="seo.og_site_name || seo.site_name" />
         <meta v-if="seo.og_title" head-key="og:title" property="og:title" :content="seo.og_title" />
         <meta v-if="seo.og_description" head-key="og:description" property="og:description" :content="seo.og_description" />
         <meta v-if="seo.og_image" head-key="og:image" property="og:image" :content="seo.og_image" />
         <meta v-if="seo.og_image_alt" head-key="og:image:alt" property="og:image:alt" :content="seo.og_image_alt" />
         <meta head-key="twitter:card" name="twitter:card" :content="twitterCard" />
+        <meta v-if="seo.site_name" head-key="twitter:site" name="twitter:site" :content="seo.site_name" />
         <meta v-if="twitterTitle" head-key="twitter:title" name="twitter:title" :content="twitterTitle" />
         <meta v-if="twitterDescription" head-key="twitter:description" name="twitter:description" :content="twitterDescription" />
         <meta v-if="twitterImage" head-key="twitter:image" name="twitter:image" :content="twitterImage" />

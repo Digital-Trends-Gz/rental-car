@@ -230,8 +230,6 @@ class MainSiteSeoSettingsController extends Controller
             'fleet',
             'applications',
             'plans',
-            'about',
-            'contact',
             'privacy-policy',
             'terms-of-use',
             'security-policy',
