@@ -370,7 +370,17 @@ const landingNavLinks = computed(() => {
         href: resolveLandingHref(link.href),
     }));
 });
-const navigationCtaLabel = computed(() => landingSettings.value?.navigation?.cta_label || t('landing.start_free_trial'));
+const navigationCtaLabel = computed(() => {
+    const translatedNavigationLabel = translatedLabel('navigation.cta_label', '');
+    const translatedLandingLabel = translatedLabel('landing.start_free_trial', '');
+
+    return (
+        translatedNavigationLabel ||
+        translatedLandingLabel ||
+        landingSettings.value?.navigation?.cta_label ||
+        'Start Free Trial'
+    );
+});
 const landingRegisterUrl = computed(() => localizedLandingPath(mainRegister().url));
 const landingFooterEnabled = computed(() => landingSettings.value?.footer?.enabled !== false);
 const footerDirection = computed(() => (direction.value === 'rtl' ? 'rtl' : 'ltr'));

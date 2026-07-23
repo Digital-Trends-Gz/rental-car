@@ -669,9 +669,17 @@ const brokenLandingImages = ref<Record<string, boolean>>({});
 const currentYear = new Date().getFullYear();
 const registerUrl = computed(() => localizedPath(mainRegister().url));
 const plansUrl = computed(() => localizedPath('/pricing-plans'));
-const navigationCtaLabel = computed(
-    () => props.landingSettings.navigation?.cta_label || 'Start Free Trial',
-);
+const navigationCtaLabel = computed(() => {
+    const translatedNavigationLabel = translatedLabel('navigation.cta_label', '');
+    const translatedLandingLabel = translatedLabel('landing.start_free_trial', '');
+
+    return (
+        translatedNavigationLabel ||
+        translatedLandingLabel ||
+        props.landingSettings.navigation?.cta_label ||
+        'Start Free Trial'
+    );
+});
 const plansDetailsLabel = computed(() =>
     translatedLabel('landing.plans_view_details', 'View Details'),
 );
