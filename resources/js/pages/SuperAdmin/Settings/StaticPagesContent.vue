@@ -267,6 +267,46 @@ const submit = () => {
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{{ localize('Tenant Website Pages', 'صفحات مواقع المكاتب') }}</CardTitle>
+                        <CardDescription>
+                            {{
+                                localize(
+                                    'These defaults are used by tenant websites when the tenant leaves its own static page content empty.',
+                                    'هذه النصوص الافتراضية تظهر في مواقع المكاتب عندما يترك المكتب محتوى صفحاته الثابتة فارغًا.'
+                                )
+                            }}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent class="space-y-6">
+                        <div v-for="section in tenantSections" :key="section.key" class="space-y-3 rounded-lg border p-4">
+                            <div>
+                                <h3 class="text-base font-semibold">{{ localize(section.title, section.titleAr) }}</h3>
+                                <p class="text-sm text-muted-foreground">
+                                    {{ localize(section.description, section.descriptionAr) }}
+                                </p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label :for="`tenant_${section.key}_${activeLocaleCode}`">
+                                    {{ localeLabel(activeLocale) }}
+                                    <span class="text-xs uppercase text-muted-foreground">({{ activeLocaleCode }})</span>
+                                </Label>
+                                <RichTextEditor
+                                    :id="`tenant_${section.key}_${activeLocaleCode}`"
+                                    v-model="form.settings.tenant_pages[section.key][activeLocaleCode]"
+                                    :dir="activeLocale?.direction ?? 'ltr'"
+                                    :placeholder="activeLocale?.direction === 'rtl' ? section.placeholderAr : section.placeholder"
+                                />
+                                <p v-if="form.errors[tenantErrorKey(section)]" class="text-sm text-red-600">
+                                    {{ form.errors[tenantErrorKey(section)] }}
+                                </p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <div class="flex justify-end">
                     <Button type="submit" :disabled="form.processing">
                         {{ form.processing ? localize('Saving...', 'جاري الحفظ...') : localize('Save Changes', 'حفظ التغييرات') }}
