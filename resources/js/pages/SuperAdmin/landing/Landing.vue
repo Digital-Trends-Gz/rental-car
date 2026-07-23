@@ -2753,7 +2753,7 @@ onUnmounted(() => {
         >
             <div class="section-container space-y-5 md:space-y-3">
                 <div
-                    class="grid items-center gap-5 md:grid-cols-[8rem_minmax(0,1fr)_auto_8rem]"
+                    class="grid items-center gap-5 md:grid-cols-[10rem_minmax(0,1fr)_11rem_9rem]"
                 >
                     <Link
                         href="/"
@@ -2764,13 +2764,13 @@ onUnmounted(() => {
                     </Link>
 
                     <nav
-                        class="flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-foreground md:grid md:grid-cols-5 md:gap-x-7 md:gap-y-2 md:font-medium"
+                        class="flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-foreground md:flex-nowrap md:gap-x-12 md:font-medium"
                         :aria-label="t('landing.footer_navigation') || 'Footer navigation'"
                     >
                         <div
                             v-for="(column, columnIndex) in footerLinkColumns"
                             :key="`footer-column-${columnIndex}`"
-                            class="contents md:flex md:min-h-16 md:flex-col md:items-start md:justify-center md:gap-2"
+                            class="contents md:flex md:min-h-16 md:items-center md:justify-center"
                         >
                             <a
                                 v-for="link in column"

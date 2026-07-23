@@ -673,16 +673,16 @@ onBeforeUnmount(() => {
 
             <footer v-if="landingFooterEnabled" ref="publicFooterRef" class="border-t border-border bg-slate-50/70 py-7 md:bg-background md:py-4">
                 <div class="section-container max-w-7xl">
-                    <div class="grid items-center gap-5 md:grid-cols-[8rem_minmax(0,1fr)_auto_8rem]">
+                    <div class="grid items-center gap-5 md:grid-cols-[10rem_minmax(0,1fr)_11rem_9rem]">
                         <Link :href="landingHomeUrl" class="inline-flex items-center justify-center md:justify-start">
                             <AppLogoIcon class="h-14 w-auto md:h-16" />
                         </Link>
 
-                        <nav class="flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-foreground md:grid md:grid-cols-5 md:gap-x-7 md:gap-y-2 md:font-medium">
+                        <nav class="flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-foreground md:flex-nowrap md:gap-x-12 md:font-medium">
                             <div
                                 v-for="(column, columnIndex) in landingFooterNavColumns"
                                 :key="`footer-column-${columnIndex}`"
-                                class="contents md:flex md:min-h-16 md:flex-col md:items-start md:justify-center md:gap-2"
+                                class="contents md:flex md:min-h-16 md:items-center md:justify-center"
                             >
                                 <a
                                     v-for="link in column"
