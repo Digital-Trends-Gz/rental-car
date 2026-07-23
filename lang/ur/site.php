@@ -658,6 +658,7 @@ return [
                 'roles_permissions' => 'Roles & Permissions',
                 'payment_providers' => 'Payment Providers',
                 'website_settings' => 'Website Settings',
+                'static_pages' => 'Static Pages',
                 'contract_pdf' => 'Contract PDF Template',
                 'seo_settings' => 'SEO Settings',
                 'seo_audit' => 'SEO Audit',

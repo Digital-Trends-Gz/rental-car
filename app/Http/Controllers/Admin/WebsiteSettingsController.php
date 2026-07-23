@@ -52,6 +52,45 @@ class WebsiteSettingsController extends Controller
         return Inertia::render('Admin/Settings/SeoSettings', $this->seoPageProps($tenant));
     }
 
+    public function staticPagesEdit(): Response
+    {
+        $tenant = TenantContext::get();
+        abort_unless($tenant, 404);
+
+        $settings = TenantSiteSetting::forTenant($tenant);
+
+        return Inertia::render('Admin/Settings/StaticPages', [
+            'tenant' => [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'slug' => $tenant->slug,
+            ],
+            'settings' => [
+                'static_pages' => $settings['static_pages'] ?? [],
+            ],
+            'locales' => $this->staticPageLocaleOptions($settings['enabled_locales'] ?? []),
+            'actions' => [
+                'update' => route('admin.settings.static-pages.update'),
+            ],
+        ]);
+    }
+
+    public function staticPagesUpdate(Request $request): RedirectResponse
+    {
+        $tenant = TenantContext::get();
+        abort_unless($tenant, 404);
+
+        $supportedLocales = $this->supportedLocaleKeys();
+        $validated = $request->validate($this->staticPagesValidationRules());
+
+        $tenant->siteSetting()->updateOrCreate(
+            ['tenant_id' => $tenant->id],
+            ['static_pages' => $this->staticPagesPayload($validated, $supportedLocales)]
+        );
+
+        return back()->with('success', __('Static pages saved successfully.'));
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $tenant = TenantContext::get();
@@ -135,20 +174,6 @@ class WebsiteSettingsController extends Controller
             'contact_page.hours.ar' => ['nullable', 'string', 'max:1000'],
             'contact_page.quick_links_title.en' => ['nullable', 'string', 'max:255'],
             'contact_page.quick_links_title.ar' => ['nullable', 'string', 'max:255'],
-
-            'static_pages' => ['nullable', 'array'],
-            'static_pages.privacy_policy.title' => ['nullable', 'array'],
-            'static_pages.privacy_policy.title.*' => ['nullable', 'string', 'max:255'],
-            'static_pages.privacy_policy.content' => ['nullable', 'array'],
-            'static_pages.privacy_policy.content.*' => ['nullable', 'string', 'max:50000'],
-            'static_pages.terms_of_use.title' => ['nullable', 'array'],
-            'static_pages.terms_of_use.title.*' => ['nullable', 'string', 'max:255'],
-            'static_pages.terms_of_use.content' => ['nullable', 'array'],
-            'static_pages.terms_of_use.content.*' => ['nullable', 'string', 'max:50000'],
-            'static_pages.security_policy.title' => ['nullable', 'array'],
-            'static_pages.security_policy.title.*' => ['nullable', 'string', 'max:255'],
-            'static_pages.security_policy.content' => ['nullable', 'array'],
-            'static_pages.security_policy.content.*' => ['nullable', 'string', 'max:50000'],
 
             'seo.defaults.title_suffix.en' => ['nullable', 'string', 'max:255'],
             'seo.defaults.title_suffix.ar' => ['nullable', 'string', 'max:255'],
@@ -375,7 +400,6 @@ class WebsiteSettingsController extends Controller
                         'ar' => $this->nullableString(data_get($validated, 'contact_page.quick_links_title.ar')),
                     ],
                 ],
-                'static_pages' => $this->staticPagesPayload($validated, $supportedLocales),
                 'seo' => [
                     'defaults' => [
                         'title_suffix' => [
@@ -957,6 +981,54 @@ class WebsiteSettingsController extends Controller
         $value = trim((string) ($value ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * @param  list<string>  $supportedLocales
+     */
+    private function staticPagesValidationRules(): array
+    {
+        return [
+            'static_pages' => ['nullable', 'array'],
+            'static_pages.privacy_policy.title' => ['nullable', 'array'],
+            'static_pages.privacy_policy.title.*' => ['nullable', 'string', 'max:255'],
+            'static_pages.privacy_policy.content' => ['nullable', 'array'],
+            'static_pages.privacy_policy.content.*' => ['nullable', 'string', 'max:50000'],
+            'static_pages.terms_of_use.title' => ['nullable', 'array'],
+            'static_pages.terms_of_use.title.*' => ['nullable', 'string', 'max:255'],
+            'static_pages.terms_of_use.content' => ['nullable', 'array'],
+            'static_pages.terms_of_use.content.*' => ['nullable', 'string', 'max:50000'],
+            'static_pages.security_policy.title' => ['nullable', 'array'],
+            'static_pages.security_policy.title.*' => ['nullable', 'string', 'max:255'],
+            'static_pages.security_policy.content' => ['nullable', 'array'],
+            'static_pages.security_policy.content.*' => ['nullable', 'string', 'max:50000'],
+        ];
+    }
+
+    /**
+     * @param  list<string>  $enabledLocales
+     */
+    private function staticPageLocaleOptions(array $enabledLocales): array
+    {
+        $enabledLocales = empty($enabledLocales) ? $this->supportedLocaleKeys() : $enabledLocales;
+        $configuredLocales = (array) config('laravellocalization.supportedLocales', []);
+
+        return collect($enabledLocales)
+            ->map(fn ($locale) => trim((string) $locale))
+            ->filter()
+            ->unique()
+            ->map(function (string $locale) use ($configuredLocales): array {
+                $config = (array) ($configuredLocales[$locale] ?? []);
+
+                return [
+                    'code' => $locale,
+                    'name' => (string) ($config['name'] ?? strtoupper($locale)),
+                    'native' => (string) ($config['native'] ?? $config['name'] ?? strtoupper($locale)),
+                    'direction' => in_array($locale, ['ar', 'ur', 'fa'], true) ? 'rtl' : 'ltr',
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /**

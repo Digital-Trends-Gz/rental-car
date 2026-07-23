@@ -415,6 +415,13 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     permission: 'tenant-manage-settings',
                 },
                 {
+                    key: 'static-pages',
+                    title: t('dashboard.sidebar.admin.static_pages'),
+                    href: adminHref('/settings/static-pages'),
+                    icon: FileText,
+                    permission: 'tenant-manage-settings',
+                },
+                {
                     key: 'translations',
                     title: t('dashboard.sidebar.admin.translations'),
                     href: adminHref('/settings/translations'),

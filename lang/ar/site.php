@@ -827,6 +827,7 @@ return array (
         'roles' => 'الأدوار',
         'payment_providers' => 'مزودو الدفع',
         'website_settings' => 'إعدادات الموقع',
+        'static_pages' => 'الصفحات الثابتة',
         'contract_pdf' => 'قالب PDF للعقد',
         'seo_settings' => 'إعدادات SEO',
         'seo_audit' => 'تدقيق SEO',

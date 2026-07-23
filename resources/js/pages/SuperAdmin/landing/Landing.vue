@@ -39,12 +39,7 @@ import {
     Users,
     X,
 } from 'lucide-vue-next';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-import { A11y, Autoplay, Navigation, Pagination } from 'swiper/modules';
-import { Swiper, SwiperSlide } from 'swiper/vue';
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 interface FeatureCard {
     title: string;
@@ -247,6 +242,8 @@ const props = defineProps<{
 
 const page = usePage<any>();
 const { t } = useTrans();
+const Swiper = defineAsyncComponent(() => import('swiper/vue').then((module) => module.Swiper));
+const SwiperSlide = defineAsyncComponent(() => import('swiper/vue').then((module) => module.SwiperSlide));
 const appName = computed(() => page.props.name || 'Car4u');
 const locale = computed(() => String(page.props.locale || 'en'));
 const isRtlLocale = computed(() =>
@@ -658,6 +655,7 @@ const appStoreButtonTextClass = computed(() => (isRtlLocale.value ? 'text-right'
 const mobileOpen = ref(false);
 const scrolled = ref(false);
 const showScrollTop = ref(false);
+const showDeferredSections = ref(false);
 const yearly = ref(false);
 const clientsRail = ref<HTMLElement | null>(null);
 const clientsAutoplay = ref<number | null>(null);
@@ -713,8 +711,8 @@ const whatsappHref = computed(() =>
 );
 const carSearch = ref(props.carSearch ?? '');
 const fleetUrl = computed(() => localizedPath(mainFleet().url));
-const featureSwiperModules = [Navigation, Pagination, Autoplay, A11y];
-const planSwiperModules = [Navigation, Pagination, Autoplay, A11y];
+const featureSwiperModules = ref<any[]>([]);
+const planSwiperModules = ref<any[]>([]);
 const mobileAppBackgrounds = [
     'linear-gradient(135deg, #dbeafe 0%, #f8fafc 100%)',
     'linear-gradient(135deg, #ede9fe 0%, #f8fafc 100%)',
@@ -1088,6 +1086,63 @@ const submitContact = () => {
         },
     });
 };
+
+const scrollToCurrentHash = () => {
+    const hash = window.location.hash;
+    if (!hash || hash.length <= 1) {
+        return;
+    }
+
+    let targetId = hash.slice(1);
+
+    try {
+        targetId = decodeURIComponent(targetId);
+    } catch {
+        targetId = hash.slice(1);
+    }
+
+    const target = document.getElementById(targetId);
+    if (target) {
+        target.scrollIntoView({ block: 'start' });
+    }
+};
+
+const enableDeferredSections = async () => {
+    if (showDeferredSections.value) {
+        return;
+    }
+
+    showDeferredSections.value = true;
+
+    const [{ A11y, Autoplay, Navigation, Pagination }] = await Promise.all([
+        import('swiper/modules'),
+        import('swiper/css'),
+        import('swiper/css/navigation'),
+        import('swiper/css/pagination'),
+    ]);
+    const modules = [Navigation, Pagination, Autoplay, A11y];
+    featureSwiperModules.value = modules;
+    planSwiperModules.value = modules;
+
+    await nextTick();
+    startClientsAutoplay();
+    updateFloatingActionsOffset();
+    scrollToCurrentHash();
+};
+
+const scheduleDeferredSections = () => {
+    const run = () => {
+        void enableDeferredSections();
+    };
+
+    if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(run, { timeout: 1200 });
+        return;
+    }
+
+    window.setTimeout(run, 150);
+};
+
 onMounted(() => {
     // Clean up empty car_search query parameter from URL (e.g. after browser back)
     const url = new URL(window.location.href);
@@ -1099,12 +1154,18 @@ onMounted(() => {
     onScroll();
     window.addEventListener('scroll', onScroll);
     window.addEventListener('resize', updateFloatingActionsOffset);
-    nextTick(startClientsAutoplay);
+    window.addEventListener('pointerdown', enableDeferredSections, { once: true, passive: true });
+    window.addEventListener('keydown', enableDeferredSections, { once: true });
+    window.addEventListener('scroll', enableDeferredSections, { once: true, passive: true });
+    scheduleDeferredSections();
 });
 
 onUnmounted(() => {
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('resize', updateFloatingActionsOffset);
+    window.removeEventListener('pointerdown', enableDeferredSections);
+    window.removeEventListener('keydown', enableDeferredSections);
+    window.removeEventListener('scroll', enableDeferredSections);
 
     if (clientsAutoplay.value !== null) {
         window.clearInterval(clientsAutoplay.value);
@@ -1323,6 +1384,7 @@ onUnmounted(() => {
                                     muted
                                     loop
                                     playsinline
+                                    preload="metadata"
                                 />
                                 <img
                                     v-else
@@ -1330,6 +1392,8 @@ onUnmounted(() => {
                                     alt="Hero"
                                     class="h-full w-full object-cover"
                                     loading="eager"
+                                    fetchpriority="high"
+                                    decoding="async"
                                 />
                             </div>
                         </div>
@@ -1338,7 +1402,7 @@ onUnmounted(() => {
             </section>
 
             <section
-                v-if="landingSettings.cars_section.enabled"
+                v-if="showDeferredSections && landingSettings.cars_section.enabled"
                 id="cars"
                 class="section-padding"
             >
@@ -1400,6 +1464,8 @@ onUnmounted(() => {
                                     :src="car.image_url"
                                     :alt="`${car.make} ${car.model}`"
                                     class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                                    loading="lazy"
+                                    decoding="async"
                                 />
                                 <div
                                     class="absolute top-4 right-4 rounded-2xl px-4 py-3 shadow-lg"
@@ -1448,6 +1514,8 @@ onUnmounted(() => {
                                                         )
                                                     "
                                                     class="h-full w-full object-contain"
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     @error="
                                                         markCarTenantLogoBroken(
                                                             car.id,
@@ -1617,6 +1685,8 @@ onUnmounted(() => {
                                 "
                                 alt=""
                                 class="h-8 w-8 shrink-0 object-contain brightness-0 invert"
+                                loading="lazy"
+                                decoding="async"
                             />
                             {{ t('landing.cars_view_complete_fleet') }}
                         </a>
@@ -1625,7 +1695,7 @@ onUnmounted(() => {
             </section>
 
             <section
-                v-if="landingSettings.getting_started.enabled"
+                v-if="showDeferredSections && landingSettings.getting_started.enabled"
                 id="how-it-works"
                 class="section-padding"
             >
@@ -1661,6 +1731,8 @@ onUnmounted(() => {
                                     :src="item.image_url"
                                     :alt="item.title"
                                     class="h-9 w-9 object-contain"
+                                    loading="lazy"
+                                    decoding="async"
                                     @error="
                                         markLandingImageBroken(item.image_url)
                                     "
@@ -1688,7 +1760,7 @@ onUnmounted(() => {
             </section>
 
             <section
-                v-if="landingSettings.features_section.enabled"
+                v-if="showDeferredSections && landingSettings.features_section.enabled"
                 id="features"
                 class="section-padding bg-secondary/30"
             >
@@ -1731,6 +1803,8 @@ onUnmounted(() => {
                                         :src="card.image_url"
                                         :alt="card.title"
                                         class="h-7 w-7 object-contain"
+                                        loading="lazy"
+                                        decoding="async"
                                         @error="
                                             markLandingImageBroken(
                                                 card.image_url,
@@ -1817,6 +1891,8 @@ onUnmounted(() => {
                                                 :src="card.image_url"
                                                 :alt="card.title"
                                                 class="h-7 w-7 object-contain"
+                                                loading="lazy"
+                                                decoding="async"
                                                 @error="
                                                     markLandingImageBroken(
                                                         card.image_url,
@@ -1866,7 +1942,7 @@ onUnmounted(() => {
             </section>
 
             <section
-                v-if="landingSettings.mobile_apps_section.enabled"
+                v-if="showDeferredSections && landingSettings.mobile_apps_section.enabled"
                 id="application"
                 class="section-padding bg-white"
             >
@@ -1903,6 +1979,7 @@ onUnmounted(() => {
                                                 :alt="`${selectedManagementMobileApp.title} icon`"
                                                 class="h-5 w-5 object-contain"
                                                 loading="lazy"
+                                                decoding="async"
                                             />
                                             <BriefcaseBusiness v-else class="h-5 w-5" />
                                         </span>
@@ -1980,6 +2057,8 @@ onUnmounted(() => {
                                                 :src="mobileAppIconUrl('ios')"
                                                 alt=""
                                                 class="h-5 w-5 shrink-0 object-contain"
+                                                loading="lazy"
+                                                decoding="async"
                                             />
                                             <Apple v-else class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
@@ -2003,6 +2082,8 @@ onUnmounted(() => {
                                                 :src="mobileAppIconUrl('android')"
                                                 alt=""
                                                 class="h-5 w-5 shrink-0 object-contain"
+                                                loading="lazy"
+                                                decoding="async"
                                             />
                                             <Play v-else class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
@@ -2025,6 +2106,7 @@ onUnmounted(() => {
                                         :alt="selectedManagementMobileApp.title"
                                         class="relative z-10 h-[19rem] w-auto rotate-[-4deg] object-contain drop-shadow-[0_24px_36px_rgba(15,23,42,0.22)]"
                                         loading="lazy"
+                                        decoding="async"
                                     />
                                     <div
                                         v-else
@@ -2067,6 +2149,7 @@ onUnmounted(() => {
                                         :alt="clientMobileApp.title"
                                         class="mt-10 h-48 w-auto rotate-[5deg] object-contain drop-shadow-[0_18px_28px_rgba(15,23,42,0.20)]"
                                         loading="lazy"
+                                        decoding="async"
                                     />
                                     <div
                                         v-else
@@ -2089,6 +2172,7 @@ onUnmounted(() => {
                                                 :alt="`${clientMobileApp.title} icon`"
                                                 class="h-6 w-6 object-contain"
                                                 loading="lazy"
+                                                decoding="async"
                                             />
                                             <Users v-else class="h-6 w-6" />
                                         </span>
@@ -2144,6 +2228,8 @@ onUnmounted(() => {
                                                 :src="mobileAppIconUrl('ios')"
                                                 alt=""
                                                 class="h-5 w-5 shrink-0 object-contain"
+                                                loading="lazy"
+                                                decoding="async"
                                             />
                                             <Apple v-else class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
@@ -2167,6 +2253,8 @@ onUnmounted(() => {
                                                 :src="mobileAppIconUrl('android')"
                                                 alt=""
                                                 class="h-5 w-5 shrink-0 object-contain"
+                                                loading="lazy"
+                                                decoding="async"
                                             />
                                             <Play v-else class="h-5 w-5 shrink-0 text-slate-950" />
                                         </a>
@@ -2179,7 +2267,7 @@ onUnmounted(() => {
             </section>
 
             <section
-                v-if="landingSettings.clients_section.enabled"
+                v-if="showDeferredSections && landingSettings.clients_section.enabled"
                 id="clients"
                 class="section-padding border-y border-border bg-secondary/20"
             >
@@ -2214,6 +2302,8 @@ onUnmounted(() => {
                                     :src="tenant.logo_url"
                                     :alt="tenant.name"
                                     class="h-full w-full object-contain p-1"
+                                    loading="lazy"
+                                    decoding="async"
                                     @error="markTenantLogoBroken(tenant.id)"
                                 />
                             </div>
@@ -2236,7 +2326,7 @@ onUnmounted(() => {
             </section>
 
             <section
-                v-if="landingSettings.plans_section.enabled"
+                v-if="showDeferredSections && landingSettings.plans_section.enabled"
                 id="pricing"
                 class="section-padding bg-secondary/30"
             >
@@ -2491,7 +2581,7 @@ onUnmounted(() => {
             </section>
 
             <section
-                v-if="landingSettings.faq_section.enabled"
+                v-if="showDeferredSections && landingSettings.faq_section.enabled"
                 id="faq"
                 class="section-padding"
             >
@@ -2531,7 +2621,7 @@ onUnmounted(() => {
             </section>
 
             <section
-                v-if="landingSettings.contact_section.enabled"
+                v-if="showDeferredSections && landingSettings.contact_section.enabled"
                 id="contact"
                 class="section-padding bg-secondary/30"
             >
@@ -2747,7 +2837,7 @@ onUnmounted(() => {
         </main>
 
         <footer
-            v-if="landingSettings.footer.enabled"
+            v-if="showDeferredSections && landingSettings.footer.enabled"
             ref="landingFooterRef"
             class="border-t border-border bg-slate-50/70 py-7 md:bg-background md:py-4"
         >
@@ -2825,6 +2915,8 @@ onUnmounted(() => {
                                 :src="landingSettings.footer.android_icon_url"
                                 alt=""
                                 class="h-4 w-4 shrink-0 object-contain"
+                                loading="lazy"
+                                decoding="async"
                             />
                             <Play v-else class="h-4 w-4 shrink-0 text-slate-950" />
                         </a>
@@ -2851,6 +2943,8 @@ onUnmounted(() => {
                                 :src="landingSettings.footer.ios_icon_url"
                                 alt=""
                                 class="h-4 w-4 shrink-0 object-contain"
+                                loading="lazy"
+                                decoding="async"
                             />
                             <Apple v-else class="h-4 w-4 shrink-0 text-slate-950" />
                         </a>

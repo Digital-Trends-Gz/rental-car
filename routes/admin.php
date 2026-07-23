@@ -363,6 +363,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::get('settings/website', [WebsiteSettingsController::class, 'edit'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.website.edit');
+        Route::get('settings/static-pages', [WebsiteSettingsController::class, 'staticPagesEdit'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.static-pages.edit');
         Route::get('settings/seo', [WebsiteSettingsController::class, 'seoEdit'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.seo.edit');
@@ -372,6 +375,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::put('settings/website', [WebsiteSettingsController::class, 'update'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.website.update');
+        Route::put('settings/static-pages', [WebsiteSettingsController::class, 'staticPagesUpdate'])
+            ->middleware('permission:tenant-manage-settings')
+            ->name('settings.static-pages.update');
         Route::put('settings/seo', [WebsiteSettingsController::class, 'seoUpdate'])
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.seo.update');
