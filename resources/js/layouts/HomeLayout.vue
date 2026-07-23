@@ -226,7 +226,12 @@ const translatedLandingLabel = (key: string, fallback: string, localized: Partia
 };
 const footerNavLabel = (key: string, fallback: string, localized: Partial<Record<string, string>> = {}) => {
     const configured = String(landingSettings.value?.footer?.[key] || '').trim();
-    if (configured) {
+    const legacyShortLabels: Record<string, string> = {
+        nav_privacy: 'Privacy',
+        nav_terms: 'Terms',
+    };
+
+    if (configured && configured !== legacyShortLabels[key]) {
         return configured;
     }
 
@@ -239,8 +244,8 @@ const footerLabels = {
     features: () => footerNavLabel('nav_features', 'Features', { ar: '\u0627\u0644\u0645\u0645\u064a\u0632\u0627\u062a' }),
     application: () => footerNavLabel('nav_application', 'Application', { ar: '\u062a\u0637\u0628\u064a\u0642\u0627\u062a \u0627\u0644\u0645\u0648\u0628\u0627\u064a\u0644' }),
     plans: () => footerNavLabel('nav_plans', 'Plans', { ar: '\u062e\u0637\u0637 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643' }),
-    privacy: () => footerNavLabel('nav_privacy', 'Privacy', { ar: '\u0627\u0644\u062e\u0635\u0648\u0635\u064a\u0629' }),
-    terms: () => footerNavLabel('nav_terms', 'Terms', { ar: '\u0627\u0644\u0634\u0631\u0648\u0637' }),
+    privacy: () => footerNavLabel('nav_privacy', 'Privacy Policy', { ar: '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u062e\u0635\u0648\u0635\u064a\u0629' }),
+    terms: () => footerNavLabel('nav_terms', 'Terms of Use', { ar: '\u0634\u0631\u0648\u0637 \u0627\u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645' }),
     securityPolicy: () => footerNavLabel('nav_security_policy', 'Security Policy', { ar: '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u0623\u0645\u0627\u0646' }),
 };
 const navigationNavLabel = (key: string, fallback: string) =>
