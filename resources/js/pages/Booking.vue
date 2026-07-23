@@ -51,7 +51,7 @@ interface ReservationLocationSetting {
 }
 
 const $page = usePage<any>();
-const { t } = useTrans();
+const { t, locale } = useTrans();
 const car = computed<Car>(() => $page.props.car as Car);
 const currentTenant = computed(() => $page.props.current_tenant);
 const tenantSiteSettings = computed(() => $page.props.tenant_site_settings ?? null);
@@ -153,14 +153,14 @@ function addDays(value: Date, days: number): Date {
 }
 
 function formatShortDate(value: string): string {
-    return new Intl.DateTimeFormat('en-US', {
+    return new Intl.DateTimeFormat(locale.value || 'en-US', {
         month: 'short',
         day: 'numeric',
     }).format(parseDate(value));
 }
 
 function formatWeekday(value: string): string {
-    return new Intl.DateTimeFormat('en-US', {
+    return new Intl.DateTimeFormat(locale.value || 'en-US', {
         weekday: 'short',
     }).format(parseDate(value));
 }
@@ -207,7 +207,7 @@ function selectAvailableDate(iso: string) {
 
     if (hasBlockedDateInRange(form.start_date, iso)) {
         showAvailabilityDialog.value = true;
-        form.setError('end_date', 'The selected range includes unavailable days. Please choose free dates only.');
+        form.setError('end_date', t('booking.availability_range_unavailable'));
         return;
     }
 
@@ -229,10 +229,17 @@ const availabilityDays = computed(() => {
         isBlocked: boolean;
         isSelectedStart: boolean;
         isSelectedEnd: boolean;
+        isInSelectedRange: boolean;
     }> = [];
 
     for (let cursor = start; cursor <= end; cursor = addDays(cursor, 1)) {
         const iso = formatDate(cursor);
+        const isInSelectedRange = Boolean(
+            form.start_date &&
+            form.end_date &&
+            iso > form.start_date &&
+            iso < form.end_date,
+        );
 
         days.push({
             iso,
@@ -242,6 +249,7 @@ const availabilityDays = computed(() => {
             isBlocked: isBlockedDate(iso),
             isSelectedStart: form.start_date === iso,
             isSelectedEnd: form.end_date === iso,
+            isInSelectedRange,
         });
     }
 
@@ -294,11 +302,11 @@ const rateSummary = computed(() => {
     const monthlyRate = toMoneyNumber(car.value.price_per_month);
 
     if (days >= 30 && monthlyRate > 0) {
-        return { label: 'Monthly Rate', amount: monthlyRate };
+        return { label: t('booking.monthly_rate'), amount: monthlyRate };
     }
 
     if (days >= 7 && weeklyRate > 0) {
-        return { label: 'Weekly Rate', amount: weeklyRate };
+        return { label: t('booking.weekly_rate'), amount: weeklyRate };
     }
 
     return { label: t('booking.daily_rate'), amount: dailyRate };
@@ -409,7 +417,7 @@ const requestPricingPreview = async (couponCode = '') => {
 
     const data = await response.json();
     if (!response.ok || !data?.ok) {
-        throw new Error(data?.message || 'Could not calculate pricing.');
+        throw new Error(data?.message || t('booking.pricing_calculation_failed'));
     }
 
     autoDiscount.value = Number(data.amounts?.auto_discount_amount || 0);
@@ -420,12 +428,12 @@ const requestPricingPreview = async (couponCode = '') => {
 
 const applyCoupon = async () => {
     if (!form.coupon_code) {
-        form.setError('coupon_code', 'Please enter coupon code.');
+        form.setError('coupon_code', t('booking.coupon_enter_code'));
         return;
     }
 
     if (!form.start_date || !form.end_date) {
-        form.setError('coupon_code', 'Please select rental dates first.');
+        form.setError('coupon_code', t('booking.coupon_select_dates_first'));
         return;
     }
 
@@ -437,10 +445,12 @@ const applyCoupon = async () => {
         const data = await requestPricingPreview(form.coupon_code);
         couponDiscount.value = Number(data?.amounts?.coupon_discount_amount || 0);
         couponAppliedCode.value = String(data?.coupon?.code || form.coupon_code);
-        couponMessage.value = `Coupon applied: -$${couponDiscount.value.toFixed(2)}`;
+        couponMessage.value = t('booking.coupon_applied', {
+            amount: discountWithCurrency(couponDiscount.value.toFixed(2)),
+        });
     } catch (error: any) {
         clearCouponPreview();
-        form.setError('coupon_code', error?.message || 'Coupon is invalid.');
+        form.setError('coupon_code', error?.message || t('booking.coupon_invalid'));
         try {
             await requestPricingPreview('');
         } catch {
@@ -475,7 +485,9 @@ watch(
             if (couponAppliedCode.value) {
                 const data = await requestPricingPreview(couponAppliedCode.value);
                 couponDiscount.value = Number(data?.amounts?.coupon_discount_amount || 0);
-                couponMessage.value = `Coupon applied: -$${couponDiscount.value.toFixed(2)}`;
+                couponMessage.value = t('booking.coupon_applied', {
+                    amount: discountWithCurrency(couponDiscount.value.toFixed(2)),
+                });
                 return;
             }
 
@@ -484,7 +496,7 @@ watch(
             clearAutoPreview();
             if (couponAppliedCode.value) {
                 clearCouponPreview();
-                form.setError('coupon_code', 'Coupon no longer valid for selected dates.');
+                form.setError('coupon_code', t('booking.coupon_no_longer_valid'));
             }
         }
     },
@@ -528,6 +540,44 @@ const images = computed(() => {
 });
 
 const currentImage = computed(() => images.value[selectedImageIndex.value] ?? images.value[0]);
+
+const locationTranslationKeys: Record<string, string> = {
+    'Downtown Office': 'booking.locations.downtown_office',
+    'Airport Terminal 1': 'booking.locations.airport_terminal_1',
+    'Airport Terminal 2': 'booking.locations.airport_terminal_2',
+    'Central Station': 'booking.locations.central_station',
+    'Mall Plaza': 'booking.locations.mall_plaza',
+    'Hotel District': 'booking.locations.hotel_district',
+    'Business District': 'booking.locations.business_district',
+};
+
+const locationLabel = (location: string): string => {
+    const key = locationTranslationKeys[location];
+
+    return key ? t(key) : location;
+};
+
+const dayStatusLabel = (day: {
+    isSelectedStart: boolean;
+    isSelectedEnd: boolean;
+    isInSelectedRange: boolean;
+    isBlocked: boolean;
+    isPast: boolean;
+}): string => {
+    if (day.isSelectedStart || day.isSelectedEnd || day.isInSelectedRange) {
+        return t('booking.availability_selected');
+    }
+
+    if (day.isBlocked) {
+        return t('booking.availability_booked');
+    }
+
+    if (day.isPast) {
+        return t('booking.availability_closed');
+    }
+
+    return t('booking.availability_free');
+};
 
 watch(
     images,
@@ -735,10 +785,10 @@ watch(
                                 </div>
                                 <div>
                                     <h3 class="text-xl font-bold text-gray-900 sm:text-2xl">
-                                        Availability Calendar
+                                        {{ t('booking.availability_calendar') }}
                                     </h3>
                                     <p class="text-sm leading-6 text-gray-500">
-                                        Green days are free. Red days are already booked. Click a free day to fill your rental dates.
+                                        {{ t('booking.availability_calendar_help') }}
                                     </p>
                                 </div>
                             </div>
@@ -746,15 +796,15 @@ watch(
                             <div class="mb-6 flex flex-wrap items-center gap-3 text-sm">
                                 <div class="flex items-center gap-2">
                                     <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
-                                    <span class="text-gray-600">Free</span>
+                                    <span class="text-gray-600">{{ t('booking.availability_free') }}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <span class="h-3 w-3 rounded-full bg-red-400"></span>
-                                    <span class="text-gray-600">Booked</span>
+                                    <span class="h-3 w-3 rounded-full bg-primary/30"></span>
+                                    <span class="text-gray-600">{{ t('booking.availability_booked') }}</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <span class="h-3 w-3 rounded-full bg-orange-500"></span>
-                                    <span class="text-gray-600">Selected</span>
+                                    <span class="h-3 w-3 rounded-full bg-primary"></span>
+                                    <span class="text-gray-600">{{ t('booking.availability_selected') }}</span>
                                 </div>
                             </div>
 
@@ -762,13 +812,13 @@ watch(
                                 <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                     <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                                         <Button variant="outline" class="px-3 text-xs sm:text-sm" @click="openAvailabilityWindow(availabilityCalendar.window.previous)">
-                                            Previous
+                                            {{ t('booking.previous_month') }}
                                         </Button>
                                         <div class="min-w-0 text-center text-sm font-semibold text-gray-900 sm:min-w-40 sm:text-lg">
                                             {{ availabilityCalendar.window.label }}
                                         </div>
                                         <Button variant="outline" class="px-3 text-xs sm:text-sm" @click="openAvailabilityWindow(availabilityCalendar.window.next)">
-                                            Next
+                                            {{ t('booking.next_month') }}
                                         </Button>
                                     </div>
 
@@ -788,9 +838,10 @@ watch(
                                         class="min-h-20 rounded-xl border px-3 py-3 text-start text-sm transition-all duration-200"
                                         :class="{
                                             'border-gray-200 bg-white text-gray-400': day.isPast,
-                                            'border-red-200 bg-red-50 text-red-600': day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd,
-                                            'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100': !day.isPast && !day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd,
-                                            'border-orange-300 bg-orange-500 text-white shadow-sm': day.isSelectedStart || day.isSelectedEnd,
+                                            'border-primary/25 bg-primary/10 text-primary': day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd,
+                                            'border-primary/25 bg-primary/10 text-primary ring-1 ring-primary/10': day.isInSelectedRange && !day.isPast && !day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd,
+                                            'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100': !day.isPast && !day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd && !day.isInSelectedRange,
+                                            'border-primary/40 bg-primary text-primary-foreground shadow-sm': day.isSelectedStart || day.isSelectedEnd,
                                         }"
                                         :disabled="day.isPast || day.isBlocked"
                                         @click="selectAvailableDate(day.iso)"
@@ -800,10 +851,7 @@ watch(
                                         </div>
                                         <div class="mt-1 text-base font-semibold">{{ day.label }}</div>
                                         <div class="mt-1 text-[11px]">
-                                            <span v-if="day.isSelectedStart || day.isSelectedEnd">Selected</span>
-                                            <span v-else-if="day.isBlocked">Booked</span>
-                                            <span v-else-if="day.isPast">Closed</span>
-                                            <span v-else>Free</span>
+                                            {{ dayStatusLabel(day) }}
                                         </div>
                                     </button>
                                 </div>
@@ -967,7 +1015,7 @@ watch(
                                                     :key="location"
                                                     :value="location"
                                                 >
-                                                    {{ location }}
+                                                    {{ locationLabel(location) }}
                                                 </option>
                                             </select>
                                             <span
@@ -1006,7 +1054,7 @@ watch(
                                                     :key="location"
                                                     :value="location"
                                                 >
-                                                    {{ location }}
+                                                    {{ locationLabel(location) }}
                                                 </option>
                                             </select>
                                             <span
@@ -1041,13 +1089,13 @@ watch(
                                                 d="M9 14l6-6m-5.5 0h.01m4.99 9h.01M7 19h10a2 2 0 002-2v-4a2 2 0 00-2-2h-2l-2-2H7a2 2 0 00-2 2v6a2 2 0 002 2z"
                                             />
                                         </svg>
-                                        Coupon Code
+                                        {{ t('booking.coupon_code') }}
                                     </h4>
                                     <div class="flex flex-col gap-3 md:flex-row">
                                         <input
                                             v-model="form.coupon_code"
                                             type="text"
-                                            placeholder="e.g. SAVE10"
+                                            :placeholder="t('booking.coupon_placeholder')"
                                             class="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base uppercase transition-all duration-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 sm:text-lg"
                                         />
                                         <button
@@ -1056,7 +1104,7 @@ watch(
                                             :disabled="couponApplying"
                                             @click="applyCoupon"
                                         >
-                                            {{ couponApplying ? 'Applying...' : 'Apply Coupon' }}
+                                            {{ couponApplying ? t('booking.coupon_applying') : t('booking.coupon_apply') }}
                                         </button>
                                     </div>
                                     <span
@@ -1165,7 +1213,7 @@ watch(
                                         class="flex items-center justify-between gap-4 py-2"
                                     >
                                         <span class="text-sm font-medium text-gray-600 sm:text-base"
-                                            >Tax ({{ formattedTaxPercentage }}%)</span
+                                            >{{ t('booking.tax_with_percentage', { percentage: formattedTaxPercentage }) }}</span
                                         >
                                         <span
                                             class="shrink-0 text-base font-bold text-gray-900 sm:text-lg"
@@ -1206,7 +1254,7 @@ watch(
                                         class="flex items-center justify-between gap-4 py-2"
                                     >
                                         <span class="min-w-0 text-sm font-medium text-gray-600 sm:text-base">
-                                            Auto Discount
+                                            {{ t('booking.auto_discount') }}
                                             <span v-if="autoDiscountName" class="text-xs text-gray-500">({{ autoDiscountName }})</span>
                                         </span>
                                         <span
@@ -1226,7 +1274,7 @@ watch(
                                         v-if="hasCoupons"
                                         class="flex items-center justify-between gap-4 py-2"
                                     >
-                                        <span class="text-sm font-medium text-gray-600 sm:text-base">Coupon Discount</span>
+                                        <span class="text-sm font-medium text-gray-600 sm:text-base">{{ t('booking.coupon_discount') }}</span>
                                         <span
                                             class="shrink-0 text-base font-bold text-emerald-600 sm:text-lg"
                                         >
@@ -1347,19 +1395,19 @@ watch(
         <Dialog v-model:open="showAvailabilityDialog">
             <DialogContent class="sm:max-w-[460px]">
                 <DialogHeader>
-                    <DialogTitle>Car Not Available</DialogTitle>
+                    <DialogTitle>{{ t('booking.car_not_available') }}</DialogTitle>
                     <DialogDescription>
-                        {{ availabilityErrorMessage || 'This car is not available for the selected dates. Please choose another time range.' }}
+                        {{ availabilityErrorMessage || t('booking.car_not_available_description') }}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                    Please select different pickup and return dates, then try booking again.
+                    {{ t('booking.select_different_dates') }}
                 </div>
 
                 <DialogFooter>
                     <Button type="button" @click="showAvailabilityDialog = false">
-                        OK
+                        {{ t('booking.ok') }}
                     </Button>
                 </DialogFooter>
             </DialogContent>

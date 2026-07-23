@@ -27,7 +27,7 @@ class TenantAdminAccessSync
             return false;
         }
 
-        $role = Role::withoutGlobalScope('tenant')->firstOrCreate(
+        $ownerRole = Role::withoutGlobalScope('tenant')->firstOrCreate(
             [
                 'name' => 'tenant-owner',
                 'tenant_id' => $tenantId,
@@ -35,6 +35,17 @@ class TenantAdminAccessSync
             [
                 'display_name' => 'Tenant Owner',
                 'description' => 'Default full-access role for the tenant account owner.',
+            ]
+        );
+
+        $partnerRole = Role::withoutGlobalScope('tenant')->firstOrCreate(
+            [
+                'name' => 'tenant-partner',
+                'tenant_id' => $tenantId,
+            ],
+            [
+                'display_name' => 'Tenant Partner',
+                'description' => 'Full-access partner role for this tenant.',
             ]
         );
 
@@ -50,8 +61,9 @@ class TenantAdminAccessSync
             ->values()
             ->all();
 
-        $role->permissions()->sync($permissionIds);
-        $user->roles()->syncWithoutDetaching([$role->id]);
+        $ownerRole->permissions()->sync($permissionIds);
+        $partnerRole->permissions()->sync($permissionIds);
+        $user->roles()->syncWithoutDetaching([$ownerRole->id]);
 
         return true;
     }

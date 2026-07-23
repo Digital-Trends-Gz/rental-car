@@ -37,6 +37,7 @@ const form = useForm({
     domain: '',
     email: '',
     phone: '',
+    partner_seats: 0,
     company_owners: [blankOwner()] as CompanyOwner[],
     plan_id: props.plans[0]?.id ? String(props.plans[0].id) : '',
     admin_name: '',
@@ -274,6 +275,22 @@ const submit = () => {
                             <Label for="phone">{{ t('dashboard.super_admin.tenants.form.phone_number') }}</Label>
                             <Input id="phone" v-model="form.phone" type="tel" :placeholder="t('dashboard.super_admin.tenants.form.phone_placeholder')" />
                             <div v-if="form.errors.phone" class="text-sm text-red-600">{{ form.errors.phone }}</div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="partner_seats">{{ t('dashboard.super_admin.tenants.form.partner_seats') }}</Label>
+                            <Input
+                                id="partner_seats"
+                                v-model.number="form.partner_seats"
+                                type="number"
+                                min="0"
+                                step="1"
+                                placeholder="0"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                {{ t('dashboard.super_admin.tenants.form.partner_seats_help') }}
+                            </p>
+                            <div v-if="form.errors.partner_seats" class="text-sm text-red-600">{{ form.errors.partner_seats }}</div>
                         </div>
 
                         <div class="space-y-3">

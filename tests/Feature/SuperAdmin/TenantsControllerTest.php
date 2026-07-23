@@ -10,6 +10,7 @@ use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Car;
 use App\Models\Contract;
+use App\Models\Permission;
 use App\Models\Plan;
 use App\Models\Reservation;
 use App\Models\Tenant;
@@ -31,6 +32,12 @@ class TenantsControllerTest extends TestCase
             'role' => UserRole::SUPER_ADMIN,
             'is_active' => true,
         ]);
+
+        $permission = Permission::query()->create([
+            'name' => 'manage-tenants',
+            'display_name' => 'Manage Tenants',
+        ]);
+        $this->user->syncPermissions([$permission->id]);
 
         $this->withoutMiddleware([
             \App\Http\Middleware\PermissionMiddleware::class,

@@ -30,6 +30,7 @@ class TenantSiteSetting extends Model
         'about',
         'contact',
         'contact_page',
+        'static_pages',
         'seo',
         'pdf_header',
         'pdf_templates',
@@ -51,6 +52,7 @@ class TenantSiteSetting extends Model
         'about' => 'array',
         'contact' => 'array',
         'contact_page' => 'array',
+        'static_pages' => 'array',
         'seo' => 'array',
         'pdf_header' => 'array',
         'pdf_templates' => 'array',
@@ -189,6 +191,20 @@ class TenantSiteSetting extends Model
                 'quick_links_title' => [
                     'en' => null,
                     'ar' => null,
+                ],
+            ],
+            'static_pages' => [
+                'privacy_policy' => [
+                    'title' => self::localizedNullMap($supportedLocales),
+                    'content' => self::localizedNullMap($supportedLocales),
+                ],
+                'terms_of_use' => [
+                    'title' => self::localizedNullMap($supportedLocales),
+                    'content' => self::localizedNullMap($supportedLocales),
+                ],
+                'security_policy' => [
+                    'title' => self::localizedNullMap($supportedLocales),
+                    'content' => self::localizedNullMap($supportedLocales),
                 ],
             ],
             'seo' => [
@@ -710,6 +726,20 @@ class TenantSiteSetting extends Model
                 'quick_links_title' => [
                     'en' => self::nullableString(data_get($data, 'contact_page.quick_links_title.en')),
                     'ar' => self::nullableString(data_get($data, 'contact_page.quick_links_title.ar')),
+                ],
+            ],
+            'static_pages' => [
+                'privacy_policy' => [
+                    'title' => self::normalizeLocalizedMap(data_get($data, 'static_pages.privacy_policy.title')),
+                    'content' => self::normalizeLocalizedMap(data_get($data, 'static_pages.privacy_policy.content')),
+                ],
+                'terms_of_use' => [
+                    'title' => self::normalizeLocalizedMap(data_get($data, 'static_pages.terms_of_use.title')),
+                    'content' => self::normalizeLocalizedMap(data_get($data, 'static_pages.terms_of_use.content')),
+                ],
+                'security_policy' => [
+                    'title' => self::normalizeLocalizedMap(data_get($data, 'static_pages.security_policy.title')),
+                    'content' => self::normalizeLocalizedMap(data_get($data, 'static_pages.security_policy.content')),
                 ],
             ],
             'seo' => [

@@ -62,6 +62,7 @@ return array (
     'feature_support_desc' => 'فريق الدعم متاح على مدار الساعة خلال فترة التأجير.',
     'feature_value_title' => 'أفضل قيمة',
     'feature_value_desc' => 'أسعار تنافسية بدون رسوم مخفية وخيارات مرنة.',
+    'hero_image_alt' => 'مرآب سيارات فاخر بمنظور ثلاثي الأبعاد',
   ),
   'fleet' => 
   array (
@@ -228,6 +229,12 @@ return array (
     'quick_links' => 'روابط سريعة',
     'browse_fleet' => 'تصفح أسطولنا',
     'about_us' => 'من نحن',
+    'default_address' => 'شارع الأعمال 123
+منطقة وسط المدينة
+المدينة، الولاية 12345',
+    'default_hours' => 'الاثنين - الجمعة: 8:00 صباحاً - 8:00 مساءً
+السبت: 9:00 صباحاً - 6:00 مساءً
+الأحد: 10:00 صباحاً - 4:00 مساءً',
   ),
   'auth' => 
   array (
@@ -288,6 +295,8 @@ return array (
     'commercial_registration_no' => 'رقم السجل التجاري',
     'tax_no' => 'الرقم الضريبي',
     'phone_number' => 'رقم الهاتف',
+    'partner_accounts' => 'حسابات الشركاء',
+    'partner_accounts_help' => 'عدد حسابات الشركاء بصلاحية كاملة التي تريد إضافتها بعد التسجيل.',
     'custom_domain' => 'النطاق المخصص',
     'country' => 'الدولة',
     'repeat_password' => 'تكرار كلمة المرور',
@@ -427,7 +436,35 @@ return array (
       'hotel_district' => 'منطقة الفنادق',
       'business_district' => 'الحي التجاري',
     ),
-    'return_location_fee' => 'Return Location Fee',
+    'return_location_fee' => 'رسوم موقع التسليم',
+    'weekly_rate' => 'السعر الأسبوعي',
+    'monthly_rate' => 'السعر الشهري',
+    'tax_with_percentage' => 'الضريبة (:percentage%)',
+    'availability_calendar' => 'تقويم التوفر',
+    'availability_calendar_help' => 'الأيام الخضراء متاحة. الأيام المظللة محجوزة مسبقاً. اضغط على يوم متاح لتعبئة تواريخ الإيجار.',
+    'availability_free' => 'متاح',
+    'availability_booked' => 'محجوز',
+    'availability_selected' => 'محدد',
+    'availability_closed' => 'مغلق',
+    'availability_range_unavailable' => 'النطاق المحدد يحتوي على أيام غير متاحة. يرجى اختيار تواريخ متاحة فقط.',
+    'previous_month' => 'السابق',
+    'next_month' => 'التالي',
+    'pricing_calculation_failed' => 'تعذر احتساب السعر.',
+    'coupon_code' => 'رمز الكوبون',
+    'coupon_placeholder' => 'مثال: SAVE10',
+    'coupon_apply' => 'تطبيق الكوبون',
+    'coupon_applying' => 'جاري التطبيق...',
+    'coupon_enter_code' => 'يرجى إدخال رمز الكوبون.',
+    'coupon_select_dates_first' => 'يرجى اختيار تواريخ الإيجار أولاً.',
+    'coupon_applied' => 'تم تطبيق الكوبون: :amount',
+    'coupon_invalid' => 'الكوبون غير صالح.',
+    'coupon_no_longer_valid' => 'لم يعد الكوبون صالحاً للتواريخ المحددة.',
+    'auto_discount' => 'الخصم التلقائي',
+    'coupon_discount' => 'خصم الكوبون',
+    'car_not_available' => 'السيارة غير متاحة',
+    'car_not_available_description' => 'هذه السيارة غير متاحة في التواريخ المحددة. يرجى اختيار فترة أخرى.',
+    'select_different_dates' => 'يرجى اختيار تواريخ استلام وتسليم مختلفة ثم المحاولة مرة أخرى.',
+    'ok' => 'حسناً',
   ),
   'booking_confirmation' => 
   array (
@@ -1183,6 +1220,8 @@ return array (
           'custom_domain_help' => 'Optional. Enter a domain only (no http:// or https://).',
           'phone_number' => 'Phone Number',
           'phone_placeholder' => '+1 (555) 123-4567',
+          'partner_seats' => 'عدد الشركاء',
+          'partner_seats_help' => 'حسابات الشركاء بصلاحية كاملة التي يمكن لهذا المستأجر إضافتها.',
           'tenant_logo' => 'Tenant Logo',
           'tenant_logo_help_create' => 'Optional. This logo will be used as the tenant website logo immediately after creation.',
           'tenant_logo_help_edit' => 'Optional. Upload a tenant-specific logo or replace the existing one.',
@@ -1948,6 +1987,9 @@ return array (
           'password_help' => 'Leave blank to keep existing password.',
           'direct_permissions' => 'Direct Permissions',
           'direct_permissions_help' => 'Assign specific permissions directly to this employee (bypass roles).',
+          'tenant_partner_role' => 'شريك المستأجر',
+          'tenant_partner_role_description' => 'دور شريك بصلاحية كاملة لهذا المستأجر.',
+          'partner_seat_limit_reached' => 'تم الوصول إلى الحد المسموح للشركاء. تواصل مع السوبر أدمن لزيادة عدد الشركاء لهذا المستأجر.',
         ),
         'delete_dialog' => 
         array (

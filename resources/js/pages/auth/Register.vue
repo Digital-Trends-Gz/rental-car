@@ -29,6 +29,7 @@ type RegisterPrefill = {
     commercial_registration_number?: string | null;
     tax_number?: string | null;
     civil_number?: string | null;
+    partner_seats?: number | string | null;
 };
 
 type CountryOption = {
@@ -109,6 +110,7 @@ const initial = computed(() => ({
     phone: props.prefill?.phone ?? '',
     commercial_registration_number: props.prefill?.commercial_registration_number ?? '',
     tax_number: props.prefill?.tax_number ?? '',
+    partner_seats: props.prefill?.partner_seats ?? 0,
 }));
 
 const selectedCountryIso2 = ref(initial.value.country_iso2);
@@ -436,6 +438,29 @@ watch(
                                 class="h-11 border-gray-300"
                             />
                             <InputError :message="errors.email" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label
+                                for="partner_seats"
+                                class="text-sm font-semibold text-gray-800"
+                            >
+                                {{ t('auth.partner_accounts') }}
+                            </Label>
+                            <Input
+                                id="partner_seats"
+                                name="partner_seats"
+                                type="number"
+                                min="0"
+                                max="10"
+                                step="1"
+                                :default-value="initial.partner_seats"
+                                class="h-11 border-gray-300"
+                            />
+                            <p class="text-xs text-gray-500">
+                                {{ t('auth.partner_accounts_help') }}
+                            </p>
+                            <InputError :message="errors.partner_seats" />
                         </div>
 
                         <div class="space-y-2">

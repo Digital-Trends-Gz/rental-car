@@ -6,6 +6,7 @@ use App\Core\TenantContext;
 use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Permission;
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -197,6 +198,138 @@ class EmployeesControllerTest extends TestCase
         $this->assertDatabaseMissing('users', [
             'tenant_id' => $tenant->id,
             'email' => 'employee1@example.com',
+        ]);
+    }
+
+    public function test_admin_can_create_partner_employee_when_partner_seat_is_available(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+            'email' => 'owner@example.com',
+            'partner_seats' => 1,
+        ]);
+        TenantContext::set($tenant);
+
+        $branch = Branch::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+        ]);
+
+        $partnerRole = Role::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'tenant-partner',
+            'display_name' => 'Tenant Partner',
+            'description' => 'Full-access partner role for this tenant.',
+        ]);
+
+        $manageEmployeesPermission = Permission::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'tenant-manage-employees',
+            'display_name' => 'Manage Employees',
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'role' => UserRole::ADMIN,
+            'name' => 'Owner',
+            'email' => 'owner@example.com',
+            'civil_number' => '11112222',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+        $admin->syncPermissions([$manageEmployeesPermission->id]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.employees.store', ['subdomain' => $tenant->slug]), [
+                'name' => 'Partner User',
+                'email' => 'partner@example.com',
+                'civil_number' => '99887766',
+                'branch_id' => $branch->id,
+                'password' => 'Password123',
+                'password_confirmation' => 'Password123',
+                'is_active' => true,
+                'role_ids' => [$partnerRole->id],
+                'permission_ids' => [],
+            ])
+            ->assertRedirect(route('admin.employees.index', ['subdomain' => $tenant->slug]));
+
+        $employee = User::query()->where('email', 'partner@example.com')->firstOrFail();
+
+        $this->assertTrue($employee->hasRole('tenant-partner'));
+    }
+
+    public function test_admin_cannot_create_partner_employee_when_partner_seat_limit_is_reached(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+            'email' => 'owner@example.com',
+            'partner_seats' => 1,
+        ]);
+        TenantContext::set($tenant);
+
+        $branch = Branch::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+        ]);
+
+        $partnerRole = Role::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'tenant-partner',
+            'display_name' => 'Tenant Partner',
+            'description' => 'Full-access partner role for this tenant.',
+        ]);
+
+        $manageEmployeesPermission = Permission::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'tenant-manage-employees',
+            'display_name' => 'Manage Employees',
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'role' => UserRole::ADMIN,
+            'name' => 'Owner',
+            'email' => 'owner@example.com',
+            'civil_number' => '11112222',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+        $admin->syncPermissions([$manageEmployeesPermission->id]);
+
+        $existingPartner = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'role' => UserRole::ADMIN,
+            'name' => 'Existing Partner',
+            'email' => 'existing-partner@example.com',
+            'civil_number' => '22223333',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+        $existingPartner->syncRoles([$partnerRole->id]);
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.employees.create', ['subdomain' => $tenant->slug]))
+            ->post(route('admin.employees.store', ['subdomain' => $tenant->slug]), [
+                'name' => 'Extra Partner',
+                'email' => 'extra-partner@example.com',
+                'civil_number' => '99887766',
+                'branch_id' => $branch->id,
+                'password' => 'Password123',
+                'password_confirmation' => 'Password123',
+                'is_active' => true,
+                'role_ids' => [$partnerRole->id],
+                'permission_ids' => [],
+            ]);
+
+        $response->assertRedirect(route('admin.employees.create', ['subdomain' => $tenant->slug]));
+        $response->assertSessionHasErrors(['role_ids']);
+
+        $this->assertDatabaseMissing('users', [
+            'tenant_id' => $tenant->id,
+            'email' => 'extra-partner@example.com',
         ]);
     }
 }

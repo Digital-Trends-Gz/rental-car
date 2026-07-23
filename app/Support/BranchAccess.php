@@ -29,7 +29,7 @@ class BranchAccess
             return false;
         }
 
-        if (!(method_exists($user, 'hasRole') && $user->hasRole('tenant-owner'))) {
+        if (!(method_exists($user, 'hasRole') && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner')))) {
             return false;
         }
 

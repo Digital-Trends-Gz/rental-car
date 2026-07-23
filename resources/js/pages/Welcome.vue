@@ -29,6 +29,8 @@ const homeCars = $page.props.homeCars as Car[];
 const currentTenant = computed(() => $page.props.current_tenant);
 const tenantSiteSettings = computed(() => $page.props.tenant_site_settings ?? null);
 const locale = computed(() => String($page.props.locale || 'en'));
+const isRtl = computed(() => ['ar', 'ur', 'fa'].includes(locale.value));
+const questionMark = computed(() => (isRtl.value ? '؟' : '?'));
 const primaryColor = computed(() => tenantSiteSettings.value?.primary_color || '#f97316');
 const secondaryColor = computed(() => tenantSiteSettings.value?.secondary_color || '#ea580c');
 const accentGradient = computed(() => `linear-gradient(90deg, ${primaryColor.value}, ${secondaryColor.value})`);
@@ -220,7 +222,7 @@ const aboutUrl = computed(() =>
                                 ></div>
                                 <img
                                     src="/images/hero_image.png"
-                                    alt="Premium Car Garage - Isometric View"
+                                    :alt="t('welcome.hero_image_alt')"
                                     class="relative h-auto max-w-full rounded-2xl drop-shadow-2xl"
                                 />
                             </div>
@@ -292,14 +294,16 @@ const aboutUrl = computed(() =>
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="mb-20 text-center">
                         <h2
-                            class="mb-6 text-4xl font-bold text-gray-900 lg:text-5xl"
+                            class="mb-6 text-4xl font-bold leading-tight text-gray-900 lg:text-5xl"
                         >
                             {{ t('welcome.why_choose_start') }}
                             <span
-                                class="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent"
+                                :class="isRtl
+                                    ? 'text-orange-600'
+                                    : 'bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent'"
                             >
                                 {{ t('welcome.why_choose_highlight') }} </span
-                            >?
+                            >{{ questionMark }}
                         </h2>
                         <p class="mx-auto max-w-2xl text-xl text-gray-600">{{ t('welcome.why_choose_desc') }}</p>
                     </div>
@@ -386,6 +390,7 @@ const aboutUrl = computed(() =>
 <style scoped>
 .font-sans {
     font-family:
+        Cairo,
         'Inter',
         -apple-system,
         BlinkMacSystemFont,

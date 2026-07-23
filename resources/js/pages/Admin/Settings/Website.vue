@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
+import RichTextEditor from '@/components/RichTextEditor.vue';
 import SearchableSelect from '@/components/SearchableSelect.vue';
 import { getCurrencyOptions } from '@/lib/currencies';
 import AdminLayout from '@/layouts/AdminLayout.vue';
@@ -11,6 +12,8 @@ import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 type LocalizedText = { en: string | null; ar: string | null };
+type NullableLocalizedMap = Record<string, string | null>;
+type LocalizedMap = Record<string, string>;
 type PdfTemplateOption = {
     value: string;
     label: LocalizedText;
@@ -82,6 +85,10 @@ const props = defineProps<{
             hours: LocalizedText;
             quick_links_title: LocalizedText;
         };
+        static_pages?: Record<'privacy_policy' | 'terms_of_use' | 'security_policy', {
+            title: NullableLocalizedMap;
+            content: NullableLocalizedMap;
+        }>;
         enabled_locales?: string[];
         seo: {
             defaults: {
@@ -246,6 +253,19 @@ function currencyOptionLabel(code: string): string {
     return marketCurrencyOptions.value.find((currency) => currency.code === code)?.label ?? code;
 }
 
+const settingsLocaleCodes = () => {
+    const locales = Array.isArray(props.settings.enabled_locales) && props.settings.enabled_locales.length
+        ? props.settings.enabled_locales
+        : ['en', 'ar'];
+
+    return locales
+        .map((localeCode) => String(localeCode || '').trim())
+        .filter((localeCode, index, array) => localeCode !== '' && array.indexOf(localeCode) === index);
+};
+
+const makeLocalizedMap = (value?: NullableLocalizedMap | null): LocalizedMap =>
+    Object.fromEntries(settingsLocaleCodes().map((localeCode) => [localeCode, value?.[localeCode] ?? '']));
+
 const form = useForm({
     site_name: props.settings.site_name ?? '',
     logo_url: props.settings.logo_url ?? '',
@@ -362,6 +382,20 @@ const form = useForm({
         quick_links_title: {
             en: props.settings.contact_page?.quick_links_title?.en ?? '',
             ar: props.settings.contact_page?.quick_links_title?.ar ?? '',
+        },
+    },
+    static_pages: {
+        privacy_policy: {
+            title: makeLocalizedMap(props.settings.static_pages?.privacy_policy?.title),
+            content: makeLocalizedMap(props.settings.static_pages?.privacy_policy?.content),
+        },
+        terms_of_use: {
+            title: makeLocalizedMap(props.settings.static_pages?.terms_of_use?.title),
+            content: makeLocalizedMap(props.settings.static_pages?.terms_of_use?.content),
+        },
+        security_policy: {
+            title: makeLocalizedMap(props.settings.static_pages?.security_policy?.title),
+            content: makeLocalizedMap(props.settings.static_pages?.security_policy?.content),
         },
     },
     seo: {
@@ -603,6 +637,33 @@ const enabledSeoLocales = computed(() => {
         .map((locale) => String(locale).trim())
         .filter((locale, index, array) => locale !== '' && array.indexOf(locale) === index);
 });
+const staticPageSections = [
+    {
+        key: 'privacy_policy',
+        label: 'Privacy Policy',
+        labelAr: 'سياسة الخصوصية',
+        path: '/privacy-policy',
+    },
+    {
+        key: 'terms_of_use',
+        label: 'Terms of Use',
+        labelAr: 'شروط الاستخدام',
+        path: '/terms-of-use',
+    },
+    {
+        key: 'security_policy',
+        label: 'Security Policy',
+        labelAr: 'سياسة الأمان',
+        path: '/security-policy',
+    },
+] as const;
+const localeDisplayNames: Record<string, string> = {
+    en: 'English',
+    ar: 'Arabic',
+    ur: 'Urdu',
+};
+const staticPageLocaleLabel = (localeCode: string) => `${localeDisplayNames[localeCode] || localeCode.toUpperCase()} (${localeCode.toUpperCase()})`;
+const staticPageLocaleDirection = (localeCode: string): 'ltr' | 'rtl' => (['ar', 'ur', 'fa'].includes(localeCode) ? 'rtl' : 'ltr');
 const primarySecondaryGradient = computed(
     () => `linear-gradient(135deg, ${form.primary_color || '#f97316'}, ${form.secondary_color || '#ea580c'})`,
 );
@@ -2173,6 +2234,70 @@ function submit() {
                             <Label for="contact_page_quick_links_title_ar">{{ localize('Quick Links Title (AR)', 'عنوان الروابط السريعة (AR)') }}</Label>
                             <Input id="contact_page_quick_links_title_ar" v-model="form.contact_page.quick_links_title.ar" dir="rtl" />
                             <p v-if="form.errors['contact_page.quick_links_title.ar']" class="text-sm text-red-600">{{ form.errors['contact_page.quick_links_title.ar'] }}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="space-y-5 rounded-lg border p-5">
+                    <div>
+                        <h2 class="text-lg font-semibold">{{ localize('Static Pages', 'الصفحات الثابتة') }}</h2>
+                        <p class="text-sm text-muted-foreground">
+                            {{ localize('Edit tenant website legal pages in each enabled language.', 'عدّل صفحات الشروط والسياسات الخاصة بموقع التاجر لكل لغة مفعلة.') }}
+                        </p>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div v-for="section in staticPageSections" :key="section.key" class="rounded-lg border bg-muted/10 p-4">
+                            <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h3 class="font-semibold">{{ localize(section.label, section.labelAr) }}</h3>
+                                    <p class="text-xs text-muted-foreground">{{ section.path }}</p>
+                                </div>
+                                <Link :href="section.path" class="text-sm font-medium text-primary hover:underline" target="_blank">
+                                    {{ localize('Open Page', 'فتح الصفحة') }}
+                                </Link>
+                            </div>
+
+                            <div class="space-y-5">
+                                <div
+                                    v-for="localeCode in enabledSeoLocales"
+                                    :key="`${section.key}-${localeCode}`"
+                                    class="space-y-3 rounded-md border bg-background p-4"
+                                    :dir="staticPageLocaleDirection(localeCode)"
+                                >
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="text-sm font-semibold">{{ staticPageLocaleLabel(localeCode) }}</div>
+                                        <span class="rounded-full bg-muted px-2 py-1 text-xs font-medium uppercase text-muted-foreground">
+                                            {{ staticPageLocaleDirection(localeCode) }}
+                                        </span>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label :for="`static_${section.key}_${localeCode}_title`">{{ localize('Page Title', 'عنوان الصفحة') }}</Label>
+                                        <Input
+                                            :id="`static_${section.key}_${localeCode}_title`"
+                                            v-model="form.static_pages[section.key].title[localeCode]"
+                                            :dir="staticPageLocaleDirection(localeCode)"
+                                        />
+                                        <p v-if="form.errors[`static_pages.${section.key}.title.${localeCode}`]" class="text-sm text-red-600">
+                                            {{ form.errors[`static_pages.${section.key}.title.${localeCode}`] }}
+                                        </p>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label :for="`static_${section.key}_${localeCode}_content`">{{ localize('Page Content', 'محتوى الصفحة') }}</Label>
+                                        <RichTextEditor
+                                            :id="`static_${section.key}_${localeCode}_content`"
+                                            v-model="form.static_pages[section.key].content[localeCode]"
+                                            :dir="staticPageLocaleDirection(localeCode)"
+                                            :placeholder="localize('Write page content...', 'اكتب محتوى الصفحة...')"
+                                        />
+                                        <p v-if="form.errors[`static_pages.${section.key}.content.${localeCode}`]" class="text-sm text-red-600">
+                                            {{ form.errors[`static_pages.${section.key}.content.${localeCode}`] }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>

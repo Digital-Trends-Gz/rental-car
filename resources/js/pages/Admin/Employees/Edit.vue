@@ -12,7 +12,7 @@ import { useTrans } from '@/composables/useTrans';
 const props = defineProps<{
     employee: any | null;
     branches: Array<{ id: number; name: string }>;
-    roles: Array<{ id: number; display_name: string }>;
+    roles: Array<{ id: number; name?: string; display_name: string }>;
     permissions: Array<{ id: number; display_name: string; description: string }>;
 }>();
 
@@ -74,6 +74,14 @@ function onPermissionCheckboxChange(id: number, event: Event) {
 
 function onActiveCheckboxChange(event: Event) {
     form.is_active = (event.target as HTMLInputElement).checked;
+}
+
+function roleDisplayName(role: { name?: string; display_name: string }) {
+    if (role.name === 'tenant-partner') {
+        return t('dashboard.admin.employees.form.tenant_partner_role');
+    }
+
+    return role.display_name;
 }
 </script>
 
@@ -159,7 +167,7 @@ function onActiveCheckboxChange(event: Event) {
                                         class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                     />
                                     <Label :for="`role-${role.id}`" class="text-sm font-medium leading-none cursor-pointer">
-                                        {{ role.display_name }}
+                                        {{ roleDisplayName(role) }}
                                     </Label>
                                 </div>
                                 <div v-if="props.roles.length === 0" class="col-span-2 text-sm text-gray-500 italic">

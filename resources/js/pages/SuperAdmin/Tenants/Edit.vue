@@ -41,6 +41,7 @@ const props = defineProps<{
         email: string | null;
         phone: string | null;
         plan_id: number | null;
+        partner_seats: number;
         subscription_plan?: { id: number; name: string } | null;
         is_active: boolean;
         logo_url: string | null;
@@ -60,6 +61,7 @@ const form = useForm({
     domain: props.tenant.domain ?? '',
     email: props.tenant.email ?? '',
     phone: props.tenant.phone ?? '',
+    partner_seats: props.tenant.partner_seats ?? 0,
     company_owners: props.tenant.company_owners?.length
         ? props.tenant.company_owners.map((owner) => ({
               name: owner?.name ?? '',
@@ -324,6 +326,24 @@ const submit = () => {
                             />
                             <div v-if="form.errors.phone" class="text-sm text-red-600">
                                 {{ form.errors.phone }}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="partner_seats">{{ t('dashboard.super_admin.tenants.form.partner_seats') }}</Label>
+                            <Input
+                                id="partner_seats"
+                                v-model.number="form.partner_seats"
+                                type="number"
+                                min="0"
+                                step="1"
+                                placeholder="0"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                {{ t('dashboard.super_admin.tenants.form.partner_seats_help') }}
+                            </p>
+                            <div v-if="form.errors.partner_seats" class="text-sm text-red-600">
+                                {{ form.errors.partner_seats }}
                             </div>
                         </div>
 

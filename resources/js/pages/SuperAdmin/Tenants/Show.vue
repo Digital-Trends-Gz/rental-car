@@ -4,6 +4,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Mail, Phone, CreditCard, CheckCircle, XCircle, Users, Car, Calendar, DollarSign } from 'lucide-vue-next';
+import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
     tenant: {
@@ -14,6 +15,8 @@ const props = defineProps<{
         email: string | null;
         phone: string | null;
         plan_id: number | null;
+        partner_seats: number;
+        partner_users_count?: number;
         subscription_plan?: { id: number; name: string } | null;
         is_active: boolean;
         created_at: string;
@@ -31,6 +34,8 @@ const props = defineProps<{
         }>;
     };
 }>();
+
+const { t } = useTrans();
 
 const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -107,6 +112,12 @@ const planColors: Record<string, string> = {
                             <span :class="props.tenant.is_active ? 'text-green-700' : 'text-red-700'">
                                 {{ props.tenant.is_active ? 'Active' : 'Inactive' }}
                             </span>
+                        </div>
+                        <div>
+                            <span class="text-sm text-muted-foreground">{{ t('dashboard.super_admin.tenants.form.partner_seats') }}</span>
+                            <p class="font-medium">
+                                {{ props.tenant.partner_users_count ?? 0 }} / {{ props.tenant.partner_seats ?? 0 }}
+                            </p>
                         </div>
                         <div class="pt-2 text-sm text-muted-foreground">
                             Created {{ formatDate(props.tenant.created_at) }}

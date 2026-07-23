@@ -29,6 +29,7 @@ class Tenant extends Model
         'phone_national',
         'phone_e164',
         'plan_id',
+        'partner_seats',
         'plan',
         'is_active',
         'settings',
@@ -51,6 +52,7 @@ class Tenant extends Model
         return [
             'is_active' => 'boolean',
             'plan_id' => 'integer',
+            'partner_seats' => 'integer',
             'settings' => 'array',
             'trial_ends_at' => 'datetime',
             'country_iso2' => 'string',

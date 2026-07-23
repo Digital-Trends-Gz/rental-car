@@ -77,6 +77,7 @@ class TenantsController
             'domain' => ['nullable', 'string', 'max:255', 'regex:/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i', 'unique:tenants,domain'],
             'email' => 'required|email|unique:tenants,email',
             'phone' => 'nullable|string|max:20',
+            'partner_seats' => ['nullable', 'integer', 'min:0', 'max:1000'],
             'company_owners' => ['required', 'array', 'min:1'],
             'company_owners.*.name' => ['required', 'string', 'max:255', new LettersOnly()],
             'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255', new DigitsOnly()],
@@ -97,6 +98,7 @@ class TenantsController
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'plan_id' => (int) $validated['plan_id'],
+            'partner_seats' => (int) ($validated['partner_seats'] ?? 0),
             'settings' => [
                 'company_owners' => CompanyOwners::normalize($validated['company_owners'] ?? []),
             ],
@@ -161,7 +163,10 @@ class TenantsController
         ]);
 
         return Inertia::render('SuperAdmin/Tenants/Show', [
-            'tenant' => $tenant,
+            'tenant' => array_merge($tenant->toArray(), [
+                'company_owners' => data_get($tenant->settings, 'company_owners', []),
+                'partner_users_count' => $this->partnerUsersCount($tenant),
+            ]),
         ]);
     }
 
@@ -192,6 +197,7 @@ class TenantsController
                 'email' => $tenant->email,
                 'phone' => $tenant->phone,
                 'plan_id' => $tenant->plan_id,
+                'partner_seats' => $tenant->partner_seats,
                 'is_active' => $tenant->is_active,
                 'logo_url' => TenantSiteSetting::forTenant($tenant)['logo_url'],
                 'company_owners' => data_get($tenant->settings, 'company_owners', []),
@@ -233,6 +239,7 @@ class TenantsController
             'domain' => ['nullable', 'string', 'max:255', 'regex:/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i', 'unique:tenants,domain,' . $tenant->id],
             'email' => 'required|email|unique:tenants,email,' . $tenant->id,
             'phone' => 'nullable|string|max:20',
+            'partner_seats' => ['nullable', 'integer', 'min:0', 'max:1000'],
             'company_owners' => ['required', 'array', 'min:1'],
             'company_owners.*.name' => ['required', 'string', 'max:255', new LettersOnly()],
             'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255', new DigitsOnly()],
@@ -260,6 +267,7 @@ class TenantsController
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'plan_id' => (int) $validated['plan_id'],
+            'partner_seats' => (int) ($validated['partner_seats'] ?? 0),
             'is_active' => $validated['is_active'],
             'settings' => array_merge(
                 is_array($tenant->settings) ? $tenant->settings : [],
@@ -374,5 +382,14 @@ class TenantsController
         }
 
         return $normalized !== '' ? $normalized : null;
+    }
+
+    private function partnerUsersCount(Tenant $tenant): int
+    {
+        return User::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('role', UserRole::ADMIN)
+            ->whereHas('roles', fn ($query) => $query->where('name', 'tenant-partner'))
+            ->count();
     }
 }

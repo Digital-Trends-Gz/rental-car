@@ -50,6 +50,22 @@ const destroyRole = () => {
     },
   });
 };
+
+function roleDisplayName(role: { name: string; display_name: string }) {
+  if (role.name === 'tenant-partner') {
+    return t('dashboard.admin.employees.form.tenant_partner_role');
+  }
+
+  return role.display_name;
+}
+
+function roleDescription(role: { name: string; description: string | null }) {
+  if (role.name === 'tenant-partner') {
+    return t('dashboard.admin.employees.form.tenant_partner_role_description');
+  }
+
+  return role.description || '-';
+}
 </script>
 
 <template>
@@ -84,11 +100,11 @@ const destroyRole = () => {
                                     <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
                                         <Shield class="h-4 w-4 text-indigo-600" />
                                     </div>
-                                    <div class="font-medium text-gray-900">{{ role.display_name }}</div>
+                                    <div class="font-medium text-gray-900">{{ roleDisplayName(role) }}</div>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-600">
-                                {{ role.description || '-' }}
+                                {{ roleDescription(role) }}
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full w-fit">

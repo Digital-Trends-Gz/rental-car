@@ -455,10 +455,17 @@ const availabilityDays = computed(() => {
         isBlocked: boolean;
         isSelectedStart: boolean;
         isSelectedEnd: boolean;
+        isInSelectedRange: boolean;
     }> = [];
 
     for (let cursor = start; cursor <= end; cursor = addDays(cursor, 1)) {
         const iso = formatDate(cursor);
+        const isInSelectedRange = Boolean(
+            form.start_date &&
+            form.end_date &&
+            iso > form.start_date &&
+            iso < form.end_date,
+        );
 
         days.push({
             iso,
@@ -468,6 +475,7 @@ const availabilityDays = computed(() => {
             isBlocked: isBlockedDate(iso),
             isSelectedStart: form.start_date === iso,
             isSelectedEnd: form.end_date === iso,
+            isInSelectedRange,
         });
     }
 
@@ -749,11 +757,11 @@ function cancelDebtAction() {
                         <span class="text-gray-600">{{ localize('Free', 'متاح') }}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="h-3 w-3 rounded-full bg-red-400"></span>
+                        <span class="h-3 w-3 rounded-full bg-primary/30"></span>
                         <span class="text-gray-600">{{ localize('Booked', 'محجوز') }}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="h-3 w-3 rounded-full bg-orange-500"></span>
+                        <span class="h-3 w-3 rounded-full bg-primary"></span>
                         <span class="text-gray-600">{{ localize('Selected', 'محدد') }}</span>
                     </div>
                 </div>
@@ -800,9 +808,10 @@ function cancelDebtAction() {
                             class="min-h-20 rounded-xl border px-3 py-3 text-left text-sm transition-all duration-200"
                             :class="{
                                 'border-gray-200 bg-white text-gray-400': day.isPast,
-                                'border-red-200 bg-red-50 text-red-600': day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd,
-                                'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100': !day.isPast && !day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd,
-                                'border-orange-300 bg-orange-500 text-white shadow-sm': day.isSelectedStart || day.isSelectedEnd,
+                                'border-primary/25 bg-primary/10 text-primary': day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd,
+                                'border-primary/25 bg-primary/10 text-primary ring-1 ring-primary/10': day.isInSelectedRange && !day.isPast && !day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd,
+                                'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100': !day.isPast && !day.isBlocked && !day.isSelectedStart && !day.isSelectedEnd && !day.isInSelectedRange,
+                                'border-primary/40 bg-primary text-primary-foreground shadow-sm': day.isSelectedStart || day.isSelectedEnd,
                             }"
                             :disabled="day.isPast || day.isBlocked"
                             @click="selectAvailableDate(day.iso)"
@@ -813,6 +822,7 @@ function cancelDebtAction() {
                             <div class="mt-1 text-base font-semibold">{{ day.label }}</div>
                             <div class="mt-1 text-[11px]">
                                 <span v-if="day.isSelectedStart || day.isSelectedEnd">{{ localize('Selected', 'محدد') }}</span>
+                                <span v-else-if="day.isInSelectedRange">{{ localize('Selected', 'محدد') }}</span>
                                 <span v-else-if="day.isBlocked">{{ localize('Booked', 'محجوز') }}</span>
                                 <span v-else-if="day.isPast">{{ localize('Closed', 'مغلق') }}</span>
                                 <span v-else>{{ localize('Free', 'متاح') }}</span>

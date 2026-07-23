@@ -727,11 +727,18 @@ class HomePagesController extends Controller
 
         $localization = LocalizationSettings::load();
         $locale = app()->getLocale();
+        $tenantStaticPage = $this->tenantStaticPageSettings($section);
         $content = $this->localizedStaticPageContent(
-            data_get($this->staticPageSettings(), $section),
+            is_array($tenantStaticPage)
+                ? data_get($tenantStaticPage, 'content')
+                : data_get($this->staticPageSettings(), $section),
             $locale,
             $localization
         );
+        $title = is_array($tenantStaticPage)
+            ? ($this->localizedStaticPageContent(data_get($tenantStaticPage, 'title'), $locale, $localization)
+                ?: $this->localizedStaticPageTitle($section, $locale))
+            : $this->localizedStaticPageTitle($section, $locale);
         [$landingSettings, $availableLocales] = TenantContext::get()
             ? [null, null]
             : $this->landingShellSettings();
@@ -739,7 +746,7 @@ class HomePagesController extends Controller
         $props = [
             'page' => [
                 'section' => $section,
-                'title' => $this->localizedStaticPageTitle($section, $locale),
+                'title' => $title,
                 'content_html' => $content,
                 'locale' => $locale,
                 'direction' => $this->staticPageDirection($locale, $localization),
@@ -757,6 +764,20 @@ class HomePagesController extends Controller
         }
 
         return inertia('StaticPage', $props);
+    }
+
+    private function tenantStaticPageSettings(string $section): ?array
+    {
+        $tenant = TenantContext::get();
+
+        if (! $tenant) {
+            return null;
+        }
+
+        $settings = TenantSiteSetting::forTenant($tenant);
+        $page = data_get($settings, "static_pages.{$section}");
+
+        return is_array($page) ? $page : null;
     }
 
     private function staticPageSettings(): array

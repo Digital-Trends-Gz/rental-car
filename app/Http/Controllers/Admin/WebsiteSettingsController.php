@@ -136,6 +136,20 @@ class WebsiteSettingsController extends Controller
             'contact_page.quick_links_title.en' => ['nullable', 'string', 'max:255'],
             'contact_page.quick_links_title.ar' => ['nullable', 'string', 'max:255'],
 
+            'static_pages' => ['nullable', 'array'],
+            'static_pages.privacy_policy.title' => ['nullable', 'array'],
+            'static_pages.privacy_policy.title.*' => ['nullable', 'string', 'max:255'],
+            'static_pages.privacy_policy.content' => ['nullable', 'array'],
+            'static_pages.privacy_policy.content.*' => ['nullable', 'string', 'max:50000'],
+            'static_pages.terms_of_use.title' => ['nullable', 'array'],
+            'static_pages.terms_of_use.title.*' => ['nullable', 'string', 'max:255'],
+            'static_pages.terms_of_use.content' => ['nullable', 'array'],
+            'static_pages.terms_of_use.content.*' => ['nullable', 'string', 'max:50000'],
+            'static_pages.security_policy.title' => ['nullable', 'array'],
+            'static_pages.security_policy.title.*' => ['nullable', 'string', 'max:255'],
+            'static_pages.security_policy.content' => ['nullable', 'array'],
+            'static_pages.security_policy.content.*' => ['nullable', 'string', 'max:50000'],
+
             'seo.defaults.title_suffix.en' => ['nullable', 'string', 'max:255'],
             'seo.defaults.title_suffix.ar' => ['nullable', 'string', 'max:255'],
             'seo.defaults.default_description.en' => ['nullable', 'string', 'max:500'],
@@ -361,6 +375,7 @@ class WebsiteSettingsController extends Controller
                         'ar' => $this->nullableString(data_get($validated, 'contact_page.quick_links_title.ar')),
                     ],
                 ],
+                'static_pages' => $this->staticPagesPayload($validated, $supportedLocales),
                 'seo' => [
                     'defaults' => [
                         'title_suffix' => [
@@ -942,6 +957,64 @@ class WebsiteSettingsController extends Controller
         $value = trim((string) ($value ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * @param  list<string>  $supportedLocales
+     */
+    private function staticPagesPayload(array $validated, array $supportedLocales): array
+    {
+        $pages = ['privacy_policy', 'terms_of_use', 'security_policy'];
+        $payload = [];
+
+        foreach ($pages as $page) {
+            $payload[$page] = [
+                'title' => $this->localizedTextPayload($validated, "static_pages.{$page}.title", $supportedLocales),
+                'content' => $this->localizedHtmlPayload($validated, "static_pages.{$page}.content", $supportedLocales),
+            ];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  list<string>  $supportedLocales
+     * @return array<string, string|null>
+     */
+    private function localizedTextPayload(array $validated, string $prefix, array $supportedLocales): array
+    {
+        $values = [];
+
+        foreach ($supportedLocales as $locale) {
+            $values[$locale] = $this->nullableString(data_get($validated, "{$prefix}.{$locale}"));
+        }
+
+        return $values;
+    }
+
+    /**
+     * @param  list<string>  $supportedLocales
+     * @return array<string, string|null>
+     */
+    private function localizedHtmlPayload(array $validated, string $prefix, array $supportedLocales): array
+    {
+        $values = [];
+
+        foreach ($supportedLocales as $locale) {
+            $values[$locale] = $this->sanitizeStaticPageHtml((string) data_get($validated, "{$prefix}.{$locale}", ''));
+        }
+
+        return $values;
+    }
+
+    private function sanitizeStaticPageHtml(string $content): ?string
+    {
+        $content = strip_tags($content, '<p><br><strong><b><em><i><u><s><blockquote><hr><h2><h3><h4><ul><ol><li><a>');
+        $content = preg_replace('/\s+on[a-z]+\s*=\s*(".*?"|\'.*?\'|[^\s>]+)/i', '', $content) ?? $content;
+        $content = preg_replace('/href\s*=\s*(["\'])\s*javascript:.*?\1/i', 'href="#"', $content) ?? $content;
+        $content = trim($content);
+
+        return $content === '' ? null : $content;
     }
 
     private function upperNullableString(mixed $value): ?string

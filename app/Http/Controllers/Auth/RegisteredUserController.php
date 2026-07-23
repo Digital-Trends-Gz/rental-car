@@ -42,6 +42,7 @@ class RegisteredUserController extends Controller
     private const PLAN_SELECTION_SESSION_KEY = 'saas.registration.plan';
     private const CHECKOUT_SESSION_KEY = 'saas.registration.checkout_session_id';
     private const SUBSCRIPTION_TXN_SESSION_KEY = 'saas.registration.subscription_transaction_id';
+    private const MAX_REGISTRATION_PARTNER_SEATS = 10;
 
     /**
      * Show the registration page.
@@ -62,6 +63,7 @@ class RegisteredUserController extends Controller
                 'commercial_registration_number' => data_get($registration, 'company_identifiers.commercial_registration_number'),
                 'tax_number' => data_get($registration, 'company_identifiers.tax_number'),
                 'civil_number' => data_get($registration, 'company_identifiers.civil_number'),
+                'partner_seats' => $registration['partner_seats'] ?? 0,
             ],
             'countries' => $this->registrationCountries(),
         ]);
@@ -144,6 +146,7 @@ class RegisteredUserController extends Controller
             'commercial_registration_number' => ['required', 'string', 'max:255', new DigitsOnly()],
             'tax_number' => ['required', 'string', 'max:255', new DigitsOnly()],
             'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'partner_seats' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_REGISTRATION_PARTNER_SEATS],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ], $this->registrationValidationMessages());
 
@@ -169,6 +172,7 @@ class RegisteredUserController extends Controller
             'phone_country_code' => $phoneCountryCode,
             'phone_national' => $phoneNational,
             'phone' => $phoneE164,
+            'partner_seats' => (int) ($validated['partner_seats'] ?? 0),
             'company_identifiers' => [
                 'commercial_registration_number' => trim((string) $validated['commercial_registration_number']),
                 'tax_number' => trim((string) $validated['tax_number']),
@@ -438,6 +442,7 @@ class RegisteredUserController extends Controller
             ],
             'civil_number' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'partner_seats' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_REGISTRATION_PARTNER_SEATS],
             'password_hash' => ['required', 'string'],
         ]);
 
@@ -804,6 +809,7 @@ class RegisteredUserController extends Controller
                     'phone_national' => $registration['phone_national'] ?? null,
                     'phone_e164' => $registration['phone'] ?? null,
                     'plan_id' => $plan->id,
+                    'partner_seats' => (int) ($registration['partner_seats'] ?? 0),
                     'settings' => [
                         'company_identifiers' => $registration['company_identifiers'] ?? [],
                     ],
@@ -1471,6 +1477,7 @@ class RegisteredUserController extends Controller
                     'phone_national' => $registration['phone_national'] ?? null,
                     'phone_e164' => $registration['phone'] ?? null,
                     'plan_id' => $plan->id,
+                    'partner_seats' => (int) ($registration['partner_seats'] ?? 0),
                     'trial_ends_at' => $accessEndsAt,
                     'is_active' => true,
                 ]);

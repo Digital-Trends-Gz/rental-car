@@ -23,6 +23,9 @@ use Inertia\Response;
 
 class EmployeesController extends Controller
 {
+    private const TENANT_OWNER_ROLE = 'tenant-owner';
+    private const TENANT_PARTNER_ROLE = 'tenant-partner';
+
     public function __construct(
         private BranchAccess $branchAccess,
         private PlanUsageLimits $planUsageLimits
@@ -82,6 +85,8 @@ class EmployeesController extends Controller
 
     public function create(): Response
     {
+        $this->ensureTenantFullAccessRole(self::TENANT_PARTNER_ROLE, 'Tenant Partner', 'Full-access partner role for this tenant.');
+
         $branches = $this->branchAccess->availableBranchesForUser(request()->user());
         $roles = $this->assignableRoles();
         $permissions = Permission::withoutGlobalScope('tenant')
@@ -141,6 +146,12 @@ class EmployeesController extends Controller
             (string) $validated['email']
         );
 
+        if ($this->roleIdsIncludePartner($roleIds) && !$this->canAssignPartnerRole()) {
+            return redirect()->back()
+                ->withErrors(['role_ids' => $this->partnerLimitMessage()])
+                ->withInput();
+        }
+
         $employee = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -174,6 +185,7 @@ class EmployeesController extends Controller
     {
         abort_unless($this->isAdminEmployee($employee), 403);
         abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $employee->branch_id ? (int) $employee->branch_id : null), 403);
+        $this->ensureTenantFullAccessRole(self::TENANT_PARTNER_ROLE, 'Tenant Partner', 'Full-access partner role for this tenant.');
 
         $branches = $this->branchAccess->availableBranchesForUser(request()->user());
         $roles = $this->assignableRoles($employee);
@@ -242,6 +254,12 @@ class EmployeesController extends Controller
             (string) $validated['email'],
             $employee
         );
+
+        if ($this->roleIdsIncludePartner($roleIds) && !$this->canAssignPartnerRole($employee)) {
+            return redirect()->back()
+                ->withErrors(['role_ids' => $this->partnerLimitMessage()])
+                ->withInput();
+        }
 
         $employee->update([
             'name' => $validated['name'],
@@ -340,7 +358,7 @@ class EmployeesController extends Controller
 
         $roleId = Role::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
-            ->where('name', 'tenant-owner')
+            ->where('name', self::TENANT_OWNER_ROLE)
             ->value('id');
 
         return $roleId ? (int) $roleId : null;
@@ -351,6 +369,8 @@ class EmployeesController extends Controller
      */
     private function assignableRoles(?User $employee = null)
     {
+        $this->ensureTenantFullAccessRole(self::TENANT_PARTNER_ROLE, 'Tenant Partner', 'Full-access partner role for this tenant.');
+
         $roles = Role::orderBy('display_name')->get(['id', 'name', 'display_name']);
 
         if ($employee && $this->isPrimaryTenantEmail((string) $employee->email, $employee)) {
@@ -358,8 +378,94 @@ class EmployeesController extends Controller
         }
 
         return $roles
-            ->reject(fn (Role $role) => $role->name === 'tenant-owner')
+            ->reject(fn (Role $role) => $role->name === self::TENANT_OWNER_ROLE)
             ->values();
+    }
+
+    private function tenantPartnerRoleId(): ?int
+    {
+        $tenantId = $this->tenantId();
+
+        if ($tenantId <= 0) {
+            return null;
+        }
+
+        $roleId = Role::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('name', self::TENANT_PARTNER_ROLE)
+            ->value('id');
+
+        return $roleId ? (int) $roleId : null;
+    }
+
+    /**
+     * @param  array<int, int>  $roleIds
+     */
+    private function roleIdsIncludePartner(array $roleIds): bool
+    {
+        $partnerRoleId = $this->tenantPartnerRoleId();
+
+        return $partnerRoleId !== null && in_array($partnerRoleId, $roleIds, true);
+    }
+
+    private function canAssignPartnerRole(?User $employee = null): bool
+    {
+        $tenant = Tenant::query()->find($this->tenantId());
+        $allowedSeats = max(0, (int) ($tenant?->partner_seats ?? 0));
+
+        if ($allowedSeats <= 0) {
+            return false;
+        }
+
+        $currentPartners = User::withoutGlobalScope('tenant')
+            ->where('tenant_id', $this->tenantId())
+            ->where('role', UserRole::ADMIN)
+            ->whereHas('roles', fn ($query) => $query->where('name', self::TENANT_PARTNER_ROLE))
+            ->when($employee, fn ($query) => $query->whereKeyNot($employee->id))
+            ->count();
+
+        return $currentPartners < $allowedSeats;
+    }
+
+    private function partnerLimitMessage(): string
+    {
+        return trans('site.dashboard.admin.employees.form.partner_seat_limit_reached');
+    }
+
+    private function ensureTenantFullAccessRole(string $name, string $displayName, string $description): ?Role
+    {
+        $tenantId = $this->tenantId();
+
+        if ($tenantId <= 0) {
+            return null;
+        }
+
+        $role = Role::withoutGlobalScope('tenant')->firstOrCreate(
+            [
+                'name' => $name,
+                'tenant_id' => $tenantId,
+            ],
+            [
+                'display_name' => $displayName,
+                'description' => $description,
+            ]
+        );
+
+        $permissionIds = Permission::withoutGlobalScope('tenant')
+            ->where('name', 'like', 'tenant-%')
+            ->where(function ($query) use ($tenantId) {
+                $query->whereNull('tenant_id')
+                    ->orWhere('tenant_id', $tenantId);
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $role->permissions()->sync($permissionIds);
+
+        return $role;
     }
 
     private function isPrimaryTenantEmail(string $email, ?User $employee = null): bool

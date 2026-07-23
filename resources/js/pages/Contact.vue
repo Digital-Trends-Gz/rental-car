@@ -46,13 +46,13 @@ const contactEmail = computed(() => tenantSiteSettings.value?.contact?.email || 
 const contactAddress = computed(() =>
     localizedText(
         tenantSiteSettings.value?.contact?.address,
-        '123 Main Street\nDowntown District\nCity, State 12345'
+        t('contact.default_address')
     )
 );
 const contactHours = computed(() =>
     localizedText(
         contactPageContent.value?.hours,
-        'Monday - Friday: 8:00 AM - 8:00 PM\nSaturday: 9:00 AM - 6:00 PM\nSunday: 10:00 AM - 4:00 PM'
+        t('contact.default_hours')
     )
 );
 const contactHoursLines = computed(() =>
