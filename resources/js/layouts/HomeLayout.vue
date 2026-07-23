@@ -406,14 +406,8 @@ const landingFooterNavColumns = computed(() => [
     [{ label: footerLabels.privacy(), href: localizedLandingPath('/privacy-policy') }],
     [{ label: footerLabels.terms(), href: localizedLandingPath('/terms-of-use') }],
     [{ label: footerLabels.securityPolicy(), href: localizedLandingPath('/security-policy') }],
-    [
-        { label: footerLabels.cars(), href: resolveLandingHref('#cars') },
-        { label: footerLabels.features(), href: resolveLandingHref('#features') },
-    ],
-    [
-        { label: footerLabels.application(), href: resolveLandingHref('#application') },
-        { label: footerLabels.plans(), href: resolveLandingHref('#pricing') },
-    ],
+    [{ label: footerLabels.application(), href: resolveLandingHref('#application') }],
+    [{ label: footerLabels.plans(), href: resolveLandingHref('#pricing') }],
 ]);
 const landingFooterSocialLinks = computed(() => {
     if (landingSettings.value?.footer?.show_social_links === false) {

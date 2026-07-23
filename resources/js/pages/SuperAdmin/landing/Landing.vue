@@ -637,14 +637,8 @@ const footerLinkColumns = computed(() => [
     [{ label: footerLabels.privacy(), href: localizedPath('/privacy-policy') }],
     [{ label: footerLabels.terms(), href: localizedPath('/terms-of-use') }],
     [{ label: footerLabels.securityPolicy(), href: localizedPath('/security-policy') }],
-    [
-        { label: footerLabels.cars(), href: '#cars' },
-        { label: footerLabels.features(), href: '#features' },
-    ],
-    [
-        { label: footerLabels.application(), href: '#application' },
-        { label: footerLabels.plans(), href: '#pricing' },
-    ],
+    [{ label: footerLabels.application(), href: '#application' }],
+    [{ label: footerLabels.plans(), href: '#pricing' }],
 ]);
 const footerDirection = computed(() => (isRtlLocale.value ? 'rtl' : 'ltr'));
 const footerCopyrightText = computed(() => {
