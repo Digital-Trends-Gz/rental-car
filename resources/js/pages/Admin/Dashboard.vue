@@ -185,9 +185,29 @@ const props = defineProps<{
     canViewFinancials: boolean;
 }>();
 
-const { locale, direction } = useTrans();
+const { t, locale, direction } = useTrans();
 const isRtl = computed(() => direction.value === 'rtl');
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const translationKeyFor = (text: string) =>
+    text
+        .toLowerCase()
+        .replace(/#/g, ' number ')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '')
+        .replace(/_+/g, '_');
+const localize = (en: string, ar: string, params: Record<string, string | number> = {}) => {
+    const key = `dashboard.admin_page.${translationKeyFor(en)}`;
+    const translated = t(key, params);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    const fallback = locale.value === 'ar' ? ar : en;
+
+    return fallback.replace(/:([a-zA-Z0-9_]+)/g, (_match, paramKey: string) =>
+        params[paramKey] !== undefined ? String(params[paramKey]) : `:${paramKey}`,
+    );
+};
 
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug ?? '');
@@ -218,7 +238,7 @@ const daysRemainingLabel = (days: number | null) => {
     if (days === null) return localize('Unknown', 'غير معروف');
     if (days === 0) return localize('Expires today', 'تنتهي اليوم');
 
-    return localize(`In ${days} days`, `خلال ${days} أيام`);
+    return localize('In :days days', 'خلال :days أيام', { days });
 };
 
 type TaskType = 'pickup' | 'return' | 'overdue';
@@ -290,7 +310,7 @@ const taskRows = computed(() =>
         rowDate: taskType.value === 'pickup' ? item.start_date : item.end_date,
         rowStatus: taskType.value === 'overdue'
             ? item.is_overdue
-                ? localize(`Overdue ${item.days_overdue ?? 0} days`, `متأخر ${item.days_overdue ?? 0} يوم`)
+                ? localize('Overdue :days days', 'متأخر :days يوم', { days: item.days_overdue ?? 0 })
                 : localize('Due today', 'مستحق اليوم')
             : item.status ?? item.reservation_status ?? localize('N/A', 'غير متوفر'),
     })),
@@ -568,7 +588,7 @@ const kpiCards = computed(() => [
     {
         title: localize('Total Cars', 'إجمالي السيارات'),
         value: props.stats.total_cars,
-        sub: localize(`${props.stats.available_cars} available`, `${props.stats.available_cars} متاحة`),
+        sub: localize(':count available', ':count متاحة', { count: props.stats.available_cars }),
         icon: Car,
         accent: '#3B82F6',
         bg: 'rgba(59,130,246,0.1)',
@@ -576,7 +596,7 @@ const kpiCards = computed(() => [
     {
         title: localize('Available Cars', 'السيارات المتاحة'),
         value: props.stats.available_cars,
-        sub: localize(`of ${props.stats.total_cars} total`, `من أصل ${props.stats.total_cars}`),
+        sub: localize('of :count total', 'من أصل :count', { count: props.stats.total_cars }),
         icon: TrendingUp,
         accent: '#06B6D4',
         bg: 'rgba(6,182,212,0.1)',
@@ -584,7 +604,7 @@ const kpiCards = computed(() => [
     {
         title: localize('Active Reservations', 'الحجوزات النشطة'),
         value: props.stats.active_reservations,
-        sub: localize(`${props.stats.pending_reservations} pending`, `${props.stats.pending_reservations} قيد الانتظار`),
+        sub: localize(':count pending', ':count قيد الانتظار', { count: props.stats.pending_reservations }),
         icon: Calendar,
         accent: '#F59E0B',
         bg: 'rgba(245,158,11,0.1)',
@@ -664,12 +684,12 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
     const hours = Math.floor(abs / 60);
     const mins = abs % 60;
     const value = hours > 0
-        ? localize(`${hours}h ${mins}m`, `${hours}س ${mins}د`)
-        : localize(`${mins}m`, `${mins}د`);
+        ? localize(':hours h :minutes m', ':hours س :minutes د', { hours, minutes: mins })
+        : localize(':minutes m', ':minutes د', { minutes: mins });
 
     return isLate
-        ? localize(`${value} late`, `متأخرة ${value}`)
-        : localize(`${value} remaining`, `متبقي ${value}`);
+        ? localize(':value late', 'متأخرة :value', { value })
+        : localize(':value remaining', 'متبقي :value', { value });
 };
 </script>
 
@@ -1230,7 +1250,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                                 <Layers class="h-4 w-4 text-primary" />
                                 <CardTitle class="text-base">{{ localize('Reservations by Status', 'الحجوزات حسب الحالة') }}</CardTitle>
                             </div>
-                            <p class="text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize(`${props.stats.total_reservations} total`, `الإجمالي ${props.stats.total_reservations}`) }}</p>
+                            <p class="text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize(':count total', 'الإجمالي :count', { count: props.stats.total_reservations }) }}</p>
                         </div>
                     </CardHeader>
                     <CardContent class="space-y-4">
@@ -1355,7 +1375,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                                             {{ item.pickup_time }}
                                         </div>
                                         <div v-else-if="taskType === 'overdue' && item.days_overdue !== undefined">
-                                            {{ localize(`${item.days_overdue} days overdue`, `متأخر ${item.days_overdue} يوم`) }}
+                                            {{ localize(':days days overdue', 'متأخر :days يوم', { days: item.days_overdue }) }}
                                         </div>
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3 font-semibold" :class="isRtl ? 'text-left' : 'text-right'">

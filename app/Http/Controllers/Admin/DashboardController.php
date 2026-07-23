@@ -117,7 +117,7 @@ class DashboardController extends Controller
         $reservationsByStatus = collect(ReservationStatus::cases())->map(function ($status) use ($reservationsQuery) {
             return [
                 'status' => $status->value,
-                'label'  => ucfirst(str_replace('_', ' ', $status->value)),
+                'label'  => $this->dashboardLabel('reservation_statuses', $status->value, $status->label()),
                 'count'  => (clone $reservationsQuery)->where('status', $status->value)->count(),
                 'color'  => ReservationStatus::statusColors()[$status->value] ?? '#6B7280',
             ];
@@ -127,7 +127,7 @@ class DashboardController extends Controller
         $fleetStatus = collect(CarStatus::cases())->map(function ($status) use ($carsQuery) {
             return [
                 'status' => $status->value,
-                'label'  => $status->label(),
+                'label'  => $this->dashboardLabel('car_statuses', $status->value, $status->label()),
                 'count'  => (clone $carsQuery)->where('status', $status->value)->count(),
                 'color'  => $status->color(),
             ];
@@ -188,7 +188,9 @@ class DashboardController extends Controller
                 'name'           => "{$car->year} {$car->make} {$car->model}",
                 'price_per_day'  => (float) $car->price_per_day,
                 'status'         => $car->status instanceof CarStatus ? $car->status->value : (string) $car->status,
-                'status_label'   => $car->status instanceof CarStatus ? $car->status->label() : (string) $car->status,
+                'status_label'   => $car->status instanceof CarStatus
+                    ? $this->dashboardLabel('car_statuses', $car->status->value, $car->status->label())
+                    : (string) $car->status,
                 'status_color'   => $car->status instanceof CarStatus ? $car->status->color() : '#6B7280',
                 'completed_count'=> $car->completed_count,
             ]);
@@ -499,5 +501,13 @@ class DashboardController extends Controller
         }
 
         $query->whereHas('car', fn ($q) => $q->where('branch_id', $userBranchId));
+    }
+
+    private function dashboardLabel(string $group, string $key, string $fallback): string
+    {
+        $translationKey = "site.dashboard.admin_page.{$group}.{$key}";
+        $translated = __($translationKey);
+
+        return $translated === $translationKey ? $fallback : $translated;
     }
 }

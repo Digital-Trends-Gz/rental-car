@@ -980,7 +980,27 @@ class DailyTasksService
 
     private function translate(string $locale, string $en, string $ar): string
     {
+        $translationKey = 'site.dashboard.admin_page.'.$this->dashboardTranslationKeyFor($en);
+        $translated = trans($translationKey, [], $locale);
+
+        if ($translated !== $translationKey) {
+            return $translated;
+        }
+
         return Str::startsWith(strtolower($locale), 'ar') ? $this->repairArabicMojibake($ar) : $en;
+    }
+
+    private function dashboardTranslationKeyFor(string $text): string
+    {
+        $key = Str::of($text)
+            ->lower()
+            ->replace('#', ' number ')
+            ->replaceMatches('/[^a-z0-9]+/', '_')
+            ->trim('_')
+            ->replaceMatches('/_+/', '_')
+            ->toString();
+
+        return $key !== '' ? $key : 'text';
     }
 
     private function repairArabicMojibake(string $value): string

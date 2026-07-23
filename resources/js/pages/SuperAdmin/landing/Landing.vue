@@ -662,6 +662,8 @@ const showScrollTop = ref(false);
 const yearly = ref(false);
 const clientsRail = ref<HTMLElement | null>(null);
 const clientsAutoplay = ref<number | null>(null);
+const landingFooterRef = ref<HTMLElement | null>(null);
+const floatingActionsFooterOffset = ref(0);
 const brokenTenantLogos = ref<Record<number, boolean>>({});
 const brokenCarTenantLogos = ref<Record<number, boolean>>({});
 const brokenLandingImages = ref<Record<string, boolean>>({});
@@ -816,11 +818,28 @@ const contactNoticeTone = ref<'success' | 'error' | null>(null);
 const onScroll = () => {
     scrolled.value = window.scrollY > 10;
     showScrollTop.value = window.scrollY > 420;
+    updateFloatingActionsOffset();
 };
 
 const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
+
+const updateFloatingActionsOffset = () => {
+    const footer = landingFooterRef.value;
+
+    if (!footer) {
+        floatingActionsFooterOffset.value = 0;
+        return;
+    }
+
+    const rect = footer.getBoundingClientRect();
+    floatingActionsFooterOffset.value = Math.max(0, window.innerHeight - rect.top);
+};
+
+const floatingActionsStyle = computed(() => ({
+    bottom: `${20 + floatingActionsFooterOffset.value}px`,
+}));
 
 const toggleMenu = () => {
     mobileOpen.value = !mobileOpen.value;
@@ -1072,11 +1091,13 @@ onMounted(() => {
 
     onScroll();
     window.addEventListener('scroll', onScroll);
+    window.addEventListener('resize', updateFloatingActionsOffset);
     nextTick(startClientsAutoplay);
 });
 
 onUnmounted(() => {
     window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('resize', updateFloatingActionsOffset);
 
     if (clientsAutoplay.value !== null) {
         window.clearInterval(clientsAutoplay.value);
@@ -2720,6 +2741,7 @@ onUnmounted(() => {
 
         <footer
             v-if="landingSettings.footer.enabled"
+            ref="landingFooterRef"
             class="border-t border-border bg-slate-50/70 py-7 md:bg-background md:py-4"
         >
             <div class="section-container space-y-5 md:space-y-3">
@@ -2839,7 +2861,7 @@ onUnmounted(() => {
             </div>
         </footer>
 
-        <div class="fixed bottom-5 right-4 z-[60] flex flex-col items-center gap-3 sm:right-6">
+        <div class="fixed right-4 z-[60] flex flex-col items-center gap-3 transition-[bottom] duration-200 sm:right-6" :style="floatingActionsStyle">
             <a
                 v-if="whatsappHref"
                 :href="whatsappHref"

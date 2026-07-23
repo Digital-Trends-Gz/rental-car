@@ -38,6 +38,8 @@ const isLandingShell = computed(() => props.shellVariant === 'landing');
 const role = computed(() => $page.props.auth.user?.role);
 const mobileOpen = ref(false);
 const showScrollTop = ref(false);
+const publicFooterRef = ref<HTMLElement | null>(null);
+const floatingActionsFooterOffset = ref(0);
 const appBranding = computed(() => $page.props.app_branding ?? {});
 const landingSettings = computed(() => $page.props.landingSettings ?? {});
 const translatedLandingValue = (key: string, fallback = '') => {
@@ -475,6 +477,7 @@ const closeLandingMenu = () => {
 };
 const handleWindowScroll = () => {
     showScrollTop.value = typeof window !== 'undefined' && window.scrollY > 420;
+    updateFloatingActionsOffset();
 };
 const scrollToTop = () => {
     if (typeof window === 'undefined') {
@@ -483,6 +486,24 @@ const scrollToTop = () => {
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
+const updateFloatingActionsOffset = () => {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const footer = publicFooterRef.value;
+
+    if (!footer) {
+        floatingActionsFooterOffset.value = 0;
+        return;
+    }
+
+    const rect = footer.getBoundingClientRect();
+    floatingActionsFooterOffset.value = Math.max(0, window.innerHeight - rect.top);
+};
+const floatingActionsStyle = computed(() => ({
+    bottom: `${20 + floatingActionsFooterOffset.value}px`,
+}));
 const normalizeWhatsAppNumber = (value: unknown) => {
     const digits = String(value || '').replace(/\D/g, '');
 
@@ -516,6 +537,7 @@ onMounted(() => {
 
     handleWindowScroll();
     window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    window.addEventListener('resize', updateFloatingActionsOffset, { passive: true });
 });
 
 onBeforeUnmount(() => {
@@ -524,6 +546,7 @@ onBeforeUnmount(() => {
     }
 
     window.removeEventListener('scroll', handleWindowScroll);
+    window.removeEventListener('resize', updateFloatingActionsOffset);
 });
 </script>
 
@@ -639,7 +662,7 @@ onBeforeUnmount(() => {
                 <slot />
             </main>
 
-            <footer v-if="landingFooterEnabled" class="border-t border-border bg-slate-50/70 py-7 md:bg-background md:py-4">
+            <footer v-if="landingFooterEnabled" ref="publicFooterRef" class="border-t border-border bg-slate-50/70 py-7 md:bg-background md:py-4">
                 <div class="section-container max-w-7xl">
                     <div class="grid items-center gap-5 md:grid-cols-[8rem_minmax(0,1fr)_auto_8rem]">
                         <Link :href="landingHomeUrl" class="inline-flex items-center justify-center md:justify-start">
@@ -831,7 +854,7 @@ onBeforeUnmount(() => {
         <slot />
 
         <!--  Footer -->
-        <footer class="bg-gray-900 py-16 text-white">
+        <footer ref="publicFooterRef" class="bg-gray-900 py-16 text-white">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div class="grid gap-12 md:grid-cols-4">
                     <div class="space-y-6">
@@ -1011,7 +1034,7 @@ onBeforeUnmount(() => {
     </div>
 </template>
 
-    <div class="fixed bottom-5 right-4 z-[60] flex flex-col items-center gap-3 sm:right-6">
+    <div class="fixed right-4 z-[60] flex flex-col items-center gap-3 transition-[bottom] duration-200 sm:right-6" :style="floatingActionsStyle">
         <a
             v-if="whatsappHref"
             :href="whatsappHref"
