@@ -101,7 +101,10 @@ const filteredRows = computed(() => {
             return true;
         }
 
-        if (row.key.toLowerCase().includes(query)) {
+        const rowKey = row.key.toLowerCase();
+        const searchableKeys = [rowKey, `site.${rowKey}`];
+
+        if (searchableKeys.some((key) => key.includes(query))) {
             return true;
         }
 
