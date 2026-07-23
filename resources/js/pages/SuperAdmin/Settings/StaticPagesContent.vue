@@ -22,10 +22,17 @@ interface StaticPageContentSettings {
     privacy_policy: LocalizedText;
     terms_conditions: LocalizedText;
     security_policy: LocalizedText;
+    tenant_pages: TenantPageContentSettings;
+}
+
+interface TenantPageContentSettings {
+    privacy_policy: LocalizedText;
+    terms_of_use: LocalizedText;
+    security_policy: LocalizedText;
 }
 
 interface ContentSection {
-    key: keyof StaticPageContentSettings;
+    key: keyof Omit<StaticPageContentSettings, 'tenant_pages'>;
     title: string;
     titleAr: string;
     description: string;
@@ -33,6 +40,16 @@ interface ContentSection {
     placeholder: string;
     placeholderAr: string;
     rows: number;
+}
+
+interface TenantContentSection {
+    key: keyof TenantPageContentSettings;
+    title: string;
+    titleAr: string;
+    description: string;
+    descriptionAr: string;
+    placeholder: string;
+    placeholderAr: string;
 }
 
 const props = defineProps<{
@@ -78,6 +95,11 @@ const form = useForm<{
         privacy_policy: makeLocalizedText(props.settings.privacy_policy),
         terms_conditions: makeLocalizedText(props.settings.terms_conditions),
         security_policy: makeLocalizedText(props.settings.security_policy),
+        tenant_pages: {
+            privacy_policy: makeLocalizedText(props.settings.tenant_pages?.privacy_policy),
+            terms_of_use: makeLocalizedText(props.settings.tenant_pages?.terms_of_use),
+            security_policy: makeLocalizedText(props.settings.tenant_pages?.security_policy),
+        },
     },
 });
 
@@ -124,6 +146,36 @@ const sections: ContentSection[] = [
     },
 ];
 
+const tenantSections: TenantContentSection[] = [
+    {
+        key: 'privacy_policy',
+        title: 'Tenant Privacy Policy Default',
+        titleAr: 'المحتوى الافتراضي لسياسة الخصوصية للمكاتب',
+        description: 'Default privacy policy used on tenant websites when the tenant does not override it.',
+        descriptionAr: 'المحتوى الافتراضي الذي يظهر في مواقع المكاتب إذا لم يضع المكتب محتوى خاص به.',
+        placeholder: 'Tenant privacy policy default content...',
+        placeholderAr: 'المحتوى الافتراضي لسياسة الخصوصية للمكاتب...',
+    },
+    {
+        key: 'terms_of_use',
+        title: 'Tenant Terms of Use Default',
+        titleAr: 'المحتوى الافتراضي لشروط الاستخدام للمكاتب',
+        description: 'Default terms of use used on tenant websites when the tenant does not override it.',
+        descriptionAr: 'شروط الاستخدام الافتراضية التي تظهر في مواقع المكاتب إذا لم يضع المكتب محتوى خاص به.',
+        placeholder: 'Tenant terms of use default content...',
+        placeholderAr: 'المحتوى الافتراضي لشروط الاستخدام للمكاتب...',
+    },
+    {
+        key: 'security_policy',
+        title: 'Tenant Security Policy Default',
+        titleAr: 'المحتوى الافتراضي لسياسة الأمان للمكاتب',
+        description: 'Default security policy used on tenant websites when the tenant does not override it.',
+        descriptionAr: 'سياسة الأمان الافتراضية التي تظهر في مواقع المكاتب إذا لم يضع المكتب محتوى خاص به.',
+        placeholder: 'Tenant security policy default content...',
+        placeholderAr: 'المحتوى الافتراضي لسياسة الأمان للمكاتب...',
+    },
+];
+
 const localeLabel = (localeOption?: LocaleOption) => {
     if (!localeOption) {
         return '';
@@ -136,6 +188,8 @@ const localeLabel = (localeOption?: LocaleOption) => {
 };
 
 const errorKey = (section: ContentSection) => `settings.${section.key}.${activeLocaleCode.value}`;
+
+const tenantErrorKey = (section: TenantContentSection) => `settings.tenant_pages.${section.key}.${activeLocaleCode.value}`;
 
 const submit = () => {
     form.put(props.actions.update, {

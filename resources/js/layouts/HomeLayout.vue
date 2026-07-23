@@ -2,8 +2,8 @@
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { Button } from '@/components/ui/button';
 import { useBrandTheme } from '@/composables/useBrandTheme';
-import { login as mainLogin, register as mainRegister, home as mainHome, fleet as mainFleet, about as mainAbout, contact as mainContact } from '@/routes';
-import { login as tenantLogin, register as tenantRegister, home as tenantHome, fleet as tenantFleet, about as tenantAbout, contact as tenantContact } from '@/routes/tenant/index.ts';
+import { login as mainLogin, register as mainRegister, home as mainHome, fleet as mainFleet, about as mainAbout, contact as mainContact, privacyPolicy as mainPrivacyPolicy, termsOfUse as mainTermsOfUse } from '@/routes';
+import { login as tenantLogin, register as tenantRegister, home as tenantHome, fleet as tenantFleet, about as tenantAbout, contact as tenantContact, privacyPolicy as tenantPrivacyPolicy, termsOfUse as tenantTermsOfUse } from '@/routes/tenant/index.ts';
 import { useTrans } from '@/composables/useTrans';
 import {
     DropdownMenu,
@@ -96,6 +96,8 @@ const routeHelpers = computed(() => {
             fleet: tenantFleet,
             about: tenantAbout,
             contact: tenantContact,
+            privacyPolicy: tenantPrivacyPolicy,
+            termsOfUse: tenantTermsOfUse,
             login: tenantLogin,
             register: tenantRegister,
             dashboard: role.value === 'admin' ? tenantAdminCarsIndex : tenantClientReservationsIndex
@@ -106,6 +108,8 @@ const routeHelpers = computed(() => {
         fleet: mainFleet,
         about: mainAbout,
         contact: mainContact,
+        privacyPolicy: mainPrivacyPolicy,
+        termsOfUse: mainTermsOfUse,
         login: mainLogin,
         register: mainRegister,
         dashboard: superAdminDashboard
@@ -904,30 +908,23 @@ onBeforeUnmount(() => {
                         <ul class="space-y-3 text-gray-400">
                             <li>
                                 <a
-                                    href="#"
+                                    :href="getUrl(routeHelpers.home)"
                                     class="transition-colors hover:text-orange-500"
-                                    >{{ t('footer.luxury_car_rental') }}</a
+                                    >{{ t('nav.home') }}</a
                                 >
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    :href="getUrl(routeHelpers.about)"
                                     class="transition-colors hover:text-orange-500"
-                                    >{{ t('footer.long_term_rental') }}</a
+                                    >{{ t('nav.about') }}</a
                                 >
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    :href="getUrl(routeHelpers.fleet)"
                                     class="transition-colors hover:text-orange-500"
-                                    >{{ t('footer.corporate_solutions') }}</a
-                                >
-                            </li>
-                            <li>
-                                <a
-                                    href="#"
-                                    class="transition-colors hover:text-orange-500"
-                                    >{{ t('footer.airport_transfers') }}</a
+                                    >{{ t('nav.fleet') }}</a
                                 >
                             </li>
                         </ul>
@@ -938,30 +935,23 @@ onBeforeUnmount(() => {
                         <ul class="space-y-3 text-gray-400">
                             <li>
                                 <a
-                                    :href="getUrl(routeHelpers.contact)"
+                                    :href="getUrl(routeHelpers.privacyPolicy)"
                                     class="transition-colors hover:text-orange-500"
-                                    >{{ t('footer.contact_us') }}</a
+                                    >{{ t('footer.privacy') }}</a
                                 >
                             </li>
                             <li>
                                 <a
-                                    href="#"
-                                    class="transition-colors hover:text-orange-500"
-                                    >{{ t('footer.help_center') }}</a
-                                >
-                            </li>
-                            <li>
-                                <a
-                                    href="#"
+                                    :href="getUrl(routeHelpers.termsOfUse)"
                                     class="transition-colors hover:text-orange-500"
                                     >{{ t('footer.terms') }}</a
                                 >
                             </li>
                             <li>
                                 <a
-                                    href="#"
+                                    :href="getUrl(routeHelpers.contact)"
                                     class="transition-colors hover:text-orange-500"
-                                    >{{ t('footer.privacy') }}</a
+                                    >{{ t('footer.contact_us') }}</a
                                 >
                             </li>
                         </ul>

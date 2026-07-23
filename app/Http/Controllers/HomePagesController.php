@@ -27,6 +27,7 @@ class HomePagesController extends Controller
 {
     private const MAIN_SITE_SEO_KEY = 'main_site_seo';
     private const WEB_PAGES_CONTENT_KEY = 'main_web_pages_content';
+    private const STATIC_PAGES_CONTENT_KEY = 'main_static_pages_content';
     private const WEB_PAGE_TITLES = [
         'privacy_policy' => [
             'en' => 'Privacy Policy',
@@ -728,16 +729,24 @@ class HomePagesController extends Controller
         $localization = LocalizationSettings::load();
         $locale = app()->getLocale();
         $tenantStaticPage = $this->tenantStaticPageSettings($section);
-        $content = $this->localizedStaticPageContent(
-            is_array($tenantStaticPage)
-                ? data_get($tenantStaticPage, 'content')
-                : data_get($this->staticPageSettings(), $section),
-            $locale,
-            $localization
-        );
-        $title = is_array($tenantStaticPage)
-            ? ($this->localizedStaticPageContent(data_get($tenantStaticPage, 'title'), $locale, $localization)
-                ?: $this->localizedStaticPageTitle($section, $locale))
+        $defaultStaticPages = $this->staticPageSettings();
+        $content = is_array($tenantStaticPage)
+            ? $this->localizedStaticPageOverride(data_get($tenantStaticPage, 'content'), $locale)
+            : '';
+
+        if ($content === '') {
+            $content = $this->localizedStaticPageContent(
+                data_get($defaultStaticPages, $section),
+                $locale,
+                $localization
+            );
+        }
+
+        $titleOverride = is_array($tenantStaticPage)
+            ? $this->localizedStaticPageOverride(data_get($tenantStaticPage, 'title'), $locale)
+            : '';
+        $title = $titleOverride !== ''
+            ? $titleOverride
             : $this->localizedStaticPageTitle($section, $locale);
         [$landingSettings, $availableLocales] = TenantContext::get()
             ? [null, null]
@@ -782,11 +791,60 @@ class HomePagesController extends Controller
 
     private function staticPageSettings(): array
     {
-        $stored = SiteSetting::query()
+        $webPageContent = SiteSetting::query()
             ->where('key', self::WEB_PAGES_CONTENT_KEY)
             ->value('value');
+        $staticPageContent = SiteSetting::query()
+            ->where('key', self::STATIC_PAGES_CONTENT_KEY)
+            ->value('value');
 
-        return is_array($stored) ? $stored : [];
+        $webPageContent = is_array($webPageContent) ? $webPageContent : [];
+        $staticPageContent = is_array($staticPageContent) ? $staticPageContent : [];
+
+        return [
+            'privacy_policy' => $this->mergeStaticPageDefaultContent(
+                data_get($webPageContent, 'privacy_policy'),
+                data_get($staticPageContent, 'privacy_policy')
+            ),
+            'terms_of_use' => $this->mergeStaticPageDefaultContent(
+                data_get($webPageContent, 'terms_of_use'),
+                data_get($staticPageContent, 'terms_conditions')
+            ),
+            'security_policy' => $this->mergeStaticPageDefaultContent(
+                data_get($webPageContent, 'security_policy'),
+                data_get($staticPageContent, 'security_policy')
+            ),
+        ];
+    }
+
+    private function mergeStaticPageDefaultContent(mixed $primary, mixed $fallback): mixed
+    {
+        if (! is_array($primary)) {
+            return trim((string) ($primary ?? '')) !== '' ? $primary : $fallback;
+        }
+
+        if (! is_array($fallback)) {
+            return $primary;
+        }
+
+        $content = [];
+        foreach (array_unique(array_merge(array_keys($primary), array_keys($fallback))) as $locale) {
+            $primaryValue = trim((string) ($primary[$locale] ?? ''));
+            $content[$locale] = $primaryValue !== '' ? $primaryValue : trim((string) ($fallback[$locale] ?? ''));
+        }
+
+        return $content;
+    }
+
+    private function localizedStaticPageOverride(mixed $content, string $locale): string
+    {
+        if (! is_array($content)) {
+            return trim((string) ($content ?? ''));
+        }
+
+        $baseLocale = strtolower(explode('-', $locale)[0] ?? $locale);
+
+        return trim((string) ($content[$locale] ?? $content[$baseLocale] ?? ''));
     }
 
     private function localizedStaticPageContent(mixed $content, string $locale, array $localization): string

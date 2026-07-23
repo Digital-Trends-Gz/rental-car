@@ -32,6 +32,7 @@ const props = defineProps<{
     };
     settings: {
         static_pages?: Partial<StaticPageSettings>;
+        default_static_pages?: Partial<Record<PageKey, NullableLocalizedMap>>;
     };
     locales: LocaleOption[];
     actions: {
@@ -119,6 +120,12 @@ const localeLabel = (localeOption: LocaleOption) => {
 
 const directionFor = (localeCode: string): 'ltr' | 'rtl' =>
     normalizedLocales.value.find((item) => item.code === localeCode)?.direction ?? (['ar', 'ur', 'fa'].includes(localeCode) ? 'rtl' : 'ltr');
+
+const defaultContentFor = (sectionKey: PageKey, localeCode: string): string =>
+    String(props.settings.default_static_pages?.[sectionKey]?.[localeCode] ?? '').trim();
+
+const usesDefaultContent = (sectionKey: PageKey, localeCode: string): boolean =>
+    String(form.static_pages[sectionKey].content[localeCode] ?? '').trim() === '' && defaultContentFor(sectionKey, localeCode) !== '';
 
 const submit = () => {
     form.put(props.actions.update, {
@@ -223,6 +230,19 @@ const submit = () => {
                                 <p v-if="form.errors[`static_pages.${section.key}.content.${activeLocaleCode}`]" class="text-sm text-red-600">
                                     {{ form.errors[`static_pages.${section.key}.content.${activeLocaleCode}`] }}
                                 </p>
+                                <div
+                                    v-if="defaultContentFor(section.key, activeLocaleCode)"
+                                    class="rounded-md border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground"
+                                >
+                                    <p class="mb-2 font-medium text-foreground">
+                                        {{
+                                            usesDefaultContent(section.key, activeLocaleCode)
+                                                ? localize('Using Super Admin default content.', 'يتم استخدام المحتوى الافتراضي من السوبر أدمن.')
+                                                : localize('Super Admin default content if this field is cleared:', 'المحتوى الافتراضي من السوبر أدمن إذا تركت هذا الحقل فارغًا:')
+                                        }}
+                                    </p>
+                                    <div class="max-h-40 overflow-auto rounded border bg-background p-3" v-html="defaultContentFor(section.key, activeLocaleCode)" />
+                                </div>
                             </div>
                         </div>
                     </div>

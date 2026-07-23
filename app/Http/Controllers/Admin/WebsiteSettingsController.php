@@ -7,6 +7,7 @@ use App\Core\MrtaPdfSettings;
 use App\Http\Controllers\Controller;
 use App\Models\Contract;
 use App\Models\AccidentReport;
+use App\Models\SiteSetting;
 use App\Models\TenantSiteSetting;
 use App\Support\BrandLogoImageResizer;
 use App\Support\BranchLocationOptions;
@@ -23,6 +24,9 @@ use MohamedGaldi\ViltFilepond\Services\FilePondService;
 
 class WebsiteSettingsController extends Controller
 {
+    private const WEB_PAGES_CONTENT_KEY = 'main_web_pages_content';
+    private const STATIC_PAGES_CONTENT_KEY = 'main_static_pages_content';
+
     public function __construct(
         private readonly FilePondService $filePondService,
         private readonly BrandLogoImageResizer $brandLogoImageResizer,
@@ -67,6 +71,7 @@ class WebsiteSettingsController extends Controller
             ],
             'settings' => [
                 'static_pages' => $settings['static_pages'] ?? [],
+                'default_static_pages' => $this->defaultStaticPageSettings(),
             ],
             'locales' => $this->staticPageLocaleOptions($settings['enabled_locales'] ?? []),
             'actions' => [
@@ -1003,6 +1008,49 @@ class WebsiteSettingsController extends Controller
             'static_pages.security_policy.content' => ['nullable', 'array'],
             'static_pages.security_policy.content.*' => ['nullable', 'string', 'max:50000'],
         ];
+    }
+
+    private function defaultStaticPageSettings(): array
+    {
+        $webPageContent = SiteSetting::query()
+            ->where('key', self::WEB_PAGES_CONTENT_KEY)
+            ->value('value');
+        $staticPageContent = SiteSetting::query()
+            ->where('key', self::STATIC_PAGES_CONTENT_KEY)
+            ->value('value');
+
+        $webPageContent = is_array($webPageContent) ? $webPageContent : [];
+        $staticPageContent = is_array($staticPageContent) ? $staticPageContent : [];
+
+        return [
+            'privacy_policy' => $this->mergeStaticPageDefaultContent(
+                data_get($webPageContent, 'privacy_policy'),
+                data_get($staticPageContent, 'privacy_policy')
+            ),
+            'terms_of_use' => $this->mergeStaticPageDefaultContent(
+                data_get($webPageContent, 'terms_of_use'),
+                data_get($staticPageContent, 'terms_conditions')
+            ),
+            'security_policy' => $this->mergeStaticPageDefaultContent(
+                data_get($webPageContent, 'security_policy'),
+                data_get($staticPageContent, 'security_policy')
+            ),
+        ];
+    }
+
+    private function mergeStaticPageDefaultContent(mixed $primary, mixed $fallback): array
+    {
+        $supportedLocales = $this->supportedLocaleKeys();
+        $primary = is_array($primary) ? $primary : ['en' => trim((string) ($primary ?? ''))];
+        $fallback = is_array($fallback) ? $fallback : ['en' => trim((string) ($fallback ?? ''))];
+
+        $content = [];
+        foreach ($supportedLocales as $locale) {
+            $primaryValue = trim((string) ($primary[$locale] ?? ''));
+            $content[$locale] = $primaryValue !== '' ? $primaryValue : trim((string) ($fallback[$locale] ?? ''));
+        }
+
+        return $content;
     }
 
     /**
