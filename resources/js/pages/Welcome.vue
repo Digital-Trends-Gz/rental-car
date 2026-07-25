@@ -115,7 +115,7 @@ const aboutUrl = computed(() =>
                                 </div>
 
                                 <h1
-                                    class="text-3xl leading-tight font-bold text-gray-900 lg:text-6xl"
+                                    class="text-3xl leading-normal font-bold text-gray-900 lg:text-6xl py-2"
                                 >
                                     <template v-if="hasCustomHeroTitle">
                                         {{ heroTitle }}
@@ -123,7 +123,7 @@ const aboutUrl = computed(() =>
                                     <template v-else>
                                         {{ t('welcome.hero_title_start') }}
                                         <span
-                                            class="bg-clip-text text-transparent"
+                                            class="inline-block py-1 bg-clip-text text-transparent"
                                             :style="{ backgroundImage: accentGradient }"
                                         >
                                             {{ t('welcome.hero_title_highlight') }}
@@ -241,11 +241,11 @@ const aboutUrl = computed(() =>
                             {{ t('welcome.collection_badge') }}
                         </div>
                         <h2
-                            class="mb-6 text-4xl font-bold text-gray-900 lg:text-5xl"
+                            class="mb-6 text-4xl font-bold leading-normal text-gray-900 lg:text-5xl py-2"
                         >
                             {{ t('welcome.fleet_heading_start') }}
                             <span
-                                class="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent"
+                                class="inline-block py-1 bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent"
                             >
                                 {{ t('welcome.fleet_heading_highlight') }}
                             </span>
@@ -294,13 +294,13 @@ const aboutUrl = computed(() =>
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="mb-20 text-center">
                         <h2
-                            class="mb-6 text-4xl font-bold leading-tight text-gray-900 lg:text-5xl"
+                            class="mb-6 text-4xl font-bold leading-normal text-gray-900 lg:text-5xl py-2"
                         >
                             {{ t('welcome.why_choose_start') }}
                             <span
                                 :class="isRtl
                                     ? 'text-orange-600'
-                                    : 'bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent'"
+                                    : 'inline-block py-1 bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent'"
                             >
                                 {{ t('welcome.why_choose_highlight') }} </span
                             >{{ questionMark }}
