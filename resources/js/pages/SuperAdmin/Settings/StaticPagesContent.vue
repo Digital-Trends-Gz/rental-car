@@ -22,17 +22,10 @@ interface StaticPageContentSettings {
     privacy_policy: LocalizedText;
     terms_conditions: LocalizedText;
     security_policy: LocalizedText;
-    tenant_pages: TenantPageContentSettings;
-}
-
-interface TenantPageContentSettings {
-    privacy_policy: LocalizedText;
-    terms_of_use: LocalizedText;
-    security_policy: LocalizedText;
 }
 
 interface ContentSection {
-    key: keyof Omit<StaticPageContentSettings, 'tenant_pages'>;
+    key: keyof StaticPageContentSettings;
     title: string;
     titleAr: string;
     description: string;
@@ -40,16 +33,6 @@ interface ContentSection {
     placeholder: string;
     placeholderAr: string;
     rows: number;
-}
-
-interface TenantContentSection {
-    key: keyof TenantPageContentSettings;
-    title: string;
-    titleAr: string;
-    description: string;
-    descriptionAr: string;
-    placeholder: string;
-    placeholderAr: string;
 }
 
 const props = defineProps<{
@@ -95,11 +78,6 @@ const form = useForm<{
         privacy_policy: makeLocalizedText(props.settings.privacy_policy),
         terms_conditions: makeLocalizedText(props.settings.terms_conditions),
         security_policy: makeLocalizedText(props.settings.security_policy),
-        tenant_pages: {
-            privacy_policy: makeLocalizedText(props.settings.tenant_pages?.privacy_policy),
-            terms_of_use: makeLocalizedText(props.settings.tenant_pages?.terms_of_use),
-            security_policy: makeLocalizedText(props.settings.tenant_pages?.security_policy),
-        },
     },
 });
 
@@ -146,36 +124,6 @@ const sections: ContentSection[] = [
     },
 ];
 
-const tenantSections: TenantContentSection[] = [
-    {
-        key: 'privacy_policy',
-        title: 'Tenant Privacy Policy Default',
-        titleAr: 'المحتوى الافتراضي لسياسة الخصوصية للمكاتب',
-        description: 'Default privacy policy used on tenant websites when the tenant does not override it.',
-        descriptionAr: 'المحتوى الافتراضي الذي يظهر في مواقع المكاتب إذا لم يضع المكتب محتوى خاص به.',
-        placeholder: 'Tenant privacy policy default content...',
-        placeholderAr: 'المحتوى الافتراضي لسياسة الخصوصية للمكاتب...',
-    },
-    {
-        key: 'terms_of_use',
-        title: 'Tenant Terms of Use Default',
-        titleAr: 'المحتوى الافتراضي لشروط الاستخدام للمكاتب',
-        description: 'Default terms of use used on tenant websites when the tenant does not override it.',
-        descriptionAr: 'شروط الاستخدام الافتراضية التي تظهر في مواقع المكاتب إذا لم يضع المكتب محتوى خاص به.',
-        placeholder: 'Tenant terms of use default content...',
-        placeholderAr: 'المحتوى الافتراضي لشروط الاستخدام للمكاتب...',
-    },
-    {
-        key: 'security_policy',
-        title: 'Tenant Security Policy Default',
-        titleAr: 'المحتوى الافتراضي لسياسة الأمان للمكاتب',
-        description: 'Default security policy used on tenant websites when the tenant does not override it.',
-        descriptionAr: 'سياسة الأمان الافتراضية التي تظهر في مواقع المكاتب إذا لم يضع المكتب محتوى خاص به.',
-        placeholder: 'Tenant security policy default content...',
-        placeholderAr: 'المحتوى الافتراضي لسياسة الأمان للمكاتب...',
-    },
-];
-
 const localeLabel = (localeOption?: LocaleOption) => {
     if (!localeOption) {
         return '';
@@ -188,8 +136,6 @@ const localeLabel = (localeOption?: LocaleOption) => {
 };
 
 const errorKey = (section: ContentSection) => `settings.${section.key}.${activeLocaleCode.value}`;
-
-const tenantErrorKey = (section: TenantContentSection) => `settings.tenant_pages.${section.key}.${activeLocaleCode.value}`;
 
 const submit = () => {
     form.put(props.actions.update, {
@@ -264,46 +210,6 @@ const submit = () => {
                         <p v-if="form.errors[errorKey(section)]" class="text-sm text-red-600">
                             {{ form.errors[errorKey(section)] }}
                         </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{{ localize('Tenant Website Pages', 'صفحات مواقع المكاتب') }}</CardTitle>
-                        <CardDescription>
-                            {{
-                                localize(
-                                    'These defaults are used by tenant websites when the tenant leaves its own static page content empty.',
-                                    'هذه النصوص الافتراضية تظهر في مواقع المكاتب عندما يترك المكتب محتوى صفحاته الثابتة فارغًا.'
-                                )
-                            }}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent class="space-y-6">
-                        <div v-for="section in tenantSections" :key="section.key" class="space-y-3 rounded-lg border p-4">
-                            <div>
-                                <h3 class="text-base font-semibold">{{ localize(section.title, section.titleAr) }}</h3>
-                                <p class="text-sm text-muted-foreground">
-                                    {{ localize(section.description, section.descriptionAr) }}
-                                </p>
-                            </div>
-
-                            <div class="space-y-2">
-                                <Label :for="`tenant_${section.key}_${activeLocaleCode}`">
-                                    {{ localeLabel(activeLocale) }}
-                                    <span class="text-xs uppercase text-muted-foreground">({{ activeLocaleCode }})</span>
-                                </Label>
-                                <RichTextEditor
-                                    :id="`tenant_${section.key}_${activeLocaleCode}`"
-                                    v-model="form.settings.tenant_pages[section.key][activeLocaleCode]"
-                                    :dir="activeLocale?.direction ?? 'ltr'"
-                                    :placeholder="activeLocale?.direction === 'rtl' ? section.placeholderAr : section.placeholder"
-                                />
-                                <p v-if="form.errors[tenantErrorKey(section)]" class="text-sm text-red-600">
-                                    {{ form.errors[tenantErrorKey(section)] }}
-                                </p>
-                            </div>
-                        </div>
                     </CardContent>
                 </Card>
 

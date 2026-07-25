@@ -41,23 +41,11 @@ class StaticPageContentSettingsController extends Controller
             'settings.terms_conditions.*' => ['nullable', 'string', 'max:50000'],
             'settings.security_policy' => ['nullable', 'array'],
             'settings.security_policy.*' => ['nullable', 'string', 'max:50000'],
-            'settings.tenant_pages' => ['nullable', 'array'],
-            'settings.tenant_pages.privacy_policy' => ['nullable', 'array'],
-            'settings.tenant_pages.privacy_policy.*' => ['nullable', 'string', 'max:50000'],
-            'settings.tenant_pages.terms_of_use' => ['nullable', 'array'],
-            'settings.tenant_pages.terms_of_use.*' => ['nullable', 'string', 'max:50000'],
-            'settings.tenant_pages.security_policy' => ['nullable', 'array'],
-            'settings.tenant_pages.security_policy.*' => ['nullable', 'string', 'max:50000'],
         ]);
 
         SiteSetting::query()->updateOrCreate(
             ['key' => self::KEY],
             ['value' => $this->normalize($validated['settings'] ?? [], $localization, false)]
-        );
-
-        SiteSetting::query()->updateOrCreate(
-            ['key' => WebPageContentSettingsController::KEY],
-            ['value' => $this->normalizeTenantPages($validated['settings']['tenant_pages'] ?? [], $localization)]
         );
 
         return back()->with('success', 'Static page content updated successfully.');
@@ -77,37 +65,10 @@ class StaticPageContentSettingsController extends Controller
         $localeCodes = LocalizationSettings::localeCodes($localization);
         $defaultLocale = LocalizationSettings::defaultLocale($localization);
 
-        $normalized = [
+        return [
             'support' => $this->localizedField($settings['support'] ?? null, $localeCodes, $defaultLocale),
             'privacy_policy' => $this->localizedField($settings['privacy_policy'] ?? null, $localeCodes, $defaultLocale),
             'terms_conditions' => $this->localizedField($settings['terms_conditions'] ?? null, $localeCodes, $defaultLocale),
-            'security_policy' => $this->localizedField($settings['security_policy'] ?? null, $localeCodes, $defaultLocale),
-        ];
-
-        if ($includeTenantPages) {
-            $normalized['tenant_pages'] = $this->tenantPageSettings($localization);
-        }
-
-        return $normalized;
-    }
-
-    private function tenantPageSettings(array $localization): array
-    {
-        $stored = SiteSetting::query()
-            ->where('key', WebPageContentSettingsController::KEY)
-            ->value('value');
-
-        return $this->normalizeTenantPages(is_array($stored) ? $stored : [], $localization);
-    }
-
-    private function normalizeTenantPages(array $settings, array $localization): array
-    {
-        $localeCodes = LocalizationSettings::localeCodes($localization);
-        $defaultLocale = LocalizationSettings::defaultLocale($localization);
-
-        return [
-            'privacy_policy' => $this->localizedField($settings['privacy_policy'] ?? null, $localeCodes, $defaultLocale),
-            'terms_of_use' => $this->localizedField($settings['terms_of_use'] ?? null, $localeCodes, $defaultLocale),
             'security_policy' => $this->localizedField($settings['security_policy'] ?? null, $localeCodes, $defaultLocale),
         ];
     }

@@ -39,6 +39,13 @@ class WebPageContentSettingsController extends Controller
             'settings.terms_of_use.*' => ['nullable', 'string', 'max:50000'],
             'settings.security_policy' => ['nullable', 'array'],
             'settings.security_policy.*' => ['nullable', 'string', 'max:50000'],
+            'settings.tenant_pages' => ['nullable', 'array'],
+            'settings.tenant_pages.privacy_policy' => ['nullable', 'array'],
+            'settings.tenant_pages.privacy_policy.*' => ['nullable', 'string', 'max:50000'],
+            'settings.tenant_pages.terms_of_use' => ['nullable', 'array'],
+            'settings.tenant_pages.terms_of_use.*' => ['nullable', 'string', 'max:50000'],
+            'settings.tenant_pages.security_policy' => ['nullable', 'array'],
+            'settings.tenant_pages.security_policy.*' => ['nullable', 'string', 'max:50000'],
         ]);
 
         SiteSetting::query()->updateOrCreate(
@@ -59,6 +66,19 @@ class WebPageContentSettingsController extends Controller
     }
 
     private function normalize(array $settings, array $localization): array
+    {
+        $localeCodes = LocalizationSettings::localeCodes($localization);
+        $defaultLocale = LocalizationSettings::defaultLocale($localization);
+
+        return [
+            'privacy_policy' => $this->localizedField($settings['privacy_policy'] ?? null, $localeCodes, $defaultLocale),
+            'terms_of_use' => $this->localizedField($settings['terms_of_use'] ?? null, $localeCodes, $defaultLocale),
+            'security_policy' => $this->localizedField($settings['security_policy'] ?? null, $localeCodes, $defaultLocale),
+            'tenant_pages' => $this->normalizeTenantPages($settings['tenant_pages'] ?? [], $localization),
+        ];
+    }
+
+    private function normalizeTenantPages(array $settings, array $localization): array
     {
         $localeCodes = LocalizationSettings::localeCodes($localization);
         $defaultLocale = LocalizationSettings::defaultLocale($localization);
