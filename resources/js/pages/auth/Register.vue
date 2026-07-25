@@ -64,7 +64,7 @@ const localizedAuthPath = (path: string) => {
 
 const loginUrl = computed(() => {
     const slug = currentTenant.value?.slug;
-    const loginPath = localizedAuthPath('/tenant/login');
+    const loginPath = localizedAuthPath(slug ? '/login' : '/tenant/login');
 
     return slug
         ? buildUrl(`${slug}.${page.props.app_url_base}`, loginPath)

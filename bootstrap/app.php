@@ -42,11 +42,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 return route('superadmin.login');
             }
 
-            if ($baseHost !== '' && str_ends_with($host, '.'.$baseHost)) {
-                return route('tenant-login');
+            $isSubdomain = ($baseHost !== '' && str_ends_with($host, '.'.$baseHost)) || \App\Core\TenantContext::get() !== null;
+
+            if ($isSubdomain) {
+                return route('tenant.login');
             }
 
-            return route('login');
+            return route('tenant-login');
         });
 
         $middleware->statefulApi();

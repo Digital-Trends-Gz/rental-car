@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 
 test('login screen can be rendered', function () {
-    $response = $this->get(route('login'));
+    $response = $this->get(route('tenant-login'));
 
     $response->assertStatus(200);
 });
@@ -94,4 +94,34 @@ test('users are rate limited', function () {
     $errors = session('errors');
 
     $this->assertStringContainsString('Too many login attempts', $errors->first('email'));
+});
+
+test('unauthenticated guest on subdomain is redirected to /login', function () {
+    $plan = \App\Models\Plan::factory()->create(['is_active' => true]);
+    $tenant = \App\Models\Tenant::factory()->create([
+        'is_active' => true,
+        'plan_id' => $plan->id,
+    ]);
+
+    $response = $this->get(route('admin.cars.index', ['subdomain' => $tenant->slug]));
+
+    $response->assertRedirect(route('tenant.login', ['subdomain' => $tenant->slug]));
+});
+
+test('unauthenticated guest on main domain is redirected to /tenant/login', function () {
+    $response = $this->get(route('dashboard'));
+
+    $response->assertRedirect(route('tenant-login'));
+});
+
+test('tenant/login on subdomain redirects to /login', function () {
+    $plan = \App\Models\Plan::factory()->create(['is_active' => true]);
+    $tenant = \App\Models\Tenant::factory()->create([
+        'is_active' => true,
+        'plan_id' => $plan->id,
+    ]);
+
+    $response = $this->get(route('tenant.tenant-login', ['subdomain' => $tenant->slug]));
+
+    $response->assertRedirect(route('tenant.login', ['subdomain' => $tenant->slug]));
 });

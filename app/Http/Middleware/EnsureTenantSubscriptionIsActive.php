@@ -43,7 +43,8 @@ class EnsureTenantSubscriptionIsActive
 
         $request->session()->flash('error', $message);
 
-        $url = route('tenant-login');
+        $routeName = \App\Core\TenantContext::id() ? 'tenant.login' : 'tenant-login';
+        $url = route($routeName);
 
         if ($request->header('X-Inertia')) {
             return Inertia::location($url);

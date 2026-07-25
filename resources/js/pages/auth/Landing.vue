@@ -8,7 +8,7 @@ import {
 import {
     home as tenantHome,
     register as tenantRegister,
-    tenantLogin as tenantTenantLogin,
+    login as tenantLoginRoute,
 } from '@/routes/tenant/index.ts';
 import { withLocalePrefix } from '@/lib/utils';
 import { Head, Link, usePage } from '@inertiajs/vue3';
@@ -26,7 +26,7 @@ const homeUrl = computed(() => {
 
 const loginUrl = computed(() => {
     const slug = currentTenant.value?.slug;
-    return localizedUrl(slug ? tenantTenantLogin(slug).url : mainTenantLogin().url);
+    return localizedUrl(slug ? tenantLoginRoute(slug).url : mainTenantLogin().url);
 });
 
 const registerUrl = computed(() => {

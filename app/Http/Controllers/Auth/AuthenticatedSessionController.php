@@ -42,8 +42,12 @@ class AuthenticatedSessionController extends Controller
     /**
      * Show the tenant login page.
      */
-    public function tenantLogin(Request $request): Response
+    public function tenantLogin(Request $request): Response|RedirectResponse
     {
+        if (TenantContext::get()) {
+            return redirect()->route('tenant.login');
+        }
+
         return Inertia::render('auth/TenantLogin', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),

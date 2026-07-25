@@ -83,7 +83,8 @@ class CheckUserActive
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 
-                $url = route('tenant-login');
+                $routeName = \App\Core\TenantContext::id() ? 'tenant.login' : 'tenant-login';
+                $url = route($routeName);
 
                 if ($request->header('X-Inertia')) {
                     $request->session()->flash('error', 'This tenant subscription has expired. Please contact your administrator.');

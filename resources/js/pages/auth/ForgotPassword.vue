@@ -11,7 +11,7 @@ import {
     PinInputSlot,
 } from '@/components/ui/pin-input';
 import { tenantLogin as mainTenantLogin } from '@/routes';
-import { tenantLogin as tenantTenantLogin } from '@/routes/tenant/index.ts';
+import { login as tenantLoginRoute } from '@/routes/tenant/index.ts';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { LoaderCircle, Mail } from 'lucide-vue-next';
 import { computed, reactive, ref } from 'vue';
@@ -28,7 +28,7 @@ const authSideImage = computed(() => {
 
 const loginHref = computed(() =>
     currentTenant.value?.slug
-        ? tenantTenantLogin(currentTenant.value.slug)
+        ? tenantLoginRoute(currentTenant.value.slug)
         : mainTenantLogin(),
 );
 
