@@ -312,6 +312,17 @@ return array (
     'optional' => 'اختياري',
     'already_have_account_short' => 'لديك حساب بالفعل؟',
     'sign_in_here_short' => 'سجّل الدخول من هنا',
+    'reset_password_page' => [
+        'head_title' => 'إعادة تعيين كلمة المرور',
+        'title' => 'إعادة تعيين كلمة المرور',
+        'subtitle' => 'يرجى إدخال كلمة المرور الجديدة أدناه',
+        'email_label' => 'البريد الإلكتروني',
+        'new_password_label' => 'كلمة المرور',
+        'new_password_placeholder' => 'كلمة المرور',
+        'confirm_password_label' => 'تأكيد كلمة المرور',
+        'confirm_password_placeholder' => 'تأكيد كلمة المرور',
+        'reset_password' => 'إعادة تعيين كلمة المرور',
+    ],
     'forgot_password_page' => 
     array (
       'head_title' => 'إعادة تعيين كلمة المرور',

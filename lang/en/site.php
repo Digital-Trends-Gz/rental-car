@@ -282,6 +282,17 @@ return [
         'optional' => 'optional',
         'already_have_account_short' => 'Already have an account?',
         'sign_in_here_short' => 'Sign in here',
+        'reset_password_page' => [
+            'head_title' => 'Reset password',
+            'title' => 'Reset password',
+            'subtitle' => 'Please enter your new password below',
+            'email_label' => 'Email',
+            'new_password_label' => 'Password',
+            'new_password_placeholder' => 'Password',
+            'confirm_password_label' => 'Confirm Password',
+            'confirm_password_placeholder' => 'Confirm password',
+            'reset_password' => 'Reset password',
+        ],
         'forgot_password_page' => [
             'head_title' => 'Reset password',
             'hero_alt' => 'Car4U background',

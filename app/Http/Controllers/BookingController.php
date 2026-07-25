@@ -87,7 +87,7 @@ class BookingController extends Controller
         $windowMeta = [
             'starts_at' => $windowStart->toDateString(),
             'ends_at' => $windowEnd->toDateString(),
-            'label' => sprintf('%s - %s', $windowStart->format('M j, Y'), $windowEnd->format('M j, Y')),
+            'label' => sprintf('%s - %s', $windowStart->translatedFormat('M j, Y'), $windowEnd->translatedFormat('M j, Y')),
             'previous' => $windowStart->copy()->subDays(30)->toDateString(),
             'next' => $windowStart->copy()->addDays(30)->toDateString(),
         ];

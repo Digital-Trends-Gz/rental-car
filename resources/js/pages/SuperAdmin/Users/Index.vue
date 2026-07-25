@@ -3,7 +3,6 @@ import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { UserCircle, Mail, Shield, KeyRound, Trash2 } from 'lucide-vue-next';
-import Auth from '@/actions/App/Http/Controllers/Auth';
 import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{

@@ -508,15 +508,7 @@ const restartWizard = (): void => {
                     </div>
                 </div>
 
-                <div
-                    v-if="testOtp"
-                    class="rounded-2xl border border-dashed border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800"
-                >
-                    <span class="font-semibold">{{ forgotPasswordText('test_otp_label') }}</span>
-                    <code class="ml-2 rounded bg-white px-2 py-0.5 font-mono text-xs">
-                        {{ testOtp }}
-                    </code>
-                </div>
+         
 
                 <div class="flex items-center justify-between text-sm text-gray-600">
                     <Link
