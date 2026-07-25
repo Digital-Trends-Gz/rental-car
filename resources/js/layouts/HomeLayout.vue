@@ -1025,7 +1025,12 @@ onBeforeUnmount(() => {
                 <div class="mt-2 border-t border-gray-800 pt-8">
                    
                         <p class="text-gray-400 text-center">
-                            &copy; {{ new Date().getFullYear() }} {{ siteName }}. {{ t('footer.rights') }}
+                            <template v-if="direction === 'rtl'">
+                                {{ t('footer.rights') }}  &copy; {{ new Date().getFullYear() }} <span dir="ltr" class="inline-block mx-1">{{ siteName }}</span>
+                            </template>
+                            <template v-else>
+                              {{ t('footer.rights') }}  &copy; {{ new Date().getFullYear() }} {{ siteName }}. 
+                            </template>
                         </p>
                        
                 </div>
