@@ -800,37 +800,45 @@ class HomePagesController extends Controller
 
         $webPageContent = is_array($webPageContent) ? $webPageContent : [];
         $staticPageContent = is_array($staticPageContent) ? $staticPageContent : [];
+        $tenantPages = data_get($webPageContent, 'tenant_pages');
+        $isTenant = TenantContext::get() !== null;
 
         return [
             'privacy_policy' => $this->mergeStaticPageDefaultContent(
+                $isTenant ? data_get($tenantPages, 'privacy_policy') : null,
                 data_get($webPageContent, 'privacy_policy'),
                 data_get($staticPageContent, 'privacy_policy')
             ),
             'terms_of_use' => $this->mergeStaticPageDefaultContent(
+                $isTenant ? data_get($tenantPages, 'terms_of_use') : null,
                 data_get($webPageContent, 'terms_of_use'),
                 data_get($staticPageContent, 'terms_conditions')
             ),
             'security_policy' => $this->mergeStaticPageDefaultContent(
+                $isTenant ? data_get($tenantPages, 'security_policy') : null,
                 data_get($webPageContent, 'security_policy'),
                 data_get($staticPageContent, 'security_policy')
             ),
         ];
     }
 
-    private function mergeStaticPageDefaultContent(mixed $primary, mixed $fallback): mixed
+    private function mergeStaticPageDefaultContent(mixed ...$sources): mixed
     {
-        if (! is_array($primary)) {
-            return trim((string) ($primary ?? '')) !== '' ? $primary : $fallback;
-        }
-
-        if (! is_array($fallback)) {
-            return $primary;
-        }
-
         $content = [];
-        foreach (array_unique(array_merge(array_keys($primary), array_keys($fallback))) as $locale) {
-            $primaryValue = trim((string) ($primary[$locale] ?? ''));
-            $content[$locale] = $primaryValue !== '' ? $primaryValue : trim((string) ($fallback[$locale] ?? ''));
+        $hasArray = false;
+
+        foreach ($sources as $source) {
+            if (is_array($source)) {
+                $hasArray = true;
+                foreach ($source as $locale => $val) {
+                    $valStr = trim((string) $val);
+                    if ($valStr !== '' && empty($content[$locale])) {
+                        $content[$locale] = $valStr;
+                    }
+                }
+            } elseif (! $hasArray && is_string($source) && trim($source) !== '' && empty($content)) {
+                return trim($source);
+            }
         }
 
         return $content;
@@ -839,12 +847,19 @@ class HomePagesController extends Controller
     private function localizedStaticPageOverride(mixed $content, string $locale): string
     {
         if (! is_array($content)) {
-            return trim((string) ($content ?? ''));
+            $val = trim((string) ($content ?? ''));
+
+            return (trim(strip_tags($val)) !== '' || str_contains($val, '<img') || str_contains($val, '<iframe')) ? $val : '';
         }
 
         $baseLocale = strtolower(explode('-', $locale)[0] ?? $locale);
+        $val = trim((string) ($content[$locale] ?? $content[$baseLocale] ?? ''));
 
-        return trim((string) ($content[$locale] ?? $content[$baseLocale] ?? ''));
+        if (trim(strip_tags($val)) === '' && ! str_contains($val, '<img') && ! str_contains($val, '<iframe')) {
+            return '';
+        }
+
+        return $val;
     }
 
     private function localizedStaticPageContent(mixed $content, string $locale, array $localization): string

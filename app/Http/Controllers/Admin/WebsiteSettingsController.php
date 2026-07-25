@@ -1021,33 +1021,50 @@ class WebsiteSettingsController extends Controller
 
         $webPageContent = is_array($webPageContent) ? $webPageContent : [];
         $staticPageContent = is_array($staticPageContent) ? $staticPageContent : [];
+        $tenantPages = data_get($webPageContent, 'tenant_pages');
 
         return [
             'privacy_policy' => $this->mergeStaticPageDefaultContent(
+                data_get($tenantPages, 'privacy_policy'),
                 data_get($webPageContent, 'privacy_policy'),
                 data_get($staticPageContent, 'privacy_policy')
             ),
             'terms_of_use' => $this->mergeStaticPageDefaultContent(
+                data_get($tenantPages, 'terms_of_use'),
                 data_get($webPageContent, 'terms_of_use'),
                 data_get($staticPageContent, 'terms_conditions')
             ),
             'security_policy' => $this->mergeStaticPageDefaultContent(
+                data_get($tenantPages, 'security_policy'),
                 data_get($webPageContent, 'security_policy'),
                 data_get($staticPageContent, 'security_policy')
             ),
         ];
     }
 
-    private function mergeStaticPageDefaultContent(mixed $primary, mixed $fallback): array
+    private function mergeStaticPageDefaultContent(mixed ...$sources): array
     {
         $supportedLocales = $this->supportedLocaleKeys();
-        $primary = is_array($primary) ? $primary : ['en' => trim((string) ($primary ?? ''))];
-        $fallback = is_array($fallback) ? $fallback : ['en' => trim((string) ($fallback ?? ''))];
-
         $content = [];
+
         foreach ($supportedLocales as $locale) {
-            $primaryValue = trim((string) ($primary[$locale] ?? ''));
-            $content[$locale] = $primaryValue !== '' ? $primaryValue : trim((string) ($fallback[$locale] ?? ''));
+            $value = '';
+            foreach ($sources as $source) {
+                if (is_array($source)) {
+                    $val = trim((string) ($source[$locale] ?? ''));
+                    if ($val !== '') {
+                        $value = $val;
+                        break;
+                    }
+                } elseif (is_string($source) && $locale === 'en') {
+                    $val = trim($source);
+                    if ($val !== '') {
+                        $value = $val;
+                        break;
+                    }
+                }
+            }
+            $content[$locale] = $value;
         }
 
         return $content;
