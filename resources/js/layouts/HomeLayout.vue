@@ -119,7 +119,8 @@ const routeHelpers = computed(() => {
 const getUrl = (helper: any) => {
     if (typeof helper !== 'function') return '#';
     const slug = currentTenant.value?.slug;
-    return slug ? helper(slug).url : helper().url;
+    const rawUrl = slug ? helper(slug).url : helper().url;
+    return localizedLandingPath(rawUrl);
 };
 
 const tenantBranding = computed(() => tenantSiteSettings.value ?? null);
