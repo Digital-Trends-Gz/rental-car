@@ -813,18 +813,31 @@ onBeforeUnmount(() => {
 
                     <!-- Auth Buttons -->
                     <div class="flex items-center space-x-3">
-                        <div v-if="props.showLocaleSwitcher && availableLocales.length > 0" class="hidden items-center rounded-lg border border-gray-200 bg-white p-1 md:flex">
-                            <a
-                                v-for="localeCode in availableLocales"
-                                :key="localeCode"
-                                :href="localeSwitcherUrl(localeCode)"
-                                class="rounded-md px-2 py-1 text-xs font-semibold transition-colors"
-                                :class="locale === localeCode ? 'text-white' : 'text-gray-600 hover:text-orange-600'"
-                                :style="locale === localeCode ? { backgroundColor: 'var(--tenant-primary)' } : undefined"
-                            >
-                                {{ localeDisplayName(localeCode) }}
-                            </a>
-                        </div>
+                        <DropdownMenu v-if="props.showLocaleSwitcher && availableLocales.length > 1" :modal="false">
+                            <DropdownMenuTrigger as-child>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    class="hidden h-9 items-center gap-2 rounded-lg border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 md:inline-flex"
+                                >
+                                    <Languages class="h-4 w-4 text-gray-500" />
+                                    <span>{{ localeDisplayName(String(locale || '')) }}</span>
+                                    <ChevronDown class="h-4 w-4 text-gray-400" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" class="min-w-40 rounded-lg border border-gray-100 bg-white p-1 shadow-lg">
+                                <DropdownMenuItem v-for="localeCode in availableLocales" :key="localeCode" as-child>
+                                    <a
+                                        :href="localeSwitcherUrl(localeCode)"
+                                        class="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-medium"
+                                        :class="locale === localeCode ? 'text-primary' : 'text-gray-700'"
+                                    >
+                                        <span>{{ localeDisplayName(localeCode) }}</span>
+                                        <Check v-if="locale === localeCode" class="h-4 w-4 text-primary" />
+                                    </a>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <Link
                             v-if="$page.props.auth.user"
                             :href="getUrl(routeHelpers.dashboard)"
