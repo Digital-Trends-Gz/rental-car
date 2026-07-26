@@ -7,6 +7,10 @@ return [
         'ar' => 'عربی',
         'ur' => 'اردو',
     ],
+    'pagination' => [
+        'previous' => 'Previous',
+        'next' => 'Next',
+    ],
     'nav' => [
         'home' => 'Home',
         'fleet' => 'Fleet',

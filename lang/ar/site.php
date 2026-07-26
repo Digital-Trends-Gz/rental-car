@@ -8,6 +8,11 @@ return array (
     'ar' => 'العربية',
     'ur' => 'الأردية',
   ),
+  'pagination' => 
+  array (
+    'previous' => 'السابق',
+    'next' => 'التالي',
+  ),
   'nav' => 
   array (
     'home' => 'الرئيسية',

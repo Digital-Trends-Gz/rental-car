@@ -768,6 +768,8 @@ class LandingSettingsController extends Controller
             'auth.or_continue_with' => 'Or continue with',
             'auth.google' => 'Google',
             'auth.apple' => 'Apple',
+            'pagination.previous' => 'Previous',
+            'pagination.next' => 'Next',
             'dashboard.admin.car_statuses.draft' => 'Draft',
             'dashboard.admin.car_statuses.available' => 'Available',
             'dashboard.admin.car_statuses.reserved' => 'Reserved',
