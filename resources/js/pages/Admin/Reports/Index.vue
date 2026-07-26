@@ -54,6 +54,7 @@ interface CarPerformance {
     id: number;
     car_name: string;
     license_plate: string;
+    status_key?: string;
     status: string;
     status_color: string;
     total_reservations: number;
@@ -656,6 +657,21 @@ const severityClasses = (severity: ReportAlert['severity']) => {
 
 const displayMoney = (value: number) =>
     hasFinancialAccess.value ? `$${value.toFixed(2)}` : '*******';
+
+const carStatusLabel = (car: CarPerformance) => {
+    const statusKey = String(car.status_key || car.status || '').toLowerCase().replace(/\s+/g, '_');
+    const adminKey = `dashboard.admin.car_statuses.${statusKey}`;
+    const adminTranslated = t(adminKey);
+
+    if (adminTranslated !== adminKey) {
+        return adminTranslated;
+    }
+
+    const dashboardKey = `dashboard.car_statuses.${statusKey}`;
+    const dashboardTranslated = t(dashboardKey);
+
+    return dashboardTranslated === dashboardKey ? car.status : dashboardTranslated;
+};
 
 // Sorted and limited cars performance
 const sortedCarsPerformance = computed(() => {
@@ -3399,7 +3415,7 @@ onMounted(() => {
                                                     car.status_color,
                                             }"
                                         >
-                                            {{ car.status }}
+                                            {{ carStatusLabel(car) }}
                                         </span>
                                     </td>
                                     <td

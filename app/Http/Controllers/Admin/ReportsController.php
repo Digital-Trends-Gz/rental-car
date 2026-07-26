@@ -1991,6 +1991,7 @@ class ReportsController extends Controller
                     'id' => $car->id,
                     'car_name' => $car->full_name,
                     'license_plate' => $car->license_plate,
+                    'status_key' => $car->status instanceof CarStatus ? $car->status->value : (string) $car->status,
                     'status' => $car->status->label(),
                     'status_color' => $car->status->color(),
                     'total_reservations' => $car->total_reservations,
