@@ -87,9 +87,17 @@ const getStatusColor = (status: string) => {
 }
 
 const statusLabel = (key: string, fallback: string) => {
-  const translated = t(`dashboard.admin.car_statuses.${key}`);
+  const adminKey = `dashboard.admin.car_statuses.${key}`;
+  const adminTranslated = t(adminKey);
 
-  return translated === `dashboard.admin.car_statuses.${key}` ? fallback : translated;
+  if (adminTranslated !== adminKey) {
+    return adminTranslated;
+  }
+
+  const dashboardKey = `dashboard.car_statuses.${key}`;
+  const dashboardTranslated = t(dashboardKey);
+
+  return dashboardTranslated === dashboardKey ? fallback : dashboardTranslated;
 }
 
 const search = ref(props.filters?.search || '')
