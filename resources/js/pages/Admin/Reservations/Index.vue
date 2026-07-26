@@ -72,6 +72,21 @@ const getStatusColor = (status: string) => {
     );
 };
 
+const statusLabel = (key: string, fallback: string) => {
+    const statusKey = key.toLowerCase().trim().replace(/\s+/g, '_');
+    const adminKey = `dashboard.admin.reservation_statuses.${statusKey}`;
+    const adminTranslated = t(adminKey);
+
+    if (adminTranslated !== adminKey) {
+        return adminTranslated;
+    }
+
+    const dashboardKey = `dashboard.reservation_statuses.${statusKey}`;
+    const dashboardTranslated = t(dashboardKey);
+
+    return dashboardTranslated === dashboardKey ? fallback : dashboardTranslated;
+};
+
 const search = ref(props.filters?.search || '');
 const statusFilter = ref(props.filters?.status || 'all');
 const branchFilter = ref(props.filters?.branch_id ? String(props.filters.branch_id) : 'all');
@@ -190,7 +205,7 @@ watch(search, (v, ov) => {
                                         backgroundColor: (status as any).color,
                                     }"
                                 ></span>
-                                {{ (status as any).label }} ({{
+                                {{ statusLabel(String(key), (status as any).label) }} ({{
                                     (status as any).count
                                 }})
                             </span>
@@ -320,8 +335,7 @@ watch(search, (v, ov) => {
                                         }"
                                     />
                                     {{
-                                        statuses[res.status]?.label ||
-                                        res.status
+                                        statusLabel(res.status, statuses[res.status]?.label || res.status)
                                     }}
                                 </span>
                             </td>
