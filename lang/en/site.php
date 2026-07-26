@@ -1245,6 +1245,25 @@ return [
             ],
         ],
         'admin' => [
+            'car_statuses' => [
+                'draft' => 'Draft',
+                'available' => 'Available',
+                'reserved' => 'Reserved',
+                'rented' => 'Rented',
+                'maintenance' => 'Maintenance',
+                'cleaning' => 'Cleaning',
+                'unavailable' => 'Unavailable',
+                'retired' => 'Retired',
+            ],
+            'reservation_statuses' => [
+                'pending' => 'Pending',
+                'confirmed' => 'Confirmed',
+                'active' => 'Active',
+                'completed_wait_contract' => 'Completed - Waiting for Contract',
+                'completed' => 'Completed',
+                'cancelled' => 'Cancelled',
+                'no_show' => 'No Show',
+            ],
             'common' => [
                 'edit' => 'Edit',
                 'delete' => 'Delete',

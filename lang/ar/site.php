@@ -1346,6 +1346,27 @@ return array (
     ),
     'admin' => 
     array (
+      'car_statuses' => 
+      array (
+        'draft' => 'مسودة',
+        'available' => 'متاحة',
+        'reserved' => 'محجوزة',
+        'rented' => 'مؤجرة',
+        'maintenance' => 'صيانة',
+        'cleaning' => 'تنظيف',
+        'unavailable' => 'غير متاحة',
+        'retired' => 'متقاعدة',
+      ),
+      'reservation_statuses' => 
+      array (
+        'pending' => 'قيد الانتظار',
+        'confirmed' => 'مؤكد',
+        'active' => 'نشط',
+        'completed_wait_contract' => 'مكتمل - بانتظار العقد',
+        'completed' => 'مكتمل',
+        'cancelled' => 'ملغي',
+        'no_show' => 'لم يحضر',
+      ),
       'common' => 
       array (
         'edit' => 'تعديل',
