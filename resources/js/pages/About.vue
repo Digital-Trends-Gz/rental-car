@@ -20,6 +20,40 @@ const availableLocales = computed<string[]>(() =>
 );
 const aboutContent = computed(() => tenantSiteSettings.value?.about ?? null);
 const seo = computed(() => page.props.seo ?? null);
+const valueIconPaths: Record<string, string> = {
+    reliability: 'M353.8 118.1L330.2 70.3C326.3 62 314.1 61.7 309.8 70.3L286.2 118.1L233.9 125.6C224.6 127 220.6 138.5 227.5 145.4L265.5 182.4L256.5 234.5C255.1 243.8 264.7 251 273.3 246.7L320.2 221.9L366.8 246.3C375.4 250.6 385.1 243.4 383.6 234.1L374.6 182L412.6 145.4C419.4 138.6 415.5 127.1 406.2 125.6L353.9 118.1zM288 320C261.5 320 240 341.5 240 368L240 528C240 554.5 261.5 576 288 576L352 576C378.5 576 400 554.5 400 528L400 368C400 341.5 378.5 320 352 320L288 320zM80 384C53.5 384 32 405.5 32 432L32 528C32 554.5 53.5 576 80 576L144 576C170.5 576 192 554.5 192 528L192 432C192 405.5 170.5 384 144 384L80 384zM448 496L448 528C448 554.5 469.5 576 496 576L560 576C586.5 576 608 554.5 608 528L608 496C608 469.5 586.5 448 560 448L496 448C469.5 448 448 469.5 448 496z',
+    transparency: 'M320 576C461.4 576 576 461.4 576 320C576 295.6 572.6 271.9 566.2 249.5C584.8 213.4 563.5 165.9 519.5 159.5C472.6 101.2 400.6 64 320 64C239.4 64 167.4 101.3 120.5 159.5C76.5 165.9 55.2 213.4 73.8 249.5C67.4 271.9 64 295.5 64 320C64 461.4 178.6 576 320 576zM450.7 388.9C462.6 385.2 474.6 395.2 470.3 407C447.9 468.3 389 512.1 320 512.1C251 512.1 192.1 468.2 169.7 406.9C165.4 395.1 177.4 385.1 189.3 388.8C228.5 401 273 407.9 320 407.9C367 407.9 411.5 401 450.7 388.8zM419.1 157.9C424.4 147.2 439.6 147.2 444.9 157.9L465.8 200.3L512.5 207.1C524.3 208.8 529 223.3 520.5 231.6L486.7 264.6L494.7 311.2C496.7 322.9 484.4 331.9 473.8 326.4L432 304.4L390.2 326.4C379.7 331.9 367.3 323 369.3 311.2L377.3 264.6L343.5 231.6C335 223.3 339.7 208.8 351.5 207.1L398.2 200.3L419.1 157.9zM220.9 157.9L241.8 200.3L288.5 207.1C300.3 208.8 305 223.3 296.5 231.6L262.7 264.6L270.7 311.2C272.7 322.9 260.4 331.9 249.8 326.4L208 304.4L166.2 326.4C155.7 331.9 143.3 323 145.3 311.2L153.3 264.6L119.5 231.6C111 223.3 115.7 208.8 127.5 207.1L174.2 200.3L195.1 157.9C200.4 147.2 215.6 147.2 220.9 157.9z',
+    excellence: 'M320.3 192L235.7 51.1C229.2 40.3 215.6 36.4 204.4 42L117.8 85.3C105.9 91.2 101.1 105.6 107 117.5L176.6 256.6C146.5 290.5 128.3 335.1 128.3 384C128.3 490 214.3 576 320.3 576C426.3 576 512.3 490 512.3 384C512.3 335.1 494 290.5 464 256.6L533.6 117.5C539.5 105.6 534.7 91.2 522.9 85.3L436.2 41.9C425 36.3 411.3 40.3 404.9 51L320.3 192zM351.1 334.5C352.5 337.3 355.1 339.2 358.1 339.6L408.2 346.9C415.9 348 418.9 357.4 413.4 362.9L377.1 398.3C374.9 400.5 373.9 403.5 374.4 406.6L383 456.5C384.3 464.1 376.3 470 369.4 466.4L324.6 442.8C321.9 441.4 318.6 441.4 315.9 442.8L271.1 466.4C264.2 470 256.2 464.2 257.5 456.5L266.1 406.6C266.6 403.6 265.6 400.5 263.4 398.3L227.1 362.9C221.5 357.5 224.6 348.1 232.3 346.9L282.4 339.6C285.4 339.2 288.1 337.2 289.4 334.5L311.8 289.1C315.2 282.1 325.1 282.1 328.6 289.1L351 334.5z',
+};
+const fallbackValueItems = computed(() => [
+    {
+        icon: 'reliability',
+        title: t('about.values.reliability.title'),
+        description: t('about.values.reliability.desc'),
+    },
+    {
+        icon: 'transparency',
+        title: t('about.values.transparency.title'),
+        description: t('about.values.transparency.desc'),
+    },
+    {
+        icon: 'excellence',
+        title: t('about.values.excellence.title'),
+        description: t('about.values.excellence.desc'),
+    },
+]);
+const valueItems = computed(() => {
+    const items = Array.isArray(aboutContent.value?.values) ? aboutContent.value.values : [];
+    const normalized = items
+        .map((item: any, index: number) => ({
+            icon: item?.icon || 'reliability',
+            title: tenantTranslation(`tenant_about.values.${index}.title`, localizedText(item?.title, '')),
+            description: tenantTranslation(`tenant_about.values.${index}.description`, localizedText(item?.description, '')),
+        }))
+        .filter((item: any) => item.title || item.description);
+
+    return normalized.length ? normalized : fallbackValueItems.value;
+});
 const teamMembers = computed(() => [
     {
         key: 'sarah',
@@ -43,6 +77,19 @@ const teamMembers = computed(() => [
         bio: t('about.team.members.emily.bio'),
     },
 ]);
+const displayedTeamMembers = computed(() => {
+    const items = Array.isArray(aboutContent.value?.team_members) ? aboutContent.value.team_members : [];
+    const normalized = items
+        .map((item: any, index: number) => ({
+            image: item?.image_url || '/images/team/sara.webp',
+            name: tenantTranslation(`tenant_about.team_members.${index}.name`, localizedText(item?.title, '')),
+            role: tenantTranslation(`tenant_about.team_members.${index}.role`, item?.role || ''),
+            bio: tenantTranslation(`tenant_about.team_members.${index}.bio`, localizedText(item?.description, '')),
+        }))
+        .filter((item: any) => item.name || item.role || item.bio);
+
+    return normalized.length ? normalized : teamMembers.value;
+});
 
 const localizedText = (value: any, fallback = ''): string => {
     const currentLocale = String(locale.value || 'en');
@@ -59,6 +106,12 @@ const localizedText = (value: any, fallback = ''): string => {
     }
 
     return fallback;
+};
+
+const tenantTranslation = (key: string, fallback = ''): string => {
+    const translated = t(key);
+
+    return translated && translated !== key ? translated : fallback;
 };
 
 const localeAwarePathname = (pathname: string) => {
@@ -203,7 +256,7 @@ const contactUrl = computed(() =>
                     </div>
 
                     <div class="grid gap-8 md:grid-cols-3">
-                        <div class="p-6 text-center">
+                        <div v-for="item in valueItems" :key="`${item.icon}-${item.title}`" class="p-6 text-center">
                             <div
                                 class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-500"
                             >
@@ -213,65 +266,17 @@ const contactUrl = computed(() =>
                                     viewBox="0 0 640 640"
                                 >
                                     <path
-                                        d="M353.8 118.1L330.2 70.3C326.3 62 314.1 61.7 309.8 70.3L286.2 118.1L233.9 125.6C224.6 127 220.6 138.5 227.5 145.4L265.5 182.4L256.5 234.5C255.1 243.8 264.7 251 273.3 246.7L320.2 221.9L366.8 246.3C375.4 250.6 385.1 243.4 383.6 234.1L374.6 182L412.6 145.4C419.4 138.6 415.5 127.1 406.2 125.6L353.9 118.1zM288 320C261.5 320 240 341.5 240 368L240 528C240 554.5 261.5 576 288 576L352 576C378.5 576 400 554.5 400 528L400 368C400 341.5 378.5 320 352 320L288 320zM80 384C53.5 384 32 405.5 32 432L32 528C32 554.5 53.5 576 80 576L144 576C170.5 576 192 554.5 192 528L192 432C192 405.5 170.5 384 144 384L80 384zM448 496L448 528C448 554.5 469.5 576 496 576L560 576C586.5 576 608 554.5 608 528L608 496C608 469.5 586.5 448 560 448L496 448C469.5 448 448 469.5 448 496z"
+                                        :d="valueIconPaths[item.icon] || valueIconPaths.reliability"
                                     />
                                 </svg>
                             </div>
                             <h3
                                 class="mb-3 text-xl font-semibold text-gray-900"
                             >
-                                {{ t('about.values.reliability.title') }}
+                                {{ item.title }}
                             </h3>
                             <p class="text-gray-600">
-                                {{ t('about.values.reliability.desc') }}
-                            </p>
-                        </div>
-
-                        <div class="p-6 text-center">
-                            <div
-                                class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-500"
-                            >
-                                <svg
-                                    class="h-8 w-8 fill-white"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 640 640"
-                                >
-                                    <path
-                                        d="M320 576C461.4 576 576 461.4 576 320C576 295.6 572.6 271.9 566.2 249.5C584.8 213.4 563.5 165.9 519.5 159.5C472.6 101.2 400.6 64 320 64C239.4 64 167.4 101.3 120.5 159.5C76.5 165.9 55.2 213.4 73.8 249.5C67.4 271.9 64 295.5 64 320C64 461.4 178.6 576 320 576zM450.7 388.9C462.6 385.2 474.6 395.2 470.3 407C447.9 468.3 389 512.1 320 512.1C251 512.1 192.1 468.2 169.7 406.9C165.4 395.1 177.4 385.1 189.3 388.8C228.5 401 273 407.9 320 407.9C367 407.9 411.5 401 450.7 388.8zM419.1 157.9C424.4 147.2 439.6 147.2 444.9 157.9L465.8 200.3L512.5 207.1C524.3 208.8 529 223.3 520.5 231.6L486.7 264.6L494.7 311.2C496.7 322.9 484.4 331.9 473.8 326.4L432 304.4L390.2 326.4C379.7 331.9 367.3 323 369.3 311.2L377.3 264.6L343.5 231.6C335 223.3 339.7 208.8 351.5 207.1L398.2 200.3L419.1 157.9zM220.9 157.9L241.8 200.3L288.5 207.1C300.3 208.8 305 223.3 296.5 231.6L262.7 264.6L270.7 311.2C272.7 322.9 260.4 331.9 249.8 326.4L208 304.4L166.2 326.4C155.7 331.9 143.3 323 145.3 311.2L153.3 264.6L119.5 231.6C111 223.3 115.7 208.8 127.5 207.1L174.2 200.3L195.1 157.9C200.4 147.2 215.6 147.2 220.9 157.9z"
-                                    />
-                                </svg>
-                            </div>
-                            <h3
-                                class="mb-3 text-xl font-semibold text-gray-900"
-                            >
-                                {{ t('about.values.transparency.title') }}
-                            </h3>
-                            <p class="text-gray-600">
-                                {{ t('about.values.transparency.desc') }}
-                            </p>
-                        </div>
-
-                        <div class="p-6 text-center">
-                            <div
-                                class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-500"
-                            >
-                                <svg
-                                    class="h-8 w-8 fill-white"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 640 640"
-                                >
-                                    <path
-                                        d="M320.3 192L235.7 51.1C229.2 40.3 215.6 36.4 204.4 42L117.8 85.3C105.9 91.2 101.1 105.6 107 117.5L176.6 256.6C146.5 290.5 128.3 335.1 128.3 384C128.3 490 214.3 576 320.3 576C426.3 576 512.3 490 512.3 384C512.3 335.1 494 290.5 464 256.6L533.6 117.5C539.5 105.6 534.7 91.2 522.9 85.3L436.2 41.9C425 36.3 411.3 40.3 404.9 51L320.3 192zM351.1 334.5C352.5 337.3 355.1 339.2 358.1 339.6L408.2 346.9C415.9 348 418.9 357.4 413.4 362.9L377.1 398.3C374.9 400.5 373.9 403.5 374.4 406.6L383 456.5C384.3 464.1 376.3 470 369.4 466.4L324.6 442.8C321.9 441.4 318.6 441.4 315.9 442.8L271.1 466.4C264.2 470 256.2 464.2 257.5 456.5L266.1 406.6C266.6 403.6 265.6 400.5 263.4 398.3L227.1 362.9C221.5 357.5 224.6 348.1 232.3 346.9L282.4 339.6C285.4 339.2 288.1 337.2 289.4 334.5L311.8 289.1C315.2 282.1 325.1 282.1 328.6 289.1L351 334.5z"
-                                    />
-                                </svg>
-                            </div>
-                            <h3
-                                class="mb-3 text-xl font-semibold text-gray-900"
-                            >
-                                {{ t('about.values.excellence.title') }}
-                            </h3>
-                            <p class="text-gray-600">
-                                {{ t('about.values.excellence.desc') }}
+                                {{ item.description }}
                             </p>
                         </div>
                     </div>
@@ -436,7 +441,7 @@ const contactUrl = computed(() =>
                     </div>
 
                     <div class="grid gap-8 md:grid-cols-3">
-                        <div v-for="member in teamMembers" :key="member.key" class="text-center">
+                        <div v-for="(member, index) in displayedTeamMembers" :key="`${member.name}-${index}`" class="text-center">
                             <img
                                 class="mx-auto mb-4 h-32 w-32 overflow-hidden rounded-full bg-gray-200 object-cover"
                                 :src="member.image"

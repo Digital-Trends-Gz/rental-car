@@ -171,6 +171,12 @@ class WebsiteSettingsController extends Controller
             'about.team_members.*.role' => ['nullable', 'string', 'max:255'],
             'about.team_members.*.description.en' => ['nullable', 'string', 'max:1000'],
             'about.team_members.*.description.ar' => ['nullable', 'string', 'max:1000'],
+            'about_team_member_image_temp_folders' => ['nullable', 'array'],
+            'about_team_member_image_temp_folders.*' => ['nullable', 'array'],
+            'about_team_member_image_temp_folders.*.*' => ['string'],
+            'about_team_member_image_removed_files' => ['nullable', 'array'],
+            'about_team_member_image_removed_files.*' => ['nullable', 'array'],
+            'about_team_member_image_removed_files.*.*' => ['integer'],
             'about.cta_title.en' => ['nullable', 'string', 'max:255'],
             'about.cta_title.ar' => ['nullable', 'string', 'max:255'],
             'about.cta_subtitle.en' => ['nullable', 'string', 'max:2000'],
@@ -624,6 +630,7 @@ class WebsiteSettingsController extends Controller
         $this->syncJsonImageUpload($request, $siteSetting, 'about_team_sarah_image', 'about.team_images.sarah');
         $this->syncJsonImageUpload($request, $siteSetting, 'about_team_michael_image', 'about.team_images.michael');
         $this->syncJsonImageUpload($request, $siteSetting, 'about_team_emily_image', 'about.team_images.emily');
+        $this->syncTeamMemberImageUploads($request, $siteSetting);
 
         return back()->with('success', 'Website settings updated successfully.');
     }
@@ -1031,6 +1038,38 @@ class WebsiteSettingsController extends Controller
         $value = trim((string) ($value ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    private function sanitizeRepeatItems(mixed $items, array $extraFields = []): array
+    {
+        return collect(is_array($items) ? $items : [])
+            ->map(function ($item) use ($extraFields) {
+                if (! is_array($item)) {
+                    return null;
+                }
+
+                $normalized = [
+                    'title' => [
+                        'en' => $this->nullableString(data_get($item, 'title.en')),
+                        'ar' => $this->nullableString(data_get($item, 'title.ar')),
+                    ],
+                    'description' => [
+                        'en' => $this->nullableString(data_get($item, 'description.en')),
+                        'ar' => $this->nullableString(data_get($item, 'description.ar')),
+                    ],
+                ];
+
+                foreach ($extraFields as $field) {
+                    $normalized[$field] = $this->nullableString(data_get($item, $field));
+                }
+
+                $hasContent = collect($normalized)->flatten()->filter(fn ($value) => $this->nullableString($value) !== null)->isNotEmpty();
+
+                return $hasContent ? $normalized : null;
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**
@@ -1563,6 +1602,7 @@ class WebsiteSettingsController extends Controller
                 'michael' => $this->siteSettingFiles($tenant->siteSetting, 'about_team_michael_image'),
                 'emily' => $this->siteSettingFiles($tenant->siteSetting, 'about_team_emily_image'),
             ],
+            'aboutTeamMemberImageFiles' => $this->aboutTeamMemberImageFiles($tenant->siteSetting),
             'actions' => [
                 'update' => route('admin.settings.website.update'),
                 'website' => route('admin.settings.website.edit'),
@@ -1654,6 +1694,24 @@ class WebsiteSettingsController extends Controller
                 'url' => TenantSiteSetting::publicUrlFromPath($file->path),
             ])
             ->values()
+            ->all();
+    }
+
+    private function aboutTeamMemberImageFiles(?TenantSiteSetting $siteSetting): array
+    {
+        if (! $siteSetting) {
+            return [];
+        }
+
+        $members = is_array(data_get($siteSetting->about, 'team_members'))
+            ? data_get($siteSetting->about, 'team_members')
+            : [];
+
+        return collect($members)
+            ->keys()
+            ->mapWithKeys(fn ($index) => [
+                $index => $this->siteSettingFiles($siteSetting, 'about_team_member_image_'.$index),
+            ])
             ->all();
     }
 
@@ -1769,6 +1827,64 @@ class WebsiteSettingsController extends Controller
         $payload = is_array($settings->{$column}) ? $settings->{$column} : [];
         data_set($payload, substr($jsonPath, strlen($column) + 1), $value);
         $settings->update([$column => $payload]);
+    }
+
+    private function syncTeamMemberImageUploads(Request $request, TenantSiteSetting $siteSetting): void
+    {
+        $tempFoldersByIndex = is_array($request->input('about_team_member_image_temp_folders', []))
+            ? $request->input('about_team_member_image_temp_folders', [])
+            : [];
+        $removedIdsByIndex = is_array($request->input('about_team_member_image_removed_files', []))
+            ? $request->input('about_team_member_image_removed_files', [])
+            : [];
+        $indexes = array_unique(array_merge(array_keys($tempFoldersByIndex), array_keys($removedIdsByIndex)));
+
+        if ($indexes === []) {
+            return;
+        }
+
+        $settings = $siteSetting->fresh();
+        if (! $settings) {
+            return;
+        }
+
+        $about = is_array($settings->about) ? $settings->about : [];
+        $members = is_array(data_get($about, 'team_members')) ? data_get($about, 'team_members') : [];
+
+        foreach ($indexes as $index) {
+            if (! array_key_exists($index, $members)) {
+                continue;
+            }
+
+            $collection = 'about_team_member_image_'.$index;
+            $tempFolders = is_array($tempFoldersByIndex[$index] ?? null)
+                ? array_values(array_filter($tempFoldersByIndex[$index]))
+                : [];
+            $removedIds = is_array($removedIdsByIndex[$index] ?? null)
+                ? array_values(array_filter($removedIdsByIndex[$index]))
+                : [];
+
+            if (!empty($tempFolders)) {
+                $existingIds = $settings->files()->where('collection', $collection)->pluck('id')->all();
+                $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+            }
+
+            $this->filePondService->handleFileUpdates($settings, $tempFolders, $removedIds, $collection);
+
+            if (empty($tempFolders) && empty($removedIds)) {
+                continue;
+            }
+
+            $file = $settings->files()->where('collection', $collection)->latest('id')->first();
+            data_set(
+                $members,
+                $index.'.image_url',
+                $file && $file->path ? TenantSiteSetting::publicUrlFromPath($file->path) : null
+            );
+        }
+
+        data_set($about, 'team_members', array_values($members));
+        $settings->update(['about' => $about]);
     }
 
     private function contractPdfDefaults(): array

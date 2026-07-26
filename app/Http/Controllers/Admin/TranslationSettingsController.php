@@ -39,6 +39,8 @@ class TranslationSettingsController extends Controller
             $keyPool = array_merge($keyPool, array_keys($flatBaseByLocale[$locale]), array_keys($flatOverrideByLocale[$locale]));
         }
 
+        $this->addTenantWebsiteContentRows($settings, $supportedLocales, $flatBaseByLocale, $keyPool);
+
         $keys = array_values(array_unique($keyPool));
         sort($keys);
 
@@ -177,6 +179,95 @@ class TranslationSettingsController extends Controller
         }
 
         return $flat;
+    }
+
+    /**
+     * Repeatable tenant website content is stored in tenant_site_settings.about,
+     * but tenants still need to edit its public translations from the same table.
+     */
+    private function addTenantWebsiteContentRows(
+        TenantSiteSetting $settings,
+        array $supportedLocales,
+        array &$flatBaseByLocale,
+        array &$keyPool
+    ): void {
+        $about = is_array($settings->about) ? $settings->about : [];
+
+        foreach ((array) data_get($about, 'values', []) as $index => $item) {
+            $this->addLocalizedContentRow(
+                "tenant_about.values.$index.title",
+                data_get($item, 'title', []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+            $this->addLocalizedContentRow(
+                "tenant_about.values.$index.description",
+                data_get($item, 'description', []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+        }
+
+        foreach ((array) data_get($about, 'team_members', []) as $index => $item) {
+            $this->addLocalizedContentRow(
+                "tenant_about.team_members.$index.name",
+                data_get($item, 'title', []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+            $this->addLocalizedContentRow(
+                "tenant_about.team_members.$index.role",
+                (string) data_get($item, 'role', ''),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+            $this->addLocalizedContentRow(
+                "tenant_about.team_members.$index.bio",
+                data_get($item, 'description', []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+        }
+    }
+
+    private function addLocalizedContentRow(
+        string $key,
+        mixed $value,
+        array $supportedLocales,
+        array &$flatBaseByLocale,
+        array &$keyPool
+    ): void {
+        $hasValue = false;
+
+        foreach ($supportedLocales as $locale) {
+            $text = $this->localizedContentValue($value, $locale);
+            $flatBaseByLocale[$locale][$key] = $text;
+            $hasValue = $hasValue || trim($text) !== '';
+        }
+
+        if ($hasValue) {
+            $keyPool[] = $key;
+        }
+    }
+
+    private function localizedContentValue(mixed $value, string $locale): string
+    {
+        if (is_string($value) || is_numeric($value)) {
+            return (string) $value;
+        }
+
+        if (is_array($value)) {
+            $candidate = $value[$locale] ?? $value['en'] ?? $value['ar'] ?? null;
+
+            return is_string($candidate) || is_numeric($candidate) ? (string) $candidate : '';
+        }
+
+        return '';
     }
 
     private function sanitizeEnabledLocales(mixed $value): array

@@ -13,6 +13,17 @@ import { computed, ref, watch } from 'vue';
 
 type LocalizedText = { en: string | null; ar: string | null };
 type UploadedFilePreview = { id: number; url: string };
+type AboutValueItem = {
+    icon: string | null;
+    title: LocalizedText;
+    description: LocalizedText;
+};
+type AboutTeamMemberItem = {
+    image_url: string | null;
+    title: LocalizedText;
+    role: string | null;
+    description: LocalizedText;
+};
 type PdfTemplateOption = {
     value: string;
     label: LocalizedText;
@@ -67,6 +78,8 @@ const props = defineProps<{
             story_p2: LocalizedText;
             mission_title: LocalizedText;
             mission_subtitle: LocalizedText;
+            values?: AboutValueItem[];
+            team_members?: AboutTeamMemberItem[];
             cta_title: LocalizedText;
             cta_subtitle: LocalizedText;
             cta_browse_text: LocalizedText;
@@ -166,6 +179,7 @@ const props = defineProps<{
         michael?: UploadedFilePreview[];
         emily?: UploadedFilePreview[];
     };
+    aboutTeamMemberImageFiles?: Record<number, UploadedFilePreview[]>;
     actions: {
         update: string;
         website?: string;
@@ -190,6 +204,67 @@ const contentSectionOpen = ref<Record<ContentSectionKey, boolean>>({
 function toggleContentSection(section: ContentSectionKey) {
     contentSectionOpen.value[section] = !contentSectionOpen.value[section];
 }
+
+const aboutValueIconOptions = [
+    { value: 'reliability', label: 'Reliability' },
+    { value: 'transparency', label: 'Transparency' },
+    { value: 'excellence', label: 'Excellence' },
+];
+const fallbackAboutValues = (): AboutValueItem[] => [
+    {
+        icon: 'reliability',
+        title: { en: 'Reliability', ar: 'الموثوقية' },
+        description: {
+            en: 'Every vehicle in our fleet is regularly maintained and inspected to ensure your safety and peace of mind on every journey.',
+            ar: 'تخضع كل سيارة في أسطولنا للصيانة والفحص بانتظام لضمان سلامتك وراحة بالك في كل رحلة.',
+        },
+    },
+    {
+        icon: 'transparency',
+        title: { en: 'Transparency', ar: 'الشفافية' },
+        description: {
+            en: 'No hidden fees, no surprises. We believe in clear, upfront pricing and honest communication with all our customers.',
+            ar: 'لا رسوم مخفية ولا مفاجآت. نؤمن بالتسعير الواضح والتواصل الصادق مع جميع عملائنا.',
+        },
+    },
+    {
+        icon: 'excellence',
+        title: { en: 'Excellence', ar: 'التميز' },
+        description: {
+            en: 'We continuously strive to exceed expectations through superior service, quality vehicles, and innovative solutions.',
+            ar: 'نسعى دائماً لتجاوز التوقعات عبر خدمة مميزة وسيارات عالية الجودة وحلول مبتكرة.',
+        },
+    },
+];
+const fallbackTeamMembers = (): AboutTeamMemberItem[] => [
+    {
+        image_url: props.settings.about?.team_images?.sarah ?? '/images/team/sara.webp',
+        title: { en: 'Sarah Johnson', ar: 'Sarah Johnson' },
+        role: 'CEO & Founder',
+        description: {
+            en: '15+ years in automotive industry with a passion for customer service excellence.',
+            ar: 'أكثر من 15 عاماً في قطاع السيارات مع شغف بالتميز في خدمة العملاء.',
+        },
+    },
+    {
+        image_url: props.settings.about?.team_images?.michael ?? '/images/team/michael.webp',
+        title: { en: 'Michael Chen', ar: 'Michael Chen' },
+        role: 'Operations Director',
+        description: {
+            en: 'Expert in fleet management and logistics with 12 years of industry experience.',
+            ar: 'خبير في إدارة الأسطول والخدمات اللوجستية مع 12 عاماً من الخبرة.',
+        },
+    },
+    {
+        image_url: props.settings.about?.team_images?.emily ?? '/images/team/emily.webp',
+        title: { en: 'Emily Rodriguez', ar: 'Emily Rodriguez' },
+        role: 'Customer Success Manager',
+        description: {
+            en: 'Dedicated to ensuring every customer has an exceptional rental experience.',
+            ar: 'تركز على ضمان حصول كل عميل على تجربة تأجير استثنائية.',
+        },
+    },
+];
 
 const marketCountryOptions = computed(() =>
     [...(props.marketCountryOptions || [])].sort((a, b) => localizedCountryName(a).localeCompare(localizedCountryName(b))),
@@ -289,6 +364,8 @@ const form = useForm({
     about_team_michael_image_removed_files: [] as number[],
     about_team_emily_image_temp_folders: [] as string[],
     about_team_emily_image_removed_files: [] as number[],
+    about_team_member_image_temp_folders: [] as string[][],
+    about_team_member_image_removed_files: [] as number[][],
     seo_og_image_temp_folders: [] as string[],
     seo_og_image_removed_files: [] as number[],
     primary_color: props.settings.primary_color || '#f97316',
@@ -349,6 +426,8 @@ const form = useForm({
             en: props.settings.about?.mission_subtitle?.en ?? '',
             ar: props.settings.about?.mission_subtitle?.ar ?? '',
         },
+        values: props.settings.about?.values?.length ? props.settings.about.values : fallbackAboutValues(),
+        team_members: props.settings.about?.team_members?.length ? props.settings.about.team_members : fallbackTeamMembers(),
         cta_title: {
             en: props.settings.about?.cta_title?.en ?? '',
             ar: props.settings.about?.cta_title?.ar ?? '',
@@ -915,6 +994,7 @@ const heroImageTempFolders = ref<string[]>([]);
 const aboutSarahImageTempFolders = ref<string[]>([]);
 const aboutMichaelImageTempFolders = ref<string[]>([]);
 const aboutEmilyImageTempFolders = ref<string[]>([]);
+const teamMemberImageTempFolders = ref<string[][]>([]);
 const logoRemovedFileIds = ref<number[]>([]);
 const faviconRemovedFileIds = ref<number[]>([]);
 const seoOgImageRemovedFileIds = ref<number[]>([]);
@@ -922,6 +1002,9 @@ const heroImageRemovedFileIds = ref<number[]>([]);
 const aboutSarahImageRemovedFileIds = ref<number[]>([]);
 const aboutMichaelImageRemovedFileIds = ref<number[]>([]);
 const aboutEmilyImageRemovedFileIds = ref<number[]>([]);
+const teamMemberImageRemovedFileIds = ref<number[][]>([]);
+const openAboutValueItems = ref<Record<number, boolean>>({});
+const openTeamMemberItems = ref<Record<number, boolean>>({});
 const showAdvancedBranding = ref(false);
 
 watch(
@@ -971,6 +1054,18 @@ watch(
     },
     { deep: true },
 );
+
+watch(
+    teamMemberImageTempFolders,
+    (value) => {
+        form.about_team_member_image_temp_folders = value.map((folders) => [...(folders || [])]);
+    },
+    { deep: true },
+);
+
+function teamMemberInitialFiles(index: number): UploadedFilePreview[] {
+    return props.aboutTeamMemberImageFiles?.[index] || [];
+}
 
 function copySeoMetaSummary(preview: {
     label: string;
@@ -1124,6 +1219,65 @@ function handleAboutEmilyImageFileRemoved(data: { type: string; fileId?: number 
     }
 }
 
+function handleTeamMemberImageFileRemoved(index: number, data: { type: string; fileId?: number }) {
+    if (data.type === 'existing' && data.fileId) {
+        const current = teamMemberImageRemovedFileIds.value[index] || [];
+        teamMemberImageRemovedFileIds.value[index] = [...new Set([...current, data.fileId])];
+        form.about_team_member_image_removed_files = teamMemberImageRemovedFileIds.value.map((ids) => [...(ids || [])]);
+    }
+}
+
+function addAboutValue() {
+    form.about.values.push({
+        icon: 'reliability',
+        title: { en: '', ar: '' },
+        description: { en: '', ar: '' },
+    });
+    openAboutValueItems.value[form.about.values.length - 1] = true;
+}
+
+function removeAboutValue(index: number) {
+    form.about.values.splice(index, 1);
+    delete openAboutValueItems.value[index];
+}
+
+function toggleAboutValueItem(index: number) {
+    openAboutValueItems.value[index] = !openAboutValueItems.value[index];
+}
+
+function isAboutValueItemOpen(index: number) {
+    return openAboutValueItems.value[index] ?? index === 0;
+}
+
+function addTeamMember() {
+    form.about.team_members.push({
+        image_url: '',
+        title: { en: '', ar: '' },
+        role: '',
+        description: { en: '', ar: '' },
+    });
+    teamMemberImageTempFolders.value.push([]);
+    teamMemberImageRemovedFileIds.value.push([]);
+    openTeamMemberItems.value[form.about.team_members.length - 1] = true;
+}
+
+function removeTeamMember(index: number) {
+    form.about.team_members.splice(index, 1);
+    teamMemberImageTempFolders.value.splice(index, 1);
+    teamMemberImageRemovedFileIds.value.splice(index, 1);
+    form.about_team_member_image_temp_folders = teamMemberImageTempFolders.value.map((folders) => [...(folders || [])]);
+    form.about_team_member_image_removed_files = teamMemberImageRemovedFileIds.value.map((ids) => [...(ids || [])]);
+    delete openTeamMemberItems.value[index];
+}
+
+function toggleTeamMemberItem(index: number) {
+    openTeamMemberItems.value[index] = !openTeamMemberItems.value[index];
+}
+
+function isTeamMemberItemOpen(index: number) {
+    return openTeamMemberItems.value[index] ?? index === 0;
+}
+
 function submit() {
     if (false && seoBlockingPages.value.length > 0) {
         const labels = seoBlockingPages.value.map((page) => page.label).join(', ');
@@ -1178,6 +1332,11 @@ function submit() {
             form.about_team_emily_image_removed_files = [];
             aboutEmilyImageRemovedFileIds.value = [];
             aboutEmilyImageUploadRef.value?.resetFiles();
+
+            teamMemberImageTempFolders.value = [];
+            teamMemberImageRemovedFileIds.value = [];
+            form.about_team_member_image_temp_folders = [];
+            form.about_team_member_image_removed_files = [];
         },
     });
 }
@@ -2049,6 +2208,140 @@ function submit() {
 
                     <div v-show="contentSectionOpen.about" class="grid gap-4 border-t p-5 pt-4 md:grid-cols-2">
                         <div class="space-y-4 rounded-md border bg-muted/20 p-4 md:col-span-2">
+                            <div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <h3 class="text-sm font-semibold">{{ localize('Mission Values', 'قيم المهمة') }}</h3>
+                                        <p class="text-xs text-muted-foreground">
+                                            {{ localize('Repeatable items shown under Mission & Values on the About page.', 'عناصر قابلة للتكرار تظهر تحت قسم المهمة والقيم في صفحة من نحن.') }}
+                                        </p>
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" @click="addAboutValue">
+                                        {{ localize('Add Value', 'إضافة قيمة') }}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div v-for="(valueItem, index) in form.about.values" :key="`about-value-${index}`" class="rounded-md border bg-background">
+                                <div class="flex items-center justify-between gap-3 p-4">
+                                    <button
+                                        type="button"
+                                        class="flex min-w-0 flex-1 items-center justify-between gap-3 text-start"
+                                        :aria-expanded="isAboutValueItemOpen(index)"
+                                        @click="toggleAboutValueItem(index)"
+                                    >
+                                        <span class="truncate text-sm font-semibold">
+                                            {{ valueItem.title.en || valueItem.title.ar || `${localize('Value', 'القيمة')} #${index + 1}` }}
+                                        </span>
+                                        <ChevronDown class="h-4 w-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': isAboutValueItemOpen(index) }" />
+                                    </button>
+                                    <Button type="button" variant="outline" size="sm" @click="removeAboutValue(index)">
+                                        {{ localize('Remove', 'حذف') }}
+                                    </Button>
+                                </div>
+                                <div v-show="isAboutValueItemOpen(index)" class="grid gap-4 border-t p-4 md:grid-cols-2">
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Icon', 'الأيقونة') }}</Label>
+                                        <select v-model="valueItem.icon" :class="selectClass">
+                                            <option v-for="option in aboutValueIconOptions" :key="option.value" :value="option.value">
+                                                {{ option.label }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div></div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Title (EN)', 'العنوان (EN)') }}</Label>
+                                        <Input v-model="valueItem.title.en" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Title (AR)', 'العنوان (AR)') }}</Label>
+                                        <Input v-model="valueItem.title.ar" dir="rtl" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
+                                        <textarea v-model="valueItem.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
+                                        <textarea v-model="valueItem.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 rounded-md border bg-muted/20 p-4 md:col-span-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold">{{ localize('Leadership Team', 'فريق القيادة') }}</h3>
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ localize('Repeatable team members shown on the About page. Use Image URL for each member.', 'أعضاء فريق قابلون للتكرار يظهرون في صفحة من نحن. استخدم رابط الصورة لكل عضو.') }}
+                                    </p>
+                                </div>
+                                <Button type="button" variant="outline" size="sm" @click="addTeamMember">
+                                    {{ localize('Add Member', 'إضافة عضو') }}
+                                </Button>
+                            </div>
+
+                            <div v-for="(member, index) in form.about.team_members" :key="`team-member-${index}`" class="rounded-md border bg-background">
+                                <div class="flex items-center justify-between gap-3 p-4">
+                                    <button
+                                        type="button"
+                                        class="flex min-w-0 flex-1 items-center justify-between gap-3 text-start"
+                                        :aria-expanded="isTeamMemberItemOpen(index)"
+                                        @click="toggleTeamMemberItem(index)"
+                                    >
+                                        <span class="truncate text-sm font-semibold">
+                                            {{ member.title.en || member.title.ar || `${localize('Member', 'العضو')} #${index + 1}` }}
+                                        </span>
+                                        <ChevronDown class="h-4 w-4 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': isTeamMemberItemOpen(index) }" />
+                                    </button>
+                                    <Button type="button" variant="outline" size="sm" @click="removeTeamMember(index)">
+                                        {{ localize('Remove', 'حذف') }}
+                                    </Button>
+                                </div>
+                                <div v-show="isTeamMemberItemOpen(index)" class="grid gap-4 border-t p-4 md:grid-cols-2">
+                                    <div class="space-y-2 md:col-span-2">
+                                        <Label>{{ localize('Image Upload', 'رفع الصورة') }}</Label>
+                                        <FileUpload
+                                            v-model="teamMemberImageTempFolders[index]"
+                                            :initial-files="teamMemberInitialFiles(index)"
+                                            :allow-multiple="false"
+                                            :max-files="1"
+                                            :allowed-file-types="['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']"
+                                            :collection="`about_team_member_image_${index}`"
+                                            theme="light"
+                                            width="100%"
+                                            @file-removed="(data) => handleTeamMemberImageFileRemoved(index, data)"
+                                        />
+                                        <p v-if="member.image_url && !teamMemberInitialFiles(index).length" class="text-xs text-muted-foreground">
+                                            {{ localize('Current fallback image:', 'الصورة الحالية الاحتياطية:') }} {{ member.image_url }}
+                                        </p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Name (EN)', 'الاسم (EN)') }}</Label>
+                                        <Input v-model="member.title.en" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Name (AR)', 'الاسم (AR)') }}</Label>
+                                        <Input v-model="member.title.ar" dir="rtl" />
+                                    </div>
+                                    <div class="space-y-2 md:col-span-2">
+                                        <Label>{{ localize('Role', 'المسمى الوظيفي') }}</Label>
+                                        <Input v-model="member.role" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Bio (EN)', 'النبذة (EN)') }}</Label>
+                                        <textarea v-model="member.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>{{ localize('Bio (AR)', 'النبذة (AR)') }}</Label>
+                                        <textarea v-model="member.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="false" class="space-y-4 rounded-md border bg-muted/20 p-4 md:col-span-2">
                             <div>
                                 <h3 class="text-sm font-semibold">{{ localize('Team Images', 'صور الفريق') }}</h3>
                                 <p class="text-xs text-muted-foreground">
