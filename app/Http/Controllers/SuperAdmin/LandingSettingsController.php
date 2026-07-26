@@ -761,6 +761,10 @@ class LandingSettingsController extends Controller
         ));
         $rows = array_merge($rows, $this->flatten(PlanTranslations::defaultTranslationTree()));
         $rows = array_merge($rows, [
+            'fleet.fuel_types.gasoline' => 'Gasoline',
+            'fleet.fuel_types.diesel' => 'Diesel',
+            'fleet.fuel_types.electric' => 'Electric',
+            'fleet.fuel_types.hybrid' => 'Hybrid',
             'navigation.nav_clients' => 'Clients',
             'navigation.nav_contact' => 'Contact',
             'static_pages.privacy_policy.title' => 'Privacy Policy',

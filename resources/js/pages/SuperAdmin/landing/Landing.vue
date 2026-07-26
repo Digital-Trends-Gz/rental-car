@@ -665,6 +665,17 @@ const brokenTenantLogos = ref<Record<number, boolean>>({});
 const brokenCarTenantLogos = ref<Record<number, boolean>>({});
 const brokenLandingImages = ref<Record<string, boolean>>({});
 const currentYear = new Date().getFullYear();
+const normalizeCtaLabel = (label: string) => {
+    const hasArrow = /[←→]/.test(label);
+
+    return {
+        hasArrow,
+        text: label
+            .replace(/^\s*[←→]\s*/, '')
+            .replace(/\s*[←→]\s*$/, '')
+            .trim(),
+    };
+};
 const registerUrl = computed(() => localizedPath(mainRegister().url));
 const plansUrl = computed(() => localizedPath('/pricing-plans'));
 const navigationCtaLabel = computed(() => {
@@ -678,6 +689,8 @@ const navigationCtaLabel = computed(() => {
         'Start Free Trial'
     );
 });
+const navigationCta = computed(() => normalizeCtaLabel(navigationCtaLabel.value));
+const browseCarsCta = computed(() => normalizeCtaLabel(t('landing.browse_cars')));
 const plansDetailsLabel = computed(() =>
     translatedLabel('landing.plans_view_details', 'View Details'),
 );
@@ -1338,21 +1351,47 @@ onUnmounted(() => {
                         </p>
                         <div
                             class="mt-8 grid grid-cols-2 items-center justify-center gap-3 sm:inline-flex sm:flex-row"
+                            :dir="isRtlLocale ? 'rtl' : 'ltr'"
                         >
                             <Button
                                 as-child
                                 size="lg"
                                 class="gradient-button h-12 min-w-0 rounded-full px-4 text-sm sm:px-8 sm:text-base"
                             >
-                                <Link :href="registerUrl">{{
-                                    navigationCtaLabel
-                                }}</Link>
+                                <Link
+                                    :href="registerUrl"
+                                    class="inline-flex items-center justify-center gap-2"
+                                    dir="ltr"
+                                >
+                                    <span :dir="isRtlLocale ? 'rtl' : 'ltr'">
+                                        {{ navigationCta.text }}
+                                    </span>
+                                    <span
+                                        v-if="navigationCta.hasArrow"
+                                        aria-hidden="true"
+                                        class="shrink-0"
+                                        :class="isRtlLocale ? 'order-first' : 'order-last'"
+                                    >
+                                        {{ isRtlLocale ? '←' : '→' }}
+                                    </span>
+                                </Link>
                             </Button>
                             <a
                                 :href="browseCarsHref"
-                                class="inline-flex h-12 min-w-0 items-center justify-center rounded-full border border-input px-4 text-sm font-medium hover:bg-accent sm:px-8 sm:text-base"
+                                class="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-full border border-input px-4 text-sm font-medium hover:bg-accent sm:px-8 sm:text-base"
+                                dir="ltr"
                             >
-                                {{ t('landing.browse_cars') }}
+                                <span :dir="isRtlLocale ? 'rtl' : 'ltr'">
+                                    {{ browseCarsCta.text }}
+                                </span>
+                                <span
+                                    v-if="browseCarsCta.hasArrow"
+                                    aria-hidden="true"
+                                    class="shrink-0"
+                                    :class="isRtlLocale ? 'order-first' : 'order-last'"
+                                >
+                                    {{ isRtlLocale ? '←' : '→' }}
+                                </span>
                             </a>
                         </div>
 

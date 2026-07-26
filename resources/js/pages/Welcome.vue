@@ -28,6 +28,13 @@ const { t } = useTrans();
 const homeCars = $page.props.homeCars as Car[];
 const currentTenant = computed(() => $page.props.current_tenant);
 const tenantSiteSettings = computed(() => $page.props.tenant_site_settings ?? null);
+const availableLocales = computed<string[]>(() =>
+    Array.isArray($page.props?.available_locales) && $page.props.available_locales.length
+        ? $page.props.available_locales
+        : Array.isArray($page.props?.availableLocales) && $page.props.availableLocales.length
+            ? $page.props.availableLocales
+            : ['en']
+);
 const locale = computed(() => String($page.props.locale || 'en'));
 const isRtl = computed(() => ['ar', 'ur', 'fa'].includes(locale.value));
 const questionMark = computed(() => (isRtl.value ? '؟' : '?'));
@@ -51,18 +58,75 @@ function localizedText(node: any, fallback: string): string {
 const heroTitle = computed(() => localizedText(tenantSiteSettings.value?.hero?.title, ''));
 const heroDescription = computed(() => localizedText(tenantSiteSettings.value?.hero?.description, ''));
 const heroButtonText = computed(() => localizedText(tenantSiteSettings.value?.hero?.button_text, ''));
+const normalizeCtaLabel = (label: string) =>
+    label
+        .replace(/^\s*[←→]\s*/, '')
+        .replace(/\s*[←→]\s*$/, '')
+        .trim();
+const heroButtonLabel = computed(() => normalizeCtaLabel(heroButtonText.value || t('welcome.browse_fleet')));
 const heroButtonLink = computed(() => tenantSiteSettings.value?.hero?.button_link || null);
 const hasCustomHeroTitle = computed(() => heroTitle.value.trim() !== '');
+const localeAwarePathname = (pathname: string) => {
+    const normalizedPath = (pathname.startsWith('/') ? pathname : `/${pathname}`) || '/';
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : String($page.url || '/');
+    const firstSegment = currentPath.split('/').filter(Boolean)[0] || '';
+    const normalizedLocales = availableLocales.value.map((item) => String(item || '').toLowerCase());
+    const urlLocale = normalizedLocales.includes(firstSegment.toLowerCase()) ? firstSegment : '';
+    const activeLocale = urlLocale || locale.value.toLowerCase().split('-')[0];
+
+    if (
+        activeLocale &&
+        normalizedLocales.includes(activeLocale) &&
+        (normalizedPath === `/${activeLocale}` || normalizedPath.startsWith(`/${activeLocale}/`))
+    ) {
+        return normalizedPath;
+    }
+
+    if (activeLocale && activeLocale !== 'en' && normalizedLocales.includes(activeLocale)) {
+        return normalizedPath === '/' ? `/${activeLocale}` : `/${activeLocale}${normalizedPath}`;
+    }
+
+    return normalizedPath;
+};
+const localizedPath = (path: string) => {
+    const value = String(path || '/').trim() || '/';
+
+    if (value.startsWith('#')) {
+        return value;
+    }
+
+    if (/^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith('//')) {
+        try {
+            const parsedUrl = new URL(value, typeof window !== 'undefined' ? window.location.origin : undefined);
+            const localizedPathname = localeAwarePathname(parsedUrl.pathname);
+
+            return `${parsedUrl.origin}${localizedPathname}${parsedUrl.search}${parsedUrl.hash}`;
+        } catch {
+            return value;
+        }
+    }
+
+    return localeAwarePathname(value);
+};
 const fleetUrl = computed(() =>
-    currentTenant.value?.slug
-        ? tenantFleet(currentTenant.value.slug).url
-        : mainFleet().url
+    localizedPath(
+        currentTenant.value?.slug
+            ? tenantFleet(currentTenant.value.slug).url
+            : mainFleet().url
+    )
 );
 const aboutUrl = computed(() =>
-    currentTenant.value?.slug
-        ? tenantAbout(currentTenant.value.slug).url
-        : mainAbout().url
+    localizedPath(
+        currentTenant.value?.slug
+            ? tenantAbout(currentTenant.value.slug).url
+            : mainAbout().url
+    )
 );
+const heroButtonHref = computed(() => {
+    const value = String(heroButtonLink.value || '').trim();
+
+    return value ? localizedPath(value) : fleetUrl.value;
+});
 </script>
 
 <template>
@@ -138,14 +202,19 @@ const aboutUrl = computed(() =>
                                 </p>
                             </div>
 
-                            <div class="flex flex-col gap-4 sm:flex-row">
+                            <div
+                                class="flex flex-col gap-4 sm:flex-row"
+                                :dir="isRtl ? 'rtl' : 'ltr'"
+                            >
                                 <a
-                                    :href="heroButtonLink || fleetUrl"
-                                    class="group cursor-pointer inline-flex items-center justify-center rounded-xl text-md px-5 py-2 font-semibold text-white shadow-xl transition-all duration-200 hover:scale-105 hover:shadow-2xl"
+                                    :href="heroButtonHref"
+                                    class="group inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2 text-md font-semibold text-white shadow-xl transition-all duration-200 hover:scale-105 hover:shadow-2xl"
                                     :style="{ backgroundImage: accentGradient }"
+                                    dir="ltr"
                                 >
                                     <svg
-                                        class="mr-2 h-5 w-5 transition-transform group-hover:translate-x-1"
+                                        class="h-5 w-5 shrink-0 transition-transform"
+                                        :class="isRtl ? 'order-first group-hover:-translate-x-1' : 'order-last group-hover:translate-x-1'"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -154,15 +223,16 @@ const aboutUrl = computed(() =>
                                             stroke-linecap="round"
                                             stroke-linejoin="round"
                                             stroke-width="2"
-                                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                                            :d="isRtl ? 'M11 17l-5-5m0 0l5-5m-5 5h12' : 'M13 7l5 5m0 0l-5 5m5-5H6'"
                                         ></path>
                                     </svg>
-                                    {{ heroButtonText || t('welcome.browse_fleet') }}
+                                    <span :dir="isRtl ? 'rtl' : 'ltr'">{{ heroButtonLabel }}</span>
                                 </a>
                                 <a
                                     :href="aboutUrl"
                                     class="inline-flex cursor-pointer items-center justify-center rounded-xl border-2 border-gray-300 bg-white text-md px-5 py-2 font-semibold text-gray-700 transition-all duration-200 hover:shadow-lg"
                                     :style="{ borderColor: `${primaryColor}66`, color: primaryColor }"
+                                    :dir="isRtl ? 'rtl' : 'ltr'"
                                 >
                                     {{ t('welcome.learn_more') }}
                                 </a>

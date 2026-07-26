@@ -17,6 +17,9 @@ const { themeVars } = useBrandTheme();
 
 const page = usePage<any>();
 const currentTenant = computed(() => page.props.current_tenant);
+const availableLocaleCodes = computed<string[]>(() =>
+    Array.isArray(page.props.available_locales) ? page.props.available_locales.map(String) : [],
+);
 
 type RegisterPrefill = {
     name?: string | null;
@@ -53,41 +56,27 @@ const baseProtocol = computed(() =>
 );
 const buildUrl = (host: string, path: string) =>
     `${baseProtocol.value}//${host}${path}`;
-const localizedAuthPath = (path: string) => {
-    const locale = String(page.props.locale || '').trim();
-    const availableLocales = Array.isArray(page.props.available_locales)
-        ? page.props.available_locales.map(String)
-        : [];
+const localizedPath = (path: string) => {
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const localeCode = String(page.props.locale || '').trim();
 
-    return locale && availableLocales.includes(locale) ? `/${locale}${path}` : path;
+    if (!localeCode || !availableLocaleCodes.value.includes(localeCode)) {
+        return normalizedPath;
+    }
+
+    return normalizedPath === '/' ? `/${localeCode}` : `/${localeCode}${normalizedPath}`;
 };
 
 const loginUrl = computed(() => {
     const slug = currentTenant.value?.slug;
-    const loginPath = localizedAuthPath(slug ? '/login' : '/tenant/login');
+    const loginPath = localizedPath(slug ? '/login' : '/tenant/login');
 
     return slug
         ? buildUrl(`${slug}.${page.props.app_url_base}`, loginPath)
         : buildUrl(page.props.app_url_base, loginPath);
 });
-const homeUrl = computed(() =>
-    '/',
-);
-const localizedPublicPath = (path: string) => {
-    const localeCode = String(locale.value || '').trim();
-    const currentPath =
-        typeof window !== 'undefined' ? window.location.pathname : '';
-
-    if (
-        localeCode &&
-        (currentPath === `/${localeCode}` ||
-            currentPath.startsWith(`/${localeCode}/`))
-    ) {
-        return `/${localeCode}${path}`;
-    }
-
-    return path;
-};
+const homeUrl = computed(() => localizedPath('/'));
+const localizedPublicPath = (path: string) => localizedPath(path);
 const termsUrl = computed(() => localizedPublicPath('/terms-of-use'));
 
 const isArabic = computed(() => page.props.locale === 'ar');

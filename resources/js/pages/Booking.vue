@@ -87,6 +87,23 @@ const normalizeLocationName = (value: string | null | undefined): string => Stri
 const formatMoney = (value: number): string => (Number.isFinite(value) ? Math.max(0, value).toFixed(2) : '0.00');
 const moneyWithCurrency = (value: number | string): string => `${value} ${currencySymbol.value}`;
 const discountWithCurrency = (value: number | string): string => `- ${value} ${currencySymbol.value}`;
+const translatedOr = (key: string, fallback: string): string => {
+    const value = t(key);
+
+    return value === key ? fallback : value;
+};
+const prettifyValue = (value: string): string =>
+    value
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+const normalizedKey = (value: string): string => String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+const fuelTypeLabel = (fuelType: string): string => {
+    const normalized = normalizedKey(fuelType);
+
+    return translatedOr(`fleet.fuel_types.${normalized}`, prettifyValue(String(fuelType || '')));
+};
 const toMoneyNumber = (value: unknown): number => {
     const parsed = Number(value ?? 0);
     return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
@@ -736,7 +753,7 @@ watch(
                                                         d="M13 10V3L4 14h7v7l9-11h-7z"
                                                     ></path>
                                                 </svg>
-                                                {{ car.fuel_type }}
+                                                {{ fuelTypeLabel(car.fuel_type) }}
                                             </span>
                                         </div>
                                     </div>

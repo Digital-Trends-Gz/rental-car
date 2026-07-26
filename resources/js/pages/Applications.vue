@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SeoHead from '@/components/SeoHead.vue';
 import HomeLayout from '@/layouts/HomeLayout.vue';
-import { register as mainRegister } from '@/routes';
+import { register as mainRegister } from '@/routes/index';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Apple, ArrowRight, BriefcaseBusiness, Building2, Check, Play, Smartphone, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
