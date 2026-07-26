@@ -14,11 +14,12 @@ const { t, locale } = useTrans();
 const currentTenant = computed(() => page.props.current_tenant);
 const tenantSiteSettings = computed(() => page.props.tenant_site_settings ?? null);
 const tenantSlug = computed(() => currentTenant.value?.slug ?? null);
-const fleetUrl = computed(() =>
-    tenantSlug.value ? tenantFleet(tenantSlug.value).url : mainFleet().url
-);
-const aboutUrl = computed(() =>
-    tenantSlug.value ? tenantAbout(tenantSlug.value).url : mainAbout().url
+const availableLocales = computed<string[]>(() =>
+    Array.isArray(page.props?.available_locales) && page.props.available_locales.length
+        ? page.props.available_locales
+        : Array.isArray(page.props?.availableLocales) && page.props.availableLocales.length
+            ? page.props.availableLocales
+            : ['en']
 );
 const canSubmitTenantTicket = computed(() => !!tenantSlug.value);
 const contactPageContent = computed(() => tenantSiteSettings.value?.contact_page ?? null);
@@ -40,6 +41,57 @@ const localizedText = (value: any, fallback = ''): string => {
 
     return fallback;
 };
+
+const localeAwarePathname = (pathname: string) => {
+    const normalizedPath = (pathname.startsWith('/') ? pathname : `/${pathname}`) || '/';
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : String(page.url || '/');
+    const firstSegment = currentPath.split('/').filter(Boolean)[0] || '';
+    const normalizedLocales = availableLocales.value.map((item) => String(item || '').toLowerCase());
+    const urlLocale = normalizedLocales.includes(firstSegment.toLowerCase()) ? firstSegment : '';
+    const activeLocale = urlLocale || String(locale.value || 'en').toLowerCase().split('-')[0];
+
+    if (
+        activeLocale &&
+        normalizedLocales.includes(activeLocale) &&
+        (normalizedPath === `/${activeLocale}` || normalizedPath.startsWith(`/${activeLocale}/`))
+    ) {
+        return normalizedPath;
+    }
+
+    if (activeLocale && activeLocale !== 'en' && normalizedLocales.includes(activeLocale)) {
+        return normalizedPath === '/' ? `/${activeLocale}` : `/${activeLocale}${normalizedPath}`;
+    }
+
+    return normalizedPath;
+};
+
+const localizedPath = (path: string) => {
+    const value = String(path || '/').trim() || '/';
+
+    if (value.startsWith('#')) {
+        return value;
+    }
+
+    if (/^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith('//')) {
+        try {
+            const parsedUrl = new URL(value, typeof window !== 'undefined' ? window.location.origin : undefined);
+            const localizedPathname = localeAwarePathname(parsedUrl.pathname);
+
+            return `${parsedUrl.origin}${localizedPathname}${parsedUrl.search}${parsedUrl.hash}`;
+        } catch {
+            return value;
+        }
+    }
+
+    return localeAwarePathname(value);
+};
+
+const fleetUrl = computed(() =>
+    localizedPath(tenantSlug.value ? tenantFleet(tenantSlug.value).url : mainFleet().url)
+);
+const aboutUrl = computed(() =>
+    localizedPath(tenantSlug.value ? tenantAbout(tenantSlug.value).url : mainAbout().url)
+);
 
 const contactPhone = computed(() => tenantSiteSettings.value?.contact?.phone || '+1 (555) 123-4567');
 const contactEmail = computed(() => tenantSiteSettings.value?.contact?.email || 'info@realrentcar.com');
