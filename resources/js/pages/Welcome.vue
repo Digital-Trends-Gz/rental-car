@@ -65,6 +65,7 @@ const normalizeCtaLabel = (label: string) =>
         .trim();
 const heroButtonLabel = computed(() => normalizeCtaLabel(heroButtonText.value || t('welcome.browse_fleet')));
 const heroButtonLink = computed(() => tenantSiteSettings.value?.hero?.button_link || null);
+const heroImageUrl = computed(() => tenantSiteSettings.value?.hero?.image_url || '/images/hero_image.png');
 const hasCustomHeroTitle = computed(() => heroTitle.value.trim() !== '');
 const localeAwarePathname = (pathname: string) => {
     const normalizedPath = (pathname.startsWith('/') ? pathname : `/${pathname}`) || '/';
@@ -291,7 +292,7 @@ const heroButtonHref = computed(() => {
                                     class="absolute -inset-4 rounded-3xl bg-gradient-to-r from-orange-500/20 to-orange-600/20 blur-2xl"
                                 ></div>
                                 <img
-                                    src="/images/hero_image.png"
+                                    :src="heroImageUrl"
                                     :alt="t('welcome.hero_image_alt')"
                                     class="relative h-auto max-w-full rounded-2xl drop-shadow-2xl"
                                 />

@@ -2,6 +2,7 @@
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import { useTrans } from '@/composables/useTrans';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,6 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const page = usePage();
+const { t } = useTrans();
 const auth = computed(() => page.props.auth);
 const notifications = ref<Array<{
     id: string;
@@ -155,12 +157,12 @@ const mainNavItems = computed<NavItem[]>(() => {
 
     return [
         {
-            title: 'Reservations',
+            title: t('client_pages.layout.nav.reservations'),
             href: reservationsIndex(slug).url,
             icon: FileCheck,
         },
         {
-            title: 'Support',
+            title: t('client_pages.layout.nav.support'),
             href: supportIndex(slug).url,
             icon: LifeBuoy,
         },
@@ -185,9 +187,9 @@ const mainNavItems = computed<NavItem[]>(() => {
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" class="w-[300px] p-6">
-                            <SheetTitle class="sr-only"
-                                >Navigation Menu</SheetTitle
-                            >
+                            <SheetTitle class="sr-only">
+                                {{ t('client_pages.layout.nav.navigation_menu') }}
+                            </SheetTitle>
                             <SheetHeader class="flex justify-start text-left">
                                 <AppLogoIcon
                                     class="size-6 fill-current text-black dark:text-white"
@@ -271,7 +273,9 @@ const mainNavItems = computed<NavItem[]>(() => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" class="w-96 p-0">
                             <div class="flex items-center justify-between border-b px-3 py-2">
-                                <p class="text-sm font-semibold">Notifications</p>
+                                <p class="text-sm font-semibold">
+                                    {{ t('client_pages.layout.notifications.title') }}
+                                </p>
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -279,7 +283,7 @@ const mainNavItems = computed<NavItem[]>(() => {
                                     :disabled="unreadCount <= 0"
                                     @click="markAllAsRead"
                                 >
-                                    Mark all read
+                                    {{ t('client_pages.layout.notifications.mark_all_read') }}
                                 </Button>
                             </div>
                             <div class="max-h-96 overflow-y-auto">
@@ -304,7 +308,7 @@ const mainNavItems = computed<NavItem[]>(() => {
                                                 class="block text-xs font-medium text-primary hover:underline"
                                                 @click="markAsRead(item.id)"
                                             >
-                                                Open
+                                                {{ t('client_pages.layout.notifications.open') }}
                                             </a>
                                             <button
                                                 v-if="!item.read_at"
@@ -312,13 +316,13 @@ const mainNavItems = computed<NavItem[]>(() => {
                                                 class="block text-xs text-muted-foreground hover:text-foreground"
                                                 @click="markAsRead(item.id)"
                                             >
-                                                Mark read
+                                                {{ t('client_pages.layout.notifications.mark_read') }}
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                                 <div v-if="notifications.length === 0" class="px-3 py-6 text-center text-sm text-muted-foreground">
-                                    No notifications.
+                                    {{ t('client_pages.layout.notifications.empty') }}
                                 </div>
                             </div>
                         </DropdownMenuContent>

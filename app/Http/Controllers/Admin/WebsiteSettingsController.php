@@ -138,6 +138,11 @@ class WebsiteSettingsController extends Controller
             'hero.button_text.en' => ['nullable', 'string', 'max:100'],
             'hero.button_text.ar' => ['nullable', 'string', 'max:100'],
             'hero.button_link' => ['nullable', 'string', 'max:500'],
+            'hero.image_url' => ['nullable', 'string', 'max:1000'],
+            'hero_image_temp_folders' => ['array'],
+            'hero_image_temp_folders.*' => ['string'],
+            'hero_image_removed_files' => ['array'],
+            'hero_image_removed_files.*' => ['integer'],
 
             'about.title.en' => ['nullable', 'string', 'max:255'],
             'about.title.ar' => ['nullable', 'string', 'max:255'],
@@ -153,6 +158,19 @@ class WebsiteSettingsController extends Controller
             'about.mission_title.ar' => ['nullable', 'string', 'max:255'],
             'about.mission_subtitle.en' => ['nullable', 'string', 'max:2000'],
             'about.mission_subtitle.ar' => ['nullable', 'string', 'max:2000'],
+            'about.values' => ['nullable', 'array'],
+            'about.values.*.icon' => ['nullable', 'string', 'max:50'],
+            'about.values.*.title.en' => ['nullable', 'string', 'max:255'],
+            'about.values.*.title.ar' => ['nullable', 'string', 'max:255'],
+            'about.values.*.description.en' => ['nullable', 'string', 'max:1000'],
+            'about.values.*.description.ar' => ['nullable', 'string', 'max:1000'],
+            'about.team_members' => ['nullable', 'array'],
+            'about.team_members.*.image_url' => ['nullable', 'string', 'max:1000'],
+            'about.team_members.*.title.en' => ['nullable', 'string', 'max:255'],
+            'about.team_members.*.title.ar' => ['nullable', 'string', 'max:255'],
+            'about.team_members.*.role' => ['nullable', 'string', 'max:255'],
+            'about.team_members.*.description.en' => ['nullable', 'string', 'max:1000'],
+            'about.team_members.*.description.ar' => ['nullable', 'string', 'max:1000'],
             'about.cta_title.en' => ['nullable', 'string', 'max:255'],
             'about.cta_title.ar' => ['nullable', 'string', 'max:255'],
             'about.cta_subtitle.en' => ['nullable', 'string', 'max:2000'],
@@ -161,6 +179,21 @@ class WebsiteSettingsController extends Controller
             'about.cta_browse_text.ar' => ['nullable', 'string', 'max:100'],
             'about.cta_contact_text.en' => ['nullable', 'string', 'max:100'],
             'about.cta_contact_text.ar' => ['nullable', 'string', 'max:100'],
+            'about.team_images.sarah' => ['nullable', 'string', 'max:1000'],
+            'about.team_images.michael' => ['nullable', 'string', 'max:1000'],
+            'about.team_images.emily' => ['nullable', 'string', 'max:1000'],
+            'about_team_sarah_image_temp_folders' => ['array'],
+            'about_team_sarah_image_temp_folders.*' => ['string'],
+            'about_team_sarah_image_removed_files' => ['array'],
+            'about_team_sarah_image_removed_files.*' => ['integer'],
+            'about_team_michael_image_temp_folders' => ['array'],
+            'about_team_michael_image_temp_folders.*' => ['string'],
+            'about_team_michael_image_removed_files' => ['array'],
+            'about_team_michael_image_removed_files.*' => ['integer'],
+            'about_team_emily_image_temp_folders' => ['array'],
+            'about_team_emily_image_temp_folders.*' => ['string'],
+            'about_team_emily_image_removed_files' => ['array'],
+            'about_team_emily_image_removed_files.*' => ['integer'],
 
             'contact.phone' => ['nullable', 'string', 'max:100'],
             'contact.email' => ['nullable', 'email', 'max:255'],
@@ -324,6 +357,7 @@ class WebsiteSettingsController extends Controller
                         'ar' => $this->nullableString(data_get($validated, 'hero.button_text.ar')),
                     ],
                     'button_link' => $this->nullableString(data_get($validated, 'hero.button_link')),
+                    'image_url' => $this->nullableString(data_get($validated, 'hero.image_url')),
                 ],
                 'about' => [
                     'title' => [
@@ -354,6 +388,8 @@ class WebsiteSettingsController extends Controller
                         'en' => $this->nullableString(data_get($validated, 'about.mission_subtitle.en')),
                         'ar' => $this->nullableString(data_get($validated, 'about.mission_subtitle.ar')),
                     ],
+                    'values' => $this->sanitizeRepeatItems(data_get($validated, 'about.values', []), ['icon']),
+                    'team_members' => $this->sanitizeRepeatItems(data_get($validated, 'about.team_members', []), ['role', 'image_url']),
                     'cta_title' => [
                         'en' => $this->nullableString(data_get($validated, 'about.cta_title.en')),
                         'ar' => $this->nullableString(data_get($validated, 'about.cta_title.ar')),
@@ -369,6 +405,11 @@ class WebsiteSettingsController extends Controller
                     'cta_contact_text' => [
                         'en' => $this->nullableString(data_get($validated, 'about.cta_contact_text.en')),
                         'ar' => $this->nullableString(data_get($validated, 'about.cta_contact_text.ar')),
+                    ],
+                    'team_images' => [
+                        'sarah' => $this->nullableString(data_get($validated, 'about.team_images.sarah')),
+                        'michael' => $this->nullableString(data_get($validated, 'about.team_images.michael')),
+                        'emily' => $this->nullableString(data_get($validated, 'about.team_images.emily')),
                     ],
                 ],
                 'contact' => [
@@ -579,6 +620,10 @@ class WebsiteSettingsController extends Controller
         );
 
         $this->syncSeoOgImageUpload($request, $siteSetting);
+        $this->syncJsonImageUpload($request, $siteSetting, 'hero_image', 'hero.image_url');
+        $this->syncJsonImageUpload($request, $siteSetting, 'about_team_sarah_image', 'about.team_images.sarah');
+        $this->syncJsonImageUpload($request, $siteSetting, 'about_team_michael_image', 'about.team_images.michael');
+        $this->syncJsonImageUpload($request, $siteSetting, 'about_team_emily_image', 'about.team_images.emily');
 
         return back()->with('success', 'Website settings updated successfully.');
     }
@@ -1493,47 +1538,11 @@ class WebsiteSettingsController extends Controller
     {
         $tenant->loadMissing('siteSetting.files');
 
-        $logoFiles = $tenant->siteSetting
-            ? $tenant->siteSetting->files()
-                ->where('collection', 'logo')
-                ->get()
-                ->map(function ($file) {
-                    return [
-                        'id' => $file->id,
-                        'url' => TenantSiteSetting::publicUrlFromPath($file->path),
-                    ];
-                })
-                ->values()
-                ->all()
-            : [];
+        $logoFiles = $this->siteSettingFiles($tenant->siteSetting, 'logo');
 
-        $seoOgImageFiles = $tenant->siteSetting
-            ? $tenant->siteSetting->files()
-                ->where('collection', 'seo_og_image')
-                ->get()
-                ->map(function ($file) {
-                    return [
-                        'id' => $file->id,
-                        'url' => TenantSiteSetting::publicUrlFromPath($file->path),
-                    ];
-                })
-                ->values()
-                ->all()
-            : [];
+        $seoOgImageFiles = $this->siteSettingFiles($tenant->siteSetting, 'seo_og_image');
 
-        $faviconFiles = $tenant->siteSetting
-            ? $tenant->siteSetting->files()
-                ->where('collection', 'favicon')
-                ->get()
-                ->map(function ($file) {
-                    return [
-                        'id' => $file->id,
-                        'url' => TenantSiteSetting::publicUrlFromPath($file->path),
-                    ];
-                })
-                ->values()
-                ->all()
-            : [];
+        $faviconFiles = $this->siteSettingFiles($tenant->siteSetting, 'favicon');
 
         return [
             'tenant' => [
@@ -1548,6 +1557,12 @@ class WebsiteSettingsController extends Controller
             'logoFiles' => $logoFiles,
             'faviconFiles' => $faviconFiles,
             'seoOgImageFiles' => $seoOgImageFiles,
+            'heroImageFiles' => $this->siteSettingFiles($tenant->siteSetting, 'hero_image'),
+            'aboutTeamImageFiles' => [
+                'sarah' => $this->siteSettingFiles($tenant->siteSetting, 'about_team_sarah_image'),
+                'michael' => $this->siteSettingFiles($tenant->siteSetting, 'about_team_michael_image'),
+                'emily' => $this->siteSettingFiles($tenant->siteSetting, 'about_team_emily_image'),
+            ],
             'actions' => [
                 'update' => route('admin.settings.website.update'),
                 'website' => route('admin.settings.website.edit'),
@@ -1622,12 +1637,17 @@ class WebsiteSettingsController extends Controller
 
     private function contractSignatureFiles(?TenantSiteSetting $siteSetting): array
     {
+        return $this->siteSettingFiles($siteSetting, 'contract_incharge_signature');
+    }
+
+    private function siteSettingFiles(?TenantSiteSetting $siteSetting, string $collection): array
+    {
         if (! $siteSetting) {
             return [];
         }
 
         return $siteSetting->files()
-            ->where('collection', 'contract_incharge_signature')
+            ->where('collection', $collection)
             ->get()
             ->map(fn ($file) => [
                 'id' => $file->id,
@@ -1716,6 +1736,39 @@ class WebsiteSettingsController extends Controller
         $siteSetting->update(['seo' => $seo]);
 
         return;
+    }
+
+    private function syncJsonImageUpload(Request $request, TenantSiteSetting $siteSetting, string $collection, string $jsonPath): void
+    {
+        $tempFolders = is_array($request->input("{$collection}_temp_folders", []))
+            ? array_values(array_filter($request->input("{$collection}_temp_folders", [])))
+            : [];
+        $removedIds = is_array($request->input("{$collection}_removed_files", []))
+            ? array_values(array_filter($request->input("{$collection}_removed_files", [])))
+            : [];
+
+        if (empty($tempFolders) && empty($removedIds)) {
+            return;
+        }
+
+        $this->syncSingleFileUpload($request, $siteSetting, $collection);
+
+        $file = $siteSetting->files()
+            ->where('collection', $collection)
+            ->latest('id')
+            ->first();
+
+        $value = $file && $file->path ? TenantSiteSetting::publicUrlFromPath($file->path) : null;
+        $settings = $siteSetting->fresh();
+        $column = explode('.', $jsonPath, 2)[0] ?? null;
+
+        if (! $settings || ! $column) {
+            return;
+        }
+
+        $payload = is_array($settings->{$column}) ? $settings->{$column} : [];
+        data_set($payload, substr($jsonPath, strlen($column) + 1), $value);
+        $settings->update([$column => $payload]);
     }
 
     private function contractPdfDefaults(): array

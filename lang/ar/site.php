@@ -2072,63 +2072,129 @@ return array (
   ),
   'client_pages' => 
   array (
+    'layout' => 
+    array (
+      'nav' => 
+      array (
+        'reservations' => 'الحجوزات',
+        'support' => 'الدعم',
+        'navigation_menu' => 'قائمة التنقل',
+      ),
+      'notifications' => 
+      array (
+        'title' => 'الإشعارات',
+        'mark_all_read' => 'تحديد الكل كمقروء',
+        'open' => 'فتح',
+        'mark_read' => 'تحديد كمقروء',
+        'empty' => 'لا توجد إشعارات.',
+      ),
+    ),
     'reservations' => 
     array (
+      'statuses' => 
+      array (
+        'pending' => 'قيد الانتظار',
+        'confirmed' => 'مؤكد',
+        'active' => 'نشط',
+        'completed' => 'مكتمل',
+        'cancelled' => 'ملغي',
+        'no_show' => 'لم يحضر',
+      ),
+      'payment_statuses' => 
+      array (
+        'pending' => 'قيد الانتظار',
+        'completed' => 'مكتملة',
+        'failed' => 'فشلت',
+        'refunded' => 'مستردة',
+        'cancelled' => 'ملغاة',
+      ),
+      'payment_methods' => 
+      array (
+        'cash' => 'نقداً',
+        'card' => 'بطاقة',
+        'bank_transfer' => 'حوالة بنكية',
+        'online' => 'دفع إلكتروني',
+        'stripe' => 'Stripe',
+        'myfatoorah' => 'MyFatoorah',
+      ),
       'index' => 
       array (
-        'head_title' => 'My Reservations',
-        'title' => 'My Reservations',
-        'days' => ':count days',
-        'empty' => 'No reservations found.',
+        'head_title' => 'حجوزاتي',
+        'title' => 'حجوزاتي',
+        'days' => ':count يوم',
+        'empty' => 'لا توجد حجوزات.',
+        'force_extension' => 
+        array (
+          'rental_update' => 'تحديث على الحجز',
+          'open' => 'فتح',
+        ),
+        'extension_requests' => 
+        array (
+          'title' => 'طلبات التمديد',
+          'pending' => ':count قيد الانتظار',
+          'contract' => 'العقد',
+          'new_end_date' => 'تاريخ الانتهاء الجديد',
+          'extra' => 'الإضافة',
+          'extra_days' => ':count يوم',
+          'reason' => 'السبب',
+          'approve' => 'موافقة',
+          'reject' => 'رفض',
+          'statuses' => 
+          array (
+            'pending' => 'قيد الانتظار',
+            'approved' => 'تمت الموافقة',
+            'rejected' => 'مرفوض',
+          ),
+        ),
         'table' => 
         array (
-          'car' => 'Car',
-          'dates' => 'Dates',
-          'total' => 'Total',
-          'status' => 'Status',
+          'car' => 'السيارة',
+          'dates' => 'التواريخ',
+          'total' => 'الإجمالي',
+          'status' => 'الحالة',
         ),
       ),
       'show' => 
       array (
-        'head_title' => 'Reservation :number',
-        'back' => 'Back',
-        'print' => 'Print',
-        'days' => ':count days',
-        'no_payments' => 'No payments recorded yet.',
+        'head_title' => 'الحجز :number',
+        'back' => 'رجوع',
+        'print' => 'طباعة',
+        'days' => ':count يوم',
+        'no_payments' => 'لا توجد دفعات مسجلة بعد.',
         'sections' => 
         array (
-          'client' => 'Client',
-          'car' => 'Car',
-          'reservation_details' => 'Reservation Details',
-          'amounts' => 'Amounts',
-          'payments' => 'Payments',
+          'client' => 'العميل',
+          'car' => 'السيارة',
+          'reservation_details' => 'تفاصيل الحجز',
+          'amounts' => 'المبالغ',
+          'payments' => 'الدفعات',
         ),
         'fields' => 
         array (
-          'status' => 'Status',
-          'total' => 'Total',
-          'name' => 'Name',
-          'email' => 'Email',
-          'car' => 'Car',
-          'plate' => 'Plate',
-          'start_date' => 'Start Date',
-          'end_date' => 'End Date',
-          'duration' => 'Duration',
-          'pickup_location' => 'Pickup Location',
-          'return_location' => 'Return Location',
-          'cancelled_at' => 'Cancelled At',
-          'reason' => 'Reason',
-          'daily_rate' => 'Daily Rate',
-          'subtotal' => 'Subtotal',
-          'tax' => 'Tax',
-          'discount' => 'Discount',
+          'status' => 'الحالة',
+          'total' => 'الإجمالي',
+          'name' => 'الاسم',
+          'email' => 'البريد الإلكتروني',
+          'car' => 'السيارة',
+          'plate' => 'رقم اللوحة',
+          'start_date' => 'تاريخ البداية',
+          'end_date' => 'تاريخ النهاية',
+          'duration' => 'المدة',
+          'pickup_location' => 'موقع الاستلام',
+          'return_location' => 'موقع التسليم',
+          'cancelled_at' => 'تاريخ الإلغاء',
+          'reason' => 'السبب',
+          'daily_rate' => 'السعر اليومي',
+          'subtotal' => 'المجموع الفرعي',
+          'tax' => 'الضريبة',
+          'discount' => 'الخصم',
         ),
         'payment_table' => 
         array (
-          'amount' => 'Amount',
-          'method' => 'Method',
-          'status' => 'Status',
-          'processed' => 'Processed',
+          'amount' => 'المبلغ',
+          'method' => 'الطريقة',
+          'status' => 'الحالة',
+          'processed' => 'تاريخ المعالجة',
         ),
       ),
     ),
@@ -2136,75 +2202,75 @@ return array (
     array (
       'index' => 
       array (
-        'head_title' => 'Support Tickets',
-        'title' => 'Support Tickets',
-        'new_ticket' => 'New Ticket',
-        'empty' => 'No support tickets found.',
+        'head_title' => 'تذاكر الدعم',
+        'title' => 'تذاكر الدعم',
+        'new_ticket' => 'تذكرة جديدة',
+        'empty' => 'لا توجد تذاكر دعم.',
         'table' => 
         array (
-          'ticket_number' => 'Ticket #',
-          'subject' => 'Subject',
-          'status' => 'Status',
-          'created' => 'Created',
+          'ticket_number' => 'رقم التذكرة',
+          'subject' => 'الموضوع',
+          'status' => 'الحالة',
+          'created' => 'تاريخ الإنشاء',
         ),
         'statuses' => 
         array (
-          'open' => 'Open',
-          'in_progress' => 'In Progress',
-          'closed' => 'Closed',
+          'open' => 'مفتوحة',
+          'in_progress' => 'قيد المعالجة',
+          'closed' => 'مغلقة',
         ),
       ),
       'create' => 
       array (
-        'head_title' => 'Create New Ticket',
-        'title' => 'Create New Support Ticket',
-        'subtitle' => 'Need help? Submit a support ticket and our team will get back to you as soon as possible.',
-        'back_to_tickets' => 'Back to Tickets',
-        'cancel' => 'Cancel',
-        'submit' => 'Create Ticket',
-        'submitting' => 'Creating...',
-        'subject_counter' => ':count/255 characters',
-        'detail_help' => 'Please provide as much detail as possible to help us assist you better.',
-        'tips_title' => 'Tips for submitting a ticket',
+        'head_title' => 'إنشاء تذكرة جديدة',
+        'title' => 'إنشاء تذكرة دعم جديدة',
+        'subtitle' => 'تحتاج إلى مساعدة؟ أرسل تذكرة دعم وسيتواصل معك فريقنا في أقرب وقت.',
+        'back_to_tickets' => 'العودة إلى التذاكر',
+        'cancel' => 'إلغاء',
+        'submit' => 'إنشاء التذكرة',
+        'submitting' => 'جاري الإنشاء...',
+        'subject_counter' => ':count/255 حرف',
+        'detail_help' => 'يرجى إضافة أكبر قدر ممكن من التفاصيل حتى نتمكن من مساعدتك بشكل أفضل.',
+        'tips_title' => 'نصائح لإرسال التذكرة',
         'fields' => 
         array (
-          'subject' => 'Subject',
-          'message' => 'Message',
+          'subject' => 'الموضوع',
+          'message' => 'الرسالة',
         ),
         'placeholders' => 
         array (
-          'subject' => 'Brief description of your issue',
-          'message' => 'Provide detailed information about your issue...',
+          'subject' => 'وصف مختصر للمشكلة',
+          'message' => 'اكتب تفاصيل المشكلة...',
         ),
         'aria' => 
         array (
-          'subject' => 'Ticket subject',
-          'message' => 'Ticket message',
+          'subject' => 'موضوع التذكرة',
+          'message' => 'رسالة التذكرة',
         ),
         'tips' => 
         array (
-          1 => 'Use a clear and descriptive subject line.',
-          2 => 'Include relevant details such as error messages or screenshots.',
-          3 => 'Describe the steps to reproduce the issue.',
-          4 => 'Our support team typically responds within 24 hours.',
+          1 => 'استخدم عنواناً واضحاً يصف المشكلة.',
+          2 => 'أرفق التفاصيل المهمة مثل رسائل الخطأ أو لقطات الشاشة.',
+          3 => 'اشرح خطوات تكرار المشكلة.',
+          4 => 'عادةً يرد فريق الدعم خلال 24 ساعة.',
         ),
       ),
       'show' => 
       array (
-        'head_title' => 'Ticket #:id',
-        'back' => 'Back',
-        'no_messages' => 'No messages yet. Start the conversation below.',
-        'support_team' => 'Support Team',
-        'you' => 'You',
-        'reply_label' => 'Reply to ticket',
-        'reply_placeholder' => 'Type your message here... (Ctrl+Enter to send)',
-        'send' => 'Send',
-        'sending' => 'Sending...',
+        'head_title' => 'تذكرة رقم :id',
+        'back' => 'رجوع',
+        'no_messages' => 'لا توجد رسائل بعد. ابدأ المحادثة بالأسفل.',
+        'support_team' => 'فريق الدعم',
+        'you' => 'أنت',
+        'reply_label' => 'الرد على التذكرة',
+        'reply_placeholder' => 'اكتب رسالتك هنا... (Ctrl+Enter للإرسال)',
+        'send' => 'إرسال',
+        'sending' => 'جاري الإرسال...',
         'statuses' => 
         array (
-          'open' => 'Open',
-          'in_progress' => 'In Progress',
-          'closed' => 'Closed',
+          'open' => 'مفتوحة',
+          'in_progress' => 'قيد المعالجة',
+          'closed' => 'مغلقة',
         ),
       ),
     ),

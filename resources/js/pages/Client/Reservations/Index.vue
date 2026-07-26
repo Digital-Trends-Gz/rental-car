@@ -48,6 +48,22 @@ const props = defineProps<{
 const { t } = useTrans();
 const page = usePage<any>();
 
+const reservationStatusLabels: Record<string, string> = {
+    pending: t('client_pages.reservations.statuses.pending'),
+    confirmed: t('client_pages.reservations.statuses.confirmed'),
+    active: t('client_pages.reservations.statuses.active'),
+    completed: t('client_pages.reservations.statuses.completed'),
+    cancelled: t('client_pages.reservations.statuses.cancelled'),
+    canceled: t('client_pages.reservations.statuses.cancelled'),
+    no_show: t('client_pages.reservations.statuses.no_show'),
+};
+
+const extensionStatusLabels: Record<string, string> = {
+    pending: t('client_pages.reservations.index.extension_requests.statuses.pending'),
+    approved: t('client_pages.reservations.index.extension_requests.statuses.approved'),
+    rejected: t('client_pages.reservations.index.extension_requests.statuses.rejected'),
+};
+
 const forceExtensionNotification = computed(() => {
     const notifications = Array.isArray(page.props?.auth?.notifications) ? page.props.auth.notifications : [];
 
@@ -92,7 +108,10 @@ function rejectExtensionRequest(url: string) {
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <p class="text-sm font-semibold">
-                            {{ forceExtensionNotification.title || 'Rental update' }}
+                            {{
+                                forceExtensionNotification.title ||
+                                t('client_pages.reservations.index.force_extension.rental_update')
+                            }}
                         </p>
                         <p class="mt-1 text-sm">
                             {{ forceExtensionNotification.message }}
@@ -103,7 +122,7 @@ function rejectExtensionRequest(url: string) {
                         :href="forceExtensionNotification.url"
                         class="text-sm font-medium text-amber-900 underline underline-offset-2"
                     >
-                        Open
+                        {{ t('client_pages.reservations.index.force_extension.open') }}
                     </Link>
                 </div>
             </div>
@@ -113,9 +132,15 @@ function rejectExtensionRequest(url: string) {
                 class="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm"
             >
                 <div class="flex items-center justify-between gap-3">
-                    <h2 class="text-lg font-semibold text-amber-950">Extension Requests</h2>
+                    <h2 class="text-lg font-semibold text-amber-950">
+                        {{ t('client_pages.reservations.index.extension_requests.title') }}
+                    </h2>
                     <span class="text-sm text-amber-900">
-                        {{ props.extensionRequests.length }} pending
+                        {{
+                            t('client_pages.reservations.index.extension_requests.pending', {
+                                count: props.extensionRequests.length,
+                            })
+                        }}
                     </span>
                 </div>
 
@@ -127,7 +152,11 @@ function rejectExtensionRequest(url: string) {
                     <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div class="space-y-1">
                             <div class="text-sm font-semibold text-amber-950">
-                                {{ request.contract_number || 'Contract' }} - {{ request.status_label }}
+                                {{
+                                    request.contract_number ||
+                                    t('client_pages.reservations.index.extension_requests.contract')
+                                }}
+                                - {{ extensionStatusLabels[request.status] || request.status_label }}
                             </div>
                             <div class="text-sm text-gray-700">
                                 {{ request.car_name || '-' }}
@@ -136,22 +165,34 @@ function rejectExtensionRequest(url: string) {
                                 </span>
                             </div>
                             <div class="text-sm text-gray-700">
-                                New end date: {{ request.new_end_date || '-' }}
+                                {{
+                                    t('client_pages.reservations.index.extension_requests.new_end_date')
+                                }}:
+                                {{ request.new_end_date || '-' }}
                             </div>
                             <div class="text-sm text-gray-700">
-                                Extra: {{ props.currency.symbol }}{{ Number(request.extra_amount).toFixed(2) }}
-                                <span class="text-gray-500">/ {{ request.extra_days }} days</span>
+                                {{ t('client_pages.reservations.index.extension_requests.extra') }}:
+                                {{ props.currency.symbol }}{{ Number(request.extra_amount).toFixed(2) }}
+                                <span class="text-gray-500">
+                                    /
+                                    {{
+                                        t('client_pages.reservations.index.extension_requests.extra_days', {
+                                            count: request.extra_days,
+                                        })
+                                    }}
+                                </span>
                             </div>
                             <div v-if="request.reason" class="text-sm text-gray-700">
-                                Reason: {{ request.reason }}
+                                {{ t('client_pages.reservations.index.extension_requests.reason') }}:
+                                {{ request.reason }}
                             </div>
                         </div>
                         <div class="flex gap-2">
                             <Button type="button" @click="approveExtensionRequest(request.approve_url)">
-                                Approve
+                                {{ t('client_pages.reservations.index.extension_requests.approve') }}
                             </Button>
                             <Button type="button" variant="outline" @click="rejectExtensionRequest(request.reject_url)">
-                                Reject
+                                {{ t('client_pages.reservations.index.extension_requests.reject') }}
                             </Button>
                         </div>
                     </div>
@@ -256,7 +297,9 @@ function rejectExtensionRequest(url: string) {
                                 {{ props.currency.symbol }}
                                 {{ Number(res.total_amount).toFixed(2) }}
                             </td>
-                            <td class="px-4 py-3">{{ res.status }}</td>
+                            <td class="px-4 py-3">
+                                {{ reservationStatusLabels[res.status] || res.status }}
+                            </td>
                         </tr>
                         <tr v-if="props.reservations.data.length === 0">
                             <td

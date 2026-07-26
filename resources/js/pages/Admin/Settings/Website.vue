@@ -8,9 +8,11 @@ import SearchableSelect from '@/components/SearchableSelect.vue';
 import { getCurrencyOptions } from '@/lib/currencies';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { ChevronDown } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 type LocalizedText = { en: string | null; ar: string | null };
+type UploadedFilePreview = { id: number; url: string };
 type PdfTemplateOption = {
     value: string;
     label: LocalizedText;
@@ -55,6 +57,7 @@ const props = defineProps<{
             description: LocalizedText;
             button_text: LocalizedText;
             button_link: string | null;
+            image_url?: string | null;
         };
         about: {
             title: LocalizedText;
@@ -68,6 +71,11 @@ const props = defineProps<{
             cta_subtitle: LocalizedText;
             cta_browse_text: LocalizedText;
             cta_contact_text: LocalizedText;
+            team_images?: {
+                sarah?: string | null;
+                michael?: string | null;
+                emily?: string | null;
+            };
         };
         contact: {
             phone: string | null;
@@ -149,9 +157,15 @@ const props = defineProps<{
     marketCountryOptions: CountryOption[];
     marketCityOptionsByCountry: Record<string, CityOption[]>;
     pdfTemplateOptions: PdfTemplateOption[];
-    logoFiles: Array<{ id: number; url: string }>;
-    faviconFiles: Array<{ id: number; url: string }>;
-    seoOgImageFiles?: Array<{ id: number; url: string }>;
+    logoFiles: UploadedFilePreview[];
+    faviconFiles: UploadedFilePreview[];
+    seoOgImageFiles?: UploadedFilePreview[];
+    heroImageFiles?: UploadedFilePreview[];
+    aboutTeamImageFiles?: {
+        sarah?: UploadedFilePreview[];
+        michael?: UploadedFilePreview[];
+        emily?: UploadedFilePreview[];
+    };
     actions: {
         update: string;
         website?: string;
@@ -164,6 +178,19 @@ const { locale } = useTrans();
 const page = usePage<any>();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 const selectClass = 'h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
+type ContentSectionKey = 'hero' | 'about' | 'pdfHeader' | 'contactPage' | 'contactFooter';
+const contentSectionOpen = ref<Record<ContentSectionKey, boolean>>({
+    hero: true,
+    about: false,
+    pdfHeader: false,
+    contactPage: false,
+    contactFooter: false,
+});
+
+function toggleContentSection(section: ContentSectionKey) {
+    contentSectionOpen.value[section] = !contentSectionOpen.value[section];
+}
+
 const marketCountryOptions = computed(() =>
     [...(props.marketCountryOptions || [])].sort((a, b) => localizedCountryName(a).localeCompare(localizedCountryName(b))),
 );
@@ -254,6 +281,14 @@ const form = useForm({
     favicon_url: props.settings.favicon_url ?? '',
     favicon_temp_folders: [] as string[],
     favicon_removed_files: [] as number[],
+    hero_image_temp_folders: [] as string[],
+    hero_image_removed_files: [] as number[],
+    about_team_sarah_image_temp_folders: [] as string[],
+    about_team_sarah_image_removed_files: [] as number[],
+    about_team_michael_image_temp_folders: [] as string[],
+    about_team_michael_image_removed_files: [] as number[],
+    about_team_emily_image_temp_folders: [] as string[],
+    about_team_emily_image_removed_files: [] as number[],
     seo_og_image_temp_folders: [] as string[],
     seo_og_image_removed_files: [] as number[],
     primary_color: props.settings.primary_color || '#f97316',
@@ -283,6 +318,7 @@ const form = useForm({
             ar: props.settings.hero?.button_text?.ar ?? '',
         },
         button_link: props.settings.hero?.button_link ?? '',
+        image_url: props.settings.hero?.image_url ?? '',
     },
     about: {
         title: {
@@ -328,6 +364,11 @@ const form = useForm({
         cta_contact_text: {
             en: props.settings.about?.cta_contact_text?.en ?? '',
             ar: props.settings.about?.cta_contact_text?.ar ?? '',
+        },
+        team_images: {
+            sarah: props.settings.about?.team_images?.sarah ?? '',
+            michael: props.settings.about?.team_images?.michael ?? '',
+            emily: props.settings.about?.team_images?.emily ?? '',
         },
     },
     contact: {
@@ -864,11 +905,23 @@ const seoCopyMessage = ref('');
 const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
 const faviconUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
 const seoFileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
+const heroImageUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
+const aboutSarahImageUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
+const aboutMichaelImageUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
+const aboutEmilyImageUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
 const logoTempFolders = ref<string[]>([]);
 const faviconTempFolders = ref<string[]>([]);
+const heroImageTempFolders = ref<string[]>([]);
+const aboutSarahImageTempFolders = ref<string[]>([]);
+const aboutMichaelImageTempFolders = ref<string[]>([]);
+const aboutEmilyImageTempFolders = ref<string[]>([]);
 const logoRemovedFileIds = ref<number[]>([]);
 const faviconRemovedFileIds = ref<number[]>([]);
 const seoOgImageRemovedFileIds = ref<number[]>([]);
+const heroImageRemovedFileIds = ref<number[]>([]);
+const aboutSarahImageRemovedFileIds = ref<number[]>([]);
+const aboutMichaelImageRemovedFileIds = ref<number[]>([]);
+const aboutEmilyImageRemovedFileIds = ref<number[]>([]);
 const showAdvancedBranding = ref(false);
 
 watch(
@@ -883,6 +936,38 @@ watch(
     faviconTempFolders,
     (value) => {
         form.favicon_temp_folders = [...value];
+    },
+    { deep: true },
+);
+
+watch(
+    heroImageTempFolders,
+    (value) => {
+        form.hero_image_temp_folders = [...value];
+    },
+    { deep: true },
+);
+
+watch(
+    aboutSarahImageTempFolders,
+    (value) => {
+        form.about_team_sarah_image_temp_folders = [...value];
+    },
+    { deep: true },
+);
+
+watch(
+    aboutMichaelImageTempFolders,
+    (value) => {
+        form.about_team_michael_image_temp_folders = [...value];
+    },
+    { deep: true },
+);
+
+watch(
+    aboutEmilyImageTempFolders,
+    (value) => {
+        form.about_team_emily_image_temp_folders = [...value];
     },
     { deep: true },
 );
@@ -1011,6 +1096,34 @@ function handleSeoOgImageFileRemoved(data: { type: string; fileId?: number }) {
     }
 }
 
+function handleHeroImageFileRemoved(data: { type: string; fileId?: number }) {
+    if (data.type === 'existing' && data.fileId) {
+        heroImageRemovedFileIds.value.push(data.fileId);
+        form.hero_image_removed_files = [...new Set(heroImageRemovedFileIds.value)];
+    }
+}
+
+function handleAboutSarahImageFileRemoved(data: { type: string; fileId?: number }) {
+    if (data.type === 'existing' && data.fileId) {
+        aboutSarahImageRemovedFileIds.value.push(data.fileId);
+        form.about_team_sarah_image_removed_files = [...new Set(aboutSarahImageRemovedFileIds.value)];
+    }
+}
+
+function handleAboutMichaelImageFileRemoved(data: { type: string; fileId?: number }) {
+    if (data.type === 'existing' && data.fileId) {
+        aboutMichaelImageRemovedFileIds.value.push(data.fileId);
+        form.about_team_michael_image_removed_files = [...new Set(aboutMichaelImageRemovedFileIds.value)];
+    }
+}
+
+function handleAboutEmilyImageFileRemoved(data: { type: string; fileId?: number }) {
+    if (data.type === 'existing' && data.fileId) {
+        aboutEmilyImageRemovedFileIds.value.push(data.fileId);
+        form.about_team_emily_image_removed_files = [...new Set(aboutEmilyImageRemovedFileIds.value)];
+    }
+}
+
 function submit() {
     if (false && seoBlockingPages.value.length > 0) {
         const labels = seoBlockingPages.value.map((page) => page.label).join(', ');
@@ -1041,6 +1154,30 @@ function submit() {
             form.seo_og_image_removed_files = [];
             seoOgImageRemovedFileIds.value = [];
             seoFileUploadRef.value?.resetFiles();
+
+            heroImageTempFolders.value = [];
+            form.hero_image_temp_folders = [];
+            form.hero_image_removed_files = [];
+            heroImageRemovedFileIds.value = [];
+            heroImageUploadRef.value?.resetFiles();
+
+            aboutSarahImageTempFolders.value = [];
+            form.about_team_sarah_image_temp_folders = [];
+            form.about_team_sarah_image_removed_files = [];
+            aboutSarahImageRemovedFileIds.value = [];
+            aboutSarahImageUploadRef.value?.resetFiles();
+
+            aboutMichaelImageTempFolders.value = [];
+            form.about_team_michael_image_temp_folders = [];
+            form.about_team_michael_image_removed_files = [];
+            aboutMichaelImageRemovedFileIds.value = [];
+            aboutMichaelImageUploadRef.value?.resetFiles();
+
+            aboutEmilyImageTempFolders.value = [];
+            form.about_team_emily_image_temp_folders = [];
+            form.about_team_emily_image_removed_files = [];
+            aboutEmilyImageRemovedFileIds.value = [];
+            aboutEmilyImageUploadRef.value?.resetFiles();
         },
     });
 }
@@ -1820,13 +1957,40 @@ function submit() {
                     </div>
                 </section>
 
-                <section class="rounded-lg border p-5 space-y-4">
-                    <div>
-                        <h2 class="text-lg font-semibold">{{ localize('Hero Section', 'القسم الرئيسي') }}</h2>
-                        <p class="text-sm text-muted-foreground">{{ localize('Main banner texts for the tenant homepage.', 'النصوص الرئيسية لواجهة الصفحة الرئيسية الخاصة بالمستأجر.') }}</p>
-                    </div>
+                <section class="rounded-lg border">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-4 p-5 text-start"
+                        :aria-expanded="contentSectionOpen.hero"
+                        @click="toggleContentSection('hero')"
+                    >
+                        <div>
+                            <h2 class="text-lg font-semibold">{{ localize('Hero Section', 'القسم الرئيسي') }}</h2>
+                            <p class="text-sm text-muted-foreground">{{ localize('Main banner texts for the tenant homepage.', 'النصوص الرئيسية لواجهة الصفحة الرئيسية الخاصة بالمستأجر.') }}</p>
+                        </div>
+                        <ChevronDown class="h-5 w-5 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': contentSectionOpen.hero }" />
+                    </button>
 
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <div v-show="contentSectionOpen.hero" class="grid gap-4 border-t p-5 pt-4 md:grid-cols-2">
+                        <div class="space-y-2 md:col-span-2">
+                            <Label>{{ localize('Hero Image', 'صورة القسم الرئيسي') }}</Label>
+                            <FileUpload
+                                ref="heroImageUploadRef"
+                                v-model="heroImageTempFolders"
+                                :initial-files="heroImageFiles || []"
+                                :allow-multiple="false"
+                                :max-files="1"
+                                :allowed-file-types="['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']"
+                                collection="hero_image"
+                                theme="light"
+                                width="100%"
+                                @file-removed="handleHeroImageFileRemoved"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                {{ localize('Upload the image shown on the homepage hero. A new upload replaces the previous image.', 'ارفع الصورة الظاهرة في القسم الرئيسي للصفحة الرئيسية. أي رفع جديد سيستبدل الصورة السابقة.') }}
+                            </p>
+                        </div>
+
                         <div class="space-y-2">
                             <Label for="hero_title_en">{{ localize('Hero Title (EN)', 'عنوان القسم الرئيسي (EN)') }}</Label>
                             <Input id="hero_title_en" v-model="form.hero.title.en" placeholder="Rent the perfect car today" />
@@ -1869,13 +2033,77 @@ function submit() {
                     </div>
                 </section>
 
-                <section class="rounded-lg border p-5 space-y-4">
-                    <div>
-                        <h2 class="text-lg font-semibold">{{ localize('About Page', 'صفحة من نحن') }}</h2>
-                        <p class="text-sm text-muted-foreground">{{ localize('Editable content for public About page.', 'محتوى قابل للتعديل لصفحة من نحن العامة.') }}</p>
-                    </div>
+                <section class="rounded-lg border">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-4 p-5 text-start"
+                        :aria-expanded="contentSectionOpen.about"
+                        @click="toggleContentSection('about')"
+                    >
+                        <div>
+                            <h2 class="text-lg font-semibold">{{ localize('About Page', 'صفحة من نحن') }}</h2>
+                            <p class="text-sm text-muted-foreground">{{ localize('Editable content for public About page.', 'محتوى قابل للتعديل لصفحة من نحن العامة.') }}</p>
+                        </div>
+                        <ChevronDown class="h-5 w-5 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': contentSectionOpen.about }" />
+                    </button>
 
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <div v-show="contentSectionOpen.about" class="grid gap-4 border-t p-5 pt-4 md:grid-cols-2">
+                        <div class="space-y-4 rounded-md border bg-muted/20 p-4 md:col-span-2">
+                            <div>
+                                <h3 class="text-sm font-semibold">{{ localize('Team Images', 'صور الفريق') }}</h3>
+                                <p class="text-xs text-muted-foreground">
+                                    {{ localize('Upload the three team member images shown on the About page.', 'ارفع صور أعضاء الفريق الثلاثة الظاهرة في صفحة من نحن.') }}
+                                </p>
+                            </div>
+                            <div class="grid gap-4 md:grid-cols-3">
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Sarah Image', 'صورة Sarah') }}</Label>
+                                    <FileUpload
+                                        ref="aboutSarahImageUploadRef"
+                                        v-model="aboutSarahImageTempFolders"
+                                        :initial-files="aboutTeamImageFiles?.sarah || []"
+                                        :allow-multiple="false"
+                                        :max-files="1"
+                                        :allowed-file-types="['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']"
+                                        collection="about_team_sarah_image"
+                                        theme="light"
+                                        width="100%"
+                                        @file-removed="handleAboutSarahImageFileRemoved"
+                                    />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Michael Image', 'صورة Michael') }}</Label>
+                                    <FileUpload
+                                        ref="aboutMichaelImageUploadRef"
+                                        v-model="aboutMichaelImageTempFolders"
+                                        :initial-files="aboutTeamImageFiles?.michael || []"
+                                        :allow-multiple="false"
+                                        :max-files="1"
+                                        :allowed-file-types="['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']"
+                                        collection="about_team_michael_image"
+                                        theme="light"
+                                        width="100%"
+                                        @file-removed="handleAboutMichaelImageFileRemoved"
+                                    />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ localize('Emily Image', 'صورة Emily') }}</Label>
+                                    <FileUpload
+                                        ref="aboutEmilyImageUploadRef"
+                                        v-model="aboutEmilyImageTempFolders"
+                                        :initial-files="aboutTeamImageFiles?.emily || []"
+                                        :allow-multiple="false"
+                                        :max-files="1"
+                                        :allowed-file-types="['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']"
+                                        collection="about_team_emily_image"
+                                        theme="light"
+                                        width="100%"
+                                        @file-removed="handleAboutEmilyImageFileRemoved"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="space-y-2">
                             <Label for="about_title_en">{{ localize('Page Title (EN)', 'عنوان الصفحة (EN)') }}</Label>
                             <Input id="about_title_en" v-model="form.about.title.en" />
@@ -1999,15 +2227,23 @@ function submit() {
                     </div>
                 </section>
 
-                <section class="rounded-lg border p-5 space-y-4">
-                    <div>
-                        <h2 class="text-lg font-semibold">{{ localize('Contract PDF Header', 'ترويسة العقد') }}</h2>
-                        <p class="text-sm text-muted-foreground">
-                            {{ localize('Editable company header content printed at the top of the contract PDF.', 'محتوى ترويسة الشركة الذي يظهر في أعلى ملف العقد.') }}
-                        </p>
-                    </div>
+                <section class="rounded-lg border">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-4 p-5 text-start"
+                        :aria-expanded="contentSectionOpen.pdfHeader"
+                        @click="toggleContentSection('pdfHeader')"
+                    >
+                        <div>
+                            <h2 class="text-lg font-semibold">{{ localize('Contract PDF Header', 'ترويسة العقد') }}</h2>
+                            <p class="text-sm text-muted-foreground">
+                                {{ localize('Editable company header content printed at the top of the contract PDF.', 'محتوى ترويسة الشركة الذي يظهر في أعلى ملف العقد.') }}
+                            </p>
+                        </div>
+                        <ChevronDown class="h-5 w-5 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': contentSectionOpen.pdfHeader }" />
+                    </button>
 
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <div v-show="contentSectionOpen.pdfHeader" class="grid gap-4 border-t p-5 pt-4 md:grid-cols-2">
                         <div class="space-y-2 md:col-span-2">
                             <Label for="pdf_template_contract">{{ localize('Contract PDF Template', 'قالب PDF للعقد') }}</Label>
                             <select
@@ -2100,13 +2336,21 @@ function submit() {
                     </div>
                 </section>
 
-                <section class="rounded-lg border p-5 space-y-4">
-                    <div>
-                        <h2 class="text-lg font-semibold">{{ localize('Contact Page', 'صفحة اتصل بنا') }}</h2>
-                        <p class="text-sm text-muted-foreground">{{ localize('Editable titles and business hours for public Contact page.', 'العناوين وساعات العمل القابلة للتعديل في صفحة اتصل بنا العامة.') }}</p>
-                    </div>
+                <section class="rounded-lg border">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-4 p-5 text-start"
+                        :aria-expanded="contentSectionOpen.contactPage"
+                        @click="toggleContentSection('contactPage')"
+                    >
+                        <div>
+                            <h2 class="text-lg font-semibold">{{ localize('Contact Page', 'صفحة اتصل بنا') }}</h2>
+                            <p class="text-sm text-muted-foreground">{{ localize('Editable titles and business hours for public Contact page.', 'العناوين وساعات العمل القابلة للتعديل في صفحة اتصل بنا العامة.') }}</p>
+                        </div>
+                        <ChevronDown class="h-5 w-5 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': contentSectionOpen.contactPage }" />
+                    </button>
 
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <div v-show="contentSectionOpen.contactPage" class="grid gap-4 border-t p-5 pt-4 md:grid-cols-2">
                         <div class="space-y-2">
                             <Label for="contact_page_title_en">{{ localize('Page Title (EN)', 'عنوان الصفحة (EN)') }}</Label>
                             <Input id="contact_page_title_en" v-model="form.contact_page.title.en" />
@@ -2177,13 +2421,21 @@ function submit() {
                     </div>
                 </section>
 
-                <section class="rounded-lg border p-5 space-y-4">
-                    <div>
-                        <h2 class="text-lg font-semibold">{{ localize('Contact & Footer (MVP)', 'التواصل والتذييل') }}</h2>
-                        <p class="text-sm text-muted-foreground">{{ localize('Basic public contact info and footer description.', 'معلومات التواصل العامة ووصف التذييل.') }}</p>
-                    </div>
+                <section class="rounded-lg border">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-4 p-5 text-start"
+                        :aria-expanded="contentSectionOpen.contactFooter"
+                        @click="toggleContentSection('contactFooter')"
+                    >
+                        <div>
+                            <h2 class="text-lg font-semibold">{{ localize('Contact & Footer (MVP)', 'التواصل والتذييل') }}</h2>
+                            <p class="text-sm text-muted-foreground">{{ localize('Basic public contact info and footer description.', 'معلومات التواصل العامة ووصف التذييل.') }}</p>
+                        </div>
+                        <ChevronDown class="h-5 w-5 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': contentSectionOpen.contactFooter }" />
+                    </button>
 
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <div v-show="contentSectionOpen.contactFooter" class="grid gap-4 border-t p-5 pt-4 md:grid-cols-2">
                         <div class="space-y-2">
                             <Label for="contact_phone">{{ localize('Phone', 'الهاتف') }}</Label>
                             <Input id="contact_phone" v-model="form.contact.phone" placeholder="+965 ..." />

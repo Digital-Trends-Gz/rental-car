@@ -20,6 +20,29 @@ const availableLocales = computed<string[]>(() =>
 );
 const aboutContent = computed(() => tenantSiteSettings.value?.about ?? null);
 const seo = computed(() => page.props.seo ?? null);
+const teamMembers = computed(() => [
+    {
+        key: 'sarah',
+        image: aboutContent.value?.team_images?.sarah || '/images/team/sara.webp',
+        name: t('about.team.members.sarah.name'),
+        role: t('about.team.members.sarah.role'),
+        bio: t('about.team.members.sarah.bio'),
+    },
+    {
+        key: 'michael',
+        image: aboutContent.value?.team_images?.michael || '/images/team/michael.webp',
+        name: t('about.team.members.michael.name'),
+        role: t('about.team.members.michael.role'),
+        bio: t('about.team.members.michael.bio'),
+    },
+    {
+        key: 'emily',
+        image: aboutContent.value?.team_images?.emily || '/images/team/emily.webp',
+        name: t('about.team.members.emily.name'),
+        role: t('about.team.members.emily.role'),
+        bio: t('about.team.members.emily.bio'),
+    },
+]);
 
 const localizedText = (value: any, fallback = ''): string => {
     const currentLocale = String(locale.value || 'en');
@@ -413,60 +436,22 @@ const contactUrl = computed(() =>
                     </div>
 
                     <div class="grid gap-8 md:grid-cols-3">
-                        <div class="text-center">
+                        <div v-for="member in teamMembers" :key="member.key" class="text-center">
                             <img
                                 class="mx-auto mb-4 h-32 w-32 overflow-hidden rounded-full bg-gray-200 object-cover"
-                                src="images/team/sara.webp"
-                                alt=""
+                                :src="member.image"
+                                :alt="member.name"
                             />
                             <h4
                                 class="mb-1 text-xl font-semibold text-gray-900"
                             >
-                                {{ t('about.team.members.sarah.name') }}
+                                {{ member.name }}
                             </h4>
                             <p class="mb-2 font-medium text-orange-500">
-                                {{ t('about.team.members.sarah.role') }}
+                                {{ member.role }}
                             </p>
                             <p class="text-sm text-gray-600">
-                                {{ t('about.team.members.sarah.bio') }}
-                            </p>
-                        </div>
-
-                        <div class="text-center">
-                            <img
-                                class="mx-auto mb-4 h-32 w-32 overflow-hidden rounded-full bg-gray-200 object-cover"
-                                src="images/team/michael.webp"
-                                alt=""
-                            />
-                            <h4
-                                class="mb-1 text-xl font-semibold text-gray-900"
-                            >
-                                {{ t('about.team.members.michael.name') }}
-                            </h4>
-                            <p class="mb-2 font-medium text-orange-500">
-                                {{ t('about.team.members.michael.role') }}
-                            </p>
-                            <p class="text-sm text-gray-600">
-                                {{ t('about.team.members.michael.bio') }}
-                            </p>
-                        </div>
-
-                        <div class="text-center">
-                            <img
-                                class="mx-auto mb-4 h-32 w-32 overflow-hidden rounded-full bg-gray-200 object-cover"
-                                src="images/team/emily.webp"
-                                alt=""
-                            />
-                            <h4
-                                class="mb-1 text-xl font-semibold text-gray-900"
-                            >
-                                {{ t('about.team.members.emily.name') }}
-                            </h4>
-                            <p class="mb-2 font-medium text-orange-500">
-                                {{ t('about.team.members.emily.role') }}
-                            </p>
-                            <p class="text-sm text-gray-600">
-                                {{ t('about.team.members.emily.bio') }}
+                                {{ member.bio }}
                             </p>
                         </div>
                     </div>

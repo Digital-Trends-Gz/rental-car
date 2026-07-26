@@ -1613,12 +1613,69 @@ return [
         ],
     ],
     'client_pages' => [
+        'layout' => [
+            'nav' => [
+                'reservations' => 'Reservations',
+                'support' => 'Support',
+                'navigation_menu' => 'Navigation Menu',
+            ],
+            'notifications' => [
+                'title' => 'Notifications',
+                'mark_all_read' => 'Mark all read',
+                'open' => 'Open',
+                'mark_read' => 'Mark read',
+                'empty' => 'No notifications.',
+            ],
+        ],
         'reservations' => [
+            'statuses' => [
+                'pending' => 'Pending',
+                'confirmed' => 'Confirmed',
+                'active' => 'Active',
+                'completed' => 'Completed',
+                'cancelled' => 'Cancelled',
+                'no_show' => 'No show',
+            ],
+            'payment_statuses' => [
+                'pending' => 'Pending',
+                'completed' => 'Completed',
+                'failed' => 'Failed',
+                'refunded' => 'Refunded',
+                'cancelled' => 'Cancelled',
+            ],
+            'payment_methods' => [
+                'cash' => 'Cash',
+                'card' => 'Card',
+                'bank_transfer' => 'Bank transfer',
+                'online' => 'Online',
+                'stripe' => 'Stripe',
+                'myfatoorah' => 'MyFatoorah',
+            ],
             'index' => [
                 'head_title' => 'My Reservations',
                 'title' => 'My Reservations',
                 'days' => ':count days',
                 'empty' => 'No reservations found.',
+                'force_extension' => [
+                    'rental_update' => 'Rental update',
+                    'open' => 'Open',
+                ],
+                'extension_requests' => [
+                    'title' => 'Extension Requests',
+                    'pending' => ':count pending',
+                    'contract' => 'Contract',
+                    'new_end_date' => 'New end date',
+                    'extra' => 'Extra',
+                    'extra_days' => ':count days',
+                    'reason' => 'Reason',
+                    'approve' => 'Approve',
+                    'reject' => 'Reject',
+                    'statuses' => [
+                        'pending' => 'Pending',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ],
+                ],
                 'table' => [
                     'car' => 'Car',
                     'dates' => 'Dates',

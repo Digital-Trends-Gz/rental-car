@@ -112,6 +112,7 @@ class TenantSiteSetting extends Model
                     'ar' => null,
                 ],
                 'button_link' => null,
+                'image_url' => null,
             ],
             'about' => [
                 'title' => [
@@ -142,6 +143,8 @@ class TenantSiteSetting extends Model
                     'en' => null,
                     'ar' => null,
                 ],
+                'values' => [],
+                'team_members' => [],
                 'cta_title' => [
                     'en' => null,
                     'ar' => null,
@@ -157,6 +160,11 @@ class TenantSiteSetting extends Model
                 'cta_contact_text' => [
                     'en' => null,
                     'ar' => null,
+                ],
+                'team_images' => [
+                    'sarah' => null,
+                    'michael' => null,
+                    'emily' => null,
                 ],
             ],
             'contact' => [
@@ -647,6 +655,7 @@ class TenantSiteSetting extends Model
                     'ar' => self::nullableString(data_get($data, 'hero.button_text.ar')),
                 ],
                 'button_link' => self::nullableString(data_get($data, 'hero.button_link')),
+                'image_url' => self::nullableString(data_get($data, 'hero.image_url')),
             ],
             'about' => [
                 'title' => [
@@ -677,6 +686,8 @@ class TenantSiteSetting extends Model
                     'en' => self::nullableString(data_get($data, 'about.mission_subtitle.en')),
                     'ar' => self::nullableString(data_get($data, 'about.mission_subtitle.ar')),
                 ],
+                'values' => self::normalizeAboutItems(data_get($data, 'about.values'), ['icon']),
+                'team_members' => self::normalizeAboutItems(data_get($data, 'about.team_members'), ['role', 'image_url']),
                 'cta_title' => [
                     'en' => self::nullableString(data_get($data, 'about.cta_title.en')),
                     'ar' => self::nullableString(data_get($data, 'about.cta_title.ar')),
@@ -692,6 +703,11 @@ class TenantSiteSetting extends Model
                 'cta_contact_text' => [
                     'en' => self::nullableString(data_get($data, 'about.cta_contact_text.en')),
                     'ar' => self::nullableString(data_get($data, 'about.cta_contact_text.ar')),
+                ],
+                'team_images' => [
+                    'sarah' => self::nullableString(data_get($data, 'about.team_images.sarah')),
+                    'michael' => self::nullableString(data_get($data, 'about.team_images.michael')),
+                    'emily' => self::nullableString(data_get($data, 'about.team_images.emily')),
                 ],
             ],
             'contact' => [
@@ -1091,6 +1107,38 @@ class TenantSiteSetting extends Model
         $value = trim((string) ($value ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    private static function normalizeAboutItems(mixed $items, array $extraFields = []): array
+    {
+        return collect(is_array($items) ? $items : [])
+            ->map(function ($item) use ($extraFields) {
+                if (! is_array($item)) {
+                    return null;
+                }
+
+                $normalized = [
+                    'title' => [
+                        'en' => self::nullableString(data_get($item, 'title.en')),
+                        'ar' => self::nullableString(data_get($item, 'title.ar')),
+                    ],
+                    'description' => [
+                        'en' => self::nullableString(data_get($item, 'description.en')),
+                        'ar' => self::nullableString(data_get($item, 'description.ar')),
+                    ],
+                ];
+
+                foreach ($extraFields as $field) {
+                    $normalized[$field] = self::nullableString(data_get($item, $field));
+                }
+
+                $hasContent = collect($normalized)->flatten()->filter(fn ($value) => self::nullableString($value) !== null)->isNotEmpty();
+
+                return $hasContent ? $normalized : null;
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private static function normalizeCountryCode(mixed $value): ?string

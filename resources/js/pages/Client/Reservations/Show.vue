@@ -15,6 +15,35 @@ const props = defineProps<{
 
 const { t, locale } = useTrans();
 
+const reservationStatusLabels: Record<string, string> = {
+    pending: t('client_pages.reservations.statuses.pending'),
+    confirmed: t('client_pages.reservations.statuses.confirmed'),
+    active: t('client_pages.reservations.statuses.active'),
+    completed: t('client_pages.reservations.statuses.completed'),
+    cancelled: t('client_pages.reservations.statuses.cancelled'),
+    canceled: t('client_pages.reservations.statuses.cancelled'),
+    no_show: t('client_pages.reservations.statuses.no_show'),
+};
+
+const paymentStatusLabels: Record<string, string> = {
+    pending: t('client_pages.reservations.payment_statuses.pending'),
+    completed: t('client_pages.reservations.payment_statuses.completed'),
+    failed: t('client_pages.reservations.payment_statuses.failed'),
+    refunded: t('client_pages.reservations.payment_statuses.refunded'),
+    cancelled: t('client_pages.reservations.payment_statuses.cancelled'),
+    canceled: t('client_pages.reservations.payment_statuses.cancelled'),
+};
+
+const paymentMethodLabels: Record<string, string> = {
+    cash: t('client_pages.reservations.payment_methods.cash'),
+    card: t('client_pages.reservations.payment_methods.card'),
+    credit_card: t('client_pages.reservations.payment_methods.card'),
+    bank_transfer: t('client_pages.reservations.payment_methods.bank_transfer'),
+    online: t('client_pages.reservations.payment_methods.online'),
+    stripe: t('client_pages.reservations.payment_methods.stripe'),
+    myfatoorah: t('client_pages.reservations.payment_methods.myfatoorah'),
+};
+
 const statusMap = computed(() => {
     const map: Record<string, { label: string; color: string }> = {};
     for (const s of props.statusMeta || []) {
@@ -34,9 +63,9 @@ function getStatusStyle(status: string) {
     if (!meta) {
         return {
             bg: 'rgba(107,114,128,0.1)',
-            text: '#6B7280',
-            dot: '#6B7280',
-            label: status,
+        text: '#6B7280',
+        dot: '#6B7280',
+        label: reservationStatusLabels[status] || status,
         };
     }
 
@@ -49,7 +78,7 @@ function getStatusStyle(status: string) {
         bg: `rgba(${r}, ${g}, ${b}, 0.1)`,
         text: meta.color,
         dot: meta.color,
-        label: meta.label,
+        label: reservationStatusLabels[status] || meta.label,
     };
 }
 
@@ -412,9 +441,14 @@ function fmtMoney(n?: number | string) {
                                         {{ fmtMoney(p.amount) }}
                                     </td>
                                     <td class="px-4 py-2">
-                                        {{ p.payment_method }}
+                                        {{
+                                            paymentMethodLabels[p.payment_method] ||
+                                            p.payment_method
+                                        }}
                                     </td>
-                                    <td class="px-4 py-2">{{ p.status }}</td>
+                                    <td class="px-4 py-2">
+                                        {{ paymentStatusLabels[p.status] || p.status }}
+                                    </td>
                                     <td class="px-4 py-2">
                                         {{ fmtDateTime(p.processed_at) }}
                                     </td>
