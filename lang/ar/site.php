@@ -840,6 +840,7 @@ return array (
         'website_settings' => 'إعدادات الموقع',
         'static_pages' => 'الصفحات الثابتة',
         'contract_pdf' => 'قالب PDF للعقد',
+        'mrta_pdf' => 'قالب PDF لحادث المرور',
         'seo_settings' => 'إعدادات SEO',
         'seo_audit' => 'تدقيق SEO',
         'translations' => 'الترجمات',

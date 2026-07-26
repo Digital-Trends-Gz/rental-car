@@ -86,6 +86,12 @@ const getStatusColor = (status: string) => {
   };
 }
 
+const statusLabel = (key: string, fallback: string) => {
+  const translated = t(`dashboard.admin.car_statuses.${key}`);
+
+  return translated === `dashboard.admin.car_statuses.${key}` ? fallback : translated;
+}
+
 const search = ref(props.filters?.search || '')
 
 const statusFilter = ref(props.filters?.status || 'all')
@@ -207,7 +213,7 @@ const destroyCar = () => {
                                     class="w-2 h-2 rounded-full" 
                                     :style="{ backgroundColor: status.color }"
                                 ></span>
-                                {{ status.label }} ({{ status.count }})
+                                {{ statusLabel(String(key), status.label) }} ({{ status.count }})
                             </span>
                         </label>
                     </template>
