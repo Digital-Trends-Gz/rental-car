@@ -555,6 +555,11 @@ class LandingPageSettings
 
         if (in_array('ar', $supportedLocales, true)) {
             $translations['ar'] = [
+                'auth' => [
+                    'or_continue_with' => 'أو المتابعة باستخدام',
+                    'google' => 'جوجل',
+                    'apple' => 'آبل',
+                ],
                 'auth_verify_email' => [
                     'head_title' => 'تأكيد البريد الإلكتروني',
                     'title' => 'تأكيد البريد الإلكتروني',
@@ -576,6 +581,11 @@ class LandingPageSettings
 
         if (in_array('ur', $supportedLocales, true)) {
             $translations['ur'] = [
+                'auth' => [
+                    'or_continue_with' => 'یا جاری رکھیں',
+                    'google' => 'گوگل',
+                    'apple' => 'ایپل',
+                ],
                 'auth_verify_email' => [
                     'head_title' => 'ای میل کی تصدیق',
                     'title' => 'ای میل کی تصدیق کریں',
