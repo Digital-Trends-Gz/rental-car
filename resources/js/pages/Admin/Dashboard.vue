@@ -194,7 +194,10 @@ const translationKeyFor = (text: string) =>
         .replace(/[^a-z0-9]+/g, '_')
         .replace(/^_|_$/g, '')
         .replace(/_+/g, '_');
-const localize = (en: string, ar: string, params: Record<string, string | number> = {}) => {
+const localize = (en: string, ar: string, urOrParams: string | Record<string, string | number> = {}, maybeParams: Record<string, string | number> = {}) => {
+    const hasUrFallback = typeof urOrParams === 'string';
+    const ur = hasUrFallback ? urOrParams : en;
+    const params = hasUrFallback ? maybeParams : urOrParams;
     const key = `dashboard.admin_page.${translationKeyFor(en)}`;
     const translated = t(key, params);
 
@@ -202,7 +205,7 @@ const localize = (en: string, ar: string, params: Record<string, string | number
         return translated;
     }
 
-    const fallback = locale.value === 'ar' ? ar : en;
+    const fallback = locale.value === 'ar' ? ar : locale.value === 'ur' ? ur : en;
 
     return fallback.replace(/:([a-zA-Z0-9_]+)/g, (_match, paramKey: string) =>
         params[paramKey] !== undefined ? String(params[paramKey]) : `:${paramKey}`,
@@ -232,7 +235,7 @@ const reservationStatusLabel = (status: string, fallback: string) => translatedS
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug ?? '');
 const currency = computed(() => page.props.currency?.symbol ?? '$');
-const numberLocale = computed(() => (locale.value === 'ar' ? 'ar' : 'en-US'));
+const numberLocale = computed(() => (locale.value === 'ar' ? 'ar' : locale.value === 'ur' ? 'ur-PK' : 'en-US'));
 const authPermissions = computed<string[]>(() =>
     Array.isArray(page.props?.auth?.permissions) ? page.props.auth.permissions : [],
 );
@@ -298,19 +301,19 @@ const dailyTaskActionKey = ref('');
 const taskTypeMeta = computed(() => {
     const meta = {
         pickup: {
-            title: localize('Today Pickups', 'استلام اليوم'),
-            numberLabel: localize('Reservation #', 'رقم الحجز'),
-            dateLabel: localize('Pickup Date', 'تاريخ الاستلام'),
+            title: localize('Today Pickups', 'استلام اليوم', 'آج کی وصولیاں'),
+            numberLabel: localize('Reservation #', 'رقم الحجز', 'ریزرویشن #'),
+            dateLabel: localize('Pickup Date', 'تاريخ الاستلام', 'وصولی کی تاریخ'),
         },
         return: {
-            title: localize('Today Returns', 'تسليم اليوم'),
-            numberLabel: localize('Contract #', 'رقم العقد'),
-            dateLabel: localize('Return Date', 'تاريخ التسليم'),
+            title: localize('Today Returns', 'تسليم اليوم', 'آج کی واپسی'),
+            numberLabel: localize('Contract #', 'رقم العقد', 'معاہدہ #'),
+            dateLabel: localize('Return Date', 'تاريخ التسليم', 'واپسی کی تاریخ'),
         },
         overdue: {
-            title: localize('Overdue Returns', 'المتأخرات'),
-            numberLabel: localize('Contract #', 'رقم العقد'),
-            dateLabel: localize('Due Date', 'تاريخ الاستحقاق'),
+            title: localize('Overdue Returns', 'المتأخرات', 'تاخیر شدہ واپسی'),
+            numberLabel: localize('Contract #', 'رقم العقد', 'معاہدہ #'),
+            dateLabel: localize('Due Date', 'تاريخ الاستحقاق', 'واجب الادا تاریخ'),
         },
     }[taskType.value];
 
@@ -318,10 +321,17 @@ const taskTypeMeta = computed(() => {
 });
 
 const taskTabs = computed(() => [
-    { key: 'pickup' as const, label: localize('Pickup', 'استلام') },
-    { key: 'return' as const, label: localize('Return', 'تسليم') },
-    { key: 'overdue' as const, label: localize('Overdue', 'متأخر') },
+    { key: 'pickup' as const, label: localize('Pickup', 'استلام', 'وصولی') },
+    { key: 'return' as const, label: localize('Return', 'تسليم', 'واپسی') },
+    { key: 'overdue' as const, label: localize('Overdue', 'متأخر', 'تاخیر شدہ') },
 ]);
+
+const taskTypeLabel = (type?: TaskType | null, fallback?: string | null) => {
+    const key = type ?? taskType.value;
+    const label = taskTabs.value.find((tab) => tab.key === key)?.label;
+
+    return label || fallback || taskTypeMeta.value.title;
+};
 
 const taskRows = computed(() =>
     taskItems.value.map((item, index) => ({
@@ -330,8 +340,8 @@ const taskRows = computed(() =>
         rowDate: taskType.value === 'pickup' ? item.start_date : item.end_date,
         rowStatus: taskType.value === 'overdue'
             ? item.is_overdue
-                ? localize('Overdue :days days', 'متأخر :days يوم', { days: item.days_overdue ?? 0 })
-                : localize('Due today', 'مستحق اليوم')
+                ? localize('Overdue :days days', 'متأخر :days يوم', ':days دن تاخیر', { days: item.days_overdue ?? 0 })
+                : localize('Due today', 'مستحق اليوم', 'آج واجب الادا')
             : item.status ?? item.reservation_status ?? localize('N/A', 'غير متوفر'),
     })),
 );
@@ -1369,8 +1379,8 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                                     <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Client', 'العميل') }}</th>
                                     <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Car', 'السيارة') }}</th>
                                     <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ taskTypeMeta.dateLabel }}</th>
-                                    <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Task', 'النوع') }}</th>
-                                    <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Status', 'الحالة') }}</th>
+                                    <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-left' : 'text-right'">{{ localize('Task', 'النوع', 'کام') }}</th>
+                                    <th class="px-4 py-2 text-xs text-muted-foreground" :class="isRtl ? 'text-right' : 'text-left'">{{ localize('Status', 'الحالة', 'حالت') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1399,7 +1409,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                                         </div>
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3 font-semibold" :class="isRtl ? 'text-left' : 'text-right'">
-                                        {{ item.task_type_label || taskTypeMeta.title }}
+                                        {{ taskTypeLabel(item.task_type, item.task_type_label) }}
                                     </td>
                                     <td class="px-4 py-3">
                                         <span
