@@ -649,6 +649,7 @@ return [
                 'reservations' => 'Reservations',
                 'clients' => 'Clients',
                 'payments' => 'Payments',
+                'discount_requests' => 'Discount Requests',
                 'reports' => 'Reports',
                 'ai_insights' => 'AI Insights',
                 'support' => 'Support',

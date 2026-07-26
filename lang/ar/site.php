@@ -831,6 +831,7 @@ return array (
         'damage_repairs' => 'إصلاحات الأضرار',
         'contracts' => 'العقود',
         'coupons' => 'الكوبونات',
+        'discount_requests' => 'طلبات الخصم',
         'auto_discounts' => 'الخصومات التلقائية',
         'platform_support' => 'دعم المنصة',
         'branches' => 'الفروع',

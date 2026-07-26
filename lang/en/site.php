@@ -757,6 +757,7 @@ return [
                 'payments' => 'Payments',
                 'debtors' => 'Debtors',
                 'coupons' => 'Coupons',
+                'discount_requests' => 'Discount Requests',
                 'auto_discounts' => 'Auto Discounts',
                 'reports' => 'Reports',
                 'ai_insights' => 'AI Insights',

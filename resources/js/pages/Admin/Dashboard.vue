@@ -209,6 +209,26 @@ const localize = (en: string, ar: string, params: Record<string, string | number
     );
 };
 
+const normalizedStatusKey = (status: string) => status.toLowerCase().trim().replace(/\s+/g, '_');
+
+const translatedStatusLabel = (group: 'car_statuses' | 'reservation_statuses', status: string, fallback: string) => {
+    const key = normalizedStatusKey(status);
+    const adminKey = `dashboard.admin.${group}.${key}`;
+    const adminTranslated = t(adminKey);
+
+    if (adminTranslated !== adminKey) {
+        return adminTranslated;
+    }
+
+    const dashboardKey = `dashboard.${group}.${key}`;
+    const dashboardTranslated = t(dashboardKey);
+
+    return dashboardTranslated === dashboardKey ? fallback : dashboardTranslated;
+};
+
+const carStatusLabel = (status: string, fallback: string) => translatedStatusLabel('car_statuses', status, fallback);
+const reservationStatusLabel = (status: string, fallback: string) => translatedStatusLabel('reservation_statuses', status, fallback);
+
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug ?? '');
 const currency = computed(() => page.props.currency?.symbol ?? '$');
@@ -1260,7 +1280,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                                 :key="seg.status"
                                 :style="{ width: seg.pct + '%', background: seg.color }"
                                 class="transition-all duration-500"
-                                :title="`${seg.label}: ${seg.count}`"
+                                :title="`${reservationStatusLabel(seg.status, seg.label)}: ${seg.count}`"
                             />
                             <div v-if="totalResCount === 0" class="w-full rounded-full bg-muted" />
                         </div>
@@ -1273,7 +1293,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                             >
                                 <div class="flex items-center gap-2">
                                     <div class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ background: seg.color }" />
-                                    <span class="text-xs capitalize">{{ seg.label }}</span>
+                                    <span class="text-xs capitalize">{{ reservationStatusLabel(seg.status, seg.label) }}</span>
                                 </div>
                                 <span class="text-sm font-semibold">{{ seg.count }}</span>
                             </div>
@@ -1298,7 +1318,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                             :style="{ borderColor: fs.color, color: fs.color, background: `${fs.color}15` }"
                         >
                             <span class="h-2 w-2 rounded-full" :style="{ background: fs.color }" />
-                            {{ fs.label }}
+                            {{ carStatusLabel(fs.status, fs.label) }}
                             <span class="ml-1 font-bold">{{ fs.count }}</span>
                         </div>
                     </div>
@@ -1444,7 +1464,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                                             class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize"
                                             :style="{ background: `${car.status_color}20`, color: car.status_color }"
                                         >
-                                            {{ car.status_label }}
+                                            {{ carStatusLabel(car.status, car.status_label) }}
                                         </span>
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3" :class="isRtl ? 'text-left' : 'text-right'">{{ fmtCurrency(car.price_per_day) }}</td>
