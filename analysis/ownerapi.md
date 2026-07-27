@@ -276,3 +276,12 @@ Response مقترح:
 - ملخص الإيراد يستخدم `base_amount` إذا كان موجودًا، وإلا يستخدم `amount`.
 - مقارنة الإيراد حاليًا مع يوم أمس فقط.
 - باقي كروت الأرقام لا ترجع نسبة تغير لأنها تحتاج snapshot/history يومي حتى تكون دقيقة.
+
+## Owner Dashboard Change Accuracy
+
+- Change values for owner dashboard cards now come from persisted daily snapshots in `owner_dashboard_metric_snapshots`.
+- The API compares today's live value with yesterday's saved snapshot. It does not infer yesterday from `updated_at`.
+- Historical days before the snapshot system runs cannot be recovered 100% for status-based metrics because car status is overwritten in the current row.
+- Run `php artisan owner-dashboard:snapshot` to capture today's values manually.
+- Run `php artisan owner-dashboard:snapshot --date=2026-07-26` only for controlled testing; it cannot recreate a true historical car status if the snapshot was not captured on that day.
+- The scheduler captures owner dashboard snapshots daily at `23:59`.

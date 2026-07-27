@@ -2,28 +2,20 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\CarStatus;
 use App\Enums\CarViolationStatus;
-use App\Enums\ContractStatus;
-use App\Enums\PaymentStatus;
-use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
-use App\Models\Car;
 use App\Models\CarViolation;
-use App\Models\Contract;
-use App\Models\Payment;
-use App\Models\Reservation;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
+use App\Services\Dashboard\OwnerDashboardMetricsService;
 use App\Services\Notifications\OperationalNotificationsService;
 use App\Support\BranchAccess;
 use App\Support\CurrencyCatalog;
 use App\Support\TenantTranslations;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -33,6 +25,7 @@ class OwnerDashboardController extends Controller
     public function __construct(
         private readonly BranchAccess $branchAccess,
         private readonly OperationalNotificationsService $notifications,
+        private readonly OwnerDashboardMetricsService $dashboardMetrics,
     ) {
     }
 
@@ -72,6 +65,7 @@ class OwnerDashboardController extends Controller
         $user = $this->authorizedOwner($request);
         $locale = $this->resolveLocale($request);
         $today = Carbon::today();
+        $yesterday = $today->copy()->subDay();
         $branchId = $this->resolveOwnerBranchId($request, $user);
         $tenant = Tenant::query()->with('siteSetting')->findOrFail((int) $user->tenant_id);
         $currency = $this->tenantCurrency($tenant, $request);
@@ -79,32 +73,21 @@ class OwnerDashboardController extends Controller
             ? Branch::query()->where('tenant_id', (int) $user->tenant_id)->find($branchId)
             : null;
 
-        $carsQuery = Car::query()->where('tenant_id', (int) $user->tenant_id);
-        $this->applyCarBranchScope($carsQuery, $branchId);
+        $currentMetrics = $this->dashboardMetrics->currentMetrics((int) $user->tenant_id, $branchId, $today);
+        $paymentsQuery = $this->dashboardMetrics->paymentsQuery((int) $user->tenant_id, $branchId);
 
-        $reservationsQuery = Reservation::query()->where('tenant_id', (int) $user->tenant_id);
-        $this->applyReservationBranchScope($reservationsQuery, $branchId);
+        $todayRevenue = (float) $currentMetrics[OwnerDashboardMetricsService::TODAY_REVENUE];
+        $availableCars = (int) $currentMetrics[OwnerDashboardMetricsService::AVAILABLE_CARS];
+        $activeReservations = (int) $currentMetrics[OwnerDashboardMetricsService::ACTIVE_RESERVATIONS];
+        $lateReturns = (int) $currentMetrics[OwnerDashboardMetricsService::LATE_RETURNS];
+        $rentedCars = (int) $currentMetrics[OwnerDashboardMetricsService::RENTED_CARS];
+        $maintenanceCars = $this->dashboardMetrics->maintenanceCars((int) $user->tenant_id, $branchId);
 
-        $contractsQuery = Contract::query()->where('tenant_id', (int) $user->tenant_id);
-        $this->applyContractBranchScope($contractsQuery, $branchId);
-
-        $paymentsQuery = Payment::query()
-            ->where('tenant_id', (int) $user->tenant_id)
-            ->where('status', PaymentStatus::COMPLETED->value);
-        $this->applyPaymentBranchScope($paymentsQuery, $branchId);
-
-        $todayRevenue = $this->paymentTotalForDate((clone $paymentsQuery), $today);
-        $yesterdayRevenue = $this->paymentTotalForDate((clone $paymentsQuery), $today->copy()->subDay());
-        $revenueChange = $this->changePayload($todayRevenue, $yesterdayRevenue, $locale);
-
-        $availableCars = (clone $carsQuery)->where('status', CarStatus::AVAILABLE->value)->count();
-        $activeReservations = (clone $reservationsQuery)->where('status', ReservationStatus::ACTIVE->value)->count();
-        $lateReturns = (clone $contractsQuery)
-            ->pendingReturnTask($today)
-            ->whereDate('end_date', '<', $today)
-            ->count();
-        $rentedCars = (clone $carsQuery)->where('status', CarStatus::RENTED->value)->count();
-        $maintenanceCars = (clone $carsQuery)->where('status', CarStatus::MAINTENANCE->value)->count();
+        $revenueChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::TODAY_REVENUE, $todayRevenue, $yesterday, $locale);
+        $availableCarsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::AVAILABLE_CARS, $availableCars, $yesterday, $locale);
+        $activeReservationsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::ACTIVE_RESERVATIONS, $activeReservations, $yesterday, $locale);
+        $lateReturnsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::LATE_RETURNS, $lateReturns, $yesterday, $locale);
+        $rentedCarsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::RENTED_CARS, $rentedCars, $yesterday, $locale);
 
         $pendingViolationsQuery = CarViolation::query()
             ->where('tenant_id', (int) $user->tenant_id)
@@ -135,10 +118,10 @@ class OwnerDashboardController extends Controller
             'currency' => $currency,
             'cards' => [
                 $this->metricCard('today_revenue', $locale, 'Today revenue', $todayRevenue, 'money', '#14B8A6', $currency, $revenueChange),
-                $this->metricCard('available_cars', $locale, 'Available cars', $availableCars, 'count', '#0EA5E9', $currency),
-                $this->metricCard('active_reservations', $locale, 'Active reservations', $activeReservations, 'count', '#14B8A6', $currency),
-                $this->metricCard('late_returns', $locale, 'Late returns', $lateReturns, 'count', '#EF4444', $currency),
-                $this->metricCard('rented_cars', $locale, 'Rented cars', $rentedCars, 'count', '#8B5CF6', $currency),
+                $this->metricCard('available_cars', $locale, 'Available cars', $availableCars, 'count', '#0EA5E9', $currency, $availableCarsChange),
+                $this->metricCard('active_reservations', $locale, 'Active reservations', $activeReservations, 'count', '#14B8A6', $currency, $activeReservationsChange),
+                $this->metricCard('late_returns', $locale, 'Late returns', $lateReturns, 'count', '#EF4444', $currency, $lateReturnsChange),
+                $this->metricCard('rented_cars', $locale, 'Rented cars', $rentedCars, 'count', '#8B5CF6', $currency, $rentedCarsChange),
             ],
             'stats' => [
                 'today_revenue' => $todayRevenue,
@@ -150,7 +133,7 @@ class OwnerDashboardController extends Controller
                 'pending_violations' => $pendingViolations,
                 'notification_badge_count' => $notificationBadgeCount,
             ],
-            'revenue_chart' => $this->revenueChart((clone $paymentsQuery), $today->copy()->subDays(6), $today),
+            'revenue_chart' => $this->dashboardMetrics->revenueChart((clone $paymentsQuery), $today->copy()->subDays(6), $today),
             'quick_alerts' => [
                 $this->alertPayload('late_returns', $locale, 'Late car returns', $lateReturns, '#FEE2E2', '#DC2626'),
                 $this->alertPayload('unpaid_violations', $locale, 'Unpaid violations', $pendingViolations, '#FFEDD5', '#EA580C'),
@@ -222,76 +205,6 @@ class OwnerDashboardController extends Controller
         return $currency;
     }
 
-    private function paymentTotalForDate(Builder $query, Carbon $date): float
-    {
-        $total = $query
-            ->where(function (Builder $query) use ($date): void {
-                $query->whereDate('processed_at', $date)
-                    ->orWhere(function (Builder $query) use ($date): void {
-                        $query->whereNull('processed_at')
-                            ->whereDate('created_at', $date);
-                    });
-            })
-            ->selectRaw('COALESCE(SUM(COALESCE(base_amount, amount)), 0) as aggregate')
-            ->value('aggregate');
-
-        return round((float) $total, 2);
-    }
-
-    private function revenueChart(Builder $query, Carbon $from, Carbon $to): array
-    {
-        $rows = $query
-            ->whereRaw('DATE(COALESCE(processed_at, created_at)) between ? and ?', [$from->toDateString(), $to->toDateString()])
-            ->selectRaw('DATE(COALESCE(processed_at, created_at)) as payment_date, COALESCE(SUM(COALESCE(base_amount, amount)), 0) as total')
-            ->groupBy('payment_date')
-            ->pluck('total', 'payment_date');
-
-        return collect(range(0, $from->diffInDays($to)))
-            ->map(function (int $offset) use ($from, $rows): array {
-                $date = $from->copy()->addDays($offset);
-                $key = $date->toDateString();
-
-                return [
-                    'date' => $key,
-                    'label' => $date->format('M j'),
-                    'value' => round((float) ($rows[$key] ?? 0), 2),
-                ];
-            })
-            ->values()
-            ->all();
-    }
-
-    private function applyCarBranchScope(Builder $query, ?int $branchId): void
-    {
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
-        }
-    }
-
-    private function applyReservationBranchScope(Builder $query, ?int $branchId): void
-    {
-        if ($branchId) {
-            $query->whereHas('car', fn (Builder $query) => $query->where('branch_id', $branchId));
-        }
-    }
-
-    private function applyContractBranchScope(Builder $query, ?int $branchId): void
-    {
-        if ($branchId) {
-            $query->where(function (Builder $query) use ($branchId): void {
-                $query->where('branch_id', $branchId)
-                    ->orWhereHas('reservation.car', fn (Builder $query) => $query->where('branch_id', $branchId));
-            });
-        }
-    }
-
-    private function applyPaymentBranchScope(Builder $query, ?int $branchId): void
-    {
-        if ($branchId) {
-            $query->whereHas('reservation.car', fn (Builder $query) => $query->where('branch_id', $branchId));
-        }
-    }
-
     private function metricCard(string $key, string $locale, string $fallbackTitle, float|int $value, string $valueType, string $accent, array $currency, ?array $change = null): array
     {
         return [
@@ -316,6 +229,13 @@ class OwnerDashboardController extends Controller
             'background_color' => $backgroundColor,
             'text_color' => $textColor,
         ];
+    }
+
+    private function snapshotChangePayload(int $tenantId, ?int $branchId, string $metricKey, float $current, Carbon $comparisonDate, string $locale): ?array
+    {
+        $previous = $this->dashboardMetrics->snapshotValue($tenantId, $branchId, $metricKey, $comparisonDate);
+
+        return $previous === null ? null : $this->changePayload($current, $previous, $locale);
     }
 
     private function changePayload(float $current, float $previous, string $locale): array
