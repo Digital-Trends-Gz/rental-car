@@ -127,14 +127,22 @@ class OwnerDashboardMetricsService
 
     public function snapshotValue(int $tenantId, ?int $branchId, string $metricKey, CarbonInterface $date): ?float
     {
-        $value = OwnerDashboardMetricSnapshot::query()
+        $snapshot = OwnerDashboardMetricSnapshot::query()
             ->where('tenant_id', $tenantId)
             ->where('branch_scope', $this->branchScope($branchId))
             ->where('metric_key', $metricKey)
             ->whereDate('metric_date', $date)
-            ->value('value');
+            ->first(['value', 'metric_date', 'captured_at']);
 
-        return $value === null ? null : round((float) $value, 2);
+        if (!$snapshot) {
+            return null;
+        }
+
+        if ($snapshot->captured_at && $snapshot->captured_at->toDateString() > $snapshot->metric_date->toDateString()) {
+            return null;
+        }
+
+        return round((float) $snapshot->value, 2);
     }
 
     public function paymentTotalForDate(Builder $query, CarbonInterface $date): float

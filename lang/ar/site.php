@@ -2292,8 +2292,55 @@ return array (
     'alerts' => 
     array (
       'late_returns' => 'تأخيرات في إرجاع السيارات',
+      'late_returns_description' => ':count عمليات تأخير في الإرجاع',
       'unpaid_violations' => 'غرامات غير مدفوعة',
+      'unpaid_violations_description' => ':count غرامات مستحقة الدفع',
       'maintenance_cars' => 'سيارات بحاجة لصيانة',
+      'maintenance_cars_description' => ':count سيارات تحتاج فحص وصيانة',
+    ),
+    'notifications' => 
+    array (
+      'sections' => 
+      array (
+        'active_alerts' => 'تنبيهات نشطة',
+        'latest_notifications' => 'آخر الإشعارات',
+      ),
+      'late_return' => 
+      array (
+        'title' => 'تأخر إرجاع سيارة',
+        'description' => 'تأخر إرجاع :car - العميل :client',
+      ),
+      'unpaid_violation' => 
+      array (
+        'title' => 'غرامة مستحقة',
+        'description' => 'غرامة جديدة بقيمة :amount - العميل :client',
+      ),
+      'maintenance_required' => 
+      array (
+        'title' => 'صيانة مطلوبة',
+        'description' => ':car تحتاج فحص دوري عاجل',
+      ),
+      'new_reservation' => 
+      array (
+        'title' => 'حجز جديد',
+        'description' => 'حجز جديد في :branch - :days أيام',
+      ),
+      'payment_received' => 
+      array (
+        'title' => 'دفعة مستلمة',
+        'description' => 'تم استلام دفعة :amount من العميل :client',
+      ),
+      'unknown_client' => 'العميل',
+      'messages' => 
+      array (
+        'marked_read' => 'تم تحديد الإشعارات كمقروءة.',
+      ),
+    ),
+    'time' => 
+    array (
+      'minutes_ago' => ':count د',
+      'hours_ago' => ':count س',
+      'days_ago' => ':count يوم',
     ),
     'comparisons' => 
     array (

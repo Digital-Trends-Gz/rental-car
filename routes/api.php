@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\DiscountRequestsController;
 use App\Http\Controllers\Api\ReservationsController;
 use App\Http\Controllers\Api\NotificationsController;
 use App\Http\Controllers\Api\OwnerDashboardController;
+use App\Http\Controllers\Api\OwnerNotificationsController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\StaticPageContentController;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,9 @@ Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
 Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
     Route::get('branches', [OwnerDashboardController::class, 'branches'])->name('api.owner.branches');
     Route::get('dashboard/summary', [OwnerDashboardController::class, 'summary'])->name('api.owner.dashboard.summary');
+    Route::get('notifications', [OwnerNotificationsController::class, 'index'])->name('api.owner.notifications.index');
+    Route::get('notifications/count', [OwnerNotificationsController::class, 'count'])->name('api.owner.notifications.count');
+    Route::post('notifications/read-all', [OwnerNotificationsController::class, 'readAll'])->name('api.owner.notifications.read-all');
 });
 
 Route::middleware('auth:sanctum')->prefix('tasks')->group(function () {

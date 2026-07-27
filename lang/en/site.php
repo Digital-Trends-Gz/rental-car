@@ -2080,8 +2080,46 @@ return [
         ],
         'alerts' => [
             'late_returns' => 'Late car returns',
+            'late_returns_description' => ':count delayed return operations',
             'unpaid_violations' => 'Unpaid violations',
+            'unpaid_violations_description' => ':count unpaid violations',
             'maintenance_cars' => 'Cars need maintenance',
+            'maintenance_cars_description' => ':count cars need inspection or maintenance',
+        ],
+        'notifications' => [
+            'sections' => [
+                'active_alerts' => 'Active alerts',
+                'latest_notifications' => 'Latest notifications',
+            ],
+            'late_return' => [
+                'title' => 'Car return delayed',
+                'description' => ':car return is delayed - client :client',
+            ],
+            'unpaid_violation' => [
+                'title' => 'Violation due',
+                'description' => 'New violation of :amount - client :client',
+            ],
+            'maintenance_required' => [
+                'title' => 'Maintenance required',
+                'description' => ':car needs urgent inspection',
+            ],
+            'new_reservation' => [
+                'title' => 'New reservation',
+                'description' => 'New reservation in :branch - :days days',
+            ],
+            'payment_received' => [
+                'title' => 'Payment received',
+                'description' => 'Received :amount from client :client',
+            ],
+            'unknown_client' => 'Client',
+            'messages' => [
+                'marked_read' => 'Notifications marked as read.',
+            ],
+        ],
+        'time' => [
+            'minutes_ago' => ':count min',
+            'hours_ago' => ':count h',
+            'days_ago' => ':count d',
         ],
         'comparisons' => [
             'yesterday' => 'Yesterday',

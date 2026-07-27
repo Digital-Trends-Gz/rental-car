@@ -11,7 +11,7 @@ use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Services\Dashboard\OwnerDashboardMetricsService;
-use App\Services\Notifications\OperationalNotificationsService;
+use App\Services\Notifications\OwnerNotificationsService;
 use App\Support\BranchAccess;
 use App\Support\CurrencyCatalog;
 use App\Support\TenantTranslations;
@@ -24,7 +24,7 @@ class OwnerDashboardController extends Controller
 {
     public function __construct(
         private readonly BranchAccess $branchAccess,
-        private readonly OperationalNotificationsService $notifications,
+        private readonly OwnerNotificationsService $notifications,
         private readonly OwnerDashboardMetricsService $dashboardMetrics,
     ) {
     }
@@ -95,9 +95,7 @@ class OwnerDashboardController extends Controller
         $this->branchAccess->applyToQuery($pendingViolationsQuery, $user, $branchId, 'branch_id');
         $pendingViolations = (clone $pendingViolationsQuery)->count();
 
-        $notificationBadgeCount = $this->notifications
-            ->unreadForUser($user, $branchId, 500, $locale)
-            ->count();
+        $notificationBadgeCount = $this->notifications->unreadCount($user, $branchId, $locale);
 
         return response()->json([
             'status' => 'success',
@@ -243,11 +241,11 @@ class OwnerDashboardController extends Controller
         $difference = round($current - $previous, 2);
         $percent = $previous > 0
             ? round(($difference / $previous) * 100, 2)
-            : ($current > 0 ? 100.0 : 0.0);
+            : ($current == 0.0 ? 0.0 : null);
 
         return [
             'value' => $difference,
-            'percent' => abs($percent),
+            'percent' => $percent === null ? null : abs($percent),
             'direction' => $difference > 0 ? 'up' : ($difference < 0 ? 'down' : 'flat'),
             'comparison' => 'yesterday',
             'comparison_label' => $this->ownerText('comparisons.yesterday', $locale, 'Yesterday'),

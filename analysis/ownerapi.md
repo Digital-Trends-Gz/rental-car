@@ -285,3 +285,31 @@ Response مقترح:
 - Run `php artisan owner-dashboard:snapshot` to capture today's values manually.
 - Run `php artisan owner-dashboard:snapshot --date=2026-07-26` only for controlled testing; it cannot recreate a true historical car status if the snapshot was not captured on that day.
 - The scheduler captures owner dashboard snapshots daily at `23:59`.
+
+## Owner Notifications API
+
+Implemented for the owner/partner mobile notifications screen:
+
+- `GET /api/owner/notifications?branch_id=&page=1&per_page=20`
+- `GET /api/owner/notifications/count?branch_id=`
+- `POST /api/owner/notifications/read-all?branch_id=`
+
+The response is split into:
+
+- `active_alerts`: aggregated operating alerts for late returns, unpaid violations, and maintenance cars.
+- `latest_notifications`: a paginated feed sorted by newest first.
+
+Feed item types:
+
+- `late_return`
+- `unpaid_violation`
+- `maintenance_required`
+- `new_reservation`
+- `payment_received`
+
+Rules:
+
+- `tenant_id` is always taken from the authenticated owner/partner user.
+- `branch_id` is optional. Empty means all branches; a valid branch filters all alert/feed queries.
+- Text is returned using `Accept-Language` through `owner_api.*` translation keys.
+- Read state is stored in `operational_notification_reads` using owner notification keys.

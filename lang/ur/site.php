@@ -1802,8 +1802,46 @@ return [
         ],
         'alerts' => [
             'late_returns' => 'گاڑیوں کی واپسی میں تاخیر',
+            'late_returns_description' => ':count واپسی کے تاخیری عمل',
             'unpaid_violations' => 'غیر ادا شدہ جرمانے',
+            'unpaid_violations_description' => ':count غیر ادا شدہ جرمانے',
             'maintenance_cars' => 'مرمت کی ضرورت والی گاڑیاں',
+            'maintenance_cars_description' => ':count گاڑیوں کو معائنہ یا مرمت کی ضرورت ہے',
+        ],
+        'notifications' => [
+            'sections' => [
+                'active_alerts' => 'فعال الرٹس',
+                'latest_notifications' => 'تازہ ترین اطلاعات',
+            ],
+            'late_return' => [
+                'title' => 'گاڑی کی واپسی میں تاخیر',
+                'description' => ':car کی واپسی میں تاخیر - کلائنٹ :client',
+            ],
+            'unpaid_violation' => [
+                'title' => 'واجب الادا جرمانہ',
+                'description' => ':amount کا نیا جرمانہ - کلائنٹ :client',
+            ],
+            'maintenance_required' => [
+                'title' => 'مرمت درکار',
+                'description' => ':car کو فوری معائنہ چاہیے',
+            ],
+            'new_reservation' => [
+                'title' => 'نئی ریزرویشن',
+                'description' => ':branch میں نئی ریزرویشن - :days دن',
+            ],
+            'payment_received' => [
+                'title' => 'ادائیگی موصول ہوئی',
+                'description' => 'کلائنٹ :client سے :amount موصول ہوئے',
+            ],
+            'unknown_client' => 'کلائنٹ',
+            'messages' => [
+                'marked_read' => 'اطلاعات پڑھی ہوئی نشان زد کر دی گئیں۔',
+            ],
+        ],
+        'time' => [
+            'minutes_ago' => ':count منٹ',
+            'hours_ago' => ':count گھنٹے',
+            'days_ago' => ':count دن',
         ],
         'comparisons' => [
             'yesterday' => 'گزشتہ روز',
