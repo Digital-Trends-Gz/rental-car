@@ -1789,5 +1789,28 @@ return [
             ],
         ],
     ],
+    'owner_api' => [
+        'branches' => [
+            'all' => 'تمام برانچز',
+        ],
+        'metrics' => [
+            'today_revenue' => 'آج کی آمدنی',
+            'available_cars' => 'دستیاب گاڑیاں',
+            'active_reservations' => 'فعال ریزرویشنز',
+            'late_returns' => 'تاخیر سے واپسی',
+            'rented_cars' => 'کرائے پر گاڑیاں',
+        ],
+        'alerts' => [
+            'late_returns' => 'گاڑیوں کی واپسی میں تاخیر',
+            'unpaid_violations' => 'غیر ادا شدہ جرمانے',
+            'maintenance_cars' => 'مرمت کی ضرورت والی گاڑیاں',
+        ],
+        'comparisons' => [
+            'yesterday' => 'گزشتہ روز',
+        ],
+        'errors' => [
+            'branch_invalid' => 'منتخب برانچ درست یا دستیاب نہیں ہے۔',
+        ],
+    ],
 ];
 

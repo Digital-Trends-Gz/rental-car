@@ -2067,4 +2067,27 @@ return [
             ],
         ],
     ],
+    'owner_api' => [
+        'branches' => [
+            'all' => 'All branches',
+        ],
+        'metrics' => [
+            'today_revenue' => 'Today revenue',
+            'available_cars' => 'Available cars',
+            'active_reservations' => 'Active reservations',
+            'late_returns' => 'Late returns',
+            'rented_cars' => 'Rented cars',
+        ],
+        'alerts' => [
+            'late_returns' => 'Late car returns',
+            'unpaid_violations' => 'Unpaid violations',
+            'maintenance_cars' => 'Cars need maintenance',
+        ],
+        'comparisons' => [
+            'yesterday' => 'Yesterday',
+        ],
+        'errors' => [
+            'branch_invalid' => 'Selected branch is invalid or not accessible.',
+        ],
+    ],
 ];

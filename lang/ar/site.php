@@ -2275,4 +2275,33 @@ return array (
       ),
     ),
   ),
+  'owner_api' => 
+  array (
+    'branches' => 
+    array (
+      'all' => 'كل الفروع',
+    ),
+    'metrics' => 
+    array (
+      'today_revenue' => 'إيرادات اليوم',
+      'available_cars' => 'السيارات المتاحة',
+      'active_reservations' => 'الحجوزات النشطة',
+      'late_returns' => 'تأخيرات الإرجاع',
+      'rented_cars' => 'سيارات مؤجرة',
+    ),
+    'alerts' => 
+    array (
+      'late_returns' => 'تأخيرات في إرجاع السيارات',
+      'unpaid_violations' => 'غرامات غير مدفوعة',
+      'maintenance_cars' => 'سيارات بحاجة لصيانة',
+    ),
+    'comparisons' => 
+    array (
+      'yesterday' => 'أمس',
+    ),
+    'errors' => 
+    array (
+      'branch_invalid' => 'الفرع المحدد غير صحيح أو غير متاح.',
+    ),
+  ),
 );

@@ -29,15 +29,11 @@ class BranchAccess
             return false;
         }
 
-        if (!(method_exists($user, 'hasRole') && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner')))) {
-            return false;
-        }
-
-        if (empty($user->branch_id)) {
+        if (method_exists($user, 'hasRole') && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner'))) {
             return true;
         }
 
-        return $this->isPrimaryTenantAccount($user);
+        return false;
     }
 
     public function availableBranchesForUser(?User $user): Collection

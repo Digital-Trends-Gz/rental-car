@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\DailyTasksController;
 use App\Http\Controllers\Api\DiscountRequestsController;
 use App\Http\Controllers\Api\ReservationsController;
 use App\Http\Controllers\Api\NotificationsController;
+use App\Http\Controllers\Api\OwnerDashboardController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\StaticPageContentController;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,11 @@ Route::prefix('auth')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
     Route::get('summary', [DashboardController::class, 'summary'])->name('api.dashboard.summary');
+});
+
+Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
+    Route::get('branches', [OwnerDashboardController::class, 'branches'])->name('api.owner.branches');
+    Route::get('dashboard/summary', [OwnerDashboardController::class, 'summary'])->name('api.owner.dashboard.summary');
 });
 
 Route::middleware('auth:sanctum')->prefix('tasks')->group(function () {
