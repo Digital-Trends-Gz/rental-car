@@ -2078,6 +2078,27 @@ return [
             'late_returns' => 'Late returns',
             'rented_cars' => 'Rented cars',
         ],
+        'fleet' => [
+            'summary' => [
+                'total_cars' => 'Total cars',
+                'total_reservations' => 'Total reservations',
+            ],
+            'statuses' => [
+                'all' => 'All',
+                'draft' => 'Draft',
+                'available' => 'Available',
+                'reserved' => 'Reserved',
+                'rented' => 'Rented',
+                'maintenance' => 'Maintenance',
+                'cleaning' => 'Cleaning',
+                'unavailable' => 'Unavailable',
+                'retired' => 'Retired',
+            ],
+            'next_events' => [
+                'next_reservation' => 'Next reservation',
+                'return_date' => 'Return date',
+            ],
+        ],
         'alerts' => [
             'late_returns' => 'Late car returns',
             'late_returns_description' => ':count delayed return operations',
@@ -2114,6 +2135,31 @@ return [
             'unknown_client' => 'Client',
             'messages' => [
                 'marked_read' => 'Notifications marked as read.',
+            ],
+        ],
+        'discount_requests' => [
+            'summary' => [
+                'title' => 'Pending approval requests',
+                'description' => 'Need your review and decision.',
+            ],
+            'type_label' => 'Discount request',
+            'description' => 'Discount :discount requested - client :client',
+            'unknown_client' => 'Client',
+            'statuses' => [
+                'pending' => 'Pending decision',
+                'approved' => 'Approved',
+                'rejected' => 'Rejected',
+                'cancelled' => 'Cancelled',
+            ],
+            'timeline' => [
+                'reservation_created' => 'Reservation created',
+                'contract_created' => 'Contract created',
+                'return_report_created' => 'Return report created',
+                'approval_requested' => 'Approval request submitted',
+            ],
+            'messages' => [
+                'approved' => 'Discount request approved.',
+                'rejected' => 'Discount request rejected.',
             ],
         ],
         'time' => [

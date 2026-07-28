@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ContractReturnReport;
 use App\Models\DiscountRequest;
 use App\Models\Payment;
+use App\Services\DiscountRequests\DiscountRequestDecisionService;
 use App\Support\BranchAccess;
 use App\Support\FinancialVisibility;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,8 +21,10 @@ use Inertia\Response;
 
 class DiscountRequestsController extends Controller
 {
-    public function __construct(private readonly BranchAccess $branchAccess)
-    {
+    public function __construct(
+        private readonly BranchAccess $branchAccess,
+        private readonly DiscountRequestDecisionService $decisionService,
+    ) {
     }
 
     public function index(Request $request): Response
@@ -160,50 +163,7 @@ class DiscountRequestsController extends Controller
     {
         abort_unless($this->canAccessDiscountRequest($discountRequest, $request), 403);
 
-        DB::transaction(function () use ($discountRequest, $request): void {
-            $lockedRequest = DiscountRequest::query()
-                ->whereKey($discountRequest->id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($lockedRequest->status !== DiscountRequestStatus::PENDING) {
-                throw ValidationException::withMessages([
-                    'discount_request' => 'This discount request is no longer pending.',
-                ]);
-            }
-
-            $report = ContractReturnReport::query()
-                ->with(['reservation.payments'])
-                ->whereKey($lockedRequest->contract_return_report_id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $remainingAmount = $this->returnReportBalance($report);
-            if ($remainingAmount <= 0) {
-                throw ValidationException::withMessages([
-                    'discount_request' => 'There is no remaining return report amount to discount.',
-                ]);
-            }
-
-            $appliedDiscount = round(min((float) $lockedRequest->discount_amount, $remainingAmount), 2);
-            $newDiscountAmount = round((float) ($report->discount ?? 0) + $appliedDiscount, 2);
-            $newTotalExtraCharges = round(max(0, (float) $report->total_extra_charges - $appliedDiscount), 2);
-
-            $report->forceFill([
-                'discount' => $newDiscountAmount,
-                'total_extra_charges' => $newTotalExtraCharges,
-                'payment_status' => $this->reportPaymentStatusAfterDiscount($report, $newTotalExtraCharges),
-            ])->save();
-
-            $lockedRequest->forceFill([
-                'discount_amount' => $appliedDiscount,
-                'final_amount' => round(max(0, $remainingAmount - $appliedDiscount), 2),
-                'status' => DiscountRequestStatus::APPROVED,
-                'reviewed_by_user_id' => $request->user()?->id,
-                'reviewed_at' => now(),
-                'approved_at' => now(),
-            ])->save();
-        });
+        $this->decisionService->approve($discountRequest, $request->user());
 
         return back()->with('success', 'Discount request approved.');
     }
@@ -216,26 +176,11 @@ class DiscountRequestsController extends Controller
             'review_note' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        DB::transaction(function () use ($discountRequest, $request, $validated): void {
-            $lockedRequest = DiscountRequest::query()
-                ->whereKey($discountRequest->id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($lockedRequest->status !== DiscountRequestStatus::PENDING) {
-                throw ValidationException::withMessages([
-                    'discount_request' => 'This discount request is no longer pending.',
-                ]);
-            }
-
-            $lockedRequest->forceFill([
-                'status' => DiscountRequestStatus::REJECTED,
-                'reviewed_by_user_id' => $request->user()?->id,
-                'review_note' => trim((string) ($validated['review_note'] ?? '')) ?: null,
-                'reviewed_at' => now(),
-                'rejected_at' => now(),
-            ])->save();
-        });
+        $this->decisionService->reject(
+            $discountRequest,
+            $request->user(),
+            $validated['review_note'] ?? null
+        );
 
         return back()->with('success', 'Discount request rejected.');
     }

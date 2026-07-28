@@ -2289,6 +2289,31 @@ return array (
       'late_returns' => 'تأخيرات الإرجاع',
       'rented_cars' => 'سيارات مؤجرة',
     ),
+    'fleet' => 
+    array (
+      'summary' => 
+      array (
+        'total_cars' => 'إجمالي السيارات',
+        'total_reservations' => 'إجمالي الحجوزات',
+      ),
+      'statuses' => 
+      array (
+        'all' => 'الكل',
+        'draft' => 'مسودة',
+        'available' => 'متاحة',
+        'reserved' => 'محجوزة',
+        'rented' => 'مؤجرة',
+        'maintenance' => 'صيانة',
+        'cleaning' => 'تنظيف',
+        'unavailable' => 'غير متاحة',
+        'retired' => 'خارج الخدمة',
+      ),
+      'next_events' => 
+      array (
+        'next_reservation' => 'أقرب حجز',
+        'return_date' => 'تاريخ الإرجاع',
+      ),
+    ),
     'alerts' => 
     array (
       'late_returns' => 'تأخيرات في إرجاع السيارات',
@@ -2334,6 +2359,36 @@ return array (
       'messages' => 
       array (
         'marked_read' => 'تم تحديد الإشعارات كمقروءة.',
+      ),
+    ),
+    'discount_requests' => 
+    array (
+      'summary' => 
+      array (
+        'title' => 'طلبات الموافقة المعلقة',
+        'description' => 'تحتاج إلى مراجعتك واتخاذ قرار.',
+      ),
+      'type_label' => 'طلب خصم',
+      'description' => 'طلب خصم :discount - العميل :client',
+      'unknown_client' => 'العميل',
+      'statuses' => 
+      array (
+        'pending' => 'بانتظار القرار',
+        'approved' => 'تمت الموافقة',
+        'rejected' => 'مرفوض',
+        'cancelled' => 'ملغي',
+      ),
+      'timeline' => 
+      array (
+        'reservation_created' => 'تم إنشاء الحجز',
+        'contract_created' => 'تم إنشاء العقد',
+        'return_report_created' => 'تم إنشاء تقرير الإرجاع',
+        'approval_requested' => 'تم تقديم طلب الموافقة',
+      ),
+      'messages' => 
+      array (
+        'approved' => 'تمت الموافقة على طلب الخصم.',
+        'rejected' => 'تم رفض طلب الخصم.',
       ),
     ),
     'time' => 

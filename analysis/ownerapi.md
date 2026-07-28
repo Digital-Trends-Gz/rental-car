@@ -313,3 +313,42 @@ Rules:
 - `branch_id` is optional. Empty means all branches; a valid branch filters all alert/feed queries.
 - Text is returned using `Accept-Language` through `owner_api.*` translation keys.
 - Read state is stored in `operational_notification_reads` using owner notification keys.
+
+## Owner Discount Requests API
+
+Implemented as the mobile owner/partner API for the same workflow used by the admin dashboard page:
+
+- `GET /api/owner/discount-requests?branch_id=&status=pending&page=1&per_page=20`
+- `GET /api/owner/discount-requests/count?branch_id=`
+- `GET /api/owner/discount-requests/{discountRequest}`
+- `POST /api/owner/discount-requests/{discountRequest}/approve`
+- `POST /api/owner/discount-requests/{discountRequest}/reject`
+
+Rules:
+
+- The source table is `discount_requests`; no parallel approval table was added.
+- The API accepts optional `branch_id`. Empty means all tenant branches; a valid branch filters requests by the reservation car branch.
+- The authenticated owner/partner tenant is always used. The API does not accept `tenant_id` from the request.
+- Approve/reject uses `DiscountRequestDecisionService`, the same service used by the admin dashboard actions.
+- Approving a request updates the linked return report discount, total extra charges, payment status, reviewer, and timestamps.
+- Rejecting a request stores reviewer, optional review note, and timestamps.
+- Text is returned using `Accept-Language` through `owner_api.discount_requests.*` translation keys.
+
+## Owner Fleet API
+
+Implemented for the owner/partner mobile fleet screen:
+
+- `GET /api/owner/fleet?branch_id=&status=all&search=&page=1&per_page=20`
+- `GET /api/owner/fleet/statuses?branch_id=`
+- `GET /api/owner/fleet/{car}?branch_id=`
+
+Rules:
+
+- The authenticated owner/partner tenant is always used. The API does not accept `tenant_id` from the request.
+- `tenant-owner` and `tenant-partner` are treated the same.
+- `branch_id` is optional. Empty means all tenant branches; a valid branch filters cars, counts, revenue, and next events.
+- Fleet statuses come from the dashboard `CarStatus` enum, not the static mobile mockup chips.
+- Supported statuses: `draft`, `available`, `reserved`, `rented`, `maintenance`, `cleaning`, `unavailable`, `retired`.
+- The list endpoint returns summary counts, status filters with counts, paginated cars, monthly revenue per car, branch location, and the nearest reservation/return event.
+- The show endpoint returns one car with images, additional photos, stats, recent reservations, monthly revenue, and nearest event.
+- Text is returned using `Accept-Language` through `owner_api.fleet.*` translation keys.
