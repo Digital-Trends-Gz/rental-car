@@ -48,6 +48,7 @@ Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
     Route::get('fleet/statuses', [OwnerFleetController::class, 'statuses'])->name('api.owner.fleet.statuses');
     Route::get('fleet', [OwnerFleetController::class, 'index'])->name('api.owner.fleet.index');
     Route::get('fleet/{car}', [OwnerFleetController::class, 'show'])->name('api.owner.fleet.show');
+    Route::get('reservations/statuses', [OwnerReservationsController::class, 'statuses'])->name('api.owner.reservations.statuses');
     Route::get('reservations/summary', [OwnerReservationsController::class, 'summary'])->name('api.owner.reservations.summary');
     Route::get('reservations', [OwnerReservationsController::class, 'index'])->name('api.owner.reservations.index');
     Route::get('reservations/{reservation}', [OwnerReservationsController::class, 'show'])->name('api.owner.reservations.show');

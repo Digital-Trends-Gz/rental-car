@@ -2614,6 +2614,7 @@ const saveError = ref(\'',
     array (
       'statuses' => 
       array (
+        'all' => 'الكل',
         'pending' => 'قيد الانتظار',
         'confirmed' => 'مؤكد',
         'active' => 'نشط',

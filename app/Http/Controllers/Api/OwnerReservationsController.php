@@ -94,6 +94,21 @@ class OwnerReservationsController extends Controller
         ]);
     }
 
+    public function statuses(Request $request): JsonResponse
+    {
+        $user = $this->authorizedOwner($request);
+        $locale = $this->resolveLocale($request);
+        $branchId = $this->resolveOwnerBranchId($request, $user);
+        $statusCounts = $this->reservationStatusCounts((int) $user->tenant_id, $branchId);
+
+        return response()->json([
+            'status' => 'success',
+            'locale' => $locale,
+            'branch_id' => $branchId,
+            'data' => $this->reservationStatusesPayload($statusCounts, $locale),
+        ]);
+    }
+
     public function show(Request $request, Reservation $reservation): JsonResponse
     {
         $user = $this->authorizedOwner($request);
@@ -327,6 +342,41 @@ class OwnerReservationsController extends Controller
     private function likeTerm(string $value): string
     {
         return '%'.addcslashes($value, "\\%_").'%';
+    }
+
+    private function reservationStatusCounts(int $tenantId, ?int $branchId): array
+    {
+        $query = $this->baseReservationQuery($tenantId);
+        $this->applyBranchScope($query, $branchId);
+
+        return $query
+            ->select('reservations.status', DB::raw('COUNT(*) as aggregate'))
+            ->groupBy('reservations.status')
+            ->pluck('aggregate', 'reservations.status')
+            ->map(fn (mixed $count): int => (int) $count)
+            ->all();
+    }
+
+    private function reservationStatusesPayload(array $statusCounts, string $locale): array
+    {
+        $all = [[
+            'value' => 'all',
+            'label' => $this->ownerText('reservations.statuses.all', $locale, 'All'),
+            'color' => '#0F2F7F',
+            'count' => array_sum($statusCounts),
+        ]];
+
+        $statuses = collect(ReservationStatus::cases())
+            ->map(fn (ReservationStatus $status): array => [
+                'value' => $status->value,
+                'label' => $this->reservationStatusLabel($status->value, $locale),
+                'color' => $status->color(),
+                'count' => (int) ($statusCounts[$status->value] ?? 0),
+            ])
+            ->values()
+            ->all();
+
+        return array_merge($all, $statuses);
     }
 
     private function summaryPayload(int $tenantId, ?int $branchId, string $locale, array $filters): array

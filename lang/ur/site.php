@@ -2104,6 +2104,7 @@ return [
         ],
         'reservations' => [
             'statuses' => [
+                'all' => 'All',
                 'pending' => 'Pending',
                 'confirmed' => 'Confirmed',
                 'active' => 'Active',
