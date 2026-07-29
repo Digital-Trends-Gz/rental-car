@@ -43,9 +43,25 @@ const props = defineProps<{
     };
 }>();
 
-const { locale } = useTrans();
+const { t, locale } = useTrans();
 const page = usePage<any>();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const translationRoot = 'dashboard.admin.settings.mrta_pdf';
+const translationKeyFor = (text: string) =>
+    text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 80);
+const localize = (en: string, ar: string) => {
+    const fullKey = `${translationRoot}.${translationKeyFor(en)}`;
+    const translated = t(fullKey);
+
+    if (translated !== fullKey) {
+        return translated;
+    }
+
+    return locale.value === 'ar' ? ar : en;
+};
 const settingValue = (key: keyof MrtaPdfSettings): string => String(props.settings.mrta_pdf?.[key] ?? props.mrtaPdfDefaults[key] ?? '');
 
 const form = useForm({

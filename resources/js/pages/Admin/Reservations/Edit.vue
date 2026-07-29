@@ -49,8 +49,29 @@ const props = defineProps<{
     };
 }>();
 
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { t, locale } = useTrans();
+const editTranslationRoot = 'dashboard.admin.reservations.edit';
+const editTranslationKeyFor = (text: string) =>
+    text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 80);
+const fallbackInterpolate = (text: string, params: Record<string, string | number> = {}) =>
+    text.replace(/:([a-zA-Z0-9_]+)/g, (_match, key: string) => (params[key] !== undefined ? String(params[key]) : `:${key}`));
+const tr = (key: string, fallback: string, params: Record<string, string | number> = {}) => {
+    const fullKey = `${editTranslationRoot}.${key}`;
+    const translated = t(fullKey, params);
+
+    return translated === fullKey ? fallbackInterpolate(fallback, params) : translated;
+};
+const localize = (en: string, ar: string, params: Record<string, string | number> = {}) => {
+    const key = editTranslationKeyFor(en);
+    const fullKey = `${editTranslationRoot}.${key}`;
+    const translated = t(fullKey, params);
+
+    return translated === fullKey ? fallbackInterpolate(locale.value === 'ar' ? ar : en, params) : translated;
+};
 
 const statuses = computed(() => props.enums.statuses || []);
 const allStatuses = computed(() => props.enums.allStatuses || props.enums.statuses || []);
@@ -58,7 +79,17 @@ const statusMetaMap = computed<Record<string, { value: string; label: string; co
     Object.fromEntries((allStatuses.value || []).map((status) => [status.value, status])),
 );
 const isSystemManagedStatus = computed(() => form.status === 'completed_wait_contract');
-const currentStatusLabel = computed(() => statusMetaMap.value[form.status]?.label || form.status);
+const reservationStatusLabel = (status: { value: string; label: string }) => {
+    const key = `dashboard.admin.reservation_statuses.${status.value}`;
+    const translated = t(key);
+
+    return translated === key ? status.label : translated;
+};
+const currentStatusLabel = computed(() => {
+    const status = statusMetaMap.value[form.status];
+
+    return status ? reservationStatusLabel(status) : form.status;
+});
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
 const tenantFeatureFlags = computed<Record<string, boolean>>(
@@ -269,10 +300,9 @@ const selectedClientDebtMessage = computed(() => {
         return '';
     }
 
-    return localize(
-        `This client has unpaid return charges (${formatMoney(selectedClientOutstandingDebt.value)}). You can continue after manager confirmation.`,
-        `هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة ${formatMoney(selectedClientOutstandingDebt.value)}. يمكنك المتابعة بعد تأكيد المدير.`,
-    );
+    return tr('debt_notice', 'This client has unpaid return charges (:amount). You can continue after manager confirmation.', {
+        amount: formatMoney(selectedClientOutstandingDebt.value),
+    });
 });
 
 const debtAcknowledged = ref(false);
@@ -1020,10 +1050,9 @@ function cancelDebtAction() {
                         />
                         <p class="mt-1 text-xs text-muted-foreground">
                             {{
-                                localize(
-                                    `Calculated discount: ${formatMoney(discountAmountPreview)}`,
-                                    `الخصم المحسوب: ${formatMoney(discountAmountPreview)}`,
-                                )
+                                tr('calculated_discount', 'Calculated discount: :amount', {
+                                    amount: formatMoney(discountAmountPreview),
+                                })
                             }}
                         </p>
                         <InputError :message="form.errors.discount_value" class="mt-1" />
@@ -1055,7 +1084,7 @@ function cancelDebtAction() {
                                 class="mt-1 block w-full rounded-md border border-gray-300 py-2 pr-10 pl-3 text-base focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
                             >
                                 <option v-for="s in statuses" :key="s.value" :value="s.value">
-                                    {{ s.label }}
+                                    {{ reservationStatusLabel(s) }}
                                 </option>
                             </select>
                         </template>
@@ -1191,14 +1220,12 @@ function cancelDebtAction() {
                         <DialogDescription>
                             {{
                                 debtDialogMode === 'submit'
-                                    ? localize(
-                                          `This client has unpaid return charges totaling ${formatMoney(selectedClientOutstandingDebt)}. Do you want to create the reservation anyway?`,
-                                          `هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة ${formatMoney(selectedClientOutstandingDebt)}. هل تريد إنشاء الحجز له رغم ذلك؟`,
-                                      )
-                                    : localize(
-                                          `This client has unpaid return charges totaling ${formatMoney(selectedClientOutstandingDebt)}. Do you want to continue with this client?`,
-                                          `هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة ${formatMoney(selectedClientOutstandingDebt)}. هل تريد المتابعة مع هذا العميل؟`,
-                                      )
+                                    ? tr('debt_submit_question', 'This client has unpaid return charges totaling :amount. Do you want to create the reservation anyway?', {
+                                          amount: formatMoney(selectedClientOutstandingDebt),
+                                      })
+                                    : tr('debt_continue_question', 'This client has unpaid return charges totaling :amount. Do you want to continue with this client?', {
+                                          amount: formatMoney(selectedClientOutstandingDebt),
+                                      })
                             }}
                         </DialogDescription>
                     </DialogHeader>

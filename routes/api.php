@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\OwnerDashboardController;
 use App\Http\Controllers\Api\OwnerDiscountRequestsController;
 use App\Http\Controllers\Api\OwnerFleetController;
 use App\Http\Controllers\Api\OwnerNotificationsController;
+use App\Http\Controllers\Api\OwnerReservationsController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\StaticPageContentController;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,9 @@ Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
     Route::get('fleet/statuses', [OwnerFleetController::class, 'statuses'])->name('api.owner.fleet.statuses');
     Route::get('fleet', [OwnerFleetController::class, 'index'])->name('api.owner.fleet.index');
     Route::get('fleet/{car}', [OwnerFleetController::class, 'show'])->name('api.owner.fleet.show');
+    Route::get('reservations/summary', [OwnerReservationsController::class, 'summary'])->name('api.owner.reservations.summary');
+    Route::get('reservations', [OwnerReservationsController::class, 'index'])->name('api.owner.reservations.index');
+    Route::get('reservations/{reservation}', [OwnerReservationsController::class, 'show'])->name('api.owner.reservations.show');
     Route::get('notifications', [OwnerNotificationsController::class, 'index'])->name('api.owner.notifications.index');
     Route::get('notifications/count', [OwnerNotificationsController::class, 'count'])->name('api.owner.notifications.count');
     Route::post('notifications/read-all', [OwnerNotificationsController::class, 'readAll'])->name('api.owner.notifications.read-all');

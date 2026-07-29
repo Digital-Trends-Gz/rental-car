@@ -66,6 +66,7 @@ class OwnerDashboardController extends Controller
         $locale = $this->resolveLocale($request);
         $today = Carbon::today();
         $yesterday = $today->copy()->subDay();
+        [$dateFrom, $dateTo, $hasCustomDateRange] = $this->resolveDateRange($request, $today);
         $branchId = $this->resolveOwnerBranchId($request, $user);
         $tenant = Tenant::query()->with('siteSetting')->findOrFail((int) $user->tenant_id);
         $currency = $this->tenantCurrency($tenant, $request);
@@ -73,7 +74,9 @@ class OwnerDashboardController extends Controller
             ? Branch::query()->where('tenant_id', (int) $user->tenant_id)->find($branchId)
             : null;
 
-        $currentMetrics = $this->dashboardMetrics->currentMetrics((int) $user->tenant_id, $branchId, $today);
+        $currentMetrics = $hasCustomDateRange
+            ? $this->dashboardMetrics->currentMetricsForDateRange((int) $user->tenant_id, $branchId, $dateFrom, $dateTo)
+            : $this->dashboardMetrics->currentMetrics((int) $user->tenant_id, $branchId, $today);
         $paymentsQuery = $this->dashboardMetrics->paymentsQuery((int) $user->tenant_id, $branchId);
 
         $todayRevenue = (float) $currentMetrics[OwnerDashboardMetricsService::TODAY_REVENUE];
@@ -83,7 +86,9 @@ class OwnerDashboardController extends Controller
         $rentedCars = (int) $currentMetrics[OwnerDashboardMetricsService::RENTED_CARS];
         $maintenanceCars = $this->dashboardMetrics->maintenanceCars((int) $user->tenant_id, $branchId);
 
-        $revenueChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::TODAY_REVENUE, $todayRevenue, $yesterday, $locale);
+        $revenueChange = $hasCustomDateRange
+            ? $this->dateRangeRevenueChangePayload((int) $user->tenant_id, $branchId, $todayRevenue, $dateFrom, $dateTo, $locale)
+            : $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::TODAY_REVENUE, $todayRevenue, $yesterday, $locale);
         $availableCarsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::AVAILABLE_CARS, $availableCars, $yesterday, $locale);
         $activeReservationsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::ACTIVE_RESERVATIONS, $activeReservations, $yesterday, $locale);
         $lateReturnsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::LATE_RETURNS, $lateReturns, $yesterday, $locale);
@@ -101,6 +106,11 @@ class OwnerDashboardController extends Controller
             'status' => 'success',
             'locale' => $locale,
             'date' => $today->toDateString(),
+            'date_range' => [
+                'from' => $dateFrom->toDateString(),
+                'to' => $dateTo->toDateString(),
+                'is_custom' => $hasCustomDateRange,
+            ],
             'tenant' => [
                 'id' => $tenant->id,
                 'name' => $tenant->name,
@@ -131,7 +141,11 @@ class OwnerDashboardController extends Controller
                 'pending_violations' => $pendingViolations,
                 'notification_badge_count' => $notificationBadgeCount,
             ],
-            'revenue_chart' => $this->dashboardMetrics->revenueChart((clone $paymentsQuery), $today->copy()->subDays(6), $today),
+            'revenue_chart' => $this->dashboardMetrics->revenueChart(
+                (clone $paymentsQuery),
+                $hasCustomDateRange ? $dateFrom : $today->copy()->subDays(6),
+                $hasCustomDateRange ? $dateTo : $today
+            ),
             'quick_alerts' => [
                 $this->alertPayload('late_returns', $locale, 'Late car returns', $lateReturns, '#FEE2E2', '#DC2626'),
                 $this->alertPayload('unpaid_violations', $locale, 'Unpaid violations', $pendingViolations, '#FFEDD5', '#EA580C'),
@@ -139,6 +153,42 @@ class OwnerDashboardController extends Controller
             ],
             'notification_badge_count' => $notificationBadgeCount,
         ]);
+    }
+
+    private function resolveDateRange(Request $request, Carbon $defaultDate): array
+    {
+        $dateFromInput = $this->firstFilledDateInput($request, ['date_from', 'from', 'from_date', 'start_date', 'dateFrom']);
+        $dateToInput = $this->firstFilledDateInput($request, ['date_to', 'to', 'to_date', 'end_date', 'dateTo']);
+
+        $validated = validator([
+            'date_from' => $dateFromInput,
+            'date_to' => $dateToInput,
+        ], [
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+        ])->validate();
+
+        $hasCustomDateRange = $dateFromInput !== null || $dateToInput !== null;
+
+        if (!$hasCustomDateRange) {
+            return [$defaultDate->copy(), $defaultDate->copy(), false];
+        }
+
+        $dateFrom = Carbon::parse($validated['date_from'] ?? $validated['date_to'])->startOfDay();
+        $dateTo = Carbon::parse($validated['date_to'] ?? $validated['date_from'])->startOfDay();
+
+        return [$dateFrom, $dateTo, true];
+    }
+
+    private function firstFilledDateInput(Request $request, array $keys): ?string
+    {
+        foreach ($keys as $key) {
+            if ($request->filled($key)) {
+                return (string) $request->input($key);
+            }
+        }
+
+        return null;
     }
 
     private function authorizedOwner(Request $request): User
@@ -236,20 +286,41 @@ class OwnerDashboardController extends Controller
         return $previous === null ? null : $this->changePayload($current, $previous, $locale);
     }
 
-    private function changePayload(float $current, float $previous, string $locale): array
+    private function dateRangeRevenueChangePayload(int $tenantId, ?int $branchId, float $current, Carbon $dateFrom, Carbon $dateTo, string $locale): array
+    {
+        $days = $dateFrom->diffInDays($dateTo) + 1;
+        $comparisonTo = $dateFrom->copy()->subDay();
+        $comparisonFrom = $comparisonTo->copy()->subDays($days - 1);
+        $previous = $this->dashboardMetrics->paymentTotalForDateRange(
+            $this->dashboardMetrics->paymentsQuery($tenantId, $branchId),
+            $comparisonFrom,
+            $comparisonTo
+        );
+
+        return $this->changePayload($current, $previous, $locale, [
+            'comparison' => 'previous_period',
+            'comparison_label' => $this->ownerText('comparisons.previous_period', $locale, 'Previous period'),
+            'comparison_period' => [
+                'from' => $comparisonFrom->toDateString(),
+                'to' => $comparisonTo->toDateString(),
+            ],
+        ]);
+    }
+
+    private function changePayload(float $current, float $previous, string $locale, array $overrides = []): array
     {
         $difference = round($current - $previous, 2);
         $percent = $previous > 0
             ? round(($difference / $previous) * 100, 2)
             : ($current == 0.0 ? 0.0 : null);
 
-        return [
+        return array_merge([
             'value' => $difference,
             'percent' => $percent === null ? null : abs($percent),
             'direction' => $difference > 0 ? 'up' : ($difference < 0 ? 'down' : 'flat'),
             'comparison' => 'yesterday',
             'comparison_label' => $this->ownerText('comparisons.yesterday', $locale, 'Yesterday'),
-        ];
+        ], $overrides);
     }
 
     private function formatMoney(float $amount, array $currency): string

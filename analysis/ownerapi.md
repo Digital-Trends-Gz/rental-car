@@ -352,3 +352,31 @@ Rules:
 - The list endpoint returns summary counts, status filters with counts, paginated cars, monthly revenue per car, branch location, and the nearest reservation/return event.
 - The show endpoint returns one car with images, additional photos, stats, recent reservations, monthly revenue, and nearest event.
 - Text is returned using `Accept-Language` through `owner_api.fleet.*` translation keys.
+
+## Owner Reservations API
+
+Implemented for the owner/partner mobile reservations screen:
+
+- `GET /api/owner/reservations?branch_id=&status=all&payment_status=all&date=&date_type=pickup&search=&page=1&per_page=20`
+- `GET /api/owner/reservations/summary?branch_id=`
+- `GET /api/owner/reservations/{reservation}?branch_id=`
+
+Rules:
+
+- The authenticated owner/partner tenant is always used. The API does not accept `tenant_id` from the request.
+- `tenant-owner` and `tenant-partner` are treated the same.
+- `branch_id` is optional. Empty means all tenant branches; a valid branch filters reservations by the reservation car branch.
+- Reservation statuses come from the dashboard `ReservationStatus` enum, not static mobile mockup chips.
+- Payment status is derived from completed payments:
+  - `paid`: completed paid amount is greater than or equal to reservation total.
+  - `partial`: completed paid amount is greater than zero and less than reservation total.
+  - `not_paid`: no completed paid amount.
+- Date filters:
+  - `date_type=pickup` filters `start_date`.
+  - `date_type=return` filters `end_date`.
+  - `date_type=created` filters `created_at`.
+- Search checks reservation number, customer name/email/phone, car make/model/year/license plate, and branch name.
+- Summary counts follow the same filters as the list: `branch_id`, `status`, `payment_status`, `date`, `date_type`, and `search`. Pagination parameters only affect the returned page data, not the summary counts.
+- The list endpoint returns summary cards, paginated reservations, car image, customer, branch location, reservation status, payment status, pickup/return dates, and payment totals.
+- The show endpoint returns one reservation with payments, contract, return report summary, and timeline events.
+- Text is returned using `Accept-Language` through `owner_api.reservations.*` translation keys.

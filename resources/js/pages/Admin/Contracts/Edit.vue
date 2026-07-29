@@ -51,7 +51,14 @@ const props = defineProps<{
   actions: { index: string; store?: string; update?: string; show?: string; extract?: string; extractDriver?: string; extractCustomerPhoto?: string; reservationStore?: string };
 }>();
 
-const { locale } = useTrans();
+const { t, locale } = useTrans();
+const editTranslationRoot = 'dashboard.admin.contracts.edit';
+const editTranslationKeyFor = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 80);
 const currencyOptions = computed(() => getCurrencyOptions(locale.value));
 const countryOptions = computed(() => Array.isArray(props.countries) ? props.countries : []);
 const plateFormatOptions = computed(() => Array.isArray(props.plateFormats) ? props.plateFormats : []);
@@ -214,6 +221,14 @@ const arabicTranslations: Record<string, string> = {
 };
 
 const localize = (en: string, ar: string) => {
+  const key = editTranslationKeyFor(en);
+  const fullKey = `${editTranslationRoot}.${key}`;
+  const translated = t(fullKey);
+
+  if (translated !== fullKey) {
+    return translated;
+  }
+
   if (locale.value !== 'ar') {
     return en;
   }
@@ -284,22 +299,22 @@ const contractRentalEndDateMin = computed(() => {
 });
 
 const documentTypeOptions = computed(() => [
-  { value: '', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0627\u062e\u062a\u0631 \u0646\u0648\u0639 \u0627\u0644\u0645\u0633\u062a\u0646\u062f' : 'Select document type' },
-  { value: 'passport', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u062c\u0648\u0627\u0632 \u0633\u0641\u0631 (\u0633\u0627\u0626\u062d)' : 'Passport (Tourist)' },
-  { value: 'driver_license', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0631\u062e\u0635\u0629 \u0642\u064a\u0627\u062f\u0629' : 'Driver License' },
-  { value: 'id_card', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0628\u0637\u0627\u0642\u0629 \u0647\u0648\u064a\u0629 (\u0645\u0648\u0627\u0637\u0646)' : 'ID Card (Citizen)' },
-  { value: 'residency_card', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0628\u0637\u0627\u0642\u0629 \u0625\u0642\u0627\u0645\u0629 (\u0645\u0642\u064a\u0645)' : 'Residency Card (Resident)' },
+  { value: '', label: localize('Select document type', 'اختر نوع المستند') },
+  { value: 'passport', label: localize('Passport (Tourist)', 'جواز سفر (سائح)') },
+  { value: 'driver_license', label: localize('Driver License', 'رخصة قيادة') },
+  { value: 'id_card', label: localize('ID Card (Citizen)', 'بطاقة هوية (مواطن)') },
+  { value: 'residency_card', label: localize('Residency Card (Resident)', 'بطاقة إقامة (مقيم)') },
 ]);
 
 const additionalArchiveDocumentTypeOptions = computed(() => [
-  { value: '', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0627\u062e\u062a\u0631 \u0646\u0648\u0639 \u0627\u0644\u0645\u0633\u062a\u0646\u062f' : 'Select archive type' },
-  { value: 'passport', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u062c\u0648\u0627\u0632 \u0633\u0641\u0631' : 'Passport' },
-  { value: 'id_card', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0628\u0637\u0627\u0642\u0629 \u0647\u0648\u064a\u0629' : 'ID Card' },
-  { value: 'residency_card', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0628\u0637\u0627\u0642\u0629 \u0625\u0642\u0627\u0645\u0629' : 'Residency Card' },
-  { value: 'driver_license', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0631\u062e\u0635\u0629 \u0642\u064a\u0627\u062f\u0629' : 'Driver License' },
-  { value: 'visa', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u062a\u0623\u0634\u064a\u0631\u0629' : 'Visa' },
-  { value: 'insurance', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u062a\u0623\u0645\u064a\u0646' : 'Insurance' },
-  { value: 'other', label: (usePage<any>().props.locale ?? 'en') === 'ar' ? '\u0623\u062e\u0631\u0649' : 'Other' },
+  { value: '', label: localize('Select archive type', 'اختر نوع الأرشيف') },
+  { value: 'passport', label: localize('Passport', 'جواز سفر') },
+  { value: 'id_card', label: localize('ID Card', 'بطاقة هوية') },
+  { value: 'residency_card', label: localize('Residency Card', 'بطاقة إقامة') },
+  { value: 'driver_license', label: localize('Driver License', 'رخصة قيادة') },
+  { value: 'visa', label: localize('Visa', 'تأشيرة') },
+  { value: 'insurance', label: localize('Insurance', 'تأمين') },
+  { value: 'other', label: localize('Other', 'أخرى') },
 ]);
 
 const reservationStatusOptions = [
@@ -2161,8 +2176,6 @@ function submit() {
     </main>
   </AdminLayout>
 </template>
-
-
 
 
 

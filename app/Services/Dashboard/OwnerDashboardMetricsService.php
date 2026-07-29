@@ -71,6 +71,25 @@ class OwnerDashboardMetricsService
         ];
     }
 
+    /**
+     * @return array<string, float|int>
+     */
+    public function currentMetricsForDateRange(int $tenantId, ?int $branchId, CarbonInterface $from, CarbonInterface $to): array
+    {
+        $from = Carbon::instance($from->toDateTimeImmutable());
+        $to = Carbon::instance($to->toDateTimeImmutable());
+
+        $metrics = $this->currentMetrics($tenantId, $branchId, $to);
+        $paymentsQuery = Payment::query()
+            ->where('tenant_id', $tenantId)
+            ->where('status', PaymentStatus::COMPLETED->value);
+        $this->applyPaymentBranchScope($paymentsQuery, $branchId);
+
+        $metrics[self::TODAY_REVENUE] = $this->paymentTotalForDateRange($paymentsQuery, $from, $to);
+
+        return $metrics;
+    }
+
     public function maintenanceCars(int $tenantId, ?int $branchId): int
     {
         $query = Car::query()->where('tenant_id', $tenantId);
@@ -157,6 +176,19 @@ class OwnerDashboardMetricsService
                             ->whereDate('created_at', $date);
                     });
             })
+            ->selectRaw('COALESCE(SUM(COALESCE(base_amount, amount)), 0) as aggregate')
+            ->value('aggregate');
+
+        return round((float) $total, 2);
+    }
+
+    public function paymentTotalForDateRange(Builder $query, CarbonInterface $from, CarbonInterface $to): float
+    {
+        $from = Carbon::instance($from->toDateTimeImmutable());
+        $to = Carbon::instance($to->toDateTimeImmutable());
+
+        $total = $query
+            ->whereRaw('DATE(COALESCE(processed_at, created_at)) between ? and ?', [$from->toDateString(), $to->toDateString()])
             ->selectRaw('COALESCE(SUM(COALESCE(base_amount, amount)), 0) as aggregate')
             ->value('aggregate');
 

@@ -52,9 +52,25 @@ const props = defineProps<{
     };
 }>();
 
-const { locale } = useTrans();
+const { t, locale } = useTrans();
 const page = usePage<any>();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const translationRoot = 'dashboard.admin.settings.contract_pdf';
+const translationKeyFor = (text: string) =>
+    text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 80);
+const localize = (en: string, ar: string) => {
+    const fullKey = `${translationRoot}.${translationKeyFor(en)}`;
+    const translated = t(fullKey);
+
+    if (translated !== fullKey) {
+        return translated;
+    }
+
+    return locale.value === 'ar' ? ar : en;
+};
 
 const resolvedText = (key: keyof ContractPdfTextSet, lang: 'en' | 'ar'): string => {
     if (key === 'mobile_signature_text') {
