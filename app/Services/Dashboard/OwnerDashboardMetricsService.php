@@ -45,16 +45,23 @@ class OwnerDashboardMetricsService
     {
         $date = Carbon::instance($date->toDateTimeImmutable());
 
-        $carsQuery = Car::query()->where('tenant_id', $tenantId);
+        $carsQuery = Car::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId);
         $this->applyCarBranchScope($carsQuery, $branchId);
 
-        $reservationsQuery = Reservation::query()->where('tenant_id', $tenantId);
+        $reservationsQuery = Reservation::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId);
         $this->applyReservationBranchScope($reservationsQuery, $branchId);
 
-        $contractsQuery = Contract::query()->where('tenant_id', $tenantId);
+        $contractsQuery = Contract::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId);
         $this->applyContractBranchScope($contractsQuery, $branchId);
 
         $paymentsQuery = Payment::query()
+            ->withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->where('status', PaymentStatus::COMPLETED->value);
         $this->applyPaymentBranchScope($paymentsQuery, $branchId);
@@ -81,6 +88,7 @@ class OwnerDashboardMetricsService
 
         $metrics = $this->currentMetrics($tenantId, $branchId, $to);
         $paymentsQuery = Payment::query()
+            ->withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->where('status', PaymentStatus::COMPLETED->value);
         $this->applyPaymentBranchScope($paymentsQuery, $branchId);
@@ -92,7 +100,9 @@ class OwnerDashboardMetricsService
 
     public function maintenanceCars(int $tenantId, ?int $branchId): int
     {
-        $query = Car::query()->where('tenant_id', $tenantId);
+        $query = Car::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId);
         $this->applyCarBranchScope($query, $branchId);
 
         return $query->where('status', CarStatus::MAINTENANCE->value)->count();
@@ -101,6 +111,7 @@ class OwnerDashboardMetricsService
     public function snapshotTenant(Tenant $tenant, CarbonInterface $date): array
     {
         $branchIds = Branch::query()
+            ->withoutGlobalScope('tenant')
             ->where('tenant_id', (int) $tenant->id)
             ->orderBy('id')
             ->pluck('id')
@@ -224,6 +235,7 @@ class OwnerDashboardMetricsService
     public function paymentsQuery(int $tenantId, ?int $branchId): Builder
     {
         $query = Payment::query()
+            ->withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->where('status', PaymentStatus::COMPLETED->value);
 
@@ -242,7 +254,9 @@ class OwnerDashboardMetricsService
     private function applyReservationBranchScope(Builder $query, ?int $branchId): void
     {
         if ($branchId) {
-            $query->whereHas('car', fn (Builder $query) => $query->where('branch_id', $branchId));
+            $query->whereHas('car', fn (Builder $query) => $query
+                ->withoutGlobalScope('tenant')
+                ->where('branch_id', $branchId));
         }
     }
 
@@ -251,7 +265,11 @@ class OwnerDashboardMetricsService
         if ($branchId) {
             $query->where(function (Builder $query) use ($branchId): void {
                 $query->where('branch_id', $branchId)
-                    ->orWhereHas('reservation.car', fn (Builder $query) => $query->where('branch_id', $branchId));
+                    ->orWhereHas('reservation', fn (Builder $query) => $query
+                        ->withoutGlobalScope('tenant')
+                        ->whereHas('car', fn (Builder $query) => $query
+                            ->withoutGlobalScope('tenant')
+                            ->where('branch_id', $branchId)));
             });
         }
     }
@@ -259,7 +277,11 @@ class OwnerDashboardMetricsService
     private function applyPaymentBranchScope(Builder $query, ?int $branchId): void
     {
         if ($branchId) {
-            $query->whereHas('reservation.car', fn (Builder $query) => $query->where('branch_id', $branchId));
+            $query->whereHas('reservation', fn (Builder $query) => $query
+                ->withoutGlobalScope('tenant')
+                ->whereHas('car', fn (Builder $query) => $query
+                    ->withoutGlobalScope('tenant')
+                    ->where('branch_id', $branchId)));
         }
     }
 
