@@ -14,6 +14,11 @@ return [
         'password_reset_sent' => 'إذا كان الحساب موجودا، فقد أرسلنا رابط إعادة تعيين كلمة المرور ورمز التحقق إلى البريد الإلكتروني المسجل.',
         'otp_verify_first' => 'يرجى تأكيد رمز التحقق أولا.',
         'password_reset_success' => 'تمت إعادة تعيين كلمة المرور بنجاح.',
+        'switch_mode_employee_success' => 'تم التحويل إلى وضع الموظف بنجاح.',
+        'switch_mode_owner_success' => 'تم التحويل إلى وضع مالك الشركة بنجاح.',
+        'switch_mode_forbidden' => 'فقط مالك الشركة يمكنه تغيير وضع التطبيق.',
+        'switch_mode_branch_required' => 'يرجى اختيار الفرع الذي تريد العمل منه كموظف.',
+        'switch_mode_branch_invalid' => 'الفرع المحدد غير صحيح أو غير متاح.',
         'account_types' => [
             'company_owner' => 'صاحب الشركة',
             'employee' => 'موظف',

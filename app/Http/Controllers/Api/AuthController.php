@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\ApiPasswordResetNotification;
+use App\Support\ApiAccessMode;
 use App\Support\TenantTranslations;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
@@ -51,14 +53,26 @@ class AuthController extends Controller
         $deviceName = trim((string) $request->input('device_name', 'mobile'));
         $deviceName = $deviceName !== '' ? $deviceName : 'mobile';
 
-        $sanctumToken = $user->createToken($deviceName, ['*'], now()->addDays(self::TOKEN_EXPIRY_DAYS));
+        $tenant = $this->resolveTenant($user);
+        $activeMode = ApiAccessMode::activeMode($user, $tenant);
+        $activeBranchId = $activeMode === ApiAccessMode::MODE_EMPLOYEE
+            ? ApiAccessMode::effectiveBranchId($user)
+            : null;
+
+        $sanctumToken = $user->createToken(
+            $deviceName,
+            ApiAccessMode::abilitiesFor($activeMode, $activeBranchId),
+            now()->addDays(self::TOKEN_EXPIRY_DAYS)
+        );
 
         return response()->json([
             'message' => 'Login successful.',
             'token_type' => 'Bearer',
             'access_token' => $sanctumToken->plainTextToken,
             'expires_at' => optional($sanctumToken->accessToken->expires_at)->toIso8601String(),
-            'user' => $this->userPayload($user),
+            'active_mode' => $activeMode,
+            'branch_id' => $activeBranchId,
+            'user' => $this->userPayload($user, $activeMode, $activeBranchId),
         ]);
     }
 
@@ -173,6 +187,106 @@ class AuthController extends Controller
         ]);
     }
 
+    public function switchMode(Request $request): JsonResponse
+    {
+        $this->setApiLocale($request);
+
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        if ($response = $this->apiLoginRestriction($user)) {
+            return response()->json($response['body'], $response['status']);
+        }
+
+        $tenant = $this->resolveTenant($user);
+
+        if (!ApiAccessMode::isOwnerCapable($user, $tenant)) {
+            return response()->json([
+                'message' => $this->authMessage('switch_mode_forbidden'),
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'mode' => ['required', 'string', Rule::in([
+                ApiAccessMode::MODE_OWNER,
+                ApiAccessMode::MODE_EMPLOYEE,
+                'company_owner',
+            ])],
+            'branch_id' => ['nullable', 'integer', 'required_if:mode,'.ApiAccessMode::MODE_EMPLOYEE],
+            'device_name' => ['nullable', 'string', 'max:255'],
+        ], [
+            'branch_id.required_if' => $this->authMessage('switch_mode_branch_required'),
+        ]);
+
+        $activeMode = $validated['mode'] === 'company_owner'
+            ? ApiAccessMode::MODE_OWNER
+            : (string) $validated['mode'];
+
+        $activeBranchId = null;
+
+        if ($activeMode === ApiAccessMode::MODE_EMPLOYEE) {
+            $activeBranchId = (int) $validated['branch_id'];
+
+            $branchExists = Branch::query()
+                ->withoutGlobalScope('tenant')
+                ->whereKey($activeBranchId)
+                ->where('tenant_id', (int) $user->tenant_id)
+                ->exists();
+
+            if (!$branchExists) {
+                throw ValidationException::withMessages([
+                    'branch_id' => [$this->authMessage('switch_mode_branch_invalid')],
+                ]);
+            }
+        }
+
+        $currentToken = $user->currentAccessToken();
+        $deviceName = trim((string) ($validated['device_name'] ?? $currentToken?->name ?? 'mobile'));
+        $deviceName = $deviceName !== '' ? $deviceName : 'mobile';
+        $abilities = ApiAccessMode::abilitiesFor($activeMode, $activeBranchId);
+        $expiresAt = now()->addDays(self::TOKEN_EXPIRY_DAYS);
+        $plainTextToken = $request->bearerToken();
+
+        if ($currentToken && $plainTextToken && method_exists($currentToken, 'forceFill') && method_exists($currentToken, 'save')) {
+            $currentToken->forceFill([
+                'name' => $deviceName,
+                'abilities' => $abilities,
+                'expires_at' => $expiresAt,
+            ])->save();
+
+            $accessToken = $plainTextToken;
+            $tokenExpiresAt = optional($currentToken->fresh()?->expires_at)->toIso8601String();
+        } else {
+            $sanctumToken = $user->createToken(
+                $deviceName,
+                $abilities,
+                $expiresAt
+            );
+
+            $accessToken = $sanctumToken->plainTextToken;
+            $tokenExpiresAt = optional($sanctumToken->accessToken->expires_at)->toIso8601String();
+        }
+
+        return response()->json([
+            'message' => $this->authMessage(
+                $activeMode === ApiAccessMode::MODE_EMPLOYEE
+                    ? 'switch_mode_employee_success'
+                    : 'switch_mode_owner_success'
+            ),
+            'token_type' => 'Bearer',
+            'access_token' => $accessToken,
+            'expires_at' => $tokenExpiresAt,
+            'active_mode' => $activeMode,
+            'branch_id' => $activeBranchId,
+            'user' => $this->userPayload($user, $activeMode, $activeBranchId),
+        ]);
+    }
+
     public function forgotPassword(Request $request): JsonResponse
     {
         $this->setApiLocale($request);
@@ -283,11 +397,19 @@ class AuthController extends Controller
         return TenantTranslations::get($translationKey, app()->getLocale(), $fallback);
     }
 
-    private function userPayload(User $user): array
+    private function userPayload(User $user, ?string $activeMode = null, ?int $activeBranchId = null): array
     {
         $tenant = $this->resolveTenant($user);
-        $branch = $user->branch_id
-            ? $user->branch()->withoutGlobalScope('tenant')->select('id', 'name')->first()
+        $baseAccountType = $this->baseAccountType($user, $tenant);
+        $mode = ApiAccessMode::activeMode($user, $tenant, $activeMode);
+        $accountType = $mode === ApiAccessMode::MODE_EMPLOYEE && $baseAccountType === 'company_owner'
+            ? 'employee'
+            : $baseAccountType;
+        $branchId = $mode === ApiAccessMode::MODE_EMPLOYEE
+            ? ApiAccessMode::effectiveBranchId($user, $activeBranchId)
+            : null;
+        $branch = $branchId
+            ? Branch::query()->withoutGlobalScope('tenant')->select('id', 'name')->whereKey($branchId)->first()
             : null;
 
         return [
@@ -295,10 +417,13 @@ class AuthController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role instanceof UserRole ? $user->role->value : (string) $user->role,
-            'account_type' => $this->accountType($user, $tenant),
-            'account_type_label' => $this->accountTypeLabel($user, $tenant),
+            'account_type' => $accountType,
+            'account_type_label' => $this->accountTypeLabelFor($accountType, $tenant),
+            'base_account_type' => $baseAccountType,
+            'active_mode' => $mode,
+            'can_switch_modes' => ApiAccessMode::isOwnerCapable($user, $tenant),
             'tenant_id' => $user->tenant_id,
-            'branch_id' => $user->branch_id,
+            'branch_id' => $branchId,
             'branch_name' => $branch?->name,
             'is_active' => (bool) $user->is_active,
             'email_verified_at' => optional($user->email_verified_at)->toIso8601String(),
@@ -311,7 +436,7 @@ class AuthController extends Controller
         ];
     }
 
-    private function accountType(User $user, ?Tenant $tenant = null): string
+    private function baseAccountType(User $user, ?Tenant $tenant = null): string
     {
         if ($user->role === UserRole::ADMIN) {
             return $this->isCompanyOwner($user, $tenant) ? 'company_owner' : 'employee';
@@ -320,10 +445,8 @@ class AuthController extends Controller
         return $user->role instanceof UserRole ? $user->role->value : (string) $user->role;
     }
 
-    private function accountTypeLabel(User $user, ?Tenant $tenant = null): string
+    private function accountTypeLabelFor(string $accountType, ?Tenant $tenant = null): string
     {
-        $accountType = $this->accountType($user, $tenant);
-
         $fallback = match ($accountType) {
             'company_owner' => 'Company owner',
             'employee' => 'Employee',
@@ -337,18 +460,7 @@ class AuthController extends Controller
 
     private function isCompanyOwner(User $user, ?Tenant $tenant = null): bool
     {
-        if ($user->role !== UserRole::ADMIN || empty($user->tenant_id)) {
-            return false;
-        }
-
-        if (method_exists($user, 'hasRole') && $user->hasRole('tenant-owner')) {
-            return true;
-        }
-
-        $tenant ??= $this->resolveTenant($user);
-
-        return $tenant && !empty($tenant->email)
-            && strcasecmp((string) $tenant->email, (string) $user->email) === 0;
+        return ApiAccessMode::isOwnerCapable($user, $tenant ?? $this->resolveTenant($user));
     }
 
     private function apiLoginRestriction(User $user): ?array

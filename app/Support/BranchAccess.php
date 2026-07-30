@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Enums\UserRole;
 use App\Models\Branch;
-use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -14,6 +13,10 @@ class BranchAccess
     public function canAccessAllBranches(?User $user): bool
     {
         if (!$user) {
+            return false;
+        }
+
+        if (ApiAccessMode::isEmployeeMode($user)) {
             return false;
         }
 
@@ -48,12 +51,14 @@ class BranchAccess
                 ->get(['id', 'name']);
         }
 
-        if (empty($user->branch_id)) {
+        $branchId = ApiAccessMode::effectiveBranchId($user);
+
+        if (empty($branchId)) {
             return collect();
         }
 
         return Branch::query()
-            ->whereKey((int) $user->branch_id)
+            ->whereKey((int) $branchId)
             ->orderBy('name')
             ->get(['id', 'name']);
     }
@@ -85,11 +90,13 @@ class BranchAccess
                 : $query;
         }
 
-        if (empty($user->branch_id)) {
+        $branchId = ApiAccessMode::effectiveBranchId($user);
+
+        if (empty($branchId)) {
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where($column, (int) $user->branch_id);
+        return $query->where($column, (int) $branchId);
     }
 
     public function canAccessBranchId(?User $user, ?int $branchId): bool
@@ -106,7 +113,7 @@ class BranchAccess
             return true;
         }
 
-        return (int) ($user->branch_id ?? 0) === $branchId;
+        return (int) (ApiAccessMode::effectiveBranchId($user) ?? 0) === $branchId;
     }
 
     public function resolveWritableBranchId(?User $user, ?int $requestedBranchId): ?int
@@ -119,7 +126,7 @@ class BranchAccess
             return $requestedBranchId;
         }
 
-        return !empty($user->branch_id) ? (int) $user->branch_id : null;
+        return ApiAccessMode::effectiveBranchId($user);
     }
 
     private function tenantHasNoBranches(User $user): bool
@@ -131,21 +138,4 @@ class BranchAccess
         return !Branch::query()->exists();
     }
 
-    private function isPrimaryTenantAccount(User $user): bool
-    {
-        if (empty($user->tenant_id)) {
-            return false;
-        }
-
-        $tenant = Tenant::query()
-            ->select('id', 'email')
-            ->whereKey((int) $user->tenant_id)
-            ->first();
-
-        if (!$tenant || empty($tenant->email)) {
-            return false;
-        }
-
-        return strcasecmp((string) $tenant->email, (string) $user->email) === 0;
-    }
 }
