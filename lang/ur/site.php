@@ -2276,6 +2276,15 @@ return [
             'late_returns' => 'تاخیر سے واپسی',
             'rented_cars' => 'کرائے پر گاڑیاں',
         ],
+        'finance' => [
+            'cards' => [
+                'total_revenue' => 'کل آمدنی',
+                'collected_amount' => 'وصول شدہ',
+                'uncollected_amount' => 'غیر وصول شدہ',
+                'expenses' => 'اخراجات',
+                'net_profit' => 'خالص منافع',
+            ],
+        ],
         'fleet' => [
             'summary' => [
                 'total_cars' => 'کل گاڑیاں',
@@ -2402,9 +2411,11 @@ return [
         ],
         'comparisons' => [
             'yesterday' => 'گزشتہ روز',
+            'previous_period' => 'پچھلی مدت',
         ],
         'errors' => [
             'branch_invalid' => 'منتخب برانچ درست یا دستیاب نہیں ہے۔',
+            'date_range_too_long' => 'چارٹ کی تاریخ کی حد 7 دن سے زیادہ نہیں ہو سکتی۔',
         ],
     ],
 ];

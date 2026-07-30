@@ -2811,6 +2811,17 @@ const saveError = ref(\'',
       'late_returns' => 'تأخيرات الإرجاع',
       'rented_cars' => 'سيارات مؤجرة',
     ),
+    'finance' => 
+    array (
+      'cards' => 
+      array (
+        'total_revenue' => 'إجمالي الإيرادات',
+        'collected_amount' => 'المحصل',
+        'uncollected_amount' => 'غير المحصل',
+        'expenses' => 'المصروفات',
+        'net_profit' => 'صافي الربح',
+      ),
+    ),
     'fleet' => 
     array (
       'summary' => 
@@ -2964,10 +2975,12 @@ const saveError = ref(\'',
     'comparisons' => 
     array (
       'yesterday' => 'أمس',
+      'previous_period' => 'الفترة السابقة',
     ),
     'errors' => 
     array (
       'branch_invalid' => 'الفرع المحدد غير صحيح أو غير متاح.',
+      'date_range_too_long' => 'نطاق التاريخ للرسم البياني يجب ألا يتجاوز 7 أيام.',
     ),
   ),
 );

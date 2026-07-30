@@ -66,7 +66,7 @@ class OwnerDashboardController extends Controller
         $locale = $this->resolveLocale($request);
         $today = Carbon::today();
         $yesterday = $today->copy()->subDay();
-        [$dateFrom, $dateTo, $hasCustomDateRange] = $this->resolveDateRange($request, $today);
+        [$dateFrom, $dateTo, $hasCustomDateRange] = $this->resolveDateRange($request, $today, $locale);
         $branchId = $this->resolveOwnerBranchId($request, $user);
         $tenant = Tenant::query()->with('siteSetting')->findOrFail((int) $user->tenant_id);
         $currency = $this->tenantCurrency($tenant, $request);
@@ -155,7 +155,7 @@ class OwnerDashboardController extends Controller
         ]);
     }
 
-    private function resolveDateRange(Request $request, Carbon $defaultDate): array
+    private function resolveDateRange(Request $request, Carbon $defaultDate, string $locale): array
     {
         $dateFromInput = $this->firstFilledDateInput($request, ['date_from', 'from', 'from_date', 'start_date', 'dateFrom']);
         $dateToInput = $this->firstFilledDateInput($request, ['date_to', 'to', 'to_date', 'end_date', 'dateTo']);
@@ -176,6 +176,12 @@ class OwnerDashboardController extends Controller
 
         $dateFrom = Carbon::parse($validated['date_from'] ?? $validated['date_to'])->startOfDay();
         $dateTo = Carbon::parse($validated['date_to'] ?? $validated['date_from'])->startOfDay();
+
+        if ($dateFrom->diffInDays($dateTo) > 6) {
+            throw ValidationException::withMessages([
+                'date_to' => [$this->ownerText('errors.date_range_too_long', $locale, 'The chart date range cannot exceed 7 days.')],
+            ]);
+        }
 
         return [$dateFrom, $dateTo, true];
     }

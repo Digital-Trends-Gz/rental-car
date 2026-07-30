@@ -84,9 +84,9 @@ Artisan::command('owner-dashboard:snapshot {--date=} {--tenant_id=}', function (
     $this->info('Owner dashboard metric snapshots completed.');
 })->purpose('Capture owner dashboard metrics per tenant and branch for exact day-over-day comparison');
 
-Schedule::command('maintenance:process-schedule')->everyFiveMinutes();
-Schedule::command('rentals:sync-statuses')->everyFiveMinutes();
-Schedule::command('cars:notify-expiring-documents')->dailyAt('14:22');
-Schedule::command('contracts:notify-ending-tomorrow')->dailyAt('14:23');
-Schedule::command('ai-insights:generate-monthly --with-openai')->monthlyOn(1, '09:00');
-Schedule::command('owner-dashboard:snapshot')->dailyAt('23:59');
+Schedule::command('maintenance:process-schedule')->everyFiveMinutes()->withoutOverlapping(10);
+Schedule::command('rentals:sync-statuses')->everyFiveMinutes()->withoutOverlapping(10);
+Schedule::command('cars:notify-expiring-documents')->dailyAt('14:22')->withoutOverlapping(60);
+Schedule::command('contracts:notify-ending-tomorrow')->dailyAt('14:23')->withoutOverlapping(60);
+Schedule::command('ai-insights:generate-monthly --with-openai')->monthlyOn(1, '09:00')->withoutOverlapping(120);
+Schedule::command('owner-dashboard:snapshot')->dailyAt('23:59')->withoutOverlapping(60);

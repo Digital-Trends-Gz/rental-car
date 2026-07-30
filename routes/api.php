@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\ReservationsController;
 use App\Http\Controllers\Api\NotificationsController;
 use App\Http\Controllers\Api\OwnerDashboardController;
 use App\Http\Controllers\Api\OwnerDiscountRequestsController;
+use App\Http\Controllers\Api\OwnerFinanceController;
 use App\Http\Controllers\Api\OwnerFleetController;
 use App\Http\Controllers\Api\OwnerNotificationsController;
 use App\Http\Controllers\Api\OwnerReservationsController;
@@ -45,6 +46,7 @@ Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
 Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
     Route::get('branches', [OwnerDashboardController::class, 'branches'])->name('api.owner.branches');
     Route::get('dashboard/summary', [OwnerDashboardController::class, 'summary'])->name('api.owner.dashboard.summary');
+    Route::get('finance/summary', [OwnerFinanceController::class, 'summary'])->name('api.owner.finance.summary');
     Route::get('fleet/statuses', [OwnerFleetController::class, 'statuses'])->name('api.owner.fleet.statuses');
     Route::get('fleet', [OwnerFleetController::class, 'index'])->name('api.owner.fleet.index');
     Route::get('fleet/{car}', [OwnerFleetController::class, 'show'])->name('api.owner.fleet.show');

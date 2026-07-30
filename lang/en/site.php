@@ -2554,6 +2554,15 @@ return [
             'late_returns' => 'Late returns',
             'rented_cars' => 'Rented cars',
         ],
+        'finance' => [
+            'cards' => [
+                'total_revenue' => 'Total revenue',
+                'collected_amount' => 'Collected',
+                'uncollected_amount' => 'Uncollected',
+                'expenses' => 'Expenses',
+                'net_profit' => 'Net profit',
+            ],
+        ],
         'fleet' => [
             'summary' => [
                 'total_cars' => 'Total cars',
@@ -2680,9 +2689,11 @@ return [
         ],
         'comparisons' => [
             'yesterday' => 'Yesterday',
+            'previous_period' => 'Previous period',
         ],
         'errors' => [
             'branch_invalid' => 'Selected branch is invalid or not accessible.',
+            'date_range_too_long' => 'The chart date range cannot exceed 7 days.',
         ],
     ],
 ];
