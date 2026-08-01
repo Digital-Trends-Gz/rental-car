@@ -43,25 +43,10 @@ const props = defineProps<{
     };
 }>();
 
-const { t, locale } = useTrans();
+const { t } = useTrans();
 const page = usePage<any>();
 const translationRoot = 'dashboard.admin.settings.mrta_pdf';
-const translationKeyFor = (text: string) =>
-    text
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '')
-        .slice(0, 80);
-const localize = (en: string, ar: string) => {
-    const fullKey = `${translationRoot}.${translationKeyFor(en)}`;
-    const translated = t(fullKey);
-
-    if (translated !== fullKey) {
-        return translated;
-    }
-
-    return locale.value === 'ar' ? ar : en;
-};
+const translate = (key: string) => t(`${translationRoot}.${key}`);
 const settingValue = (key: keyof MrtaPdfSettings): string => String(props.settings.mrta_pdf?.[key] ?? props.mrtaPdfDefaults[key] ?? '');
 
 const form = useForm({
@@ -191,19 +176,19 @@ function submit() {
 </script>
 
 <template>
-    <Head :title="localize('MRTA PDF Settings', 'إعدادات ملف الحادث PDF')" />
+    <Head :title="translate('title')" />
 
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <h1 class="text-2xl font-semibold">{{ localize('MRTA PDF Settings', 'إعدادات ملف الحادث PDF') }}</h1>
+                    <h1 class="text-2xl font-semibold">{{ translate('title') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        {{ localize('Control the logos, color, insurance text, contact details, and footer used in the accident PDF.', 'تحكم بالصور واللون ونصوص التأمين ومعلومات التواصل والفوتر داخل ملف الحادث.') }}
+                        {{ translate('description') }}
                     </p>
                 </div>
                 <Button :disabled="form.processing" @click="submit">
-                    {{ form.processing ? localize('Saving...', 'جاري الحفظ...') : localize('Save Settings', 'حفظ الإعدادات') }}
+                    {{ form.processing ? translate('saving') : translate('save_settings') }}
                 </Button>
             </div>
 
@@ -214,7 +199,7 @@ function submit() {
                 {{ flashError }}
             </div>
             <div v-if="formErrorList.length" class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                <div class="font-medium">{{ localize('Please fix the following errors:', 'يرجى تصحيح الأخطاء التالية:') }}</div>
+                <div class="font-medium">{{ translate('validation_intro') }}</div>
                 <ul class="mt-1 list-disc pl-5">
                     <li v-for="(message, idx) in formErrorList" :key="idx">{{ message }}</li>
                 </ul>
@@ -224,13 +209,13 @@ function submit() {
                 <form class="space-y-6" @submit.prevent="submit">
                     <Card>
                         <CardHeader>
-                            <CardTitle>{{ localize('Color and logos', 'اللون والصور') }}</CardTitle>
-                            <CardDescription>{{ localize('Upload images for the PDF. If a logo is empty, the PDF uses the built-in drawn mark.', 'ارفع صور الشعارات للملف. إذا تركت شعارًا فارغًا سيستخدم الملف الرسم الافتراضي.') }}</CardDescription>
+                            <CardTitle>{{ translate('color_and_logos') }}</CardTitle>
+                            <CardDescription>{{ translate('color_and_logos_description') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="grid gap-4 md:grid-cols-[180px_1fr]">
                                 <div class="space-y-2">
-                                    <Label for="primary_color">{{ localize('Main Color', 'اللون الرئيسي') }}</Label>
+                                    <Label for="primary_color">{{ translate('main_color') }}</Label>
                                     <div class="flex gap-2">
                                         <Input id="primary_color_picker" v-model="form.mrta_pdf.primary_color" type="color" class="h-10 w-14 p-1" />
                                         <Input id="primary_color" v-model="form.mrta_pdf.primary_color" placeholder="#f15a24" />
@@ -239,7 +224,7 @@ function submit() {
                             </div>
 
                             <div class="space-y-2">
-                                <Label>{{ localize('Oman top-left logo', 'شعار عمان أعلى اليسار') }}</Label>
+                                <Label>{{ translate('oman_top_left_logo') }}</Label>
                                 <FileUpload
                                     ref="omanLogoUploadRef"
                                     v-model="omanLogoTempFolders"
@@ -251,7 +236,7 @@ function submit() {
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label>{{ localize('ROP top-right logo', 'شعار شرطة عمان أعلى اليمين') }}</Label>
+                                <Label>{{ translate('rop_top_right_logo') }}</Label>
                                 <FileUpload
                                     ref="ropLogoUploadRef"
                                     v-model="ropLogoTempFolders"
@@ -263,7 +248,7 @@ function submit() {
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label>{{ localize('Bottom insurance logo', 'شعار التأمين في الأسفل') }}</Label>
+                                <Label>{{ translate('bottom_insurance_logo') }}</Label>
                                 <FileUpload
                                     ref="bottomLogoUploadRef"
                                     v-model="bottomLogoTempFolders"
@@ -279,32 +264,32 @@ function submit() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>{{ localize('Insurance section text', 'نصوص قسم التأمين') }}</CardTitle>
-                            <CardDescription>{{ localize('These values control the visible Insurance title, fallback logo text, and contact details.', 'هذه القيم تتحكم بعنوان التأمين ونص الشعار البديل ومعلومات التواصل.') }}</CardDescription>
+                            <CardTitle>{{ translate('insurance_section_text') }}</CardTitle>
+                            <CardDescription>{{ translate('insurance_section_description') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="grid gap-4 md:grid-cols-2">
                             <div class="space-y-2">
-                                <Label for="insurance_title_en">{{ localize('Insurance title (EN)', 'عنوان التأمين (EN)') }}</Label>
+                                <Label for="insurance_title_en">{{ translate('insurance_title_en') }}</Label>
                                 <Input id="insurance_title_en" v-model="form.mrta_pdf.insurance_section_title_en" />
                             </div>
                             <div class="space-y-2">
-                                <Label for="insurance_title_ar">{{ localize('Insurance title (AR)', 'عنوان التأمين (AR)') }}</Label>
+                                <Label for="insurance_title_ar">{{ translate('insurance_title_ar') }}</Label>
                                 <Input id="insurance_title_ar" v-model="form.mrta_pdf.insurance_section_title_ar" dir="rtl" />
                             </div>
                             <div class="space-y-2">
-                                <Label for="liva_logo_text">{{ localize('Fallback logo text', 'نص الشعار البديل') }}</Label>
+                                <Label for="liva_logo_text">{{ translate('fallback_logo_text') }}</Label>
                                 <Input id="liva_logo_text" v-model="form.mrta_pdf.liva_logo_text" />
                             </div>
                             <div class="space-y-2">
-                                <Label for="liva_logo_ar">{{ localize('Fallback logo Arabic text', 'نص الشعار العربي البديل') }}</Label>
+                                <Label for="liva_logo_ar">{{ translate('fallback_logo_arabic_text') }}</Label>
                                 <Input id="liva_logo_ar" v-model="form.mrta_pdf.liva_logo_ar" dir="rtl" />
                             </div>
                             <div class="space-y-2">
-                                <Label for="liva_contact_email">{{ localize('Contact email', 'البريد الإلكتروني') }}</Label>
+                                <Label for="liva_contact_email">{{ translate('contact_email') }}</Label>
                                 <Input id="liva_contact_email" v-model="form.mrta_pdf.liva_contact_email" />
                             </div>
                             <div class="space-y-2">
-                                <Label for="liva_contact_website">{{ localize('Website', 'الموقع') }}</Label>
+                                <Label for="liva_contact_website">{{ translate('website') }}</Label>
                                 <Input id="liva_contact_website" v-model="form.mrta_pdf.liva_contact_website" />
                             </div>
                         </CardContent>
@@ -312,16 +297,16 @@ function submit() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>{{ localize('Footer text', 'نص الفوتر') }}</CardTitle>
-                            <CardDescription>{{ localize('Shown at the very bottom of the generated PDF.', 'يظهر في أسفل ملف PDF.') }}</CardDescription>
+                            <CardTitle>{{ translate('footer_text') }}</CardTitle>
+                            <CardDescription>{{ translate('footer_description') }}</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="space-y-2">
-                                <Label for="footer_ar">{{ localize('Footer Arabic', 'الفوتر العربي') }}</Label>
+                                <Label for="footer_ar">{{ translate('footer_arabic') }}</Label>
                                 <Textarea id="footer_ar" v-model="form.mrta_pdf.footer_ar" rows="3" dir="rtl" />
                             </div>
                             <div class="space-y-2">
-                                <Label for="footer_en">{{ localize('Footer English', 'الفوتر الإنجليزي') }}</Label>
+                                <Label for="footer_en">{{ translate('footer_english') }}</Label>
                                 <Textarea id="footer_en" v-model="form.mrta_pdf.footer_en" rows="3" />
                             </div>
                         </CardContent>
@@ -329,25 +314,25 @@ function submit() {
 
                     <div class="flex justify-end">
                         <Button type="submit" :disabled="form.processing">
-                            {{ form.processing ? localize('Saving...', 'جاري الحفظ...') : localize('Save Settings', 'حفظ الإعدادات') }}
+                            {{ form.processing ? translate('saving') : translate('save_settings') }}
                         </Button>
                     </div>
                 </form>
 
                 <Card class="h-fit">
                     <CardHeader>
-                        <CardTitle>{{ localize('Preview', 'المعاينة') }}</CardTitle>
-                        <CardDescription>{{ localize('Preview uses the latest accident report after saving.', 'المعاينة تستخدم آخر بلاغ حادث بعد الحفظ.') }}</CardDescription>
+                        <CardTitle>{{ translate('preview') }}</CardTitle>
+                        <CardDescription>{{ translate('preview_description') }}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <iframe
                             v-if="previewSrc"
                             :src="previewSrc"
                             class="h-[760px] w-full rounded-md border"
-                            title="MRTA PDF preview"
+                            :title="translate('preview_iframe_title')"
                         ></iframe>
                         <div v-else class="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
-                            {{ localize('Create an accident report first to enable PDF preview.', 'أنشئ بلاغ حادث أولاً لتفعيل المعاينة.') }}
+                            {{ translate('preview_empty') }}
                         </div>
                     </CardContent>
                 </Card>
