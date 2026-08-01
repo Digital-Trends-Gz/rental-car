@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useTrans } from '@/composables/useTrans';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { computed, ref, watch } from 'vue';
 import { Building2, CarFront, UserRound } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
     reports: {
@@ -39,8 +39,15 @@ const props = defineProps<{
     createUrl: string;
 }>();
 
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { t } = useTrans();
+const translationRoot = 'dashboard.admin.accident_reports';
+const translate = (key: string, params: Record<string, string | number> = {}) => t(`${translationRoot}.${key}`, params);
+const translateStatus = (statusValue: string, fallback: string) => {
+    const key = `${translationRoot}.statuses.${statusValue}`;
+    const translated = t(key);
+
+    return translated === key ? fallback : translated;
+};
 
 const search = ref(props.filters?.search ?? '');
 const status = ref(props.filters?.status || 'all');
@@ -51,26 +58,26 @@ const workflowCards = computed(() => [
     {
         key: 'contract',
         icon: UserRound,
-        title: localize('Customer accidents', '\u062d\u0648\u0627\u062f\u062b \u0627\u0644\u0639\u0645\u0644\u0627\u0621'),
-        description: localize('Linked to rental contracts and customer responsibility review.', '\u0645\u0631\u062a\u0628\u0637\u0629 \u0628\u0627\u0644\u0639\u0642\u0648\u062f \u0648\u0645\u0631\u0627\u062c\u0639\u0629 \u0645\u0633\u0624\u0648\u0644\u064a\u0629 \u0627\u0644\u0639\u0645\u064a\u0644.'),
+        title: translate('workflow.customer_accidents.title'),
+        description: translate('workflow.customer_accidents.description'),
         value: props.reports.data.length,
-        state: localize('Active', '\u0645\u0641\u0639\u0644'),
+        state: translate('workflow.active'),
     },
     {
         key: 'employee',
         icon: CarFront,
-        title: localize('Employee custody', '\u0639\u0647\u062f\u0629 \u0627\u0644\u0645\u0648\u0638\u0641'),
-        description: localize('For transfers, inspections, refueling, and internal movement.', '\u0644\u0644\u0646\u0642\u0644 \u0648\u0627\u0644\u0641\u062d\u0635 \u0648\u0627\u0644\u062a\u0639\u0628\u0626\u0629 \u0648\u0627\u0644\u062d\u0631\u0643\u0629 \u0627\u0644\u062f\u0627\u062e\u0644\u064a\u0629.'),
+        title: translate('workflow.employee_custody.title'),
+        description: translate('workflow.employee_custody.description'),
         value: 0,
-        state: localize('Next', '\u0627\u0644\u062e\u0637\u0648\u0629 \u0627\u0644\u0642\u0627\u062f\u0645\u0629'),
+        state: translate('workflow.next'),
     },
     {
         key: 'branch',
         icon: Building2,
-        title: localize('Office and gate', '\u0627\u0644\u0645\u0643\u062a\u0628 \u0648\u0627\u0644\u0628\u0648\u0627\u0628\u0629'),
-        description: localize('For parking, branch entrance, and handover-area incidents.', '\u0644\u0644\u0645\u0648\u0627\u0642\u0641 \u0648\u0645\u062f\u062e\u0644 \u0627\u0644\u0641\u0631\u0639 \u0648\u0645\u0646\u0637\u0642\u0629 \u0627\u0644\u062a\u0633\u0644\u064a\u0645.'),
+        title: translate('workflow.office_and_gate.title'),
+        description: translate('workflow.office_and_gate.description'),
         value: 0,
-        state: localize('Next', '\u0627\u0644\u062e\u0637\u0648\u0629 \u0627\u0644\u0642\u0627\u062f\u0645\u0629'),
+        state: translate('workflow.next'),
     },
 ]);
 
@@ -98,20 +105,20 @@ watch(search, (newValue, oldValue) => {
 </script>
 
 <template>
-    <Head :title="localize('Accident Reports', 'بلاغات الحوادث')" />
+    <Head :title="translate('title')" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
                     <h1 class="text-2xl font-semibold">
-                        {{ localize('Accident Reports', 'بلاغات الحوادث') }}
+                        {{ translate('title') }}
                     </h1>
                     <p class="text-sm text-muted-foreground">
-                        {{ localize('Track accident reports linked to rental contracts.', 'متابعة بلاغات الحوادث المرتبطة بالعقود.') }}
+                        {{ translate('description') }}
                     </p>
                 </div>
                 <Link :href="createUrl">
-                    <Button>{{ localize('New Accident Report', 'بلاغ حادث جديد') }}</Button>
+                    <Button>{{ translate('new_report') }}</Button>
                 </Link>
             </div>
 
@@ -143,14 +150,14 @@ watch(search, (newValue, oldValue) => {
                 <Input
                     v-model="search"
                     class="md:col-span-2"
-                    :placeholder="localize('Search by number, contract, car, location...', 'بحث بالرقم أو العقد أو السيارة أو الموقع...')"
+                    :placeholder="translate('search_placeholder')"
                     @keyup.enter="doSearch"
                 />
 
                 <select v-model="status" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="all">{{ localize('All statuses', 'كل الحالات') }}</option>
+                    <option value="all">{{ translate('all_statuses') }}</option>
                     <option v-for="item in statuses" :key="item.value" :value="item.value">
-                        {{ item.label }}
+                        {{ translateStatus(item.value, item.label) }}
                     </option>
                 </select>
 
@@ -159,7 +166,7 @@ watch(search, (newValue, oldValue) => {
                     v-model="branchId"
                     class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                    <option value="">{{ localize('All branches', 'كل الفروع') }}</option>
+                    <option value="">{{ translate('all_branches') }}</option>
                     <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">
                         {{ branch.name }}
                     </option>
@@ -167,7 +174,7 @@ watch(search, (newValue, oldValue) => {
             </div>
 
             <div class="flex items-center gap-2">
-                <Button @click="doSearch">{{ localize('Search', 'بحث') }}</Button>
+                <Button @click="doSearch">{{ translate('search') }}</Button>
                 <Button
                     variant="outline"
                     @click="
@@ -177,7 +184,7 @@ watch(search, (newValue, oldValue) => {
                         doSearch();
                     "
                 >
-                    {{ localize('Clear', 'مسح') }}
+                    {{ translate('clear') }}
                 </Button>
             </div>
 
@@ -186,39 +193,39 @@ watch(search, (newValue, oldValue) => {
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                {{ localize('Number', 'الرقم') }}
+                                {{ translate('table.number') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                {{ localize('Contract', 'العقد') }}
+                                {{ translate('table.contract') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                {{ localize('Car', 'السيارة') }}
+                                {{ translate('table.car') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                {{ localize('Location', 'الموقع') }}
+                                {{ translate('table.location') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                {{ localize('Status', 'الحالة') }}
+                                {{ translate('table.status') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                {{ localize('Date', 'التاريخ') }}
+                                {{ translate('table.date') }}
                             </th>
                             <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                                {{ localize('Actions', 'إجراءات') }}
+                                {{ translate('table.actions') }}
                             </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 bg-white">
                         <tr v-if="!hasRows">
                             <td colspan="7" class="px-4 py-10 text-center text-sm text-muted-foreground">
-                                {{ localize('No accident reports found.', 'لا توجد بلاغات حوادث.') }}
+                                {{ translate('empty') }}
                             </td>
                         </tr>
                         <tr v-for="report in reports.data" :key="report.id">
                             <td class="whitespace-nowrap px-4 py-3 text-sm font-medium">
                                 {{ report.accident_number }}
                                 <div class="text-xs text-muted-foreground">
-                                    {{ report.photos_count }} {{ localize('photos', 'صور') }}
+                                    {{ translate('photos_count', { count: report.photos_count }) }}
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-sm">
@@ -229,13 +236,13 @@ watch(search, (newValue, oldValue) => {
                             <td class="px-4 py-3 text-sm">{{ report.location || '-' }}</td>
                             <td class="px-4 py-3 text-sm">
                                 <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium text-white" :style="{ backgroundColor: report.status_color }">
-                                    {{ report.status_label }}
+                                    {{ translateStatus(report.status, report.status_label) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm">{{ report.accident_at || '-' }}</td>
                             <td class="px-4 py-3 text-right text-sm">
                                 <Link :href="report.show_url" class="text-primary hover:underline">
-                                    {{ localize('View', 'عرض') }}
+                                    {{ translate('view') }}
                                 </Link>
                             </td>
                         </tr>

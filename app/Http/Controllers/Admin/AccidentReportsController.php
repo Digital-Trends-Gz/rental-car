@@ -828,13 +828,10 @@ class AccidentReportsController extends Controller
 
     private function statusLabel(string $status): string
     {
-        return match ($status) {
-            'reported' => 'Reported',
-            'under_review' => 'Under review',
-            'resolved' => 'Resolved',
-            'rejected' => 'Rejected',
-            default => Str::headline($status),
-        };
+        $key = "site.dashboard.admin.accident_reports.statuses.{$status}";
+        $translated = __($key);
+
+        return $translated === $key ? Str::headline($status) : $translated;
     }
 
     private function statusColor(string $status): string
@@ -850,35 +847,35 @@ class AccidentReportsController extends Controller
 
     private function contextLabel(?string $context): string
     {
-        return match ($context) {
-            'employee' => 'With employee',
-            'branch' => 'At office or gate',
-            default => 'With customer',
-        };
+        $value = $context ?: 'contract';
+        $key = "site.dashboard.admin.accident_reports.contexts.{$value}";
+        $translated = __($key);
+
+        return $translated === $key ? Str::headline($value) : $translated;
     }
 
     private function responsibilityLabel(?string $responsibility): string
     {
-        return match ($responsibility) {
-            'customer' => 'Customer',
-            'employee' => 'Employee',
-            'company' => 'Company',
-            'third_party' => 'Third party',
-            'unknown' => 'Unknown',
-            default => '-',
-        };
+        if (!$responsibility) {
+            return '-';
+        }
+
+        $key = "site.dashboard.admin.accident_reports.responsibilities.{$responsibility}";
+        $translated = __($key);
+
+        return $translated === $key ? Str::headline($responsibility) : $translated;
     }
 
     private function locationTypeLabel(?string $locationType): string
     {
-        return match ($locationType) {
-            'road' => 'Road',
-            'branch_gate' => 'Branch gate',
-            'parking' => 'Parking',
-            'workshop' => 'Workshop',
-            'other' => 'Other',
-            default => '-',
-        };
+        if (!$locationType) {
+            return '-';
+        }
+
+        $key = "site.dashboard.admin.accident_reports.location_types.{$locationType}";
+        $translated = __($key);
+
+        return $translated === $key ? Str::headline($locationType) : $translated;
     }
 
     private function routeParams(Request $request, array $params = []): array

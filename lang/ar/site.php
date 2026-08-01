@@ -1441,6 +1441,79 @@ return array (
           'cancelled' => 'ملغاة',
         ),
       ),
+      'accident_reports' => 
+      array (
+        'title' => 'بلاغات الحوادث',
+        'description' => 'متابعة بلاغات الحوادث المرتبطة بعقود التأجير.',
+        'new_report' => 'بلاغ حادث جديد',
+        'search_placeholder' => 'ابحث بالرقم أو العقد أو السيارة أو الموقع...',
+        'all_statuses' => 'كل الحالات',
+        'all_branches' => 'كل الفروع',
+        'search' => 'بحث',
+        'clear' => 'مسح',
+        'empty' => 'لا توجد بلاغات حوادث.',
+        'photos_count' => ':count صور',
+        'view' => 'عرض',
+        'workflow' => 
+        array (
+          'active' => 'مفعل',
+          'next' => 'الخطوة القادمة',
+          'customer_accidents' => 
+          array (
+            'title' => 'حوادث العملاء',
+            'description' => 'مرتبطة بالعقود ومراجعة مسؤولية العميل.',
+          ),
+          'employee_custody' => 
+          array (
+            'title' => 'عهدة الموظف',
+            'description' => 'للنقل والفحص والتعبئة والحركة الداخلية.',
+          ),
+          'office_and_gate' => 
+          array (
+            'title' => 'المكتب والبوابة',
+            'description' => 'للمواقف ومدخل الفرع ومنطقة التسليم.',
+          ),
+        ),
+        'table' => 
+        array (
+          'number' => 'الرقم',
+          'contract' => 'العقد',
+          'car' => 'السيارة',
+          'location' => 'الموقع',
+          'status' => 'الحالة',
+          'date' => 'التاريخ',
+          'actions' => 'إجراءات',
+        ),
+        'statuses' => 
+        array (
+          'reported' => 'مبلغ عنه',
+          'under_review' => 'قيد المراجعة',
+          'resolved' => 'تم الحل',
+          'rejected' => 'مرفوض',
+        ),
+        'contexts' => 
+        array (
+          'contract' => 'مع العميل',
+          'employee' => 'مع موظف',
+          'branch' => 'عند المكتب أو البوابة',
+        ),
+        'responsibilities' => 
+        array (
+          'customer' => 'العميل',
+          'employee' => 'الموظف',
+          'company' => 'الشركة',
+          'third_party' => 'طرف ثالث',
+          'unknown' => 'غير معروف',
+        ),
+        'location_types' => 
+        array (
+          'road' => 'الطريق',
+          'branch_gate' => 'بوابة الفرع',
+          'parking' => 'المواقف',
+          'workshop' => 'الورشة',
+          'other' => 'أخرى',
+        ),
+      ),
       'settings' => 
       array (
         'contract_pdf' => 
