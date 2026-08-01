@@ -3,10 +3,10 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTrans } from '@/composables/useTrans';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
     repair: {
@@ -30,9 +30,17 @@ const props = defineProps<{
     method: 'post' | 'put';
 }>();
 
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { t } = useTrans();
+const translationRoot = 'dashboard.admin.damage_repairs';
+const translate = (key: string) => t(`${translationRoot}.${key}`);
+const translateStatus = (statusValue: string, fallback: string) => {
+    const key = `${translationRoot}.statuses.${statusValue}`;
+    const translated = t(key);
+
+    return translated === key ? fallback : translated;
+};
 const isEdit = computed(() => !!props.repair?.id);
+const pageTitle = computed(() => translate(isEdit.value ? 'edit_title' : 'create_title'));
 
 const form = useForm({
     car_damage_case_id: props.repair?.damage_case_id ? String(props.repair.damage_case_id) : '',
@@ -58,15 +66,15 @@ function submit() {
 </script>
 
 <template>
-    <Head :title="isEdit ? localize('Edit Damage Repair', 'تعديل إصلاح الضرر') : localize('Create Damage Repair', 'إنشاء إصلاح ضرر')" />
+    <Head :title="pageTitle" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">
-                    {{ isEdit ? localize('Edit Damage Repair', 'تعديل إصلاح الضرر') : localize('Create Damage Repair', 'إنشاء إصلاح ضرر') }}
+                    {{ pageTitle }}
                 </h1>
                 <Link :href="indexUrl">
-                    <Button variant="outline">{{ localize('Back', 'رجوع') }}</Button>
+                    <Button variant="outline">{{ translate('back') }}</Button>
                 </Link>
             </div>
 
@@ -74,14 +82,14 @@ function submit() {
                 <form class="space-y-6" @submit.prevent="submit">
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="space-y-2 md:col-span-2">
-                            <Label for="car_damage_case_id">{{ localize('Damage Case', 'الضرر') }}</Label>
+                            <Label for="car_damage_case_id">{{ translate('fields.damage_case') }}</Label>
                             <select
                                 id="car_damage_case_id"
                                 v-model="form.car_damage_case_id"
                                 class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 required
                             >
-                                <option value="" disabled>{{ localize('Select damage case', 'اختر الضرر') }}</option>
+                                <option value="" disabled>{{ translate('select_damage_case') }}</option>
                                 <option v-for="item in damageCases" :key="item.id" :value="String(item.id)">
                                     {{ item.label }}
                                 </option>
@@ -90,7 +98,7 @@ function submit() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="status">{{ localize('Status', 'الحالة') }}</Label>
+                            <Label for="status">{{ translate('fields.status') }}</Label>
                             <select
                                 id="status"
                                 v-model="form.status"
@@ -98,20 +106,20 @@ function submit() {
                                 required
                             >
                                 <option v-for="item in statuses" :key="item.value" :value="item.value">
-                                    {{ item.label }}
+                                    {{ translateStatus(item.value, item.label) }}
                                 </option>
                             </select>
                             <InputError :message="form.errors.status" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="maintenance_workshop_id">{{ localize('Workshop', 'الورشة') }}</Label>
+                            <Label for="maintenance_workshop_id">{{ translate('fields.workshop') }}</Label>
                             <select
                                 id="maintenance_workshop_id"
                                 v-model="form.maintenance_workshop_id"
                                 class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                             >
-                                <option value="">{{ localize('Select workshop', 'اختر الورشة') }}</option>
+                                <option value="">{{ translate('select_workshop') }}</option>
                                 <option v-for="item in workshops" :key="item.id" :value="String(item.id)">
                                     {{ item.label }}
                                 </option>
@@ -120,37 +128,37 @@ function submit() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="opened_at">{{ localize('Opened At', 'تاريخ الفتح') }}</Label>
+                            <Label for="opened_at">{{ translate('fields.opened_at') }}</Label>
                             <Input id="opened_at" v-model="form.opened_at" type="datetime-local" />
                             <InputError :message="form.errors.opened_at" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="started_at">{{ localize('Started At', 'تاريخ البدء') }}</Label>
+                            <Label for="started_at">{{ translate('fields.started_at') }}</Label>
                             <Input id="started_at" v-model="form.started_at" type="datetime-local" />
                             <InputError :message="form.errors.started_at" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="completed_at">{{ localize('Completed At', 'تاريخ الإنهاء') }}</Label>
+                            <Label for="completed_at">{{ translate('fields.completed_at') }}</Label>
                             <Input id="completed_at" v-model="form.completed_at" type="datetime-local" />
                             <InputError :message="form.errors.completed_at" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="estimated_cost">{{ localize('Estimated Cost', 'التكلفة التقديرية') }}</Label>
+                            <Label for="estimated_cost">{{ translate('fields.estimated_cost') }}</Label>
                             <Input id="estimated_cost" v-model="form.estimated_cost" min="0" step="0.01" type="number" />
                             <InputError :message="form.errors.estimated_cost" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="actual_cost">{{ localize('Actual Cost', 'التكلفة الفعلية') }}</Label>
+                            <Label for="actual_cost">{{ translate('fields.actual_cost') }}</Label>
                             <Input id="actual_cost" v-model="form.actual_cost" min="0" step="0.01" type="number" />
                             <InputError :message="form.errors.actual_cost" />
                         </div>
 
                         <div class="space-y-2 md:col-span-2">
-                            <Label for="notes">{{ localize('Notes', 'ملاحظات') }}</Label>
+                            <Label for="notes">{{ translate('fields.notes') }}</Label>
                             <textarea
                                 id="notes"
                                 v-model="form.notes"
@@ -161,7 +169,7 @@ function submit() {
                         </div>
 
                         <div class="space-y-2 md:col-span-2">
-                            <Label for="completion_notes">{{ localize('Completion Notes', 'ملاحظات الإنهاء') }}</Label>
+                            <Label for="completion_notes">{{ translate('fields.completion_notes') }}</Label>
                             <textarea
                                 id="completion_notes"
                                 v-model="form.completion_notes"
@@ -174,16 +182,10 @@ function submit() {
 
                     <div class="flex items-center gap-3">
                         <Button :disabled="form.processing" type="submit">
-                            {{
-                                form.processing
-                                    ? localize('Saving...', 'جارٍ الحفظ...')
-                                    : isEdit
-                                      ? localize('Save Changes', 'حفظ التغييرات')
-                                      : localize('Create Repair', 'إنشاء الإصلاح')
-                            }}
+                            {{ form.processing ? translate('saving') : isEdit ? translate('save_changes') : translate('create_repair') }}
                         </Button>
                         <Link :href="indexUrl">
-                            <Button type="button" variant="outline">{{ localize('Cancel', 'إلغاء') }}</Button>
+                            <Button type="button" variant="outline">{{ translate('cancel') }}</Button>
                         </Link>
                     </div>
                 </form>

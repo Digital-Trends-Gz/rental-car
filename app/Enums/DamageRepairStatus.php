@@ -11,12 +11,7 @@ enum DamageRepairStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::OPEN => 'Open',
-            self::IN_PROGRESS => 'In Progress',
-            self::COMPLETED => 'Completed',
-            self::CANCELLED => 'Cancelled',
-        };
+        return __("site.dashboard.admin.damage_repairs.statuses.{$this->value}");
     }
 
     public function color(): string

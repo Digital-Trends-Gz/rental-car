@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTrans } from '@/composables/useTrans';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
-import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
     repairs: {
@@ -42,8 +42,15 @@ const props = defineProps<{
     createUrl: string;
 }>();
 
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { t, locale } = useTrans();
+const translationRoot = 'dashboard.admin.damage_repairs';
+const translate = (key: string, params: Record<string, string | number> = {}) => t(`${translationRoot}.${key}`, params);
+const translateStatus = (statusValue: string, fallback: string) => {
+    const key = `${translationRoot}.statuses.${statusValue}`;
+    const translated = t(key);
+
+    return translated === key ? fallback : translated;
+};
 
 const search = ref(props.filters?.search ?? '');
 const status = ref(props.filters?.status ?? 'all');
@@ -74,7 +81,7 @@ watch(search, (value, oldValue) => {
 });
 
 function destroyRepair(url: string, numberText: string) {
-    if (!window.confirm(localize(`Delete damage repair ${numberText}?`, `هل تريد حذف إصلاح الضرر ${numberText}؟`))) {
+    if (!window.confirm(translate('delete_confirmation', { number: numberText }))) {
         return;
     }
 
@@ -93,26 +100,21 @@ const hasRows = computed(() => props.repairs.data.length > 0);
 </script>
 
 <template>
-    <Head :title="localize('Damage Repairs', 'إصلاحات الأضرار')" />
+    <Head :title="translate('title')" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
                     <h1 class="text-2xl font-semibold">
-                        {{ localize('Damage Repairs', 'إصلاحات الأضرار') }}
+                        {{ translate('title') }}
                     </h1>
                     <p class="text-sm text-slate-500">
-                        {{
-                            localize(
-                                'Track car damage maintenance until the damage is fully repaired.',
-                                'تابع إصلاح أضرار السيارات حتى يتم إنهاء الضرر بالكامل.',
-                            )
-                        }}
+                        {{ translate('description') }}
                     </p>
                 </div>
 
                 <Link :href="createUrl">
-                    <Button>{{ localize('New Repair', 'إصلاح جديد') }}</Button>
+                    <Button>{{ translate('new_repair') }}</Button>
                 </Link>
             </div>
 
@@ -120,7 +122,7 @@ const hasRows = computed(() => props.repairs.data.length > 0);
                 <Input
                     v-model="search"
                     class="md:col-span-2"
-                    :placeholder="localize('Search by repair number, car, workshop...', 'ابحث برقم الإصلاح أو السيارة أو الورشة...')"
+                    :placeholder="translate('search_placeholder')"
                     @keyup.enter="doSearch"
                 />
 
@@ -128,9 +130,9 @@ const hasRows = computed(() => props.repairs.data.length > 0);
                     v-model="status"
                     class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                    <option value="all">{{ localize('All statuses', 'كل الحالات') }}</option>
+                    <option value="all">{{ translate('all_statuses') }}</option>
                     <option v-for="item in statuses" :key="item.value" :value="item.value">
-                        {{ item.label }}
+                        {{ translateStatus(item.value, item.label) }}
                     </option>
                 </select>
 
@@ -139,7 +141,7 @@ const hasRows = computed(() => props.repairs.data.length > 0);
                     v-model="branchId"
                     class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                    <option value="">{{ localize('All branches', 'كل الفروع') }}</option>
+                    <option value="">{{ translate('all_branches') }}</option>
                     <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">
                         {{ branch.name }}
                     </option>
@@ -149,7 +151,7 @@ const hasRows = computed(() => props.repairs.data.length > 0);
                     v-model="carId"
                     class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                    <option value="">{{ localize('All cars', 'كل السيارات') }}</option>
+                    <option value="">{{ translate('all_cars') }}</option>
                     <option v-for="car in cars" :key="car.id" :value="String(car.id)">
                         {{ car.label }}
                     </option>
@@ -157,7 +159,7 @@ const hasRows = computed(() => props.repairs.data.length > 0);
             </div>
 
             <div class="flex items-center gap-2">
-                <Button @click="doSearch">{{ localize('Search', 'بحث') }}</Button>
+                <Button @click="doSearch">{{ translate('search') }}</Button>
                 <Button
                     variant="outline"
                     @click="
@@ -168,7 +170,7 @@ const hasRows = computed(() => props.repairs.data.length > 0);
                         doSearch();
                     "
                 >
-                    {{ localize('Clear', 'مسح') }}
+                    {{ translate('clear') }}
                 </Button>
             </div>
 
@@ -176,14 +178,14 @@ const hasRows = computed(() => props.repairs.data.length > 0);
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ localize('Repair', 'الإصلاح') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ localize('Car', 'السيارة') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ localize('Damage', 'الضرر') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ localize('Workshop', 'الورشة') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ localize('Status', 'الحالة') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ localize('Opened', 'الفتح') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ localize('Completed', 'الإنهاء') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ localize('Cost', 'التكلفة') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ translate('table.repair') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ translate('table.car') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ translate('table.damage') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ translate('table.workshop') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ translate('table.status') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ translate('table.opened') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ translate('table.completed') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase">{{ translate('table.cost') }}</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
@@ -204,33 +206,33 @@ const hasRows = computed(() => props.repairs.data.length > 0);
                                     class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium text-white"
                                     :style="{ backgroundColor: row.status_color }"
                                 >
-                                    {{ row.status_label }}
+                                    {{ translateStatus(row.status, row.status_label) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm">{{ row.opened_at || '-' }}</td>
                             <td class="px-4 py-3 text-sm">{{ row.completed_at || '-' }}</td>
                             <td class="px-4 py-3 text-sm">
-                                <div>{{ localize('Estimated', 'تقديري') }}: {{ money(row.estimated_cost) }}</div>
-                                <div>{{ localize('Actual', 'فعلي') }}: {{ money(row.actual_cost) }}</div>
+                                <div>{{ translate('estimated') }}: {{ money(row.estimated_cost) }}</div>
+                                <div>{{ translate('actual') }}: {{ money(row.actual_cost) }}</div>
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
                                     <Link :href="row.edit_url">
-                                        <Button size="sm" variant="outline">{{ localize('Edit', 'تعديل') }}</Button>
+                                        <Button size="sm" variant="outline">{{ translate('edit') }}</Button>
                                     </Link>
                                     <Button
                                         size="sm"
                                         variant="destructive"
                                         @click="destroyRepair(row.destroy_url, row.repair_number)"
                                     >
-                                        {{ localize('Delete', 'حذف') }}
+                                        {{ translate('delete') }}
                                     </Button>
                                 </div>
                             </td>
                         </tr>
                         <tr v-if="!hasRows">
                             <td class="px-4 py-8 text-center text-sm text-muted-foreground" colspan="9">
-                                {{ localize('No damage repairs found.', 'لا توجد إصلاحات أضرار.') }}
+                                {{ translate('empty') }}
                             </td>
                         </tr>
                     </tbody>
