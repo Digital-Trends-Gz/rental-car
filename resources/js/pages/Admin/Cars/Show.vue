@@ -151,9 +151,27 @@ const props = defineProps<{
     };
 }>();
 
-const { locale } = useTrans();
+const { locale, t } = useTrans();
 const page = usePage<any>();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const showTranslationRoot = 'dashboard.admin.cars.show';
+
+const translationKeyFor = (value: string) =>
+    `${showTranslationRoot}.${value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90)}`;
+
+const localize = (en: string, ar: string) => {
+    const key = translationKeyFor(en);
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return locale.value === 'ar' ? ar : en;
+};
 const tenantFeatureFlags = computed<Record<string, boolean>>(
     () => page.props.current_tenant?.subscription_plan?.feature_flags || {},
 );

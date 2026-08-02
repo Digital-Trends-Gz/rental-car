@@ -134,8 +134,24 @@ const props = defineProps<{
 const page = usePage<any>();
 const subdomain = computed<string | undefined>(() => page.props.current_tenant?.slug);
 const isEdit = computed(() => !!props.car);
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { locale, t } = useTrans();
+const formTranslationRoot = 'dashboard.admin.cars.form';
+const formTranslationKeyFor = (value: string) =>
+    `${formTranslationRoot}.${value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90)}`;
+const localize = (en: string, ar: string) => {
+    const key = formTranslationKeyFor(en);
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return locale.value === 'ar' ? ar : en;
+};
 const supportedLocales = computed<SupportedLocale[]>(() =>
     props.supportedLocales?.length
         ? props.supportedLocales

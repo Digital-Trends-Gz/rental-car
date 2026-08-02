@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTrans } from '@/composables/useTrans';
+import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
     reports: {
@@ -36,21 +36,21 @@ const props = defineProps<{
     currency: { symbol: string; code: string };
 }>();
 
-const { locale } = useTrans();
+const { locale, t } = useTrans();
 const page = usePage<any>();
 const search = ref(props.filters?.search || '');
 const branchFilter = ref(props.filters?.branch_id ? String(props.filters.branch_id) : 'all');
-const isArabic = computed(() => page.props.locale === 'ar');
 const authPermissions = computed<string[]>(() =>
     Array.isArray(page.props?.auth?.permissions) ? page.props.auth.permissions : [],
 );
 const hasFinancialAccess = computed(() => !!props.canViewFinancials);
 const hasPaymentsAccess = computed(() => authPermissions.value.includes('tenant-manage-payments'));
-
-const localize = (en: string, ar: string) => (isArabic.value ? ar : en);
+const translationRoot = 'dashboard.admin.payments.debtors';
+const translate = (key: string) => t(`${translationRoot}.${key}`);
 
 function adminUrl(path: string) {
-    const prefix = String(page.url || '').startsWith('/ar/') ? '/ar' : String(page.url || '').startsWith('/fr/') ? '/fr' : '';
+    const match = String(page.url || '').match(/^\/([a-z]{2})(?=\/admin)/);
+    const prefix = match ? `/${match[1]}` : '';
     return `${prefix}/admin${path}`;
 }
 
@@ -85,33 +85,33 @@ function fmtMoney(n?: number | string, currencyCode?: string) {
 </script>
 
 <template>
-    <Head :title="localize('Debtors', 'المديونين')" />
+    <Head :title="translate('title')" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">{{ localize('Debtors', 'المديونين') }}</h1>
+                    <h1 class="text-2xl font-semibold">{{ translate('title') }}</h1>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        {{ localize('Clients with unpaid return report charges.', 'العملاء الذين لديهم رسوم رجوع غير مدفوعة.') }}
+                        {{ translate('description') }}
                     </p>
                 </div>
 
                 <Link v-if="hasPaymentsAccess" :href="adminUrl('/payments')">
-                    <Button variant="outline">{{ localize('All Payments', 'كل الدفعات') }}</Button>
+                    <Button variant="outline">{{ translate('all_payments') }}</Button>
                 </Link>
             </div>
 
             <div class="grid gap-4 md:grid-cols-3">
                 <div class="rounded-lg border bg-white p-4">
-                    <div class="text-sm text-muted-foreground">{{ localize('Debtor Clients', 'عدد العملاء المديونين') }}</div>
+                    <div class="text-sm text-muted-foreground">{{ translate('debtor_clients') }}</div>
                     <div class="mt-2 text-2xl font-semibold">{{ props.summary.clients_count }}</div>
                 </div>
                 <div class="rounded-lg border bg-white p-4">
-                    <div class="text-sm text-muted-foreground">{{ localize('Unpaid Reports', 'تقارير غير مدفوعة') }}</div>
+                    <div class="text-sm text-muted-foreground">{{ translate('unpaid_reports') }}</div>
                     <div class="mt-2 text-2xl font-semibold">{{ props.summary.reports_count }}</div>
                 </div>
                 <div class="rounded-lg border bg-white p-4">
-                    <div class="text-sm text-muted-foreground">{{ localize('Total Outstanding', 'إجمالي المديونية') }}</div>
+                    <div class="text-sm text-muted-foreground">{{ translate('total_outstanding') }}</div>
                     <div class="mt-2 text-2xl font-semibold text-red-700">
                         {{ fmtMoney(props.summary.total_outstanding) }}
                     </div>
@@ -121,18 +121,18 @@ function fmtMoney(n?: number | string, currencyCode?: string) {
             <div class="flex flex-wrap items-center gap-2">
                 <Input
                     v-model="search"
-                    :placeholder="localize('Search by client, report, contract, or reservation', 'بحث باسم العميل أو التقرير أو العقد أو الحجز')"
+                    :placeholder="translate('search_placeholder')"
                     class="max-w-md"
                     @keyup.enter="doSearch"
                 />
-                <Button @click="doSearch">{{ localize('Search', 'بحث') }}</Button>
+                <Button @click="doSearch">{{ translate('search') }}</Button>
                 <select
                     v-if="props.canAccessAllBranches"
                     v-model="branchFilter"
                     class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                     @change="doSearch"
                 >
-                    <option value="all">{{ localize('All branches', 'كل الفروع') }}</option>
+                    <option value="all">{{ translate('all_branches') }}</option>
                     <option v-for="branch in props.branches" :key="branch.id" :value="String(branch.id)">
                         {{ branch.name }}
                     </option>
@@ -144,25 +144,25 @@ function fmtMoney(n?: number | string, currencyCode?: string) {
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                {{ localize('Client', 'العميل') }}
+                                {{ translate('table.client') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                {{ localize('Report', 'التقرير') }}
+                                {{ translate('table.report') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                {{ localize('Reservation / Contract', 'الحجز / العقد') }}
+                                {{ translate('table.reservation_contract') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                {{ localize('Car', 'السيارة') }}
+                                {{ translate('table.car') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                {{ localize('Branch', 'الفرع') }}
+                                {{ translate('table.branch') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                {{ localize('Amount', 'المبلغ') }}
+                                {{ translate('table.amount') }}
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                {{ localize('Action', 'إجراء') }}
+                                {{ translate('table.action') }}
                             </th>
                         </tr>
                     </thead>
@@ -192,13 +192,13 @@ function fmtMoney(n?: number | string, currencyCode?: string) {
                             </td>
                             <td class="px-4 py-3">
                                 <Link :href="report.return_report_url" class="text-blue-600 hover:underline">
-                                    {{ localize('Open return report', 'فتح تقرير الرجوع') }}
+                                    {{ translate('open_return_report') }}
                                 </Link>
                             </td>
                         </tr>
                         <tr v-if="props.reports.data.length === 0">
                             <td colspan="7" class="px-4 py-6 text-center text-gray-500">
-                                {{ localize('No unpaid return charges found.', 'لا توجد مديونيات رجوع غير مدفوعة.') }}
+                                {{ translate('empty') }}
                             </td>
                         </tr>
                     </tbody>

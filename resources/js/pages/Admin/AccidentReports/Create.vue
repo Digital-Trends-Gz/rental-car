@@ -30,8 +30,24 @@ const props = defineProps<{
     submitUrl: string;
 }>();
 
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { locale, t } = useTrans();
+const createTranslationRoot = 'dashboard.admin.accident_reports.create';
+const translationKeyFor = (value: string) =>
+    `${createTranslationRoot}.${value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90)}`;
+const localize = (en: string, ar: string) => {
+    const key = translationKeyFor(en);
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return locale.value === 'ar' ? ar : en;
+};
 
 type AccidentContext = 'contract' | 'employee' | 'branch';
 type PartyDetails = {

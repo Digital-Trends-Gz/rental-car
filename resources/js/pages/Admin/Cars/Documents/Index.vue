@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { useTrans } from '@/composables/useTrans';
+import AdminLayout from '@/layouts/AdminLayout.vue';
+import { Head, Link, router } from '@inertiajs/vue3';
 
 const props = defineProps<{
     car: {
@@ -31,22 +31,23 @@ const props = defineProps<{
     }>;
 }>();
 
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { t } = useTrans();
+const translationRoot = 'dashboard.admin.cars.documents';
+const translate = (key: string) => t(`${translationRoot}.${key}`);
 
 const typeLabel = (type: string) => {
-    if (type === 'license') return localize('Car License', 'رخصة السيارة');
-    if (type === 'insurance') return localize('Car Insurance', 'تأمين السيارة');
-    if (type === 'purchase_contract') return localize('Purchase Contract', 'عقد الشراء');
+    if (type === 'license') return translate('types.license');
+    if (type === 'insurance') return translate('types.insurance');
+    if (type === 'purchase_contract') return translate('types.purchase_contract');
     return type;
 };
 
 const statusLabel = (status: string) => {
-    if (status === 'expired') return localize('Expired', 'منتهي');
-    if (status === 'expiring_soon') return localize('Expiring Soon', 'قريب الانتهاء');
-    if (status === 'new') return localize('New', 'جديد');
-    if (status === 'inactive') return localize('Inactive', 'غير نشط');
-    return localize('Active', 'فعّال');
+    if (status === 'expired') return translate('statuses.expired');
+    if (status === 'expiring_soon') return translate('statuses.expiring_soon');
+    if (status === 'new') return translate('statuses.new');
+    if (status === 'inactive') return translate('statuses.inactive');
+    return translate('statuses.active');
 };
 
 const statusClasses = (status: string) => {
@@ -58,7 +59,7 @@ const statusClasses = (status: string) => {
 };
 
 const destroyDocument = (documentId: number) => {
-    if (!confirm(localize('Delete this document?', 'حذف هذا المستند؟'))) return;
+    if (!confirm(translate('delete_confirm'))) return;
 
     router.delete(`/admin/cars/${props.car.id}/documents/${documentId}`, {
         preserveScroll: true,
@@ -67,27 +68,27 @@ const destroyDocument = (documentId: number) => {
 </script>
 
 <template>
-    <Head :title="localize('Car Documents', 'وثائق السيارة')" />
+    <Head :title="translate('title')" />
 
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <div class="text-sm text-muted-foreground">
-                        {{ car.year }} {{ car.make }} {{ car.model }} • {{ car.license_plate }}
+                        {{ car.year }} {{ car.make }} {{ car.model }} - {{ car.license_plate }}
                     </div>
-                    <h1 class="text-2xl font-semibold">{{ localize('Car Documents', 'وثائق السيارة') }}</h1>
+                    <h1 class="text-2xl font-semibold">{{ translate('title') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        {{ localize('Manage license, insurance, and purchase contract documents for this car.', 'إدارة وثائق الرخصة والتأمين وعقد الشراء لهذه السيارة.') }}
+                        {{ translate('description') }}
                     </p>
                 </div>
 
                 <div class="flex items-center gap-2">
                     <Link :href="`/admin/cars/${car.id}/edit`">
-                        <Button variant="outline">{{ localize('Back to car', 'العودة للسيارة') }}</Button>
+                        <Button variant="outline">{{ translate('back_to_car') }}</Button>
                     </Link>
                     <Link :href="`/admin/cars/${car.id}/documents/create`">
-                        <Button>+ {{ localize('New Document', 'مستند جديد') }}</Button>
+                        <Button>+ {{ translate('new_document') }}</Button>
                     </Link>
                 </div>
             </div>
@@ -96,14 +97,14 @@ const destroyDocument = (documentId: number) => {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Type', 'النوع') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Number', 'الرقم') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Issuer', 'جهة الإصدار') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Purchase', 'الشراء') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Expiry', 'الانتهاء') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Status', 'الحالة') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Front', 'الأمام') }}</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Back', 'الخلف') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ translate('table.type') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ translate('table.number') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ translate('table.issuer') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ translate('table.purchase') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ translate('table.expiry') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ translate('table.status') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ translate('table.front') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ translate('table.back') }}</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
@@ -126,7 +127,7 @@ const destroyDocument = (documentId: number) => {
                                     target="_blank"
                                     class="text-sm text-primary underline"
                                 >
-                                    {{ localize('Open image', 'فتح الصورة') }}
+                                    {{ translate('open_image') }}
                                 </a>
                                 <span v-else>-</span>
                             </td>
@@ -137,24 +138,24 @@ const destroyDocument = (documentId: number) => {
                                     target="_blank"
                                     class="text-sm text-primary underline"
                                 >
-                                    {{ localize('Open image', 'فتح الصورة') }}
+                                    {{ translate('open_image') }}
                                 </a>
                                 <span v-else>-</span>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2">
                                     <Link :href="`/admin/cars/${car.id}/documents/${document.id}/edit`">
-                                        <Button size="sm" variant="outline">{{ localize('Edit', 'تعديل') }}</Button>
+                                        <Button size="sm" variant="outline">{{ translate('edit') }}</Button>
                                     </Link>
                                     <Button size="sm" variant="destructive" @click="destroyDocument(document.id)">
-                                        {{ localize('Delete', 'حذف') }}
+                                        {{ translate('delete') }}
                                     </Button>
                                 </div>
                             </td>
                         </tr>
                         <tr v-if="documents.length === 0">
                             <td colspan="9" class="px-4 py-8 text-center text-sm text-muted-foreground">
-                                {{ localize('No car documents found yet.', 'لا توجد وثائق سيارة بعد.') }}
+                                {{ translate('empty') }}
                             </td>
                         </tr>
                     </tbody>

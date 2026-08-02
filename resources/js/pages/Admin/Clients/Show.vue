@@ -75,8 +75,25 @@ const props = defineProps<{
   actions?: { documents?: string; store_note?: string };
 }>();
 
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { locale, t } = useTrans();
+const translationRoot = 'dashboard.admin.clients.show';
+const translationKeyFor = (value: string) =>
+  `${translationRoot}.${value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 90)}`;
+const translate = (key: string) => t(`${translationRoot}.${key}`);
+const localize = (en: string, ar: string) => {
+  const key = translationKeyFor(en);
+  const translated = t(key);
+
+  if (translated !== key) {
+    return translated;
+  }
+
+  return locale.value === 'ar' ? ar : en;
+};
 
 const showSuspendDialog = ref(false);
 const processingSuspend = ref(false);
@@ -164,7 +181,7 @@ const flagStyle = (severity: string) => {
 </script>
 
 <template>
-  <Head :title="localize(`Client ${client.name}`, `العميل ${client.name}`)" />
+  <Head :title="`${translate('client')} ${client.name}`" />
   <AdminLayout>
     <main class="flex-1 space-y-6 p-8">
       <div class="flex items-center justify-between gap-4">

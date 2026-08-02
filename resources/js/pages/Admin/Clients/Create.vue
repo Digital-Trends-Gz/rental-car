@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout.vue';
+import { useTrans } from '@/composables/useTrans';
 import { index, store } from '@/routes/admin/clients';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -16,6 +17,8 @@ const props = defineProps<{
 
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
+const { t } = useTrans();
+const tr = (key: string) => t(`dashboard.admin.clients.create.${key}`);
 
 const form = useForm({
     name: '',
@@ -39,55 +42,55 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Create Client" />
+    <Head :title="tr('head_title')" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
-                <h1 class="text-2xl font-semibold">Create Client</h1>
+                <h1 class="text-2xl font-semibold">{{ tr('title') }}</h1>
                 <Link v-if="subdomain" :href="index(subdomain).url">
-                    <Button variant="outline">Back</Button>
+                    <Button variant="outline">{{ tr('back') }}</Button>
                 </Link>
             </div>
 
             <form class="max-w-2xl" @submit.prevent="submit">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Client details</CardTitle>
-                        <CardDescription>Create a client account for the current tenant.</CardDescription>
+                        <CardTitle>{{ tr('client_details') }}</CardTitle>
+                        <CardDescription>{{ tr('description') }}</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <div class="space-y-2">
-                            <Label for="name">Full Name *</Label>
-                            <Input id="name" v-model="form.name" type="text" required placeholder="Client name" />
+                            <Label for="name">{{ tr('full_name') }}</Label>
+                            <Input id="name" v-model="form.name" type="text" required :placeholder="tr('client_name_placeholder')" />
                             <InputError :message="form.errors.name" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="email">Email *</Label>
-                            <Input id="email" v-model="form.email" type="email" required placeholder="client@example.com" />
+                            <Label for="email">{{ tr('email') }}</Label>
+                            <Input id="email" v-model="form.email" type="email" required :placeholder="tr('email_placeholder')" />
                             <InputError :message="form.errors.email" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="civil_number">Civil Number *</Label>
+                            <Label for="civil_number">{{ tr('civil_number') }}</Label>
                             <Input
                                 id="civil_number"
                                 v-model="form.civil_number"
                                 type="text"
                                 required
-                                placeholder="Civil number"
+                                :placeholder="tr('civil_number_placeholder')"
                             />
                             <InputError :message="form.errors.civil_number" />
                         </div>
 
                         <div v-if="props.branches.length > 0" class="space-y-2">
-                            <Label for="branch_id">Branch</Label>
+                            <Label for="branch_id">{{ tr('branch') }}</Label>
                             <select
                                 id="branch_id"
                                 v-model="form.branch_id"
                                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                             >
-                                <option value="">No branch</option>
+                                <option value="">{{ tr('no_branch') }}</option>
                                 <option v-for="branch in props.branches" :key="branch.id" :value="branch.id">
                                     {{ branch.name }}
                                 </option>
@@ -96,13 +99,13 @@ function submit() {
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="password">Password *</Label>
+                            <Label for="password">{{ tr('password') }}</Label>
                             <Input id="password" v-model="form.password" type="password" required autocomplete="new-password" />
                             <InputError :message="form.errors.password" />
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="password_confirmation">Confirm Password *</Label>
+                            <Label for="password_confirmation">{{ tr('confirm_password') }}</Label>
                             <Input id="password_confirmation" v-model="form.password_confirmation" type="password" required autocomplete="new-password" />
                             <InputError :message="form.errors.password_confirmation" />
                         </div>
@@ -111,10 +114,10 @@ function submit() {
 
                 <div class="mt-6 flex gap-3">
                     <Button type="submit" :disabled="form.processing">
-                        {{ form.processing ? 'Creating...' : 'Create Client' }}
+                        {{ form.processing ? tr('creating') : tr('create_client') }}
                     </Button>
                     <Link v-if="subdomain" :href="index(subdomain).url">
-                        <Button type="button" variant="outline">Cancel</Button>
+                        <Button type="button" variant="outline">{{ tr('cancel') }}</Button>
                     </Link>
                 </div>
             </form>

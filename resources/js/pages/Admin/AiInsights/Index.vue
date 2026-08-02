@@ -17,6 +17,7 @@ import {
     TrendingDown,
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
+import { useTrans } from '@/composables/useTrans';
 
 type Severity = 'danger' | 'warning' | 'info' | 'success';
 
@@ -172,6 +173,7 @@ const props = defineProps<{
 }>();
 
 const page = usePage<any>();
+const { t } = useTrans();
 const selectedPeriod = ref(props.currentPeriod);
 const selectedBranchId = ref(props.selectedBranchId ? String(props.selectedBranchId) : 'all');
 const isGenerating = ref(false);
@@ -180,7 +182,23 @@ const isApplying = ref<Record<number, boolean>>({});
 const isArabic = computed(() => page.props.locale === 'ar');
 const currentLocale = computed(() => String(page.props.locale || 'en'));
 
-const localize = (en: string, ar: string) => (isArabic.value ? ar : en);
+const translationRoot = 'dashboard.admin.ai_insights.index';
+const translationKeyFor = (value: string) =>
+    `${translationRoot}.${value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90)}`;
+const localize = (en: string, ar: string) => {
+    const key = translationKeyFor(en);
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return isArabic.value ? ar : en;
+};
 
 function adminUrl(path: string) {
     const currentUrl = String(page.url || '');

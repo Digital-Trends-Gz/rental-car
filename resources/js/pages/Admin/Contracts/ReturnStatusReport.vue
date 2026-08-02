@@ -186,6 +186,13 @@ const currencySymbol = computed(() => page.props.currency?.symbol ?? '$');
 
 
 const { t, locale } = useTrans();
+const translationRoot = 'dashboard.admin.contracts.return_status_report';
+const translationKeyFor = (value: string) =>
+    `${translationRoot}.${value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90)}`;
 const arabicTranslations: Record<string, string> = {
     'Return Status Report': 'تقرير حالة الإرجاع',
     'Record the car return, extra charges, and linked damage report in one place.': 'سجل إرجاع السيارة والرسوم الإضافية وتقرير الضرر المرتبط في مكان واحد.',
@@ -321,7 +328,16 @@ const arabicTranslations: Record<string, string> = {
     'day(s)': 'يوم/أيام',
     'hour(s)': 'ساعة/ساعات',
 };
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? (arabicTranslations[en] ?? ar) : en);
+const localize = (en: string, ar: string) => {
+    const key = translationKeyFor(en);
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return locale.value === 'ar' ? (arabicTranslations[en] ?? ar) : en;
+};
 
 // Ensure options is always defined from props
 const options = props.options ?? { fuelLevels: [], vehicleConditions: [], currencies: [] };

@@ -54,8 +54,31 @@ const props = defineProps<{
     currency: { symbol: string; code: string };
 }>();
 
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { locale, t } = useTrans();
+const translationRoot = 'dashboard.admin.discount_requests.index';
+const translate = (key: string) => t(`${translationRoot}.${key}`);
+const translateStatus = (value: string, fallback: string) => {
+    const key = `dashboard.admin.discount_requests.statuses.${value}`;
+    const translated = t(key);
+
+    return translated === key ? fallback : translated;
+};
+const translationKeyFor = (value: string) =>
+    `${translationRoot}.${value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90)}`;
+const localize = (en: string, ar: string) => {
+    const key = translationKeyFor(en);
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return locale.value === 'ar' ? ar : en;
+};
 
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? 'pending');
@@ -155,7 +178,7 @@ function statusClass(value: string) {
                 <select v-model="status" class="h-10 rounded-md border border-input bg-background px-3 text-sm" @change="applyFilters">
                     <option value="all">{{ localize('All statuses', 'كل الحالات') }}</option>
                     <option v-for="(option, key) in statuses" :key="key" :value="key">
-                        {{ option.label }}
+                        {{ translateStatus(String(key), option.label) }}
                     </option>
                 </select>
                 <select
@@ -259,7 +282,7 @@ function statusClass(value: string) {
                             </td>
                             <td class="px-4 py-3 align-top text-sm">
                                 <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium" :class="statusClass(request.status)">
-                                    {{ statuses[request.status]?.label || request.status }}
+                                    {{ translateStatus(request.status, statuses[request.status]?.label || request.status) }}
                                 </span>
                                 <div v-if="request.reviewed_by" class="mt-2 text-xs text-muted-foreground">
                                     {{ request.reviewed_by.name }}

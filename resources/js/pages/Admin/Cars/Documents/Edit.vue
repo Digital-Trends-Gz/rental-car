@@ -38,19 +38,20 @@ const props = defineProps<{
 }>();
 
 const isEdit = computed(() => !!props.document);
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { t } = useTrans();
+const translationRoot = 'dashboard.admin.cars.documents';
+const translate = (key: string) => t(`${translationRoot}.${key}`);
 
 const localizedDocumentTypes = computed(() =>
     props.documentTypes.map((item) => ({
         ...item,
         label:
             item.value === 'license'
-                ? localize('Car License', 'رخصة السيارة')
+                ? translate('types.license')
                 : item.value === 'insurance'
-                  ? localize('Car Insurance', 'تأمين السيارة')
+                  ? translate('types.insurance')
                   : item.value === 'purchase_contract'
-                    ? localize('Purchase Contract', 'عقد الشراء')
+                    ? translate('types.purchase_contract')
                     : item.label,
     })),
 );
@@ -115,11 +116,11 @@ const previewStatusKey = computed(() => {
 });
 
 const statusLabel = (status: string) => {
-    if (status === 'expired') return localize('Expired', 'منتهي');
-    if (status === 'expiring_soon') return localize('Expiring Soon', 'قريب الانتهاء');
-    if (status === 'new') return localize('New', 'جديد');
-    if (status === 'inactive') return localize('Inactive', 'غير نشط');
-    return localize('Active', 'فعّال');
+    if (status === 'expired') return translate('statuses.expired');
+    if (status === 'expiring_soon') return translate('statuses.expiring_soon');
+    if (status === 'new') return translate('statuses.new');
+    if (status === 'inactive') return translate('statuses.inactive');
+    return translate('statuses.active');
 };
 
 const statusClasses = (status: string) => {
@@ -129,6 +130,8 @@ const statusClasses = (status: string) => {
     if (status === 'inactive') return 'bg-gray-100 text-gray-600';
     return 'bg-green-100 text-green-700';
 };
+
+const pageTitle = computed(() => (isEdit.value ? translate('form.edit_title') : translate('form.create_title')));
 
 const submit = () => {
     const url = isEdit.value
@@ -145,34 +148,34 @@ const submit = () => {
 </script>
 
 <template>
-    <Head :title="isEdit ? localize('Edit Car Document', 'تعديل وثيقة السيارة') : localize('New Car Document', 'وثيقة سيارة جديدة')" />
+    <Head :title="pageTitle" />
 
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <div class="text-sm text-muted-foreground">
-                        {{ car.year }} {{ car.make }} {{ car.model }} • {{ car.license_plate }}
+                        {{ car.year }} {{ car.make }} {{ car.model }} - {{ car.license_plate }}
                     </div>
                     <h1 class="text-2xl font-semibold">
-                        {{ isEdit ? localize('Edit Car Document', 'تعديل وثيقة السيارة') : localize('New Car Document', 'وثيقة سيارة جديدة') }}
+                        {{ pageTitle }}
                     </h1>
                     <div class="mt-2">
                         <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="statusClasses(previewStatusKey)">
-                            {{ localize('Status', 'الحالة') }}: {{ statusLabel(previewStatusKey) }}
+                            {{ translate('table.status') }}: {{ statusLabel(previewStatusKey) }}
                         </span>
                     </div>
                 </div>
 
                 <Link :href="`/admin/cars/${car.id}/documents`">
-                    <Button variant="outline">{{ localize('Back', 'رجوع') }}</Button>
+                    <Button variant="outline">{{ translate('form.back') }}</Button>
                 </Link>
             </div>
 
             <form class="space-y-6 rounded-lg border bg-card p-6" @submit.prevent="submit">
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
-                        <Label for="type">{{ localize('Document Type', 'نوع الوثيقة') }}</Label>
+                        <Label for="type">{{ translate('form.document_type') }}</Label>
                         <select id="type" v-model="form.type" class="w-full rounded-md border border-input bg-transparent px-3 py-2">
                             <option v-for="type in localizedDocumentTypes" :key="type.value" :value="type.value">
                                 {{ type.label }}
@@ -182,44 +185,44 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <Label for="document_number">{{ localize('Document Number', 'رقم الوثيقة') }}</Label>
+                        <Label for="document_number">{{ translate('form.document_number') }}</Label>
                         <Input id="document_number" v-model="form.document_number" />
                         <InputError :message="form.errors.document_number" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="issuer">{{ localize('Issuer', 'جهة الإصدار') }}</Label>
+                        <Label for="issuer">{{ translate('table.issuer') }}</Label>
                         <Input id="issuer" v-model="form.issuer" />
                         <InputError :message="form.errors.issuer" class="mt-1" />
                     </div>
 
                     <div>
-                        <Label for="cost">{{ localize('Cost', 'التكلفة') }}</Label>
+                        <Label for="cost">{{ translate('form.cost') }}</Label>
                         <Input id="cost" v-model="form.cost" type="number" min="0" step="0.01" />
                         <InputError :message="form.errors.cost" class="mt-1" />
                     </div>
 
                     <div v-if="!isPurchaseContract">
-                        <Label for="issue_date">{{ localize('Issue Date', 'تاريخ الإصدار') }}</Label>
+                        <Label for="issue_date">{{ translate('form.issue_date') }}</Label>
                         <Input id="issue_date" v-model="form.issue_date" type="date" />
                         <InputError :message="form.errors.issue_date" class="mt-1" />
                     </div>
 
                     <div v-if="!isPurchaseContract">
-                        <Label for="expiry_date">{{ localize('Expiry Date', 'تاريخ الانتهاء') }}</Label>
+                        <Label for="expiry_date">{{ translate('form.expiry_date') }}</Label>
                         <Input id="expiry_date" v-model="form.expiry_date" type="date" :min="expiryDateMin" />
                         <InputError :message="form.errors.expiry_date" class="mt-1" />
                     </div>
 
                     <div v-if="isPurchaseContract">
-                        <Label for="purchase_date">{{ localize('Purchase Date', 'تاريخ الشراء') }}</Label>
+                        <Label for="purchase_date">{{ translate('form.purchase_date') }}</Label>
                         <Input id="purchase_date" v-model="form.purchase_date" type="date" />
                         <InputError :message="form.errors.purchase_date" class="mt-1" />
                     </div>
                 </div>
 
                 <div>
-                    <Label for="notes">{{ localize('Notes', 'ملاحظات') }}</Label>
+                    <Label for="notes">{{ translate('form.notes') }}</Label>
                     <textarea
                         id="notes"
                         v-model="form.notes"
@@ -231,12 +234,12 @@ const submit = () => {
                 <div class="space-y-3">
                     <div class="flex items-center gap-3">
                         <input id="is_active" v-model="form.is_active" type="checkbox" class="h-4 w-4 rounded border-input" />
-                        <Label for="is_active">{{ localize('Document is active', 'الوثيقة نشطة') }}</Label>
+                        <Label for="is_active">{{ translate('form.document_is_active') }}</Label>
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <div>
-                            <Label>{{ localize('Front Image', 'الصورة الأمامية') }}</Label>
+                            <Label>{{ translate('form.front_image') }}</Label>
                             <FileUpload
                                 :initial-files="frontImageFiles"
                                 :allowed-file-types="photoAllowedFileTypes"
@@ -249,7 +252,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <Label>{{ localize('Back Image', 'الصورة الخلفية') }}</Label>
+                            <Label>{{ translate('form.back_image') }}</Label>
                             <FileUpload
                                 :initial-files="backImageFiles"
                                 :allowed-file-types="photoAllowedFileTypes"
@@ -265,10 +268,10 @@ const submit = () => {
 
                 <div class="flex items-center justify-end gap-2">
                     <Link :href="`/admin/cars/${car.id}/documents`">
-                        <Button type="button" variant="outline">{{ localize('Cancel', 'إلغاء') }}</Button>
+                        <Button type="button" variant="outline">{{ translate('form.cancel') }}</Button>
                     </Link>
                     <Button type="submit" :disabled="form.processing">
-                        {{ isEdit ? localize('Save Changes', 'حفظ التعديلات') : localize('Create Document', 'إنشاء الوثيقة') }}
+                        {{ isEdit ? translate('form.save_changes') : translate('form.create_document') }}
                     </Button>
                 </div>
             </form>

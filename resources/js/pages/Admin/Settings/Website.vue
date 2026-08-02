@@ -188,9 +188,25 @@ const props = defineProps<{
     };
 }>();
 
-const { locale } = useTrans();
+const { locale, t } = useTrans();
 const page = usePage<any>();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const translationRoot = 'dashboard.admin.settings.website';
+const translationKeyFor = (value: string) =>
+    value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90);
+const localize = (en: string, ar: string) => {
+    const key = `${translationRoot}.${translationKeyFor(en)}`;
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return locale.value === 'ar' ? ar : en;
+};
 const selectClass = 'h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
 type ContentSectionKey = 'hero' | 'about' | 'pdfHeader' | 'contactPage' | 'contactFooter';
 const contentSectionOpen = ref<Record<ContentSectionKey, boolean>>({

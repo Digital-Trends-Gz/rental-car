@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import { useTrans } from '@/composables/useTrans';
 import { Button } from '@/components/ui/button';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
@@ -36,6 +37,9 @@ const form = useForm({
 
 const page = usePage<any>();
 const currentUserId = Number(page.props?.auth?.user?.id ?? 0);
+const { t } = useTrans();
+const translationRoot = 'dashboard.admin.support_platform';
+const translate = (key: string) => t(`${translationRoot}.${key}`);
 
 function submitReply() {
     form.post(props.urls.reply, {
@@ -62,7 +66,7 @@ function isMine(message: { user_id: number | null; is_superadmin: boolean }): bo
 </script>
 
 <template>
-    <Head :title="`Platform Ticket ${ticket.ticket_number}`" />
+    <Head :title="`${translate('platform_ticket')} ${ticket.ticket_number}`" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-start justify-between gap-4">
@@ -70,19 +74,19 @@ function isMine(message: { user_id: number | null; is_superadmin: boolean }): bo
                     <h1 class="text-2xl font-semibold">{{ ticket.subject }}</h1>
                     <p class="text-sm text-muted-foreground">{{ ticket.ticket_number }} • {{ formatDate(ticket.created_at) }}</p>
                     <p class="mt-2 text-sm text-foreground">
-                        <span class="font-medium">Employee Name:</span>
-                        {{ ticket.assigned_to?.name || 'Unassigned' }}
+                        <span class="font-medium">{{ translate('employee_name') }}</span>
+                        {{ ticket.assigned_to?.name || translate('unassigned') }}
                     </p>
                     <p class="text-sm text-foreground">
-                        <span class="font-medium">Employee Email:</span>
+                        <span class="font-medium">{{ translate('employee_email') }}</span>
                         {{ ticket.assigned_to?.email || '-' }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <Link :href="urls.index">
-                        <Button variant="outline">Back</Button>
+                        <Button variant="outline">{{ translate('back') }}</Button>
                     </Link>
-                    <Button v-if="ticket.status !== 'closed'" variant="destructive" @click="closeTicket">Close</Button>
+                    <Button v-if="ticket.status !== 'closed'" variant="destructive" @click="closeTicket">{{ translate('close') }}</Button>
                 </div>
             </div>
 
@@ -105,13 +109,13 @@ function isMine(message: { user_id: number | null; is_superadmin: boolean }): bo
                 </div>
 
                 <div v-if="ticket.messages.length === 0" class="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground">
-                    No messages yet.
+                    {{ translate('no_messages_yet') }}
                 </div>
             </section>
 
             <section v-if="ticket.status !== 'closed'" class="rounded-lg border bg-card p-5">
                 <form class="space-y-3" @submit.prevent="submitReply">
-                    <label for="reply-message" class="text-sm font-medium">Reply</label>
+                    <label for="reply-message" class="text-sm font-medium">{{ translate('reply') }}</label>
                     <textarea
                         id="reply-message"
                         v-model="form.message"
@@ -120,7 +124,7 @@ function isMine(message: { user_id: number | null; is_superadmin: boolean }): bo
                     />
                     <InputError :message="form.errors.message" />
                     <Button type="submit" :disabled="form.processing">
-                        {{ form.processing ? 'Sending...' : 'Send Reply' }}
+                        {{ form.processing ? translate('sending') : translate('send_reply') }}
                     </Button>
                 </form>
             </section>

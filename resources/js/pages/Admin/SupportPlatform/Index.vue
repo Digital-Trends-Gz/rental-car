@@ -27,8 +27,35 @@ const props = defineProps<{
     };
 }>();
 
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { locale, t } = useTrans();
+const translationRoot = 'dashboard.admin.support_platform';
+const translationKeyFor = (value: string) =>
+    value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90);
+const localize = (en: string, ar: string) => {
+    const key = `${translationRoot}.${translationKeyFor(en)}`;
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return locale.value === 'ar' ? ar : en;
+};
+
+const statusLabel = (status: string) => {
+    const key = `${translationRoot}.statuses.${status}`;
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return statusOptions.find((s) => s.value === status)?.label || status;
+};
 
 const form = useForm({
     subject: '',
@@ -115,7 +142,7 @@ const statusClass: Record<string, string> = {
                                 <td class="px-4 py-3 text-sm">{{ ticket.subject }}</td>
                                 <td class="px-4 py-3 text-sm">
                                     <span class="rounded-full px-2 py-1 text-xs font-medium" :class="statusClass[ticket.status] || 'bg-muted text-foreground'">
-                                        {{ statusOptions.find((s) => s.value === ticket.status)?.label || ticket.status }}
+                                        {{ statusLabel(ticket.status) }}
                                     </span>
                                 </td>
                                 <td class="max-w-md px-4 py-3 text-sm text-muted-foreground">{{ ticket.last_message || '-' }}</td>

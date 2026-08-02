@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useTrans } from '@/composables/useTrans';
@@ -44,8 +44,9 @@ const props = defineProps<{
 
 type SeoPageKey = 'home' | 'fleet' | 'about' | 'contact' | 'car' | 'booking_checkout' | 'booking_confirmation';
 
-const { locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { locale, t } = useTrans();
+const translationRoot = 'dashboard.admin.settings.seo';
+const tr = (key: string, params: Record<string, string | number> = {}) => t(`${translationRoot}.${key}`, params);
 const feedbackMessage = ref('');
 
 const previewName = computed(() => props.settings.site_name || props.tenant.name);
@@ -92,17 +93,7 @@ const fallbackTitle = (pageKey: SeoPageKey): string => {
         return previewName.value;
     }
 
-    const labels: Record<SeoPageKey, string> = {
-        home: localize('Home', 'الرئيسية'),
-        fleet: localize('Fleet', 'الأسطول'),
-        about: localize('About', 'من نحن'),
-        contact: localize('Contact', 'اتصل بنا'),
-        car: localize('Car Rental', 'تأجير سيارة'),
-        booking_checkout: localize('Booking Checkout', 'إتمام الحجز'),
-        booking_confirmation: localize('Booking Confirmation', 'تأكيد الحجز'),
-    };
-
-    return `${labels[pageKey]} | ${suffix}`;
+    return `${tr(`page_titles.${pageKey}`)} | ${suffix}`;
 };
 
 const fallbackDescription = (pageKey: SeoPageKey): string => {
@@ -112,39 +103,11 @@ const fallbackDescription = (pageKey: SeoPageKey): string => {
         return shared;
     }
 
-    const descriptions: Record<SeoPageKey, string> = {
-        home: localize(`Discover ${previewName.value} and reserve your next rental car online.`, `اكتشف ${previewName.value} واحجز سيارتك القادمة عبر الإنترنت.`),
-        fleet: localize(`Browse available rental vehicles from ${previewName.value}.`, `استعرض السيارات المتاحة من ${previewName.value}.`),
-        about: localize(`Learn more about ${previewName.value} and its car rental services.`, `تعرف أكثر على ${previewName.value} وخدمات تأجير السيارات.`),
-        contact: localize(`Get in touch with ${previewName.value} for bookings and support.`, `تواصل مع ${previewName.value} للحجوزات والدعم.`),
-        car: localize(`View rental car details and pricing from ${previewName.value}.`, `اطلع على تفاصيل السيارة وسعر الإيجار لدى ${previewName.value}.`),
-        booking_checkout: localize(`Choose your payment provider and complete your booking securely with ${previewName.value}.`, `اختر مزود الدفع وأكمل الحجز بأمان مع ${previewName.value}.`),
-        booking_confirmation: localize(`Review your confirmed booking and reservation details from ${previewName.value}.`, `راجع تفاصيل الحجز المؤكد ومعلومات الحجز لدى ${previewName.value}.`),
-    };
-
-    return descriptions[pageKey];
+    return tr(`fallback_descriptions.${pageKey}`, { name: previewName.value });
 };
 
 const auditPages = computed(() => {
     const pages: SeoPageKey[] = ['home', 'fleet', 'about', 'contact', 'car'];
-    const englishLabels: Record<SeoPageKey, string> = {
-        home: 'Home Page',
-        fleet: 'Fleet Page',
-        about: 'About Page',
-        contact: 'Contact Page',
-        car: 'Car Details Page',
-        booking_checkout: 'Booking Checkout Page',
-        booking_confirmation: 'Booking Confirmation Page',
-    };
-    const arabicLabels: Record<SeoPageKey, string> = {
-        home: 'الصفحة الرئيسية',
-        fleet: 'صفحة الأسطول',
-        about: 'صفحة من نحن',
-        contact: 'صفحة اتصل بنا',
-        car: 'صفحة السيارة',
-        booking_checkout: 'صفحة إتمام الحجز',
-        booking_confirmation: 'صفحة تأكيد الحجز',
-    };
 
     return pages.map((pageKey) => {
         const title = localizedSeoText(props.settings.seo.pages[pageKey].title) || fallbackTitle(pageKey);
@@ -175,49 +138,49 @@ const auditPages = computed(() => {
         const checks = [
             {
                 ok: title.length >= 30 && title.length <= 60,
-                pass: localize('Title length looks good', 'طول العنوان مناسب'),
-                fail: localize('Recommended title length is 30-60 characters', 'الطول الموصى به للعنوان هو 30-60 حرفًا'),
+                pass: tr('title_length_looks_good'),
+                fail: tr('recommended_title_length_is_30_60_characters'),
             },
             {
                 ok: description.length >= 70 && description.length <= 160,
-                pass: localize('Description length looks good', 'طول الوصف مناسب'),
-                fail: localize('Recommended description length is 70-160 characters', 'الطول الموصى به للوصف هو 70-160 حرفًا'),
+                pass: tr('description_length_looks_good'),
+                fail: tr('recommended_description_length_is_70_160_characters'),
             },
             {
                 ok: Boolean((props.settings.seo.defaults.og_image || props.settings.logo_url || '').trim()),
-                pass: localize('Open Graph image is set', 'صورة Open Graph مضبوطة'),
-                fail: localize('Set an Open Graph image for sharing previews', 'حدد صورة Open Graph لمعاينات المشاركة'),
+                pass: tr('open_graph_image_is_set'),
+                fail: tr('set_an_open_graph_image_for_sharing_previews'),
             },
             {
                 ok: !((props.settings.seo.defaults.og_image || props.settings.logo_url || '').trim()) || (ogImageAlt.length >= 8 && ogImageAlt.length <= 125),
-                pass: localize('Open Graph image alt text looks good', 'النص البديل لصورة Open Graph مناسب'),
-                fail: localize('Add descriptive Open Graph image alt text between 8 and 125 characters', 'أضف نصًا بديلاً وصفيًا لصورة Open Graph بين 8 و125 حرفًا'),
+                pass: tr('open_graph_image_alt_text_looks_good'),
+                fail: tr('add_descriptive_open_graph_image_alt_text_between_8_and_125_characters'),
             },
             {
                 ok: canonical === '' || /^https?:\/\/\S+$/i.test(canonical),
-                pass: localize('Canonical URL is valid', 'رابط Canonical صحيح'),
-                fail: localize('Canonical URL must start with http:// or https://', 'رابط Canonical يجب أن يبدأ بـ http:// أو https://'),
+                pass: tr('canonical_url_is_valid'),
+                fail: tr('canonical_url_must_start_with_http_or_https'),
             },
             {
                 ok: slug !== '' && /^[a-z0-9/_-]+$/i.test(slug) && !/\s/.test(slug),
-                pass: localize('Slug format looks clean', 'تنسيق الرابط المختصر سليم'),
-                fail: localize('Slug should use clean URL segments without spaces', 'يجب أن يستخدم الرابط المختصر مقاطع نظيفة بدون مسافات'),
+                pass: tr('slug_format_looks_clean'),
+                fail: tr('slug_should_use_clean_url_segments_without_spaces'),
             },
             {
                 ok: alternates.length === enabledSeoLocales.value.length + 1,
-                pass: localize('hreflang alternates are available', 'روابط hreflang متوفرة'),
-                fail: localize('hreflang alternates are incomplete', 'روابط hreflang غير مكتملة'),
+                pass: tr('hreflang_alternates_are_available_for_enabled_locales'),
+                fail: tr('hreflang_alternates_are_missing_for_one_or_more_enabled_locales'),
             },
             {
                 ok: !publicNoindexWarning,
-                pass: localize('Indexable public page is not blocked by robots', 'الصفحة العامة قابلة للأرشفة وغير محجوبة'),
-                fail: localize('Public page is set to noindex and may disappear from search', 'الصفحة العامة مضبوطة على noindex وقد تختفي من نتائج البحث'),
+                pass: tr('indexable_public_page_is_not_blocked_by_robots'),
+                fail: tr('public_page_is_set_to_noindex_and_may_disappear_from_search'),
             },
         ];
 
         return {
             key: pageKey,
-            label: localize(englishLabels[pageKey], arabicLabels[pageKey]),
+            label: tr(`pages.${pageKey}`),
             title,
             description,
             canonical,
@@ -229,10 +192,10 @@ const auditPages = computed(() => {
             isPublicPage,
             publicNoindexWarning,
             recommended: {
-                title: '30-60 chars',
-                description: '70-160 chars',
+                title: tr('title_length_range'),
+                description: tr('description_length_range'),
                 robots: isPublicPage ? 'index,follow' : 'noindex,nofollow',
-                slug: localize('Lowercase, hyphenated, no spaces', 'أحرف صغيرة وشرطات وبدون مسافات'),
+                slug: tr('lowercase_hyphenated_no_spaces'),
                 hreflang: `${enabledSeoLocales.value.join(', ')}, x-default`,
             },
             score: checks.filter((check) => check.ok).length,
@@ -248,23 +211,23 @@ const overallStatus = computed(() => {
 
     if (ratio >= 0.85) {
         return {
-            label: localize('Good', 'جيد'),
-            description: localize('Most SEO signals are in good shape.', 'معظم إشارات SEO في وضع جيد.'),
+            label: tr('good'),
+            description: tr('most_seo_signals_are_in_good_shape_for_the_selected_language'),
             className: 'bg-emerald-100 text-emerald-700',
         };
     }
 
     if (ratio >= 0.5) {
         return {
-            label: localize('Needs Work', 'يحتاج تحسين'),
-            description: localize('Some pages still need SEO cleanup.', 'بعض الصفحات ما زالت تحتاج تحسين SEO.'),
+            label: tr('needs_work'),
+            description: tr('some_pages_still_need_seo_cleanup_for_the_selected_language'),
             className: 'bg-amber-100 text-amber-700',
         };
     }
 
     return {
-        label: localize('Critical', 'حرج'),
-        description: localize('SEO coverage is weak and needs attention.', 'تغطية SEO ضعيفة وتحتاج معالجة.'),
+        label: tr('critical'),
+        description: tr('seo_coverage_is_weak_for_the_selected_language_and_should_be_fixed_before_publishing_chang'),
         className: 'bg-red-100 text-red-700',
     };
 });
@@ -338,7 +301,7 @@ function exportSeoReport(format: 'txt' | 'json' | 'csv') {
         ].join('\n');
 
     if (typeof window === 'undefined' || typeof document === 'undefined') {
-        feedbackMessage.value = localize('Export is not available in this environment.', 'التصدير غير متاح في هذه البيئة.');
+        feedbackMessage.value = tr('export_is_not_available_in_this_environment');
         return;
     }
 
@@ -357,36 +320,36 @@ function exportSeoReport(format: 'txt' | 'json' | 'csv') {
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    feedbackMessage.value = localize(`SEO ${format.toUpperCase()} report exported successfully.`, `تم تصدير تقرير SEO بصيغة ${format.toUpperCase()} بنجاح.`);
+    feedbackMessage.value = tr('seo_format_report_exported_successfully', { format: format.toUpperCase() });
 }
 </script>
 
 <template>
-    <Head :title="localize('SEO Audit', 'تدقيق SEO')" />
+    <Head :title="tr('seo_audit')" />
 
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">{{ localize('SEO Audit', 'تدقيق SEO') }}</h1>
+                    <h1 class="text-2xl font-semibold">{{ tr('seo_audit') }}</h1>
                     <p class="text-sm text-muted-foreground">
-                        {{ localize('Review public-page SEO quality, hreflang coverage, and export audit reports.', 'راجع جودة SEO للصفحات العامة وتغطية hreflang وصدّر تقارير التدقيق.') }}
+                        {{ tr('review_public_page_seo_quality_hreflang_coverage_and_export_audit_reports') }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <Link :href="props.actions.website">
-                        <Button variant="outline">{{ localize('Back To Website Settings', 'الرجوع لإعدادات الموقع') }}</Button>
+                        <Button variant="outline">{{ tr('back_to_website_settings') }}</Button>
                     </Link>
-                    <Button variant="outline" @click="exportSeoReport('txt')">{{ localize('Export TXT', 'تصدير TXT') }}</Button>
-                    <Button variant="outline" @click="exportSeoReport('csv')">{{ localize('Export CSV', 'تصدير CSV') }}</Button>
-                    <Button @click="exportSeoReport('json')">{{ localize('Export JSON', 'تصدير JSON') }}</Button>
+                    <Button variant="outline" @click="exportSeoReport('txt')">{{ tr('export_txt') }}</Button>
+                    <Button variant="outline" @click="exportSeoReport('csv')">{{ tr('export_csv') }}</Button>
+                    <Button @click="exportSeoReport('json')">{{ tr('export_json') }}</Button>
                 </div>
             </div>
 
             <div class="rounded-lg border bg-muted/20 p-4">
                 <div class="flex items-start justify-between gap-4">
                     <div class="space-y-1">
-                        <h2 class="font-semibold">{{ localize('Overall SEO Status', 'الحالة العامة لـ SEO') }}</h2>
+                        <h2 class="font-semibold">{{ tr('overall_seo_status') }}</h2>
                         <p class="text-sm text-muted-foreground">{{ overallStatus.description }}</p>
                     </div>
                     <span class="rounded-full px-3 py-1 text-sm font-semibold" :class="overallStatus.className">
@@ -412,7 +375,7 @@ function exportSeoReport(format: 'txt' | 'json' | 'csv') {
                     </div>
 
                     <div v-if="page.publicNoindexWarning" class="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700">
-                        {{ localize('This public page is currently blocked by noindex. Change robots if you want it indexed.', 'هذه الصفحة العامة محجوبة حاليا بواسطة noindex. غيّر robots إذا أردتها مفهرسة.') }}
+                        {{ tr('this_public_page_is_currently_blocked_by_noindex_change_robots_if_you_want_it_indexed') }}
                     </div>
 
                     <div class="space-y-2 text-sm">
@@ -420,43 +383,43 @@ function exportSeoReport(format: 'txt' | 'json' | 'csv') {
                             <div class="font-medium text-slate-900">{{ page.title }}</div>
                             <div class="text-muted-foreground">{{ page.description }}</div>
                         </div>
-                        <div><span class="font-medium">Canonical:</span> {{ page.canonical }}</div>
-                        <div><span class="font-medium">Slug:</span> {{ page.slug || '/' }}</div>
-                        <div><span class="font-medium">hreflang:</span> {{ page.alternates.map((alternate) => alternate.locale).join(', ') }}</div>
+                        <div><span class="font-medium">{{ tr('canonical_url') }}:</span> {{ page.canonical }}</div>
+                        <div><span class="font-medium">{{ tr('slug') }}:</span> {{ page.slug || '/' }}</div>
+                        <div><span class="font-medium">{{ tr('hreflang') }}:</span> {{ page.alternates.map((alternate) => alternate.locale).join(', ') }}</div>
                     </div>
 
                     <div class="overflow-hidden rounded-md border">
                         <div class="bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            {{ localize('Current vs Recommended Tags', 'الوسوم الحالية مقابل الموصى بها') }}
+                            {{ tr('current_vs_recommended_tags') }}
                         </div>
                         <div class="divide-y text-xs">
                             <div class="grid grid-cols-[120px,1fr,1fr] gap-3 px-3 py-2">
-                                <div class="font-medium">{{ localize('Field', 'الحقل') }}</div>
-                                <div class="font-medium">{{ localize('Current', 'الحالي') }}</div>
-                                <div class="font-medium">{{ localize('Recommended', 'الموصى به') }}</div>
+                                <div class="font-medium">{{ tr('field') }}</div>
+                                <div class="font-medium">{{ tr('current') }}</div>
+                                <div class="font-medium">{{ tr('recommended') }}</div>
                             </div>
                             <div class="grid grid-cols-[120px,1fr,1fr] gap-3 px-3 py-2">
-                                <div>{{ localize('Title', 'العنوان') }}</div>
-                                <div>{{ page.title.length }} {{ localize('chars', 'حرف') }}</div>
+                                <div>{{ tr('title') }}</div>
+                                <div>{{ page.title.length }} {{ tr('chars') }}</div>
                                 <div>{{ page.recommended.title }}</div>
                             </div>
                             <div class="grid grid-cols-[120px,1fr,1fr] gap-3 px-3 py-2">
-                                <div>{{ localize('Description', 'الوصف') }}</div>
-                                <div>{{ page.description.length }} {{ localize('chars', 'حرف') }}</div>
+                                <div>{{ tr('description') }}</div>
+                                <div>{{ page.description.length }} {{ tr('chars') }}</div>
                                 <div>{{ page.recommended.description }}</div>
                             </div>
                             <div class="grid grid-cols-[120px,1fr,1fr] gap-3 px-3 py-2">
-                                <div>Robots</div>
+                                <div>{{ tr('robots') }}</div>
                                 <div>{{ page.robots }}</div>
                                 <div>{{ page.recommended.robots }}</div>
                             </div>
                             <div class="grid grid-cols-[120px,1fr,1fr] gap-3 px-3 py-2">
-                                <div>Slug</div>
+                                <div>{{ tr('slug') }}</div>
                                 <div>{{ page.slug || '/' }}</div>
                                 <div>{{ page.recommended.slug }}</div>
                             </div>
                             <div class="grid grid-cols-[120px,1fr,1fr] gap-3 px-3 py-2">
-                                <div>hreflang</div>
+                                <div>{{ tr('hreflang') }}</div>
                                 <div>{{ page.alternates.map((alternate) => alternate.locale).join(', ') }}</div>
                                 <div>{{ page.recommended.hreflang }}</div>
                             </div>
@@ -476,3 +439,4 @@ function exportSeoReport(format: 'txt' | 'json' | 'csv') {
         </main>
     </AdminLayout>
 </template>
+
