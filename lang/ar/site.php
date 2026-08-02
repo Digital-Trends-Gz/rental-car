@@ -966,10 +966,10 @@ return array (
       'reservations_scheduled_to_start_today' => 'الحجوزات المجدولة لليوم.',
       'receive_today' => 'الاستلام اليوم',
       'contracts_ending_today' => 'العقود التي تنتهي اليوم.',
-      'overdue_cars' => '???????? ????????',
+    'overdue_cars' => 'السيارات المتأخرة',
       'active_contracts_past_the_due_date' => 'عقود نشطة تجاوزت تاريخ الاستحقاق.',
-      'pending_violations' => '????????? ???????',
-      'need_review_or_payment' => '????? ?????? ?? ????',
+    'pending_violations' => 'المخالفات المعلقة',
+    'need_review_or_payment' => 'تحتاج مراجعة أو دفع',
       'expiring_documents' => 'وثائق تنتهي قريبًا',
       'due_within_the_next_10_days' => 'تنتهي خلال 10 أيام.',
       'ending_contracts' => 'عقود تنتهي قريبًا',
@@ -1753,6 +1753,170 @@ return array (
       ),
       'settings' => 
       array (
+        'payment_providers' => [
+
+            'payment_providers' => 'مزودو الدفع',
+
+            'manage_tenant_booking_payment_providers_only_providers_approved_by_super_admin_can_be_enab' => 'إدارة مزودي دفع الحجوزات للمستأجر. لا يمكن تفعيل إلا المزودين المعتمدين من المشرف العام.',
+
+            'saving' => 'جارٍ الحفظ...',
+
+            'save_changes' => 'حفظ التغييرات',
+
+            'provider_availability_platform_approval' => 'توفر المزود (اعتماد المنصة)',
+
+            'stripe_connect_platform_managed_stripe_payments' => 'Stripe Connect / مدفوعات Stripe المُدارة من المنصة',
+
+            'approved_by_super_admin' => 'معتمد من المشرف العام',
+
+            'disabled_by_super_admin' => 'معطل من المشرف العام',
+
+            'mode' => 'الوضع',
+
+            'hosted_checkout_for_gcc_mena' => 'دفع مستضاف لمنطقة الخليج/الشرق الأوسط وشمال أفريقيا',
+
+            'default_booking_provider' => 'مزود الحجز الافتراضي',
+
+            'default_provider' => 'المزود الافتراضي',
+
+            'none_manual_fallback' => 'لا شيء (يدوي / احتياطي)',
+
+            'this_will_be_used_by_tenant_booking_checkout_when_multiple_tenant_providers_are_enabled' => 'سيُستخدم هذا في إتمام حجوزات المستأجر عندما تكون عدة مزودات مفعلة.',
+
+            'stripe_tenant' => 'Stripe (المستأجر)',
+
+            'uses_stripe_connect_manage_onboarding_and_account_status_in_the_stripe_connect_page' => 'يستخدم Stripe Connect. قم بإدارة الإعداد وحالة الحساب في صفحة Stripe Connect.',
+
+            'open_stripe_connect' => 'فتح Stripe Connect',
+
+            'enable_stripe_for_tenant_bookings' => 'تفعيل Stripe لحجوزات المستأجر',
+
+            'stripe_connect_status' => 'حالة Stripe Connect',
+
+            'account_id' => 'معرّف الحساب',
+
+            'not_connected' => 'غير متصل',
+
+            'charges' => 'الرسوم',
+
+            'enabled' => 'مفعلة',
+
+            'disabled' => 'معطلة',
+
+            'payouts' => 'المدفوعات',
+
+            'stripe_is_currently_disabled_by_super_admin' => 'Stripe معطل حاليًا من المشرف العام.',
+
+            'myfatoorah_tenant' => 'MyFatoorah (المستأجر)',
+
+            'store_tenant_myfatoorah_credentials_for_booking_payments_separate_from_saas_subscription_p' => 'احفظ بيانات اعتماد MyFatoorah للمستأجر لمدفوعات الحجوزات (بشكل منفصل عن مدفوعات اشتراك SaaS).',
+
+            'enable_myfatoorah_for_tenant_bookings' => 'تفعيل MyFatoorah لحجوزات المستأجر',
+
+            'country' => 'الدولة',
+
+            'environment_from_super_admin' => 'البيئة (من المشرف العام)',
+
+            'live' => 'فعلي',
+
+            'test' => 'اختبار',
+
+            'provider_mode' => 'وضع المزود',
+
+            'tenant_uses_the_platform_myfatoorah_mode_selected_by_super_admin' => 'يستخدم المستأجر وضع MyFatoorah المحدد من المشرف العام.',
+
+            'api_token' => 'رمز API',
+
+            'myfatoorah_token' => 'رمز MyFatoorah',
+
+            'payment_method_id_required_for_current_booking_flow' => 'معرّف طريقة الدفع (مطلوب لسير الحجز الحالي)',
+
+            'use_a_valid_myfatoorah_method_id_example_visa_mastercard_we_can_remove_this_later_when_boo' => 'استخدم معرّف طريقة MyFatoorah صالحًا (مثال: Visa/Mastercard). يمكننا إزالة ذلك لاحقًا عندما تُحمّل طرق الحجز ديناميكيًا.',
+
+            'webhook_secret_optional' => 'سر Webhook (اختياري)',
+
+            'api_base_url_auto' => 'رابط API الأساسي (تلقائي)',
+
+            'auto_selected_from_super_admin_mode_test_live' => 'يتم اختياره تلقائيًا من وضع المشرف العام (اختبار/فعلي).',
+
+            'advanced_myfatoorah_options' => 'خيارات MyFatoorah المتقدمة',
+
+            'use_only_if_you_need_overrides_or_a_fixed_default_method' => 'استخدمها فقط إذا كنت تحتاج إلى تجاوزات أو طريقة افتراضية ثابتة.',
+
+            'hide_advanced' => 'إخفاء المتقدم',
+
+            'show_advanced' => 'إظهار المتقدم',
+
+            'api_base_url_override' => 'رابط API الأساسي (تجاوز)',
+
+            'auto_from_mode' => 'تلقائي من الوضع',
+
+            'leave_empty_to_use_the_automatic_url_shown_above' => 'اتركه فارغًا لاستخدام الرابط التلقائي المعروض أعلاه.',
+
+            'callback_url_optional_override' => 'رابط Callback (تجاوز اختياري)',
+
+            'auto_generated_by_booking_route' => 'يتم إنشاؤه تلقائيًا من مسار الحجز',
+
+            'error_url_optional_override' => 'رابط الخطأ (تجاوز اختياري)',
+
+            'notes' => 'ملاحظات:',
+
+            '1_super_admin_must_enable_myfatoorah_in_platform_payment_providers_first' => '1. يجب على المشرف العام تفعيل MyFatoorah أولًا ضمن موفري الدفع في المنصة.',
+
+            '2_use_the_correct_token_for_the_correct_environment_test_live_configured_by_super_admin' => '2. استخدم الرمز الصحيح للبيئة الصحيحة (اختبار/فعلي) التي يحددها المشرف العام.',
+
+            '3_this_page_currently_stores_values_inside_tenant_settings_json' => '3. تحفظ هذه الصفحة القيم حاليًا داخل JSON الخاص بـ `settings` للمستأجر.',
+
+        ],
+
+        'plate_formats' => [
+
+            'plate_formats' => 'أنماط اللوحات',
+
+            'define_the_plate_formats_that_this_tenant_can_use_when_creating_vehicles' => 'عرّف أنماط لوحات السيارات التي يمكن لهذا المستأجر استخدامها عند إنشاء السيارة.',
+
+            'saving' => 'جارٍ الحفظ...',
+
+            'save_changes' => 'حفظ التغييرات',
+
+            'plate_format_rules' => 'قواعد أنماط اللوحات',
+
+            'use_for_digits_a_for_letters_and_x_for_alphanumeric_characters_spaces_are_allowed_inside_t' => 'استخدم # للأرقام، و A للحروف، و X للحروف والأرقام. يمكن استخدام المسافات داخل النمط.',
+
+            'add_format' => 'إضافة نمط',
+
+            'no_plate_formats_added_yet' => 'لم يتم إضافة أي أنماط لوحات بعد.',
+
+            'format' => 'النمط',
+
+            'remove' => 'حذف',
+
+            'name' => 'الاسم',
+
+            'oman_5_digit_standard' => 'النمط العماني القياسي',
+
+            'country' => 'الدولة',
+
+            'oman' => 'عمان',
+
+            'mask' => 'النمط',
+
+            '12345_a' => '12345 A',
+
+            'example' => 'مثال',
+
+            '12345_ab' => '12345 AB',
+
+            'active' => 'مفعّل',
+
+            'current_code' => 'الرمز الحالي',
+
+            'will_be_generated_automatically' => 'سيتم إنشاؤه تلقائيًا',
+
+            'example_mask_patterns_12345_a_12345_ab_12xx_345' => 'أمثلة على الأنماط: 12345 A، 12345 AB، 12XX 345',
+
+        ],
+
         'static_pages' => [
 
             'static_pages' => 'الصفحات الثابتة',
@@ -3591,8 +3755,727 @@ return array (
           ],
 
       ],
+      'car_discounts' => [
+
+          'delete_this_automatic_discount' => 'حذف هذا الخصم التلقائي؟',
+
+          'automatic_discounts' => 'الخصومات التلقائية',
+
+          'auto_apply_discounts_for_booking_based_on_car_and_conditions' => 'تُطبَّق الخصومات تلقائيًا على الحجز حسب السيارة والشروط.',
+
+          'new_auto_discount' => '+ خصم تلقائي جديد',
+
+          'search_by_name' => 'ابحث بالاسم...',
+
+          'all_statuses' => 'كل الحالات',
+
+          'active' => 'نشط',
+
+          'inactive' => 'غير نشط',
+
+          'all_cars' => 'كل السيارات',
+
+          'search' => 'بحث',
+
+          'clear' => 'مسح',
+
+          'name' => 'الاسم',
+
+          'scope' => 'النطاق',
+
+          'value' => 'القيمة',
+
+          'priority' => 'الأولوية',
+
+          'status' => 'الحالة',
+
+          'edit' => 'تعديل',
+
+          'delete' => 'حذف',
+
+          'no_automatic_discounts_found' => 'لا توجد خصومات تلقائية.',
+
+          'percentage' => 'نسبة مئوية',
+
+          'fixed_amount' => 'مبلغ ثابت',
+
+          'edit_auto_discount' => 'تعديل خصم تلقائي',
+
+          'create_auto_discount' => 'إنشاء خصم تلقائي',
+
+          'back' => 'رجوع',
+
+          'car_scope' => 'نطاق السيارة',
+
+          'type' => 'النوع',
+
+          'max_discount_amount_optional' => 'أقصى مبلغ للخصم (اختياري)',
+
+          'min_order_amount_optional' => 'الحد الأدنى لقيمة الطلب (اختياري)',
+
+          'min_rental_days_optional' => 'الحد الأدنى لأيام الإيجار (اختياري)',
+
+          'starts_at_optional' => 'تاريخ البدء (اختياري)',
+
+          'ends_at_optional' => 'تاريخ الانتهاء (اختياري)',
+
+          'description_optional' => 'الوصف (اختياري)',
+
+          'saving' => 'جارٍ الحفظ...',
+
+          'save_changes' => 'حفظ التغييرات',
+
+          'cancel' => 'إلغاء',
+
+      ],
+
       'reports' => 
       array (
+
+
+          'all_branches' => 'كل الفروع',
+
+
+          'this_month' => 'هذا الشهر',
+
+
+          'last_month' => 'الشهر الماضي',
+
+
+          'this_year' => 'هذه السنة',
+
+
+          'last_year' => 'السنة الماضية',
+
+
+          'new_clients' => 'عملاء جدد',
+
+
+          'active_reservations' => 'الحجوزات النشطة',
+
+
+          'platform_visits' => 'زيارات المنصة',
+
+
+          'total_cars' => 'إجمالي السيارات',
+
+
+          'available_cars' => 'السيارات المتاحة',
+
+
+          'rented_cars' => 'السيارات المؤجرة',
+
+
+          'unavailable_cars' => 'السيارات غير المتاحة',
+
+
+          'pending' => 'قيد الانتظار',
+
+
+          'confirmed' => 'مؤكد',
+
+
+          'active' => 'نشط',
+
+
+          'completed' => 'مكتمل',
+
+
+          'cancelled' => 'ملغي',
+
+
+          'no_show' => 'لم يحضر',
+
+
+          'executive_report' => 'التقرير التنفيذي',
+
+
+          'most_important' => 'الأهم',
+
+
+          'uncollected_amounts' => 'المبالغ غير المحصلة',
+
+
+          'outstanding_debts' => 'الديون المستحقة',
+
+
+          'late_fees' => 'رسوم التأخير',
+
+
+          'cleaning_fees' => 'رسوم التنظيف',
+
+
+          'net_revenue' => 'صافي الإيرادات',
+
+
+          'delivered_cars' => 'السيارات المسلمة',
+
+
+          'returned_cars' => 'السيارات المستلمة',
+
+
+          'cars_out_of_service' => 'السيارات خارج الخدمة',
+
+
+          'contracts_ending_within_24_hours' => 'عقود تنتهي خلال 24 ساعة',
+
+
+          'missing_payments' => 'مدفوعات ناقصة',
+
+
+          'missing_documents' => 'وثائق ناقصة',
+
+
+          'contracts_without_signature' => 'عقود بدون توقيع',
+
+
+          'financial_summary' => 'الملخص المالي',
+
+
+          'operations_summary' => 'ملخص العمليات',
+
+
+          'fleet_insights' => 'تحليل الأسطول',
+
+
+          'action_alerts' => 'تنبيهات تحتاج إجراء',
+
+
+          'paid_revenue' => 'الإيرادات المدفوعة',
+
+
+          'pending_payments' => 'مدفوعات معلقة',
+
+
+          'return_extra_charges' => 'رسوم الرجوع الإضافية',
+
+
+          'damage_fees' => 'رسوم الأضرار',
+
+
+          'fuel_fees' => 'رسوم الوقود',
+
+
+          'discounts' => 'الخصومات',
+
+
+          'active_contracts' => 'العقود النشطة',
+
+
+          'pending_contracts' => 'عقود بانتظار التسليم',
+
+
+          'completed_contracts' => 'العقود المكتملة',
+
+
+          'overdue_contracts' => 'العقود المتأخرة',
+
+
+          'new_reservations' => 'الحجوزات الجديدة',
+
+
+          'cancelled_reservations' => 'الحجوزات الملغاة',
+
+
+          'fleet_utilization' => 'نسبة تشغيل الأسطول',
+
+
+          'revenue_per_car' => 'الإيراد لكل سيارة',
+
+
+          'damage_reports' => 'تقارير الأضرار',
+
+
+          'damage_items' => 'بنود الأضرار',
+
+
+          'estimated_damage_cost' => 'تكلفة الأضرار التقديرية',
+
+
+          'accident_reports' => 'بلاغات الحوادث',
+
+
+          'overdue_cars' => 'سيارات متأخرة',
+
+
+          'returns_due_today' => 'مرتجعات اليوم',
+
+
+          'pending_violations' => 'مخالفات معلقة',
+
+
+          'unpaid_return_reports' => 'تقارير رجوع غير مدفوعة',
+
+
+          'draft_damage_reports' => 'تقارير أضرار مسودة',
+
+
+          'outstanding_return_charges' => 'رسوم الرجوع غير المسددة',
+
+
+          'discounts_applied' => 'الخصومات المطبقة',
+
+
+          'active_contracts_that_need_return_follow_up_soon' => 'عقود نشطة تحتاج متابعة الرجوع قريباً.',
+
+
+          'payments_or_return_charges_that_still_need_collection' => 'مدفوعات أو رسوم رجوع ما زالت بحاجة إلى تحصيل.',
+
+
+          'active_or_pending_contracts_without_primary_driver_documents' => 'عقود نشطة أو معلقة بدون وثائق السائق الأساسي.',
+
+
+          'contracts_that_still_need_mobile_terms_confirmation' => 'عقود ما زالت تحتاج تأكيد الشروط من الموبايل.',
+
+
+          'active_contracts_past_their_return_date' => 'عقود نشطة تجاوزت تاريخ الرجوع.',
+
+
+          'active_contracts_scheduled_to_return_today' => 'عقود نشطة موعد رجوعها اليوم.',
+
+
+          'violations_that_still_need_review_or_payment' => 'مخالفات تحتاج مراجعة أو دفع.',
+
+
+          'return_reports_with_outstanding_extra_charges' => 'تقارير رجوع عليها رسوم إضافية غير مدفوعة.',
+
+
+          'damage_reports_waiting_for_review_or_completion' => 'تقارير أضرار بانتظار المراجعة أو الإكمال.',
+
+
+          'a_daily_or_weekly_owner_level_report_that_summarizes_money_operations_and_urgent_follow_up' => 'تقرير يومي أو أسبوعي لصاحب المكتب يلخص المال والتشغيل والتنبيهات التي تحتاج متابعة.',
+
+
+          'download_the_executive_report_using_the_same_period_and_branch_filters' => 'نزّل التقرير التنفيذي بنفس فلتر الفترة والفرع الحالي.',
+
+
+          'financial_report' => 'التقرير المالي',
+
+
+          'export_pdf' => 'تصدير PDF',
+
+
+          'export_excel' => 'تصدير Excel',
+
+
+          'financial_section' => 'قسم مالي',
+
+
+          'click_to_view_details' => 'انقر لعرض التفاصيل',
+
+
+          'reservations_report' => 'تقرير الحجوزات',
+
+
+          'canceled' => 'الحجوزات الملغاة',
+
+
+          'average_value' => 'متوسط قيمة الحجز',
+
+
+          'cancellation_rate' => 'نسبة الإلغاء',
+
+
+          'no_show_rate' => 'نسبة No Show',
+
+
+          'fleet_report' => 'تقرير الأسطول',
+
+
+          'utilization' => 'الاستخدام',
+
+
+          'rented_days_per_car' => 'عدد الأيام المؤجرة لكل سيارة',
+
+
+          'idle_days' => 'عدد الأيام المتوقفة',
+
+
+          'top_cars' => 'أفضل السيارات',
+
+
+          'view_all' => 'عرض الكل',
+
+
+          'highest_revenue' => 'أعلى إيراد',
+
+
+          'highest_utilization' => 'أعلى استخدام',
+
+
+          'worst_cars' => 'أسوأ السيارات',
+
+
+          'lowest_utilization' => 'أقل استخدام',
+
+
+          'lowest_revenue' => 'أقل إيراد',
+
+
+          'fleet_status' => 'حالة الأسطول',
+
+
+          'available' => 'متاحة',
+
+
+          'rented' => 'مؤجرة',
+
+
+          'reserved' => 'محجوزة',
+
+
+          'maintenance' => 'صيانة',
+
+
+          'out_of_service' => 'خارج الخدمة',
+
+
+          'vehicle_profitability_report' => 'تقرير ربحية السيارات',
+
+
+          'profitability_per_vehicle_based_on_paid_revenue_minus_damage_maintenance_and_violation_cos' => 'ربحية كل سيارة حسب الإيرادات المدفوعة مطروحاً منها تكاليف الأضرار والصيانة والمخالفات.',
+
+
+          'total_costs' => 'إجمالي التكاليف',
+
+
+          'net_profit' => 'صافي الربح',
+
+
+          'average_revenue_per_car' => 'متوسط الإيراد لكل سيارة',
+
+
+          'most_profitable_cars' => 'أكثر السيارات ربحاً',
+
+
+          'no_cars_found_for_this_period' => 'لا توجد سيارات في هذه الفترة.',
+
+
+          'least_profitable_cars' => 'أقل السيارات ربحاً',
+
+
+          'car' => 'السيارة',
+
+
+          'revenue' => 'الإيرادات',
+
+
+          'damage' => 'الأضرار',
+
+
+          'violations' => 'المخالفات',
+
+
+          'profit' => 'الربح',
+
+
+          'reservations' => 'حجوزات',
+
+
+          'items' => 'بنود',
+
+
+          'records' => 'سجلات',
+
+
+          'days' => 'أيام',
+
+
+          'no_profitability_data_found_for_this_period' => 'لا توجد بيانات ربحية لهذه الفترة.',
+
+
+          'customers_report' => 'تقرير العملاء',
+
+
+          'customer_acquisition_repeat_customers_top_clients_debtors_and_overdue_customers_for_the_se' => 'اكتساب العملاء، العملاء المتكررون، أفضل العملاء، المديونون، والعملاء المتأخرون خلال الفترة المحددة.',
+
+
+          'new_customers' => 'العملاء الجدد',
+
+
+          'repeat_customers' => 'العملاء المتكررون',
+
+
+          'debtors' => 'العملاء المديونون',
+
+
+          'customer_revenue' => 'إيرادات العملاء',
+
+
+          'best_customers_by_revenue' => 'أفضل العملاء حسب الإيرادات',
+
+
+          'no_customer_revenue_in_this_period' => 'لا توجد إيرادات عملاء في هذه الفترة.',
+
+
+          'best_customers_by_contracts' => 'أفضل العملاء حسب العقود',
+
+
+          'contracts' => 'عقود',
+
+
+          'no_contracts_found_for_this_period' => 'لا توجد عقود في هذه الفترة.',
+
+
+          'customers_with_debts' => 'العملاء المتعثرون',
+
+
+          'no_debtors_in_this_period' => 'لا يوجد عملاء مديونون في هذه الفترة.',
+
+
+          'overdue_customers' => 'العملاء المتأخرون',
+
+
+          'no_overdue_customers_now' => 'لا يوجد عملاء متأخرون حالياً.',
+
+
+          'damages_report' => 'تقرير الأضرار',
+
+
+          'damage_counts_costs_open_and_closed_damage_reports_vehicle_impact_employee_activity_and_be' => 'عدد الأضرار، التكلفة، الأضرار المفتوحة والمغلقة، حسب السيارة والموظف، وصور قبل وبعد الضرر.',
+
+
+          'damage_cost' => 'تكلفة الأضرار',
+
+
+          'open_closed' => 'مفتوحة / مغلقة',
+
+
+          'by_vehicle' => 'حسب السيارة',
+
+
+          'reports' => 'التقارير',
+
+
+          'open' => 'مفتوحة',
+
+
+          'closed' => 'مغلقة',
+
+
+          'cost' => 'التكلفة',
+
+
+          'no_damage_records_in_this_period' => 'لا توجد أضرار في هذه الفترة.',
+
+
+          'registered_by_employee' => 'من سجل الضرر',
+
+
+          'no_employee_damage_activity' => 'لا توجد نشاطات أضرار للموظفين.',
+
+
+          'closed_by_employee' => 'من أغلق الضرر',
+
+
+          'no_closed_damage_records' => 'لا توجد أضرار مغلقة.',
+
+
+          'before_delivery_photos' => 'صور قبل التسليم',
+
+
+          'no_photo' => 'لا توجد صورة',
+
+
+          'no_before_delivery_photos' => 'لا توجد صور قبل التسليم.',
+
+
+          'after_return_photos' => 'صور بعد الرجوع',
+
+
+          'no_after_return_photos' => 'لا توجد صور بعد الرجوع.',
+
+
+          'traffic_violations_report' => 'تقرير المخالفات',
+
+
+          'violation_totals_open_and_paid_records_unpaid_balances_and_distribution_by_client_and_vehi' => 'إجمالي المخالفات والمفتوحة والمدفوعة وغير المدفوعة مع توزيعها حسب العميل والسيارة.',
+
+
+          'total_violations' => 'إجمالي المخالفات',
+
+
+          'open_violations' => 'المخالفات المفتوحة',
+
+
+          'paid_violations' => 'المخالفات المدفوعة',
+
+
+          'unpaid_violations' => 'المخالفات غير المدفوعة',
+
+
+          'by_client' => 'حسب العميل',
+
+
+          'client' => 'العميل',
+
+
+          'paid' => 'مدفوعة',
+
+
+          'unpaid' => 'غير مدفوعة',
+
+
+          'amount' => 'المبلغ',
+
+
+          'no_client_violations_in_this_period' => 'لا توجد مخالفات للعملاء في هذه الفترة.',
+
+
+          'no_vehicle_violations_in_this_period' => 'لا توجد مخالفات للسيارات في هذه الفترة.',
+
+
+          'recent_violations' => 'أحدث المخالفات',
+
+
+          'violation' => 'رقم المخالفة',
+
+
+          'date' => 'التاريخ',
+
+
+          'type' => 'النوع',
+
+
+          'status' => 'الحالة',
+
+
+          'no_traffic_violations_in_this_period' => 'لا توجد مخالفات في هذه الفترة.',
+
+
+          'open_contracts_report' => 'تقرير العقود المفتوحة',
+
+
+          'active_contracts_with_end_dates_outstanding_balances_and_payment_status' => 'العقود النشطة مع تاريخ النهاية والمبالغ المستحقة وحالة الدفع.',
+
+
+          'open_contracts' => 'العقود المفتوحة',
+
+
+          'ending_24h' => 'تنتهي خلال 24 ساعة',
+
+
+          'ending_48h' => 'تنتهي خلال 48 ساعة',
+
+
+          'ending_72h' => 'تنتهي خلال 72 ساعة',
+
+
+          'overdue' => 'متأخرة',
+
+
+          'outstanding' => 'المستحق',
+
+
+          'contract' => 'العقد',
+
+
+          'start' => 'البداية',
+
+
+          'end' => 'النهاية',
+
+
+          'payment' => 'الدفع',
+
+
+          'no_active_contracts_found' => 'لا توجد عقود نشطة.',
+
+
+          'collections_report' => 'تقرير الديون والتحصيل',
+
+
+          'debtors_outstanding_amounts_due_dates_overdue_days_and_aging_classification' => 'العملاء المدينون والمبالغ المستحقة وتواريخ الاستحقاق وعدد الأيام المتأخرة وتصنيف عمر الدين.',
+
+
+          'debt_items' => 'بنود الدين',
+
+
+          'overdue_items' => 'بنود متأخرة',
+
+
+          'current_items' => 'بنود حالية',
+
+
+          'outstanding_amount' => 'المبلغ المستحق',
+
+
+          'debtors_list' => 'قائمة العملاء المدينين',
+
+
+          'customer' => 'العميل',
+
+
+          'reference' => 'المرجع',
+
+
+          'due_date' => 'تاريخ الاستحقاق',
+
+
+          'late_days' => 'الأيام المتأخرة',
+
+
+          'classification' => 'التصنيف',
+
+
+          'no_debtors_found' => 'لا توجد ديون مستحقة.',
+
+
+          'staff_performance_report' => 'تقرير الموظفين',
+
+
+          'contracts_deliveries_returns_discovered_damages_and_collected_revenue_by_employee' => 'عدد العقود والتسليمات والاستلامات والأضرار المكتشفة والإيرادات المحصلة لكل موظف.',
+
+
+          'employees' => 'الموظفون',
+
+
+          'deliveries' => 'التسليمات',
+
+
+          'returns' => 'الاستلامات',
+
+
+          'damages' => 'الأضرار المكتشفة',
+
+
+          'collected_revenue' => 'الإيرادات المحصلة',
+
+
+          'employee_performance' => 'أداء الموظفين',
+
+
+          'employee' => 'الموظف',
+
+
+          'branch' => 'الفرع',
+
+
+          'collected' => 'المحصل',
+
+
+          'no_staff_performance_data_found' => 'لا توجد بيانات أداء للموظفين.',
+
+
+          'revenue_payments_return_charges_and_discounts_for_the_selected_period' => 'الإيرادات والمدفوعات ورسوم الرجوع والخصومات للفترة المحددة.',
+
+
+          'contracts_and_reservation_activity_in_the_selected_period' => 'حركة العقود والحجوزات خلال الفترة المحددة.',
+
+
+          'utilization_damage_activity_and_accident_tracking' => 'نسبة التشغيل ونشاط الأضرار والحوادث.',
+
+
+          'items_that_need_review_follow_up_or_payment' => 'عناصر تحتاج مراجعة أو متابعة أو دفع.',
+
+
+          'car_rankings' => 'ترتيب السيارات',
+
+
+          'by_revenue' => 'حسب الإيراد',
+
+
+          'by_utilization' => 'حسب الاستخدام (الأيام)',
         'title' => 'التقارير',
         'period' => 'الفترة',
         'daily_reservations_created' => 'الحجوزات اليومية المنشأة',

@@ -54,10 +54,26 @@ const props = defineProps<{
 }>();
 
 const page = usePage<any>();
-const { locale } = useTrans();
+const { locale, t } = useTrans();
 const flashSuccess = computed(() => page.props.flash?.success ?? null);
 const flashError = computed(() => page.props.flash?.error ?? null);
-const localize = (en: string, ar: string, ur: string = en) => (locale.value === 'ar' ? ar : locale.value === 'ur' ? ur : en);
+const translationRoot = 'dashboard.admin.settings.payment_providers';
+const translationKeyFor = (value: string) =>
+    value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90);
+const localize = (en: string, ar: string, ur: string = en) => {
+    const key = `${translationRoot}.${translationKeyFor(en)}`;
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return locale.value === 'ar' ? ar : locale.value === 'ur' ? ur : en;
+};
 
 const providerMap = computed<Record<string, PlatformProvider>>(() =>
     Object.fromEntries((props.platformProviders || []).map((provider) => [provider.code, provider])),

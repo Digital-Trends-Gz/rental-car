@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useTrans } from '@/composables/useTrans';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 type LocaleMeta = {
@@ -29,6 +29,21 @@ const props = defineProps<{
     supported_locales: LocaleMeta[];
     enabled_locales: string[];
     rows: TranslationRow[];
+    filters?: {
+        search: string;
+        focus_locale: string;
+        only_customized: boolean;
+        only_empty: boolean;
+        per_page: number;
+    };
+    pagination?: {
+        current_page: number;
+        per_page: number;
+        total: number;
+        last_page: number;
+        from: number | null;
+        to: number | null;
+    };
     actions: {
         update: string;
     };
@@ -36,10 +51,11 @@ const props = defineProps<{
 
 const page = usePage<any>();
 const { locale } = useTrans();
-const search = ref('');
-const focusedLocale = ref<string>('');
-const onlyCustomized = ref(false);
-const onlyEmptyForFocusedLocale = ref(false);
+const search = ref(props.filters?.search || '');
+const focusedLocale = ref<string>(props.filters?.focus_locale || '');
+const onlyCustomized = ref(Boolean(props.filters?.only_customized));
+const onlyEmptyForFocusedLocale = ref(Boolean(props.filters?.only_empty));
+const perPage = ref(Number(props.filters?.per_page || props.pagination?.per_page || 50));
 const localize = (en: string, ar: string, ur: string = en) => (locale.value === 'ar' ? ar : locale.value === 'ur' ? ur : en);
 const localeCodes = computed(() => props.supported_locales.map((item) => item.code));
 const localeMetaByCode = computed(() =>
@@ -90,34 +106,10 @@ const rowsWithDefaults = computed(() =>
     }))
 );
 
-const filteredRows = computed(() => {
-    const query = search.value.trim().toLowerCase();
-
-    return rowsWithDefaults.value.filter((row) => {
-        const matchesSearch = !query || row.key.toLowerCase().includes(query) || localeCodes.value.some((locale) =>
-            String(row.defaults?.[locale] || '').toLowerCase().includes(query)
-            || String(row.formRow?.values?.[locale] || '').toLowerCase().includes(query)
-        );
-
-        if (!matchesSearch) {
-            return false;
-        }
-
-        if (onlyCustomized.value && !isRowCustomized(row)) {
-            return false;
-        }
-
-        if (onlyEmptyForFocusedLocale.value && !isFocusedLocaleEmpty(row)) {
-            return false;
-        }
-
-        return true;
-    });
-});
-
 const flashSuccess = computed(() => page.props.flash?.success ?? null);
 const flashError = computed(() => page.props.flash?.error ?? null);
 const formErrorList = computed(() => Object.values(form.errors ?? {}).filter((value): value is string => typeof value === 'string' && value.length > 0));
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 function isEmpty(value: unknown): boolean {
     return String(value ?? '').trim() === '';
@@ -161,6 +153,53 @@ function clearFocusedLocaleValues() {
         row.formRow.values[locale] = '';
     });
 }
+
+function syncFormRows(): void {
+    form.rows = props.rows.map((row) => ({
+        key: row.key,
+        values: { ...row.values },
+    }));
+}
+
+function reloadRows(pageNumber = 1): void {
+    router.get(window.location.pathname, {
+        search: search.value.trim() || undefined,
+        focus_locale: focusedLocale.value || undefined,
+        only_customized: onlyCustomized.value ? 1 : undefined,
+        only_empty: onlyEmptyForFocusedLocale.value ? 1 : undefined,
+        per_page: perPage.value,
+        page: pageNumber,
+    }, {
+        preserveScroll: true,
+        preserveState: false,
+        replace: true,
+    });
+}
+
+function queueReload(): void {
+    if (searchTimer) {
+        clearTimeout(searchTimer);
+    }
+
+    searchTimer = setTimeout(() => reloadRows(1), 350);
+}
+
+function goToPage(pageNumber: number): void {
+    const lastPage = props.pagination?.last_page || 1;
+    const nextPage = Math.min(Math.max(1, pageNumber), lastPage);
+    if (nextPage === props.pagination?.current_page) {
+        return;
+    }
+
+    reloadRows(nextPage);
+}
+
+watch(() => props.rows, syncFormRows);
+watch(search, queueReload);
+watch(focusedLocale, () => reloadRows(1));
+watch(onlyCustomized, () => reloadRows(1));
+watch(onlyEmptyForFocusedLocale, () => reloadRows(1));
+watch(perPage, () => reloadRows(1));
 
 function submit() {
     if (!Array.isArray(form.enabled_locales) || form.enabled_locales.length === 0) {
@@ -284,6 +323,15 @@ function submit() {
                             <Button type="button" variant="outline" size="sm" @click="clearFocusedLocaleValues">
                                 {{ localize('Clear Focus Locale', 'مسح لغة التركيز', 'فوکس زبان صاف کریں') }}
                             </Button>
+                            <select
+                                v-model.number="perPage"
+                                class="h-9 rounded-md border border-input bg-transparent px-3 text-sm dark:bg-input/30"
+                            >
+                                <option :value="25">25</option>
+                                <option :value="50">50</option>
+                                <option :value="100">100</option>
+                                <option :value="200">200</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -304,7 +352,7 @@ function submit() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="row in filteredRows" :key="row.key" class="border-t align-top">
+                            <tr v-for="row in rowsWithDefaults" :key="row.key" class="border-t align-top">
                                 <td class="px-3 py-2">
                                     <div class="font-mono text-xs">{{ row.key }}</div>
                                 </td>
@@ -344,13 +392,50 @@ function submit() {
                                     </td>
                                 </template>
                             </tr>
-                            <tr v-if="filteredRows.length === 0">
+                            <tr v-if="rowsWithDefaults.length === 0">
                                 <td class="px-3 py-5 text-center text-muted-foreground" :colspan="1 + (localeCodes.length * 2)">
                                     {{ localize('No translation rows found for this search.', 'لم يتم العثور على صفوف ترجمة لهذا البحث.', 'اس تلاش کے لیے کوئی ترجمہ قطار نہیں ملی۔') }}
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div
+                    v-if="pagination"
+                    class="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div>
+                        {{ localize('Showing', 'عرض', 'دکھا رہا ہے') }}
+                        {{ pagination.from ?? 0 }}-{{ pagination.to ?? 0 }}
+                        {{ localize('of', 'من', 'میں سے') }}
+                        {{ pagination.total }}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            :disabled="pagination.current_page <= 1"
+                            @click="goToPage(pagination.current_page - 1)"
+                        >
+                            {{ localize('Previous', 'السابق', 'پچھلا') }}
+                        </Button>
+                        <span>
+                            {{ localize('Page', 'صفحة', 'صفحہ') }}
+                            {{ pagination.current_page }}
+                            {{ localize('of', 'من', 'میں سے') }}
+                            {{ pagination.last_page }}
+                        </span>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            :disabled="pagination.current_page >= pagination.last_page"
+                            @click="goToPage(pagination.current_page + 1)"
+                        >
+                            {{ localize('Next', 'التالي', 'اگلا') }}
+                        </Button>
+                    </div>
                 </div>
             </section>
         </main>

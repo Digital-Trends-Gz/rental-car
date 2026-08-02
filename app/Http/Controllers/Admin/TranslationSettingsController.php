@@ -15,7 +15,7 @@ use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
 class TranslationSettingsController extends Controller
 {
-    public function edit(): Response
+    public function edit(Request $request): Response
     {
         $tenant = TenantContext::get();
         abort_unless($tenant, 404);
@@ -24,6 +24,15 @@ class TranslationSettingsController extends Controller
         $settings = TenantSiteSetting::forTenant($tenant);
         $supportedLocales = $this->supportedLocaleKeys();
         $supportedLocaleMeta = LaravelLocalization::getSupportedLocales();
+        $search = trim((string) $request->query('search', ''));
+        $focusedLocale = (string) $request->query('focus_locale', $supportedLocales[0] ?? 'en');
+        if (! in_array($focusedLocale, $supportedLocales, true)) {
+            $focusedLocale = $supportedLocales[0] ?? 'en';
+        }
+        $onlyCustomized = filter_var($request->query('only_customized', false), FILTER_VALIDATE_BOOLEAN);
+        $onlyEmptyForFocusedLocale = filter_var($request->query('only_empty', false), FILTER_VALIDATE_BOOLEAN);
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = min(200, max(25, (int) $request->query('per_page', 50)));
 
         $flatBaseByLocale = [];
         $flatOverrideByLocale = [];
@@ -44,6 +53,48 @@ class TranslationSettingsController extends Controller
         $keys = array_values(array_unique($keyPool));
         sort($keys);
 
+        if ($search !== '') {
+            $needle = mb_strtolower($search);
+            $keys = array_values(array_filter($keys, function (string $key) use ($needle, $supportedLocales, $flatBaseByLocale, $flatOverrideByLocale): bool {
+                if (str_contains(mb_strtolower($key), $needle)) {
+                    return true;
+                }
+
+                foreach ($supportedLocales as $locale) {
+                    if (str_contains(mb_strtolower((string) ($flatBaseByLocale[$locale][$key] ?? '')), $needle)) {
+                        return true;
+                    }
+
+                    if (str_contains(mb_strtolower((string) ($flatOverrideByLocale[$locale][$key] ?? '')), $needle)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }));
+        }
+
+        if ($onlyCustomized) {
+            $keys = array_values(array_filter($keys, function (string $key) use ($supportedLocales, $flatOverrideByLocale): bool {
+                foreach ($supportedLocales as $locale) {
+                    if (trim((string) ($flatOverrideByLocale[$locale][$key] ?? '')) !== '') {
+                        return true;
+                    }
+                }
+
+                return false;
+            }));
+        }
+
+        if ($onlyEmptyForFocusedLocale) {
+            $keys = array_values(array_filter($keys, fn (string $key): bool => trim((string) ($flatOverrideByLocale[$focusedLocale][$key] ?? '')) === ''));
+        }
+
+        $total = count($keys);
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $lastPage);
+        $paginatedKeys = array_slice($keys, ($page - 1) * $perPage, $perPage);
+
         $rows = array_map(function (string $key) use ($supportedLocales, $flatBaseByLocale, $flatOverrideByLocale): array {
             $defaults = [];
             $values = [];
@@ -57,7 +108,7 @@ class TranslationSettingsController extends Controller
                 'defaults' => $defaults,
                 'values' => $values,
             ];
-        }, $keys);
+        }, $paginatedKeys);
 
         return Inertia::render('Admin/Settings/Translations', [
             'tenant' => [
@@ -77,6 +128,21 @@ class TranslationSettingsController extends Controller
             }, $supportedLocales)),
             'enabled_locales' => data_get($settings, 'enabled_locales', $supportedLocales),
             'rows' => $rows,
+            'filters' => [
+                'search' => $search,
+                'focus_locale' => $focusedLocale,
+                'only_customized' => $onlyCustomized,
+                'only_empty' => $onlyEmptyForFocusedLocale,
+                'per_page' => $perPage,
+            ],
+            'pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => $lastPage,
+                'from' => $total === 0 ? null : (($page - 1) * $perPage) + 1,
+                'to' => $total === 0 ? null : min($total, $page * $perPage),
+            ],
             'actions' => [
                 'update' => url()->current(),
             ],
@@ -104,9 +170,10 @@ class TranslationSettingsController extends Controller
             $defaultLocale = (string) ($enabledLocales[0] ?? $supportedLocales[0] ?? 'en');
         }
 
+        $settings = TenantSiteSetting::forTenant($tenant);
         $overridesByLocale = [];
         foreach ($supportedLocales as $locale) {
-            $overridesByLocale[$locale] = [];
+            $overridesByLocale[$locale] = (array) data_get($settings, "translations.$locale", []);
         }
 
         foreach ((array) ($validated['rows'] ?? []) as $row) {
@@ -119,6 +186,7 @@ class TranslationSettingsController extends Controller
             foreach ($supportedLocales as $locale) {
                 $text = trim((string) ($values[$locale] ?? ''));
                 if ($text === '') {
+                    Arr::forget($overridesByLocale[$locale], $key);
                     continue;
                 }
                 Arr::set($overridesByLocale[$locale], $key, $text);

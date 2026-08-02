@@ -418,7 +418,21 @@ const page = usePage<PageProps>();
 const rawPage = usePage<any>();
 const { t, locale } = useTrans();
 
-const localize = (en: string, ar: string, ur: string) => {
+const translationRoot = 'dashboard.admin.reports';
+const translationKeyFor = (value: string) =>
+    value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 90);
+const localize = (en: string, ar: string, ur: string = en) => {
+    const key = `${translationRoot}.${translationKeyFor(en)}`;
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
     if (locale.value === 'ar') return ar;
     if (locale.value === 'ur') return ur;
     return en;
