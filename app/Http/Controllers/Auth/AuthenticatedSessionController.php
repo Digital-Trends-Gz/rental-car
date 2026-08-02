@@ -278,8 +278,9 @@ class AuthenticatedSessionController extends Controller
 
     private function redirectToPlanSelection(Request $request, ?string $tenantSlug): RedirectResponse|BaseResponse
     {
-        return to_route('register.plans')
-            ->with('error', 'Your plan is missing or expired. Please choose a plan to continue.');
+        $request->session()->flash('error', 'Your plan is missing or expired. Please choose a plan to continue.');
+
+        return $this->locationOrRedirect($request, route('register.plans'));
     }
 
     private function locationOrRedirect(Request $request, string $url): RedirectResponse|BaseResponse

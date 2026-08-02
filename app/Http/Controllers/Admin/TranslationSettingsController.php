@@ -254,12 +254,12 @@ class TranslationSettingsController extends Controller
      * but tenants still need to edit its public translations from the same table.
      */
     private function addTenantWebsiteContentRows(
-        TenantSiteSetting $settings,
+        array $settings,
         array $supportedLocales,
         array &$flatBaseByLocale,
         array &$keyPool
     ): void {
-        $about = is_array($settings->about) ? $settings->about : [];
+        $about = is_array(data_get($settings, 'about')) ? data_get($settings, 'about') : [];
 
         foreach ((array) data_get($about, 'values', []) as $index => $item) {
             $this->addLocalizedContentRow(
