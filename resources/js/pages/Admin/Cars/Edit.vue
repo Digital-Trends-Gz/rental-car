@@ -953,7 +953,7 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                                 {{ localize('Public description translations', 'ترجمات وصف السيارة في الموقع') }}
                             </h2>
                             <p class="mt-1 text-sm text-muted-foreground">
-                                {{ localize('These descriptions are shown on the landing and fleet car cards according to the selected site language.', 'تظهر هذه الأوصاف في بطاقات السيارات حسب لغة الموقع المختارة.') }}
+                                {{ t('dashboard.admin.cars.form.public_description_translations_help') }}
                             </p>
                         </div>
 

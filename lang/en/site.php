@@ -2572,6 +2572,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'phone_number' => 'Phone number',
           'email' => 'Email',
           'email_address' => 'Email address',
+          'public_description_translations_help' => 'These descriptions are shown on the landing and fleet car cards according to the selected site language.',
         ),
         'documents' => 
         array (

@@ -5,12 +5,14 @@ namespace App\Services\Notifications;
 use App\Enums\CarStatus;
 use App\Enums\CarViolationStatus;
 use App\Enums\ContractStatus;
+use App\Enums\DiscountRequestStatus;
 use App\Enums\MaintenanceRecordStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Car;
 use App\Models\CarMaintenance;
 use App\Models\CarViolation;
 use App\Models\Contract;
+use App\Models\DiscountRequest;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Tenant;
@@ -95,6 +97,7 @@ class OwnerNotificationsService
             ->merge($this->lateReturnItems($tenantId, $branchId, $locale))
             ->merge($this->violationItems($tenantId, $branchId, $locale, $currency))
             ->merge($this->maintenanceItems($tenantId, $branchId, $locale))
+            ->merge($this->discountRequestItems($tenantId, $branchId, $locale, $currency))
             ->merge($this->reservationItems($tenantId, $branchId, $locale))
             ->merge($this->paymentItems($tenantId, $branchId, $locale, $currency))
             ->sortByDesc(fn (array $item): int => $item['occurred_at_sort'] ?? 0)
@@ -308,6 +311,76 @@ class OwnerNotificationsService
             });
     }
 
+    private function discountRequestItems(int $tenantId, ?int $branchId, string $locale, array $currency): Collection
+    {
+        $query = DiscountRequest::query()
+            ->with([
+                'requestedBy:id,name,email',
+                'reservation.user:id,name,email',
+                'reservation.car:id,branch_id,year,make,model,license_plate',
+                'reservation.car.branch:id,name',
+                'contract:id,contract_number',
+                'returnReport:id,report_number',
+            ])
+            ->where('tenant_id', $tenantId)
+            ->where('status', DiscountRequestStatus::PENDING->value);
+
+        $this->applyDiscountRequestBranchScope($query, $branchId);
+
+        return $query
+            ->latest('created_at')
+            ->latest('id')
+            ->limit(50)
+            ->get()
+            ->map(function (DiscountRequest $discountRequest) use ($locale, $currency): array {
+                $clientName = $discountRequest->reservation?->user?->name
+                    ?: $this->text('notifications.unknown_client', $locale, 'Client');
+                $employeeName = $discountRequest->requestedBy?->name
+                    ?: $this->text('notifications.unknown_employee', $locale, 'Employee');
+                $discount = $this->formatDiscount($discountRequest, $currency);
+
+                return $this->notificationPayload(
+                    id: 'owner:discount_request:'.$discountRequest->id,
+                    type: 'discount_request',
+                    icon: 'tag',
+                    accent: '#0EA5E9',
+                    background: '#E0F2FE',
+                    locale: $locale,
+                    titleKey: 'discount_request.title',
+                    descriptionKey: 'discount_request.description',
+                    replacements: [
+                        'discount' => $discount,
+                        'client' => $clientName,
+                        'employee' => $employeeName,
+                    ],
+                    occurredAt: $discountRequest->created_at,
+                    data: [
+                        'discount_request_id' => $discountRequest->id,
+                        'status' => DiscountRequestStatus::PENDING->value,
+                        'reservation_id' => $discountRequest->reservation_id,
+                        'reservation_number' => $discountRequest->reservation?->reservation_number,
+                        'contract_id' => $discountRequest->contract_id,
+                        'contract_number' => $discountRequest->contract?->contract_number,
+                        'return_report_id' => $discountRequest->contract_return_report_id,
+                        'return_report_number' => $discountRequest->returnReport?->report_number,
+                        'car_id' => $discountRequest->reservation?->car_id,
+                        'car_name' => $this->carName($discountRequest->reservation?->car),
+                        'client_name' => $clientName,
+                        'employee_name' => $employeeName,
+                        'branch_id' => $discountRequest->reservation?->car?->branch_id,
+                        'branch_name' => $discountRequest->reservation?->car?->branch?->name,
+                        'base_amount' => (float) $discountRequest->base_amount,
+                        'discount_type' => $discountRequest->discount_type,
+                        'discount_value' => (float) $discountRequest->discount_value,
+                        'discount_amount' => (float) $discountRequest->discount_amount,
+                        'final_amount' => (float) $discountRequest->final_amount,
+                        'reason' => $discountRequest->reason,
+                    ],
+                    action: ['type' => 'discount_request', 'id' => $discountRequest->id]
+                );
+            });
+    }
+
     private function reservationItems(int $tenantId, ?int $branchId, string $locale): Collection
     {
         $query = Reservation::query()
@@ -499,6 +572,13 @@ class OwnerNotificationsService
         }
     }
 
+    private function applyDiscountRequestBranchScope(Builder $query, ?int $branchId): void
+    {
+        if ($branchId) {
+            $query->whereHas('reservation.car', fn (Builder $query) => $query->where('branch_id', $branchId));
+        }
+    }
+
     private function contractReturnAt(Contract $contract): ?Carbon
     {
         if (!$contract->end_date) {
@@ -540,6 +620,15 @@ class OwnerNotificationsService
         $symbol = trim((string) ($currency['symbol'] ?? $currency['code'] ?? ''));
 
         return trim($symbol.' '.number_format($amount, 2));
+    }
+
+    private function formatDiscount(DiscountRequest $discountRequest, array $currency): string
+    {
+        if ($discountRequest->discount_type === 'percentage') {
+            return rtrim(rtrim(number_format((float) $discountRequest->discount_value, 2), '0'), '.').'%';
+        }
+
+        return $this->formatMoney((float) $discountRequest->discount_amount, $currency);
     }
 
     private function timeAgo(?string $occurredAt, string $locale): ?string
