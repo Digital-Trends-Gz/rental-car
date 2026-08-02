@@ -2972,6 +2972,27 @@ Sunday: 10:00 AM - 4:00 PM',
           'head_title' => 'Payments',
           'title' => 'Payments',
           'empty' => 'No payments found.',
+          'debtors' => 'Debtors',
+          'all_branches' => 'All branches',
+          'all_statuses' => 'All statuses',
+          'converted_to' => 'Converted to',
+          'rate' => 'Rate',
+          'statuses' => 
+          array (
+            'pending' => 'Pending',
+            'completed' => 'Completed',
+            'failed' => 'Failed',
+            'cancelled' => 'Cancelled',
+            'refunded' => 'Refunded',
+          ),
+          'payment_methods' => 
+          array (
+            'cash' => 'Cash',
+            'card' => 'Card',
+            'bank_transfer' => 'Bank transfer',
+            'online' => 'Online',
+            'wallet' => 'Wallet',
+          ),
         ),
         'debtors' => 
         array (
@@ -4048,6 +4069,14 @@ Sunday: 10:00 AM - 4:00 PM',
             'payment_reference' => 'Payment Reference',
             'notes' => 'Notes',
           ),
+        ),
+      ),
+      'employees' => 
+      array (
+        'table' => 
+        array (
+          'branch' => 'Branch',
+          'no_branch' => 'No Branch',
         ),
       ),
     ),

@@ -2687,9 +2687,30 @@ Sunday: 10:00 AM - 4:00 PM',
       array (
         'index' => 
         array (
-          'head_title' => 'Payments',
-          'title' => 'Payments',
-          'empty' => 'No payments found.',
+          'head_title' => 'ادائیگیاں',
+          'title' => 'ادائیگیاں',
+          'empty' => 'کوئی ادائیگی نہیں ملی۔',
+          'debtors' => 'مقروضین',
+          'all_branches' => 'تمام برانچز',
+          'all_statuses' => 'تمام حالتیں',
+          'converted_to' => 'میں تبدیل کیا گیا',
+          'rate' => 'شرح',
+          'statuses' => 
+          array (
+            'pending' => 'زیر التواء',
+            'completed' => 'مکمل',
+            'failed' => 'ناکام',
+            'cancelled' => 'منسوخ',
+            'refunded' => 'واپس شدہ',
+          ),
+          'payment_methods' => 
+          array (
+            'cash' => 'نقد',
+            'card' => 'کارڈ',
+            'bank_transfer' => 'بینک ٹرانسفر',
+            'online' => 'آن لائن',
+            'wallet' => 'والیٹ',
+          ),
         ),
         'debtors' => 
         array (
@@ -3766,6 +3787,14 @@ Sunday: 10:00 AM - 4:00 PM',
             'payment_reference' => 'ادائیگی کا حوالہ',
             'notes' => 'نوٹس',
           ),
+        ),
+      ),
+      'employees' => 
+      array (
+        'table' => 
+        array (
+          'branch' => 'برانچ',
+          'no_branch' => 'کوئی برانچ نہیں',
         ),
       ),
     ),

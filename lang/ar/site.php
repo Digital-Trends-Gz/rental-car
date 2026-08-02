@@ -3004,9 +3004,30 @@ return array (
       array (
         'index' => 
         array (
-          'head_title' => 'ط§ظ„ظ…ط¯ظپظˆط¹ط§طھ',
-          'title' => 'ط§ظ„ظ…ط¯ظپظˆط¹ط§طھ',
-          'empty' => 'ظ„ط§ طھظˆط¬ط¯ ظ…ط¯ظپظˆط¹ط§طھ.',
+          'head_title' => 'المدفوعات',
+          'title' => 'المدفوعات',
+          'empty' => 'لا توجد مدفوعات.',
+          'debtors' => 'المدينون',
+          'all_branches' => 'كل الفروع',
+          'all_statuses' => 'كل الحالات',
+          'converted_to' => 'محول إلى',
+          'rate' => 'سعر الصرف',
+          'statuses' => 
+          array (
+            'pending' => 'قيد الانتظار',
+            'completed' => 'مكتملة',
+            'failed' => 'فاشلة',
+            'cancelled' => 'ملغاة',
+            'refunded' => 'مستردة',
+          ),
+          'payment_methods' => 
+          array (
+            'cash' => 'نقداً',
+            'card' => 'بطاقة',
+            'bank_transfer' => 'تحويل بنكي',
+            'online' => 'دفع إلكتروني',
+            'wallet' => 'محفظة',
+          ),
         ),
         'debtors' => 
         array (
@@ -4489,10 +4510,10 @@ const saveError = ref(\'',
           'name' => 'Name',
           'email' => 'Email',
           'civil_number' => 'Civil No.',
-          'branch' => 'Branch',
+          'branch' => 'الفرع',
           'status' => 'Status',
           'roles_permissions' => 'Roles & Permissions',
-          'no_branch' => 'No Branch',
+          'no_branch' => 'لا يوجد فرع',
         ),
         'form' => 
         array (
