@@ -62,12 +62,16 @@ class LandingSettingsController extends Controller
         ]);
     }
 
-    public function translations(): Response
+    public function translations(Request $request): Response
     {
         $settings = $this->landingSettings();
         $supportedLocales = $this->supportedLocaleKeys();
         $supportedLocaleMeta = LaravelLocalization::getSupportedLocales();
         $defaultRows = $this->defaultTranslationRows('en');
+        $search = trim((string) $request->query('search', ''));
+        $section = trim((string) $request->query('section', 'all'));
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = max(25, min(200, (int) $request->query('per_page', 50)));
 
         $overrideRowsByLocale = [];
         $keyPool = array_keys($defaultRows);
@@ -83,6 +87,47 @@ class LandingSettingsController extends Controller
         ));
         sort($keys);
 
+        $sections = collect($keys)
+            ->map(static fn (string $key): string => Str::before($key, '.'))
+            ->filter(static fn (string $value): bool => $value !== '')
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        if ($section !== '' && $section !== 'all') {
+            $keys = array_values(array_filter(
+                $keys,
+                static fn (string $key): bool => Str::before($key, '.') === $section
+            ));
+        }
+
+        if ($search !== '') {
+            $query = Str::lower($search);
+            $keys = array_values(array_filter($keys, function (string $key) use ($query, $defaultRows, $overrideRowsByLocale): bool {
+                if (Str::contains(Str::lower($key), $query) || Str::contains(Str::lower('site.' . $key), $query)) {
+                    return true;
+                }
+
+                if (Str::contains(Str::lower((string) ($defaultRows[$key] ?? '')), $query)) {
+                    return true;
+                }
+
+                foreach ($overrideRowsByLocale as $rows) {
+                    if (Str::contains(Str::lower((string) ($rows[$key] ?? '')), $query)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }));
+        }
+
+        $total = count($keys);
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $lastPage);
+        $paginatedKeys = array_slice($keys, ($page - 1) * $perPage, $perPage);
+
         $rows = array_map(function (string $key) use ($supportedLocales, $defaultRows, $overrideRowsByLocale): array {
             $values = [];
             foreach ($supportedLocales as $locale) {
@@ -94,7 +139,7 @@ class LandingSettingsController extends Controller
                 'default' => (string) ($defaultRows[$key] ?? ''),
                 'values' => $values,
             ];
-        }, $keys);
+        }, $paginatedKeys);
 
         return Inertia::render('SuperAdmin/Settings/LandingTranslations', [
             'settings' => $settings,
@@ -109,6 +154,20 @@ class LandingSettingsController extends Controller
             }, $supportedLocales)),
             'enabled_locales' => data_get($settings, 'enabled_locales', $supportedLocales),
             'rows' => $rows,
+            'sections' => $sections,
+            'filters' => [
+                'search' => $search,
+                'section' => $section === '' ? 'all' : $section,
+                'per_page' => $perPage,
+            ],
+            'pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => $lastPage,
+                'from' => $total === 0 ? null : (($page - 1) * $perPage) + 1,
+                'to' => $total === 0 ? null : min($total, $page * $perPage),
+            ],
             'actions' => [
                 'update' => route('superadmin.settings.landing-translations.update'),
                 'auto_translate' => route('superadmin.settings.landing-translations.auto-translate'),
@@ -518,9 +577,10 @@ class LandingSettingsController extends Controller
         ]);
 
         $enabledLocales = $this->sanitizeEnabledLocales($validated['enabled_locales'] ?? $supportedLocales);
+        $settings = $this->landingSettings();
         $translations = [];
         foreach ($supportedLocales as $locale) {
-            $translations[$locale] = [];
+            $translations[$locale] = (array) data_get($settings, "translations.$locale", []);
         }
 
         foreach ((array) ($validated['rows'] ?? []) as $row) {
@@ -537,6 +597,7 @@ class LandingSettingsController extends Controller
             foreach ($supportedLocales as $locale) {
                 $text = trim((string) ($values[$locale] ?? ''));
                 if ($text === '') {
+                    Arr::forget($translations[$locale], $key);
                     continue;
                 }
 

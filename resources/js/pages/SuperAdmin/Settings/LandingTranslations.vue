@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SuperAdminLayout from '@/layouts/SuperAdminLayout.vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,20 @@ type Props = {
     supported_locales: LocaleMeta[];
     enabled_locales: string[];
     rows: TranslationRow[];
+    sections: string[];
+    filters: {
+        search: string;
+        section: string;
+        per_page: number;
+    };
+    pagination: {
+        current_page: number;
+        per_page: number;
+        total: number;
+        last_page: number;
+        from: number | null;
+        to: number | null;
+    };
     actions: {
         update: string;
         auto_translate: string;
@@ -39,8 +53,9 @@ type Props = {
 const props = defineProps<Props>();
 
 const page = usePage<any>();
-const search = ref('');
-const sectionFilter = ref('all');
+const search = ref(props.filters?.search || '');
+const sectionFilter = ref(props.filters?.section || 'all');
+const perPage = ref(Number(props.filters?.per_page || props.pagination?.per_page || 50));
 const focusedLocale = ref(props.supported_locales.some((locale) => locale.code === 'ar')
     ? 'ar'
     : props.supported_locales[0]?.code || 'en');
@@ -78,9 +93,7 @@ const rowsWithForm = computed(() =>
 );
 
 const sectionOptions = computed(() => {
-    const sections = Array.from(new Set(rowsWithForm.value.map((row) => row.section)));
-
-    return sections.sort().map((section) => ({
+    return (props.sections || []).map((section) => ({
         value: section,
         label: section
             .split('_')
@@ -89,40 +102,55 @@ const sectionOptions = computed(() => {
     }));
 });
 
-const filteredRows = computed(() => {
-    const query = search.value.trim().toLowerCase();
-
-    return rowsWithForm.value.filter((row) => {
-        if (sectionFilter.value !== 'all' && row.section !== sectionFilter.value) {
-            return false;
-        }
-
-        if (!query) {
-            return true;
-        }
-
-        const rowKey = row.key.toLowerCase();
-        const searchableKeys = [rowKey, `site.${rowKey}`];
-
-        if (searchableKeys.some((key) => key.includes(query))) {
-            return true;
-        }
-
-        if ((row.default || '').toLowerCase().includes(query)) {
-            return true;
-        }
-
-        return localeCodes.value.some((localeCode) =>
-            String(row.formRow?.values?.[localeCode] || '').toLowerCase().includes(query),
-        );
-    });
-});
-
 const flashSuccess = computed(() => page.props.flash?.success ?? null);
 const flashError = computed(() => page.props.flash?.error ?? null);
 const formErrors = computed(() =>
     Object.values(form.errors ?? {}).filter((value): value is string => typeof value === 'string' && value.length > 0),
 );
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function syncFormRows(): void {
+    form.rows = props.rows.map((row) => ({
+        key: row.key,
+        values: { ...row.values },
+    }));
+}
+
+function reloadRows(pageNumber = 1): void {
+    router.get(window.location.pathname, {
+        search: search.value.trim() || undefined,
+        section: sectionFilter.value === 'all' ? undefined : sectionFilter.value,
+        per_page: perPage.value,
+        page: pageNumber,
+    }, {
+        preserveScroll: true,
+        preserveState: false,
+        replace: true,
+    });
+}
+
+function queueReload(): void {
+    if (searchTimer) {
+        clearTimeout(searchTimer);
+    }
+
+    searchTimer = setTimeout(() => reloadRows(1), 350);
+}
+
+function goToPage(pageNumber: number): void {
+    const nextPage = Math.min(Math.max(1, pageNumber), props.pagination.last_page || 1);
+    if (nextPage === props.pagination.current_page) {
+        return;
+    }
+
+    reloadRows(nextPage);
+}
+
+watch(() => props.rows, syncFormRows);
+watch(search, queueReload);
+watch(sectionFilter, () => reloadRows(1));
+watch(perPage, () => reloadRows(1));
 
 function isEmpty(value: unknown): boolean {
     return String(value ?? '').trim() === '';
@@ -334,6 +362,15 @@ async function autoFillArabic(): Promise<void> {
                             </option>
                         </select>
                         <select
+                            v-model.number="perPage"
+                            class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                        >
+                            <option :value="25">25 per page</option>
+                            <option :value="50">50 per page</option>
+                            <option :value="100">100 per page</option>
+                            <option :value="200">200 per page</option>
+                        </select>
+                        <select
                             v-model="focusedLocale"
                             class="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
                         >
@@ -362,7 +399,7 @@ async function autoFillArabic(): Promise<void> {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="row in filteredRows" :key="row.key" class="border-t align-top">
+                                <tr v-for="row in rowsWithForm" :key="row.key" class="border-t align-top">
                                     <td class="min-w-[320px] max-w-[420px] px-3 py-2">
                                         <div class="overflow-x-auto whitespace-nowrap font-mono text-xs">
                                             {{ row.key }}
@@ -402,13 +439,45 @@ async function autoFillArabic(): Promise<void> {
                                         </td>
                                     </template>
                                 </tr>
-                                <tr v-if="filteredRows.length === 0">
+                                <tr v-if="rowsWithForm.length === 0">
                                     <td class="px-3 py-5 text-center text-muted-foreground" :colspan="2 + localeCodes.length">
                                         No translation rows match your search.
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div class="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            Showing
+                            <span class="font-medium text-foreground">{{ pagination.from ?? 0 }}</span>
+                            -
+                            <span class="font-medium text-foreground">{{ pagination.to ?? 0 }}</span>
+                            of
+                            <span class="font-medium text-foreground">{{ pagination.total }}</span>
+                            translations
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                :disabled="pagination.current_page <= 1"
+                                @click="goToPage(pagination.current_page - 1)"
+                            >
+                                Previous
+                            </Button>
+                            <span class="min-w-24 text-center">
+                                Page {{ pagination.current_page }} of {{ pagination.last_page }}
+                            </span>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                :disabled="pagination.current_page >= pagination.last_page"
+                                @click="goToPage(pagination.current_page + 1)"
+                            >
+                                Next
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>

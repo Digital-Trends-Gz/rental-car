@@ -1753,6 +1753,46 @@ return array (
       ),
       'settings' => 
       array (
+        'static_pages' => [
+
+            'static_pages' => 'الصفحات الثابتة',
+
+            'manage_legal_and_policy_pages_for_the_tenant_website' => 'إدارة صفحات الشروط والسياسات الخاصة بموقع التاجر.',
+
+            'saving' => 'جاري الحفظ...',
+
+            'save_pages' => 'حفظ الصفحات',
+
+            'editing_language' => 'لغة التعديل',
+
+            'choose_a_language_then_edit_all_page_titles_and_content_for_that_language' => 'اختر اللغة ثم عدل عناوين ومحتوى الصفحات لهذه اللغة.',
+
+            'open_page' => 'فتح الصفحة',
+
+            'page_title' => 'عنوان الصفحة',
+
+            'page_content' => 'محتوى الصفحة',
+
+            'write_page_content' => 'اكتب محتوى الصفحة...',
+
+            'using_super_admin_default_content' => 'يتم استخدام المحتوى الافتراضي من السوبر أدمن.',
+
+            'super_admin_default_content_if_this_field_is_cleared' => 'المحتوى الافتراضي من السوبر أدمن إذا تركت هذا الحقل فارغًا:',
+
+            'privacy_policy' => 'سياسة الخصوصية',
+
+            'privacy_and_data_handling_page_for_this_tenant_website' => 'صفحة الخصوصية والتعامل مع البيانات الخاصة بموقع هذا التاجر.',
+
+            'terms_of_use' => 'شروط الاستخدام',
+
+            'terms_shown_to_visitors_and_customers_using_this_tenant_website' => 'الشروط التي تظهر للزوار والعملاء عند استخدام موقع هذا التاجر.',
+
+            'security_policy' => 'سياسة الأمان',
+
+            'security_account_safety_and_responsible_use_content' => 'محتوى الأمان وسلامة الحسابات والاستخدام المسؤول.',
+
+        ],
+
         'website' => [
 
             'airport' => 'المطار',
