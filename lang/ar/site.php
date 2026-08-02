@@ -317,17 +317,18 @@ return array (
     'optional' => 'اختياري',
     'already_have_account_short' => 'لديك حساب بالفعل؟',
     'sign_in_here_short' => 'سجّل الدخول من هنا',
-    'reset_password_page' => [
-        'head_title' => 'إعادة تعيين كلمة المرور',
-        'title' => 'إعادة تعيين كلمة المرور',
-        'subtitle' => 'يرجى إدخال كلمة المرور الجديدة أدناه',
-        'email_label' => 'البريد الإلكتروني',
-        'new_password_label' => 'كلمة المرور',
-        'new_password_placeholder' => 'كلمة المرور',
-        'confirm_password_label' => 'تأكيد كلمة المرور',
-        'confirm_password_placeholder' => 'تأكيد كلمة المرور',
-        'reset_password' => 'إعادة تعيين كلمة المرور',
-    ],
+    'reset_password_page' => 
+    array (
+      'head_title' => 'إعادة تعيين كلمة المرور',
+      'title' => 'إعادة تعيين كلمة المرور',
+      'subtitle' => 'يرجى إدخال كلمة المرور الجديدة أدناه',
+      'email_label' => 'البريد الإلكتروني',
+      'new_password_label' => 'كلمة المرور',
+      'new_password_placeholder' => 'كلمة المرور',
+      'confirm_password_label' => 'تأكيد كلمة المرور',
+      'confirm_password_placeholder' => 'تأكيد كلمة المرور',
+      'reset_password' => 'إعادة تعيين كلمة المرور',
+    ),
     'forgot_password_page' => 
     array (
       'head_title' => 'إعادة تعيين كلمة المرور',
@@ -896,7 +897,6 @@ return array (
         'translations' => 'الترجمات',
         'plate_formats' => 'أنماط اللوحات',
         'reservation_settings' => 'إعدادات الحجز',
-        'support' => 'الدعم',
       ),
       'super_admin' => 
       array (
@@ -919,7 +919,7 @@ return array (
         'stripe_settings' => 'إعدادات Stripe',
       ),
     ),
-    'admin_page' =>
+    'admin_page' => 
     array (
       'n_a' => 'غير متوفر',
       'car_license' => 'رخصة السيارة',
@@ -966,10 +966,10 @@ return array (
       'reservations_scheduled_to_start_today' => 'الحجوزات المجدولة لليوم.',
       'receive_today' => 'الاستلام اليوم',
       'contracts_ending_today' => 'العقود التي تنتهي اليوم.',
-    'overdue_cars' => 'السيارات المتأخرة',
+      'overdue_cars' => 'السيارات المتأخرة',
       'active_contracts_past_the_due_date' => 'عقود نشطة تجاوزت تاريخ الاستحقاق.',
-    'pending_violations' => 'المخالفات المعلقة',
-    'need_review_or_payment' => 'تحتاج مراجعة أو دفع',
+      'pending_violations' => 'المخالفات المعلقة',
+      'need_review_or_payment' => 'تحتاج مراجعة أو دفع',
       'expiring_documents' => 'وثائق تنتهي قريبًا',
       'due_within_the_next_10_days' => 'تنتهي خلال 10 أيام.',
       'ending_contracts' => 'عقود تنتهي قريبًا',
@@ -1075,7 +1075,7 @@ return array (
       'completed' => 'مكتملة',
       'cancelled' => 'ملغاة',
       'pending' => 'بانتظار البدء',
-      'reservation_statuses' =>
+      'reservation_statuses' => 
       array (
         'pending' => 'قيد الانتظار',
         'confirmed' => 'مؤكد',
@@ -1085,7 +1085,7 @@ return array (
         'cancelled' => 'ملغي',
         'no_show' => 'لم يحضر',
       ),
-      'car_statuses' =>
+      'car_statuses' => 
       array (
         'draft' => 'مسودة',
         'available' => 'متاحة',
@@ -1500,7 +1500,8 @@ return array (
         'view' => 'عرض',
         'yes' => 'نعم',
         'no' => 'لا',
-        'details' => [
+        'details' => 
+        array (
           'description' => 'تفاصيل بلاغ الحادث',
           'download_mrta_pdf' => 'تحميل ملف MRTA',
           'back' => 'رجوع',
@@ -1528,14 +1529,16 @@ return array (
           'no_photos_uploaded' => 'لم يتم رفع صور.',
           'open_file' => 'فتح الملف',
           'file' => 'ملف',
-        ],
-        'third_party_fields' => [
+        ),
+        'third_party_fields' => 
+        array (
           'name' => 'الاسم',
           'phone' => 'الهاتف',
           'plate_number' => 'رقم اللوحة',
           'details' => 'التفاصيل',
-        ],
-        'mrta' => [
+        ),
+        'mrta' => 
+        array (
           'title' => 'بيانات نموذج MRTA / Liva',
           'type_of_accident' => 'نوع الحادث',
           'causes_of_accident' => 'أسباب الحادث',
@@ -1553,7 +1556,8 @@ return array (
           'company_will_repair_damages' => 'الشركة ستصلح الأضرار',
           'technical_opinion_required' => 'مطلوب رأي فني',
           'signatory_name' => 'اسم المخول بالتوقيع',
-          'party_fields' => [
+          'party_fields' => 
+          array (
             'vehicle_no' => 'رقم المركبة',
             'driver_name' => 'اسم السائق',
             'address_tel' => 'العنوان / الهاتف',
@@ -1562,13 +1566,15 @@ return array (
             'insurance_company' => 'شركة التأمين',
             'insurance_type' => 'نوع التأمين',
             'insurance_policy_no' => 'رقم الوثيقة',
-          ],
-          'accident_types' => [
+          ),
+          'accident_types' => 
+          array (
             'stationary_object' => 'اصطدام بجسم ثابت',
             'vehicle_collision' => 'اصطدام بين مركبات',
             'roll_over' => 'تدهور',
-          ],
-          'causes' => [
+          ),
+          'causes' => 
+          array (
             'over_speed' => 'السرعة',
             'negligence' => 'الإهمال',
             'fatigue' => 'الإرهاق',
@@ -1580,8 +1586,8 @@ return array (
             'vehicle_defects' => 'عيوب المركبة',
             'road_defects' => 'عيوب الطريق',
             'using_gsm' => 'استخدام الهاتف',
-          ],
-        ],
+          ),
+        ),
         'workflow' => 
         array (
           'active' => 'مفعل',
@@ -1641,7 +1647,8 @@ return array (
           'workshop' => 'الورشة',
           'other' => 'أخرى',
         ),
-        'create' => [
+        'create' => 
+        array (
           'new_accident_report' => 'بلاغ حادث جديد',
           'create_an_accident_report_linked_to_an_existing_contract' => 'إنشاء بلاغ حادث مرتبط بعقد موجود.',
           'back' => 'رجوع',
@@ -1749,648 +1756,333 @@ return array (
           'save_accident_report' => 'حفظ بلاغ الحادث',
           'saving_this_workflow_needs_the_next_backend_step' => 'حفظ هذا المسار يحتاج خطوة الباكند القادمة.',
           'cancel' => 'إلغاء',
-        ],
+        ),
       ),
       'settings' => 
       array (
-        'payment_providers' => [
-
-            'payment_providers' => 'مزودو الدفع',
-
-            'manage_tenant_booking_payment_providers_only_providers_approved_by_super_admin_can_be_enab' => 'إدارة مزودي دفع الحجوزات للمستأجر. لا يمكن تفعيل إلا المزودين المعتمدين من المشرف العام.',
-
-            'saving' => 'جارٍ الحفظ...',
-
-            'save_changes' => 'حفظ التغييرات',
-
-            'provider_availability_platform_approval' => 'توفر المزود (اعتماد المنصة)',
-
-            'stripe_connect_platform_managed_stripe_payments' => 'Stripe Connect / مدفوعات Stripe المُدارة من المنصة',
-
-            'approved_by_super_admin' => 'معتمد من المشرف العام',
-
-            'disabled_by_super_admin' => 'معطل من المشرف العام',
-
-            'mode' => 'الوضع',
-
-            'hosted_checkout_for_gcc_mena' => 'دفع مستضاف لمنطقة الخليج/الشرق الأوسط وشمال أفريقيا',
-
-            'default_booking_provider' => 'مزود الحجز الافتراضي',
-
-            'default_provider' => 'المزود الافتراضي',
-
-            'none_manual_fallback' => 'لا شيء (يدوي / احتياطي)',
-
-            'this_will_be_used_by_tenant_booking_checkout_when_multiple_tenant_providers_are_enabled' => 'سيُستخدم هذا في إتمام حجوزات المستأجر عندما تكون عدة مزودات مفعلة.',
-
-            'stripe_tenant' => 'Stripe (المستأجر)',
-
-            'uses_stripe_connect_manage_onboarding_and_account_status_in_the_stripe_connect_page' => 'يستخدم Stripe Connect. قم بإدارة الإعداد وحالة الحساب في صفحة Stripe Connect.',
-
-            'open_stripe_connect' => 'فتح Stripe Connect',
-
-            'enable_stripe_for_tenant_bookings' => 'تفعيل Stripe لحجوزات المستأجر',
-
-            'stripe_connect_status' => 'حالة Stripe Connect',
-
-            'account_id' => 'معرّف الحساب',
-
-            'not_connected' => 'غير متصل',
-
-            'charges' => 'الرسوم',
-
-            'enabled' => 'مفعلة',
-
-            'disabled' => 'معطلة',
-
-            'payouts' => 'المدفوعات',
-
-            'stripe_is_currently_disabled_by_super_admin' => 'Stripe معطل حاليًا من المشرف العام.',
-
-            'myfatoorah_tenant' => 'MyFatoorah (المستأجر)',
-
-            'store_tenant_myfatoorah_credentials_for_booking_payments_separate_from_saas_subscription_p' => 'احفظ بيانات اعتماد MyFatoorah للمستأجر لمدفوعات الحجوزات (بشكل منفصل عن مدفوعات اشتراك SaaS).',
-
-            'enable_myfatoorah_for_tenant_bookings' => 'تفعيل MyFatoorah لحجوزات المستأجر',
-
-            'country' => 'الدولة',
-
-            'environment_from_super_admin' => 'البيئة (من المشرف العام)',
-
-            'live' => 'فعلي',
-
-            'test' => 'اختبار',
-
-            'provider_mode' => 'وضع المزود',
-
-            'tenant_uses_the_platform_myfatoorah_mode_selected_by_super_admin' => 'يستخدم المستأجر وضع MyFatoorah المحدد من المشرف العام.',
-
-            'api_token' => 'رمز API',
-
-            'myfatoorah_token' => 'رمز MyFatoorah',
-
-            'payment_method_id_required_for_current_booking_flow' => 'معرّف طريقة الدفع (مطلوب لسير الحجز الحالي)',
-
-            'use_a_valid_myfatoorah_method_id_example_visa_mastercard_we_can_remove_this_later_when_boo' => 'استخدم معرّف طريقة MyFatoorah صالحًا (مثال: Visa/Mastercard). يمكننا إزالة ذلك لاحقًا عندما تُحمّل طرق الحجز ديناميكيًا.',
-
-            'webhook_secret_optional' => 'سر Webhook (اختياري)',
-
-            'api_base_url_auto' => 'رابط API الأساسي (تلقائي)',
-
-            'auto_selected_from_super_admin_mode_test_live' => 'يتم اختياره تلقائيًا من وضع المشرف العام (اختبار/فعلي).',
-
-            'advanced_myfatoorah_options' => 'خيارات MyFatoorah المتقدمة',
-
-            'use_only_if_you_need_overrides_or_a_fixed_default_method' => 'استخدمها فقط إذا كنت تحتاج إلى تجاوزات أو طريقة افتراضية ثابتة.',
-
-            'hide_advanced' => 'إخفاء المتقدم',
-
-            'show_advanced' => 'إظهار المتقدم',
-
-            'api_base_url_override' => 'رابط API الأساسي (تجاوز)',
-
-            'auto_from_mode' => 'تلقائي من الوضع',
-
-            'leave_empty_to_use_the_automatic_url_shown_above' => 'اتركه فارغًا لاستخدام الرابط التلقائي المعروض أعلاه.',
-
-            'callback_url_optional_override' => 'رابط Callback (تجاوز اختياري)',
-
-            'auto_generated_by_booking_route' => 'يتم إنشاؤه تلقائيًا من مسار الحجز',
-
-            'error_url_optional_override' => 'رابط الخطأ (تجاوز اختياري)',
-
-            'notes' => 'ملاحظات:',
-
-            '1_super_admin_must_enable_myfatoorah_in_platform_payment_providers_first' => '1. يجب على المشرف العام تفعيل MyFatoorah أولًا ضمن موفري الدفع في المنصة.',
-
-            '2_use_the_correct_token_for_the_correct_environment_test_live_configured_by_super_admin' => '2. استخدم الرمز الصحيح للبيئة الصحيحة (اختبار/فعلي) التي يحددها المشرف العام.',
-
-            '3_this_page_currently_stores_values_inside_tenant_settings_json' => '3. تحفظ هذه الصفحة القيم حاليًا داخل JSON الخاص بـ `settings` للمستأجر.',
-
-        ],
-
-        'plate_formats' => [
-
-            'plate_formats' => 'أنماط اللوحات',
-
-            'define_the_plate_formats_that_this_tenant_can_use_when_creating_vehicles' => 'عرّف أنماط لوحات السيارات التي يمكن لهذا المستأجر استخدامها عند إنشاء السيارة.',
-
-            'saving' => 'جارٍ الحفظ...',
-
-            'save_changes' => 'حفظ التغييرات',
-
-            'plate_format_rules' => 'قواعد أنماط اللوحات',
-
-            'use_for_digits_a_for_letters_and_x_for_alphanumeric_characters_spaces_are_allowed_inside_t' => 'استخدم # للأرقام، و A للحروف، و X للحروف والأرقام. يمكن استخدام المسافات داخل النمط.',
-
-            'add_format' => 'إضافة نمط',
-
-            'no_plate_formats_added_yet' => 'لم يتم إضافة أي أنماط لوحات بعد.',
-
-            'format' => 'النمط',
-
-            'remove' => 'حذف',
-
-            'name' => 'الاسم',
-
-            'oman_5_digit_standard' => 'النمط العماني القياسي',
-
-            'country' => 'الدولة',
-
-            'oman' => 'عمان',
-
-            'mask' => 'النمط',
-
-            '12345_a' => '12345 A',
-
-            'example' => 'مثال',
-
-            '12345_ab' => '12345 AB',
-
-            'active' => 'مفعّل',
-
-            'current_code' => 'الرمز الحالي',
-
-            'will_be_generated_automatically' => 'سيتم إنشاؤه تلقائيًا',
-
-            'example_mask_patterns_12345_a_12345_ab_12xx_345' => 'أمثلة على الأنماط: 12345 A، 12345 AB، 12XX 345',
-
-        ],
-
-        'static_pages' => [
-
-            'static_pages' => 'الصفحات الثابتة',
-
-            'manage_legal_and_policy_pages_for_the_tenant_website' => 'إدارة صفحات الشروط والسياسات الخاصة بموقع التاجر.',
-
-            'saving' => 'جاري الحفظ...',
-
-            'save_pages' => 'حفظ الصفحات',
-
-            'editing_language' => 'لغة التعديل',
-
-            'choose_a_language_then_edit_all_page_titles_and_content_for_that_language' => 'اختر اللغة ثم عدل عناوين ومحتوى الصفحات لهذه اللغة.',
-
-            'open_page' => 'فتح الصفحة',
-
-            'page_title' => 'عنوان الصفحة',
-
-            'page_content' => 'محتوى الصفحة',
-
-            'write_page_content' => 'اكتب محتوى الصفحة...',
-
-            'using_super_admin_default_content' => 'يتم استخدام المحتوى الافتراضي من السوبر أدمن.',
-
-            'super_admin_default_content_if_this_field_is_cleared' => 'المحتوى الافتراضي من السوبر أدمن إذا تركت هذا الحقل فارغًا:',
-
-            'privacy_policy' => 'سياسة الخصوصية',
-
-            'privacy_and_data_handling_page_for_this_tenant_website' => 'صفحة الخصوصية والتعامل مع البيانات الخاصة بموقع هذا التاجر.',
-
-            'terms_of_use' => 'شروط الاستخدام',
-
-            'terms_shown_to_visitors_and_customers_using_this_tenant_website' => 'الشروط التي تظهر للزوار والعملاء عند استخدام موقع هذا التاجر.',
-
-            'security_policy' => 'سياسة الأمان',
-
-            'security_account_safety_and_responsible_use_content' => 'محتوى الأمان وسلامة الحسابات والاستخدام المسؤول.',
-
-        ],
-
-        'website' => [
-
-            'airport' => 'المطار',
-
-            'city_center' => 'وسط المدينة',
-
-            'tourism_area' => 'منطقة سياحية',
-
-            'business_district' => 'منطقة أعمال',
-
-            'hotels_area' => 'منطقة الفنادق',
-
-            'all_service_areas' => 'كل مناطق الخدمة',
-
-            'home' => 'الرئيسية',
-
-            'fleet' => 'الأسطول',
-
-            'about' => 'من نحن',
-
-            'contact' => 'اتصل بنا',
-
-            'car_rental' => 'تأجير سيارة',
-
-            'booking_checkout' => 'إتمام الحجز',
-
-            'booking_confirmation' => 'تأكيد الحجز',
-
-            'title_length_looks_good' => 'طول العنوان مناسب',
-
-            'recommended_title_length_is_30_60_characters' => 'الطول الموصى به للعنوان هو 30-60 حرفًا',
-
-            'description_length_looks_good' => 'طول الوصف مناسب',
-
-            'recommended_description_length_is_70_160_characters' => 'الطول الموصى به للوصف هو 70-160 حرفًا',
-
-            'open_graph_image_is_set' => 'صورة Open Graph مضبوطة',
-
-            'set_an_open_graph_image_for_sharing_previews' => 'حدد صورة Open Graph لمعاينات المشاركة',
-
-            'canonical_url_is_valid' => 'رابط Canonical صحيح',
-
-            'canonical_url_must_start_with_http_or_https' => 'رابط Canonical يجب أن يبدأ بظ€ http:// أو https://',
-
-            'slug_format_looks_clean' => 'تنسيق الرابط المختصر سليم',
-
-            'slug_should_use_clean_url_segments_without_spaces' => 'يجب أن يستخدم الرابط المختصر مقاطع نظيفة بدون مسافات',
-
-            'hreflang_alternates_are_available_for_enabled_locales' => 'روابط hreflang متوفرة للغات المفعلة',
-
-            'hreflang_alternates_are_missing_for_one_or_more_enabled_locales' => 'روابط hreflang مفقودة لإحدى اللغات المفعلة أو أكثر',
-
-            'good' => 'جيد',
-
-            'most_seo_signals_are_in_good_shape' => 'معظم إشارات SEO في وضع جيد.',
-
-            'needs_work' => 'يحتاج تحسين',
-
-            'some_pages_still_need_seo_cleanup' => 'بعض الصفحات ما زالت تحتاج تحسين SEO.',
-
-            'critical' => 'حرج',
-
-            'seo_coverage_is_weak_and_should_be_fixed_before_publishing_changes' => 'تغطية SEO ضعيفة ويجب إصلاحها قبل اعتماد التغييرات.',
-
-            'clipboard_is_not_available_in_this_browser' => 'الحافظة غير متاحة في هذا المتصفح.',
-
-            'could_not_copy_seo_summary' => 'تعذر نسخ ملخص SEO.',
-
-            'seo_report_export_is_not_available_in_this_environment' => 'تصدير تقرير SEO غير متاح في هذه البيئة.',
-
-            'seo_report_exported_successfully' => 'تم تصدير تقرير SEO بنجاح.',
-
-            'website_settings' => 'إعدادات الموقع',
-
-            'customize_your_tenant_website_branding_and_homepage_content_arabic_english' => 'خصص هوية موقع المستأجر ومحتوى الصفحة الرئيسية باللغتين العربية والإنجليزية.',
-
-            'saving' => 'جارٍ الحفظ...',
-
-            'save_changes' => 'حفظ التغييرات',
-
-            'please_fix_the_following_errors' => 'يرجى تصحيح الأخطاء التالية:',
-
-            'seo_saving_is_blocked_until_every_page_has_at_least_one_valid_seo_signal' => 'تم منع حفظ SEO حتى يحتوي ?? صفحة على إشارة SEO صحيحة واحدة على الأقل.',
-
-            'branding' => 'الهوية البصرية',
-
-            'site_identity_logo_url_and_brand_colors' => 'هوية الموقع ورابط الشعار وألوان العلامة التجارية.',
-
-            'site_name' => 'اسم الموقع',
-
-            'tenant_website_name' => 'اسم موقع المستأجر',
-
-            'logo_upload_system' => 'رفع الشعار (النظام)',
-
-            'upload_logo_to_your_system_new_upload_replaces_the_previous_logo' => 'ارفع الشعار إلى النظام. أي رفع جديد سيستبدل الشعار السابق.',
-
-            'favicon_upload' => 'رفع الأيقونة المفضلة (Favicon)',
-
-            'upload_favicon_to_your_system_standard_formats_ico_png_svg_standard_sizes_16x16_32x32' => 'ارفع أيقونة الموقع المفضلة هنا. التنسيقات القياسية: .ico أو .png أو .svg. المقاسات المعتادة: 16x16 أو 32x32.',
-
-            'advanced_branding_options' => 'خيارات الهوية المتقدمة',
-
-            'optional_fallback_branding_urls_used_only_if_no_files_are_uploaded' => 'روابط الهوية الاحتياطية الاختيارية (تُستخدم فقط إذا لم يتم رفع ملفات).',
-
-            'hide_advanced' => 'إخفاء المتقدم',
-
-            'show_advanced' => 'إظهار المتقدم',
-
-            'fallback_logo_url' => 'رابط الشعار الاحتياطي',
-
-            'this_url_is_used_only_when_no_uploaded_logo_exists_in_the_system' => 'يُستخدم هذا الرابط فقط عندما لا يوجد شعار مرفوع في النظام.',
-
-            'fallback_favicon_url' => 'رابط الأيقونة المفضلة الاحتياطي',
-
-            'this_url_is_used_only_when_no_uploaded_favicon_exists_in_the_system' => 'يُستخدم هذا الرابط فقط عندما لا توجد أيقونة موقع مرفوعة في النظام.',
-
-            'primary_color' => 'اللون الأساسي',
-
-            'secondary_color' => 'اللون الثانوي',
-
-            'booking_tax_percentage' => 'نسبة ضريبة الحجز',
-
-            'set_0_to_hide_tax_in_booking_page' => 'ضع `0` لإخفاء الضريبة في صفحة الحجز.',
-
-            'market_location' => 'موقع السوق',
-
-            'used_by_ai_market_reports_pricing_suggestions_and_local_business_analysis' => 'تستخدمها تقارير الذكاء الاصطناعي ودراسة السوق واقتراحات التسعير حسب منطقة التاجر.',
-
-            'country' => 'الدولة',
-
-            'select_country' => 'اختر الدولة',
-
-            'country_code' => 'رمز الدولة',
-
-            'select_code' => 'اختر الرمز',
-
-            'iso_2_letter_code_for_example_om_ae_ps' => 'رمز ISO من حرفين مثل OM أو AE أو PS.',
-
-            'region_governorate' => 'المنطقة / المحافظة',
-
-            'select_region' => 'اختر المنطقة',
-
-            'city' => 'المدينة',
-
-            'select_city' => 'اختر المدينة',
-
-            'business_area' => 'نطاق العمل',
-
-            'select_area' => 'اختر النطاق',
-
-            'site_currency' => 'عملة الموقع',
-
-            'select_currency' => 'اختر العملة',
-
-            'search_currency' => 'ابحث عن عملة...',
-
-            'no_currencies_found' => 'لا توجد عملات.',
-
-            'enabled_currencies' => 'العملات المفعلة',
-
-            'choose_the_currencies_this_office_can_use_across_the_site_bookings_and_contracts' => 'اختر العملات التي يمكن لهذا المكتب التعامل بها في الموقع والحجوزات والعقود.',
-
-            'select_all' => 'تحديد الكل',
-
-            'keep_base_only' => 'الأساسية فقط',
-
-            'search_enabled_currencies' => 'ابحث في العملات المفعلة...',
-
-            'timezone' => 'المنطقة الزمنية',
-
-            'select_timezone' => 'اختر المنطقة الزمنية',
-
-            'preview' => 'معاينة',
-
-            'cta_preview' => 'معاينة زر الدعوة',
-
-            'seo' => 'تهيئة محركات البحث',
-
-            'seo_management_has_moved_to_a_dedicated_page_for_cleaner_settings_management' => 'تم نقل إدارة SEO إلى صفحة مستقلة لتبقى الإعدادات العامة أوضح.',
-
-            'open_seo_settings' => 'فتح إعدادات SEO',
-
-            'open_seo_audit' => 'فتح تدقيق SEO',
-
-            'control_page_titles_descriptions_canonical_urls_and_open_graph_defaults_for_your_public_we' => 'تحكم في عناوين الصفحات والأوصاف وروابط canonical وإعدادات Open Graph الافتراضية لموقعك العام.',
-
-            'overall_seo_status' => 'الحالة العامة لظ€ SEO',
-
-            'export_seo_report' => 'تصدير تقرير SEO',
-
-            'title_suffix_en' => 'لاحقة العنوان (EN)',
-
-            'title_suffix_ar' => 'لاحقة العنوان (AR)',
-
-            'default_description_en' => 'الوصف الافتراضي (EN)',
-
-            'default_description_ar' => 'الوصف الافتراضي (AR)',
-
-            'open_graph_image_upload' => 'رفع صورة Open Graph',
-
-            'upload_an_image_for_og_image_or_paste_a_url_below_as_a_fallback' => 'ارفع صورة لـ og:image أو الصق رابطًا أدناه كخيار احتياطي.',
-
-            'open_graph_image_url' => 'رابط صورة Open Graph',
-
-            'robots' => 'تعليمات Robots',
-
-            'search_preview' => 'معاينة نتائج البحث',
-
-                    'live_preview_for_each_public_page_using_the_current_form_values' => 'معاينة حية لكل صفحة عامة باستخدام القيم الحالية في النموذج.',
-
-            'copy' => 'نسخ',
-
-            'open_graph_preview' => 'معاينة Open Graph',
-
-            'preview_how_shared_links_can_appear_on_whatsapp_facebook_and_similar_platforms' => 'معاينة شكل الرابط عند مشاركته في واتساب وفيسبوك والمنصات المشابهة.',
-
-            'no_open_graph_image_selected_yet' => 'لم يتم تحديد صورة Open Graph بعد.',
-
-            'twitter_x_card_preview' => 'معاينة بطاقة Twitter / X',
-
-            'preview_the_large_summary_card_style_used_by_x_twitter_when_the_page_is_shared' => 'معاينة شكل البطاقة الكبيرة المستخدمة في X/Twitter عند مشاركة الصفحة.',
-
-            'no_card_image_available' => 'لا توجد صورة للبطاقة.',
-
-            'home_page_seo' => 'SEO الصفحة الرئيسية',
-
-            'title_en' => 'العنوان (EN)',
-
-            'title_ar' => 'العنوان (AR)',
-
-            'description_en' => 'الوصف (EN)',
-
-            'description_ar' => 'الوصف (AR)',
-
-            'canonical_url' => 'رابط Canonical',
-
-            'fleet_page_seo' => 'SEO صفحة الأسطول',
-
-            'about_page_seo' => 'SEO صفحة من نحن',
-
-            'contact_page_seo' => 'SEO صفحة اتصل بنا',
-
-            'car_details_page_seo' => 'SEO صفحة السيارة',
-
-            'booking_checkout_seo' => 'SEO صفحة إتمام الحجز',
-
-            'booking_confirmation_seo' => 'SEO صفحة تأكيد الحجز',
-
-            'hero_section' => 'القسم الرئيسي',
-
-            'main_banner_texts_for_the_tenant_homepage' => 'النصوص الرئيسية لواجهة الصفحة الرئيسية الخاصة بالمستأجر.',
-
-            'hero_image' => 'صورة القسم الرئيسي',
-
-            'upload_the_image_shown_on_the_homepage_hero_a_new_upload_replaces_the_previous_image' => 'ارفع الصورة الظاهرة في القسم الرئيسي للصفحة الرئيسية. أي رفع جديد سيستبدل الصورة السابقة.',
-
-            'hero_title_en' => 'عنوان القسم الرئيسي (EN)',
-
-            'hero_title_ar' => 'عنوان القسم الرئيسي (AR)',
-
-            'hero_description_en' => 'وصف القسم الرئيسي (EN)',
-
-            'hero_description_ar' => 'وصف القسم الرئيسي (AR)',
-
-            'button_text_en' => 'نص الزر (EN)',
-
-            'button_text_ar' => 'نص الزر (AR)',
-
-            'button_link' => 'رابط الزر',
-
-            'example_fleet_or_https' => 'مثال: `/fleet` أو `https://...`',
-
-            'about_page' => 'صفحة من نحن',
-
-            'editable_content_for_public_about_page' => 'محتوى قابل للتعديل لصفحة من نحن العامة.',
-
-            'mission_values' => 'قيم المهمة',
-
-            'repeatable_items_shown_under_mission_values_on_the_about_page' => 'عناصر قابلة للتكرار تظهر تحت قسم المهمة والقيم في صفحة من نحن.',
-
-            'add_value' => 'إضافة قيمة',
-
-            'value' => 'القيمة',
-
-            'remove' => 'حذف',
-
-            'icon' => 'الأيقونة',
-
-            'leadership_team' => 'فريق القيادة',
-
-            'repeatable_team_members_shown_on_the_about_page_use_image_url_for_each_member' => 'أعضاء فريق قابلون للتكرار يظهرون في صفحة من نحن. استخدم رابط الصورة لكل عضو.',
-
-            'add_member' => 'إضافة عضو',
-
-            'member' => 'العضو',
-
-            'image_upload' => 'رفع الصورة',
-
-            'current_fallback_image' => 'الصورة الحالية الاحتياطية:',
-
-            'name_en' => 'الاسم (EN)',
-
-            'name_ar' => 'الاسم (AR)',
-
-            'role' => 'المسمى الوظيفي',
-
-            'bio_en' => 'النبذة (EN)',
-
-            'bio_ar' => 'النبذة (AR)',
-
-            'team_images' => 'صور الفريق',
-
-            'upload_the_three_team_member_images_shown_on_the_about_page' => 'ارفع صور أعضاء الفريق الثلاثة الظاهرة في صفحة من نحن.',
-
-            'sarah_image' => 'صورة Sarah',
-
-            'michael_image' => 'صورة Michael',
-
-            'emily_image' => 'صورة Emily',
-
-            'page_title_en' => 'عنوان الصفحة (EN)',
-
-            'page_title_ar' => 'عنوان الصفحة (AR)',
-
-            'subtitle_en' => 'العنوان الفرعي (EN)',
-
-            'subtitle_ar' => 'العنوان الفرعي (AR)',
-
-            'story_title_en' => 'عنوان القصة (EN)',
-
-            'story_title_ar' => 'عنوان القصة (AR)',
-
-            'story_paragraph_1_en' => 'الفقرة الأولى من القصة (EN)',
-
-            'story_paragraph_1_ar' => 'الفقرة الأولى من القصة (AR)',
-
-            'story_paragraph_2_en' => 'الفقرة الثانية من القصة (EN)',
-
-            'story_paragraph_2_ar' => 'الفقرة الثانية من القصة (AR)',
-
-            'mission_title_en' => 'عنوان الرسالة (EN)',
-
-            'mission_title_ar' => 'عنوان الرسالة (AR)',
-
-            'mission_subtitle_en' => 'وصف الرسالة (EN)',
-
-            'mission_subtitle_ar' => 'وصف الرسالة (AR)',
-
-            'cta_title_en' => 'عنوان الدعوة للإجراء (EN)',
-
-            'cta_title_ar' => 'عنوان الدعوة للإجراء (AR)',
-
-            'cta_subtitle_en' => 'وصف الدعوة للإجراء (EN)',
-
-            'cta_subtitle_ar' => 'وصف الدعوة للإجراء (AR)',
-
-            'cta_browse_button_en' => 'زر التصفح في الدعوة (EN)',
-
-            'cta_browse_button_ar' => 'زر التصفح في الدعوة (AR)',
-
-            'cta_contact_button_en' => 'زر التواصل في الدعوة (EN)',
-
-            'cta_contact_button_ar' => 'زر التواصل في الدعوة (AR)',
-
-            'contract_pdf_header' => 'ترويسة العقد',
-
-            'editable_company_header_content_printed_at_the_top_of_the_contract_pdf' => 'محتوى ترويسة الشركة الذي يظهر في أعلى ملف العقد.',
-
-            'contract_pdf_template' => 'قالب PDF للعقد',
-
-            'company_name_en' => 'اسم الشركة (EN)',
-
-            'company_name_ar' => 'اسم الشركة (AR)',
-
-            'c_r_number' => 'رقم السجل التجاري',
-
-            'p_o_box' => 'صندوق البريد',
-
-            'p_c' => 'الرمز البريدي',
-
-            'country_en' => 'الدولة (EN)',
-
-            'country_ar' => 'الدولة (AR)',
-
-            'gsm_1' => 'نقال 1',
-
-            'gsm_2' => 'نقال 2',
-
-            'gsm_3' => 'نقال 3',
-
-            'registry_label_en' => 'وسم السجل (EN)',
-
-            'registry_label_ar' => 'وسم السجل (AR)',
-
-            'contact_page' => 'صفحة اتصل بنا',
-
-            'editable_titles_and_business_hours_for_public_contact_page' => 'العناوين وساعات العمل القابلة للتعديل في صفحة اتصل بنا العامة.',
-
-            'form_title_en' => 'عنوان النموذج (EN)',
-
-            'form_title_ar' => 'عنوان النموذج (AR)',
-
-            'sidebar_title_en' => 'عنوان الشريط الجانبي (EN)',
-
-            'sidebar_title_ar' => 'عنوان الشريط الجانبي (AR)',
-
-            'business_hours_en' => 'ساعات العمل (EN)',
-
-                    'use_new_line_for_each_row' => 'استخدم سطرًا جديدًا لكل صف.',
-
-            'business_hours_ar' => 'ساعات العمل (AR)',
-
-            'quick_links_title_en' => 'عنوان الروابط السريعة (EN)',
-
-            'quick_links_title_ar' => 'عنوان الروابط السريعة (AR)',
-
-            'contact_footer_mvp' => 'التواصل والتذييل',
-
-            'basic_public_contact_info_and_footer_description' => 'معلومات التواصل العامة ووصف التذييل.',
-
-            'phone' => 'الهاتف',
-
-            'email' => 'البريد الإلكتروني',
-
-            'address_en' => 'العنوان (EN)',
-
-            'address_ar' => 'العنوان (AR)',
-
-            'footer_description_en' => 'وصف التذييل (EN)',
-
-            'footer_description_ar' => 'وصف التذييل (AR)',
-
-        ],
-
+        'payment_providers' => 
+        array (
+          'payment_providers' => 'مزودو الدفع',
+          'manage_tenant_booking_payment_providers_only_providers_approved_by_super_admin_can_be_enab' => 'إدارة مزودي دفع الحجوزات للمستأجر. لا يمكن تفعيل إلا المزودين المعتمدين من المشرف العام.',
+          'saving' => 'جارٍ الحفظ...',
+          'save_changes' => 'حفظ التغييرات',
+          'provider_availability_platform_approval' => 'توفر المزود (اعتماد المنصة)',
+          'stripe_connect_platform_managed_stripe_payments' => 'Stripe Connect / مدفوعات Stripe المُدارة من المنصة',
+          'approved_by_super_admin' => 'معتمد من المشرف العام',
+          'disabled_by_super_admin' => 'معطل من المشرف العام',
+          'mode' => 'الوضع',
+          'hosted_checkout_for_gcc_mena' => 'دفع مستضاف لمنطقة الخليج/الشرق الأوسط وشمال أفريقيا',
+          'default_booking_provider' => 'مزود الحجز الافتراضي',
+          'default_provider' => 'المزود الافتراضي',
+          'none_manual_fallback' => 'لا شيء (يدوي / احتياطي)',
+          'this_will_be_used_by_tenant_booking_checkout_when_multiple_tenant_providers_are_enabled' => 'سيُستخدم هذا في إتمام حجوزات المستأجر عندما تكون عدة مزودات مفعلة.',
+          'stripe_tenant' => 'Stripe (المستأجر)',
+          'uses_stripe_connect_manage_onboarding_and_account_status_in_the_stripe_connect_page' => 'يستخدم Stripe Connect. قم بإدارة الإعداد وحالة الحساب في صفحة Stripe Connect.',
+          'open_stripe_connect' => 'فتح Stripe Connect',
+          'enable_stripe_for_tenant_bookings' => 'تفعيل Stripe لحجوزات المستأجر',
+          'stripe_connect_status' => 'حالة Stripe Connect',
+          'account_id' => 'معرّف الحساب',
+          'not_connected' => 'غير متصل',
+          'charges' => 'الرسوم',
+          'enabled' => 'مفعلة',
+          'disabled' => 'معطلة',
+          'payouts' => 'المدفوعات',
+          'stripe_is_currently_disabled_by_super_admin' => 'Stripe معطل حاليًا من المشرف العام.',
+          'myfatoorah_tenant' => 'MyFatoorah (المستأجر)',
+          'store_tenant_myfatoorah_credentials_for_booking_payments_separate_from_saas_subscription_p' => 'احفظ بيانات اعتماد MyFatoorah للمستأجر لمدفوعات الحجوزات (بشكل منفصل عن مدفوعات اشتراك SaaS).',
+          'enable_myfatoorah_for_tenant_bookings' => 'تفعيل MyFatoorah لحجوزات المستأجر',
+          'country' => 'الدولة',
+          'environment_from_super_admin' => 'البيئة (من المشرف العام)',
+          'live' => 'فعلي',
+          'test' => 'اختبار',
+          'provider_mode' => 'وضع المزود',
+          'tenant_uses_the_platform_myfatoorah_mode_selected_by_super_admin' => 'يستخدم المستأجر وضع MyFatoorah المحدد من المشرف العام.',
+          'api_token' => 'رمز API',
+          'myfatoorah_token' => 'رمز MyFatoorah',
+          'payment_method_id_required_for_current_booking_flow' => 'معرّف طريقة الدفع (مطلوب لسير الحجز الحالي)',
+          'use_a_valid_myfatoorah_method_id_example_visa_mastercard_we_can_remove_this_later_when_boo' => 'استخدم معرّف طريقة MyFatoorah صالحًا (مثال: Visa/Mastercard). يمكننا إزالة ذلك لاحقًا عندما تُحمّل طرق الحجز ديناميكيًا.',
+          'webhook_secret_optional' => 'سر Webhook (اختياري)',
+          'api_base_url_auto' => 'رابط API الأساسي (تلقائي)',
+          'auto_selected_from_super_admin_mode_test_live' => 'يتم اختياره تلقائيًا من وضع المشرف العام (اختبار/فعلي).',
+          'advanced_myfatoorah_options' => 'خيارات MyFatoorah المتقدمة',
+          'use_only_if_you_need_overrides_or_a_fixed_default_method' => 'استخدمها فقط إذا كنت تحتاج إلى تجاوزات أو طريقة افتراضية ثابتة.',
+          'hide_advanced' => 'إخفاء المتقدم',
+          'show_advanced' => 'إظهار المتقدم',
+          'api_base_url_override' => 'رابط API الأساسي (تجاوز)',
+          'auto_from_mode' => 'تلقائي من الوضع',
+          'leave_empty_to_use_the_automatic_url_shown_above' => 'اتركه فارغًا لاستخدام الرابط التلقائي المعروض أعلاه.',
+          'callback_url_optional_override' => 'رابط Callback (تجاوز اختياري)',
+          'auto_generated_by_booking_route' => 'يتم إنشاؤه تلقائيًا من مسار الحجز',
+          'error_url_optional_override' => 'رابط الخطأ (تجاوز اختياري)',
+          'notes' => 'ملاحظات:',
+          '1_super_admin_must_enable_myfatoorah_in_platform_payment_providers_first' => '1. يجب على المشرف العام تفعيل MyFatoorah أولًا ضمن موفري الدفع في المنصة.',
+          '2_use_the_correct_token_for_the_correct_environment_test_live_configured_by_super_admin' => '2. استخدم الرمز الصحيح للبيئة الصحيحة (اختبار/فعلي) التي يحددها المشرف العام.',
+          '3_this_page_currently_stores_values_inside_tenant_settings_json' => '3. تحفظ هذه الصفحة القيم حاليًا داخل JSON الخاص بـ `settings` للمستأجر.',
+        ),
+        'plate_formats' => 
+        array (
+          'plate_formats' => 'أنماط اللوحات',
+          'define_the_plate_formats_that_this_tenant_can_use_when_creating_vehicles' => 'عرّف أنماط لوحات السيارات التي يمكن لهذا المستأجر استخدامها عند إنشاء السيارة.',
+          'saving' => 'جارٍ الحفظ...',
+          'save_changes' => 'حفظ التغييرات',
+          'plate_format_rules' => 'قواعد أنماط اللوحات',
+          'use_for_digits_a_for_letters_and_x_for_alphanumeric_characters_spaces_are_allowed_inside_t' => 'استخدم # للأرقام، و A للحروف، و X للحروف والأرقام. يمكن استخدام المسافات داخل النمط.',
+          'add_format' => 'إضافة نمط',
+          'no_plate_formats_added_yet' => 'لم يتم إضافة أي أنماط لوحات بعد.',
+          'format' => 'النمط',
+          'remove' => 'حذف',
+          'name' => 'الاسم',
+          'oman_5_digit_standard' => 'النمط العماني القياسي',
+          'country' => 'الدولة',
+          'oman' => 'عمان',
+          'mask' => 'النمط',
+          '12345_a' => '12345 A',
+          'example' => 'مثال',
+          '12345_ab' => '12345 AB',
+          'active' => 'مفعّل',
+          'current_code' => 'الرمز الحالي',
+          'will_be_generated_automatically' => 'سيتم إنشاؤه تلقائيًا',
+          'example_mask_patterns_12345_a_12345_ab_12xx_345' => 'أمثلة على الأنماط: 12345 A، 12345 AB، 12XX 345',
+        ),
+        'static_pages' => 
+        array (
+          'static_pages' => 'الصفحات الثابتة',
+          'manage_legal_and_policy_pages_for_the_tenant_website' => 'إدارة صفحات الشروط والسياسات الخاصة بموقع التاجر.',
+          'saving' => 'جاري الحفظ...',
+          'save_pages' => 'حفظ الصفحات',
+          'editing_language' => 'لغة التعديل',
+          'choose_a_language_then_edit_all_page_titles_and_content_for_that_language' => 'اختر اللغة ثم عدل عناوين ومحتوى الصفحات لهذه اللغة.',
+          'open_page' => 'فتح الصفحة',
+          'page_title' => 'عنوان الصفحة',
+          'page_content' => 'محتوى الصفحة',
+          'write_page_content' => 'اكتب محتوى الصفحة...',
+          'using_super_admin_default_content' => 'يتم استخدام المحتوى الافتراضي من السوبر أدمن.',
+          'super_admin_default_content_if_this_field_is_cleared' => 'المحتوى الافتراضي من السوبر أدمن إذا تركت هذا الحقل فارغًا:',
+          'privacy_policy' => 'سياسة الخصوصية',
+          'privacy_and_data_handling_page_for_this_tenant_website' => 'صفحة الخصوصية والتعامل مع البيانات الخاصة بموقع هذا التاجر.',
+          'terms_of_use' => 'شروط الاستخدام',
+          'terms_shown_to_visitors_and_customers_using_this_tenant_website' => 'الشروط التي تظهر للزوار والعملاء عند استخدام موقع هذا التاجر.',
+          'security_policy' => 'سياسة الأمان',
+          'security_account_safety_and_responsible_use_content' => 'محتوى الأمان وسلامة الحسابات والاستخدام المسؤول.',
+        ),
+        'website' => 
+        array (
+          'airport' => 'المطار',
+          'city_center' => 'وسط المدينة',
+          'tourism_area' => 'منطقة سياحية',
+          'business_district' => 'منطقة أعمال',
+          'hotels_area' => 'منطقة الفنادق',
+          'all_service_areas' => 'كل مناطق الخدمة',
+          'home' => 'الرئيسية',
+          'fleet' => 'الأسطول',
+          'about' => 'من نحن',
+          'contact' => 'اتصل بنا',
+          'car_rental' => 'تأجير سيارة',
+          'booking_checkout' => 'إتمام الحجز',
+          'booking_confirmation' => 'تأكيد الحجز',
+          'title_length_looks_good' => 'طول العنوان مناسب',
+          'recommended_title_length_is_30_60_characters' => 'الطول الموصى به للعنوان هو 30-60 حرفًا',
+          'description_length_looks_good' => 'طول الوصف مناسب',
+          'recommended_description_length_is_70_160_characters' => 'الطول الموصى به للوصف هو 70-160 حرفًا',
+          'open_graph_image_is_set' => 'صورة Open Graph مضبوطة',
+          'set_an_open_graph_image_for_sharing_previews' => 'حدد صورة Open Graph لمعاينات المشاركة',
+          'canonical_url_is_valid' => 'رابط Canonical صحيح',
+          'canonical_url_must_start_with_http_or_https' => 'رابط Canonical يجب أن يبدأ بظ€ http:// أو https://',
+          'slug_format_looks_clean' => 'تنسيق الرابط المختصر سليم',
+          'slug_should_use_clean_url_segments_without_spaces' => 'يجب أن يستخدم الرابط المختصر مقاطع نظيفة بدون مسافات',
+          'hreflang_alternates_are_available_for_enabled_locales' => 'روابط hreflang متوفرة للغات المفعلة',
+          'hreflang_alternates_are_missing_for_one_or_more_enabled_locales' => 'روابط hreflang مفقودة لإحدى اللغات المفعلة أو أكثر',
+          'good' => 'جيد',
+          'most_seo_signals_are_in_good_shape' => 'معظم إشارات SEO في وضع جيد.',
+          'needs_work' => 'يحتاج تحسين',
+          'some_pages_still_need_seo_cleanup' => 'بعض الصفحات ما زالت تحتاج تحسين SEO.',
+          'critical' => 'حرج',
+          'seo_coverage_is_weak_and_should_be_fixed_before_publishing_changes' => 'تغطية SEO ضعيفة ويجب إصلاحها قبل اعتماد التغييرات.',
+          'clipboard_is_not_available_in_this_browser' => 'الحافظة غير متاحة في هذا المتصفح.',
+          'could_not_copy_seo_summary' => 'تعذر نسخ ملخص SEO.',
+          'seo_report_export_is_not_available_in_this_environment' => 'تصدير تقرير SEO غير متاح في هذه البيئة.',
+          'seo_report_exported_successfully' => 'تم تصدير تقرير SEO بنجاح.',
+          'website_settings' => 'إعدادات الموقع',
+          'customize_your_tenant_website_branding_and_homepage_content_arabic_english' => 'خصص هوية موقع المستأجر ومحتوى الصفحة الرئيسية باللغتين العربية والإنجليزية.',
+          'saving' => 'جارٍ الحفظ...',
+          'save_changes' => 'حفظ التغييرات',
+          'please_fix_the_following_errors' => 'يرجى تصحيح الأخطاء التالية:',
+          'seo_saving_is_blocked_until_every_page_has_at_least_one_valid_seo_signal' => 'تم منع حفظ SEO حتى يحتوي ?? صفحة على إشارة SEO صحيحة واحدة على الأقل.',
+          'branding' => 'الهوية البصرية',
+          'site_identity_logo_url_and_brand_colors' => 'هوية الموقع ورابط الشعار وألوان العلامة التجارية.',
+          'site_name' => 'اسم الموقع',
+          'tenant_website_name' => 'اسم موقع المستأجر',
+          'logo_upload_system' => 'رفع الشعار (النظام)',
+          'upload_logo_to_your_system_new_upload_replaces_the_previous_logo' => 'ارفع الشعار إلى النظام. أي رفع جديد سيستبدل الشعار السابق.',
+          'favicon_upload' => 'رفع الأيقونة المفضلة (Favicon)',
+          'upload_favicon_to_your_system_standard_formats_ico_png_svg_standard_sizes_16x16_32x32' => 'ارفع أيقونة الموقع المفضلة هنا. التنسيقات القياسية: .ico أو .png أو .svg. المقاسات المعتادة: 16x16 أو 32x32.',
+          'advanced_branding_options' => 'خيارات الهوية المتقدمة',
+          'optional_fallback_branding_urls_used_only_if_no_files_are_uploaded' => 'روابط الهوية الاحتياطية الاختيارية (تُستخدم فقط إذا لم يتم رفع ملفات).',
+          'hide_advanced' => 'إخفاء المتقدم',
+          'show_advanced' => 'إظهار المتقدم',
+          'fallback_logo_url' => 'رابط الشعار الاحتياطي',
+          'this_url_is_used_only_when_no_uploaded_logo_exists_in_the_system' => 'يُستخدم هذا الرابط فقط عندما لا يوجد شعار مرفوع في النظام.',
+          'fallback_favicon_url' => 'رابط الأيقونة المفضلة الاحتياطي',
+          'this_url_is_used_only_when_no_uploaded_favicon_exists_in_the_system' => 'يُستخدم هذا الرابط فقط عندما لا توجد أيقونة موقع مرفوعة في النظام.',
+          'primary_color' => 'اللون الأساسي',
+          'secondary_color' => 'اللون الثانوي',
+          'booking_tax_percentage' => 'نسبة ضريبة الحجز',
+          'set_0_to_hide_tax_in_booking_page' => 'ضع `0` لإخفاء الضريبة في صفحة الحجز.',
+          'market_location' => 'موقع السوق',
+          'used_by_ai_market_reports_pricing_suggestions_and_local_business_analysis' => 'تستخدمها تقارير الذكاء الاصطناعي ودراسة السوق واقتراحات التسعير حسب منطقة التاجر.',
+          'country' => 'الدولة',
+          'select_country' => 'اختر الدولة',
+          'country_code' => 'رمز الدولة',
+          'select_code' => 'اختر الرمز',
+          'iso_2_letter_code_for_example_om_ae_ps' => 'رمز ISO من حرفين مثل OM أو AE أو PS.',
+          'region_governorate' => 'المنطقة / المحافظة',
+          'select_region' => 'اختر المنطقة',
+          'city' => 'المدينة',
+          'select_city' => 'اختر المدينة',
+          'business_area' => 'نطاق العمل',
+          'select_area' => 'اختر النطاق',
+          'site_currency' => 'عملة الموقع',
+          'select_currency' => 'اختر العملة',
+          'search_currency' => 'ابحث عن عملة...',
+          'no_currencies_found' => 'لا توجد عملات.',
+          'enabled_currencies' => 'العملات المفعلة',
+          'choose_the_currencies_this_office_can_use_across_the_site_bookings_and_contracts' => 'اختر العملات التي يمكن لهذا المكتب التعامل بها في الموقع والحجوزات والعقود.',
+          'select_all' => 'تحديد الكل',
+          'keep_base_only' => 'الأساسية فقط',
+          'search_enabled_currencies' => 'ابحث في العملات المفعلة...',
+          'timezone' => 'المنطقة الزمنية',
+          'select_timezone' => 'اختر المنطقة الزمنية',
+          'preview' => 'معاينة',
+          'cta_preview' => 'معاينة زر الدعوة',
+          'seo' => 'تهيئة محركات البحث',
+          'seo_management_has_moved_to_a_dedicated_page_for_cleaner_settings_management' => 'تم نقل إدارة SEO إلى صفحة مستقلة لتبقى الإعدادات العامة أوضح.',
+          'open_seo_settings' => 'فتح إعدادات SEO',
+          'open_seo_audit' => 'فتح تدقيق SEO',
+          'control_page_titles_descriptions_canonical_urls_and_open_graph_defaults_for_your_public_we' => 'تحكم في عناوين الصفحات والأوصاف وروابط canonical وإعدادات Open Graph الافتراضية لموقعك العام.',
+          'overall_seo_status' => 'الحالة العامة لظ€ SEO',
+          'export_seo_report' => 'تصدير تقرير SEO',
+          'title_suffix_en' => 'لاحقة العنوان (EN)',
+          'title_suffix_ar' => 'لاحقة العنوان (AR)',
+          'default_description_en' => 'الوصف الافتراضي (EN)',
+          'default_description_ar' => 'الوصف الافتراضي (AR)',
+          'open_graph_image_upload' => 'رفع صورة Open Graph',
+          'upload_an_image_for_og_image_or_paste_a_url_below_as_a_fallback' => 'ارفع صورة لـ og:image أو الصق رابطًا أدناه كخيار احتياطي.',
+          'open_graph_image_url' => 'رابط صورة Open Graph',
+          'robots' => 'تعليمات Robots',
+          'search_preview' => 'معاينة نتائج البحث',
+          'live_preview_for_each_public_page_using_the_current_form_values' => 'معاينة حية لكل صفحة عامة باستخدام القيم الحالية في النموذج.',
+          'copy' => 'نسخ',
+          'open_graph_preview' => 'معاينة Open Graph',
+          'preview_how_shared_links_can_appear_on_whatsapp_facebook_and_similar_platforms' => 'معاينة شكل الرابط عند مشاركته في واتساب وفيسبوك والمنصات المشابهة.',
+          'no_open_graph_image_selected_yet' => 'لم يتم تحديد صورة Open Graph بعد.',
+          'twitter_x_card_preview' => 'معاينة بطاقة Twitter / X',
+          'preview_the_large_summary_card_style_used_by_x_twitter_when_the_page_is_shared' => 'معاينة شكل البطاقة الكبيرة المستخدمة في X/Twitter عند مشاركة الصفحة.',
+          'no_card_image_available' => 'لا توجد صورة للبطاقة.',
+          'home_page_seo' => 'SEO الصفحة الرئيسية',
+          'title_en' => 'العنوان (EN)',
+          'title_ar' => 'العنوان (AR)',
+          'description_en' => 'الوصف (EN)',
+          'description_ar' => 'الوصف (AR)',
+          'canonical_url' => 'رابط Canonical',
+          'fleet_page_seo' => 'SEO صفحة الأسطول',
+          'about_page_seo' => 'SEO صفحة من نحن',
+          'contact_page_seo' => 'SEO صفحة اتصل بنا',
+          'car_details_page_seo' => 'SEO صفحة السيارة',
+          'booking_checkout_seo' => 'SEO صفحة إتمام الحجز',
+          'booking_confirmation_seo' => 'SEO صفحة تأكيد الحجز',
+          'hero_section' => 'القسم الرئيسي',
+          'main_banner_texts_for_the_tenant_homepage' => 'النصوص الرئيسية لواجهة الصفحة الرئيسية الخاصة بالمستأجر.',
+          'hero_image' => 'صورة القسم الرئيسي',
+          'upload_the_image_shown_on_the_homepage_hero_a_new_upload_replaces_the_previous_image' => 'ارفع الصورة الظاهرة في القسم الرئيسي للصفحة الرئيسية. أي رفع جديد سيستبدل الصورة السابقة.',
+          'hero_title_en' => 'عنوان القسم الرئيسي (EN)',
+          'hero_title_ar' => 'عنوان القسم الرئيسي (AR)',
+          'hero_description_en' => 'وصف القسم الرئيسي (EN)',
+          'hero_description_ar' => 'وصف القسم الرئيسي (AR)',
+          'button_text_en' => 'نص الزر (EN)',
+          'button_text_ar' => 'نص الزر (AR)',
+          'button_link' => 'رابط الزر',
+          'example_fleet_or_https' => 'مثال: `/fleet` أو `https://...`',
+          'about_page' => 'صفحة من نحن',
+          'editable_content_for_public_about_page' => 'محتوى قابل للتعديل لصفحة من نحن العامة.',
+          'mission_values' => 'قيم المهمة',
+          'repeatable_items_shown_under_mission_values_on_the_about_page' => 'عناصر قابلة للتكرار تظهر تحت قسم المهمة والقيم في صفحة من نحن.',
+          'add_value' => 'إضافة قيمة',
+          'value' => 'القيمة',
+          'remove' => 'حذف',
+          'icon' => 'الأيقونة',
+          'leadership_team' => 'فريق القيادة',
+          'repeatable_team_members_shown_on_the_about_page_use_image_url_for_each_member' => 'أعضاء فريق قابلون للتكرار يظهرون في صفحة من نحن. استخدم رابط الصورة لكل عضو.',
+          'add_member' => 'إضافة عضو',
+          'member' => 'العضو',
+          'image_upload' => 'رفع الصورة',
+          'current_fallback_image' => 'الصورة الحالية الاحتياطية:',
+          'name_en' => 'الاسم (EN)',
+          'name_ar' => 'الاسم (AR)',
+          'role' => 'المسمى الوظيفي',
+          'bio_en' => 'النبذة (EN)',
+          'bio_ar' => 'النبذة (AR)',
+          'team_images' => 'صور الفريق',
+          'upload_the_three_team_member_images_shown_on_the_about_page' => 'ارفع صور أعضاء الفريق الثلاثة الظاهرة في صفحة من نحن.',
+          'sarah_image' => 'صورة Sarah',
+          'michael_image' => 'صورة Michael',
+          'emily_image' => 'صورة Emily',
+          'page_title_en' => 'عنوان الصفحة (EN)',
+          'page_title_ar' => 'عنوان الصفحة (AR)',
+          'subtitle_en' => 'العنوان الفرعي (EN)',
+          'subtitle_ar' => 'العنوان الفرعي (AR)',
+          'story_title_en' => 'عنوان القصة (EN)',
+          'story_title_ar' => 'عنوان القصة (AR)',
+          'story_paragraph_1_en' => 'الفقرة الأولى من القصة (EN)',
+          'story_paragraph_1_ar' => 'الفقرة الأولى من القصة (AR)',
+          'story_paragraph_2_en' => 'الفقرة الثانية من القصة (EN)',
+          'story_paragraph_2_ar' => 'الفقرة الثانية من القصة (AR)',
+          'mission_title_en' => 'عنوان الرسالة (EN)',
+          'mission_title_ar' => 'عنوان الرسالة (AR)',
+          'mission_subtitle_en' => 'وصف الرسالة (EN)',
+          'mission_subtitle_ar' => 'وصف الرسالة (AR)',
+          'cta_title_en' => 'عنوان الدعوة للإجراء (EN)',
+          'cta_title_ar' => 'عنوان الدعوة للإجراء (AR)',
+          'cta_subtitle_en' => 'وصف الدعوة للإجراء (EN)',
+          'cta_subtitle_ar' => 'وصف الدعوة للإجراء (AR)',
+          'cta_browse_button_en' => 'زر التصفح في الدعوة (EN)',
+          'cta_browse_button_ar' => 'زر التصفح في الدعوة (AR)',
+          'cta_contact_button_en' => 'زر التواصل في الدعوة (EN)',
+          'cta_contact_button_ar' => 'زر التواصل في الدعوة (AR)',
+          'contract_pdf_header' => 'ترويسة العقد',
+          'editable_company_header_content_printed_at_the_top_of_the_contract_pdf' => 'محتوى ترويسة الشركة الذي يظهر في أعلى ملف العقد.',
+          'contract_pdf_template' => 'قالب PDF للعقد',
+          'company_name_en' => 'اسم الشركة (EN)',
+          'company_name_ar' => 'اسم الشركة (AR)',
+          'c_r_number' => 'رقم السجل التجاري',
+          'p_o_box' => 'صندوق البريد',
+          'p_c' => 'الرمز البريدي',
+          'country_en' => 'الدولة (EN)',
+          'country_ar' => 'الدولة (AR)',
+          'gsm_1' => 'نقال 1',
+          'gsm_2' => 'نقال 2',
+          'gsm_3' => 'نقال 3',
+          'registry_label_en' => 'وسم السجل (EN)',
+          'registry_label_ar' => 'وسم السجل (AR)',
+          'contact_page' => 'صفحة اتصل بنا',
+          'editable_titles_and_business_hours_for_public_contact_page' => 'العناوين وساعات العمل القابلة للتعديل في صفحة اتصل بنا العامة.',
+          'form_title_en' => 'عنوان النموذج (EN)',
+          'form_title_ar' => 'عنوان النموذج (AR)',
+          'sidebar_title_en' => 'عنوان الشريط الجانبي (EN)',
+          'sidebar_title_ar' => 'عنوان الشريط الجانبي (AR)',
+          'business_hours_en' => 'ساعات العمل (EN)',
+          'use_new_line_for_each_row' => 'استخدم سطرًا جديدًا لكل صف.',
+          'business_hours_ar' => 'ساعات العمل (AR)',
+          'quick_links_title_en' => 'عنوان الروابط السريعة (EN)',
+          'quick_links_title_ar' => 'عنوان الروابط السريعة (AR)',
+          'contact_footer_mvp' => 'التواصل والتذييل',
+          'basic_public_contact_info_and_footer_description' => 'معلومات التواصل العامة ووصف التذييل.',
+          'phone' => 'الهاتف',
+          'email' => 'البريد الإلكتروني',
+          'address_en' => 'العنوان (EN)',
+          'address_ar' => 'العنوان (AR)',
+          'footer_description_en' => 'وصف التذييل (EN)',
+          'footer_description_ar' => 'وصف التذييل (AR)',
+        ),
         'contract_pdf' => 
         array (
           'excess_mileage_notice_en' => 'نص زيادة الكيلومترات (EN)',
@@ -2422,497 +2114,276 @@ return array (
           'please_fix_the_following_errors' => 'يرجى تصحيح الأخطاء التالية:',
           'mileage_and_period_notes' => 'ملاحظات الكيلومترات ومدة الإيجار',
           'these_lines_appear_above_the_contract_rules_and_rental_period_area' => 'هذه السطور تظهر فوق بنود العقد ومنطقة مدة الإيجار.',
-          'excess_mileage_notice_en' => 'نص زيادة الكيلومترات (EN)',
-          'excess_mileage_notice_ar' => 'نص زيادة الكيلومترات (AR)',
-          'rental_period_notice_en' => 'نص مدة الإيجار (EN)',
-          'rental_period_notice_ar' => 'نص مدة الإيجار (AR)',
           'rules_and_penalties' => 'البنود والغرامات',
           'these_rules_are_shown_in_the_terms_list_inside_the_contract' => 'هذه البنود تظهر ضمن قائمة الشروط داخل العقد.',
-          'smoking_rule_en' => 'غرامة التدخين (EN)',
-          'smoking_rule_ar' => 'غرامة التدخين (AR)',
-          'unclean_return_rule_en' => 'غرامة إعادة المركبة غير النظيفة (EN)',
-          'unclean_return_rule_ar' => 'غرامة إعادة المركبة غير النظيفة (AR)',
-          'delay_rule_en' => 'غرامة التأخير (EN)',
-          'delay_rule_ar' => 'غرامة التأخير (AR)',
-          'period_conversion_rule_en' => 'تحويل العقد إلى يومي (EN)',
-          'period_conversion_rule_ar' => 'تحويل العقد إلى يومي (AR)',
-          'accident_rule_en' => 'غرامة الحادث (EN)',
-          'accident_rule_ar' => 'غرامة الحادث (AR)',
           'acknowledgement_text' => 'نص الإقرار',
           'shown_in_the_signature_area_before_the_final_notice' => 'يظهر في منطقة التوقيع قبل التنبيه النهائي.',
-          'acknowledgement_title_en' => 'عنوان الإقرار (EN)',
-          'acknowledgement_title_ar' => 'عنوان الإقرار (AR)',
-          'acknowledgement_body_en' => 'نص الإقرار (EN)',
-          'acknowledgement_body_ar' => 'نص الإقرار (AR)',
           'mobile_signature_note' => 'ملاحظة التوقيع عبر الجوال',
           'this_text_is_shown_on_the_mobile_signature_step_before_confirmation' => 'هذا النص يظهر في صفحة التوقيع على الجوال قبل التأكيد.',
-          'mobile_note' => 'ملاحظة الجوال',
           'company_signature_image' => 'صورة توقيع الشركة',
           'upload_the_incharge_signature_that_appears_in_the_contract_pdf_signature_area' => 'ارفع توقيع المسؤول الذي يظهر في منطقة التوقيع داخل ملف العقد.',
-          'incharge_signature' => 'توقيع المسؤول',
           'use_a_transparent_png_webp_for_the_cleanest_result' => 'يفضل استخدام صورة PNG/WebP بخلفية شفافة للحصول على أفضل نتيجة.',
           'notice_and_footer' => 'التنبيه والتذييل',
           'final_callout_block_and_the_closing_contract_sentence' => 'كتلة التنبيه النهائية وجملة إغلاق العقد.',
-          'important_notice_en' => 'التنبيه الهام (EN)',
-          'important_notice_ar' => 'التنبيه الهام (AR)',
-          'closing_notice_en' => 'نص إغلاق العقد (EN)',
-          'closing_notice_ar' => 'نص إغلاق العقد (AR)',
           'saving' => 'جاري الحفظ...',
           'save_changes' => 'حفظ التغييرات',
           'live_preview' => 'معاينة مباشرة',
           'this_preview_mirrors_the_classic_contract_pdf_text_blocks_and_updates_as_you_typ' => 'هذه المعاينة تعكس كتل النص في عقد PDF الكلاسيكي وتتحدث أثناء الكتابة.',
           'no_contract_is_available_for_preview_yet_create_one_contract_first' => 'لا يوجد عقد متاح للمعاينة بعد. أنشئ عقداً أولاً.',
         ),
-        'seo' => [
-
-            'dashboard' => 'لوحة SEO',
-
-            'health' => 'الحالة',
-
-            'general_settings' => 'الإعدادات العامة',
-
-            'defaults' => 'الافتراضيات',
-
-            'page_settings' => 'إعدادات الصفحات',
-
-            'per_page' => 'لكل صفحة',
-
-            'previews' => 'المعاينات',
-
-            'serp_social' => 'البحث والسوشال',
-
-            'content_analysis' => 'تحليل المحتوى',
-
-            'yoast_like' => 'شبيه Yoast',
-
-            'social_debuggers' => 'السوشال وأدوات الفحص',
-
-            'external_tools' => 'أدوات خارجية',
-
-            'technical_seo' => 'SEO التقني',
-
-            'sitemap_robots_redirects' => 'Sitemap / Robots / Redirects',
-
+        'seo' => 
+        array (
+          'dashboard' => 'لوحة SEO',
+          'health' => 'الحالة',
+          'general_settings' => 'الإعدادات العامة',
+          'defaults' => 'الافتراضيات',
+          'page_settings' => 'إعدادات الصفحات',
+          'per_page' => 'لكل صفحة',
+          'previews' => 'المعاينات',
+          'serp_social' => 'البحث والسوشال',
+          'content_analysis' => 'تحليل المحتوى',
+          'yoast_like' => 'شبيه Yoast',
+          'social_debuggers' => 'السوشال وأدوات الفحص',
+          'external_tools' => 'أدوات خارجية',
+          'technical_seo' => 'SEO التقني',
+          'sitemap_robots_redirects' => 'Sitemap / Robots / Redirects',
+          'home' => 'الرئيسية',
+          'fleet' => 'الأسطول',
+          'about' => 'من نحن',
+          'contact' => 'اتصل بنا',
+          'car_rental' => 'تأجير سيارة',
+          'booking_checkout' => 'إتمام الحجز',
+          'booking_confirmation' => 'تأكيد الحجز',
+          'automatic' => 'أوتوماتيك',
+          'gasoline' => 'بنزين',
+          'title_length_looks_good' => 'طول العنوان مناسب',
+          'recommended_title_length_is_30_60_characters' => 'الطول الموصى به للعنوان هو 30-60 حرفا',
+          'description_length_looks_good' => 'طول الوصف مناسب',
+          'recommended_description_length_is_70_160_characters' => 'الطول الموصى به للوصف هو 70-160 حرفا',
+          'open_graph_image_is_set' => 'صورة Open Graph مضبوطة',
+          'set_an_open_graph_image_for_sharing_previews' => 'حدد صورة Open Graph لمعاينات المشاركة',
+          'open_graph_image_alt_text_looks_good' => 'النص البديل لصورة Open Graph مناسب',
+          'add_descriptive_open_graph_image_alt_text_between_8_and_125_characters' => 'أضف نصًا بديلاً وصفيًا لصورة Open Graph بين 8 و125 حرفًا',
+          'canonical_url_is_valid' => 'رابط Canonical صحيح',
+          'canonical_url_must_start_with_http_or_https' => 'رابط Canonical يجب أن يبدأ بـ http:// أو https://',
+          'slug_format_looks_clean' => 'تنسيق الرابط المختصر سليم',
+          'slug_should_use_clean_url_segments_without_spaces' => 'يجب أن يستخدم الرابط المختصر مقاطع نظيفة بدون مسافات',
+          'hreflang_alternates_are_available_for_enabled_locales' => 'روابط hreflang متوفرة للغات المفعلة',
+          'hreflang_alternates_are_missing_for_one_or_more_enabled_locales' => 'روابط hreflang مفقودة لإحدى اللغات المفعلة أو أكثر',
+          'focus_keyword_is_defined' => 'تم تحديد الكلمة المفتاحية الرئيسية',
+          'set_a_focus_keyword_to_evaluate_this_page_like_yoast' => 'حدد كلمة مفتاحية رئيسية لتقييم الصفحة بشكل أقرب إلى Yoast',
+          'focus_keyword_appears_in_the_title' => 'الكلمة المفتاحية موجودة في العنوان',
+          'add_the_focus_keyword_to_the_page_title' => 'أضف الكلمة المفتاحية إلى عنوان الصفحة',
+          'focus_keyword_appears_in_the_description' => 'الكلمة المفتاحية موجودة في الوصف',
+          'add_the_focus_keyword_to_the_page_description' => 'أضف الكلمة المفتاحية إلى وصف الصفحة',
+          'focus_keyword_appears_in_the_slug' => 'الكلمة المفتاحية موجودة في الرابط المختصر',
+          'try_to_include_the_focus_keyword_in_the_slug_when_possible' => 'حاول تضمين الكلمة المفتاحية في الرابط المختصر متى كان ذلك مناسبا',
+          'good' => 'جيد',
+          'most_seo_signals_are_in_good_shape_for_the_selected_language' => 'معظم إشارات SEO في وضع جيد للغة المحددة.',
+          'needs_work' => 'يحتاج تحسين',
+          'some_pages_still_need_seo_cleanup_for_the_selected_language' => 'بعض الصفحات ما زالت تحتاج تحسين SEO للغة المحددة.',
+          'critical' => 'حرج',
+          'seo_coverage_is_weak_for_the_selected_language_and_should_be_fixed_before_publishing_chang' => 'تغطية SEO ضعيفة للغة المحددة ويجب إصلاحها قبل اعتماد التغييرات.',
+          'use_car_make_model_year_model_year_transmission_seats_and_fuel_type_missing_car_data_falls' => 'استخدم :car و :make و :model و :year و :model_year و :transmission و :seats و :fuel_type. وإذا كانت البيانات ناقصة سيتم استخدام قيم افتراضية عامة.',
+          'use_reservation_in_the_title_or_description_to_inject_the_reservation_number' => 'استخدم :reservation داخل العنوان أو الوصف لإدراج رقم الحجز.',
+          'configure_this_page_independently_from_the_rest_of_the_site' => 'اضبط هذه الصفحة بشكل مستقل عن بقية الموقع.',
+          'seo_settings' => 'إعدادات SEO',
+          'manage_seo_per_language_then_review_readiness_scores_for_each_locale' => 'أدر SEO لكل لغة، ثم راجع درجة الجاهزية لكل لغة بشكل مستقل.',
+          'back_to_general_settings' => 'الرجوع للإعدادات العامة',
+          'open_seo_audit' => 'فتح تدقيق SEO',
+          'seo_audit' => 'تدقيق SEO',
+          'review_public_page_seo_quality_hreflang_coverage_and_export_audit_reports' => 'راجع جودة SEO للصفحات العامة وتغطية hreflang وصدّر تقارير التدقيق.',
+          'back_to_website_settings' => 'الرجوع لإعدادات الموقع',
+          'export_txt' => 'تصدير TXT',
+          'export_csv' => 'تصدير CSV',
+          'export_json' => 'تصدير JSON',
+          'export_is_not_available_in_this_environment' => 'التصدير غير متاح في هذه البيئة.',
+          'seo_format_report_exported_successfully' => 'تم تصدير تقرير SEO بصيغة :format بنجاح.',
+          'current_vs_recommended_tags' => 'الوسوم الحالية مقابل الموصى بها',
+          'field' => 'الحقل',
+          'current' => 'الحالي',
+          'recommended' => 'الموصى به',
+          'chars' => 'حرف',
+          'hreflang' => 'hreflang',
+          'title_length_range' => '30-60 حرف',
+          'description_length_range' => '70-160 حرف',
+          'lowercase_hyphenated_no_spaces' => 'أحرف صغيرة وشرطات وبدون مسافات',
+          'indexable_public_page_is_not_blocked_by_robots' => 'الصفحة العامة قابلة للأرشفة وغير محجوبة بواسطة robots',
+          'public_page_is_set_to_noindex_and_may_disappear_from_search' => 'الصفحة العامة مضبوطة على noindex وقد تختفي من نتائج البحث',
+          'this_public_page_is_currently_blocked_by_noindex_change_robots_if_you_want_it_indexed' => 'هذه الصفحة العامة محجوبة حالياً بواسطة noindex. غيّر robots إذا أردتها مفهرسة.',
+          'pages' => 
+          array (
+            'home' => 'الصفحة الرئيسية',
+            'fleet' => 'صفحة الأسطول',
+            'about' => 'صفحة من نحن',
+            'contact' => 'صفحة التواصل',
+            'car' => 'صفحة تفاصيل السيارة',
+            'booking_checkout' => 'صفحة إتمام الحجز',
+            'booking_confirmation' => 'صفحة تأكيد الحجز',
+          ),
+          'page_titles' => 
+          array (
             'home' => 'الرئيسية',
-
             'fleet' => 'الأسطول',
-
             'about' => 'من نحن',
-
-            'contact' => 'اتصل بنا',
-
-            'car_rental' => 'تأجير سيارة',
-
+            'contact' => 'تواصل معنا',
+            'car' => 'تأجير سيارة',
             'booking_checkout' => 'إتمام الحجز',
-
             'booking_confirmation' => 'تأكيد الحجز',
-
-            'automatic' => 'أوتوماتيك',
-
-            'gasoline' => 'بنزين',
-
-            'title_length_looks_good' => 'طول العنوان مناسب',
-
-            'recommended_title_length_is_30_60_characters' => 'الطول الموصى به للعنوان هو 30-60 حرفا',
-
-            'description_length_looks_good' => 'طول الوصف مناسب',
-
-            'recommended_description_length_is_70_160_characters' => 'الطول الموصى به للوصف هو 70-160 حرفا',
-
-            'open_graph_image_is_set' => 'صورة Open Graph مضبوطة',
-
-            'set_an_open_graph_image_for_sharing_previews' => 'حدد صورة Open Graph لمعاينات المشاركة',
-
-            'open_graph_image_alt_text_looks_good' => 'النص البديل لصورة Open Graph مناسب',
-
-            'add_descriptive_open_graph_image_alt_text_between_8_and_125_characters' => 'أضف نصًا بديلاً وصفيًا لصورة Open Graph بين 8 و125 حرفًا',
-
-            'canonical_url_is_valid' => 'رابط Canonical صحيح',
-
-            'canonical_url_must_start_with_http_or_https' => 'رابط Canonical يجب أن يبدأ بـ http:// أو https://',
-
-            'slug_format_looks_clean' => 'تنسيق الرابط المختصر سليم',
-
-            'slug_should_use_clean_url_segments_without_spaces' => 'يجب أن يستخدم الرابط المختصر مقاطع نظيفة بدون مسافات',
-
-            'hreflang_alternates_are_available_for_enabled_locales' => 'روابط hreflang متوفرة للغات المفعلة',
-
-            'hreflang_alternates_are_missing_for_one_or_more_enabled_locales' => 'روابط hreflang مفقودة لإحدى اللغات المفعلة أو أكثر',
-
-            'focus_keyword_is_defined' => 'تم تحديد الكلمة المفتاحية الرئيسية',
-
-            'set_a_focus_keyword_to_evaluate_this_page_like_yoast' => 'حدد كلمة مفتاحية رئيسية لتقييم الصفحة بشكل أقرب إلى Yoast',
-
-            'focus_keyword_appears_in_the_title' => 'الكلمة المفتاحية موجودة في العنوان',
-
-            'add_the_focus_keyword_to_the_page_title' => 'أضف الكلمة المفتاحية إلى عنوان الصفحة',
-
-            'focus_keyword_appears_in_the_description' => 'الكلمة المفتاحية موجودة في الوصف',
-
-            'add_the_focus_keyword_to_the_page_description' => 'أضف الكلمة المفتاحية إلى وصف الصفحة',
-
-            'focus_keyword_appears_in_the_slug' => 'الكلمة المفتاحية موجودة في الرابط المختصر',
-
-            'try_to_include_the_focus_keyword_in_the_slug_when_possible' => 'حاول تضمين الكلمة المفتاحية في الرابط المختصر متى كان ذلك مناسبا',
-
-            'good' => 'جيد',
-
-            'most_seo_signals_are_in_good_shape_for_the_selected_language' => 'معظم إشارات SEO في وضع جيد للغة المحددة.',
-
-            'needs_work' => 'يحتاج تحسين',
-
-            'some_pages_still_need_seo_cleanup_for_the_selected_language' => 'بعض الصفحات ما زالت تحتاج تحسين SEO للغة المحددة.',
-
-            'critical' => 'حرج',
-
-            'seo_coverage_is_weak_for_the_selected_language_and_should_be_fixed_before_publishing_chang' => 'تغطية SEO ضعيفة للغة المحددة ويجب إصلاحها قبل اعتماد التغييرات.',
-
-            'use_car_make_model_year_model_year_transmission_seats_and_fuel_type_missing_car_data_falls' => 'استخدم :car و :make و :model و :year و :model_year و :transmission و :seats و :fuel_type. وإذا كانت البيانات ناقصة سيتم استخدام قيم افتراضية عامة.',
-
-            'use_reservation_in_the_title_or_description_to_inject_the_reservation_number' => 'استخدم :reservation داخل العنوان أو الوصف لإدراج رقم الحجز.',
-
-            'configure_this_page_independently_from_the_rest_of_the_site' => 'اضبط هذه الصفحة بشكل مستقل عن بقية الموقع.',
-
-            'seo_settings' => 'إعدادات SEO',
-
-            'manage_seo_per_language_then_review_readiness_scores_for_each_locale' => 'أدر SEO لكل لغة، ثم راجع درجة الجاهزية لكل لغة بشكل مستقل.',
-
-            'back_to_general_settings' => 'الرجوع للإعدادات العامة',
-
-            'open_seo_audit' => 'فتح تدقيق SEO',
-                    'seo_audit' => 'تدقيق SEO',
-                    'review_public_page_seo_quality_hreflang_coverage_and_export_audit_reports' => 'راجع جودة SEO للصفحات العامة وتغطية hreflang وصدّر تقارير التدقيق.',
-                    'back_to_website_settings' => 'الرجوع لإعدادات الموقع',
-                    'export_txt' => 'تصدير TXT',
-                    'export_csv' => 'تصدير CSV',
-                    'export_json' => 'تصدير JSON',
-                    'export_is_not_available_in_this_environment' => 'التصدير غير متاح في هذه البيئة.',
-                    'seo_format_report_exported_successfully' => 'تم تصدير تقرير SEO بصيغة :format بنجاح.',
-                    'current_vs_recommended_tags' => 'الوسوم الحالية مقابل الموصى بها',
-                    'field' => 'الحقل',
-                    'current' => 'الحالي',
-                    'recommended' => 'الموصى به',
-                    'chars' => 'حرف',
-                    'hreflang' => 'hreflang',
-                    'title_length_range' => '30-60 حرف',
-                    'description_length_range' => '70-160 حرف',
-                    'lowercase_hyphenated_no_spaces' => 'أحرف صغيرة وشرطات وبدون مسافات',
-                    'indexable_public_page_is_not_blocked_by_robots' => 'الصفحة العامة قابلة للأرشفة وغير محجوبة بواسطة robots',
-                    'public_page_is_set_to_noindex_and_may_disappear_from_search' => 'الصفحة العامة مضبوطة على noindex وقد تختفي من نتائج البحث',
-                    'this_public_page_is_currently_blocked_by_noindex_change_robots_if_you_want_it_indexed' => 'هذه الصفحة العامة محجوبة حالياً بواسطة noindex. غيّر robots إذا أردتها مفهرسة.',
-                    'pages' => [
-                        'home' => 'الصفحة الرئيسية',
-                        'fleet' => 'صفحة الأسطول',
-                        'about' => 'صفحة من نحن',
-                        'contact' => 'صفحة التواصل',
-                        'car' => 'صفحة تفاصيل السيارة',
-                        'booking_checkout' => 'صفحة إتمام الحجز',
-                        'booking_confirmation' => 'صفحة تأكيد الحجز',
-                    ],
-                    'page_titles' => [
-                        'home' => 'الرئيسية',
-                        'fleet' => 'الأسطول',
-                        'about' => 'من نحن',
-                        'contact' => 'تواصل معنا',
-                        'car' => 'تأجير سيارة',
-                        'booking_checkout' => 'إتمام الحجز',
-                        'booking_confirmation' => 'تأكيد الحجز',
-                    ],
-                    'fallback_descriptions' => [
-                        'home' => 'اكتشف :name واحجز سيارتك القادمة عبر الإنترنت.',
-                        'fleet' => 'تصفح سيارات التأجير المتاحة من :name.',
-                        'about' => 'تعرف أكثر على :name وخدمات تأجير السيارات.',
-                        'contact' => 'تواصل مع :name للحجوزات والدعم.',
-                        'car' => 'اعرض تفاصيل وأسعار سيارات التأجير من :name.',
-                        'booking_checkout' => 'اختر طريقة الدفع وأكمل حجزك بأمان مع :name.',
-                        'booking_confirmation' => 'راجع حجزك المؤكد وتفاصيل الحجز من :name.',
-                    ],
-            'saving' => 'جار الحفظ...',
-
-            'save_seo_changes' => 'حفظ تغييرات SEO',
-
-            'please_fix_the_following_errors' => 'يرجى تصحيح الأخطاء التالية:',
-
-            'seo_navigation' => 'تنقل SEO',
-
-            'split_by_section_like_a_practical_yoast_workflow' => 'مقسمة إلى أقسام مثل تدفق عمل Yoast العملي.',
-
-            'seo_language' => 'لغة SEO',
-
-            'overall_seo_status' => 'الحالة العامة لـ SEO',
-
-            'export_seo_report' => 'تصدير تقرير SEO',
-
-            'checks_passed' => 'فحص ناجح',
-
-            'pages_fully_ready' => 'صفحات جاهزة بالكامل',
-
-            'checks' => 'فحوصات',
-
-            'focus_keyword' => 'الكلمة المفتاحية',
-
-            'not_set' => 'غير محددة',
-
-            'page_seo_fields' => 'حقول SEO للصفحات',
-
-            'pick_a_page_then_manage_title_description_canonical_robots_and_focus_keyword_for_the_selec' => 'اختر صفحة ثم اضبط العنوان والوصف وcanonical وrobots والكلمة المفتاحية للغة المحددة.',
-
-            'editing_language' => 'لغة التحرير:',
-
-            'title' => 'العنوان',
-
-            'description' => 'الوصف',
-
-            'canonical_url' => 'رابط Canonical',
-
-            'robots' => 'Robots',
-
-            'use_global_default' => 'استخدم الافتراضي العام',
-
-            'live_score' => 'النتيجة الحالية',
-
-            'resolved_preview' => 'المعاينة النهائية',
-
-            'slug' => 'الرابط المختصر',
-
-            'not_enough_text' => 'لا يوجد نص كافٍ',
-
-            'easy' => 'سهل',
-
-            'moderate' => 'متوسط',
-
-            'difficult' => 'صعب',
-
-            'very_difficult' => 'صعب جدا',
-
-            'focus_keyword_is_set' => 'تم تحديد الكلمة المفتاحية',
-
-            'set_a_focus_keyword_first' => 'حدد الكلمة المفتاحية أولا',
-
-            'keyword_appears_in_title' => 'الكلمة المفتاحية موجودة في العنوان',
-
-            'keyword_missing_from_title' => 'الكلمة المفتاحية غير موجودة في العنوان',
-
-            'keyword_appears_in_description' => 'الكلمة المفتاحية موجودة في الوصف',
-
-            'keyword_missing_from_description' => 'الكلمة المفتاحية غير موجودة في الوصف',
-
-            'keyword_appears_in_slug' => 'الكلمة المفتاحية موجودة في الرابط المختصر',
-
-            'keyword_missing_from_slug' => 'الكلمة المفتاحية غير موجودة في الرابط المختصر',
-
-            'keyword_density_is_balanced' => 'كثافة الكلمة المفتاحية متوازنة',
-
-            'keyword_density_is_too_low_or_too_high' => 'كثافة الكلمة المفتاحية منخفضة أو مرتفعة جدا',
-
-            'yoast_style_checks_for_the_currently_selected_seo_language' => 'فحوصات شبيهة بـ Yoast للغة SEO المحددة حاليا.',
-
-            'matches' => 'مطابقات',
-
-            'focus_keyword_checks' => 'فحوصات الكلمة المفتاحية',
-
-            'density' => 'الكثافة',
-
-            'top_title_keywords' => 'أهم كلمات العنوان',
-
-            'no_clear_keywords_found_yet' => 'لم يتم العثور على كلمات رئيسية واضحة بعد.',
-
-            'title_readability' => 'سهولة قراءة العنوان',
-
-            'description_readability' => 'سهولة قراءة الوصف',
-
-            'this_analysis_is_generated_live_from_the_currently_selected_language_content_save_after_th' => 'هذا التحليل يتم إنشاؤه مباشرة من محتوى اللغة المحددة حاليا. احفظ بعد أن تصبح النتيجة مناسبة.',
-
-            'general_seo_settings' => 'إعدادات SEO العامة',
-
-            'default_values_used_across_public_pages_when_page_specific_seo_is_empty' => 'القيم الافتراضية المستخدمة عبر الصفحات العامة عندما تكون حقول SEO الخاصة بالصفحة فارغة.',
-
-            'title_suffix' => 'لاحقة العنوان',
-
-            'default_robots_directive' => 'تعليمات Robots الافتراضية',
-
-            'index_and_follow_default' => 'الفهرسة والمتابعة (افتراضي)',
-
-            'no_index_follow' => 'بدون فهرسة، متابعة',
-
-            'index_no_follow' => 'الفهرسة، بدون متابعة',
-
-            'no_index_no_follow' => 'بدون فهرسة، بدون متابعة',
-
-            'default_description' => 'الوصف الافتراضي',
-
-            'open_graph_image_upload' => 'رفع صورة Open Graph',
-
-            'upload_an_image_for_og_image_or_paste_a_url_below_as_a_fallback' => 'ارفع صورة لـ og:image أو الصق رابطًا أدناه كخيار احتياطي.',
-
-            'open_graph_image_url' => 'رابط صورة Open Graph',
-
-            'open_graph_image_alt' => 'النص البديل لصورة Open Graph',
-
-            'used_for_og_image_alt_and_twitter_image_accessibility_metadata' => 'يُستخدم في og:image:alt وبيانات إمكانية الوصول لصورة Twitter.',
-
-            'clipboard_is_not_available_in_this_browser' => 'الحافظة غير متاحة في هذا المتصفح.',
-
-            'could_not_copy_seo_summary' => 'تعذر نسخ ملخص SEO.',
-
-            'could_not_copy_rendered_meta_tags' => 'تعذر نسخ وسوم الميتا الفعلية.',
-
-            'search_result_preview' => 'معاينة نتائج البحث',
-
-            'google_style_preview_for_each_seo_page' => 'معاينة تشبه نتائج Google لكل صفحة SEO.',
-
-            'copy' => 'نسخ',
-
-            'open_graph_preview' => 'معاينة Open Graph',
-
-            'preview_how_your_pages_appear_on_social_media_platforms' => 'معاينة كيفية ظهور صفحاتك على منصات وسائل التواصل الاجتماعي.',
-
-            'twitter_x_card_preview' => 'معاينة بطاقة Twitter / X',
-
-            'preview_how_your_pages_appear_on_twitter_x' => 'معاينة كيفية ظهور صفحاتك على Twitter/X.',
-
-            'rendered_meta_tags' => 'وسوم الميتا الفعلية',
-
-            'these_are_the_actual_tags_that_social_platforms_and_search_engines_will_read_from_each_pag' => 'هذه هي الوسوم الفعلية التي ستقرأها منصات المشاركة ومحركات البحث من كل صفحة.',
-
-            'copy_meta_tags' => 'نسخ وسوم الميتا',
-
-            'moved_permanently_seo_best' => 'تم النقل بشكل دائم (الأفضل لـ SEO)',
-
-            'found_temporary' => 'موجود (مؤقت)',
-
-            'temporary_redirect' => 'إعادة توجيه مؤقتة',
-
-            'permanent_redirect' => 'إعادة توجيه دائمة',
-
-            'source_and_destination_cannot_be_the_same' => 'لا يمكن أن يكون مسار المصدر والوجهة متطابقين.',
-
-            'duplicate_active_source_path_detected' => 'تم اكتشاف مسار مصدر نشط مكرر.',
-
-            'two_way_redirect_loop_detected' => 'تم اكتشاف حلقة إعادة توجيه ثنائية.',
-
-            'redirect_manager' => 'مدير إعادات التوجيه',
-
-            'manage_url_redirects_to_maintain_seo_value_when_moving_pages' => 'أدر إعادات توجيه الروابط للحفاظ على قيمة SEO عند نقل الصفحات.',
-
-            'active_redirects' => 'إعادات التوجيه النشطة',
-
-            'add_redirect' => '+ إضافة إعادة توجيه',
-
-            'from_path' => 'من المسار',
-
-            'to_path' => 'إلى المسار',
-
-            'status_code' => 'رمز الحالة',
-
-            'active' => 'نشط',
-
-            'inactive' => 'غير نشط',
-
-            'remove' => 'حذف',
-
-            'no_redirects_configured_yet' => 'لم يتم تكوين أي إعادات توجيه حتى الآن.',
-
-            'redirect_validation_found_issues_fix_them_before_saving' => 'تحقق إعادة التوجيه اكتشف مشاكل. أصلحها قبل الحفظ.',
-
-            'redirect_statistics' => 'إحصائيات إعادات التوجيه',
-
-            'permanent_301_308' => 'دائمة (301/308)',
-
-            'temporary_302_307' => 'مؤقتة (302/307)',
-
-            'best_practices' => '💡 أفضل الممارسات',
-
-            'use_301_permanent_for_long_term_page_moves_preserves_seo_value' => 'استخدم 301 (دائم) لنقل الصفحات طويل الأجل - يحافظ على قيمة SEO',
-
-            'use_302_307_temporary_only_for_short_term_redirects' => 'استخدم 302/307 (مؤقت) فقط لإعادات التوجيه قصيرة الأجل',
-
-            'keep_redirects_active_for_at_least_6_12_months' => 'احتفظ بإعادات التوجيه نشطة لمدة 6-12 شهراً على الأقل',
-
-            'monitor_redirect_chains_avoid_redirect_loops' => 'راقب سلاسل إعادات التوجيه - تجنب حلقات إعادة التوجيه',
-
-            'robots_txt_management' => 'إدارة Robots.txt',
-
-            'control_how_search_engines_crawl_and_index_your_site' => 'تحكم في كيفية زحف محركات البحث لموقعك وفهرسته.',
-
-            'crawling_policy' => 'سياسة الزحف',
-
-            'allow_all' => 'السماح بالكل',
-
-            'block_paths' => 'منع المسارات',
-
-            'disallowed_paths' => 'المسارات الممنوعة',
-
-            'add_path' => '+ إضافة مسار',
-
-            'crawl_settings' => 'إعدادات الزحف',
-
-            'crawl_delay_seconds' => 'تأخير الزحف (ثانية)',
-
-            'wait_between_requests_higher_fewer_requests' => 'انتظر بين الطلبات. أعلى = طلبات أقل.',
-
-            'request_rate_per_minute' => 'معدل الطلب (لكل دقيقة)',
-
-            'max_requests_per_minute_0_unlimited' => 'الحد الأقصى للطلبات لكل دقيقة. 0 = غير محدود.',
-
-            'sitemap_url' => 'رابط خريطة الموقع',
-
-            'generated_robots_txt' => 'robots.txt المُنشأة',
-
-            'copy_text' => 'نسخ النص',
-
-            'download_file' => 'تنزيل الملف',
-
-            'setup_instructions' => '📋 تعليمات الإعداد',
-
-            'download_or_copy_the_content_above' => 'نزّل أو انسخ المحتوى أعلاه',
-
-            'save_as_robots_txt_in_your_public_root_directory' => 'احفظ باسم robots.txt في مجلد الجذر العام',
-
-            'verify_in_google_search_console' => 'تحقق في Google Search Console',
-
-            'monitor_crawl_stats_and_errors' => 'راقب إحصائيات الزحف والأخطاء',
-
-            'xml_sitemap_management' => 'إدارة خريطة الموقع XML',
-
-            'manage_your_xml_sitemap_to_help_search_engines_crawl_your_site_more_effectively' => 'أدر خريطة موقعك XML لمساعدة محركات البحث على زحف موقعك بشكل أفضل.',
-
-            'sitemap_entries' => 'إدخالات خريطة الموقع',
-
-            'add_page' => '+ إضافة صفحة',
-
-            'path' => 'المسار',
-
-            'priority' => 'الأولوية',
-
-            'change_frequency' => 'تكرار التغيير',
-
-            'last_modified' => 'آخر تعديل',
-
-            'generated_xml' => 'XML المُنشأة',
-
-            'copy_xml' => 'نسخ XML',
-
-            'download_xml' => 'تنزيل XML',
-
-            'download_the_xml_file_above' => 'نزّل ملف XML أعلاه',
-
-            'upload_to_your_public_root_as_sitemap_xml' => 'حمّل إلى الجذر العام باسم sitemap.xml',
-
-            'submit_to_google_search_console' => 'قدّم إلى Google Search Console',
-
-            'add_sitemap_url_to_robots_txt' => 'أضف رابط sitemap إلى robots.txt',
-
-            'social_integration_debuggers' => 'تكامل الوسائط الاجتماعية والمُصححات',
-
-            'test_your_seo_pages_with_external_social_platform_debuggers_and_google_tools' => 'اختبر صفحات SEO الخاصة بك باستخدام أدوات تصحيح منصات الوسائط الاجتماعية الخارجية و Google.',
-
-            'pro_tip' => 'نصيحة إحترافية',
-
-            'use_these_debuggers_to_verify_how_your_content_appears_on_social_platforms_and_how_google_' => 'استخدم هذه المُصححات للتحقق من كيفية ظهور المحتوى على منصات التواصل الاجتماعي وكيف تقوم Google بفهرسة صفحاتك. قد تقوم منصات مختلفة بتخزين محتوى مختلف، لذا من الأفضل الاختبار بانتظام قبل الإطلاقات الكبيرة.',
-
-        ],
-
+          ),
+          'fallback_descriptions' => 
+          array (
+            'home' => 'اكتشف :name واحجز سيارتك القادمة عبر الإنترنت.',
+            'fleet' => 'تصفح سيارات التأجير المتاحة من :name.',
+            'about' => 'تعرف أكثر على :name وخدمات تأجير السيارات.',
+            'contact' => 'تواصل مع :name للحجوزات والدعم.',
+            'car' => 'اعرض تفاصيل وأسعار سيارات التأجير من :name.',
+            'booking_checkout' => 'اختر طريقة الدفع وأكمل حجزك بأمان مع :name.',
+            'booking_confirmation' => 'راجع حجزك المؤكد وتفاصيل الحجز من :name.',
+          ),
+          'saving' => 'جار الحفظ...',
+          'save_seo_changes' => 'حفظ تغييرات SEO',
+          'please_fix_the_following_errors' => 'يرجى تصحيح الأخطاء التالية:',
+          'seo_navigation' => 'تنقل SEO',
+          'split_by_section_like_a_practical_yoast_workflow' => 'مقسمة إلى أقسام مثل تدفق عمل Yoast العملي.',
+          'seo_language' => 'لغة SEO',
+          'overall_seo_status' => 'الحالة العامة لـ SEO',
+          'export_seo_report' => 'تصدير تقرير SEO',
+          'checks_passed' => 'فحص ناجح',
+          'pages_fully_ready' => 'صفحات جاهزة بالكامل',
+          'checks' => 'فحوصات',
+          'focus_keyword' => 'الكلمة المفتاحية',
+          'not_set' => 'غير محددة',
+          'page_seo_fields' => 'حقول SEO للصفحات',
+          'pick_a_page_then_manage_title_description_canonical_robots_and_focus_keyword_for_the_selec' => 'اختر صفحة ثم اضبط العنوان والوصف وcanonical وrobots والكلمة المفتاحية للغة المحددة.',
+          'editing_language' => 'لغة التحرير:',
+          'title' => 'العنوان',
+          'description' => 'الوصف',
+          'canonical_url' => 'رابط Canonical',
+          'robots' => 'Robots',
+          'use_global_default' => 'استخدم الافتراضي العام',
+          'live_score' => 'النتيجة الحالية',
+          'resolved_preview' => 'المعاينة النهائية',
+          'slug' => 'الرابط المختصر',
+          'not_enough_text' => 'لا يوجد نص كافٍ',
+          'easy' => 'سهل',
+          'moderate' => 'متوسط',
+          'difficult' => 'صعب',
+          'very_difficult' => 'صعب جدا',
+          'focus_keyword_is_set' => 'تم تحديد الكلمة المفتاحية',
+          'set_a_focus_keyword_first' => 'حدد الكلمة المفتاحية أولا',
+          'keyword_appears_in_title' => 'الكلمة المفتاحية موجودة في العنوان',
+          'keyword_missing_from_title' => 'الكلمة المفتاحية غير موجودة في العنوان',
+          'keyword_appears_in_description' => 'الكلمة المفتاحية موجودة في الوصف',
+          'keyword_missing_from_description' => 'الكلمة المفتاحية غير موجودة في الوصف',
+          'keyword_appears_in_slug' => 'الكلمة المفتاحية موجودة في الرابط المختصر',
+          'keyword_missing_from_slug' => 'الكلمة المفتاحية غير موجودة في الرابط المختصر',
+          'keyword_density_is_balanced' => 'كثافة الكلمة المفتاحية متوازنة',
+          'keyword_density_is_too_low_or_too_high' => 'كثافة الكلمة المفتاحية منخفضة أو مرتفعة جدا',
+          'yoast_style_checks_for_the_currently_selected_seo_language' => 'فحوصات شبيهة بـ Yoast للغة SEO المحددة حاليا.',
+          'matches' => 'مطابقات',
+          'focus_keyword_checks' => 'فحوصات الكلمة المفتاحية',
+          'density' => 'الكثافة',
+          'top_title_keywords' => 'أهم كلمات العنوان',
+          'no_clear_keywords_found_yet' => 'لم يتم العثور على كلمات رئيسية واضحة بعد.',
+          'title_readability' => 'سهولة قراءة العنوان',
+          'description_readability' => 'سهولة قراءة الوصف',
+          'this_analysis_is_generated_live_from_the_currently_selected_language_content_save_after_th' => 'هذا التحليل يتم إنشاؤه مباشرة من محتوى اللغة المحددة حاليا. احفظ بعد أن تصبح النتيجة مناسبة.',
+          'general_seo_settings' => 'إعدادات SEO العامة',
+          'default_values_used_across_public_pages_when_page_specific_seo_is_empty' => 'القيم الافتراضية المستخدمة عبر الصفحات العامة عندما تكون حقول SEO الخاصة بالصفحة فارغة.',
+          'title_suffix' => 'لاحقة العنوان',
+          'default_robots_directive' => 'تعليمات Robots الافتراضية',
+          'index_and_follow_default' => 'الفهرسة والمتابعة (افتراضي)',
+          'no_index_follow' => 'بدون فهرسة، متابعة',
+          'index_no_follow' => 'الفهرسة، بدون متابعة',
+          'no_index_no_follow' => 'بدون فهرسة، بدون متابعة',
+          'default_description' => 'الوصف الافتراضي',
+          'open_graph_image_upload' => 'رفع صورة Open Graph',
+          'upload_an_image_for_og_image_or_paste_a_url_below_as_a_fallback' => 'ارفع صورة لـ og:image أو الصق رابطًا أدناه كخيار احتياطي.',
+          'open_graph_image_url' => 'رابط صورة Open Graph',
+          'open_graph_image_alt' => 'النص البديل لصورة Open Graph',
+          'used_for_og_image_alt_and_twitter_image_accessibility_metadata' => 'يُستخدم في og:image:alt وبيانات إمكانية الوصول لصورة Twitter.',
+          'clipboard_is_not_available_in_this_browser' => 'الحافظة غير متاحة في هذا المتصفح.',
+          'could_not_copy_seo_summary' => 'تعذر نسخ ملخص SEO.',
+          'could_not_copy_rendered_meta_tags' => 'تعذر نسخ وسوم الميتا الفعلية.',
+          'search_result_preview' => 'معاينة نتائج البحث',
+          'google_style_preview_for_each_seo_page' => 'معاينة تشبه نتائج Google لكل صفحة SEO.',
+          'copy' => 'نسخ',
+          'open_graph_preview' => 'معاينة Open Graph',
+          'preview_how_your_pages_appear_on_social_media_platforms' => 'معاينة كيفية ظهور صفحاتك على منصات وسائل التواصل الاجتماعي.',
+          'twitter_x_card_preview' => 'معاينة بطاقة Twitter / X',
+          'preview_how_your_pages_appear_on_twitter_x' => 'معاينة كيفية ظهور صفحاتك على Twitter/X.',
+          'rendered_meta_tags' => 'وسوم الميتا الفعلية',
+          'these_are_the_actual_tags_that_social_platforms_and_search_engines_will_read_from_each_pag' => 'هذه هي الوسوم الفعلية التي ستقرأها منصات المشاركة ومحركات البحث من كل صفحة.',
+          'copy_meta_tags' => 'نسخ وسوم الميتا',
+          'moved_permanently_seo_best' => 'تم النقل بشكل دائم (الأفضل لـ SEO)',
+          'found_temporary' => 'موجود (مؤقت)',
+          'temporary_redirect' => 'إعادة توجيه مؤقتة',
+          'permanent_redirect' => 'إعادة توجيه دائمة',
+          'source_and_destination_cannot_be_the_same' => 'لا يمكن أن يكون مسار المصدر والوجهة متطابقين.',
+          'duplicate_active_source_path_detected' => 'تم اكتشاف مسار مصدر نشط مكرر.',
+          'two_way_redirect_loop_detected' => 'تم اكتشاف حلقة إعادة توجيه ثنائية.',
+          'redirect_manager' => 'مدير إعادات التوجيه',
+          'manage_url_redirects_to_maintain_seo_value_when_moving_pages' => 'أدر إعادات توجيه الروابط للحفاظ على قيمة SEO عند نقل الصفحات.',
+          'active_redirects' => 'إعادات التوجيه النشطة',
+          'add_redirect' => '+ إضافة إعادة توجيه',
+          'from_path' => 'من المسار',
+          'to_path' => 'إلى المسار',
+          'status_code' => 'رمز الحالة',
+          'active' => 'نشط',
+          'inactive' => 'غير نشط',
+          'remove' => 'حذف',
+          'no_redirects_configured_yet' => 'لم يتم تكوين أي إعادات توجيه حتى الآن.',
+          'redirect_validation_found_issues_fix_them_before_saving' => 'تحقق إعادة التوجيه اكتشف مشاكل. أصلحها قبل الحفظ.',
+          'redirect_statistics' => 'إحصائيات إعادات التوجيه',
+          'permanent_301_308' => 'دائمة (301/308)',
+          'temporary_302_307' => 'مؤقتة (302/307)',
+          'best_practices' => '💡 أفضل الممارسات',
+          'use_301_permanent_for_long_term_page_moves_preserves_seo_value' => 'استخدم 301 (دائم) لنقل الصفحات طويل الأجل - يحافظ على قيمة SEO',
+          'use_302_307_temporary_only_for_short_term_redirects' => 'استخدم 302/307 (مؤقت) فقط لإعادات التوجيه قصيرة الأجل',
+          'keep_redirects_active_for_at_least_6_12_months' => 'احتفظ بإعادات التوجيه نشطة لمدة 6-12 شهراً على الأقل',
+          'monitor_redirect_chains_avoid_redirect_loops' => 'راقب سلاسل إعادات التوجيه - تجنب حلقات إعادة التوجيه',
+          'robots_txt_management' => 'إدارة Robots.txt',
+          'control_how_search_engines_crawl_and_index_your_site' => 'تحكم في كيفية زحف محركات البحث لموقعك وفهرسته.',
+          'crawling_policy' => 'سياسة الزحف',
+          'allow_all' => 'السماح بالكل',
+          'block_paths' => 'منع المسارات',
+          'disallowed_paths' => 'المسارات الممنوعة',
+          'add_path' => '+ إضافة مسار',
+          'crawl_settings' => 'إعدادات الزحف',
+          'crawl_delay_seconds' => 'تأخير الزحف (ثانية)',
+          'wait_between_requests_higher_fewer_requests' => 'انتظر بين الطلبات. أعلى = طلبات أقل.',
+          'request_rate_per_minute' => 'معدل الطلب (لكل دقيقة)',
+          'max_requests_per_minute_0_unlimited' => 'الحد الأقصى للطلبات لكل دقيقة. 0 = غير محدود.',
+          'sitemap_url' => 'رابط خريطة الموقع',
+          'generated_robots_txt' => 'robots.txt المُنشأة',
+          'copy_text' => 'نسخ النص',
+          'download_file' => 'تنزيل الملف',
+          'setup_instructions' => '📋 تعليمات الإعداد',
+          'download_or_copy_the_content_above' => 'نزّل أو انسخ المحتوى أعلاه',
+          'save_as_robots_txt_in_your_public_root_directory' => 'احفظ باسم robots.txt في مجلد الجذر العام',
+          'verify_in_google_search_console' => 'تحقق في Google Search Console',
+          'monitor_crawl_stats_and_errors' => 'راقب إحصائيات الزحف والأخطاء',
+          'xml_sitemap_management' => 'إدارة خريطة الموقع XML',
+          'manage_your_xml_sitemap_to_help_search_engines_crawl_your_site_more_effectively' => 'أدر خريطة موقعك XML لمساعدة محركات البحث على زحف موقعك بشكل أفضل.',
+          'sitemap_entries' => 'إدخالات خريطة الموقع',
+          'add_page' => '+ إضافة صفحة',
+          'path' => 'المسار',
+          'priority' => 'الأولوية',
+          'change_frequency' => 'تكرار التغيير',
+          'last_modified' => 'آخر تعديل',
+          'generated_xml' => 'XML المُنشأة',
+          'copy_xml' => 'نسخ XML',
+          'download_xml' => 'تنزيل XML',
+          'download_the_xml_file_above' => 'نزّل ملف XML أعلاه',
+          'upload_to_your_public_root_as_sitemap_xml' => 'حمّل إلى الجذر العام باسم sitemap.xml',
+          'submit_to_google_search_console' => 'قدّم إلى Google Search Console',
+          'add_sitemap_url_to_robots_txt' => 'أضف رابط sitemap إلى robots.txt',
+          'social_integration_debuggers' => 'تكامل الوسائط الاجتماعية والمُصححات',
+          'test_your_seo_pages_with_external_social_platform_debuggers_and_google_tools' => 'اختبر صفحات SEO الخاصة بك باستخدام أدوات تصحيح منصات الوسائط الاجتماعية الخارجية و Google.',
+          'pro_tip' => 'نصيحة إحترافية',
+          'use_these_debuggers_to_verify_how_your_content_appears_on_social_platforms_and_how_google_' => 'استخدم هذه المُصححات للتحقق من كيفية ظهور المحتوى على منصات التواصل الاجتماعي وكيف تقوم Google بفهرسة صفحاتك. قد تقوم منصات مختلفة بتخزين محتوى مختلف، لذا من الأفضل الاختبار بانتظام قبل الإطلاقات الكبيرة.',
+        ),
         'mrta_pdf' => 
         array (
           'title' => 'إعدادات ملف حادث المرور PDF',
@@ -2952,6 +2423,7 @@ return array (
         'search_placeholder' => 'ابحث بالموديل أو الشركة أو اللوحة...',
         'search_button' => 'بحث',
         'all' => 'الكل',
+        'all_branches' => 'كل الفروع',
         'empty' => 'لا توجد سيارات.',
         'table' => 
         array (
@@ -2962,7 +2434,14 @@ return array (
           'status' => 'الحالة',
           'car_image_alt' => 'سيارة',
         ),
-        'show' => [
+        'actions' => 
+        array (
+          'view' => 'عرض',
+          'documents' => 'الوثائق',
+          'calendar' => 'التقويم',
+        ),
+        'show' => 
+        array (
           'documents' => 'الوثائق',
           'calendar' => 'التقويم',
           'edit_car' => 'تعديل السيارة',
@@ -3009,8 +2488,9 @@ return array (
           'no_discounts_linked_to_this_car' => 'لا توجد خصومات مرتبطة بهذه السيارة.',
           'active' => 'نشط',
           'inactive' => 'غير نشط',
-        ],
-        'form' => [
+        ),
+        'form' => 
+        array (
           'enter_license_plate' => 'أدخل رقم اللوحة',
           'automatic' => 'أوتوماتيك',
           'manual' => 'يدوي',
@@ -3127,8 +2607,9 @@ return array (
           'phone_number' => 'رقم الهاتف',
           'email' => 'البريد الإلكتروني',
           'email_address' => 'البريد الإلكتروني',
-        ],
-        'documents' => [
+        ),
+        'documents' => 
+        array (
           'title' => 'وثائق السيارة',
           'description' => 'إدارة وثائق الرخصة والتأمين وعقد الشراء لهذه السيارة.',
           'back_to_car' => 'العودة للسيارة',
@@ -3138,7 +2619,8 @@ return array (
           'delete' => 'حذف',
           'delete_confirm' => 'حذف هذا المستند؟',
           'empty' => 'لا توجد وثائق سيارة بعد.',
-          'table' => [
+          'table' => 
+          array (
             'type' => 'النوع',
             'number' => 'الرقم',
             'issuer' => 'جهة الإصدار',
@@ -3147,20 +2629,23 @@ return array (
             'status' => 'الحالة',
             'front' => 'الأمام',
             'back' => 'الخلف',
-          ],
-          'types' => [
+          ),
+          'types' => 
+          array (
             'license' => 'رخصة السيارة',
             'insurance' => 'تأمين السيارة',
             'purchase_contract' => 'عقد الشراء',
-          ],
-          'statuses' => [
+          ),
+          'statuses' => 
+          array (
             'expired' => 'منتهي',
             'expiring_soon' => 'قريب الانتهاء',
             'new' => 'جديد',
             'inactive' => 'غير نشط',
             'active' => 'فعّال',
-          ],
-          'form' => [
+          ),
+          'form' => 
+          array (
             'edit_title' => 'تعديل وثيقة السيارة',
             'create_title' => 'وثيقة سيارة جديدة',
             'back' => 'رجوع',
@@ -3177,9 +2662,10 @@ return array (
             'cancel' => 'إلغاء',
             'save_changes' => 'حفظ التعديلات',
             'create_document' => 'إنشاء الوثيقة',
-          ],
-        ],
-        'calendar' => [
+          ),
+        ),
+        'calendar' => 
+        array (
           'head_title' => 'تقويم السيارة',
           'title' => 'تقويم حجوزات السيارة',
           'back_to_cars' => 'العودة إلى السيارات',
@@ -3200,7 +2686,8 @@ return array (
           'reservations_in' => 'الحجوزات في :range',
           'no_reservations_in_selected_range' => 'لا توجد حجوزات لهذه السيارة في النطاق المحدد.',
           'open_reservation' => 'فتح الحجز',
-          'weekdays' => [
+          'weekdays' => 
+          array (
             'sun' => 'الأحد',
             'mon' => 'الاثنين',
             'tue' => 'الثلاثاء',
@@ -3208,8 +2695,8 @@ return array (
             'thu' => 'الخميس',
             'fri' => 'الجمعة',
             'sat' => 'السبت',
-          ],
-        ],
+          ),
+        ),
         'delete_dialog' => 
         array (
           'title' => 'حذف السيارة',
@@ -3229,162 +2716,170 @@ return array (
           'create_reservation' => 'Create Reservation',
           'all_branches' => 'All branches',
         ),
-                'edit' => [
-                    'edit_reservation' => 'تعديل الحجز',
-                    'create_reservation' => 'إنشاء حجز',
-                    'downtown_office' => 'مكتب وسط المدينة',
-                    'airport_terminal_1' => 'مطار - صالة 1',
-                    'airport_terminal_2' => 'مطار - صالة 2',
-                    'central_station' => 'المحطة المركزية',
-                    'mall_plaza' => 'مول بلازا',
-                    'hotel_district' => 'منطقة الفنادق',
-                    'business_district' => 'المنطقة التجارية',
-                    'the_end_date_must_be_after_the_start_date' => 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية.',
-                    'the_selected_range_includes_unavailable_days' => 'النطاق المحدد يحتوي على أيام غير متاحة.',
-                    'unable_to_load_the_car_availability_calendar' => 'تعذر تحميل تقويم توفر السيارة.',
-                    'unable_to_create_client' => 'تعذر إنشاء العميل.',
-                    'back' => 'رجوع',
-                    'reservation' => 'رقم الحجز',
-                    'client' => 'العميل',
-                    'car' => 'السيارة',
-                    'availability_calendar' => 'تقويم التوفر',
-                    'green_days_are_free_red_days_are_already_booked_click_a_free_day_to_fill_rental_' => 'الأيام الخضراء متاحة. الأيام الحمراء محجوزة. اضغط على يوم متاح لتعبئة التواريخ.',
-                    'free' => 'متاح',
-                    'booked' => 'محجوز',
-                    'selected' => 'محدد',
-                    'select_a_car_first_to_load_the_availability_calendar' => 'اختر السيارة أولًا لعرض تقويم التوفر.',
-                    'loading_availability_calendar' => 'جاري تحميل تقويم التوفر...',
-                    'previous' => 'السابق',
-                    'next' => 'التالي',
-                    'closed' => 'مغلق',
-                    'this_reservation_is_locked_because_its_return_report_is_marked_paid' => 'هذا الحجز مقفل لأن تقرير العودة عليه حالة مدفوعة.',
-                    'create_client' => 'إنشاء عميل',
-                    'select_client' => 'اختر العميل',
-                    'search_client' => 'ابحث عن العميل...',
-                    'no_clients_found' => 'لا يوجد عملاء.',
-                    'select_car' => 'اختر السيارة',
-                    'search_car' => 'ابحث عن السيارة...',
-                    'no_cars_found' => 'لا توجد سيارات.',
-                    'current_car_damages' => 'الأضرار الحالية للسيارة',
-                    'zone' => 'المنطقة',
-                    'view' => 'الجهة',
-                    'type' => 'النوع',
-                    'severity' => 'الدرجة',
-                    'qty' => 'الكمية',
-                    'start_date' => 'تاريخ البداية',
-                    'end_date' => 'تاريخ النهاية',
-                    'pickup_time' => 'وقت الاستلام',
-                    'return_time' => 'وقت الإرجاع',
-                    'return_time_is_fixed_by_tenant_settings' => 'وقت الإرجاع ثابت حسب إعدادات المستأجر.',
-                    'return_time_follows_pickup_time' => 'وقت الإرجاع يطابق وقت الاستلام.',
-                    'pickup_location' => 'موقع الاستلام',
-                    'select_pickup_location' => 'اختر موقع الاستلام',
-                    'return_location' => 'موقع الإرجاع',
-                    'select_return_location' => 'اختر موقع الإرجاع',
-                    'return_location_fee' => 'رسوم موقع الإرجاع',
-                    'defaults_from_reservation_settings_and_can_be_overridden_for_this_reservation_on' => 'القيمة الافتراضية من إعدادات الحجز ويمكن تعديلها لهذا الحجز فقط.',
-                    'discount_type' => 'نوع الخصم',
-                    'fixed_amount' => 'مبلغ ثابت',
-                    'percentage' => 'نسبة مئوية',
-                    'discount_percentage' => 'نسبة الخصم',
-                    'discount_amount' => 'مبلغ الخصم',
-                    'calculated_discount' => 'الخصم المحسوب: :amount',
-                    'cash_deposit' => 'العربون النقدي',
-                    'optional_deposit_amount' => 'مبلغ العربون إن وجد',
-                    'a_completed_cash_payment_will_be_created_automatically' => 'سيتم إنشاء دفعة نقدية مكتملة تلقائيًا.',
-                    'status' => 'الحالة',
-                    'system_managed_status_it_will_be_updated_automatically' => 'الحالة تُدار تلقائيًا ولا يمكن تعديلها يدويًا.',
-                    'notes' => 'ملاحظات',
-                    'internal_notes' => 'ملاحظات داخلية...',
-                    'cancellation_reason' => 'سبب الإلغاء',
-                    'why_was_this_reservation_cancelled' => 'لماذا تم إلغاء هذا الحجز؟',
-                    'saving' => 'جاري الحفظ...',
-                    'save_changes' => 'حفظ التغييرات',
-                    'cancel' => 'إلغاء',
-                    'add_a_new_client_without_leaving_this_reservation_page' => 'أضف عميلًا جديدًا بدون مغادرة صفحة الحجز.',
-                    'full_name' => 'الاسم الكامل',
-                    'email' => 'البريد الإلكتروني',
-                    'civil_number' => 'الرقم المدني',
-                    'password' => 'كلمة المرور',
-                    'confirm_password' => 'تأكيد كلمة المرور',
-                    'creating' => 'جاري الإنشاء...',
-                    'client_has_outstanding_debt' => 'العميل مديون',
-                    'debt_notice' => 'هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة :amount. يمكنك المتابعة بعد تأكيد المدير.',
-                    'debt_submit_question' => 'هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة :amount. هل تريد إنشاء الحجز له رغم ذلك؟',
-                    'debt_continue_question' => 'هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة :amount. هل تريد المتابعة مع هذا العميل؟',
-                    'yes_create_reservation' => 'نعم، إنشاء الحجز',
-                    'yes_continue' => 'نعم، المتابعة',
-                    'no_cancel' => 'لا، إلغاء',
-                    'no_choose_another_client' => 'لا، اختر عميلاً آخر',
-                ],
-                'show' => [
-                    'head_title' => 'الحجز :number',
-                    'title' => 'الحجز :number',
-                    'locked_message' => 'هذا الحجز مقفل لأن تقرير العودة عليه حالة مدفوعة.',
-                    'confirm_collect_final_cash' => 'هل تريد تسجيل الرصيد المتبقي كدفعة نقدية وإكمال هذا الحجز؟',
-                    'duration_days' => ':count يوم',
-                    'actions' => [
-                        'show_contract' => 'عرض العقد',
-                        'create_contract' => 'إنشاء عقد',
-                        'back' => 'رجوع',
-                        'edit' => 'تعديل',
-                        'print' => 'طباعة',
-                        'collect_final_cash' => 'تحصيل النقد النهائي',
-                    ],
-                    'sections' => [
-                        'client' => 'العميل',
-                        'car' => 'السيارة',
-                        'reservation_details' => 'تفاصيل الحجز',
-                        'amounts' => 'المبالغ',
-                        'payments' => 'المدفوعات',
-                    ],
-                    'fields' => [
-                        'status' => 'الحالة',
-                        'total' => 'الإجمالي',
-                        'name' => 'الاسم',
-                        'email' => 'البريد الإلكتروني',
-                        'car' => 'السيارة',
-                        'plate' => 'اللوحة',
-                        'start_date' => 'تاريخ البداية',
-                        'end_date' => 'تاريخ النهاية',
-                        'duration' => 'المدة',
-                        'pickup_location' => 'موقع الاستلام',
-                        'return_location' => 'موقع الإرجاع',
-                        'cancelled_at' => 'تاريخ الإلغاء',
-                        'reason' => 'السبب',
-                        'daily_rate' => 'السعر اليومي',
-                        'subtotal' => 'المجموع الفرعي',
-                        'tax' => 'الضريبة',
-                        'discount' => 'الخصم',
-                        'amount_paid' => 'المبلغ المدفوع',
-                        'balance_due' => 'الرصيد المتبقي',
-                        'amount' => 'المبلغ',
-                        'method' => 'الطريقة',
-                        'processed' => 'تمت المعالجة',
-                    ],
-                    'payment_methods' => [
-                        'cash' => 'نقداً',
-                        'card' => 'بطاقة',
-                        'visa' => 'فيزا',
-                        'bank_transfer' => 'تحويل بنكي',
-                        'online' => 'دفع إلكتروني',
-                        'myfatoorah' => 'ماي فاتورة',
-                        'wallet' => 'محفظة',
-                    ],
-                    'payment_statuses' => [
-                        'completed' => 'مكتملة',
-                        'pending' => 'قيد الانتظار',
-                        'failed' => 'فشلت',
-                        'refunded' => 'مستردة',
-                        'cancelled' => 'ملغاة',
-                        'paid' => 'مدفوعة',
-                        'partial' => 'مدفوعة جزئياً',
-                        'not_paid' => 'غير مدفوعة',
-                    ],
-                    'empty' => [
-                        'payments' => 'لا توجد مدفوعات مسجلة.',
-                    ],
-                ],
+        'edit' => 
+        array (
+          'edit_reservation' => 'تعديل الحجز',
+          'create_reservation' => 'إنشاء حجز',
+          'downtown_office' => 'مكتب وسط المدينة',
+          'airport_terminal_1' => 'مطار - صالة 1',
+          'airport_terminal_2' => 'مطار - صالة 2',
+          'central_station' => 'المحطة المركزية',
+          'mall_plaza' => 'مول بلازا',
+          'hotel_district' => 'منطقة الفنادق',
+          'business_district' => 'المنطقة التجارية',
+          'the_end_date_must_be_after_the_start_date' => 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية.',
+          'the_selected_range_includes_unavailable_days' => 'النطاق المحدد يحتوي على أيام غير متاحة.',
+          'unable_to_load_the_car_availability_calendar' => 'تعذر تحميل تقويم توفر السيارة.',
+          'unable_to_create_client' => 'تعذر إنشاء العميل.',
+          'back' => 'رجوع',
+          'reservation' => 'رقم الحجز',
+          'client' => 'العميل',
+          'car' => 'السيارة',
+          'availability_calendar' => 'تقويم التوفر',
+          'green_days_are_free_red_days_are_already_booked_click_a_free_day_to_fill_rental_' => 'الأيام الخضراء متاحة. الأيام الحمراء محجوزة. اضغط على يوم متاح لتعبئة التواريخ.',
+          'free' => 'متاح',
+          'booked' => 'محجوز',
+          'selected' => 'محدد',
+          'select_a_car_first_to_load_the_availability_calendar' => 'اختر السيارة أولًا لعرض تقويم التوفر.',
+          'loading_availability_calendar' => 'جاري تحميل تقويم التوفر...',
+          'previous' => 'السابق',
+          'next' => 'التالي',
+          'closed' => 'مغلق',
+          'this_reservation_is_locked_because_its_return_report_is_marked_paid' => 'هذا الحجز مقفل لأن تقرير العودة عليه حالة مدفوعة.',
+          'create_client' => 'إنشاء عميل',
+          'select_client' => 'اختر العميل',
+          'search_client' => 'ابحث عن العميل...',
+          'no_clients_found' => 'لا يوجد عملاء.',
+          'select_car' => 'اختر السيارة',
+          'search_car' => 'ابحث عن السيارة...',
+          'no_cars_found' => 'لا توجد سيارات.',
+          'current_car_damages' => 'الأضرار الحالية للسيارة',
+          'zone' => 'المنطقة',
+          'view' => 'الجهة',
+          'type' => 'النوع',
+          'severity' => 'الدرجة',
+          'qty' => 'الكمية',
+          'start_date' => 'تاريخ البداية',
+          'end_date' => 'تاريخ النهاية',
+          'pickup_time' => 'وقت الاستلام',
+          'return_time' => 'وقت الإرجاع',
+          'return_time_is_fixed_by_tenant_settings' => 'وقت الإرجاع ثابت حسب إعدادات المستأجر.',
+          'return_time_follows_pickup_time' => 'وقت الإرجاع يطابق وقت الاستلام.',
+          'pickup_location' => 'موقع الاستلام',
+          'select_pickup_location' => 'اختر موقع الاستلام',
+          'return_location' => 'موقع الإرجاع',
+          'select_return_location' => 'اختر موقع الإرجاع',
+          'return_location_fee' => 'رسوم موقع الإرجاع',
+          'defaults_from_reservation_settings_and_can_be_overridden_for_this_reservation_on' => 'القيمة الافتراضية من إعدادات الحجز ويمكن تعديلها لهذا الحجز فقط.',
+          'discount_type' => 'نوع الخصم',
+          'fixed_amount' => 'مبلغ ثابت',
+          'percentage' => 'نسبة مئوية',
+          'discount_percentage' => 'نسبة الخصم',
+          'discount_amount' => 'مبلغ الخصم',
+          'calculated_discount' => 'الخصم المحسوب: :amount',
+          'cash_deposit' => 'العربون النقدي',
+          'optional_deposit_amount' => 'مبلغ العربون إن وجد',
+          'a_completed_cash_payment_will_be_created_automatically' => 'سيتم إنشاء دفعة نقدية مكتملة تلقائيًا.',
+          'status' => 'الحالة',
+          'system_managed_status_it_will_be_updated_automatically' => 'الحالة تُدار تلقائيًا ولا يمكن تعديلها يدويًا.',
+          'notes' => 'ملاحظات',
+          'internal_notes' => 'ملاحظات داخلية...',
+          'cancellation_reason' => 'سبب الإلغاء',
+          'why_was_this_reservation_cancelled' => 'لماذا تم إلغاء هذا الحجز؟',
+          'saving' => 'جاري الحفظ...',
+          'save_changes' => 'حفظ التغييرات',
+          'cancel' => 'إلغاء',
+          'add_a_new_client_without_leaving_this_reservation_page' => 'أضف عميلًا جديدًا بدون مغادرة صفحة الحجز.',
+          'full_name' => 'الاسم الكامل',
+          'email' => 'البريد الإلكتروني',
+          'civil_number' => 'الرقم المدني',
+          'password' => 'كلمة المرور',
+          'confirm_password' => 'تأكيد كلمة المرور',
+          'creating' => 'جاري الإنشاء...',
+          'client_has_outstanding_debt' => 'العميل مديون',
+          'debt_notice' => 'هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة :amount. يمكنك المتابعة بعد تأكيد المدير.',
+          'debt_submit_question' => 'هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة :amount. هل تريد إنشاء الحجز له رغم ذلك؟',
+          'debt_continue_question' => 'هذا العميل لديه رسوم رجوع غير مدفوعة بقيمة :amount. هل تريد المتابعة مع هذا العميل؟',
+          'yes_create_reservation' => 'نعم، إنشاء الحجز',
+          'yes_continue' => 'نعم، المتابعة',
+          'no_cancel' => 'لا، إلغاء',
+          'no_choose_another_client' => 'لا، اختر عميلاً آخر',
+        ),
+        'show' => 
+        array (
+          'head_title' => 'الحجز :number',
+          'title' => 'الحجز :number',
+          'locked_message' => 'هذا الحجز مقفل لأن تقرير العودة عليه حالة مدفوعة.',
+          'confirm_collect_final_cash' => 'هل تريد تسجيل الرصيد المتبقي كدفعة نقدية وإكمال هذا الحجز؟',
+          'duration_days' => ':count يوم',
+          'actions' => 
+          array (
+            'show_contract' => 'عرض العقد',
+            'create_contract' => 'إنشاء عقد',
+            'back' => 'رجوع',
+            'edit' => 'تعديل',
+            'print' => 'طباعة',
+            'collect_final_cash' => 'تحصيل النقد النهائي',
+          ),
+          'sections' => 
+          array (
+            'client' => 'العميل',
+            'car' => 'السيارة',
+            'reservation_details' => 'تفاصيل الحجز',
+            'amounts' => 'المبالغ',
+            'payments' => 'المدفوعات',
+          ),
+          'fields' => 
+          array (
+            'status' => 'الحالة',
+            'total' => 'الإجمالي',
+            'name' => 'الاسم',
+            'email' => 'البريد الإلكتروني',
+            'car' => 'السيارة',
+            'plate' => 'اللوحة',
+            'start_date' => 'تاريخ البداية',
+            'end_date' => 'تاريخ النهاية',
+            'duration' => 'المدة',
+            'pickup_location' => 'موقع الاستلام',
+            'return_location' => 'موقع الإرجاع',
+            'cancelled_at' => 'تاريخ الإلغاء',
+            'reason' => 'السبب',
+            'daily_rate' => 'السعر اليومي',
+            'subtotal' => 'المجموع الفرعي',
+            'tax' => 'الضريبة',
+            'discount' => 'الخصم',
+            'amount_paid' => 'المبلغ المدفوع',
+            'balance_due' => 'الرصيد المتبقي',
+            'amount' => 'المبلغ',
+            'method' => 'الطريقة',
+            'processed' => 'تمت المعالجة',
+          ),
+          'payment_methods' => 
+          array (
+            'cash' => 'نقداً',
+            'card' => 'بطاقة',
+            'visa' => 'فيزا',
+            'bank_transfer' => 'تحويل بنكي',
+            'online' => 'دفع إلكتروني',
+            'myfatoorah' => 'ماي فاتورة',
+            'wallet' => 'محفظة',
+          ),
+          'payment_statuses' => 
+          array (
+            'completed' => 'مكتملة',
+            'pending' => 'قيد الانتظار',
+            'failed' => 'فشلت',
+            'refunded' => 'مستردة',
+            'cancelled' => 'ملغاة',
+            'paid' => 'مدفوعة',
+            'partial' => 'مدفوعة جزئياً',
+            'not_paid' => 'غير مدفوعة',
+          ),
+          'empty' => 
+          array (
+            'payments' => 'لا توجد مدفوعات مسجلة.',
+          ),
+        ),
       ),
       'reservation_settings' => 
       array (
@@ -3512,7 +3007,8 @@ return array (
           'title' => 'المدفوعات',
           'empty' => 'لا توجد مدفوعات.',
         ),
-        'debtors' => [
+        'debtors' => 
+        array (
           'title' => 'المديونين',
           'description' => 'العملاء الذين لديهم رسوم رجوع غير مدفوعة.',
           'all_payments' => 'كل الدفعات',
@@ -3524,7 +3020,8 @@ return array (
           'all_branches' => 'كل الفروع',
           'open_return_report' => 'فتح تقرير الرجوع',
           'empty' => 'لا توجد مديونيات رجوع غير مدفوعة.',
-          'table' => [
+          'table' => 
+          array (
             'client' => 'العميل',
             'report' => 'التقرير',
             'reservation_contract' => 'الحجز / العقد',
@@ -3532,91 +3029,110 @@ return array (
             'branch' => 'الفرع',
             'amount' => 'المبلغ',
             'action' => 'إجراء',
-          ],
-        ],
+          ),
+        ),
       ),
-      'ai_insights' => [
-          'index' => [
-              'critical_insights' => 'تنبيهات حرجة',
-              'uncollected_losses' => 'خسائر غير محصلة',
-              'high_risk_customers' => 'عملاء عالي الخطورة',
-              'pricing_opportunities' => 'فرص تسعير',
-              'ai_insights' => 'تحليلات الذكاء الاصطناعي',
-              'internal_risk_pricing_collections_and_fleet_signals_prepared_for_openai_market_analysis' => 'تحليل داخلي للمخاطر والتسعير والتحصيل والأسطول، جاهز لاحقا لدراسة السوق عبر OpenAI.',
-              'all_branches' => 'كل الفروع',
-              'refresh' => 'تحديث',
-              'generating' => 'جاري التوليد...',
-              'generate_report' => 'توليد تقرير',
-              'latest_saved_ai_report' => 'آخر تقرير محفوظ',
-              'saved_reports_keep_the_internal_data_snapshot_that_will_be_sent_to_openai_in_the_next_phas' => 'التقارير المحفوظة تحتفظ بنسخة بيانات التحليل الداخلي التي سترسل إلى OpenAI في المرحلة التالية.',
-              'ai_failed' => 'فشل AI',
-              'ai_completed' => 'اكتمل AI',
-              'internal_ready' => 'الداخلي جاهز',
-              'period' => 'الفترة',
-              'model' => 'النموذج',
-              'generated' => 'تم التوليد',
-              'analyzing' => 'جاري التحليل...',
-              'run_openai_market_study' => 'تشغيل دراسة OpenAI',
-              'export_pdf' => 'تصدير PDF',
-              'export_excel' => 'تصدير Excel',
-              'openai_is_not_configured_yet' => 'OpenAI غير مفعّل حاليا.',
-              'no_saved_report_for_the_current_filter_yet_use_generate_report_to_create_the_first_snapsho' => 'لا يوجد تقرير محفوظ للفلاتر الحالية. استخدم توليد تقرير لإنشاء أول نسخة.',
-              'recent_snapshots' => 'آخر النسخ',
-              'no_saved_snapshots_yet' => 'لا توجد نسخ محفوظة بعد.',
-              'openai_analysis_result' => 'نتيجة تحليل OpenAI',
-              'risks' => 'المخاطر',
-              'opportunities' => 'الفرص',
-              'pricing_recommendations' => 'توصيات التسعير',
-              'collection_actions' => 'إجراءات التحصيل المقترحة',
-              'action_plan' => 'خطة العمل',
-              'market_sources' => 'مصادر السوق',
-              'prev_period' => 'الفترة السابقة',
-              'no_insights_found_for_this_period' => 'لا توجد تحليلات لهذه الفترة.',
-              'try_another_period_or_branch_after_more_operational_data_is_recorded' => 'جرّب فترة أو فرعا آخر بعد تسجيل بيانات تشغيل أكثر.',
-              'unprofitable_cars' => 'سيارات لا تحقق أرباحا',
-              'revenue_minus_maintenance_damages_and_open_violations' => 'الإيراد مطروحا منه الصيانة والأضرار والمخالفات المفتوحة.',
-              'revenue' => 'الإيراد',
-              'costs' => 'التكاليف',
-              'margin' => 'الهامش',
-              'no_unprofitable_cars_detected' => 'لا توجد سيارات خاسرة.',
-              'repeated_damage_cars' => 'سيارات معرضة لأضرار متكررة',
-              'damage_reports_damage_items_and_accidents_in_the_selected_period' => 'تقارير الأضرار وبنودها والحوادث خلال الفترة المحددة.',
-              'reports' => 'تقارير',
-              'items' => 'بنود',
-              'accidents' => 'حوادث',
-              'days_used' => 'أيام تشغيل',
-              'no_repeated_damage_pattern_detected' => 'لا يوجد نمط أضرار متكرر.',
-              'risk_score_from_overdue_contracts_unpaid_balance_damages_and_cancellations' => 'درجة خطورة من التأخير والديون والأضرار والإلغاءات.',
-              'reservations' => 'حجوزات',
-              'late' => 'متأخر',
-              'damages' => 'أضرار',
-              'unpaid' => 'غير محصل',
-              'no_high_risk_customers_detected' => 'لا يوجد عملاء عالي الخطورة.',
-              'problem_contracts' => 'عقود معرضة للمشاكل',
-              'active_or_pending_contracts_with_late_return_or_unpaid_return_charges' => 'عقود نشطة أو معلقة فيها تأخير أو رسوم رجوع غير مدفوعة.',
-              'end_date' => 'تاريخ النهاية',
-              'late_days' => 'أيام التأخير',
-              'no_problem_contracts_detected' => 'لا توجد عقود معرضة للمشاكل.',
-              'price_opportunities' => 'فرص زيادة الأسعار',
-              'days' => 'يوم',
-              'applying' => 'جاري التطبيق...',
-              'apply' => 'تطبيق',
-              'no_pricing_opportunities_detected_yet' => 'لا توجد فرص تسعير حاليا.',
-              'high_demand_days' => 'أيام الطلب المرتفع',
-              'rental_days' => 'أيام تأجير',
-              'no_demand_pattern_detected' => 'لا يوجد نمط طلب واضح.',
-          ],
-      ],
+      'ai_insights' => 
+      array (
+        'index' => 
+        array (
+          'critical_insights' => 'تنبيهات حرجة',
+          'uncollected_losses' => 'خسائر غير محصلة',
+          'high_risk_customers' => 'عملاء عالي الخطورة',
+          'pricing_opportunities' => 'فرص تسعير',
+          'ai_insights' => 'تحليلات الذكاء الاصطناعي',
+          'internal_risk_pricing_collections_and_fleet_signals_prepared_for_openai_market_analysis' => 'تحليل داخلي للمخاطر والتسعير والتحصيل والأسطول، جاهز لاحقا لدراسة السوق عبر OpenAI.',
+          'all_branches' => 'كل الفروع',
+          'refresh' => 'تحديث',
+          'generating' => 'جاري التوليد...',
+          'generate_report' => 'توليد تقرير',
+          'latest_saved_ai_report' => 'آخر تقرير محفوظ',
+          'saved_reports_keep_the_internal_data_snapshot_that_will_be_sent_to_openai_in_the_next_phas' => 'التقارير المحفوظة تحتفظ بنسخة بيانات التحليل الداخلي التي سترسل إلى OpenAI في المرحلة التالية.',
+          'ai_failed' => 'فشل AI',
+          'ai_completed' => 'اكتمل AI',
+          'internal_ready' => 'الداخلي جاهز',
+          'period' => 'الفترة',
+          'model' => 'النموذج',
+          'generated' => 'تم التوليد',
+          'analyzing' => 'جاري التحليل...',
+          'run_openai_market_study' => 'تشغيل دراسة OpenAI',
+          'export_pdf' => 'تصدير PDF',
+          'export_excel' => 'تصدير Excel',
+          'openai_is_not_configured_yet' => 'OpenAI غير مفعّل حاليا.',
+          'no_saved_report_for_the_current_filter_yet_use_generate_report_to_create_the_first_snapsho' => 'لا يوجد تقرير محفوظ للفلاتر الحالية. استخدم توليد تقرير لإنشاء أول نسخة.',
+          'recent_snapshots' => 'آخر النسخ',
+          'no_saved_snapshots_yet' => 'لا توجد نسخ محفوظة بعد.',
+          'openai_analysis_result' => 'نتيجة تحليل OpenAI',
+          'risks' => 'المخاطر',
+          'opportunities' => 'الفرص',
+          'pricing_recommendations' => 'توصيات التسعير',
+          'collection_actions' => 'إجراءات التحصيل المقترحة',
+          'action_plan' => 'خطة العمل',
+          'market_sources' => 'مصادر السوق',
+          'prev_period' => 'الفترة السابقة',
+          'no_insights_found_for_this_period' => 'لا توجد تحليلات لهذه الفترة.',
+          'try_another_period_or_branch_after_more_operational_data_is_recorded' => 'جرّب فترة أو فرعا آخر بعد تسجيل بيانات تشغيل أكثر.',
+          'unprofitable_cars' => 'سيارات لا تحقق أرباحا',
+          'revenue_minus_maintenance_damages_and_open_violations' => 'الإيراد مطروحا منه الصيانة والأضرار والمخالفات المفتوحة.',
+          'revenue' => 'الإيراد',
+          'costs' => 'التكاليف',
+          'margin' => 'الهامش',
+          'no_unprofitable_cars_detected' => 'لا توجد سيارات خاسرة.',
+          'repeated_damage_cars' => 'سيارات معرضة لأضرار متكررة',
+          'damage_reports_damage_items_and_accidents_in_the_selected_period' => 'تقارير الأضرار وبنودها والحوادث خلال الفترة المحددة.',
+          'reports' => 'تقارير',
+          'items' => 'بنود',
+          'accidents' => 'حوادث',
+          'days_used' => 'أيام تشغيل',
+          'no_repeated_damage_pattern_detected' => 'لا يوجد نمط أضرار متكرر.',
+          'risk_score_from_overdue_contracts_unpaid_balance_damages_and_cancellations' => 'درجة خطورة من التأخير والديون والأضرار والإلغاءات.',
+          'reservations' => 'حجوزات',
+          'late' => 'متأخر',
+          'damages' => 'أضرار',
+          'unpaid' => 'غير محصل',
+          'no_high_risk_customers_detected' => 'لا يوجد عملاء عالي الخطورة.',
+          'problem_contracts' => 'عقود معرضة للمشاكل',
+          'active_or_pending_contracts_with_late_return_or_unpaid_return_charges' => 'عقود نشطة أو معلقة فيها تأخير أو رسوم رجوع غير مدفوعة.',
+          'end_date' => 'تاريخ النهاية',
+          'late_days' => 'أيام التأخير',
+          'no_problem_contracts_detected' => 'لا توجد عقود معرضة للمشاكل.',
+          'price_opportunities' => 'فرص زيادة الأسعار',
+          'days' => 'يوم',
+          'applying' => 'جاري التطبيق...',
+          'apply' => 'تطبيق',
+          'no_pricing_opportunities_detected_yet' => 'لا توجد فرص تسعير حاليا.',
+          'high_demand_days' => 'أيام الطلب المرتفع',
+          'rental_days' => 'أيام تأجير',
+          'no_demand_pattern_detected' => 'لا يوجد نمط طلب واضح.',
+        ),
+      ),
       'clients' => 
       array (
         'index' => 
         array (
           'head_title' => 'العملاء',
           'title' => 'العملاء',
+          'create_client' => 'إنشاء عميل',
           'search_placeholder' => 'ابحث بالاسم أو البريد الإلكتروني...',
+          'all_branches' => 'كل الفروع',
+          'client_status' => 'حالة العميل',
+          'notes' => 'ملاحظة',
           'empty' => 'لا يوجد عملاء.',
+          'statuses' => 
+          array (
+            'active' => 'نشط',
+            'suspended' => 'موقوف',
+          ),
+          'client_statuses' => 
+          array (
+            'good' => 'جيد',
+            'info' => 'معلومات',
+            'warning' => 'تحذير',
+            'danger' => 'خطر',
+          ),
         ),
-        'create' => [
+        'create' => 
+        array (
           'head_title' => 'إنشاء عميل',
           'title' => 'إنشاء عميل',
           'back' => 'رجوع',
@@ -3635,8 +3151,9 @@ return array (
           'creating' => 'جاري الإنشاء...',
           'create_client' => 'إنشاء عميل',
           'cancel' => 'إلغاء',
-        ],
-        'show' => [
+        ),
+        'show' => 
+        array (
           'client' => 'العميل',
           'active' => 'نشط',
           'suspended' => 'موقوف',
@@ -3680,7 +3197,7 @@ return array (
           'example_customer_needs_manual_review_before_next_booking' => 'مثال: العميل يحتاج مراجعة قبل الحجز القادم.',
           'saving' => 'جارٍ الحفظ...',
           'save_note' => 'حفظ الملاحظة',
-        ],
+        ),
       ),
       'support' => 
       array (
@@ -3694,788 +3211,295 @@ return array (
           'search_placeholder' => 'ابحث برقم التذكرة أو الموضوع أو المرسل...',
           'ticket_number' => 'رقم التذكرة',
           'empty' => 'لا توجد تذاكر دعم.',
-        ),      ),
-
-      'support_platform' => [
-
-          'platform_support' => 'دعم المنصة',
-
-          'create_tickets_for_super_admin_and_track_responses' => 'أنشئ تذاكر للسوبر أدمن وتابع الردود عليها.',
-
-          'new_ticket' => 'تذكرة جديدة',
-
-          'subject' => 'الموضوع',
-
-          'message' => 'الرسالة',
-
-          'sending' => 'جاري الإرسال...',
-
-          'create_ticket' => 'إنشاء تذكرة',
-
-          'my_platform_tickets' => 'تذاكر المنصة الخاصة بي',
-
-          'ticket' => 'التذكرة',
-
-          'status' => 'الحالة',
-
-          'last_message' => 'آخر رسالة',
-
-          'created' => 'تاريخ الإنشاء',
-
-          'open' => 'فتح',
-
-          'no_tickets_yet' => 'لا توجد تذاكر بعد.',
-
-          'platform_ticket' => 'تذكرة المنصة',
-
-          'employee_name' => 'اسم الموظف:',
-
-          'employee_email' => 'بريد الموظف:',
-
-          'unassigned' => 'غير معيّن',
-
-          'back' => 'رجوع',
-
-          'close' => 'إغلاق',
-
-          'no_messages_yet' => 'لا توجد رسائل بعد.',
-
-          'reply' => 'رد',
-
-          'send_reply' => 'إرسال الرد',
-
-          'statuses' => [
-
-              'new' => 'جديدة',
-
-              'in_progress' => 'قيد المعالجة',
-
-              'closed' => 'مغلقة',
-
-          ],
-
-      ],
-      'car_discounts' => [
-
-          'delete_this_automatic_discount' => 'حذف هذا الخصم التلقائي؟',
-
-          'automatic_discounts' => 'الخصومات التلقائية',
-
-          'auto_apply_discounts_for_booking_based_on_car_and_conditions' => 'تُطبَّق الخصومات تلقائيًا على الحجز حسب السيارة والشروط.',
-
-          'new_auto_discount' => '+ خصم تلقائي جديد',
-
-          'search_by_name' => 'ابحث بالاسم...',
-
-          'all_statuses' => 'كل الحالات',
-
-          'active' => 'نشط',
-
-          'inactive' => 'غير نشط',
-
-          'all_cars' => 'كل السيارات',
-
-          'search' => 'بحث',
-
-          'clear' => 'مسح',
-
-          'name' => 'الاسم',
-
-          'scope' => 'النطاق',
-
-          'value' => 'القيمة',
-
-          'priority' => 'الأولوية',
-
-          'status' => 'الحالة',
-
-          'edit' => 'تعديل',
-
-          'delete' => 'حذف',
-
-          'no_automatic_discounts_found' => 'لا توجد خصومات تلقائية.',
-
-          'percentage' => 'نسبة مئوية',
-
-          'fixed_amount' => 'مبلغ ثابت',
-
-          'edit_auto_discount' => 'تعديل خصم تلقائي',
-
-          'create_auto_discount' => 'إنشاء خصم تلقائي',
-
-          'back' => 'رجوع',
-
-          'car_scope' => 'نطاق السيارة',
-
-          'type' => 'النوع',
-
-          'max_discount_amount_optional' => 'أقصى مبلغ للخصم (اختياري)',
-
-          'min_order_amount_optional' => 'الحد الأدنى لقيمة الطلب (اختياري)',
-
-          'min_rental_days_optional' => 'الحد الأدنى لأيام الإيجار (اختياري)',
-
-          'starts_at_optional' => 'تاريخ البدء (اختياري)',
-
-          'ends_at_optional' => 'تاريخ الانتهاء (اختياري)',
-
-          'description_optional' => 'الوصف (اختياري)',
-
-          'saving' => 'جارٍ الحفظ...',
-
-          'save_changes' => 'حفظ التغييرات',
-
-          'cancel' => 'إلغاء',
-
-      ],
-
+        ),
+      ),
+      'support_platform' => 
+      array (
+        'platform_support' => 'دعم المنصة',
+        'create_tickets_for_super_admin_and_track_responses' => 'أنشئ تذاكر للسوبر أدمن وتابع الردود عليها.',
+        'new_ticket' => 'تذكرة جديدة',
+        'subject' => 'الموضوع',
+        'message' => 'الرسالة',
+        'sending' => 'جاري الإرسال...',
+        'create_ticket' => 'إنشاء تذكرة',
+        'my_platform_tickets' => 'تذاكر المنصة الخاصة بي',
+        'ticket' => 'التذكرة',
+        'status' => 'الحالة',
+        'last_message' => 'آخر رسالة',
+        'created' => 'تاريخ الإنشاء',
+        'open' => 'فتح',
+        'no_tickets_yet' => 'لا توجد تذاكر بعد.',
+        'platform_ticket' => 'تذكرة المنصة',
+        'employee_name' => 'اسم الموظف:',
+        'employee_email' => 'بريد الموظف:',
+        'unassigned' => 'غير معيّن',
+        'back' => 'رجوع',
+        'close' => 'إغلاق',
+        'no_messages_yet' => 'لا توجد رسائل بعد.',
+        'reply' => 'رد',
+        'send_reply' => 'إرسال الرد',
+        'statuses' => 
+        array (
+          'new' => 'جديدة',
+          'in_progress' => 'قيد المعالجة',
+          'closed' => 'مغلقة',
+        ),
+      ),
+      'car_discounts' => 
+      array (
+        'delete_this_automatic_discount' => 'حذف هذا الخصم التلقائي؟',
+        'automatic_discounts' => 'الخصومات التلقائية',
+        'auto_apply_discounts_for_booking_based_on_car_and_conditions' => 'تُطبَّق الخصومات تلقائيًا على الحجز حسب السيارة والشروط.',
+        'new_auto_discount' => '+ خصم تلقائي جديد',
+        'search_by_name' => 'ابحث بالاسم...',
+        'all_statuses' => 'كل الحالات',
+        'active' => 'نشط',
+        'inactive' => 'غير نشط',
+        'all_cars' => 'كل السيارات',
+        'search' => 'بحث',
+        'clear' => 'مسح',
+        'name' => 'الاسم',
+        'scope' => 'النطاق',
+        'value' => 'القيمة',
+        'priority' => 'الأولوية',
+        'status' => 'الحالة',
+        'edit' => 'تعديل',
+        'delete' => 'حذف',
+        'no_automatic_discounts_found' => 'لا توجد خصومات تلقائية.',
+        'percentage' => 'نسبة مئوية',
+        'fixed_amount' => 'مبلغ ثابت',
+        'edit_auto_discount' => 'تعديل خصم تلقائي',
+        'create_auto_discount' => 'إنشاء خصم تلقائي',
+        'back' => 'رجوع',
+        'car_scope' => 'نطاق السيارة',
+        'type' => 'النوع',
+        'max_discount_amount_optional' => 'أقصى مبلغ للخصم (اختياري)',
+        'min_order_amount_optional' => 'الحد الأدنى لقيمة الطلب (اختياري)',
+        'min_rental_days_optional' => 'الحد الأدنى لأيام الإيجار (اختياري)',
+        'starts_at_optional' => 'تاريخ البدء (اختياري)',
+        'ends_at_optional' => 'تاريخ الانتهاء (اختياري)',
+        'description_optional' => 'الوصف (اختياري)',
+        'saving' => 'جارٍ الحفظ...',
+        'save_changes' => 'حفظ التغييرات',
+        'cancel' => 'إلغاء',
+      ),
       'reports' => 
       array (
-
-
-          'all_branches' => 'كل الفروع',
-
-
-          'this_month' => 'هذا الشهر',
-
-
-          'last_month' => 'الشهر الماضي',
-
-
-          'this_year' => 'هذه السنة',
-
-
-          'last_year' => 'السنة الماضية',
-
-
-          'new_clients' => 'عملاء جدد',
-
-
-          'active_reservations' => 'الحجوزات النشطة',
-
-
-          'platform_visits' => 'زيارات المنصة',
-
-
-          'total_cars' => 'إجمالي السيارات',
-
-
-          'available_cars' => 'السيارات المتاحة',
-
-
-          'rented_cars' => 'السيارات المؤجرة',
-
-
-          'unavailable_cars' => 'السيارات غير المتاحة',
-
-
-          'pending' => 'قيد الانتظار',
-
-
-          'confirmed' => 'مؤكد',
-
-
-          'active' => 'نشط',
-
-
-          'completed' => 'مكتمل',
-
-
-          'cancelled' => 'ملغي',
-
-
-          'no_show' => 'لم يحضر',
-
-
-          'executive_report' => 'التقرير التنفيذي',
-
-
-          'most_important' => 'الأهم',
-
-
-          'uncollected_amounts' => 'المبالغ غير المحصلة',
-
-
-          'outstanding_debts' => 'الديون المستحقة',
-
-
-          'late_fees' => 'رسوم التأخير',
-
-
-          'cleaning_fees' => 'رسوم التنظيف',
-
-
-          'net_revenue' => 'صافي الإيرادات',
-
-
-          'delivered_cars' => 'السيارات المسلمة',
-
-
-          'returned_cars' => 'السيارات المستلمة',
-
-
-          'cars_out_of_service' => 'السيارات خارج الخدمة',
-
-
-          'contracts_ending_within_24_hours' => 'عقود تنتهي خلال 24 ساعة',
-
-
-          'missing_payments' => 'مدفوعات ناقصة',
-
-
-          'missing_documents' => 'وثائق ناقصة',
-
-
-          'contracts_without_signature' => 'عقود بدون توقيع',
-
-
-          'financial_summary' => 'الملخص المالي',
-
-
-          'operations_summary' => 'ملخص العمليات',
-
-
-          'fleet_insights' => 'تحليل الأسطول',
-
-
-          'action_alerts' => 'تنبيهات تحتاج إجراء',
-
-
-          'paid_revenue' => 'الإيرادات المدفوعة',
-
-
-          'pending_payments' => 'مدفوعات معلقة',
-
-
-          'return_extra_charges' => 'رسوم الرجوع الإضافية',
-
-
-          'damage_fees' => 'رسوم الأضرار',
-
-
-          'fuel_fees' => 'رسوم الوقود',
-
-
-          'discounts' => 'الخصومات',
-
-
-          'active_contracts' => 'العقود النشطة',
-
-
-          'pending_contracts' => 'عقود بانتظار التسليم',
-
-
-          'completed_contracts' => 'العقود المكتملة',
-
-
-          'overdue_contracts' => 'العقود المتأخرة',
-
-
-          'new_reservations' => 'الحجوزات الجديدة',
-
-
-          'cancelled_reservations' => 'الحجوزات الملغاة',
-
-
-          'fleet_utilization' => 'نسبة تشغيل الأسطول',
-
-
-          'revenue_per_car' => 'الإيراد لكل سيارة',
-
-
-          'damage_reports' => 'تقارير الأضرار',
-
-
-          'damage_items' => 'بنود الأضرار',
-
-
-          'estimated_damage_cost' => 'تكلفة الأضرار التقديرية',
-
-
-          'accident_reports' => 'بلاغات الحوادث',
-
-
-          'overdue_cars' => 'سيارات متأخرة',
-
-
-          'returns_due_today' => 'مرتجعات اليوم',
-
-
-          'pending_violations' => 'مخالفات معلقة',
-
-
-          'unpaid_return_reports' => 'تقارير رجوع غير مدفوعة',
-
-
-          'draft_damage_reports' => 'تقارير أضرار مسودة',
-
-
-          'outstanding_return_charges' => 'رسوم الرجوع غير المسددة',
-
-
-          'discounts_applied' => 'الخصومات المطبقة',
-
-
-          'active_contracts_that_need_return_follow_up_soon' => 'عقود نشطة تحتاج متابعة الرجوع قريباً.',
-
-
-          'payments_or_return_charges_that_still_need_collection' => 'مدفوعات أو رسوم رجوع ما زالت بحاجة إلى تحصيل.',
-
-
-          'active_or_pending_contracts_without_primary_driver_documents' => 'عقود نشطة أو معلقة بدون وثائق السائق الأساسي.',
-
-
-          'contracts_that_still_need_mobile_terms_confirmation' => 'عقود ما زالت تحتاج تأكيد الشروط من الموبايل.',
-
-
-          'active_contracts_past_their_return_date' => 'عقود نشطة تجاوزت تاريخ الرجوع.',
-
-
-          'active_contracts_scheduled_to_return_today' => 'عقود نشطة موعد رجوعها اليوم.',
-
-
-          'violations_that_still_need_review_or_payment' => 'مخالفات تحتاج مراجعة أو دفع.',
-
-
-          'return_reports_with_outstanding_extra_charges' => 'تقارير رجوع عليها رسوم إضافية غير مدفوعة.',
-
-
-          'damage_reports_waiting_for_review_or_completion' => 'تقارير أضرار بانتظار المراجعة أو الإكمال.',
-
-
-          'a_daily_or_weekly_owner_level_report_that_summarizes_money_operations_and_urgent_follow_up' => 'تقرير يومي أو أسبوعي لصاحب المكتب يلخص المال والتشغيل والتنبيهات التي تحتاج متابعة.',
-
-
-          'download_the_executive_report_using_the_same_period_and_branch_filters' => 'نزّل التقرير التنفيذي بنفس فلتر الفترة والفرع الحالي.',
-
-
-          'financial_report' => 'التقرير المالي',
-
-
-          'export_pdf' => 'تصدير PDF',
-
-
-          'export_excel' => 'تصدير Excel',
-
-
-          'financial_section' => 'قسم مالي',
-
-
-          'click_to_view_details' => 'انقر لعرض التفاصيل',
-
-
-          'reservations_report' => 'تقرير الحجوزات',
-
-
-          'canceled' => 'الحجوزات الملغاة',
-
-
-          'average_value' => 'متوسط قيمة الحجز',
-
-
-          'cancellation_rate' => 'نسبة الإلغاء',
-
-
-          'no_show_rate' => 'نسبة No Show',
-
-
-          'fleet_report' => 'تقرير الأسطول',
-
-
-          'utilization' => 'الاستخدام',
-
-
-          'rented_days_per_car' => 'عدد الأيام المؤجرة لكل سيارة',
-
-
-          'idle_days' => 'عدد الأيام المتوقفة',
-
-
-          'top_cars' => 'أفضل السيارات',
-
-
-          'view_all' => 'عرض الكل',
-
-
-          'highest_revenue' => 'أعلى إيراد',
-
-
-          'highest_utilization' => 'أعلى استخدام',
-
-
-          'worst_cars' => 'أسوأ السيارات',
-
-
-          'lowest_utilization' => 'أقل استخدام',
-
-
-          'lowest_revenue' => 'أقل إيراد',
-
-
-          'fleet_status' => 'حالة الأسطول',
-
-
-          'available' => 'متاحة',
-
-
-          'rented' => 'مؤجرة',
-
-
-          'reserved' => 'محجوزة',
-
-
-          'maintenance' => 'صيانة',
-
-
-          'out_of_service' => 'خارج الخدمة',
-
-
-          'vehicle_profitability_report' => 'تقرير ربحية السيارات',
-
-
-          'profitability_per_vehicle_based_on_paid_revenue_minus_damage_maintenance_and_violation_cos' => 'ربحية كل سيارة حسب الإيرادات المدفوعة مطروحاً منها تكاليف الأضرار والصيانة والمخالفات.',
-
-
-          'total_costs' => 'إجمالي التكاليف',
-
-
-          'net_profit' => 'صافي الربح',
-
-
-          'average_revenue_per_car' => 'متوسط الإيراد لكل سيارة',
-
-
-          'most_profitable_cars' => 'أكثر السيارات ربحاً',
-
-
-          'no_cars_found_for_this_period' => 'لا توجد سيارات في هذه الفترة.',
-
-
-          'least_profitable_cars' => 'أقل السيارات ربحاً',
-
-
-          'car' => 'السيارة',
-
-
-          'revenue' => 'الإيرادات',
-
-
-          'damage' => 'الأضرار',
-
-
-          'violations' => 'المخالفات',
-
-
-          'profit' => 'الربح',
-
-
-          'reservations' => 'حجوزات',
-
-
-          'items' => 'بنود',
-
-
-          'records' => 'سجلات',
-
-
-          'days' => 'أيام',
-
-
-          'no_profitability_data_found_for_this_period' => 'لا توجد بيانات ربحية لهذه الفترة.',
-
-
-          'customers_report' => 'تقرير العملاء',
-
-
-          'customer_acquisition_repeat_customers_top_clients_debtors_and_overdue_customers_for_the_se' => 'اكتساب العملاء، العملاء المتكررون، أفضل العملاء، المديونون، والعملاء المتأخرون خلال الفترة المحددة.',
-
-
-          'new_customers' => 'العملاء الجدد',
-
-
-          'repeat_customers' => 'العملاء المتكررون',
-
-
-          'debtors' => 'العملاء المديونون',
-
-
-          'customer_revenue' => 'إيرادات العملاء',
-
-
-          'best_customers_by_revenue' => 'أفضل العملاء حسب الإيرادات',
-
-
-          'no_customer_revenue_in_this_period' => 'لا توجد إيرادات عملاء في هذه الفترة.',
-
-
-          'best_customers_by_contracts' => 'أفضل العملاء حسب العقود',
-
-
-          'contracts' => 'عقود',
-
-
-          'no_contracts_found_for_this_period' => 'لا توجد عقود في هذه الفترة.',
-
-
-          'customers_with_debts' => 'العملاء المتعثرون',
-
-
-          'no_debtors_in_this_period' => 'لا يوجد عملاء مديونون في هذه الفترة.',
-
-
-          'overdue_customers' => 'العملاء المتأخرون',
-
-
-          'no_overdue_customers_now' => 'لا يوجد عملاء متأخرون حالياً.',
-
-
-          'damages_report' => 'تقرير الأضرار',
-
-
-          'damage_counts_costs_open_and_closed_damage_reports_vehicle_impact_employee_activity_and_be' => 'عدد الأضرار، التكلفة، الأضرار المفتوحة والمغلقة، حسب السيارة والموظف، وصور قبل وبعد الضرر.',
-
-
-          'damage_cost' => 'تكلفة الأضرار',
-
-
-          'open_closed' => 'مفتوحة / مغلقة',
-
-
-          'by_vehicle' => 'حسب السيارة',
-
-
-          'reports' => 'التقارير',
-
-
-          'open' => 'مفتوحة',
-
-
-          'closed' => 'مغلقة',
-
-
-          'cost' => 'التكلفة',
-
-
-          'no_damage_records_in_this_period' => 'لا توجد أضرار في هذه الفترة.',
-
-
-          'registered_by_employee' => 'من سجل الضرر',
-
-
-          'no_employee_damage_activity' => 'لا توجد نشاطات أضرار للموظفين.',
-
-
-          'closed_by_employee' => 'من أغلق الضرر',
-
-
-          'no_closed_damage_records' => 'لا توجد أضرار مغلقة.',
-
-
-          'before_delivery_photos' => 'صور قبل التسليم',
-
-
-          'no_photo' => 'لا توجد صورة',
-
-
-          'no_before_delivery_photos' => 'لا توجد صور قبل التسليم.',
-
-
-          'after_return_photos' => 'صور بعد الرجوع',
-
-
-          'no_after_return_photos' => 'لا توجد صور بعد الرجوع.',
-
-
-          'traffic_violations_report' => 'تقرير المخالفات',
-
-
-          'violation_totals_open_and_paid_records_unpaid_balances_and_distribution_by_client_and_vehi' => 'إجمالي المخالفات والمفتوحة والمدفوعة وغير المدفوعة مع توزيعها حسب العميل والسيارة.',
-
-
-          'total_violations' => 'إجمالي المخالفات',
-
-
-          'open_violations' => 'المخالفات المفتوحة',
-
-
-          'paid_violations' => 'المخالفات المدفوعة',
-
-
-          'unpaid_violations' => 'المخالفات غير المدفوعة',
-
-
-          'by_client' => 'حسب العميل',
-
-
-          'client' => 'العميل',
-
-
-          'paid' => 'مدفوعة',
-
-
-          'unpaid' => 'غير مدفوعة',
-
-
-          'amount' => 'المبلغ',
-
-
-          'no_client_violations_in_this_period' => 'لا توجد مخالفات للعملاء في هذه الفترة.',
-
-
-          'no_vehicle_violations_in_this_period' => 'لا توجد مخالفات للسيارات في هذه الفترة.',
-
-
-          'recent_violations' => 'أحدث المخالفات',
-
-
-          'violation' => 'رقم المخالفة',
-
-
-          'date' => 'التاريخ',
-
-
-          'type' => 'النوع',
-
-
-          'status' => 'الحالة',
-
-
-          'no_traffic_violations_in_this_period' => 'لا توجد مخالفات في هذه الفترة.',
-
-
-          'open_contracts_report' => 'تقرير العقود المفتوحة',
-
-
-          'active_contracts_with_end_dates_outstanding_balances_and_payment_status' => 'العقود النشطة مع تاريخ النهاية والمبالغ المستحقة وحالة الدفع.',
-
-
-          'open_contracts' => 'العقود المفتوحة',
-
-
-          'ending_24h' => 'تنتهي خلال 24 ساعة',
-
-
-          'ending_48h' => 'تنتهي خلال 48 ساعة',
-
-
-          'ending_72h' => 'تنتهي خلال 72 ساعة',
-
-
-          'overdue' => 'متأخرة',
-
-
-          'outstanding' => 'المستحق',
-
-
-          'contract' => 'العقد',
-
-
-          'start' => 'البداية',
-
-
-          'end' => 'النهاية',
-
-
-          'payment' => 'الدفع',
-
-
-          'no_active_contracts_found' => 'لا توجد عقود نشطة.',
-
-
-          'collections_report' => 'تقرير الديون والتحصيل',
-
-
-          'debtors_outstanding_amounts_due_dates_overdue_days_and_aging_classification' => 'العملاء المدينون والمبالغ المستحقة وتواريخ الاستحقاق وعدد الأيام المتأخرة وتصنيف عمر الدين.',
-
-
-          'debt_items' => 'بنود الدين',
-
-
-          'overdue_items' => 'بنود متأخرة',
-
-
-          'current_items' => 'بنود حالية',
-
-
-          'outstanding_amount' => 'المبلغ المستحق',
-
-
-          'debtors_list' => 'قائمة العملاء المدينين',
-
-
-          'customer' => 'العميل',
-
-
-          'reference' => 'المرجع',
-
-
-          'due_date' => 'تاريخ الاستحقاق',
-
-
-          'late_days' => 'الأيام المتأخرة',
-
-
-          'classification' => 'التصنيف',
-
-
-          'no_debtors_found' => 'لا توجد ديون مستحقة.',
-
-
-          'staff_performance_report' => 'تقرير الموظفين',
-
-
-          'contracts_deliveries_returns_discovered_damages_and_collected_revenue_by_employee' => 'عدد العقود والتسليمات والاستلامات والأضرار المكتشفة والإيرادات المحصلة لكل موظف.',
-
-
-          'employees' => 'الموظفون',
-
-
-          'deliveries' => 'التسليمات',
-
-
-          'returns' => 'الاستلامات',
-
-
-          'damages' => 'الأضرار المكتشفة',
-
-
-          'collected_revenue' => 'الإيرادات المحصلة',
-
-
-          'employee_performance' => 'أداء الموظفين',
-
-
-          'employee' => 'الموظف',
-
-
-          'branch' => 'الفرع',
-
-
-          'collected' => 'المحصل',
-
-
-          'no_staff_performance_data_found' => 'لا توجد بيانات أداء للموظفين.',
-
-
-          'revenue_payments_return_charges_and_discounts_for_the_selected_period' => 'الإيرادات والمدفوعات ورسوم الرجوع والخصومات للفترة المحددة.',
-
-
-          'contracts_and_reservation_activity_in_the_selected_period' => 'حركة العقود والحجوزات خلال الفترة المحددة.',
-
-
-          'utilization_damage_activity_and_accident_tracking' => 'نسبة التشغيل ونشاط الأضرار والحوادث.',
-
-
-          'items_that_need_review_follow_up_or_payment' => 'عناصر تحتاج مراجعة أو متابعة أو دفع.',
-
-
-          'car_rankings' => 'ترتيب السيارات',
-
-
-          'by_revenue' => 'حسب الإيراد',
-
-
-          'by_utilization' => 'حسب الاستخدام (الأيام)',
+        'all_branches' => 'كل الفروع',
+        'this_month' => 'هذا الشهر',
+        'last_month' => 'الشهر الماضي',
+        'this_year' => 'هذه السنة',
+        'last_year' => 'السنة الماضية',
+        'new_clients' => 'عملاء جدد',
+        'active_reservations' => 'الحجوزات النشطة',
+        'platform_visits' => 'زيارات المنصة',
+        'total_cars' => 'إجمالي السيارات',
+        'available_cars' => 'السيارات المتاحة',
+        'rented_cars' => 'السيارات المؤجرة',
+        'unavailable_cars' => 'السيارات غير المتاحة',
+        'pending' => 'قيد الانتظار',
+        'confirmed' => 'مؤكد',
+        'active' => 'نشط',
+        'completed' => 'مكتمل',
+        'cancelled' => 'ملغي',
+        'no_show' => 'لم يحضر',
+        'executive_report' => 'التقرير التنفيذي',
+        'most_important' => 'الأهم',
+        'uncollected_amounts' => 'المبالغ غير المحصلة',
+        'outstanding_debts' => 'الديون المستحقة',
+        'late_fees' => 'رسوم التأخير',
+        'cleaning_fees' => 'رسوم التنظيف',
+        'net_revenue' => 'صافي الإيرادات',
+        'delivered_cars' => 'السيارات المسلمة',
+        'returned_cars' => 'السيارات المستلمة',
+        'cars_out_of_service' => 'السيارات خارج الخدمة',
+        'contracts_ending_within_24_hours' => 'عقود تنتهي خلال 24 ساعة',
+        'missing_payments' => 'مدفوعات ناقصة',
+        'missing_documents' => 'وثائق ناقصة',
+        'contracts_without_signature' => 'عقود بدون توقيع',
+        'financial_summary' => 'الملخص المالي',
+        'operations_summary' => 'ملخص العمليات',
+        'fleet_insights' => 'تحليل الأسطول',
+        'action_alerts' => 'تنبيهات تحتاج إجراء',
+        'paid_revenue' => 'الإيرادات المدفوعة',
+        'pending_payments' => 'مدفوعات معلقة',
+        'return_extra_charges' => 'رسوم الرجوع الإضافية',
+        'damage_fees' => 'رسوم الأضرار',
+        'fuel_fees' => 'رسوم الوقود',
+        'discounts' => 'الخصومات',
+        'active_contracts' => 'العقود النشطة',
+        'pending_contracts' => 'عقود بانتظار التسليم',
+        'completed_contracts' => 'العقود المكتملة',
+        'overdue_contracts' => 'العقود المتأخرة',
+        'new_reservations' => 'الحجوزات الجديدة',
+        'cancelled_reservations' => 'الحجوزات الملغاة',
+        'fleet_utilization' => 'نسبة تشغيل الأسطول',
+        'revenue_per_car' => 'الإيراد لكل سيارة',
+        'damage_reports' => 'تقارير الأضرار',
+        'damage_items' => 'بنود الأضرار',
+        'estimated_damage_cost' => 'تكلفة الأضرار التقديرية',
+        'accident_reports' => 'بلاغات الحوادث',
+        'overdue_cars' => 'سيارات متأخرة',
+        'returns_due_today' => 'مرتجعات اليوم',
+        'pending_violations' => 'مخالفات معلقة',
+        'unpaid_return_reports' => 'تقارير رجوع غير مدفوعة',
+        'draft_damage_reports' => 'تقارير أضرار مسودة',
+        'outstanding_return_charges' => 'رسوم الرجوع غير المسددة',
+        'discounts_applied' => 'الخصومات المطبقة',
+        'active_contracts_that_need_return_follow_up_soon' => 'عقود نشطة تحتاج متابعة الرجوع قريباً.',
+        'payments_or_return_charges_that_still_need_collection' => 'مدفوعات أو رسوم رجوع ما زالت بحاجة إلى تحصيل.',
+        'active_or_pending_contracts_without_primary_driver_documents' => 'عقود نشطة أو معلقة بدون وثائق السائق الأساسي.',
+        'contracts_that_still_need_mobile_terms_confirmation' => 'عقود ما زالت تحتاج تأكيد الشروط من الموبايل.',
+        'active_contracts_past_their_return_date' => 'عقود نشطة تجاوزت تاريخ الرجوع.',
+        'active_contracts_scheduled_to_return_today' => 'عقود نشطة موعد رجوعها اليوم.',
+        'violations_that_still_need_review_or_payment' => 'مخالفات تحتاج مراجعة أو دفع.',
+        'return_reports_with_outstanding_extra_charges' => 'تقارير رجوع عليها رسوم إضافية غير مدفوعة.',
+        'damage_reports_waiting_for_review_or_completion' => 'تقارير أضرار بانتظار المراجعة أو الإكمال.',
+        'a_daily_or_weekly_owner_level_report_that_summarizes_money_operations_and_urgent_follow_up' => 'تقرير يومي أو أسبوعي لصاحب المكتب يلخص المال والتشغيل والتنبيهات التي تحتاج متابعة.',
+        'download_the_executive_report_using_the_same_period_and_branch_filters' => 'نزّل التقرير التنفيذي بنفس فلتر الفترة والفرع الحالي.',
+        'financial_report' => 'التقرير المالي',
+        'export_pdf' => 'تصدير PDF',
+        'export_excel' => 'تصدير Excel',
+        'financial_section' => 'قسم مالي',
+        'click_to_view_details' => 'انقر لعرض التفاصيل',
+        'reservations_report' => 'تقرير الحجوزات',
+        'canceled' => 'الحجوزات الملغاة',
+        'average_value' => 'متوسط قيمة الحجز',
+        'cancellation_rate' => 'نسبة الإلغاء',
+        'no_show_rate' => 'نسبة No Show',
+        'fleet_report' => 'تقرير الأسطول',
+        'utilization' => 'الاستخدام',
+        'rented_days_per_car' => 'عدد الأيام المؤجرة لكل سيارة',
+        'idle_days' => 'عدد الأيام المتوقفة',
+        'top_cars' => 'أفضل السيارات',
+        'view_all' => 'عرض الكل',
+        'highest_revenue' => 'أعلى إيراد',
+        'highest_utilization' => 'أعلى استخدام',
+        'worst_cars' => 'أسوأ السيارات',
+        'lowest_utilization' => 'أقل استخدام',
+        'lowest_revenue' => 'أقل إيراد',
+        'fleet_status' => 'حالة الأسطول',
+        'available' => 'متاحة',
+        'rented' => 'مؤجرة',
+        'reserved' => 'محجوزة',
+        'maintenance' => 'صيانة',
+        'out_of_service' => 'خارج الخدمة',
+        'vehicle_profitability_report' => 'تقرير ربحية السيارات',
+        'profitability_per_vehicle_based_on_paid_revenue_minus_damage_maintenance_and_violation_cos' => 'ربحية كل سيارة حسب الإيرادات المدفوعة مطروحاً منها تكاليف الأضرار والصيانة والمخالفات.',
+        'total_costs' => 'إجمالي التكاليف',
+        'net_profit' => 'صافي الربح',
+        'average_revenue_per_car' => 'متوسط الإيراد لكل سيارة',
+        'most_profitable_cars' => 'أكثر السيارات ربحاً',
+        'no_cars_found_for_this_period' => 'لا توجد سيارات في هذه الفترة.',
+        'least_profitable_cars' => 'أقل السيارات ربحاً',
+        'car' => 'السيارة',
+        'revenue' => 'الإيرادات',
+        'damage' => 'الأضرار',
+        'violations' => 'المخالفات',
+        'profit' => 'الربح',
+        'reservations' => 'حجوزات',
+        'items' => 'بنود',
+        'records' => 'سجلات',
+        'days' => 'أيام',
+        'no_profitability_data_found_for_this_period' => 'لا توجد بيانات ربحية لهذه الفترة.',
+        'customers_report' => 'تقرير العملاء',
+        'customer_acquisition_repeat_customers_top_clients_debtors_and_overdue_customers_for_the_se' => 'اكتساب العملاء، العملاء المتكررون، أفضل العملاء، المديونون، والعملاء المتأخرون خلال الفترة المحددة.',
+        'new_customers' => 'العملاء الجدد',
+        'repeat_customers' => 'العملاء المتكررون',
+        'debtors' => 'العملاء المديونون',
+        'customer_revenue' => 'إيرادات العملاء',
+        'best_customers_by_revenue' => 'أفضل العملاء حسب الإيرادات',
+        'no_customer_revenue_in_this_period' => 'لا توجد إيرادات عملاء في هذه الفترة.',
+        'best_customers_by_contracts' => 'أفضل العملاء حسب العقود',
+        'contracts' => 'عقود',
+        'no_contracts_found_for_this_period' => 'لا توجد عقود في هذه الفترة.',
+        'customers_with_debts' => 'العملاء المتعثرون',
+        'no_debtors_in_this_period' => 'لا يوجد عملاء مديونون في هذه الفترة.',
+        'overdue_customers' => 'العملاء المتأخرون',
+        'no_overdue_customers_now' => 'لا يوجد عملاء متأخرون حالياً.',
+        'damages_report' => 'تقرير الأضرار',
+        'damage_counts_costs_open_and_closed_damage_reports_vehicle_impact_employee_activity_and_be' => 'عدد الأضرار، التكلفة، الأضرار المفتوحة والمغلقة، حسب السيارة والموظف، وصور قبل وبعد الضرر.',
+        'damage_cost' => 'تكلفة الأضرار',
+        'open_closed' => 'مفتوحة / مغلقة',
+        'by_vehicle' => 'حسب السيارة',
+        'reports' => 'التقارير',
+        'open' => 'مفتوحة',
+        'closed' => 'مغلقة',
+        'cost' => 'التكلفة',
+        'no_damage_records_in_this_period' => 'لا توجد أضرار في هذه الفترة.',
+        'registered_by_employee' => 'من سجل الضرر',
+        'no_employee_damage_activity' => 'لا توجد نشاطات أضرار للموظفين.',
+        'closed_by_employee' => 'من أغلق الضرر',
+        'no_closed_damage_records' => 'لا توجد أضرار مغلقة.',
+        'before_delivery_photos' => 'صور قبل التسليم',
+        'no_photo' => 'لا توجد صورة',
+        'no_before_delivery_photos' => 'لا توجد صور قبل التسليم.',
+        'after_return_photos' => 'صور بعد الرجوع',
+        'no_after_return_photos' => 'لا توجد صور بعد الرجوع.',
+        'traffic_violations_report' => 'تقرير المخالفات',
+        'violation_totals_open_and_paid_records_unpaid_balances_and_distribution_by_client_and_vehi' => 'إجمالي المخالفات والمفتوحة والمدفوعة وغير المدفوعة مع توزيعها حسب العميل والسيارة.',
+        'total_violations' => 'إجمالي المخالفات',
+        'open_violations' => 'المخالفات المفتوحة',
+        'paid_violations' => 'المخالفات المدفوعة',
+        'unpaid_violations' => 'المخالفات غير المدفوعة',
+        'by_client' => 'حسب العميل',
+        'client' => 'العميل',
+        'paid' => 'مدفوعة',
+        'unpaid' => 'غير مدفوعة',
+        'amount' => 'المبلغ',
+        'no_client_violations_in_this_period' => 'لا توجد مخالفات للعملاء في هذه الفترة.',
+        'no_vehicle_violations_in_this_period' => 'لا توجد مخالفات للسيارات في هذه الفترة.',
+        'recent_violations' => 'أحدث المخالفات',
+        'violation' => 'رقم المخالفة',
+        'date' => 'التاريخ',
+        'type' => 'النوع',
+        'status' => 'الحالة',
+        'no_traffic_violations_in_this_period' => 'لا توجد مخالفات في هذه الفترة.',
+        'open_contracts_report' => 'تقرير العقود المفتوحة',
+        'active_contracts_with_end_dates_outstanding_balances_and_payment_status' => 'العقود النشطة مع تاريخ النهاية والمبالغ المستحقة وحالة الدفع.',
+        'open_contracts' => 'العقود المفتوحة',
+        'ending_24h' => 'تنتهي خلال 24 ساعة',
+        'ending_48h' => 'تنتهي خلال 48 ساعة',
+        'ending_72h' => 'تنتهي خلال 72 ساعة',
+        'overdue' => 'متأخرة',
+        'outstanding' => 'المستحق',
+        'contract' => 'العقد',
+        'start' => 'البداية',
+        'end' => 'النهاية',
+        'payment' => 'الدفع',
+        'no_active_contracts_found' => 'لا توجد عقود نشطة.',
+        'collections_report' => 'تقرير الديون والتحصيل',
+        'debtors_outstanding_amounts_due_dates_overdue_days_and_aging_classification' => 'العملاء المدينون والمبالغ المستحقة وتواريخ الاستحقاق وعدد الأيام المتأخرة وتصنيف عمر الدين.',
+        'debt_items' => 'بنود الدين',
+        'overdue_items' => 'بنود متأخرة',
+        'current_items' => 'بنود حالية',
+        'outstanding_amount' => 'المبلغ المستحق',
+        'debtors_list' => 'قائمة العملاء المدينين',
+        'customer' => 'العميل',
+        'reference' => 'المرجع',
+        'due_date' => 'تاريخ الاستحقاق',
+        'late_days' => 'الأيام المتأخرة',
+        'classification' => 'التصنيف',
+        'no_debtors_found' => 'لا توجد ديون مستحقة.',
+        'staff_performance_report' => 'تقرير الموظفين',
+        'contracts_deliveries_returns_discovered_damages_and_collected_revenue_by_employee' => 'عدد العقود والتسليمات والاستلامات والأضرار المكتشفة والإيرادات المحصلة لكل موظف.',
+        'employees' => 'الموظفون',
+        'deliveries' => 'التسليمات',
+        'returns' => 'الاستلامات',
+        'damages' => 'الأضرار المكتشفة',
+        'collected_revenue' => 'الإيرادات المحصلة',
+        'employee_performance' => 'أداء الموظفين',
+        'employee' => 'الموظف',
+        'branch' => 'الفرع',
+        'collected' => 'المحصل',
+        'no_staff_performance_data_found' => 'لا توجد بيانات أداء للموظفين.',
+        'revenue_payments_return_charges_and_discounts_for_the_selected_period' => 'الإيرادات والمدفوعات ورسوم الرجوع والخصومات للفترة المحددة.',
+        'contracts_and_reservation_activity_in_the_selected_period' => 'حركة العقود والحجوزات خلال الفترة المحددة.',
+        'utilization_damage_activity_and_accident_tracking' => 'نسبة التشغيل ونشاط الأضرار والحوادث.',
+        'items_that_need_review_follow_up_or_payment' => 'عناصر تحتاج مراجعة أو متابعة أو دفع.',
+        'car_rankings' => 'ترتيب السيارات',
+        'by_revenue' => 'حسب الإيراد',
+        'by_utilization' => 'حسب الاستخدام (الأيام)',
         'title' => 'التقارير',
         'period' => 'الفترة',
         'daily_reservations_created' => 'الحجوزات اليومية المنشأة',
@@ -4517,173 +3541,175 @@ return array (
             'actions' => 'Actions',
           ),
         ),
-                'return_status_report' => [
-                    'n_a' => 'N/A',
-                    'no_extracted_value' => 'No extracted value',
-                    'yes_there_is_damage' => 'نعم، يوجد ضرر',
-                    'no_damage' => 'لا يوجد ضرر',
-                    'car_was_clean_at_delivery_returned_dirty_cleaning_fee_applies' => 'السيارة كانت نظيفة عند التسليم وعادت متسخة - تطبق رسوم التنظيف',
-                    'car_was_already_not_clean_at_delivery_no_cleaning_fee' => 'السيارة كانت غير نظيفة عند التسليم - لا توجد رسوم تنظيف',
-                    'car_was_clean_at_delivery_and_return_no_cleaning_fee' => 'السيارة كانت نظيفة عند التسليم والإرجاع - لا توجد رسوم تنظيف',
-                    'delivery' => 'التسليم',
-                    'return' => 'الإرجاع',
-                    'fuel_gain' => 'زيادة الوقود:',
-                    'fuel_loss' => 'نقص الوقود:',
-                    'loss' => 'نقص',
-                    'gain' => 'زيادة',
-                    'no_fuel_difference' => 'لا يوجد فرق بالوقود',
-                    'contract' => 'العقد',
-                    'day_s' => 'يوم/أيام',
-                    'hour_s' => 'ساعة/ساعات',
-                    'loading_exchange_rate' => 'جاري جلب سعر الصرف...',
-                    'exchange_rate_fetched_from_frankfurter' => 'تم جلب سعر الصرف من Frankfurter.',
-                    'could_not_fetch_exchange_rate_enter_it_manually' => 'تعذر جلب سعر الصرف. أدخله يدوياً.',
-                    'return_status_report' => 'تقرير حالة الإرجاع',
-                    'record_the_car_return_extra_charges_and_linked_damage_report_in_one_place' => 'سجل إرجاع السيارة والرسوم الإضافية وتقرير الضرر المرتبط في مكان واحد.',
-                    'print_invoice' => 'طباعة الفاتورة',
-                    'back' => 'رجوع',
-                    'contract_summary' => 'ملخص العقد',
-                    'the_return_report_is_linked_to_this_contract_and_reservation' => 'هذا التقرير مرتبط بهذا العقد والحجز.',
-                    'contract_no' => 'رقم العقد',
-                    'reservation' => 'الحجز',
-                    'client' => 'العميل',
-                    'car' => 'السيارة',
-                    'branch' => 'الفرع',
-                    'reservation_status' => 'حالة الحجز',
-                    'contract_start' => 'بداية العقد',
-                    'contract_end' => 'نهاية العقد',
-                    'this_return_report_is_marked_paid_and_locked_you_can_print_it_but_editing_is_disabled' => 'تم تسجيل هذا التقرير كمدفوع ومقفل. يمكنك طباعته لكن لا يمكن تعديله.',
-                    'you_can_view_this_return_report_but_your_role_does_not_allow_editing_it' => 'يمكنك عرض تقرير الإرجاع، لكن الدور الحالي لا يسمح بتعديله.',
-                    'return_details' => 'بيانات الإرجاع',
-                    'record_the_actual_return_state_for_this_contract' => 'سجل حالة الإرجاع الفعلية لهذا العقد.',
-                    'actual_return_time' => 'وقت الإرجاع الفعلي',
-                    'return_location' => 'موقع الإرجاع',
-                    'select_return_location' => 'اختر موقع الإرجاع',
-                    'default_return_fee' => 'رسوم الإرجاع الافتراضية:',
-                    'free' => 'مجاني',
-                    'return_odometer' => 'عداد الإرجاع',
-                    'use_return_odometer_image_value' => 'Use return odometer image value',
-                    'return_fuel_level' => 'مستوى الوقود عند الإرجاع',
-                    'select_fuel_level' => 'اختر مستوى الوقود',
-                    'use_return_fuel_image_value' => 'Use return fuel image value',
-                    'vehicle_condition_after_return' => 'حالة السيارة بعد الإرجاع',
-                    'has_damage' => 'هل يوجد ضرر؟',
-                    'no_damage_report_will_be_created_for_this_return' => 'لن يتم إنشاء تقرير ضرر لهذا الإرجاع.',
-                    'linked_damage_report' => 'تقرير الضرر المرتبط',
-                    'none' => 'بدون',
-                    'items' => 'عناصر',
-                    'damage_report_selection_is_disabled_when_there_is_no_damage' => 'يتم تعطيل اختيار تقرير الضرر عند عدم وجود ضرر.',
-                    'payment_status' => 'حالة الدفع',
-                    'paid' => 'مدفوعة',
-                    'partial' => 'مدفوعة جزئياً',
-                    'not_paid' => 'غير مدفوعة',
-                    'cash_payments_are_added_separately_after_saving_the_return_report' => 'تتم إضافة دفعات الكاش بشكل منفصل بعد حفظ تقرير الإرجاع.',
-                    'contract_vs_return' => 'مقارنة العقد مع الإرجاع',
-                    'use_this_section_to_compare_the_original_contract_values_with_the_actual_return_values' => 'استخدم هذا القسم لمقارنة قيم العقد الأصلية مع قيم الإرجاع الفعلية.',
-                    'compare_the_contract_odometer_and_expected_return_time_against_the_actual_return_values' => 'قارن عداد العقد ووقت الإرجاع المتوقع مع القيم الفعلية عند الإرجاع.',
-                    'contract_odometer' => 'عداد العقد',
-                    'expected_return_time' => 'وقت الإرجاع المتوقع',
-                    'extra_kilometers' => 'الكيلومترات الزائدة',
-                    'late_hours' => 'ساعات التأخير',
-                    'extra_charges' => 'الرسوم الإضافية',
-                    'these_charges_are_auto_calculated_from_the_tenant_reservation_settings_and_the_actual_retu' => 'يتم حساب هذه الرسوم تلقائيًا من إعدادات الحجز وبيانات الإرجاع الفعلية.',
-                    'kilometer_rate' => 'سعر الكيلومتر',
-                    'cleaning_fee' => 'رسوم التنظيف',
-                    'fuel_fee' => 'رسوم الوقود',
-                    'fuel_credit' => 'رصيد الوقود',
-                    'fuel_returned_higher_than_pickup_credit_applies_to_the_customer' => 'تمت إعادة الوقود أكثر من وقت الاستلام، وسيتم احتساب رصيد لصالح العميل.',
-                    'late_hour_rate' => 'سعر ساعة التأخير',
-                    'default_from_tenant_reservation_settings' => 'القيمة الافتراضية من إعدادات الحجز الخاصة بالمستأجر.',
-                    'damage_fee' => 'رسوم الضرر',
-                    'selected_after_return_damage_total' => 'إجمالي ضرر ما بعد الإرجاع المحدد:',
-                    'maintenance_fee' => 'رسوم الصيانة',
-                    'other_fee' => 'رسوم أخرى',
-                    'discount' => 'الخصم',
-                    'discount_is_capped_at_the_payable_subtotal' => 'يتم تطبيق الخصم حتى قيمة الإجمالي المستحق فقط.',
-                    'after_return_damage_reports' => 'تقارير الضرر بعد الإرجاع',
-                    'only_damage_reports_created_after_delivery_are_used_for_return_charges' => 'يتم استخدام تقارير الضرر التي تم إنشاؤها بعد التسليم فقط لرسوم الإرجاع.',
-                    'no_after_return_damage_reports_have_been_created_yet_for_this_contract' => 'لم يتم إنشاء أي تقرير ضرر بعد الإرجاع لهذا العقد بعد.',
-                    'report' => 'التقرير',
-                    'estimated_cost' => 'التكلفة التقديرية',
-                    'status' => 'الحالة',
-                    'summary' => 'الملخص',
-                    'actions' => 'الإجراءات',
-                    'no_summary' => 'لا يوجد ملخص',
-                    'open' => 'فتح',
-                    'delete' => 'حذف',
-                    'final_summary' => 'الملخص النهائي',
-                    'the_report_total_will_be_used_for_the_extra_cash_payment' => 'سيتم استخدام إجمالي التقرير كدفعة نقدية إضافية.',
-                    'allowed_kilometers' => 'الكيلومترات المسموحة',
-                    'late_extra_days' => 'أيام التأخير الإضافية:',
-                    'actual_kilometers_driven' => 'الكيلومترات الفعلية المقطوعة',
-                    'contract_odometer_to_return_odometer' => 'من عداد العقد إلى عداد الإرجاع',
-                    'extra_kilometer_charges' => 'رسوم الكيلومترات الإضافية',
-                    'extra_kilometers_after_allowance' => 'الكيلومترات الزائدة بعد السماح',
-                    'fuel_credit_for_customer' => 'Fuel credit for customer',
-                    'late_return_fee' => 'رسوم التأخير',
-                    'hours' => 'ساعات',
-                    'applied_after_all_charges_and_credits' => 'يطبق بعد كل الرسوم والأرصدة.',
-                    'total_extra_charges' => 'إجمالي الرسوم الإضافية',
-                    'fuel_credit_deducted_from_the_total' => 'تم خصم رصيد الوقود من الإجمالي.',
-                    'credit_due_to_customer' => 'الرصيد المستحق للعميل',
-                    'paid_amount' => 'المبلغ المدفوع',
-                    'paid_in' => 'تم الدفع بعملة',
-                    'no_payment_recorded_yet' => 'لم يتم تسجيل دفعة بعد.',
-                    'remaining_amount' => 'المبلغ المتبقي',
-                    'fully_paid' => 'مدفوع بالكامل',
-                    'payment_exchange_rate' => 'سعر صرف الدفعة',
-                    'exchange_rate' => 'سعر الصرف',
-                    'base_amount' => 'المبلغ الأساسي',
-                    'notes' => 'ملاحظات',
-                    'saving' => 'جاري الحفظ...',
-                    'save_return_report' => 'حفظ تقرير الإرجاع',
-                    'cancel' => 'إلغاء',
-                    'add_cash_payment' => 'إضافة دفعة كاش',
-                    'record_a_new_payment_row_against_this_return_report' => 'سجل دفعة جديدة مرتبطة بهذا التقرير.',
-                    'save_the_return_report_first_then_add_cash_payments' => 'احفظ تقرير الإرجاع أولاً، ثم أضف دفعات الكاش.',
-                    'amount' => 'المبلغ',
-                    'currency' => 'العملة',
-                    'select_currency' => 'اختر العملة',
-                    'base_currency' => 'عملة التقرير',
-                    'required_only_when_payment_currency_differs_from_report_currency' => 'مطلوب فقط عندما تختلف عملة الدفع عن عملة التقرير.',
-                    'collected_at' => 'وقت التحصيل',
-                    'attachments' => 'المرفقات',
-                    'collecting' => 'جاري التحصيل...',
-                    'collect_payment' => 'تحصيل الدفعة',
-                    'payment_history' => 'سجل الدفعات',
-                    'no_return_report_payments_have_been_collected_yet' => 'لم يتم تحصيل أي دفعات لهذا التقرير بعد.',
-                    'payment' => 'الدفعة',
-                    'converted_amount' => 'المبلغ بعد التحويل',
-                ],
-                'edit' => [
-                    'select_document_type' => 'اختر نوع المستند',
-                    'passport_tourist' => 'جواز سفر (سائح)',
-                    'driver_license' => 'رخصة قيادة',
-                    'id_card_citizen' => 'بطاقة هوية (مواطن)',
-                    'residency_card_resident' => 'بطاقة إقامة (مقيم)',
-                    'select_archive_type' => 'اختر نوع الأرشيف',
-                    'passport' => 'جواز سفر',
-                    'id_card' => 'بطاقة هوية',
-                    'residency_card' => 'بطاقة إقامة',
-                    'visa' => 'تأشيرة',
-                    'insurance' => 'تأمين',
-                    'other' => 'أخرى',
-                    'pending' => 'في انتظار',
-                    'confirmed' => 'مؤكد',
-                    'active' => 'نشط',
-                    'cancelled' => 'ملغى',
-                    'select_fuel_level' => 'اختر مستوى الوقود',
-                    'empty' => 'فارغ',
-                    '1_4_tank' => 'ربع الخزان',
-                    '1_2_tank' => 'نصف الخزان',
-                    '3_4_tank' => '3/4 الخزان',
-                    'full' => 'ممتلئ',
-                    'select_condition' => 'اختر الحالة',
-                    'clean' => 'نظيف',
-                    'not_clean' => 'غير نظيف',
-                    'no_extracted_value' => 'لا توجد قيمة مستخرجة',
-                    'already_linked_to_another_contract' => 'هذه الحجز مرتبط بعقد آخر',
-                    'this_reservation_already_has_a_contract_and_cannot_be_used_for_a_new_contract' => 'هذا الحجز مرتبط بعقد آخر ولا يمكن استخدامه لإنشاء عقد جديد.\',
+        'return_status_report' => 
+        array (
+          'n_a' => 'N/A',
+          'no_extracted_value' => 'No extracted value',
+          'yes_there_is_damage' => 'نعم، يوجد ضرر',
+          'no_damage' => 'لا يوجد ضرر',
+          'car_was_clean_at_delivery_returned_dirty_cleaning_fee_applies' => 'السيارة كانت نظيفة عند التسليم وعادت متسخة - تطبق رسوم التنظيف',
+          'car_was_already_not_clean_at_delivery_no_cleaning_fee' => 'السيارة كانت غير نظيفة عند التسليم - لا توجد رسوم تنظيف',
+          'car_was_clean_at_delivery_and_return_no_cleaning_fee' => 'السيارة كانت نظيفة عند التسليم والإرجاع - لا توجد رسوم تنظيف',
+          'delivery' => 'التسليم',
+          'return' => 'الإرجاع',
+          'fuel_gain' => 'زيادة الوقود:',
+          'fuel_loss' => 'نقص الوقود:',
+          'loss' => 'نقص',
+          'gain' => 'زيادة',
+          'no_fuel_difference' => 'لا يوجد فرق بالوقود',
+          'contract' => 'العقد',
+          'day_s' => 'يوم/أيام',
+          'hour_s' => 'ساعة/ساعات',
+          'loading_exchange_rate' => 'جاري جلب سعر الصرف...',
+          'exchange_rate_fetched_from_frankfurter' => 'تم جلب سعر الصرف من Frankfurter.',
+          'could_not_fetch_exchange_rate_enter_it_manually' => 'تعذر جلب سعر الصرف. أدخله يدوياً.',
+          'return_status_report' => 'تقرير حالة الإرجاع',
+          'record_the_car_return_extra_charges_and_linked_damage_report_in_one_place' => 'سجل إرجاع السيارة والرسوم الإضافية وتقرير الضرر المرتبط في مكان واحد.',
+          'print_invoice' => 'طباعة الفاتورة',
+          'back' => 'رجوع',
+          'contract_summary' => 'ملخص العقد',
+          'the_return_report_is_linked_to_this_contract_and_reservation' => 'هذا التقرير مرتبط بهذا العقد والحجز.',
+          'contract_no' => 'رقم العقد',
+          'reservation' => 'الحجز',
+          'client' => 'العميل',
+          'car' => 'السيارة',
+          'branch' => 'الفرع',
+          'reservation_status' => 'حالة الحجز',
+          'contract_start' => 'بداية العقد',
+          'contract_end' => 'نهاية العقد',
+          'this_return_report_is_marked_paid_and_locked_you_can_print_it_but_editing_is_disabled' => 'تم تسجيل هذا التقرير كمدفوع ومقفل. يمكنك طباعته لكن لا يمكن تعديله.',
+          'you_can_view_this_return_report_but_your_role_does_not_allow_editing_it' => 'يمكنك عرض تقرير الإرجاع، لكن الدور الحالي لا يسمح بتعديله.',
+          'return_details' => 'بيانات الإرجاع',
+          'record_the_actual_return_state_for_this_contract' => 'سجل حالة الإرجاع الفعلية لهذا العقد.',
+          'actual_return_time' => 'وقت الإرجاع الفعلي',
+          'return_location' => 'موقع الإرجاع',
+          'select_return_location' => 'اختر موقع الإرجاع',
+          'default_return_fee' => 'رسوم الإرجاع الافتراضية:',
+          'free' => 'مجاني',
+          'return_odometer' => 'عداد الإرجاع',
+          'use_return_odometer_image_value' => 'Use return odometer image value',
+          'return_fuel_level' => 'مستوى الوقود عند الإرجاع',
+          'select_fuel_level' => 'اختر مستوى الوقود',
+          'use_return_fuel_image_value' => 'Use return fuel image value',
+          'vehicle_condition_after_return' => 'حالة السيارة بعد الإرجاع',
+          'has_damage' => 'هل يوجد ضرر؟',
+          'no_damage_report_will_be_created_for_this_return' => 'لن يتم إنشاء تقرير ضرر لهذا الإرجاع.',
+          'linked_damage_report' => 'تقرير الضرر المرتبط',
+          'none' => 'بدون',
+          'items' => 'عناصر',
+          'damage_report_selection_is_disabled_when_there_is_no_damage' => 'يتم تعطيل اختيار تقرير الضرر عند عدم وجود ضرر.',
+          'payment_status' => 'حالة الدفع',
+          'paid' => 'مدفوعة',
+          'partial' => 'مدفوعة جزئياً',
+          'not_paid' => 'غير مدفوعة',
+          'cash_payments_are_added_separately_after_saving_the_return_report' => 'تتم إضافة دفعات الكاش بشكل منفصل بعد حفظ تقرير الإرجاع.',
+          'contract_vs_return' => 'مقارنة العقد مع الإرجاع',
+          'use_this_section_to_compare_the_original_contract_values_with_the_actual_return_values' => 'استخدم هذا القسم لمقارنة قيم العقد الأصلية مع قيم الإرجاع الفعلية.',
+          'compare_the_contract_odometer_and_expected_return_time_against_the_actual_return_values' => 'قارن عداد العقد ووقت الإرجاع المتوقع مع القيم الفعلية عند الإرجاع.',
+          'contract_odometer' => 'عداد العقد',
+          'expected_return_time' => 'وقت الإرجاع المتوقع',
+          'extra_kilometers' => 'الكيلومترات الزائدة',
+          'late_hours' => 'ساعات التأخير',
+          'extra_charges' => 'الرسوم الإضافية',
+          'these_charges_are_auto_calculated_from_the_tenant_reservation_settings_and_the_actual_retu' => 'يتم حساب هذه الرسوم تلقائيًا من إعدادات الحجز وبيانات الإرجاع الفعلية.',
+          'kilometer_rate' => 'سعر الكيلومتر',
+          'cleaning_fee' => 'رسوم التنظيف',
+          'fuel_fee' => 'رسوم الوقود',
+          'fuel_credit' => 'رصيد الوقود',
+          'fuel_returned_higher_than_pickup_credit_applies_to_the_customer' => 'تمت إعادة الوقود أكثر من وقت الاستلام، وسيتم احتساب رصيد لصالح العميل.',
+          'late_hour_rate' => 'سعر ساعة التأخير',
+          'default_from_tenant_reservation_settings' => 'القيمة الافتراضية من إعدادات الحجز الخاصة بالمستأجر.',
+          'damage_fee' => 'رسوم الضرر',
+          'selected_after_return_damage_total' => 'إجمالي ضرر ما بعد الإرجاع المحدد:',
+          'maintenance_fee' => 'رسوم الصيانة',
+          'other_fee' => 'رسوم أخرى',
+          'discount' => 'الخصم',
+          'discount_is_capped_at_the_payable_subtotal' => 'يتم تطبيق الخصم حتى قيمة الإجمالي المستحق فقط.',
+          'after_return_damage_reports' => 'تقارير الضرر بعد الإرجاع',
+          'only_damage_reports_created_after_delivery_are_used_for_return_charges' => 'يتم استخدام تقارير الضرر التي تم إنشاؤها بعد التسليم فقط لرسوم الإرجاع.',
+          'no_after_return_damage_reports_have_been_created_yet_for_this_contract' => 'لم يتم إنشاء أي تقرير ضرر بعد الإرجاع لهذا العقد بعد.',
+          'report' => 'التقرير',
+          'estimated_cost' => 'التكلفة التقديرية',
+          'status' => 'الحالة',
+          'summary' => 'الملخص',
+          'actions' => 'الإجراءات',
+          'no_summary' => 'لا يوجد ملخص',
+          'open' => 'فتح',
+          'delete' => 'حذف',
+          'final_summary' => 'الملخص النهائي',
+          'the_report_total_will_be_used_for_the_extra_cash_payment' => 'سيتم استخدام إجمالي التقرير كدفعة نقدية إضافية.',
+          'allowed_kilometers' => 'الكيلومترات المسموحة',
+          'late_extra_days' => 'أيام التأخير الإضافية:',
+          'actual_kilometers_driven' => 'الكيلومترات الفعلية المقطوعة',
+          'contract_odometer_to_return_odometer' => 'من عداد العقد إلى عداد الإرجاع',
+          'extra_kilometer_charges' => 'رسوم الكيلومترات الإضافية',
+          'extra_kilometers_after_allowance' => 'الكيلومترات الزائدة بعد السماح',
+          'fuel_credit_for_customer' => 'Fuel credit for customer',
+          'late_return_fee' => 'رسوم التأخير',
+          'hours' => 'ساعات',
+          'applied_after_all_charges_and_credits' => 'يطبق بعد كل الرسوم والأرصدة.',
+          'total_extra_charges' => 'إجمالي الرسوم الإضافية',
+          'fuel_credit_deducted_from_the_total' => 'تم خصم رصيد الوقود من الإجمالي.',
+          'credit_due_to_customer' => 'الرصيد المستحق للعميل',
+          'paid_amount' => 'المبلغ المدفوع',
+          'paid_in' => 'تم الدفع بعملة',
+          'no_payment_recorded_yet' => 'لم يتم تسجيل دفعة بعد.',
+          'remaining_amount' => 'المبلغ المتبقي',
+          'fully_paid' => 'مدفوع بالكامل',
+          'payment_exchange_rate' => 'سعر صرف الدفعة',
+          'exchange_rate' => 'سعر الصرف',
+          'base_amount' => 'المبلغ الأساسي',
+          'notes' => 'ملاحظات',
+          'saving' => 'جاري الحفظ...',
+          'save_return_report' => 'حفظ تقرير الإرجاع',
+          'cancel' => 'إلغاء',
+          'add_cash_payment' => 'إضافة دفعة كاش',
+          'record_a_new_payment_row_against_this_return_report' => 'سجل دفعة جديدة مرتبطة بهذا التقرير.',
+          'save_the_return_report_first_then_add_cash_payments' => 'احفظ تقرير الإرجاع أولاً، ثم أضف دفعات الكاش.',
+          'amount' => 'المبلغ',
+          'currency' => 'العملة',
+          'select_currency' => 'اختر العملة',
+          'base_currency' => 'عملة التقرير',
+          'required_only_when_payment_currency_differs_from_report_currency' => 'مطلوب فقط عندما تختلف عملة الدفع عن عملة التقرير.',
+          'collected_at' => 'وقت التحصيل',
+          'attachments' => 'المرفقات',
+          'collecting' => 'جاري التحصيل...',
+          'collect_payment' => 'تحصيل الدفعة',
+          'payment_history' => 'سجل الدفعات',
+          'no_return_report_payments_have_been_collected_yet' => 'لم يتم تحصيل أي دفعات لهذا التقرير بعد.',
+          'payment' => 'الدفعة',
+          'converted_amount' => 'المبلغ بعد التحويل',
+        ),
+        'edit' => 
+        array (
+          'select_document_type' => 'اختر نوع المستند',
+          'passport_tourist' => 'جواز سفر (سائح)',
+          'driver_license' => 'رخصة قيادة',
+          'id_card_citizen' => 'بطاقة هوية (مواطن)',
+          'residency_card_resident' => 'بطاقة إقامة (مقيم)',
+          'select_archive_type' => 'اختر نوع الأرشيف',
+          'passport' => 'جواز سفر',
+          'id_card' => 'بطاقة هوية',
+          'residency_card' => 'بطاقة إقامة',
+          'visa' => 'تأشيرة',
+          'insurance' => 'تأمين',
+          'other' => 'أخرى',
+          'pending' => 'في انتظار',
+          'confirmed' => 'مؤكد',
+          'active' => 'نشط',
+          'cancelled' => 'ملغى',
+          'select_fuel_level' => 'اختر مستوى الوقود',
+          'empty' => 'فارغ',
+          '1_4_tank' => 'ربع الخزان',
+          '1_2_tank' => 'نصف الخزان',
+          '3_4_tank' => '3/4 الخزان',
+          'full' => 'ممتلئ',
+          'select_condition' => 'اختر الحالة',
+          'clean' => 'نظيف',
+          'not_clean' => 'غير نظيف',
+          'no_extracted_value' => 'لا توجد قيمة مستخرجة',
+          'already_linked_to_another_contract' => 'هذه الحجز مرتبط بعقد آخر',
+          'this_reservation_already_has_a_contract_and_cannot_be_used_for_a_new_contract' => 'هذا الحجز مرتبط بعقد آخر ولا يمكن استخدامه لإنشاء عقد جديد.\',
       ),
     };
   }
@@ -4692,14 +3718,14 @@ return array (
     return {
       tone: \'warning\',
       title: localize(\'Client has outstanding balance\', \'العميل عليه مديونية',
-                    'this_client_has_outstanding_balance_admin_can_continue_creating_the_contract_if_' => 'العميل عليه مديونية. يمكن للإدارة المتابعة بإنشاء العقد عند الموافقة.\',
+          'this_client_has_outstanding_balance_admin_can_continue_creating_the_contract_if_' => 'العميل عليه مديونية. يمكن للإدارة المتابعة بإنشاء العقد عند الموافقة.\',
       ),
     };
   }
 
   if (status === \'completed_wait_contract',
-                    'completed_waiting_for_contract' => 'مكتمل - بانتظار العقد',
-                    'this_reservation_is_completed_and_waiting_for_contract_creation_you_can_save_the' => 'هذا الحجز مكتمل وينتظر إنشاء العقد. يمكنك حفظ العقد من هنا.\',
+          'completed_waiting_for_contract' => 'مكتمل - بانتظار العقد',
+          'this_reservation_is_completed_and_waiting_for_contract_creation_you_can_save_the' => 'هذا الحجز مكتمل وينتظر إنشاء العقد. يمكنك حفظ العقد من هنا.\',
       ),
     };
   }
@@ -4707,174 +3733,174 @@ return array (
   return {
     tone: \'info\',
     title: selectedReservation.value.status_label || localize(\'Reservation selected\', \'تم اختيار الحجز',
-                    'this_reservation_can_be_used_for_the_contract' => 'يمكن استخدام هذا الحجز لإنشاء العقد.\',
+          'this_reservation_can_be_used_for_the_contract' => 'يمكن استخدام هذا الحجز لإنشاء العقد.\',
     ),
   };
 });
 const reservationClients = computed(() => props.reservationFormOptions?.clients ?? []);
 const reservationCars = computed(() => props.reservationFormOptions?.cars ?? []);
 const saveError = ref(\'',
-                    'damage' => 'ضرر',
-                    'odometer' => 'عداد',
-                    'fuel' => 'وقود',
-                    'n_a' => 'غير متوفر',
-                    'front' => 'أمام',
-                    'rear' => 'خلف',
-                    'left' => 'يسار',
-                    'right' => 'يمين',
-                    'top' => 'أعلى',
-                    'single' => 'مفرد',
-                    'return' => 'الاستلام',
-                    'delivery' => 'التسليم',
-                    'no_specific_driver' => 'بدون سائق محدد',
-                    'primary_driver' => 'السائق الأساسي',
-                    'driver_extraction_endpoint_is_not_configured' => 'لم يتم إعداد مسار استخراج بيانات السائق.',
-                    'select_a_document_type_first' => 'اختر نوع المستند أولًا.',
-                    'upload_at_least_one_document_image_before_extraction' => 'ارفع صورة مستند واحدة على الأقل قبل الاستخراج.',
-                    'driver_extraction_failed' => 'فشل استخراج بيانات السائق.',
-                    'document_extraction_completed' => 'تم استخراج بيانات المستند بنجاح.',
-                    'customer_photo_extraction_endpoint_is_not_configured' => 'لم يتم إعداد مسار استخراج صورة العميل.',
-                    'upload_a_front_or_single_document_image_before_extracting_the_customer_photo' => 'ارفع صورة الواجهة أو الصورة المفردة قبل استخراج صورة العميل.',
-                    'customer_photo_extraction_failed' => 'فشل استخراج صورة العميل.',
-                    'reservation_store_route_is_not_configured' => 'مسار حفظ الحجز غير مهيأ.',
-                    'reservation_creation_failed' => 'فشل إنشاء الحجز.',
-                    'contract_save_failed_please_review_the_errors' => 'فشل حفظ العقد. يرجى مراجعة الأخطاء.',
-                    'create_contract' => 'إنشاء عقد',
-                    'edit_contract' => 'تعديل العقد',
-                    'primary_driver_additional_drivers_car_data_rental_data_and_archive' => 'السائق الأساسي، والسائقون الإضافيون، وبيانات السيارة، وبيانات الإيجار، والأرشيف.',
-                    'back' => 'رجوع',
-                    'this_contract_is_locked_because_the_return_report_is_marked_paid' => 'هذا العقد مقفل لأن تقرير العودة عليه حالة مدفوعة.',
-                    'customer_data' => 'بيانات العميل',
-                    'primary_driver_details_and_document_uploads' => 'بيانات السائق الأساسي وملفات المستندات المرفوعة.',
-                    'review_the_extracted_ai_data_carefully_before_saving_this_contract' => 'راجع البيانات المستخرجة بالذكاء الاصطناعي بعناية قبل حفظ هذا العقد.',
-                    'extracted_vehicle_readings' => 'قراءات المركبة المستخرجة',
-                    'review_the_ai_readings_before_confirming_the_contract_values' => 'راجع قراءات الذكاء الاصطناعي قبل اعتماد قيم العقد.',
-                    'apply_extracted_readings' => 'اعتماد القراءات المستخرجة',
-                    'vehicle_odometer' => 'عداد السيارة',
-                    'fuel_in_vehicle' => 'الوقود الموجود في السيارة',
-                    'confidence' => 'الثقة',
-                    'document_type' => 'نوع المستند',
-                    'full_name' => 'الاسم الكامل',
-                    'arabic_name' => 'الاسم بالعربية',
-                    'phone' => 'الهاتف',
-                    'nationality' => 'الجنسية',
-                    'select_country' => 'اختر الدولة',
-                    'search_country' => 'ابحث عن الدولة...',
-                    'no_countries_found' => 'لا توجد دول.',
-                    'place_of_issue' => 'جهة الإصدار',
-                    'date_of_birth' => 'تاريخ الميلاد',
-                    'identity_number' => 'رقم الهوية',
-                    'residency_number' => 'رقم الإقامة',
-                    'license_number' => 'رقم الرخصة',
-                    'identity_expiry_date' => 'تاريخ انتهاء الهوية',
-                    'license_expiry_date' => 'تاريخ انتهاء الرخصة',
-                    'passport_number' => 'رقم الجواز',
-                    'passport_expiry_date' => 'تاريخ انتهاء الجواز',
-                    'driving_license_issue_date' => 'تاريخ إصدار رخصة القيادة',
-                    'visa_number' => 'رقم التأشيرة',
-                    'visa_expiry_date' => 'تاريخ انتهاء التأشيرة',
-                    'document_front_single' => 'المستند الأمامي / المفرد',
-                    'document_back' => 'خلفية المستند',
-                    'customer_photo' => 'صورة العميل',
-                    'customer_photo_preview' => 'معاينة صورة العميل',
-                    'extracting_photo' => 'جارٍ استخراج الصورة...',
-                    'extract_photo_from_document' => 'استخراج الصورة من المستند',
-                    'extracting' => 'جارٍ الاستخراج...',
-                    'extract_from_document' => 'استخراج من المستند',
-                    'i_reviewed_the_ai_extracted_data_and_confirm_it_is_correct' => 'لقد راجعت البيانات المستخرجة بالذكاء الاصطناعي وأؤكد صحتها.',
-                    'additional_drivers' => 'السائقون الإضافيون',
-                    'independent_drivers_inside_this_contract' => 'السائقون الإضافيون ضمن هذا العقد.',
-                    'add_driver' => 'إضافة سائق',
-                    'no_additional_drivers_added' => 'لم تتم إضافة سائقين إضافيين.',
-                    'upload_id_or_license_and_review_manually' => 'ارفع الهوية أو الرخصة ثم راجع البيانات يدويًا.',
-                    'remove' => 'إزالة',
-                    'additional_archive' => 'الأرشيف الإضافي',
-                    'store_extra_customer_documents_here_files_already_used_in_the_main_identity_lice' => 'خزّن هنا مستندات العميل الإضافية. لا يمكن إضافة الملفات المستخدمة سابقًا في قسم الهوية أو الرخصة الرئيسي مرة أخرى.',
-                    'add_archive_file' => 'إضافة ملف أرشيف',
-                    'files_already_used_in_the_main_customer_document_section_above_cannot_be_added_t' => 'لا يمكن إضافة الملفات المستخدمة بالفعل في قسم مستندات العميل الرئيسي أعلاه إلى هذا الأرشيف.',
-                    'no_additional_archive_files_added' => 'لم تتم إضافة أي ملفات أرشيف إضافية.',
-                    'upload_one_additional_customer_document_for_archive_only' => 'ارفع مستندًا إضافيًا واحدًا للعميل للأرشفة فقط.',
-                    'belongs_to' => 'يتبع إلى',
-                    'title' => 'العنوان',
-                    'notes' => 'ملاحظات',
-                    'archive_file' => 'ملف الأرشيف',
-                    'car_data' => 'بيانات السيارة',
-                    'reservation_and_vehicle_details_for_this_contract' => 'بيانات الحجز والسيارة الخاصة بهذا العقد.',
-                    'car_details_are_linked_to_the_selected_reservation_and_cannot_be_edited_here' => 'بيانات السيارة مرتبطة بالحجز المحدد ولا يمكن تعديلها هنا.',
-                    'car_details' => 'تفاصيل السيارة',
-                    'plate_number' => 'رقم اللوحة',
-                    'use_odometer_image_value' => 'استخدام قيمة صورة العداد',
-                    'use_fuel_image_value' => 'استخدام قيمة صورة الوقود',
-                    'current_car_damages' => 'الأضرار الحالية للسيارة',
-                    'zone' => 'المنطقة',
-                    'view' => 'الجهة',
-                    'type' => 'النوع',
-                    'severity' => 'الشدّة',
-                    'qty' => 'الكمية',
-                    'source' => 'المصدر',
-                    'rental_data' => 'بيانات الإيجار',
-                    'contract_lifecycle_rental_period_amount_and_notes' => 'حالة العقد وفترة الإيجار والمبلغ والملاحظات.',
-                    'linked_reservation' => 'الحجز المرتبط',
-                    'search_reservation' => 'ابحث عن الحجز...',
-                    'clear' => 'مسح',
-                    'no_linked_reservation' => 'لا يوجد حجز مرتبط',
-                    'has_contract' => ' (لديه عقد)',
-                    'client_debt' => ' (مديون)',
-                    'no_car_details' => 'لا توجد تفاصيل للسيارة',
-                    'no_reservations_found' => 'لا توجد حجوزات مطابقة.',
-                    'new_reservation' => 'حجز جديد',
-                    'reservation' => 'الحجز',
-                    'client' => 'العميل',
-                    'car' => 'السيارة',
-                    'status' => 'الحالة',
-                    'contract_number' => 'رقم العقد',
-                    'draft' => 'مسودة',
-                    'completed' => 'مكتمل',
-                    'contract_date' => 'تاريخ العقد',
-                    'rental_start_date' => 'تاريخ بدء الإيجار',
-                    'rental_end_date' => 'تاريخ انتهاء الإيجار',
-                    'total_amount' => 'المبلغ الإجمالي',
-                    'currency' => 'العملة',
-                    'select_currency' => 'اختر العملة',
-                    'return_mileage' => 'عداد العودة',
-                    'use_return_odometer_image_value' => 'استخدام قيمة صورة عداد الرجوع',
-                    'return_fuel' => 'الوقود عند العودة',
-                    'use_return_fuel_image_value' => 'استخدام قيمة صورة وقود الرجوع',
-                    'return_date_actual_return_time' => 'تاريخ ووقت العودة الفعلي',
-                    'vehicle_condition_before_delivery' => 'حالة المركبة قبل التسليم',
-                    'vehicle_condition_after_return' => 'حالة المركبة بعد العودة',
-                    'contract_archive' => 'أرشيف العقد',
-                    'keep_contract_scans_and_supporting_files_here_as_archive_attachments' => 'احتفِظ هنا بنسخ العقد والملفات الداعمة كمرفقات أرشيفية.',
-                    'start_rental_contract_file' => 'ملف عقد بدء الإيجار',
-                    'end_rental_contract_file' => 'ملف عقد نهاية الإيجار',
-                    'saving' => 'جارٍ الحفظ...',
-                    'save_contract' => 'حفظ العقد',
-                    'cancel' => 'إلغاء',
-                    'create_reservation' => 'إنشاء حجز',
-                    'create_a_reservation_here_then_link_it_directly_to_this_contract' => 'أنشئ الحجز هنا ثم اربطه مباشرة بهذا العقد.',
-                    'select_client' => 'اختر العميل',
-                    'select_car' => 'اختر السيارة',
-                    'start_date' => 'تاريخ البدء',
-                    'end_date' => 'تاريخ الانتهاء',
-                    'pickup_time' => 'وقت الاستلام',
-                    'return_time' => 'وقت الإرجاع',
-                    'pickup_location' => 'مكان الاستلام',
-                    'return_location' => 'موقع الإرجاع',
-                    'discount' => 'الخصم',
-                    'creating' => 'جارٍ الإنشاء...',
-                    'handover_photos' => 'صور التسليم والاستلام',
-                    'delivery_and_return_archive_photos_for_this_contract' => 'أرشيف صور التسليم والاستلام الخاصة بهذا العقد.',
-                    'no_handover_photos_added_yet' => 'لم تتم إضافة صور تسليم أو استلام بعد.',
-                    'no_handover_photos_in_this_phase_yet' => 'لا توجد صور في هذه المرحلة بعد.',
-                    'handover_photo' => 'صورة التسليم',
-                    'no_preview_available' => 'لا توجد معاينة متاحة',
-                    'no_notes' => 'لا توجد ملاحظات',
-                    'phase' => 'المرحلة',
-                    'photo_type' => 'نوع الصورة',
-                    'view_side' => 'جهة العرض',
-                    'damage_report' => 'تقرير الضرر',
-                    'extracted_value' => 'القيمة المستخرجة',
-                ],
+          'damage' => 'ضرر',
+          'odometer' => 'عداد',
+          'fuel' => 'وقود',
+          'n_a' => 'غير متوفر',
+          'front' => 'أمام',
+          'rear' => 'خلف',
+          'left' => 'يسار',
+          'right' => 'يمين',
+          'top' => 'أعلى',
+          'single' => 'مفرد',
+          'return' => 'الاستلام',
+          'delivery' => 'التسليم',
+          'no_specific_driver' => 'بدون سائق محدد',
+          'primary_driver' => 'السائق الأساسي',
+          'driver_extraction_endpoint_is_not_configured' => 'لم يتم إعداد مسار استخراج بيانات السائق.',
+          'select_a_document_type_first' => 'اختر نوع المستند أولًا.',
+          'upload_at_least_one_document_image_before_extraction' => 'ارفع صورة مستند واحدة على الأقل قبل الاستخراج.',
+          'driver_extraction_failed' => 'فشل استخراج بيانات السائق.',
+          'document_extraction_completed' => 'تم استخراج بيانات المستند بنجاح.',
+          'customer_photo_extraction_endpoint_is_not_configured' => 'لم يتم إعداد مسار استخراج صورة العميل.',
+          'upload_a_front_or_single_document_image_before_extracting_the_customer_photo' => 'ارفع صورة الواجهة أو الصورة المفردة قبل استخراج صورة العميل.',
+          'customer_photo_extraction_failed' => 'فشل استخراج صورة العميل.',
+          'reservation_store_route_is_not_configured' => 'مسار حفظ الحجز غير مهيأ.',
+          'reservation_creation_failed' => 'فشل إنشاء الحجز.',
+          'contract_save_failed_please_review_the_errors' => 'فشل حفظ العقد. يرجى مراجعة الأخطاء.',
+          'create_contract' => 'إنشاء عقد',
+          'edit_contract' => 'تعديل العقد',
+          'primary_driver_additional_drivers_car_data_rental_data_and_archive' => 'السائق الأساسي، والسائقون الإضافيون، وبيانات السيارة، وبيانات الإيجار، والأرشيف.',
+          'back' => 'رجوع',
+          'this_contract_is_locked_because_the_return_report_is_marked_paid' => 'هذا العقد مقفل لأن تقرير العودة عليه حالة مدفوعة.',
+          'customer_data' => 'بيانات العميل',
+          'primary_driver_details_and_document_uploads' => 'بيانات السائق الأساسي وملفات المستندات المرفوعة.',
+          'review_the_extracted_ai_data_carefully_before_saving_this_contract' => 'راجع البيانات المستخرجة بالذكاء الاصطناعي بعناية قبل حفظ هذا العقد.',
+          'extracted_vehicle_readings' => 'قراءات المركبة المستخرجة',
+          'review_the_ai_readings_before_confirming_the_contract_values' => 'راجع قراءات الذكاء الاصطناعي قبل اعتماد قيم العقد.',
+          'apply_extracted_readings' => 'اعتماد القراءات المستخرجة',
+          'vehicle_odometer' => 'عداد السيارة',
+          'fuel_in_vehicle' => 'الوقود الموجود في السيارة',
+          'confidence' => 'الثقة',
+          'document_type' => 'نوع المستند',
+          'full_name' => 'الاسم الكامل',
+          'arabic_name' => 'الاسم بالعربية',
+          'phone' => 'الهاتف',
+          'nationality' => 'الجنسية',
+          'select_country' => 'اختر الدولة',
+          'search_country' => 'ابحث عن الدولة...',
+          'no_countries_found' => 'لا توجد دول.',
+          'place_of_issue' => 'جهة الإصدار',
+          'date_of_birth' => 'تاريخ الميلاد',
+          'identity_number' => 'رقم الهوية',
+          'residency_number' => 'رقم الإقامة',
+          'license_number' => 'رقم الرخصة',
+          'identity_expiry_date' => 'تاريخ انتهاء الهوية',
+          'license_expiry_date' => 'تاريخ انتهاء الرخصة',
+          'passport_number' => 'رقم الجواز',
+          'passport_expiry_date' => 'تاريخ انتهاء الجواز',
+          'driving_license_issue_date' => 'تاريخ إصدار رخصة القيادة',
+          'visa_number' => 'رقم التأشيرة',
+          'visa_expiry_date' => 'تاريخ انتهاء التأشيرة',
+          'document_front_single' => 'المستند الأمامي / المفرد',
+          'document_back' => 'خلفية المستند',
+          'customer_photo' => 'صورة العميل',
+          'customer_photo_preview' => 'معاينة صورة العميل',
+          'extracting_photo' => 'جارٍ استخراج الصورة...',
+          'extract_photo_from_document' => 'استخراج الصورة من المستند',
+          'extracting' => 'جارٍ الاستخراج...',
+          'extract_from_document' => 'استخراج من المستند',
+          'i_reviewed_the_ai_extracted_data_and_confirm_it_is_correct' => 'لقد راجعت البيانات المستخرجة بالذكاء الاصطناعي وأؤكد صحتها.',
+          'additional_drivers' => 'السائقون الإضافيون',
+          'independent_drivers_inside_this_contract' => 'السائقون الإضافيون ضمن هذا العقد.',
+          'add_driver' => 'إضافة سائق',
+          'no_additional_drivers_added' => 'لم تتم إضافة سائقين إضافيين.',
+          'upload_id_or_license_and_review_manually' => 'ارفع الهوية أو الرخصة ثم راجع البيانات يدويًا.',
+          'remove' => 'إزالة',
+          'additional_archive' => 'الأرشيف الإضافي',
+          'store_extra_customer_documents_here_files_already_used_in_the_main_identity_lice' => 'خزّن هنا مستندات العميل الإضافية. لا يمكن إضافة الملفات المستخدمة سابقًا في قسم الهوية أو الرخصة الرئيسي مرة أخرى.',
+          'add_archive_file' => 'إضافة ملف أرشيف',
+          'files_already_used_in_the_main_customer_document_section_above_cannot_be_added_t' => 'لا يمكن إضافة الملفات المستخدمة بالفعل في قسم مستندات العميل الرئيسي أعلاه إلى هذا الأرشيف.',
+          'no_additional_archive_files_added' => 'لم تتم إضافة أي ملفات أرشيف إضافية.',
+          'upload_one_additional_customer_document_for_archive_only' => 'ارفع مستندًا إضافيًا واحدًا للعميل للأرشفة فقط.',
+          'belongs_to' => 'يتبع إلى',
+          'title' => 'العنوان',
+          'notes' => 'ملاحظات',
+          'archive_file' => 'ملف الأرشيف',
+          'car_data' => 'بيانات السيارة',
+          'reservation_and_vehicle_details_for_this_contract' => 'بيانات الحجز والسيارة الخاصة بهذا العقد.',
+          'car_details_are_linked_to_the_selected_reservation_and_cannot_be_edited_here' => 'بيانات السيارة مرتبطة بالحجز المحدد ولا يمكن تعديلها هنا.',
+          'car_details' => 'تفاصيل السيارة',
+          'plate_number' => 'رقم اللوحة',
+          'use_odometer_image_value' => 'استخدام قيمة صورة العداد',
+          'use_fuel_image_value' => 'استخدام قيمة صورة الوقود',
+          'current_car_damages' => 'الأضرار الحالية للسيارة',
+          'zone' => 'المنطقة',
+          'view' => 'الجهة',
+          'type' => 'النوع',
+          'severity' => 'الشدّة',
+          'qty' => 'الكمية',
+          'source' => 'المصدر',
+          'rental_data' => 'بيانات الإيجار',
+          'contract_lifecycle_rental_period_amount_and_notes' => 'حالة العقد وفترة الإيجار والمبلغ والملاحظات.',
+          'linked_reservation' => 'الحجز المرتبط',
+          'search_reservation' => 'ابحث عن الحجز...',
+          'clear' => 'مسح',
+          'no_linked_reservation' => 'لا يوجد حجز مرتبط',
+          'has_contract' => ' (لديه عقد)',
+          'client_debt' => ' (مديون)',
+          'no_car_details' => 'لا توجد تفاصيل للسيارة',
+          'no_reservations_found' => 'لا توجد حجوزات مطابقة.',
+          'new_reservation' => 'حجز جديد',
+          'reservation' => 'الحجز',
+          'client' => 'العميل',
+          'car' => 'السيارة',
+          'status' => 'الحالة',
+          'contract_number' => 'رقم العقد',
+          'draft' => 'مسودة',
+          'completed' => 'مكتمل',
+          'contract_date' => 'تاريخ العقد',
+          'rental_start_date' => 'تاريخ بدء الإيجار',
+          'rental_end_date' => 'تاريخ انتهاء الإيجار',
+          'total_amount' => 'المبلغ الإجمالي',
+          'currency' => 'العملة',
+          'select_currency' => 'اختر العملة',
+          'return_mileage' => 'عداد العودة',
+          'use_return_odometer_image_value' => 'استخدام قيمة صورة عداد الرجوع',
+          'return_fuel' => 'الوقود عند العودة',
+          'use_return_fuel_image_value' => 'استخدام قيمة صورة وقود الرجوع',
+          'return_date_actual_return_time' => 'تاريخ ووقت العودة الفعلي',
+          'vehicle_condition_before_delivery' => 'حالة المركبة قبل التسليم',
+          'vehicle_condition_after_return' => 'حالة المركبة بعد العودة',
+          'contract_archive' => 'أرشيف العقد',
+          'keep_contract_scans_and_supporting_files_here_as_archive_attachments' => 'احتفِظ هنا بنسخ العقد والملفات الداعمة كمرفقات أرشيفية.',
+          'start_rental_contract_file' => 'ملف عقد بدء الإيجار',
+          'end_rental_contract_file' => 'ملف عقد نهاية الإيجار',
+          'saving' => 'جارٍ الحفظ...',
+          'save_contract' => 'حفظ العقد',
+          'cancel' => 'إلغاء',
+          'create_reservation' => 'إنشاء حجز',
+          'create_a_reservation_here_then_link_it_directly_to_this_contract' => 'أنشئ الحجز هنا ثم اربطه مباشرة بهذا العقد.',
+          'select_client' => 'اختر العميل',
+          'select_car' => 'اختر السيارة',
+          'start_date' => 'تاريخ البدء',
+          'end_date' => 'تاريخ الانتهاء',
+          'pickup_time' => 'وقت الاستلام',
+          'return_time' => 'وقت الإرجاع',
+          'pickup_location' => 'مكان الاستلام',
+          'return_location' => 'موقع الإرجاع',
+          'discount' => 'الخصم',
+          'creating' => 'جارٍ الإنشاء...',
+          'handover_photos' => 'صور التسليم والاستلام',
+          'delivery_and_return_archive_photos_for_this_contract' => 'أرشيف صور التسليم والاستلام الخاصة بهذا العقد.',
+          'no_handover_photos_added_yet' => 'لم تتم إضافة صور تسليم أو استلام بعد.',
+          'no_handover_photos_in_this_phase_yet' => 'لا توجد صور في هذه المرحلة بعد.',
+          'handover_photo' => 'صورة التسليم',
+          'no_preview_available' => 'لا توجد معاينة متاحة',
+          'no_notes' => 'لا توجد ملاحظات',
+          'phase' => 'المرحلة',
+          'photo_type' => 'نوع الصورة',
+          'view_side' => 'جهة العرض',
+          'damage_report' => 'تقرير الضرر',
+          'extracted_value' => 'القيمة المستخرجة',
+        ),
         'show' => 
         array (
           'head_title' => 'Contract :number',
@@ -4931,6 +3957,53 @@ const saveError = ref(\'',
             'qty' => 'Qty',
             'notes' => 'Notes',
           ),
+          'return_status' => 'تقرير الإرجاع',
+          'contract_status' => 'حالة العقد',
+          'reservation_status' => 'حالة الحجز',
+          'finance_status' => 'حالة المالية',
+          'car_status' => 'حالة السيارة',
+          'balance' => 'الرصيد',
+          'daily_rate' => 'السعر اليومي',
+          'vehicle_odometer' => 'عداد السيارة',
+          'fuel_in_vehicle' => 'الوقود الموجود في السيارة',
+          'contract_statuses' => 
+          array (
+            'draft' => 'مسودة',
+            'pending' => 'قيد الانتظار',
+            'active' => 'نشط',
+            'completed' => 'مكتمل',
+            'cancelled' => 'ملغي',
+          ),
+          'reservation_statuses' => 
+          array (
+            'pending' => 'قيد الانتظار',
+            'confirmed' => 'مؤكد',
+            'active' => 'نشط',
+            'completed_wait_contract' => 'مكتمل - بانتظار العقد',
+            'completed' => 'مكتمل',
+            'cancelled' => 'ملغي',
+            'no_show' => 'لم يحضر',
+          ),
+          'finance_statuses' => 
+          array (
+            'no_charge' => 'لا توجد رسوم',
+            'paid' => 'مدفوع',
+            'partial' => 'مدفوع جزئياً',
+            'unpaid' => 'غير مدفوع',
+            'partial_with_return_debt' => 'جزئي + دين إرجاع',
+            'return_debt' => 'دين إرجاع',
+          ),
+          'car_statuses' => 
+          array (
+            'draft' => 'مسودة',
+            'available' => 'متاحة',
+            'reserved' => 'محجوزة',
+            'rented' => 'مؤجرة',
+            'maintenance' => 'صيانة',
+            'cleaning' => 'تنظيف',
+            'unavailable' => 'غير متاحة',
+            'retired' => 'خارج الخدمة',
+          ),
         ),
       ),
       'coupons' => 
@@ -4943,7 +4016,7 @@ const saveError = ref(\'',
           'new_coupon' => 'New Coupon',
           'active' => 'Active',
           'inactive' => 'Inactive',
-                  ),
+        ),
         'edit' => 
         array (
           'head_title_edit' => 'تعديل كوبون',
@@ -5034,6 +4107,16 @@ const saveError = ref(\'',
             'location' => 'Location',
             'description' => 'Description',
             'notes' => 'Notes',
+          ),
+          'select_car_first' => 'اختر السيارة أولاً',
+          'branch_owner' => 'مسؤول الفرع',
+          'payment_details' => 'تفاصيل الدفع',
+          'statuses' => 
+          array (
+            'pending' => 'قيد الانتظار',
+            'paid' => 'مدفوعة',
+            'disputed' => 'متنازع عليها',
+            'cancelled' => 'ملغاة',
           ),
         ),
       ),
@@ -5814,7 +4897,8 @@ const saveError = ref(\'',
         'title' => 'طلبات الموافقة المعلقة',
         'description' => 'تحتاج إلى مراجعتك واتخاذ قرار.',
       ),
-            'index' => [
+      'index' => 
+      array (
         'approve_this_discount_request' => '???????? ??? ??? ??????',
         'rejection_note' => '?????? ?????',
         'discount_requests' => '????? ?????',
@@ -5841,8 +4925,8 @@ const saveError = ref(\'',
         'approve' => '??????',
         'reject' => '???',
         'no_discount_requests_found' => '?? ???? ????? ???.',
-      ],
-'type_label' => 'طلب خصم',
+      ),
+      'type_label' => 'طلب خصم',
       'description' => 'طلب خصم :discount - العميل :client',
       'unknown_client' => 'العميل',
       'statuses' => 

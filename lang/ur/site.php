@@ -2108,6 +2108,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'search_placeholder' => 'Search make, model, plate...',
         'search_button' => 'Search',
         'all' => 'All',
+        'all_branches' => 'تمام برانچز',
         'empty' => 'No cars found.',
         'table' => 
         array (
@@ -2117,6 +2118,12 @@ Sunday: 10:00 AM - 4:00 PM',
           'price_per_day' => 'Price/Day',
           'status' => 'Status',
           'car_image_alt' => 'Car',
+        ),
+        'actions' => 
+        array (
+          'view' => 'دیکھیں',
+          'documents' => 'دستاویزات',
+          'calendar' => 'کیلنڈر',
         ),
         'show' => 
         array (
@@ -2788,8 +2795,24 @@ Sunday: 10:00 AM - 4:00 PM',
         array (
           'head_title' => 'Clients',
           'title' => 'Clients',
+          'create_client' => 'کلائنٹ بنائیں',
           'search_placeholder' => 'Search by name or email...',
+          'all_branches' => 'تمام برانچز',
+          'client_status' => 'کلائنٹ حالت',
+          'notes' => 'نوٹ',
           'empty' => 'No clients found.',
+          'statuses' => 
+          array (
+            'active' => 'فعال',
+            'suspended' => 'معطل',
+          ),
+          'client_statuses' => 
+          array (
+            'good' => 'اچھا',
+            'info' => 'معلومات',
+            'warning' => 'انتباہ',
+            'danger' => 'خطرہ',
+          ),
         ),
         'create' => 
         array (
@@ -3268,6 +3291,110 @@ Sunday: 10:00 AM - 4:00 PM',
           'damage_report' => 'نقصان رپورٹ',
           'extracted_value' => 'نکالی گئی قدر',
         ),
+        'show' => 
+        array (
+          'head_title' => 'Contract :number',
+          'pdf_en' => 'PDF EN',
+          'pdf_ar' => 'PDF AR',
+          'download_pdf' => 'Download PDF',
+          'no_current_damages' => 'No current damage cases recorded for this car.',
+          'no_damage_reports' => 'No damage reports linked to this contract yet.',
+          'new_damage_report' => 'New Damage Report',
+          'no_date' => 'No date',
+          'entries_count' => ':count entries',
+          'total_quantity' => 'Total quantity: :count',
+          'open_report' => 'Open report',
+          'start_rental_contract' => 'Start rental contract',
+          'end_rental_contract' => 'End rental contract',
+          'no_file_uploaded' => 'No file uploaded.',
+          'disabled' => 'Disabled',
+          'no_extracted_data' => 'No extracted data available.',
+          'sections' => 
+          array (
+            'details' => 'Contract Details',
+            'renter' => 'Renter',
+            'vehicle' => 'Vehicle',
+            'reservation_link' => 'Reservation Link',
+            'current_car_damages' => 'Current Car Damages',
+            'damage_reports' => 'Damage Reports',
+            'legacy_files' => 'Legacy Files',
+            'ai_extraction' => 'AI Extraction',
+            'notes' => 'Notes',
+          ),
+          'fields' => 
+          array (
+            'status' => 'Status',
+            'date' => 'Date',
+            'branch' => 'Branch',
+            'amount' => 'Amount',
+            'name' => 'Name',
+            'id' => 'ID Number',
+            'phone' => 'Phone',
+            'details' => 'Details',
+            'plate' => 'Plate Number',
+            'start' => 'Start',
+            'end' => 'End',
+            'reservation_number' => 'Reservation Number',
+            'client' => 'Client',
+            'car' => 'Car',
+          ),
+          'table' => 
+          array (
+            'zone' => 'Zone',
+            'view' => 'View',
+            'type' => 'Type',
+            'severity' => 'Severity',
+            'qty' => 'Qty',
+            'notes' => 'Notes',
+          ),
+          'return_status' => 'واپسی حالت',
+          'contract_status' => 'معاہدہ حالت',
+          'reservation_status' => 'ریزرویشن حالت',
+          'finance_status' => 'مالی حالت',
+          'car_status' => 'گاڑی حالت',
+          'balance' => 'بقایا',
+          'daily_rate' => 'روزانہ ریٹ',
+          'vehicle_odometer' => 'گاڑی اوڈومیٹر',
+          'fuel_in_vehicle' => 'گاڑی میں ایندھن',
+          'contract_statuses' => 
+          array (
+            'draft' => 'ڈرافٹ',
+            'pending' => 'زیر التواء',
+            'active' => 'فعال',
+            'completed' => 'مکمل',
+            'cancelled' => 'منسوخ',
+          ),
+          'reservation_statuses' => 
+          array (
+            'pending' => 'زیر التواء',
+            'confirmed' => 'تصدیق شدہ',
+            'active' => 'فعال',
+            'completed_wait_contract' => 'مکمل - معاہدے کا انتظار',
+            'completed' => 'مکمل',
+            'cancelled' => 'منسوخ',
+            'no_show' => 'حاضر نہیں ہوا',
+          ),
+          'finance_statuses' => 
+          array (
+            'no_charge' => 'کوئی چارج نہیں',
+            'paid' => 'ادا شدہ',
+            'partial' => 'جزوی ادا شدہ',
+            'unpaid' => 'غیر ادا شدہ',
+            'partial_with_return_debt' => 'جزوی + واپسی قرض',
+            'return_debt' => 'واپسی قرض',
+          ),
+          'car_statuses' => 
+          array (
+            'draft' => 'ڈرافٹ',
+            'available' => 'دستیاب',
+            'reserved' => 'محفوظ',
+            'rented' => 'کرائے پر',
+            'maintenance' => 'مینٹیننس',
+            'cleaning' => 'صفائی',
+            'unavailable' => 'غیر دستیاب',
+            'retired' => 'سروس سے خارج',
+          ),
+        ),
       ),
       'show' => 
       array (
@@ -3592,6 +3719,22 @@ Sunday: 10:00 AM - 4:00 PM',
         'utilization_rate' => 'Utilization Rate',
         'avg_per_reservation' => 'Avg per Reservation',
         'zero_amount' => '0.00',
+      ),
+      'car_violations' => 
+      array (
+        'edit' => 
+        array (
+          'select_car_first' => 'پہلے گاڑی منتخب کریں',
+          'branch_owner' => 'برانچ مالک',
+          'payment_details' => 'ادائیگی کی تفصیلات',
+          'statuses' => 
+          array (
+            'pending' => 'زیر التواء',
+            'paid' => 'ادا شدہ',
+            'disputed' => 'متنازع',
+            'cancelled' => 'منسوخ',
+          ),
+        ),
       ),
     ),
     'coupons' => 

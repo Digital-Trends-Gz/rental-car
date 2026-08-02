@@ -62,7 +62,44 @@ test('api login returns company owner account type for tenant owner', function (
 
     $response->assertOk()
         ->assertJsonPath('user.account_type', 'company_owner')
-        ->assertJsonPath('user.account_type_label', 'Company owner');
+        ->assertJsonPath('user.account_type_label', 'Company owner')
+        ->assertJsonPath('user.is_company_owner', true)
+        ->assertJsonPath('user.available_modes', ['owner', 'employee']);
+});
+
+test('api switch mode keeps owner identity while acting as employee', function () {
+    $plan = Plan::factory()->create(['is_active' => true]);
+    $tenant = Tenant::factory()->create([
+        'email' => 'owner-switch@example.com',
+        'plan_id' => $plan->id,
+        'trial_ends_at' => now()->addMonth(),
+    ]);
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Owner Branch',
+    ]);
+    $user = User::factory()->create([
+        'email' => 'owner-switch@example.com',
+        'role' => UserRole::ADMIN,
+        'tenant_id' => $tenant->id,
+        'is_active' => true,
+    ]);
+
+    Sanctum::actingAs($user, ['*', 'app-mode:owner']);
+
+    $response = $this->postJson('/api/auth/switch-mode', [
+        'mode' => 'employee',
+        'branch_id' => $branch->id,
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('active_mode', 'employee')
+        ->assertJsonPath('branch_id', $branch->id)
+        ->assertJsonPath('user.account_type', 'employee')
+        ->assertJsonPath('user.base_account_type', 'company_owner')
+        ->assertJsonPath('user.is_company_owner', true)
+        ->assertJsonPath('user.can_switch_modes', true)
+        ->assertJsonPath('user.available_modes', ['owner', 'employee']);
 });
 
 test('api login returns employee account type for tenant employee', function () {

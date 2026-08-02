@@ -37,10 +37,9 @@ const props = defineProps<{
   branches: Array<{ id: number; name: string }>
   canAccessAllBranches: boolean
 }>()
-const { t, locale } = useTrans();
+const { t } = useTrans();
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const statusColors = computed(() => {
   const colors: Record<string, { bg: string; text: string; dot: string }> = {};
@@ -75,6 +74,21 @@ const clientStatusColor = (status?: string) => {
   };
 
   return colors[status || ''] || { bg: 'rgba(107, 114, 128, 0.1)', text: '#6B7280', dot: '#6B7280' };
+};
+
+const statusLabel = (key: string, fallback: string) => {
+  const translationKey = `dashboard.admin.clients.index.statuses.${key}`;
+  const translated = t(translationKey);
+
+  return translated === translationKey ? fallback : translated;
+};
+
+const clientStatusLabel = (key?: string, fallback = '') => {
+  const normalizedKey = key || 'good';
+  const translationKey = `dashboard.admin.clients.index.client_statuses.${normalizedKey}`;
+  const translated = t(translationKey);
+
+  return translated === translationKey ? fallback || normalizedKey : translated;
 };
 
 const search = ref(props.filters?.search || '');
@@ -115,7 +129,7 @@ const navigateToClient = (id: number) => {
       <div class="flex items-center justify-between gap-4">
         <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.clients.index.title') }}</h1>
         <Link v-if="subdomain" :href="create(subdomain).url">
-          <Button>Create Client</Button>
+          <Button>{{ t('dashboard.admin.clients.index.create_client') }}</Button>
         </Link>
       </div>
 
@@ -134,7 +148,7 @@ const navigateToClient = (id: number) => {
             class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
             @change="doSearch"
           >
-            <option value="all">All branches</option>
+            <option value="all">{{ t('dashboard.admin.clients.index.all_branches') }}</option>
             <option v-for="branch in props.branches" :key="branch.id" :value="String(branch.id)">{{ branch.name }}</option>
           </select>
         </div>
@@ -165,7 +179,7 @@ const navigateToClient = (id: number) => {
                 }"
               >
                 <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: (status as any).color }"></span>
-                {{ (status as any).label }} ({{ (status as any).count }})
+                {{ statusLabel(String(key), (status as any).label) }} ({{ (status as any).count }})
               </span>
             </label>
           </template>
@@ -181,7 +195,7 @@ const navigateToClient = (id: number) => {
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.payments') }}</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.employees.table.branch') }}</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.common.status') }}</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ localize('Client status', 'حالة العميل') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ t('dashboard.admin.clients.index.client_status') }}</th>
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
@@ -220,10 +234,10 @@ const navigateToClient = (id: number) => {
                   }"
                 >
                   <span class="size-2 rounded-full" :style="{ backgroundColor: clientStatusColor(c.client_status?.status).dot }" />
-                  {{ c.client_status?.label || localize('Good', 'جيد') }}
+                  {{ clientStatusLabel(c.client_status?.status, c.client_status?.label) }}
                 </span>
                 <div v-if="c.client_status?.flags_count" class="mt-1 text-xs text-muted-foreground">
-                  {{ c.client_status.flags_count }} {{ localize('note(s)', 'ملاحظة') }}
+                  {{ c.client_status.flags_count }} {{ t('dashboard.admin.clients.index.notes') }}
                 </div>
               </td>
               <td class="px-4 py-3 text-right">

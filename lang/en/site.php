@@ -2388,6 +2388,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'search_placeholder' => 'Search make, model, plate...',
         'search_button' => 'Search',
         'all' => 'All',
+        'all_branches' => 'All branches',
         'empty' => 'No cars found.',
         'table' => 
         array (
@@ -2397,6 +2398,12 @@ Sunday: 10:00 AM - 4:00 PM',
           'price_per_day' => 'Price/Day',
           'status' => 'Status',
           'car_image_alt' => 'Car',
+        ),
+        'actions' => 
+        array (
+          'view' => 'View',
+          'documents' => 'Documents',
+          'calendar' => 'Calendar',
         ),
         'show' => 
         array (
@@ -3070,8 +3077,24 @@ Sunday: 10:00 AM - 4:00 PM',
         array (
           'head_title' => 'Clients',
           'title' => 'Clients',
+          'create_client' => 'Create Client',
           'search_placeholder' => 'Search by name or email...',
+          'all_branches' => 'All branches',
+          'client_status' => 'Client status',
+          'notes' => 'note(s)',
           'empty' => 'No clients found.',
+          'statuses' => 
+          array (
+            'active' => 'Active',
+            'suspended' => 'Suspended',
+          ),
+          'client_statuses' => 
+          array (
+            'good' => 'Good',
+            'info' => 'Info',
+            'warning' => 'Warning',
+            'danger' => 'Danger',
+          ),
         ),
         'create' => 
         array (
@@ -3550,6 +3573,110 @@ Sunday: 10:00 AM - 4:00 PM',
           'damage_report' => 'Damage Report',
           'extracted_value' => 'Extracted Value',
         ),
+        'show' => 
+        array (
+          'head_title' => 'Contract :number',
+          'pdf_en' => 'PDF EN',
+          'pdf_ar' => 'PDF AR',
+          'download_pdf' => 'Download PDF',
+          'no_current_damages' => 'No current damage cases recorded for this car.',
+          'no_damage_reports' => 'No damage reports linked to this contract yet.',
+          'new_damage_report' => 'New Damage Report',
+          'no_date' => 'No date',
+          'entries_count' => ':count entries',
+          'total_quantity' => 'Total quantity: :count',
+          'open_report' => 'Open report',
+          'start_rental_contract' => 'Start rental contract',
+          'end_rental_contract' => 'End rental contract',
+          'no_file_uploaded' => 'No file uploaded.',
+          'disabled' => 'Disabled',
+          'no_extracted_data' => 'No extracted data available.',
+          'sections' => 
+          array (
+            'details' => 'Contract Details',
+            'renter' => 'Renter',
+            'vehicle' => 'Vehicle',
+            'reservation_link' => 'Reservation Link',
+            'current_car_damages' => 'Current Car Damages',
+            'damage_reports' => 'Damage Reports',
+            'legacy_files' => 'Legacy Files',
+            'ai_extraction' => 'AI Extraction',
+            'notes' => 'Notes',
+          ),
+          'fields' => 
+          array (
+            'status' => 'Status',
+            'date' => 'Date',
+            'branch' => 'Branch',
+            'amount' => 'Amount',
+            'name' => 'Name',
+            'id' => 'ID Number',
+            'phone' => 'Phone',
+            'details' => 'Details',
+            'plate' => 'Plate Number',
+            'start' => 'Start',
+            'end' => 'End',
+            'reservation_number' => 'Reservation Number',
+            'client' => 'Client',
+            'car' => 'Car',
+          ),
+          'table' => 
+          array (
+            'zone' => 'Zone',
+            'view' => 'View',
+            'type' => 'Type',
+            'severity' => 'Severity',
+            'qty' => 'Qty',
+            'notes' => 'Notes',
+          ),
+          'return_status' => 'Return Status',
+          'contract_status' => 'Contract Status',
+          'reservation_status' => 'Reservation Status',
+          'finance_status' => 'Finance Status',
+          'car_status' => 'Car Status',
+          'balance' => 'Balance',
+          'daily_rate' => 'Daily Rate',
+          'vehicle_odometer' => 'Vehicle Odometer',
+          'fuel_in_vehicle' => 'Fuel In Vehicle',
+          'contract_statuses' => 
+          array (
+            'draft' => 'Draft',
+            'pending' => 'Pending',
+            'active' => 'Active',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+          ),
+          'reservation_statuses' => 
+          array (
+            'pending' => 'Pending',
+            'confirmed' => 'Confirmed',
+            'active' => 'Active',
+            'completed_wait_contract' => 'Completed - Waiting for Contract',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+            'no_show' => 'No Show',
+          ),
+          'finance_statuses' => 
+          array (
+            'no_charge' => 'No Charge',
+            'paid' => 'Paid',
+            'partial' => 'Partially Paid',
+            'unpaid' => 'Unpaid',
+            'partial_with_return_debt' => 'Partial + Return Debt',
+            'return_debt' => 'Return Debt',
+          ),
+          'car_statuses' => 
+          array (
+            'draft' => 'Draft',
+            'available' => 'Available',
+            'reserved' => 'Reserved',
+            'rented' => 'Rented',
+            'maintenance' => 'Maintenance',
+            'cleaning' => 'Cleaning',
+            'unavailable' => 'Unavailable',
+            'retired' => 'Retired',
+          ),
+        ),
       ),
       'show' => 
       array (
@@ -3874,6 +4001,22 @@ Sunday: 10:00 AM - 4:00 PM',
         'utilization_rate' => 'Utilization Rate',
         'avg_per_reservation' => 'Avg per Reservation',
         'zero_amount' => '0.00',
+      ),
+      'car_violations' => 
+      array (
+        'edit' => 
+        array (
+          'select_car_first' => 'Select car first',
+          'branch_owner' => 'Branch Owner',
+          'payment_details' => 'Payment Details',
+          'statuses' => 
+          array (
+            'pending' => 'Pending',
+            'paid' => 'Paid',
+            'disputed' => 'Disputed',
+            'cancelled' => 'Cancelled',
+          ),
+        ),
       ),
     ),
     'coupons' => 

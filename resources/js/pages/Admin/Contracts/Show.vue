@@ -289,6 +289,20 @@ const badgeStyle = (status?: StatusPayload | null) => {
     };
 };
 
+const statusTranslationKey = (value?: string | null) => String(value || 'unknown')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+const statusLabel = (group: string, status?: StatusPayload | null, fallback = '-') => {
+    const key = statusTranslationKey(status?.value || status?.label);
+    const translationKey = `dashboard.admin.contracts.show.${group}.${key}`;
+    const translated = t(translationKey);
+
+    return translated === translationKey ? (status?.label || fallback) : translated;
+};
+
 function buildPreview(currentEndDate: string, newEndDate: string, currentTotal: number) {
     if (!currentEndDate || !newEndDate) {
         return null;
@@ -400,7 +414,7 @@ function submitRequestExtension() {
                         {{ localize('Deliver Vehicle', 'تسليم السيارة') }}
                     </Button>
                     <Link v-if="actions.return_report" :href="actions.return_report">
-                        <Button variant="secondary">{{ localize('Return Status', 'تقرير الإرجاع') }}</Button>
+                        <Button variant="secondary">{{ t('dashboard.admin.contracts.show.return_status') }}</Button>
                     </Link>
                     <div v-if="isLocked" class="w-full rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 md:col-span-2 xl:col-span-4">
                         {{ localize('This contract is locked because the return report is marked paid.', 'هذا العقد مقفل لأن تقرير الإرجاع معلم كمدفوع.') }}
@@ -426,56 +440,56 @@ function submitRequestExtension() {
             <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
                 <div class="rounded-md border p-4">
                     <div class="text-xs font-medium uppercase text-gray-500">
-                        Contract Status
+                        {{ t('dashboard.admin.contracts.show.contract_status') }}
                     </div>
                     <span
                         class="mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
                         :style="badgeStyle(contract.contract_status)"
                     >
-                        {{ contract.contract_status?.label || contract.status || '-' }}
+                        {{ statusLabel('contract_statuses', contract.contract_status, contract.status || '-') }}
                     </span>
                 </div>
                 <div class="rounded-md border p-4">
                     <div class="text-xs font-medium uppercase text-gray-500">
-                        Reservation Status
+                        {{ t('dashboard.admin.contracts.show.reservation_status') }}
                     </div>
                     <span
                         v-if="contract.reservation_status"
                         class="mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
                         :style="badgeStyle(contract.reservation_status)"
                     >
-                        {{ contract.reservation_status.label }}
+                        {{ statusLabel('reservation_statuses', contract.reservation_status) }}
                     </span>
                     <div v-else class="mt-2 text-sm text-gray-500">-</div>
                 </div>
                 <div class="rounded-md border p-4">
                     <div class="text-xs font-medium uppercase text-gray-500">
-                        Finance Status
+                        {{ t('dashboard.admin.contracts.show.finance_status') }}
                     </div>
                     <span
                         class="mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
                         :style="badgeStyle(contract.finance_status)"
                     >
-                        {{ contract.finance_status?.label || '-' }}
+                        {{ statusLabel('finance_statuses', contract.finance_status) }}
                     </span>
                     <div
                         v-if="Number(contract.finance_status?.balance_due ?? 0) > 0"
                         class="mt-2 text-xs text-gray-500"
                     >
-                        Balance: {{ contract.finance_status?.balance_due }}
+                        {{ t('dashboard.admin.contracts.show.balance') }}: {{ contract.finance_status?.balance_due }}
                         {{ contract.currency || '' }}
                     </div>
                 </div>
                 <div class="rounded-md border p-4">
                     <div class="text-xs font-medium uppercase text-gray-500">
-                        Car Status
+                        {{ t('dashboard.admin.contracts.show.car_status') }}
                     </div>
                     <span
                         v-if="contract.car_status"
                         class="mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
                         :style="badgeStyle(contract.car_status)"
                     >
-                        {{ contract.car_status.label }}
+                        {{ statusLabel('car_statuses', contract.car_status) }}
                     </span>
                     <div v-else class="mt-2 text-sm text-gray-500">-</div>
                 </div>
@@ -491,7 +505,7 @@ function submitRequestExtension() {
                             <strong
                                 >{{ t('dashboard.admin.contracts.show.fields.status') }}:</strong
                             >
-                            {{ contract.contract_status?.label || contract.status }}
+                            {{ statusLabel('contract_statuses', contract.contract_status, contract.status || '-') }}
                         </div>
                         <div>
                             <strong
@@ -513,7 +527,7 @@ function submitRequestExtension() {
                             {{ contract.currency || '' }}
                         </div>
                         <div>
-                            <strong>Daily Rate:</strong>
+                            <strong>{{ t('dashboard.admin.contracts.show.daily_rate') }}:</strong>
                             {{ extensionDailyRate || '-' }}
                             {{ contract.currency || '' }}
                         </div>
@@ -564,11 +578,11 @@ function submitRequestExtension() {
                             {{ contract.plate_number || '-' }}
                         </div>
                         <div>
-                            <strong>Vehicle Odometer:</strong>
+                            <strong>{{ t('dashboard.admin.contracts.show.vehicle_odometer') }}:</strong>
                             {{ contract.vehicle_odometer ?? '-' }}
                         </div>
                         <div>
-                            <strong>Fuel In Vehicle:</strong>
+                            <strong>{{ t('dashboard.admin.contracts.show.fuel_in_vehicle') }}:</strong>
                             {{ contract.vehicle_fuel_level || '-' }}
                         </div>
                         <div>

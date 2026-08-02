@@ -79,6 +79,48 @@ const badgeStyle = (status?: StatusPayload | null) => {
         borderColor: `${color}4d`,
     };
 };
+
+const normalizeTranslationKey = (value?: string | null): string =>
+    String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+const translateWithFallback = (key: string, fallback: string): string => {
+    const translated = t(key);
+
+    return translated === key ? fallback : translated;
+};
+
+const translatedStatus = (
+    group:
+        | 'contract_statuses'
+        | 'reservation_statuses'
+        | 'finance_statuses'
+        | 'car_statuses',
+    status?: StatusPayload | null,
+    fallback?: string | null,
+): string => {
+    const rawValue = status?.value || fallback || status?.label;
+    const key = normalizeTranslationKey(rawValue);
+
+    if (!key) {
+        return fallback || status?.label || '-';
+    }
+
+    return translateWithFallback(
+        `dashboard.admin.${group}.${key}`,
+        status?.label || fallback || key,
+    );
+};
+
+const translatedContractStatusFilter = (value: string): string =>
+    translatedStatus('contract_statuses', {
+        value,
+        label: value,
+        color: '',
+    });
 </script>
 
 <template>
@@ -113,7 +155,7 @@ const badgeStyle = (status?: StatusPayload | null) => {
                         {{ t('dashboard.admin.contracts.index.all_statuses') }}
                     </option>
                     <option v-for="item in statuses" :key="item" :value="item">
-                        {{ item }}
+                        {{ translatedContractStatusFilter(item) }}
                     </option>
                 </select>
 
@@ -183,22 +225,42 @@ const badgeStyle = (status?: StatusPayload | null) => {
                             <th
                                 class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                             >
-                                Contract Status
+                                {{
+                                    translateWithFallback(
+                                        'dashboard.admin.contracts.index.table.contract_status',
+                                        'Contract Status',
+                                    )
+                                }}
                             </th>
                             <th
                                 class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                             >
-                                Reservation Status
+                                {{
+                                    translateWithFallback(
+                                        'dashboard.admin.contracts.index.table.reservation_status',
+                                        'Reservation Status',
+                                    )
+                                }}
                             </th>
                             <th
                                 class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                             >
-                                Finance Status
+                                {{
+                                    translateWithFallback(
+                                        'dashboard.admin.contracts.index.table.finance_status',
+                                        'Finance Status',
+                                    )
+                                }}
                             </th>
                             <th
                                 class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
                             >
-                                Car Status
+                                {{
+                                    translateWithFallback(
+                                        'dashboard.admin.contracts.index.table.car_status',
+                                        'Car Status',
+                                    )
+                                }}
                             </th>
                             <th
                                 class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
@@ -240,9 +302,11 @@ const badgeStyle = (status?: StatusPayload | null) => {
                                     :style="badgeStyle(item.contract_status)"
                                 >
                                     {{
-                                        item.contract_status?.label ||
-                                        item.status ||
-                                        '-'
+                                        translatedStatus(
+                                            'contract_statuses',
+                                            item.contract_status,
+                                            item.status,
+                                        )
                                     }}
                                 </span>
                             </td>
@@ -252,7 +316,12 @@ const badgeStyle = (status?: StatusPayload | null) => {
                                     class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
                                     :style="badgeStyle(item.reservation_status)"
                                 >
-                                    {{ item.reservation_status.label }}
+                                    {{
+                                        translatedStatus(
+                                            'reservation_statuses',
+                                            item.reservation_status,
+                                        )
+                                    }}
                                 </span>
                                 <span v-else>-</span>
                             </td>
@@ -262,7 +331,12 @@ const badgeStyle = (status?: StatusPayload | null) => {
                                         class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
                                         :style="badgeStyle(item.finance_status)"
                                     >
-                                        {{ item.finance_status?.label || '-' }}
+                                        {{
+                                            translatedStatus(
+                                                'finance_statuses',
+                                                item.finance_status,
+                                            )
+                                        }}
                                     </span>
                                     <div
                                         v-if="
@@ -273,7 +347,12 @@ const badgeStyle = (status?: StatusPayload | null) => {
                                         "
                                         class="text-xs text-gray-500"
                                     >
-                                        Balance:
+                                        {{
+                                            translateWithFallback(
+                                                'dashboard.admin.contracts.index.balance',
+                                                'Balance',
+                                            )
+                                        }}:
                                         {{
                                             item.finance_status?.balance_due
                                         }}
@@ -287,7 +366,12 @@ const badgeStyle = (status?: StatusPayload | null) => {
                                     class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
                                     :style="badgeStyle(item.car_status)"
                                 >
-                                    {{ item.car_status.label }}
+                                    {{
+                                        translatedStatus(
+                                            'car_statuses',
+                                            item.car_status,
+                                        )
+                                    }}
                                 </span>
                                 <span v-else>-</span>
                             </td>

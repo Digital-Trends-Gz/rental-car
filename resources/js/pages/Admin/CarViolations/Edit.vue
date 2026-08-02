@@ -63,6 +63,13 @@ const pageTitle = computed(() =>
         : t('dashboard.admin.car_violations.edit.head_title_create'),
 );
 
+const statusLabel = (status: { value: string; label: string }) => {
+    const translationKey = `dashboard.admin.car_violations.edit.statuses.${status.value}`;
+    const translated = t(translationKey);
+
+    return translated === translationKey ? status.label : translated;
+};
+
 const form = useForm({
     car_id: props.violation?.car_id ? String(props.violation.car_id) : '',
     reservation_id: props.violation?.reservation_id
@@ -449,7 +456,7 @@ function submit() {
                                     :disabled="!form.car_id"
                                     :placeholder="
                                         !form.car_id
-                                            ? localize('Select car first', 'اختر السيارة أولاً')
+                                            ? t('dashboard.admin.car_violations.edit.select_car_first')
                                             : localize('Search reservation...', 'ابحث عن الحجز...')
                                     "
                                     autocomplete="off"
@@ -510,7 +517,7 @@ function submit() {
                                 localize('Reservation User', 'مستخدم الحجز')
                             }}</Label>
                             <Label v-else for="branch_owner_user_id">{{
-                                localize('Branch Owner', 'مسؤول الفرع')
+                                t('dashboard.admin.car_violations.edit.branch_owner')
                             }}</Label>
 
                             <div
@@ -527,7 +534,7 @@ function submit() {
                                     :disabled="!form.car_id"
                                     :placeholder="
                                         !form.car_id
-                                            ? localize('Select car first', 'اختر السيارة أولاً')
+                                            ? t('dashboard.admin.car_violations.edit.select_car_first')
                                             : localize('Search branch owner...', 'ابحث عن مسؤول الفرع...')
                                     "
                                     autocomplete="off"
@@ -760,7 +767,7 @@ function submit() {
                                     :key="statusItem.value"
                                     :value="statusItem.value"
                                 >
-                                    {{ statusItem.label }}
+                                    {{ statusLabel(statusItem) }}
                                 </option>
                             </select>
                             <InputError :message="form.errors.status" />
@@ -821,7 +828,7 @@ function submit() {
 
                         <div class="md:col-span-2 border-t pt-2">
                             <h3 class="text-sm font-semibold text-foreground">
-                                {{ localize('Payment Details', 'تفاصيل الدفع') }}
+                                {{ t('dashboard.admin.car_violations.edit.payment_details') }}
                             </h3>
                         </div>
 

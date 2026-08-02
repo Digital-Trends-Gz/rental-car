@@ -401,6 +401,7 @@ class AuthController extends Controller
     {
         $tenant = $this->resolveTenant($user);
         $baseAccountType = $this->baseAccountType($user, $tenant);
+        $isCompanyOwner = $baseAccountType === 'company_owner';
         $mode = ApiAccessMode::activeMode($user, $tenant, $activeMode);
         $accountType = $mode === ApiAccessMode::MODE_EMPLOYEE && $baseAccountType === 'company_owner'
             ? 'employee'
@@ -420,8 +421,12 @@ class AuthController extends Controller
             'account_type' => $accountType,
             'account_type_label' => $this->accountTypeLabelFor($accountType, $tenant),
             'base_account_type' => $baseAccountType,
+            'is_company_owner' => $isCompanyOwner,
             'active_mode' => $mode,
             'can_switch_modes' => ApiAccessMode::isOwnerCapable($user, $tenant),
+            'available_modes' => $isCompanyOwner
+                ? [ApiAccessMode::MODE_OWNER, ApiAccessMode::MODE_EMPLOYEE]
+                : [$mode],
             'tenant_id' => $user->tenant_id,
             'branch_id' => $branchId,
             'branch_name' => $branch?->name,

@@ -35,19 +35,21 @@ const props = defineProps<{
     canViewFinancials: boolean;
     currency: { symbol: string; code: string };
 }>();
-const { t, locale } = useTrans();
+const { t, raw, locale } = useTrans();
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
 const search = ref(props.filters?.search || '');
 const statusFilter = ref(props.filters?.status || 'all');
 const branchFilter = ref(props.filters?.branch_id ? String(props.filters.branch_id) : 'all');
-const isArabic = computed(() => page.props.locale === 'ar');
 const authPermissions = computed<string[]>(() =>
     Array.isArray(page.props?.auth?.permissions) ? page.props.auth.permissions : [],
 );
 const hasFinancialAccess = computed(() => !!props.canViewFinancials);
 const hasDebtorsAccess = computed(() => authPermissions.value.includes('tenant-view-debtors'));
-const localize = (en: string, ar: string) => (isArabic.value ? ar : en);
+const translateStatus = (status: string, fallback?: string) =>
+    raw(`dashboard.admin.payments.index.statuses.${status}`, fallback || status);
+const translatePaymentMethod = (method: string, fallback?: string) =>
+    raw(`dashboard.admin.payments.index.payment_methods.${method}`, fallback || method);
 
 function adminUrl(path: string) {
     const currentUrl = String(page.url || '');
@@ -132,7 +134,7 @@ const getStatusColor = (status: string) => {
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.payments.index.title') }}</h1>
                 <Link v-if="hasDebtorsAccess" :href="adminUrl('/payments/debtors')">
-                    <Button variant="outline">{{ localize('Debtors', 'المديونين') }}</Button>
+                    <Button variant="outline">{{ t('dashboard.admin.payments.index.debtors') }}</Button>
                 </Link>
             </div>
 
@@ -151,7 +153,7 @@ const getStatusColor = (status: string) => {
                         class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                         @change="doSearch"
                     >
-                        <option value="all">All branches</option>
+                        <option value="all">{{ t('dashboard.admin.payments.index.all_branches') }}</option>
                         <option v-for="branch in props.branches" :key="branch.id" :value="String(branch.id)">
                             {{ branch.name }}
                         </option>
@@ -161,9 +163,9 @@ const getStatusColor = (status: string) => {
                         class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                         @change="doSearch"
                     >
-                        <option value="all">{{ t('dashboard.common.all') }} status</option>
+                        <option value="all">{{ t('dashboard.admin.payments.index.all_statuses') }}</option>
                         <option v-for="(status, key) in props.statuses" :key="key" :value="key">
-                            {{ status.label }} ({{ status.count }})
+                            {{ translateStatus(String(key), status.label) }} ({{ status.count }})
                         </option>
                     </select>
                 </div>
@@ -244,22 +246,20 @@ const getStatusColor = (status: string) => {
                                     class="mt-1 max-w-[220px] text-xs font-normal leading-5 text-muted-foreground"
                                 >
                                     <div>
-                                        {{
-                                            localize('Converted to', 'تم التحويل إلى')
-                                        }}
+                                        {{ t('dashboard.admin.payments.index.converted_to') }}
                                         <span class="font-medium text-gray-700">
                                             {{ fmtCurrencyAmount(p.base_amount, p.base_currency) }}
                                         </span>
                                     </div>
                                     <div>
-                                        {{ localize('Rate', 'سعر الصرف') }}:
+                                        {{ t('dashboard.admin.payments.index.rate') }}:
                                         1 {{ p.currency }} =
                                         {{ fmtRate(p.exchange_rate) }}
                                         {{ p.base_currency }}
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3">{{ p.payment_method }}</td>
+                            <td class="px-4 py-3">{{ translatePaymentMethod(p.payment_method) }}</td>
                             <td class="px-4 py-3">
                                 <span
                                     class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium"
@@ -278,7 +278,7 @@ const getStatusColor = (status: string) => {
                                             ).dot,
                                         }"
                                     />
-                                    {{ p.status }}
+                                    {{ translateStatus(p.status) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3">

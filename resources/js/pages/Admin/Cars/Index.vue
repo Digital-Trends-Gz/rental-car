@@ -100,6 +100,10 @@ const statusLabel = (key: string, fallback: string) => {
   return dashboardTranslated === dashboardKey ? fallback : dashboardTranslated;
 }
 
+const carStatusLabel = (car: { status: string; status_label?: string }) => {
+  return statusLabel(car.status, car.status_label || car.status);
+}
+
 const search = ref(props.filters?.search || '')
 
 const statusFilter = ref(props.filters?.status || 'all')
@@ -173,7 +177,7 @@ const destroyCar = () => {
                       class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                       @change="doSearch"
                     >
-                      <option value="all">All branches</option>
+                      <option value="all">{{ t('dashboard.admin.cars.all_branches') }}</option>
                       <option v-for="branch in props.branches" :key="branch.id" :value="String(branch.id)">
                         {{ branch.name }}
                       </option>
@@ -264,18 +268,18 @@ const destroyCar = () => {
                                     class="size-2 rounded-full" 
                                     :style="{ backgroundColor: getStatusColor(car.status).dot }"
                                   />
-                                  {{ car.status_label || car.status }}
+                                  {{ carStatusLabel(car) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right space-x-2">
                                 <Link :href="`/admin/cars/${car.id}`">
-                                    <Button variant="outline" size="sm">View</Button>
+                                    <Button variant="outline" size="sm">{{ t('dashboard.admin.cars.actions.view') }}</Button>
                                 </Link>
                                 <Link :href="`/admin/cars/${car.id}/documents`">
-                                    <Button variant="outline" size="sm">Documents</Button>
+                                    <Button variant="outline" size="sm">{{ t('dashboard.admin.cars.actions.documents') }}</Button>
                                 </Link>
                                 <Link v-if="subdomain" :href="`/admin/cars/${car.id}/calendar`">
-                                    <Button variant="outline" size="sm">Calendar</Button>
+                                    <Button variant="outline" size="sm">{{ t('dashboard.admin.cars.actions.calendar') }}</Button>
                                 </Link>
                                 <Link v-if="subdomain" :href="edit([subdomain, car.id]).url">
                                     <Button variant="outline" size="sm">{{ t('dashboard.admin.common.edit') }}</Button>

@@ -37,7 +37,7 @@ const props = defineProps<{
     branches: Array<{ id: number; name: string }>
     canAccessAllBranches: boolean
 }>();
-const { t, locale } = useTrans();
+const { t, raw, locale } = useTrans();
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
 
@@ -79,6 +79,10 @@ const getStatusCount = (type: 'customer' | 'guest' | undefined, status: string):
 const getTotalCount = (type: 'customer' | 'guest' | undefined): number => {
     if (!type) return 0;
     return props.statusCounts?.[type]?.all || 0;
+};
+
+const translatedStatusLabel = (status: string, fallback: string): string => {
+    return raw(`dashboard.admin.support.index.statuses.${status}`, fallback);
 };
 
 const doSearch = () => {
@@ -194,7 +198,7 @@ function goToTicket(id: number) {
                         class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                         @change="doSearch"
                     >
-                        <option value="all">All branches</option>
+                        <option value="all">{{ t('dashboard.admin.support.index.all_branches') }}</option>
                         <option v-for="branch in props.branches" :key="branch.id" :value="String(branch.id)">
                             {{ branch.name }}
                         </option>
@@ -227,7 +231,7 @@ function goToTicket(id: number) {
                                 }"
                             >
                                 <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: status.color }" />
-                                {{ status.label }} ({{ getStatusCount(ticketType, key) }})
+                                {{ translatedStatusLabel(String(key), status.label) }} ({{ getStatusCount(ticketType, key) }})
                             </span>
                         </label>
                     </template>
@@ -299,7 +303,7 @@ function goToTicket(id: number) {
                                         class="w-2 h-2 rounded-full" 
                                         :style="{ backgroundColor: getStatusColor(ticket.status).dot }"
                                     />
-                                    {{ statuses[ticket.status]?.label || ticket.status }}
+                                    {{ translatedStatusLabel(ticket.status, statuses[ticket.status]?.label || ticket.status) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
