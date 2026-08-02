@@ -3725,15 +3725,46 @@ Sunday: 10:00 AM - 4:00 PM',
       array (
         'edit' => 
         array (
-          'select_car_first' => 'ظ¾غپظ„غ’ ع¯ط§ع‘غŒ ظ…ظ†طھط®ط¨ ع©ط±غŒع؛',
-          'branch_owner' => 'ط¨ط±ط§ظ†ع† ظ…ط§ظ„ع©',
-          'payment_details' => 'ط§ط¯ط§ط¦غŒع¯غŒ ع©غŒ طھظپطµغŒظ„ط§طھ',
+          'select_car_first' => 'پہلے گاڑی منتخب کریں',
+          'branch_owner' => 'برانچ مالک',
+          'payment_details' => 'ادائیگی کی تفصیلات',
           'statuses' => 
           array (
-            'pending' => 'ط²غŒط± ط§ظ„طھظˆط§ط،',
-            'paid' => 'ط§ط¯ط§ ط´ط¯غپ',
-            'disputed' => 'ظ…طھظ†ط§ط²ط¹',
-            'cancelled' => 'ظ…ظ†ط³ظˆط®',
+            'pending' => 'زیر التواء',
+            'paid' => 'ادا شدہ',
+            'disputed' => 'متنازع',
+            'cancelled' => 'منسوخ',
+          ),
+          'head_title_edit' => 'خلاف ورزی میں ترمیم کریں',
+          'head_title_create' => 'خلاف ورزی بنائیں',
+          'select_car' => 'گاڑی منتخب کریں',
+          'no_reservation' => 'کوئی ریزرویشن نہیں',
+          'not_specified' => 'متعین نہیں',
+          'saving' => 'محفوظ کیا جا رہا ہے...',
+          'create_violation' => 'خلاف ورزی بنائیں',
+          'placeholders' => 
+          array (
+            'unique_number' => 'منفرد خلاف ورزی نمبر',
+            'type' => 'خلاف ورزی کی قسم',
+            'authority' => 'جاری کرنے والی اتھارٹی',
+          ),
+          'fields' => 
+          array (
+            'car' => 'گاڑی',
+            'reservation_optional' => 'ریزرویشن (اختیاری)',
+            'issued_to_client' => 'کلائنٹ کو جاری',
+            'violation_number' => 'خلاف ورزی نمبر',
+            'violation_date' => 'خلاف ورزی کی تاریخ',
+            'type' => 'قسم',
+            'amount' => 'رقم',
+            'status' => 'حالت',
+            'authority' => 'اتھارٹی',
+            'location' => 'مقام',
+            'due_date' => 'واجب الادا تاریخ',
+            'description' => 'تفصیل',
+            'paid_at' => 'ادائیگی کی تاریخ',
+            'payment_reference' => 'ادائیگی کا حوالہ',
+            'notes' => 'نوٹس',
           ),
         ),
       ),
@@ -4605,7 +4636,13 @@ Sunday: 10:00 AM - 4:00 PM',
         'title' => 'ط§ط¯ط§ط¦غŒع¯غŒ ظ…ظˆطµظˆظ„ غپظˆط¦غŒ',
         'description' => 'ع©ظ„ط§ط¦ظ†ظ¹ :client ط³غ’ :amount ظ…ظˆطµظˆظ„ غپظˆط¦غ’',
       ),
+      'discount_request' => 
+      array (
+        'title' => 'رعایت کی درخواست',
+        'description' => ':employee نے کلائنٹ :client کے لیے :discount رعایت کی درخواست کی',
+      ),
       'unknown_client' => 'ع©ظ„ط§ط¦ظ†ظ¹',
+      'unknown_employee' => 'ملازم',
       'messages' => 
       array (
         'marked_read' => 'ط§ط·ظ„ط§ط¹ط§طھ ظ¾ع‘ع¾غŒ غپظˆط¦غŒ ظ†ط´ط§ظ† ط²ط¯ ع©ط± ط¯غŒ ع¯ط¦غŒع؛غ”',
