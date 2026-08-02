@@ -380,3 +380,49 @@ Rules:
 - The list endpoint returns summary cards, paginated reservations, car image, customer, branch location, reservation status, payment status, pickup/return dates, and payment totals.
 - The show endpoint returns one reservation with payments, contract, return report summary, and timeline events.
 - Text is returned using `Accept-Language` through `owner_api.reservations.*` translation keys.
+
+## Owner API Documentation Rule
+
+From now on, every change to an `owner` API must be reflected in this file before the task is considered complete.
+
+Required for each owner API change:
+
+- Add or update the endpoint section in `analysis/ownerapi.md`.
+- Document request parameters, filters, response shape, and branch-scope rules.
+- Confirm that `tenant_id` is always resolved from the authenticated owner/partner user and is never accepted from request input.
+- Confirm that `branch_id` is optional, validated against the authenticated tenant, and applied consistently to counts, cards, lists, charts, and details.
+- Add every API-facing label/message/status to the Landing Translation keys under `owner_api.*`.
+- Keep the API response text resolved by `Accept-Language` through `App\Support\TenantTranslations`.
+
+## 2026-08-02 Owner Notifications Translation Fix
+
+Issue:
+
+- `GET /api/owner/notifications?branch_id=&page=1&per_page=20` returned mojibake Arabic text for section titles and active alert labels.
+- The endpoint was already using `TenantTranslations`, but the Arabic fallback values under `lang/ar/site.php -> owner_api` were corrupted.
+- No valid override was found in global Landing Translation settings or tenant translation settings, so the API fell back to the corrupted file values.
+
+Fixed translation groups:
+
+- `owner_api.alerts.*`
+- `owner_api.notifications.sections.*`
+- `owner_api.notifications.late_return.*`
+- `owner_api.notifications.unpaid_violation.*`
+- `owner_api.notifications.maintenance_required.*`
+- `owner_api.notifications.new_reservation.*`
+- `owner_api.notifications.payment_received.*`
+- `owner_api.notifications.discount_request.*`
+- `owner_api.notifications.messages.marked_read`
+- `owner_api.time.minutes_ago`
+- `owner_api.time.hours_ago`
+- `owner_api.time.days_ago`
+
+Verification:
+
+- `php -l lang\ar\site.php`
+- `php artisan optimize:clear`
+- Confirmed Arabic fallback output for notification sections, active alerts, and time labels.
+
+Important:
+
+- If the API shows broken text again, first check whether a bad override exists in Landing Translation or tenant translations before changing controller/service logic.
