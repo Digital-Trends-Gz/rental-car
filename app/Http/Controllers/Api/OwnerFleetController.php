@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\CarStatus;
 use App\Enums\ContractStatus;
+use App\Enums\MaintenanceRecordStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
@@ -13,6 +14,8 @@ use App\Models\CarDamageCase;
 use App\Models\CarDamageReport;
 use App\Models\CarMaintenance;
 use App\Models\Contract;
+use App\Models\MaintenanceType;
+use App\Models\MaintenanceWorkshop;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Tenant;
@@ -180,6 +183,211 @@ class OwnerFleetController extends Controller
                     'recent_reservations' => $this->recentReservations((int) $user->tenant_id, (int) $car->id, $locale, $currency),
                 ]
             ),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Maintenance Options (form dropdowns for mobile)
+    // ─────────────────────────────────────────────────────────────
+
+    public function maintenanceOptions(Request $request): JsonResponse
+    {
+        $user = $this->authorizedOwner($request);
+        $locale = $this->resolveLocale($request);
+
+        $statuses = collect(MaintenanceRecordStatus::cases())->map(fn (MaintenanceRecordStatus $s): array => [
+            'value' => $s->value,
+            'label' => $s->label(),
+            'color' => $s->color(),
+        ])->values();
+
+        $maintenanceTypes = MaintenanceType::query()
+            ->withoutGlobalScope('tenant')
+            ->with(['workshops' => fn ($q) => $q
+                ->withoutGlobalScope('tenant')
+                ->where('tenant_id', (int) $user->tenant_id)
+                ->select(['id', 'maintenance_type_id', 'name', 'phone', 'city', 'country'])
+                ->orderBy('name'),
+            ])
+            ->where('tenant_id', (int) $user->tenant_id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->select(['id', 'name'])
+            ->get()
+            ->map(fn (MaintenanceType $type): array => [
+                'id'        => $type->id,
+                'name'      => $type->name,
+                'workshops' => $type->workshops->map(fn (MaintenanceWorkshop $w): array => [
+                    'id'    => $w->id,
+                    'name'  => $w->name,
+                    'phone' => $w->phone,
+                    'city'  => $w->city,
+                    'label' => trim($w->name.($w->city ? " - {$w->city}" : '').($w->phone ? " ({$w->phone})" : '')),
+                ])->values()->all(),
+            ])->values();
+
+        return response()->json([
+            'status' => 'success',
+            'locale' => $locale,
+            'data'   => [
+                'statuses'          => $statuses,
+                'maintenance_types' => $maintenanceTypes,
+            ],
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Schedule Maintenance
+    // ─────────────────────────────────────────────────────────────
+
+    public function scheduleMaintenance(Request $request, Car $car): JsonResponse
+    {
+        $user   = $this->authorizedOwner($request);
+        $locale = $this->resolveLocale($request);
+
+        abort_unless((int) $car->tenant_id === (int) $user->tenant_id, 404);
+        abort_unless($this->branchAccess->canAccessBranchId($user, $car->branch_id ? (int) $car->branch_id : null), 403);
+
+        $tenantId = (int) $user->tenant_id;
+
+        $validated = $request->validate([
+            'status'                    => ['required', 'string', Rule::enum(MaintenanceRecordStatus::class)],
+            'scheduled_date'            => ['nullable', 'date'],
+            'task_time'                 => ['nullable', 'regex:/^\d{2}:\d{2}$/'],
+            'maintenance_type_id'       => [
+                'nullable',
+                'integer',
+                Rule::exists('maintenance_types', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
+            ],
+            'maintenance_workshop_id'   => [
+                'nullable',
+                'integer',
+                Rule::exists('maintenance_workshops', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
+            ],
+            'cost'                      => ['nullable', 'numeric', 'min:0'],
+            'odometer'                  => ['nullable', 'integer', 'min:0'],
+            'notes'                     => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        // Resolve workshop (must belong to same tenant)
+        $workshop = null;
+        if (!empty($validated['maintenance_workshop_id'])) {
+            $workshop = MaintenanceWorkshop::query()
+                ->withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenantId)
+                ->find((int) $validated['maintenance_workshop_id']);
+
+            if (!$workshop) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'maintenance_workshop_id' => ['Selected workshop is not accessible.'],
+                ]);
+            }
+        }
+
+        // Combine scheduled_date + task_time → started_at
+        $scheduledDate = !empty($validated['scheduled_date'])
+            ? Carbon::parse($validated['scheduled_date'])
+            : null;
+
+        $startedAt = null;
+        if ($scheduledDate && !empty($validated['task_time'])) {
+            [$hours, $minutes] = explode(':', $validated['task_time']);
+            $startedAt = $scheduledDate->copy()->setHour((int) $hours)->setMinute((int) $minutes)->setSecond(0);
+        }
+
+        $maintenance = CarMaintenance::create([
+            'tenant_id'                 => $tenantId,
+            'car_id'                    => $car->id,
+            'branch_id'                 => $car->branch_id,
+            'maintenance_type_id'       => $validated['maintenance_type_id'] ?? null,
+            'maintenance_workshop_id'   => $workshop?->id,
+            'status'                    => $validated['status'],
+            'scheduled_date'            => $scheduledDate?->toDateString(),
+            'started_at'                => $startedAt,
+            'cost'                      => $validated['cost'] ?? null,
+            'odometer'                  => $validated['odometer'] ?? null,
+            'workshop_name'             => $workshop?->name,
+            'notes'                     => $validated['notes'] ?? null,
+            'created_by'                => $user->id,
+        ]);
+
+        // Sync car status when in_progress
+        $this->syncCarStatusForMaintenance($car);
+
+        $statusEnum = MaintenanceRecordStatus::from($maintenance->status instanceof MaintenanceRecordStatus
+            ? $maintenance->status->value
+            : (string) $maintenance->status);
+
+        $maintenanceType = $maintenance->maintenance_type_id
+            ? MaintenanceType::withoutGlobalScope('tenant')->find($maintenance->maintenance_type_id)
+            : null;
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => $this->ownerText('fleet.maintenance.created', $locale, 'Maintenance scheduled successfully.'),
+            'data'    => [
+                'id'                      => $maintenance->id,
+                'car_id'                  => $car->id,
+                'status'                  => $statusEnum->value,
+                'status_label'            => $statusEnum->label(),
+                'status_color'            => $statusEnum->color(),
+                'scheduled_date'          => $scheduledDate?->toDateString(),
+                'task_time'               => $validated['task_time'] ?? null,
+                'maintenance_type_id'     => $maintenance->maintenance_type_id,
+                'maintenance_type'        => $maintenanceType?->name,
+                'maintenance_workshop_id' => $maintenance->maintenance_workshop_id,
+                'workshop_name'           => $maintenance->workshop_name,
+                'cost'                    => $maintenance->cost !== null ? (float) $maintenance->cost : null,
+                'odometer'                => $maintenance->odometer,
+                'notes'                   => $maintenance->notes,
+                'created_at'              => $maintenance->created_at?->toIso8601String(),
+            ],
+        ], 201);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Transfer Branch
+    // ─────────────────────────────────────────────────────────────
+
+    public function transferBranch(Request $request, Car $car): JsonResponse
+    {
+        $user   = $this->authorizedOwner($request);
+        $locale = $this->resolveLocale($request);
+
+        abort_unless((int) $car->tenant_id === (int) $user->tenant_id, 404);
+        abort_unless($this->branchAccess->canAccessBranchId($user, $car->branch_id ? (int) $car->branch_id : null), 403);
+
+        $tenantId = (int) $user->tenant_id;
+
+        $validated = $request->validate([
+            'branch_id' => [
+                'required',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
+            ],
+        ]);
+
+        $newBranchId = (int) $validated['branch_id'];
+
+        if ($car->branch_id && (int) $car->branch_id === $newBranchId) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'branch_id' => [$this->ownerText('fleet.transfer.same_branch', $locale, 'Car is already in the selected branch.')],
+            ]);
+        }
+
+        $newBranch = Branch::query()->where('tenant_id', $tenantId)->findOrFail($newBranchId);
+
+        $car->update(['branch_id' => $newBranchId]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => $this->ownerText('fleet.transfer.success', $locale, 'Car transferred successfully.'),
+            'data'    => [
+                'car_id'          => $car->id,
+                'new_branch_id'   => $newBranch->id,
+                'new_branch_name' => $newBranch->name,
+            ],
         ]);
     }
 
@@ -778,5 +986,26 @@ class OwnerFleetController extends Controller
             'to' => $paginator->total() > 0 ? $paginator->lastItem() : null,
             'has_more_pages' => $paginator->hasMorePages(),
         ];
+    }
+
+    private function syncCarStatusForMaintenance(Car $car): void
+    {
+        $car->refresh();
+
+        $hasInProgress = CarMaintenance::query()
+            ->withoutGlobalScope('tenant')
+            ->where('car_id', $car->id)
+            ->where('status', MaintenanceRecordStatus::IN_PROGRESS->value)
+            ->exists();
+
+        if ($hasInProgress && $car->status !== CarStatus::MAINTENANCE) {
+            $car->update(['status' => CarStatus::MAINTENANCE->value]);
+
+            return;
+        }
+
+        if (!$hasInProgress && $car->status === CarStatus::MAINTENANCE) {
+            $car->update(['status' => CarStatus::AVAILABLE->value]);
+        }
     }
 }

@@ -49,8 +49,11 @@ Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
     Route::get('dashboard/summary', [OwnerDashboardController::class, 'summary'])->name('api.owner.dashboard.summary');
     Route::get('finance/summary', [OwnerFinanceController::class, 'summary'])->name('api.owner.finance.summary');
     Route::get('fleet/statuses', [OwnerFleetController::class, 'statuses'])->name('api.owner.fleet.statuses');
+    Route::get('fleet/maintenance-options', [OwnerFleetController::class, 'maintenanceOptions'])->name('api.owner.fleet.maintenance-options');
     Route::get('fleet', [OwnerFleetController::class, 'index'])->name('api.owner.fleet.index');
     Route::get('fleet/{car}', [OwnerFleetController::class, 'show'])->name('api.owner.fleet.show');
+    Route::post('fleet/{car}/schedule-maintenance', [OwnerFleetController::class, 'scheduleMaintenance'])->name('api.owner.fleet.schedule-maintenance');
+    Route::post('fleet/{car}/transfer-branch', [OwnerFleetController::class, 'transferBranch'])->name('api.owner.fleet.transfer-branch');
     Route::get('reservations/statuses', [OwnerReservationsController::class, 'statuses'])->name('api.owner.reservations.statuses');
     Route::get('reservations/summary', [OwnerReservationsController::class, 'summary'])->name('api.owner.reservations.summary');
     Route::get('reservations', [OwnerReservationsController::class, 'index'])->name('api.owner.reservations.index');

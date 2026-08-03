@@ -4822,6 +4822,28 @@ const saveError = ref(\'',
         'next_reservation' => 'أقرب حجز',
         'return_date' => 'تاريخ الإرجاع',
       ),
+      'maintenance' => 
+      array (
+        'created' => 'تم جدولة الصيانة بنجاح.',
+      ),
+      'transfer' => 
+      array (
+        'success' => 'تم نقل السيارة بنجاح.',
+        'same_branch' => 'السيارة موجودة بالفعل في الفرع المحدد.',
+      ),
+      'show' => 
+      array (
+        'upcoming_one' => 'حجز واحد قادم',
+        'upcoming_plural' => '%d حجوزات قادمة',
+        'no_upcoming' => 'لا توجد حجوزات قادمة',
+        'no_maintenance' => 'لا توجد صيانة مسجلة',
+        'status_good' => 'جيد',
+        'days_ago' => 'قبل %d يوم',
+        'no_damages' => 'لا توجد أضرار مسجلة',
+        'damages_count' => '%d أضرار مسجلة',
+        'status_excellent' => 'ممتاز',
+        'status_attention' => 'يحتاج متابعة',
+      ),
     ),
     'reservations' => 
     array (

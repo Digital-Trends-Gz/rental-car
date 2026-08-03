@@ -488,3 +488,137 @@ Implementation Status (2026-08-03):
 - **Damage Record Summary**: Implemented `damage_record_summary` containing `count`, `description` (e.g. `"لا توجد أضرار مسجلة"`), `status`, `status_label`, and `status_color`.
 - **Quick Actions**: Excluded per explicit user request.
 - **Tests**: Created `tests/Feature/Api/OwnerFleetControllerTest.php` and verified 100% pass rate.
+
+---
+
+## 2026-08-03 Owner Fleet – Schedule Maintenance & Transfer Branch APIs
+
+### New Endpoints
+
+| Method | Endpoint | Route Name |
+|--------|----------|------------|
+| `GET`  | `/api/owner/fleet/maintenance-options` | `api.owner.fleet.maintenance-options` |
+| `POST` | `/api/owner/fleet/{car}/schedule-maintenance` | `api.owner.fleet.schedule-maintenance` |
+| `POST` | `/api/owner/fleet/{car}/transfer-branch` | `api.owner.fleet.transfer-branch` |
+
+---
+
+### GET /api/owner/fleet/maintenance-options
+
+يُستخدم لتحميل بيانات الـ dropdowns عند فتح شاشة جدولة الصيانة في التطبيق المحمول (يُكاش مرة واحدة).
+
+**Response:**
+```json
+{
+  "status": "success",
+  "locale": "ar",
+  "data": {
+    "statuses": [
+      { "value": "scheduled", "label": "مجدول", "color": "#3B82F6" },
+      { "value": "in_progress", "label": "قيد التنفيذ", "color": "#F59E0B" },
+      { "value": "completed", "label": "مكتمل", "color": "#10B981" },
+      { "value": "cancelled", "label": "ملغي", "color": "#EF4444" }
+    ],
+    "maintenance_types": [
+      {
+        "id": 1,
+        "name": "تغيير الزيت",
+        "workshops": [
+          { "id": 2, "name": "ورشة النور", "phone": "0501234567", "city": "الرياض", "label": "ورشة النور - الرياض (0501234567)" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+### POST /api/owner/fleet/{car}/schedule-maintenance
+
+مطابق لنموذج الداش بورد (`MaintenanceRecordsController::store`) مع حقل إضافي `task_time` للموبايل.
+
+**Request Body:**
+```json
+{
+  "status": "scheduled",
+  "scheduled_date": "2026-08-10",
+  "task_time": "09:30",
+  "maintenance_type_id": 1,
+  "maintenance_workshop_id": 2,
+  "cost": 150.00,
+  "odometer": 45000,
+  "notes": "فحص دوري"
+}
+```
+
+- `status`: مطلوب – enum `MaintenanceRecordStatus` (`scheduled`, `in_progress`, `completed`, `cancelled`).
+- `scheduled_date`: اختياري – تاريخ الصيانة.
+- `task_time`: اختياري – وقت المهمة بصيغة `HH:mm`، يُدمج مع `scheduled_date` ليُخزَّن في `started_at`.
+- `maintenance_type_id`: اختياري – يجب أن ينتمي لنفس الـ tenant.
+- `maintenance_workshop_id`: اختياري – يجب أن ينتمي لنفس الـ tenant.
+- إذا كان الـ status = `in_progress` تتغير حالة السيارة تلقائياً إلى `maintenance`.
+
+**Response (201):**
+```json
+{
+  "status": "success",
+  "message": "Maintenance scheduled successfully.",
+  "data": {
+    "id": 12,
+    "car_id": 3,
+    "status": "scheduled",
+    "status_label": "مجدول",
+    "status_color": "#3B82F6",
+    "scheduled_date": "2026-08-10",
+    "task_time": "09:30",
+    "maintenance_type_id": 1,
+    "maintenance_type": "تغيير الزيت",
+    "maintenance_workshop_id": 2,
+    "workshop_name": "ورشة النور",
+    "cost": 150.00,
+    "odometer": 45000,
+    "notes": "فحص دوري",
+    "created_at": "2026-08-03T..."
+  }
+}
+```
+
+---
+
+### POST /api/owner/fleet/{car}/transfer-branch
+
+ينقل السيارة إلى فرع آخر داخل نفس الـ tenant. لا يتغير `status` السيارة.
+
+**Request Body:**
+```json
+{
+  "branch_id": 4
+}
+```
+
+- `branch_id`: مطلوب – يجب أن ينتمي لنفس الـ tenant.
+- يُرفض إذا كان نفس الفرع الحالي للسيارة (422).
+- يُرفض إذا كان الفرع لـ tenant آخر (422).
+
+**Response (200):**
+```json
+{
+  "status": "success",
+  "message": "Car transferred successfully.",
+  "data": {
+    "car_id": 3,
+    "new_branch_id": 4,
+    "new_branch_name": "فرع الملز"
+  }
+}
+```
+
+---
+
+### Implementation Notes (2026-08-03)
+
+- **Controller**: جميع المنطق في `OwnerFleetController.php` – methods: `maintenanceOptions()`, `scheduleMaintenance()`, `transferBranch()`, `syncCarStatusForMaintenance()`.
+- **Routes**: أضيفت في `routes/api.php` داخل group `/api/owner/`.
+- **Security**: كل endpoint يمر على `authorizedOwner()` + `abort_unless(tenant_id match)` + `branchAccess->canAccessBranchId()`.
+- **Tests**: 8 اختبارات آلية تغطي النجاح والفشل والتحقق – جميعها PASS (55 assertions).

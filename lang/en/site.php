@@ -4026,18 +4026,31 @@ Sunday: 10:00 AM - 4:00 PM',
       ),
       'car_violations' => 
       array (
+        'index' => 
+        array (
+          'head_title' => 'Car Violations',
+          'title' => 'Car Violations',
+          'new_violation' => 'New Violation',
+          'search_placeholder' => 'Search violation, car, or type...',
+          'all_statuses' => 'All statuses',
+          'all_branches' => 'All branches',
+          'all_cars' => 'All cars',
+          'clear' => 'Clear',
+          'this_violation' => 'this violation',
+          'delete_confirm' => 'Delete :label?',
+          'empty' => 'No car violations found.',
+          'table' => 
+          array (
+            'number' => 'Number',
+            'car' => 'Car',
+            'type' => 'Type',
+            'amount' => 'Amount',
+            'status' => 'Status',
+            'date' => 'Date',
+          ),
+        ),
         'edit' => 
         array (
-          'select_car_first' => 'Select car first',
-          'branch_owner' => 'Branch Owner',
-          'payment_details' => 'Payment Details',
-          'statuses' => 
-          array (
-            'pending' => 'Pending',
-            'paid' => 'Paid',
-            'disputed' => 'Disputed',
-            'cancelled' => 'Cancelled',
-          ),
           'head_title_edit' => 'Edit Violation',
           'head_title_create' => 'Create Violation',
           'select_car' => 'Select car',
@@ -4061,12 +4074,12 @@ Sunday: 10:00 AM - 4:00 PM',
             'type' => 'Type',
             'amount' => 'Amount',
             'status' => 'Status',
-            'authority' => 'Authority',
-            'location' => 'Location',
             'due_date' => 'Due Date',
-            'description' => 'Description',
             'paid_at' => 'Paid At',
             'payment_reference' => 'Payment Reference',
+            'authority' => 'Authority',
+            'location' => 'Location',
+            'description' => 'Description',
             'notes' => 'Notes',
           ),
         ),
@@ -4077,6 +4090,421 @@ Sunday: 10:00 AM - 4:00 PM',
         array (
           'branch' => 'Branch',
           'no_branch' => 'No Branch',
+          'name' => 'Name',
+          'email' => 'Email',
+          'civil_number' => 'Civil No.',
+          'status' => 'Status',
+          'roles_permissions' => 'Roles & Permissions',
+        ),
+        'head_title' => 'Employees',
+        'title' => 'Employees',
+        'new_employee' => 'New Employee',
+        'edit_employee' => 'Edit Employee',
+        'search_placeholder' => 'Search name, email, civil number...',
+        'empty' => 'No employees found.',
+        'all_branches' => 'All branches',
+        'form' => 
+        array (
+          'civil_number' => 'Civil Number',
+          'civil_number_placeholder' => '123456789',
+          'password' => 'Password',
+          'password_confirmation' => 'Confirm Password',
+          'password_help' => 'Leave blank to keep existing password.',
+          'direct_permissions' => 'Direct Permissions',
+          'direct_permissions_help' => 'Assign specific permissions directly to this employee (bypass roles).',
+          'tenant_partner_role' => 'Tenant Partner',
+          'tenant_partner_role_description' => 'Full-access partner role for this tenant.',
+          'partner_seat_limit_reached' => 'Partner seat limit reached. Contact the Super Admin to increase partner seats for this tenant.',
+        ),
+        'delete_dialog' => 
+        array (
+          'title' => 'Delete Employee',
+          'description' => 'Are you sure you want to delete this employee? This action cannot be undone.',
+          'warning' => 'This will permanently delete the employee account.',
+          'confirm' => 'Delete Employee',
+        ),
+      ),
+      'damage_reports' => 
+      array (
+        'view_sides' => 
+        array (
+          'left' => 'Left',
+          'front' => 'Front',
+          'right' => 'Right',
+          'rear' => 'Rear',
+          'top' => 'Top',
+        ),
+        'index' => 
+        array (
+          'head_title' => 'Damage Reports',
+          'title' => 'Damage Reports',
+          'subtitle' => 'Damage reports are created from contracts so the reservation and car are inherited automatically.',
+          'open_contracts' => 'Open Contracts',
+          'search_placeholder' => 'Search report, car, contract...',
+          'all_report_types' => 'All report types',
+          'all_branches' => 'All branches',
+          'all_cars' => 'All cars',
+          'clear' => 'Clear',
+          'delete_confirm' => 'Delete damage report :number?',
+          'linked_contract' => 'Contract',
+          'linked_reservation' => 'Reservation',
+          'entries_count' => ':count entries',
+          'empty' => 'No damage reports found.',
+          'table' => 
+          array (
+            'report' => 'Report',
+            'car' => 'Car',
+            'type' => 'Type',
+            'linked' => 'Linked',
+            'damage_qty' => 'Damage Qty',
+            'date' => 'Date',
+          ),
+        ),
+        'edit' => 
+        array (
+          'head_title_create' => 'Create Damage Report',
+          'head_title_edit' => 'Damage Report :number',
+          'save_report' => 'Save Report',
+          'create_report' => 'Create Report',
+          'sections' => 
+          array (
+            'add_damage_item' => 'Add damage item',
+            'edit_damage_item' => 'Edit damage item',
+            'body_source' => 'The car body comes from the selected contract reservation.',
+            'report_totals' => 'Report totals',
+            'current_car_damages' => 'Current car damages',
+            'damage_items' => 'Damage Items',
+            'inspection_snapshot' => 'Each row becomes part of the inspection snapshot.',
+          ),
+          'fields' => 
+          array (
+            'report_number' => 'Report Number',
+            'contract' => 'Contract',
+            'reservation' => 'Reservation',
+            'car' => 'Car',
+            'report_type' => 'Report Type',
+            'status' => 'Status',
+            'inspection_date' => 'Inspection Date',
+            'odometer' => 'Odometer',
+            'summary' => 'Summary',
+            'zone' => 'Zone',
+            'damage_type' => 'Damage Type',
+            'severity' => 'Severity',
+            'damage_timing' => 'Damage Timing',
+            'quantity' => 'Quantity',
+            'estimated_cost' => 'Estimated Cost',
+            'notes' => 'Notes',
+          ),
+          'placeholders' => 
+          array (
+            'select_contract' => 'Select contract',
+            'reservation_derived' => 'Reservation is derived from the selected contract.',
+            'car_derived' => 'Car is derived from the selected contract reservation.',
+            'summary' => 'Describe the vehicle condition, handover notes, or return notes.',
+            'select_zone' => 'Select zone',
+            'notes' => 'Example: long scratch below the handle.',
+          ),
+          'actions' => 
+          array (
+            'cancel_edit' => 'Cancel edit',
+            'update_item' => 'Update Item',
+            'add_item' => 'Add Item',
+            'clear' => 'Clear',
+            'edit_item' => 'Edit',
+            'delete_item' => 'Delete',
+          ),
+          'totals' => 
+          array (
+            'damage_entries' => 'Damage entries: :count',
+            'total_quantity' => 'Total quantity: :count',
+            'estimated_cost' => 'Estimated cost: :amount',
+          ),
+          'empty' => 
+          array (
+            'no_current_damages' => 'No open damage cases recorded for this car yet.',
+            'no_damage_items' => 'No damage items added yet.',
+          ),
+          'errors' => 
+          array (
+            'select_contract_first' => 'Select the contract first.',
+            'select_zone_first' => 'Select a zone on the vehicle first.',
+            'damage_fields_required' => 'Damage type, severity, and quantity are required.',
+          ),
+          'table' => 
+          array (
+            'zone' => 'Zone',
+            'view' => 'View',
+            'type' => 'Type',
+            'severity' => 'Severity',
+            'timing' => 'Timing',
+            'qty' => 'Qty',
+            'cost' => 'Cost',
+            'source' => 'Source',
+            'notes' => 'Notes',
+          ),
+        ),
+      ),
+      'branches' => 
+      array (
+        'head_title' => 'Branches',
+        'title' => 'Branches',
+        'new_branch' => 'New Branch',
+        'edit_branch' => 'Edit Branch',
+        'search_placeholder' => 'Search name, CR, manager, phone...',
+        'empty' => 'No branches found.',
+        'form' => 
+        array (
+          'branch_name' => 'Branch Name',
+          'branch_name_placeholder' => 'Main Showroom',
+          'country' => 'Country',
+          'select_country' => 'Select country',
+          'city' => 'City',
+          'select_city' => 'Select city',
+          'select_country_first' => 'Select country first',
+          'no_cities_available' => 'No cities available for this country',
+          'no_city_options_found' => 'No city options were found for the selected country in the current dataset.',
+          'street_name' => 'Street Name',
+          'street_name_placeholder' => 'Sultan Qaboos Street',
+          'street_number' => 'Street Number',
+          'street_number_placeholder' => '12',
+          'building_number' => 'Building Number',
+          'building_number_placeholder' => 'A-14',
+          'office_number' => 'Office Number',
+          'office_number_placeholder' => 'Office 204',
+          'post_code' => 'Post Code',
+          'post_code_placeholder' => '112',
+          'google_map_url' => 'Google Map Location URL',
+          'google_map_url_placeholder' => 'https://maps.google.com/...',
+          'phone_1' => 'Phone 1',
+          'phone_2' => 'Phone 2',
+          'phone_placeholder' => '+968 9000 0000',
+          'whatsapp' => 'WhatsApp',
+          'cr_number' => 'CR Number',
+          'cr_number_placeholder' => 'CR-123456',
+          'manager_name' => 'Manager Name',
+          'manager_name_placeholder' => 'Mohammed Ali',
+          'manager_civil_number' => 'Manager Civil Number',
+          'manager_civil_number_placeholder' => '123456789',
+          'email' => 'Email',
+          'email_placeholder' => 'branch@example.com',
+          'showroom_image' => 'Car Rental Showroom Image',
+        ),
+        'table' => 
+        array (
+          'name' => 'Name',
+          'cr_number' => 'CR',
+          'manager_name' => 'Manager Name',
+          'manager_civil_number' => 'Manager Civil No.',
+          'address' => 'Address',
+          'phone' => 'Phone',
+          'email' => 'Email',
+        ),
+        'delete_dialog' => 
+        array (
+          'title' => 'Delete Branch',
+          'description' => 'Are you sure you want to delete this branch? This action cannot be undone.',
+          'warning' => 'This will permanently delete the branch and all its associated data.',
+          'confirm' => 'Delete Branch',
+        ),
+      ),
+      'maintenance_types' => 
+      array (
+        'index' => 
+        array (
+          'head_title' => 'Maintenance Types',
+          'title' => 'Maintenance Types',
+          'search_placeholder' => 'Search by name or description...',
+          'empty' => 'No maintenance types found.',
+          'new_type' => 'New Type',
+          'search' => 'Search',
+        ),
+        'table' => 
+        array (
+          'name' => 'Name',
+          'description' => 'Description',
+          'status' => 'Status',
+          'workshops' => 'Workshops',
+          'sort' => 'Sort Order',
+        ),
+        'status' => 
+        array (
+          'active' => 'Active',
+          'inactive' => 'Inactive',
+        ),
+        'edit' => 
+        array (
+          'head_title_create' => 'Create Maintenance Type',
+          'head_title_edit' => 'Edit Maintenance Type',
+          'title_create' => 'Create Maintenance Type',
+          'title_edit' => 'Edit Maintenance Type',
+          'create_type' => 'Create Type',
+          'fields' => 
+          array (
+            'name' => 'Name',
+            'description' => 'Description',
+            'sort_order' => 'Sort Order',
+            'active' => 'Active',
+          ),
+          'workshops' => 
+          array (
+            'title' => 'Workshops',
+            'subtitle' => 'Add one or more workshops for this maintenance type.',
+            'add' => 'Add Workshop',
+            'empty' => 'No workshops added yet.',
+            'item_title' => 'Workshop :index',
+            'fields' => 
+            array (
+              'name' => 'Name',
+              'phone' => 'Phone',
+              'rate' => 'Rate',
+              'country' => 'Country',
+              'city' => 'City',
+              'street_name' => 'Street Name',
+              'street_number' => 'Street Number',
+              'building_number' => 'Building Number',
+              'office_number' => 'Office Number',
+              'post_code' => 'Post Code',
+              'google_map_url' => 'Google Map URL',
+              'front_image' => 'Front Image (Optional)',
+            ),
+            'placeholders' => 
+            array (
+              'select_country' => 'Select country',
+              'select_city' => 'Select city',
+              'select_country_first' => 'Select country first',
+            ),
+          ),
+        ),
+      ),
+      'maintenance_records' => 
+      array (
+        'index' => 
+        array (
+          'head_title' => 'Maintenance Records',
+          'title' => 'Maintenance Records',
+          'new_record' => 'New Record',
+          'search_placeholder' => 'Search car, workshop, notes...',
+          'all_statuses' => 'All statuses',
+          'all_branches' => 'All branches',
+          'all_cars' => 'All cars',
+          'search' => 'Search',
+          'clear' => 'Clear',
+          'delete_confirm' => 'Delete maintenance record for ":car"?',
+          'empty' => 'No maintenance records found.',
+          'table' => 
+          array (
+            'car' => 'Car',
+            'type' => 'Type',
+            'status' => 'Status',
+            'scheduled' => 'Scheduled',
+            'cost' => 'Cost',
+            'branch' => 'Branch',
+          ),
+        ),
+        'edit' => 
+        array (
+          'head_title_create' => 'Create Maintenance Record',
+          'head_title_edit' => 'Edit Maintenance Record',
+          'title_create' => 'Create Maintenance Record',
+          'title_edit' => 'Edit Maintenance Record',
+          'create_record' => 'Create Record',
+          'fields' => 
+          array (
+            'car' => 'Car',
+            'maintenance_type' => 'Maintenance Type',
+            'status' => 'Status',
+            'scheduled_date' => 'Scheduled Date',
+            'started_at' => 'Started At',
+            'completed_at' => 'Completed At',
+            'cost' => 'Cost',
+            'odometer' => 'Odometer',
+            'workshop' => 'Workshop',
+            'notes' => 'Notes',
+          ),
+          'placeholders' => 
+          array (
+            'select_car' => 'Select a car',
+            'select_type' => 'Select type',
+            'select_type_first' => 'Select maintenance type first',
+            'no_workshops_for_type' => 'No workshops available for this type',
+            'search_workshop' => 'Search workshop...',
+          ),
+          'empty_workshops' => 'No workshops found.',
+          'statuses' => 
+          array (
+            'scheduled' => 'Scheduled',
+            'in_progress' => 'In Progress',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+          ),
+        ),
+      ),
+      'violation_types' => 
+      array (
+        'index' => 
+        array (
+          'head_title' => 'Violation Types',
+          'title' => 'Violation Types',
+          'search_placeholder' => 'Search by name or description...',
+          'empty' => 'No violation types found.',
+          'new_type' => 'New Type',
+          'search' => 'Search',
+        ),
+        'table' => 
+        array (
+          'name' => 'Name',
+          'description' => 'Description',
+          'status' => 'Status',
+          'sort' => 'Sort Order',
+        ),
+        'status' => 
+        array (
+          'active' => 'Active',
+          'inactive' => 'Inactive',
+        ),
+        'edit' => 
+        array (
+          'head_title_create' => 'Create Violation Type',
+          'head_title_edit' => 'Edit Violation Type',
+          'title_create' => 'Create Violation Type',
+          'title_edit' => 'Edit Violation Type',
+          'create_type' => 'Create Type',
+          'fields' => 
+          array (
+            'name' => 'Name',
+            'description' => 'Description',
+            'sort_order' => 'Sort Order',
+            'active' => 'Active',
+          ),
+        ),
+      ),
+      'roles' => 
+      array (
+        'head_title' => 'Roles',
+        'title' => 'Roles',
+        'new_role' => 'New Role',
+        'edit_role' => 'Edit Role',
+        'search_placeholder' => 'Search role name...',
+        'empty' => 'No roles found.',
+        'table' => 
+        array (
+          'display_name' => 'Role Name',
+          'description' => 'Description',
+          'permissions_count' => 'Permissions',
+        ),
+        'form' => 
+        array (
+          'display_name' => 'Display Name',
+          'description' => 'Description',
+          'permissions' => 'Permissions',
+          'permissions_help' => 'Select the permissions to assign to this role.',
+        ),
+        'delete_dialog' => 
+        array (
+          'title' => 'Delete Role',
+          'description' => 'Are you sure you want to delete this role? This action cannot be undone.',
+          'warning' => 'This will permanently delete the role. You cannot delete a role that is currently assigned to employees.',
+          'confirm' => 'Delete Role',
         ),
       ),
     ),
@@ -4122,489 +4550,6 @@ Sunday: 10:00 AM - 4:00 PM',
           'usage_limit' => 'Usage Limit (optional)',
           'description' => 'Description (optional)',
         ),
-      ),
-    ),
-    'car_violations' => 
-    array (
-      'index' => 
-      array (
-        'head_title' => 'Car Violations',
-        'title' => 'Car Violations',
-        'new_violation' => 'New Violation',
-        'search_placeholder' => 'Search violation, car, or type...',
-        'all_statuses' => 'All statuses',
-        'all_branches' => 'All branches',
-        'all_cars' => 'All cars',
-        'clear' => 'Clear',
-        'this_violation' => 'this violation',
-        'delete_confirm' => 'Delete :label?',
-        'empty' => 'No car violations found.',
-        'table' => 
-        array (
-          'number' => 'Number',
-          'car' => 'Car',
-          'type' => 'Type',
-          'amount' => 'Amount',
-          'status' => 'Status',
-          'date' => 'Date',
-        ),
-      ),
-      'edit' => 
-      array (
-        'head_title_edit' => 'Edit Violation',
-        'head_title_create' => 'Create Violation',
-        'select_car' => 'Select car',
-        'no_reservation' => 'No reservation',
-        'not_specified' => 'Not specified',
-        'saving' => 'Saving...',
-        'create_violation' => 'Create Violation',
-        'placeholders' => 
-        array (
-          'unique_number' => 'Unique violation number',
-          'type' => 'Violation type',
-          'authority' => 'Issuing authority',
-        ),
-        'fields' => 
-        array (
-          'car' => 'Car',
-          'reservation_optional' => 'Reservation (optional)',
-          'issued_to_client' => 'Issued to client',
-          'violation_number' => 'Violation Number',
-          'violation_date' => 'Violation Date',
-          'type' => 'Type',
-          'amount' => 'Amount',
-          'status' => 'Status',
-          'due_date' => 'Due Date',
-          'paid_at' => 'Paid At',
-          'payment_reference' => 'Payment Reference',
-          'authority' => 'Authority',
-          'location' => 'Location',
-          'description' => 'Description',
-          'notes' => 'Notes',
-        ),
-      ),
-    ),
-    'damage_reports' => 
-    array (
-      'view_sides' => 
-      array (
-        'left' => 'Left',
-        'front' => 'Front',
-        'right' => 'Right',
-        'rear' => 'Rear',
-        'top' => 'Top',
-      ),
-      'index' => 
-      array (
-        'head_title' => 'Damage Reports',
-        'title' => 'Damage Reports',
-        'subtitle' => 'Damage reports are created from contracts so the reservation and car are inherited automatically.',
-        'open_contracts' => 'Open Contracts',
-        'search_placeholder' => 'Search report, car, contract...',
-        'all_report_types' => 'All report types',
-        'all_branches' => 'All branches',
-        'all_cars' => 'All cars',
-        'clear' => 'Clear',
-        'delete_confirm' => 'Delete damage report :number?',
-        'linked_contract' => 'Contract',
-        'linked_reservation' => 'Reservation',
-        'entries_count' => ':count entries',
-        'empty' => 'No damage reports found.',
-        'table' => 
-        array (
-          'report' => 'Report',
-          'car' => 'Car',
-          'type' => 'Type',
-          'linked' => 'Linked',
-          'damage_qty' => 'Damage Qty',
-          'date' => 'Date',
-        ),
-      ),
-      'edit' => 
-      array (
-        'head_title_create' => 'Create Damage Report',
-        'head_title_edit' => 'Damage Report :number',
-        'save_report' => 'Save Report',
-        'create_report' => 'Create Report',
-        'sections' => 
-        array (
-          'add_damage_item' => 'Add damage item',
-          'edit_damage_item' => 'Edit damage item',
-          'body_source' => 'The car body comes from the selected contract reservation.',
-          'report_totals' => 'Report totals',
-          'current_car_damages' => 'Current car damages',
-          'damage_items' => 'Damage Items',
-          'inspection_snapshot' => 'Each row becomes part of the inspection snapshot.',
-        ),
-        'fields' => 
-        array (
-          'report_number' => 'Report Number',
-          'contract' => 'Contract',
-          'reservation' => 'Reservation',
-          'car' => 'Car',
-          'report_type' => 'Report Type',
-          'status' => 'Status',
-          'inspection_date' => 'Inspection Date',
-          'odometer' => 'Odometer',
-          'summary' => 'Summary',
-          'zone' => 'Zone',
-          'damage_type' => 'Damage Type',
-          'severity' => 'Severity',
-          'damage_timing' => 'Damage Timing',
-          'quantity' => 'Quantity',
-          'estimated_cost' => 'Estimated Cost',
-          'notes' => 'Notes',
-        ),
-        'placeholders' => 
-        array (
-          'select_contract' => 'Select contract',
-          'reservation_derived' => 'Reservation is derived from the selected contract.',
-          'car_derived' => 'Car is derived from the selected contract reservation.',
-          'summary' => 'Describe the vehicle condition, handover notes, or return notes.',
-          'select_zone' => 'Select zone',
-          'notes' => 'Example: long scratch below the handle.',
-        ),
-        'actions' => 
-        array (
-          'cancel_edit' => 'Cancel edit',
-          'update_item' => 'Update Item',
-          'add_item' => 'Add Item',
-          'clear' => 'Clear',
-          'edit_item' => 'Edit',
-          'delete_item' => 'Delete',
-        ),
-        'totals' => 
-        array (
-          'damage_entries' => 'Damage entries: :count',
-          'total_quantity' => 'Total quantity: :count',
-          'estimated_cost' => 'Estimated cost: :amount',
-        ),
-        'empty' => 
-        array (
-          'no_current_damages' => 'No open damage cases recorded for this car yet.',
-          'no_damage_items' => 'No damage items added yet.',
-        ),
-        'errors' => 
-        array (
-          'select_contract_first' => 'Select the contract first.',
-          'select_zone_first' => 'Select a zone on the vehicle first.',
-          'damage_fields_required' => 'Damage type, severity, and quantity are required.',
-        ),
-        'table' => 
-        array (
-          'zone' => 'Zone',
-          'view' => 'View',
-          'type' => 'Type',
-          'severity' => 'Severity',
-          'timing' => 'Timing',
-          'qty' => 'Qty',
-          'cost' => 'Cost',
-          'source' => 'Source',
-          'notes' => 'Notes',
-        ),
-      ),
-    ),
-    'branches' => 
-    array (
-      'head_title' => 'Branches',
-      'title' => 'Branches',
-      'new_branch' => 'New Branch',
-      'edit_branch' => 'Edit Branch',
-      'search_placeholder' => 'Search name, CR, manager, phone...',
-      'empty' => 'No branches found.',
-      'form' => 
-      array (
-        'branch_name' => 'Branch Name',
-        'branch_name_placeholder' => 'Main Showroom',
-        'country' => 'Country',
-        'select_country' => 'Select country',
-        'city' => 'City',
-        'select_city' => 'Select city',
-        'select_country_first' => 'Select country first',
-        'no_cities_available' => 'No cities available for this country',
-        'no_city_options_found' => 'No city options were found for the selected country in the current dataset.',
-        'street_name' => 'Street Name',
-        'street_name_placeholder' => 'Sultan Qaboos Street',
-        'street_number' => 'Street Number',
-        'street_number_placeholder' => '12',
-        'building_number' => 'Building Number',
-        'building_number_placeholder' => 'A-14',
-        'office_number' => 'Office Number',
-        'office_number_placeholder' => 'Office 204',
-        'post_code' => 'Post Code',
-        'post_code_placeholder' => '112',
-        'google_map_url' => 'Google Map Location URL',
-        'google_map_url_placeholder' => 'https://maps.google.com/...',
-        'phone_1' => 'Phone 1',
-        'phone_2' => 'Phone 2',
-        'phone_placeholder' => '+968 9000 0000',
-        'whatsapp' => 'WhatsApp',
-        'cr_number' => 'CR Number',
-        'cr_number_placeholder' => 'CR-123456',
-        'manager_name' => 'Manager Name',
-        'manager_name_placeholder' => 'Mohammed Ali',
-        'manager_civil_number' => 'Manager Civil Number',
-        'manager_civil_number_placeholder' => '123456789',
-        'email' => 'Email',
-        'email_placeholder' => 'branch@example.com',
-        'showroom_image' => 'Car Rental Showroom Image',
-      ),
-      'table' => 
-      array (
-        'name' => 'Name',
-        'cr_number' => 'CR',
-        'manager_name' => 'Manager Name',
-        'manager_civil_number' => 'Manager Civil No.',
-        'address' => 'Address',
-        'phone' => 'Phone',
-        'email' => 'Email',
-      ),
-      'delete_dialog' => 
-      array (
-        'title' => 'Delete Branch',
-        'description' => 'Are you sure you want to delete this branch? This action cannot be undone.',
-        'warning' => 'This will permanently delete the branch and all its associated data.',
-        'confirm' => 'Delete Branch',
-      ),
-    ),
-    'maintenance_types' => 
-    array (
-      'index' => 
-      array (
-        'head_title' => 'Maintenance Types',
-        'title' => 'Maintenance Types',
-        'search_placeholder' => 'Search by name or description...',
-        'empty' => 'No maintenance types found.',
-        'new_type' => 'New Type',
-        'search' => 'Search',
-      ),
-      'table' => 
-      array (
-        'name' => 'Name',
-        'description' => 'Description',
-        'status' => 'Status',
-        'workshops' => 'Workshops',
-        'sort' => 'Sort Order',
-      ),
-      'status' => 
-      array (
-        'active' => 'Active',
-        'inactive' => 'Inactive',
-      ),
-      'edit' => 
-      array (
-        'head_title_create' => 'Create Maintenance Type',
-        'head_title_edit' => 'Edit Maintenance Type',
-        'title_create' => 'Create Maintenance Type',
-        'title_edit' => 'Edit Maintenance Type',
-        'create_type' => 'Create Type',
-        'fields' => 
-        array (
-          'name' => 'Name',
-          'description' => 'Description',
-          'sort_order' => 'Sort Order',
-          'active' => 'Active',
-        ),
-        'workshops' => 
-        array (
-          'title' => 'Workshops',
-          'subtitle' => 'Add one or more workshops for this maintenance type.',
-          'add' => 'Add Workshop',
-          'empty' => 'No workshops added yet.',
-          'item_title' => 'Workshop :index',
-          'fields' => 
-          array (
-            'name' => 'Name',
-            'phone' => 'Phone',
-            'rate' => 'Rate',
-            'country' => 'Country',
-            'city' => 'City',
-            'street_name' => 'Street Name',
-            'street_number' => 'Street Number',
-            'building_number' => 'Building Number',
-            'office_number' => 'Office Number',
-            'post_code' => 'Post Code',
-            'google_map_url' => 'Google Map URL',
-            'front_image' => 'Front Image (Optional)',
-          ),
-          'placeholders' => 
-          array (
-            'select_country' => 'Select country',
-            'select_city' => 'Select city',
-            'select_country_first' => 'Select country first',
-          ),
-        ),
-      ),
-    ),
-    'maintenance_records' => 
-    array (
-      'index' => 
-      array (
-        'head_title' => 'Maintenance Records',
-        'title' => 'Maintenance Records',
-        'new_record' => 'New Record',
-        'search_placeholder' => 'Search car, workshop, notes...',
-        'all_statuses' => 'All statuses',
-        'all_branches' => 'All branches',
-        'all_cars' => 'All cars',
-        'search' => 'Search',
-        'clear' => 'Clear',
-        'delete_confirm' => 'Delete maintenance record for ":car"?',
-        'empty' => 'No maintenance records found.',
-        'table' => 
-        array (
-          'car' => 'Car',
-          'type' => 'Type',
-          'status' => 'Status',
-          'scheduled' => 'Scheduled',
-          'cost' => 'Cost',
-          'branch' => 'Branch',
-        ),
-      ),
-      'edit' => 
-      array (
-        'head_title_create' => 'Create Maintenance Record',
-        'head_title_edit' => 'Edit Maintenance Record',
-        'title_create' => 'Create Maintenance Record',
-        'title_edit' => 'Edit Maintenance Record',
-        'create_record' => 'Create Record',
-        'fields' => 
-        array (
-          'car' => 'Car',
-          'maintenance_type' => 'Maintenance Type',
-          'status' => 'Status',
-          'scheduled_date' => 'Scheduled Date',
-          'started_at' => 'Started At',
-          'completed_at' => 'Completed At',
-          'cost' => 'Cost',
-          'odometer' => 'Odometer',
-          'workshop' => 'Workshop',
-          'notes' => 'Notes',
-        ),
-        'placeholders' => 
-        array (
-          'select_car' => 'Select a car',
-          'select_type' => 'Select type',
-          'select_type_first' => 'Select maintenance type first',
-          'no_workshops_for_type' => 'No workshops available for this type',
-          'search_workshop' => 'Search workshop...',
-        ),
-        'empty_workshops' => 'No workshops found.',
-        'statuses' => 
-        array (
-          'scheduled' => 'Scheduled',
-          'in_progress' => 'In Progress',
-          'completed' => 'Completed',
-          'cancelled' => 'Cancelled',
-        ),
-      ),
-    ),
-    'violation_types' => 
-    array (
-      'index' => 
-      array (
-        'head_title' => 'Violation Types',
-        'title' => 'Violation Types',
-        'search_placeholder' => 'Search by name or description...',
-        'empty' => 'No violation types found.',
-        'new_type' => 'New Type',
-        'search' => 'Search',
-      ),
-      'table' => 
-      array (
-        'name' => 'Name',
-        'description' => 'Description',
-        'status' => 'Status',
-        'sort' => 'Sort Order',
-      ),
-      'status' => 
-      array (
-        'active' => 'Active',
-        'inactive' => 'Inactive',
-      ),
-      'edit' => 
-      array (
-        'head_title_create' => 'Create Violation Type',
-        'head_title_edit' => 'Edit Violation Type',
-        'title_create' => 'Create Violation Type',
-        'title_edit' => 'Edit Violation Type',
-        'create_type' => 'Create Type',
-        'fields' => 
-        array (
-          'name' => 'Name',
-          'description' => 'Description',
-          'sort_order' => 'Sort Order',
-          'active' => 'Active',
-        ),
-      ),
-    ),
-    'employees' => 
-    array (
-      'head_title' => 'Employees',
-      'title' => 'Employees',
-      'new_employee' => 'New Employee',
-      'edit_employee' => 'Edit Employee',
-      'search_placeholder' => 'Search name, email, civil number...',
-      'empty' => 'No employees found.',
-      'all_branches' => 'All branches',
-      'table' => 
-      array (
-        'name' => 'Name',
-        'email' => 'Email',
-        'civil_number' => 'Civil No.',
-        'branch' => 'Branch',
-        'status' => 'Status',
-        'roles_permissions' => 'Roles & Permissions',
-        'no_branch' => 'No Branch',
-      ),
-      'form' => 
-      array (
-        'civil_number' => 'Civil Number',
-        'civil_number_placeholder' => '123456789',
-        'password' => 'Password',
-        'password_confirmation' => 'Confirm Password',
-        'password_help' => 'Leave blank to keep existing password.',
-        'direct_permissions' => 'Direct Permissions',
-        'direct_permissions_help' => 'Assign specific permissions directly to this employee (bypass roles).',
-        'tenant_partner_role' => 'Tenant Partner',
-        'tenant_partner_role_description' => 'Full-access partner role for this tenant.',
-        'partner_seat_limit_reached' => 'Partner seat limit reached. Contact the Super Admin to increase partner seats for this tenant.',
-      ),
-      'delete_dialog' => 
-      array (
-        'title' => 'Delete Employee',
-        'description' => 'Are you sure you want to delete this employee? This action cannot be undone.',
-        'warning' => 'This will permanently delete the employee account.',
-        'confirm' => 'Delete Employee',
-      ),
-    ),
-    'roles' => 
-    array (
-      'head_title' => 'Roles',
-      'title' => 'Roles',
-      'new_role' => 'New Role',
-      'edit_role' => 'Edit Role',
-      'search_placeholder' => 'Search role name...',
-      'empty' => 'No roles found.',
-      'table' => 
-      array (
-        'display_name' => 'Role Name',
-        'description' => 'Description',
-        'permissions_count' => 'Permissions',
-      ),
-      'form' => 
-      array (
-        'display_name' => 'Display Name',
-        'description' => 'Description',
-        'permissions' => 'Permissions',
-        'permissions_help' => 'Select the permissions to assign to this role.',
-      ),
-      'delete_dialog' => 
-      array (
-        'title' => 'Delete Role',
-        'description' => 'Are you sure you want to delete this role? This action cannot be undone.',
-        'warning' => 'This will permanently delete the role. You cannot delete a role that is currently assigned to employees.',
-        'confirm' => 'Delete Role',
       ),
     ),
   ),
@@ -4862,6 +4807,28 @@ Sunday: 10:00 AM - 4:00 PM',
       array (
         'next_reservation' => 'Next reservation',
         'return_date' => 'Return date',
+      ),
+      'maintenance' => 
+      array (
+        'created' => 'Maintenance scheduled successfully.',
+      ),
+      'transfer' => 
+      array (
+        'success' => 'Car transferred successfully.',
+        'same_branch' => 'Car is already in the selected branch.',
+      ),
+      'show' => 
+      array (
+        'upcoming_one' => '1 upcoming reservation',
+        'upcoming_plural' => '%d upcoming reservations',
+        'no_upcoming' => 'No upcoming reservations',
+        'no_maintenance' => 'No maintenance recorded',
+        'status_good' => 'Good',
+        'days_ago' => '%d days ago',
+        'no_damages' => 'No registered damages',
+        'damages_count' => '%d registered damages',
+        'status_excellent' => 'Excellent',
+        'status_attention' => 'Attention needed',
       ),
     ),
     'reservations' => 
