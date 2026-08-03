@@ -9,6 +9,9 @@ use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Car;
+use App\Models\CarDamageCase;
+use App\Models\CarDamageReport;
+use App\Models\CarMaintenance;
 use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\Reservation;
@@ -140,6 +143,11 @@ class OwnerFleetController extends Controller
         $monthlyRevenue = $this->monthlyRevenueByCar((int) $user->tenant_id, $car->branch_id ? (int) $car->branch_id : null, (int) $car->id);
         $nextEvent = $this->nextEventsByCar((int) $user->tenant_id, $car->branch_id ? (int) $car->branch_id : null, (int) $car->id)[(int) $car->id] ?? null;
 
+        $occupancyData = $this->occupancyRateByCar((int) $user->tenant_id, $car);
+        $upcomingSummary = $this->upcomingReservationsSummary((int) $user->tenant_id, $car, $locale);
+        $lastMaintenance = $this->lastMaintenanceSummary((int) $user->tenant_id, $car, $locale);
+        $damageSummary = $this->damageRecordSummary((int) $user->tenant_id, $car, $locale);
+
         return response()->json([
             'status' => 'success',
             'locale' => $locale,
@@ -152,6 +160,11 @@ class OwnerFleetController extends Controller
                     $nextEvent
                 ),
                 [
+                    'occupancy_rate' => $occupancyData['rate'],
+                    'formatted_occupancy_rate' => $occupancyData['formatted_rate'],
+                    'upcoming_reservations_summary' => $upcomingSummary,
+                    'last_maintenance' => $lastMaintenance,
+                    'damage_record_summary' => $damageSummary,
                     'images' => collect($car->images)
                         ->map(fn (array $image): array => array_merge($image, [
                             'url' => $this->absoluteUrl((string) ($image['url'] ?? '')),
@@ -238,10 +251,11 @@ class OwnerFleetController extends Controller
      */
     private function monthlyRevenueByCar(int $tenantId, ?int $branchId, ?int $carId = null): array
     {
-        $start = Carbon::today()->startOfMonth();
-        $end = Carbon::today()->endOfMonth();
+        $start = Carbon::today()->subDays(30)->startOfDay();
+        $end = Carbon::today()->endOfDay();
 
         $query = Payment::query()
+            ->withoutGlobalScope('tenant')
             ->join('reservations', 'reservations.id', '=', 'payments.reservation_id')
             ->where('payments.tenant_id', $tenantId)
             ->where('payments.status', PaymentStatus::COMPLETED->value)
@@ -254,11 +268,11 @@ class OwnerFleetController extends Controller
             }))
             ->when($carId, fn ($query) => $query->where('reservations.car_id', $carId))
             ->groupBy('reservations.car_id')
-            ->selectRaw('reservations.car_id, SUM(COALESCE(payments.base_amount, payments.amount, 0)) as revenue');
+            ->selectRaw('reservations.car_id, SUM(COALESCE(payments.base_amount, payments.amount, 0) - COALESCE(payments.refunded_amount, 0)) as revenue');
 
         return $query
             ->pluck('revenue', 'reservations.car_id')
-            ->map(fn (mixed $value): float => (float) $value)
+            ->map(fn (mixed $value): float => max(0.0, round((float) $value, 2)))
             ->all();
     }
 
@@ -267,38 +281,62 @@ class OwnerFleetController extends Controller
      */
     private function nextEventsByCar(int $tenantId, ?int $branchId, ?int $carId = null): array
     {
-        $today = Carbon::today()->toDateString();
+        $today = Carbon::today();
 
         $reservationRows = Reservation::query()
             ->with(['user:id,name,email'])
             ->where('tenant_id', $tenantId)
-            ->whereIn('status', [ReservationStatus::PENDING->value, ReservationStatus::CONFIRMED->value, ReservationStatus::ACTIVE->value])
-            ->whereDate('start_date', '>=', $today)
+            ->whereIn('status', [
+                ReservationStatus::PENDING->value,
+                ReservationStatus::CONFIRMED->value,
+                ReservationStatus::ACTIVE->value,
+                ReservationStatus::COMPLETED_WAIT_CONTRACT->value,
+            ])
+            ->where(function (Builder $query) use ($today): void {
+                $query
+                    ->whereDate('start_date', '>=', $today->toDateString())
+                    ->orWhereDate('end_date', '>=', $today->toDateString());
+            })
             ->when($branchId, fn (Builder $query): Builder => $query->whereHas('car', fn (Builder $carQuery): Builder => $carQuery->where('branch_id', $branchId)))
             ->when($carId, fn (Builder $query): Builder => $query->where('car_id', $carId))
             ->orderBy('start_date')
             ->orderBy('pickup_time')
-            ->get()
-            ->groupBy('car_id');
+            ->get();
 
         $contractRows = Contract::query()
             ->with(['reservation.user:id,name,email'])
             ->where('tenant_id', $tenantId)
             ->where('status', ContractStatus::ACTIVE->value)
-            ->whereDate('end_date', '>=', $today)
+            ->where(function (Builder $query) use ($today): void {
+                $query
+                    ->whereDate('end_date', '>=', $today->toDateString())
+                    ->orWhereHas('reservation', fn (Builder $reservationQuery): Builder => $reservationQuery->whereDate('end_date', '>=', $today->toDateString()));
+            })
             ->whereHas('reservation')
-            ->when($branchId, fn (Builder $query): Builder => $query->where('branch_id', $branchId))
+            ->when($branchId, fn (Builder $query): Builder => $query->where(function (Builder $branchQuery) use ($branchId): void {
+                $branchQuery
+                    ->where('branch_id', $branchId)
+                    ->orWhereHas('reservation.car', fn (Builder $carQuery): Builder => $carQuery->where('branch_id', $branchId));
+            }))
             ->when($carId, fn (Builder $query): Builder => $query->whereHas('reservation', fn (Builder $reservationQuery): Builder => $reservationQuery->where('car_id', $carId)))
             ->orderBy('end_date')
-            ->get()
-            ->groupBy(fn (Contract $contract): int => (int) $contract->reservation?->car_id);
+            ->get();
 
         $events = [];
 
-        foreach ($reservationRows as $groupCarId => $reservations) {
-            $reservation = $reservations->first();
-            if ($reservation instanceof Reservation) {
-                $events[(int) $groupCarId] = [
+        foreach ($reservationRows as $reservation) {
+            $groupCarId = (int) $reservation->car_id;
+            if ($groupCarId <= 0) {
+                continue;
+            }
+
+            $status = $reservation->status instanceof ReservationStatus
+                ? $reservation->status->value
+                : (string) $reservation->status;
+
+            if (in_array($status, [ReservationStatus::PENDING->value, ReservationStatus::CONFIRMED->value], true)
+                && $this->dateIsTodayOrLater($reservation->start_date, $today)) {
+                $this->rememberNearestEvent($events, $groupCarId, [
                     'type' => 'reservation',
                     'label_key' => 'fleet.next_events.next_reservation',
                     'date' => $reservation->start_date?->toDateString(),
@@ -306,36 +344,72 @@ class OwnerFleetController extends Controller
                     'reservation_id' => $reservation->id,
                     'reservation_number' => $reservation->reservation_number,
                     'client_name' => $reservation->user?->name,
-                ];
+                ]);
+            }
+
+            if (in_array($status, [ReservationStatus::ACTIVE->value, ReservationStatus::COMPLETED_WAIT_CONTRACT->value], true)
+                && $this->dateIsTodayOrLater($reservation->end_date, $today)) {
+                $this->rememberNearestEvent($events, $groupCarId, [
+                    'type' => 'return',
+                    'label_key' => 'fleet.next_events.return_date',
+                    'date' => $reservation->end_date?->toDateString(),
+                    'time' => $reservation->return_time?->format('H:i'),
+                    'reservation_id' => $reservation->id,
+                    'reservation_number' => $reservation->reservation_number,
+                    'client_name' => $reservation->user?->name,
+                ]);
             }
         }
 
-        foreach ($contractRows as $groupCarId => $contracts) {
-            $contract = $contracts->first();
-            if (!$contract instanceof Contract) {
+        foreach ($contractRows as $contract) {
+            $groupCarId = (int) $contract->reservation?->car_id;
+            if ($groupCarId <= 0) {
                 continue;
             }
 
-            $current = $events[(int) $groupCarId] ?? null;
-            $contractDate = $contract->end_date?->toDateString();
-
-            if ($current && $contractDate && ($current['date'] ?? null) && strcmp((string) $current['date'], $contractDate) <= 0) {
-                continue;
-            }
-
-            $events[(int) $groupCarId] = [
+            $this->rememberNearestEvent($events, $groupCarId, [
                 'type' => 'return',
                 'label_key' => 'fleet.next_events.return_date',
-                'date' => $contractDate,
+                'date' => $contract->end_date?->toDateString() ?? $contract->reservation?->end_date?->toDateString(),
                 'time' => $contract->reservation?->return_time?->format('H:i'),
                 'contract_id' => $contract->id,
                 'contract_number' => $contract->contract_number,
                 'reservation_id' => $contract->reservation_id,
                 'client_name' => $contract->reservation?->user?->name,
-            ];
+            ]);
         }
 
-        return $events;
+        return array_map(function (array $event): array {
+            unset($event['_sort_key']);
+
+            return $event;
+        }, $events);
+    }
+
+    private function dateIsTodayOrLater(mixed $date, Carbon $today): bool
+    {
+        if (!$date) {
+            return false;
+        }
+
+        return Carbon::parse($date)->toDateString() >= $today->toDateString();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $events
+     * @param  array<string, mixed>  $event
+     */
+    private function rememberNearestEvent(array &$events, int $carId, array $event): void
+    {
+        if (empty($event['date'])) {
+            return;
+        }
+
+        $event['_sort_key'] = sprintf('%s %s', (string) $event['date'], (string) ($event['time'] ?? '23:59'));
+
+        if (!isset($events[$carId]) || strcmp((string) $event['_sort_key'], (string) ($events[$carId]['_sort_key'] ?? '9999-12-31 23:59')) < 0) {
+            $events[$carId] = $event;
+        }
     }
 
     private function carPayload(Car $car, string $locale, array $currency, float $monthlyRevenue, ?array $nextEvent): array
@@ -519,6 +593,157 @@ class OwnerFleetController extends Controller
         }
 
         return TenantTranslations::get($translationKey, $locale, $fileFallback);
+    }
+
+    private function occupancyRateByCar(int $tenantId, Car $car): array
+    {
+        $today = Carbon::today();
+        $start = $today->copy()->subDays(30)->startOfDay();
+        $end = $today->copy()->endOfDay();
+        $totalDays = 30;
+
+        $rentedDays = Reservation::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('car_id', $car->id)
+            ->whereIn('status', [
+                ReservationStatus::CONFIRMED->value,
+                ReservationStatus::ACTIVE->value,
+                ReservationStatus::COMPLETED->value,
+            ])
+            ->where('start_date', '<=', $end->toDateString())
+            ->where('end_date', '>=', $start->toDateString())
+            ->get(['start_date', 'end_date'])
+            ->sum(function (Reservation $res) use ($start, $end): int {
+                $resStart = Carbon::parse($res->start_date)->max($start);
+                $resEnd = Carbon::parse($res->end_date)->min($end);
+
+                return max(1, (int) $resStart->diffInDays($resEnd) + 1);
+            });
+
+        $percent = min(100, (int) round(($rentedDays / $totalDays) * 100));
+
+        return [
+            'rate' => $percent,
+            'formatted_rate' => $percent.'%',
+        ];
+    }
+
+    private function upcomingReservationsSummary(int $tenantId, Car $car, string $locale): array
+    {
+        $today = Carbon::today();
+
+        $upcoming = Reservation::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('car_id', $car->id)
+            ->whereIn('status', [
+                ReservationStatus::PENDING->value,
+                ReservationStatus::CONFIRMED->value,
+                ReservationStatus::ACTIVE->value,
+            ])
+            ->where('start_date', '>=', $today->toDateString())
+            ->orderBy('start_date')
+            ->orderBy('pickup_time')
+            ->get();
+
+        $count = $upcoming->count();
+        $nearest = $upcoming->first();
+
+        $nearestDateLabel = null;
+        if ($nearest && $nearest->start_date) {
+            $formattedDate = Carbon::parse($nearest->start_date)->locale($locale)->isoFormat('D MMMM');
+            $formattedTime = $nearest->pickup_time ? Carbon::parse($nearest->pickup_time)->locale($locale)->isoFormat('h:mm a') : null;
+            $nearestDateLabel = trim($formattedDate.($formattedTime ? '، '.$formattedTime : ''));
+        }
+
+        $subtitleText = $count === 1
+            ? $this->ownerText('fleet.show.upcoming_one', $locale, '1 upcoming reservation')
+            : ($count > 1
+                ? sprintf($this->ownerText('fleet.show.upcoming_plural', $locale, '%d upcoming reservations'), $count)
+                : $this->ownerText('fleet.show.no_upcoming', $locale, 'No upcoming reservations'));
+
+        return [
+            'count' => $count,
+            'subtitle' => $subtitleText,
+            'nearest_date_label' => $nearestDateLabel,
+        ];
+    }
+
+    private function lastMaintenanceSummary(int $tenantId, Car $car, string $locale): array
+    {
+        $lastMaintenance = CarMaintenance::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('car_id', $car->id)
+            ->latest('completed_at')
+            ->latest('scheduled_date')
+            ->latest('id')
+            ->first();
+
+        $count = CarMaintenance::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('car_id', $car->id)
+            ->count();
+
+        if (!$lastMaintenance) {
+            return [
+                'count' => $count,
+                'date' => null,
+                'formatted_date' => null,
+                'days_ago' => null,
+                'days_ago_label' => $this->ownerText('fleet.show.no_maintenance', $locale, 'No maintenance recorded'),
+                'status' => 'good',
+                'status_label' => $this->ownerText('fleet.show.status_good', $locale, 'Good'),
+                'status_color' => '#10B981',
+            ];
+        }
+
+        $date = $lastMaintenance->completed_at ?? $lastMaintenance->scheduled_date ?? $lastMaintenance->created_at;
+        $daysAgo = $date ? (int) max(0, Carbon::parse($date)->diffInDays(Carbon::today())) : 0;
+
+        return [
+            'count' => $count,
+            'date' => $date?->toDateString(),
+            'formatted_date' => $date ? Carbon::parse($date)->locale($locale)->isoFormat('D MMMM YYYY') : null,
+            'days_ago' => $daysAgo,
+            'days_ago_label' => sprintf($this->ownerText('fleet.show.days_ago', $locale, '%d days ago'), $daysAgo),
+            'status' => 'good',
+            'status_label' => $this->ownerText('fleet.show.status_good', $locale, 'Good'),
+            'status_color' => '#10B981',
+        ];
+    }
+
+    private function damageRecordSummary(int $tenantId, Car $car, string $locale): array
+    {
+        $damageCount = CarDamageReport::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('car_id', $car->id)
+            ->count() + CarDamageCase::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('car_id', $car->id)
+            ->count();
+
+        $description = $damageCount === 0
+            ? $this->ownerText('fleet.show.no_damages', $locale, 'No registered damages')
+            : sprintf($this->ownerText('fleet.show.damages_count', $locale, '%d registered damages'), $damageCount);
+
+        $status = $damageCount === 0 ? 'excellent' : 'attention_needed';
+        $statusLabel = $damageCount === 0
+            ? $this->ownerText('fleet.show.status_excellent', $locale, 'Excellent')
+            : $this->ownerText('fleet.show.status_attention', $locale, 'Attention needed');
+        $statusColor = $damageCount === 0 ? '#10B981' : '#EF4444';
+
+        return [
+            'count' => $damageCount,
+            'description' => $description,
+            'status' => $status,
+            'status_label' => $statusLabel,
+            'status_color' => $statusColor,
+        ];
     }
 
     private function resolveLocale(Request $request): string

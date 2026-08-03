@@ -349,3 +349,67 @@ test('owner dashboard summary filters revenue by requested date range and branch
         ->assertJsonPath('date_range.is_custom', true)
         ->assertJsonPath('stats.today_revenue', 200);
 });
+
+test('owner admin without pre-attached tenant-owner role can access branches API via fallback and auto-sync', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+        'email' => 'owner-test@tenant.com',
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Main Branch',
+    ]);
+
+    $owner = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'email' => 'owner-test@tenant.com',
+        'branch_id' => null,
+        'role' => UserRole::ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    Sanctum::actingAs($owner, ['*']);
+
+    $response = $this->getJson(route('api.owner.branches'));
+
+    $response->assertOk()
+        ->assertJsonPath('status', 'success')
+        ->assertJsonPath('can_access_all_branches', true);
+});
+
+test('tenant partner admin can access owner branches API', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Main Branch',
+    ]);
+
+    $partner = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => null,
+        'role' => UserRole::ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $partnerRole = Role::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'tenant-partner',
+        'display_name' => 'Tenant Partner',
+        'description' => 'Tenant partner',
+    ]);
+    $partner->roles()->syncWithoutDetaching([$partnerRole->id]);
+
+    Sanctum::actingAs($partner, ['*']);
+
+    $response = $this->getJson(route('api.owner.branches'));
+
+    $response->assertOk()
+        ->assertJsonPath('status', 'success')
+        ->assertJsonPath('can_access_all_branches', true);
+});

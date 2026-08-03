@@ -426,3 +426,65 @@ Verification:
 Important:
 
 - If the API shows broken text again, first check whether a bad override exists in Landing Translation or tenant translations before changing controller/service logic.
+
+## 2026-08-03 Owner & Partner API 403 Forbidden Access Fix
+
+Issue:
+
+- Owner and Partner API requests to `/api/owner/*` (e.g. `GET /api/owner/branches`) intermittently returned `403 Forbidden`.
+- Running `php artisan optimize:clear` temporarily resolved the issue, but it reoccurred when requests were made via mobile/API without prior web dashboard login.
+- `BranchAccess::canAccessAllBranches()` strictly required an explicit `tenant-owner` or `tenant-partner` role record in the `role_user` database table and lacked the fallback capabilities present in `ApiAccessMode::isOwnerCapable()`.
+- Primary tenant owner admins and partner accounts created via API or seeders were missing automatic role synchronization because `TenantAdminAccessSync` was only invoked inside web `AdminMiddleware`.
+
+Fix Details:
+
+1. **BranchAccess Authorization Fallback & Auto-Sync**:
+   - Updated `BranchAccess::canAccessAllBranches()` in `app/Support/BranchAccess.php` to invoke `ApiAccessMode::isOwnerCapable($user)` as a fallback when role records are pending.
+   - Automatically triggers `TenantAdminAccessSync::syncUser()` on owner-capable users so role relations are created and persisted in the DB upon API execution.
+
+2. **Refined Employee vs. Owner & Partner Discrimination**:
+   - Updated `ApiAccessMode::isOwnerCapable()` in `app/Support/ApiAccessMode.php` to check if a user is assigned to a specific branch (`branch_id !== null`). Users with explicit branch assignments remain scoped as employees unless assigned an explicit `tenant-owner` or `tenant-partner` role.
+   - Users without branch assignment (`branch_id === null`) or holding `tenant-partner` / `tenant-owner` roles are correctly identified as owner-capable across all API routes.
+
+3. **API Authentication Role Sync**:
+   - Added automatic `TenantAdminAccessSync::syncUser()` calls inside `AuthController::login()` and `AuthController::switchMode()` for admin users in `app/Http/Controllers/Api/AuthController.php`.
+
+4. **Automated Test Coverage**:
+   - Added feature tests in `tests/Feature/Api/OwnerDashboardControllerTest.php` ensuring owner admins without pre-attached roles and partner admins with `tenant-partner` roles receive `200 OK` on `/api/owner/branches`.
+   - Confirmed full test suite pass across `OwnerDashboardControllerTest` and `DailyTasksControllerTest`.
+
+## 2026-08-03 Owner Fleet Show API Screen Alignment Analysis
+
+Comparison between current `GET /api/owner/fleet/{car}` response shape and the mobile design mockup for the Car Details screen:
+
+Missing / Required Fields to match the mobile screen:
+
+1. **`occupancy_rate` (نسبة الإشغال)**:
+   - Percentage indicator (e.g. `72%`) representing current monthly car utilization.
+   - Fields: `occupancy_rate` (float/int), `formatted_occupancy_rate` (string, e.g. `"72%"`).
+
+2. **`upcoming_reservations_summary` (الحجوزات القادمة)**:
+   - Summary card for upcoming reservations.
+   - Fields: `count` (int, e.g. `2`), `subtitle` (string, e.g. `"حجوزتان قادمتان"`), `nearest_date_label` (string, e.g. `"18 مايو، 11:00 ص"`).
+
+3. **`last_maintenance` (آخر صيانة)**:
+   - Summary card for latest car maintenance.
+   - Fields: `count` (int, e.g. `0`), `date` (string, e.g. `"2024-04-10"`), `formatted_date` (string), `days_ago` (int, e.g. `32`), `days_ago_label` (string, e.g. `"قبل 32 يوم"`), `status` (string, e.g. `"good"`), `status_label` (string, e.g. `"جيد"`), `status_color` (string).
+
+4. **`damage_record_summary` (سجل الأضرار)**:
+   - Summary card for car damage history.
+   - Fields: `count` (int, e.g. `0`), `description` (string, e.g. `"لا توجد أضرار مسجلة"`), `status` (string, e.g. `"excellent"`), `status_label` (string, e.g. `"ممتاز"`), `status_color` (string).
+
+5. **`quick_actions` (إجراءات سريعة)**:
+   - Quick action chips at the bottom of the screen.
+   - Actions: `schedule_maintenance` (جدولة صيانة), `view_reservations` (عرض الحجوزات), `transfer_branch` (نقل إلى فرع آخر). (Skipped UI chips per user instruction).
+
+Implementation Status (2026-08-03):
+
+- **Monthly Revenue Calculation Fix**: Calculated for the last 30 rolling days (`Carbon::today()->subDays(30)` to `endOfDay()`) and subtracted `refunded_amount` (`net_revenue = COALESCE(base_amount, amount) - COALESCE(refunded_amount, 0)`).
+- **Occupancy Rate**: Implemented `occupancy_rate` (int percentage for the last 30 rolling days) and `formatted_occupancy_rate` (`"72%"`).
+- **Upcoming Reservations Summary**: Implemented `upcoming_reservations_summary` containing `count`, `subtitle`, and `nearest_date_label` (e.g. `"18 مايو، 11:00 ص"`).
+- **Last Maintenance Summary**: Implemented `last_maintenance` containing `count`, `date`, `formatted_date`, `days_ago`, `days_ago_label` (e.g. `"قبل 32 يوم"`), `status`, `status_label`, and `status_color`.
+- **Damage Record Summary**: Implemented `damage_record_summary` containing `count`, `description` (e.g. `"لا توجد أضرار مسجلة"`), `status`, `status_label`, and `status_color`.
+- **Quick Actions**: Excluded per explicit user request.
+- **Tests**: Created `tests/Feature/Api/OwnerFleetControllerTest.php` and verified 100% pass rate.

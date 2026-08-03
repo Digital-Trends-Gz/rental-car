@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\UserRole;
 use App\Models\Branch;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -33,6 +34,15 @@ class BranchAccess
         }
 
         if (method_exists($user, 'hasRole') && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner'))) {
+            return true;
+        }
+
+        if (ApiAccessMode::isOwnerCapable($user)) {
+            $tenant = Tenant::query()->withoutGlobalScope('tenant')->find((int) $user->tenant_id);
+            if ($tenant) {
+                app(TenantAdminAccessSync::class)->syncUser($user, $tenant);
+            }
+
             return true;
         }
 

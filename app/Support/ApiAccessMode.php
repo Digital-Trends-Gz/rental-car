@@ -76,8 +76,25 @@ class ApiAccessMode
             return true;
         }
 
-        return $tenant && !empty($tenant->email)
-            && strcasecmp((string) $tenant->email, (string) $user->email) === 0;
+        $tenant = $tenant ?? Tenant::query()->withoutGlobalScope('tenant')->find((int) $user->tenant_id);
+
+        if ($tenant && !empty($tenant->email)
+            && strcasecmp((string) $tenant->email, (string) $user->email) === 0) {
+            return true;
+        }
+
+        if (!empty($user->branch_id)) {
+            return false;
+        }
+
+        $ownerUserId = User::withoutGlobalScope('tenant')
+            ->where('tenant_id', (int) $user->tenant_id)
+            ->where('role', UserRole::ADMIN)
+            ->whereNull('branch_id')
+            ->orderBy('id')
+            ->value('id');
+
+        return $ownerUserId && (int) $user->id === (int) $ownerUserId;
     }
 
     public static function effectiveBranchId(User $user, ?int $explicitBranchId = null): ?int

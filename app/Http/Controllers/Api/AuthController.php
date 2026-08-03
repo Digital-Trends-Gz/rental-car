@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\ApiPasswordResetNotification;
 use App\Support\ApiAccessMode;
+use App\Support\TenantAdminAccessSync;
 use App\Support\TenantTranslations;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
@@ -54,6 +55,9 @@ class AuthController extends Controller
         $deviceName = $deviceName !== '' ? $deviceName : 'mobile';
 
         $tenant = $this->resolveTenant($user);
+        if ($tenant && $user->role === UserRole::ADMIN) {
+            app(TenantAdminAccessSync::class)->syncUser($user, $tenant);
+        }
         $activeMode = ApiAccessMode::activeMode($user, $tenant);
         $activeBranchId = $activeMode === ApiAccessMode::MODE_EMPLOYEE
             ? ApiAccessMode::effectiveBranchId($user)
@@ -204,6 +208,9 @@ class AuthController extends Controller
         }
 
         $tenant = $this->resolveTenant($user);
+        if ($tenant && $user->role === UserRole::ADMIN) {
+            app(TenantAdminAccessSync::class)->syncUser($user, $tenant);
+        }
 
         if (!ApiAccessMode::isOwnerCapable($user, $tenant)) {
             return response()->json([
