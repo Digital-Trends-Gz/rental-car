@@ -343,7 +343,7 @@ class OwnerFleetController extends Controller
                 'notes'                   => $maintenance->notes,
                 'created_at'              => $maintenance->created_at?->toIso8601String(),
             ],
-        ], 201);
+        ], 200);
     }
 
     // ─────────────────────────────────────────────────────────────
