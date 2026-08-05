@@ -391,6 +391,72 @@ class OwnerFleetController extends Controller
         ]);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    //  Bulk Transfer Branch
+    // ─────────────────────────────────────────────────────────────
+
+    public function bulkTransfer(Request $request): JsonResponse
+    {
+        $user   = $this->authorizedOwner($request);
+        $locale = $this->resolveLocale($request);
+        $tenantId = (int) $user->tenant_id;
+
+        $validated = $request->validate([
+            'car_ids'   => ['required', 'array', 'min:1'],
+            'car_ids.*' => [
+                'required',
+                'integer',
+                Rule::exists('cars', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
+            ],
+            'branch_id' => [
+                'required',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
+            ],
+        ]);
+
+        $newBranchId = (int) $validated['branch_id'];
+        $newBranch = Branch::query()->where('tenant_id', $tenantId)->findOrFail($newBranchId);
+
+        $cars = Car::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->whereIn('id', $validated['car_ids'])
+            ->get();
+
+        foreach ($cars as $car) {
+            abort_unless($this->branchAccess->canAccessBranchId($user, $car->branch_id ? (int) $car->branch_id : null), 403);
+        }
+
+        $transferredCount = 0;
+        $transferredIds = [];
+
+        foreach ($cars as $car) {
+            if ($car->branch_id && (int) $car->branch_id === $newBranchId) {
+                continue;
+            }
+            $car->update(['branch_id' => $newBranchId]);
+            $transferredCount++;
+            $transferredIds[] = $car->id;
+        }
+
+        $message = str_replace(
+            [':count', ':branch'],
+            [$transferredCount, $newBranch->name],
+            $this->ownerText('fleet.transfer.bulk_success', $locale, 'Successfully transferred :count cars to :branch.')
+        );
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => $message,
+            'data'    => [
+                'transferred_car_ids' => $transferredIds,
+                'new_branch_id'       => $newBranch->id,
+                'new_branch_name'     => $newBranch->name,
+            ],
+        ]);
+    }
+
     private function authorizedOwner(Request $request): User
     {
         $user = $request->user();

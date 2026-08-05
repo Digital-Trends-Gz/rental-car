@@ -4775,6 +4775,8 @@ Sunday: 10:00 AM - 4:00 PM',
     ),
     'finance' => 
     array (
+      'fleet_occupancy' => 'Fleet occupancy rate',
+      'top_performing_cars' => 'Top performing cars',
       'cards' => 
       array (
         'total_revenue' => 'Total revenue',
@@ -4816,6 +4818,7 @@ Sunday: 10:00 AM - 4:00 PM',
       array (
         'success' => 'Car transferred successfully.',
         'same_branch' => 'Car is already in the selected branch.',
+        'bulk_success' => 'Successfully transferred :count cars to :branch.',
       ),
       'show' => 
       array (
@@ -4995,6 +4998,35 @@ Sunday: 10:00 AM - 4:00 PM',
     array (
       'yesterday' => 'Yesterday',
       'previous_period' => 'Previous period',
+    ),
+    'smart_opportunities' => 
+    array (
+      'idle_cars_title' => 'Idle cars now',
+      'idle_cars_subtitle' => 'idle cars',
+      'section_title' => 'Smart Opportunities',
+      'section_subtitle' => 'AI-powered suggestions to increase revenue',
+      'redistribution_title' => 'Redistribution suggestion',
+      'redistribution_description' => 'High demand at :target_branch. We suggest transferring :count cars from :source_branch.',
+      'expected_revenue_increase' => 'Expected revenue increase',
+      'view_details' => 'View details',
+      'promotional_title' => 'Promotional offer suggestion',
+      'promotional_description' => 'Demand drops during :period. We recommend creating a :discount% discount offer to increase bookings.',
+      'expected_booking_increase' => 'Expected booking increase',
+      'create_offer' => 'Create offer',
+      'weekend' => 'weekends',
+      'pricing_title' => 'Pricing adjustment suggestion',
+      'pricing_description' => ':car_name has high demand (:days rental days). We suggest a :percent% price increase.',
+      'suggested_new_price' => 'Suggested new price',
+      'low_demand' => 'Low demand / surplus cars',
+      'high_demand' => 'High demand / low supply',
+      'redistribution_reason' => ':target_branch had :target_reservations reservations in 30 days with only :target_available available cars. :source_branch has :source_available idle cars.',
+    ),
+    'car_discounts' => 
+    array (
+      'created' => 'Car discount created successfully.',
+      'updated' => 'Car discount updated successfully.',
+      'deleted' => 'Car discount deleted successfully.',
+      'all_cars' => 'All cars',
     ),
     'errors' => 
     array (

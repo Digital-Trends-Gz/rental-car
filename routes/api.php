@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\OwnerFinanceController;
 use App\Http\Controllers\Api\OwnerFleetController;
 use App\Http\Controllers\Api\OwnerNotificationsController;
 use App\Http\Controllers\Api\OwnerReservationsController;
+use App\Http\Controllers\Api\OwnerSmartOpportunitiesController;
+use App\Http\Controllers\Api\OwnerCarDiscountsController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\StaticPageContentController;
 use Illuminate\Support\Facades\Route;
@@ -48,9 +50,11 @@ Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
     Route::get('branches', [OwnerDashboardController::class, 'branches'])->name('api.owner.branches');
     Route::get('dashboard/summary', [OwnerDashboardController::class, 'summary'])->name('api.owner.dashboard.summary');
     Route::get('finance/summary', [OwnerFinanceController::class, 'summary'])->name('api.owner.finance.summary');
+    Route::get('smart-opportunities', [OwnerSmartOpportunitiesController::class, 'index'])->name('api.owner.smart-opportunities');
     Route::get('fleet/statuses', [OwnerFleetController::class, 'statuses'])->name('api.owner.fleet.statuses');
     Route::get('fleet/maintenance-options', [OwnerFleetController::class, 'maintenanceOptions'])->name('api.owner.fleet.maintenance-options');
     Route::get('fleet', [OwnerFleetController::class, 'index'])->name('api.owner.fleet.index');
+    Route::post('fleet/bulk-transfer', [OwnerFleetController::class, 'bulkTransfer'])->name('api.owner.fleet.bulk-transfer');
     Route::get('fleet/{car}', [OwnerFleetController::class, 'show'])->name('api.owner.fleet.show');
     Route::post('fleet/{car}/schedule-maintenance', [OwnerFleetController::class, 'scheduleMaintenance'])->name('api.owner.fleet.schedule-maintenance');
     Route::post('fleet/{car}/transfer-branch', [OwnerFleetController::class, 'transferBranch'])->name('api.owner.fleet.transfer-branch');
@@ -66,6 +70,13 @@ Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
     Route::get('discount-requests/{discountRequest}', [OwnerDiscountRequestsController::class, 'show'])->name('api.owner.discount-requests.show');
     Route::post('discount-requests/{discountRequest}/approve', [OwnerDiscountRequestsController::class, 'approve'])->name('api.owner.discount-requests.approve');
     Route::post('discount-requests/{discountRequest}/reject', [OwnerDiscountRequestsController::class, 'reject'])->name('api.owner.discount-requests.reject');
+
+    // Car Discounts (Promotions)
+    Route::get('car-discounts', [OwnerCarDiscountsController::class, 'index'])->name('api.owner.car-discounts.index');
+    Route::post('car-discounts', [OwnerCarDiscountsController::class, 'store'])->name('api.owner.car-discounts.store');
+    Route::get('car-discounts/{carDiscount}', [OwnerCarDiscountsController::class, 'show'])->name('api.owner.car-discounts.show');
+    Route::put('car-discounts/{carDiscount}', [OwnerCarDiscountsController::class, 'update'])->name('api.owner.car-discounts.update');
+    Route::delete('car-discounts/{carDiscount}', [OwnerCarDiscountsController::class, 'destroy'])->name('api.owner.car-discounts.destroy');
 });
 
 Route::middleware('auth:sanctum')->prefix('tasks')->group(function () {

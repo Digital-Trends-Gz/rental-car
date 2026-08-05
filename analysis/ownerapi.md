@@ -760,3 +760,283 @@ Implementation Status (2026-08-03):
   - `top_performing_cars`: ترجع أعلى السيارات طلباً وتحقيقاً للإيرادات (Top 3 cars) مجمعة حسب دفعات الحجوزات أو مبالغ الحجز، متضمنة اسم السيارة الكامل وصورتها وإجمالي إيراداتها وعدد حجوزاتها.
   - دعم كامل لفلترة الفروع سواء لكل الفروع (`branch_id = null`) أو لفرع محدد (`branch_id = X`).
 
+---
+
+### GET /api/owner/smart-opportunities
+
+شاشة **الفرص الذكية** لمساعدة المالك على زيادة الأرباح وتوزيع الأسطول بكفاءة باستخدام تحليلات النظام المدمجة والذكاء الاصطناعي.
+
+**Endpoint**: `GET /api/owner/smart-opportunities`  
+**Query Parameters**:
+- `branch_id` (optional): رقم الفرع (أو `null` / ملغى لكل الفروع).
+
+**الآلية التحليلية ومصدر البيانات**:
+1. **السيارات الفارغة المتاحة الآن (`idle_cars_count`)**: إجمالي عدد السيارات ذات الحالة المتاحة (`status = available`) في الفرع المحدد أو كل الفروع.
+2. **اقتراح إعادة توزيع الأسطول (`redistribution`)**: يتم تحليلياً بمقارنة نسبة إشغال الفروع الحالية. عند وجود فرع يعاني من ضغط حجوزات مرتفع وفرع آخر يمتلك سيارات فارغة غير مؤجرة، يتم توليد فرصة نقل عدد محدد من السيارات بين الفرعين مع تقدير زيادة الإيرادات المتوقعة.
+3. **اقتراح العروض الترويجية (`promotional_offer`)**: يتتبع أيام الأسبوع أو الفترات الزمنية ذات معدل الطلب المنخفض، ويقترح خصماً مئوياً لزيادة الحجوزات.
+4. **تكامل الذكاء الاصطناعي**: يعتمد على المحرك التحليلي الداخلي للنظام (`AiInsightsReportService`) مع إمكانية الربط مع خدمة الذكاء الاصطناعي (`AiInsightsOpenAiService`) المدمجة في المشروع لصياغة التوصيات الذكية وتوقعات الأرباح.
+
+**Response (200 OK)**:
+```json
+{
+  "status": "success",
+  "locale": "ar",
+  "branch_id": null,
+  "summary": {
+    "idle_cars_count": 9,
+    "title": "السيارات الفارغة الآن",
+    "subtitle": "سيارات فارغة",
+    "image_url": "http://..."
+  },
+  "opportunities_section_title": "الفرص الذكية",
+  "opportunities_section_subtitle": "اقترحات بالذكاء الاصطناعي لزيادة الأرباح",
+  "opportunities": [
+    {
+      "id": 1,
+      "type": "redistribution",
+      "icon": "swap",
+      "title": "اقترح إعادة توزيع",
+      "description": "يوجد طلب مرتفع في فرع جدة - الروضة، ونقترح نقل 2 سيارات من فرع الرياض - العليا.",
+      "metric": {
+        "label": "زيادة متوقعة في الإيراد",
+        "value": 2350.0,
+        "type": "money",
+        "formatted_value": "2,350 ر.ع."
+      },
+      "action": {
+        "type": "view_details",
+        "label": "عرض التفاصيل",
+        "meta": {
+          "source_branch_id": 1,
+          "source_branch_name": "فرع الرياض - العليا",
+          "target_branch_id": 4,
+          "target_branch_name": "فرع جدة - الروضة",
+          "suggested_cars_count": 2
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "promotional_offer",
+      "icon": "megaphone",
+      "title": "اقترح عرض ترويجي",
+      "description": "الطلب ينخفض في عطلة نهاية الأسبوع، ننصح بإنشاء عرض خصم 18% لزيادة الحجوزات.",
+      "metric": {
+        "label": "زيادة متوقعة في الحجوزات",
+        "value": 18.0,
+        "type": "percentage",
+        "formatted_value": "+18%"
+      },
+      "action": {
+        "type": "create_offer",
+        "label": "إنشاء العرض",
+        "meta": {
+          "suggested_discount_percent": 18,
+          "target_days": ["weekend"]
+        }
+      }
+    }
+  ]
+}
+```
+
+#### نوع الفرصة الثالث: `pricing_adjustment`
+
+```json
+{
+  "id": 3,
+  "type": "pricing_adjustment",
+  "icon": "trending_up",
+  "title": "اقتراح تعديل السعر",
+  "description": "Toyota Camry 2023 عليها طلب عالي (22 يوم تأجير). نقترح زيادة السعر بنسبة 10%.",
+  "metric": {
+    "label": "السعر الجديد المقترح",
+    "value": 165.00,
+    "type": "money",
+    "formatted_value": "ر.ع. 165.00"
+  },
+  "action": {
+    "type": "view_details",
+    "label": "عرض التفاصيل",
+    "meta": {
+      "car_id": 15,
+      "car_name": "Toyota Camry 2023",
+      "current_price": 150.00,
+      "suggested_price": 165.00,
+      "suggested_increase_percent": 10,
+      "utilization_days": 22
+    }
+  }
+}
+```
+
+---
+
+### Implementation Notes (2026-08-05)
+
+- **Controller**: `OwnerSmartOpportunitiesController.php` (طريقة `index()`)
+- **Route**: `GET /api/owner/smart-opportunities` → `api.owner.smart-opportunities`
+- **التحليلات المبنية على بيانات داخلية** (بدون استدعاء AI خارجي):
+  1. **`redistribution`**: يقارن الطلب على الحجوزات لكل فرع خلال آخر 30 يوم مع عدد السيارات المتاحة، ويحدد فرع مصدر (فائض) وفرع هدف (نقص)، مع تقدير الإيراد المتوقع. **يرجع قائمة السيارات المقترحة للنقل (حتى 10 سيارات)** في `action.meta.cars`.
+  2. **`promotional_offer`**: يحلل أيام الأسبوع ذات الطلب المنخفض (أقل من 70% من المتوسط) ويقترح نسبة خصم مناسبة (8%-20%).
+  3. **`pricing_adjustment`**: يحدد السيارة الأعلى استخداماً (≥10 أيام تأجير في آخر 30 يوم) ويقترح زيادة سعر بنسبة 5%-15% حسب معدل الاستخدام.
+- **الأمان**: يستخدم `authorizedOwner()` + `BranchAccess` + التحقق من `tenant_id`.
+- **الترجمة**: جميع النصوص تحت مفاتيح `owner_api.smart_opportunities.*` في `lang/ar/site.php` و `lang/en/site.php`.
+- **ملاحظة**: الفرصة من نوع `redistribution` تظهر فقط عند عرض كل الفروع (بدون `branch_id`) ووجود أكثر من فرع واحد.
+
+---
+
+### POST /api/owner/fleet/transfer-branch (Bulk Transfer)
+
+إضافة جديدة تتيح نقل عدة سيارات دفعة واحدة إلى فرع آخر. مفيد مع شاشة الفرص الذكية عند تنفيذ اقتراح إعادة التوزيع.
+
+**Endpoint**: `POST /api/owner/fleet/transfer-branch`  
+**Route Name**: `api.owner.fleet.bulk-transfer`
+
+**Request Body**:
+```json
+{
+  "car_ids": [5, 8, 12],
+  "branch_id": 4
+}
+```
+
+- `car_ids`: مطلوب – قائمة IDs السيارات. يجب أن تنتمي لنفس الـ tenant.
+- `branch_id`: مطلوب – الفرع الهدف. يجب أن ينتمي لنفس الـ tenant.
+- السيارات الموجودة بالفعل في الفرع الهدف يتم تجاهلها (لا خطأ).
+
+**Response (200)**:
+```json
+{
+  "status": "success",
+  "message": "تم نقل 3 سيارات بنجاح إلى فرع جدة.",
+  "data": {
+    "transferred_car_ids": [5, 8, 12],
+    "new_branch_id": 4,
+    "new_branch_name": "فرع جدة"
+  }
+}
+```
+
+**الربط مع الفرص الذكية**: عند ظهور فرصة `redistribution` في `/api/owner/smart-opportunities`، يرجع الـ `action.meta` قائمة السيارات المقترحة (`cars`) مع `target_branch_id`. التطبيق يعرض هذه القائمة للمالك ليختار السيارات، ثم يرسلها مع `branch_id` إلى هذا الـ endpoint.
+
+---
+
+### Car Discounts (Promotions) CRUD APIs
+
+تسمح للمالك بإدارة خصومات السيارات التلقائية (العروض الترويجية) مباشرة من تطبيق الهاتف (مثل شاشة الخصومات في لوحة تحكم الآدمن).
+
+#### 1. قائمة خصومات السيارات
+**Endpoint**: `GET /api/owner/car-discounts`  
+**Query Parameters**:
+- `search` (optional): للبحث بالاسم أو الوصف.
+- `status` (optional): `all` (الافتراضي)، `active` (النشطة فقط)، `inactive` (غير النشطة).
+- `car_id` (optional): لفلترة الخصومات التابعة لسيارة معينة.
+
+**Response (200)**:
+```json
+{
+  "status": "success",
+  "locale": "ar",
+  "data": [
+    {
+      "id": 1,
+      "car_id": 4,
+      "car_name": "2021 Chevrolet Camaro",
+      "car_license_plate": "CC-3004",
+      "name": "خصم الصيف",
+      "description": "خصم خاص بسيارات الكامارو",
+      "type": "percentage",
+      "type_label": "Percentage",
+      "value": 20,
+      "value_formatted": "20%",
+      "max_discount_amount": 100,
+      "max_discount_amount_formatted": "AED 100.00",
+      "min_total_amount": 200,
+      "min_total_amount_formatted": "AED 200.00",
+      "min_days": 3,
+      "starts_at": "2026-08-01T00:00:00Z",
+      "ends_at": "2026-08-31T23:59:59Z",
+      "priority": 1,
+      "is_active": true,
+      "created_at": "2026-08-05T12:00:00Z"
+    }
+  ],
+  "pagination": {
+    "total": 1,
+    "count": 1,
+    "per_page": 15,
+    "current_page": 1,
+    "last_page": 1
+  }
+}
+```
+
+#### 2. إنشاء خصم سيارة جديد
+**Endpoint**: `POST /api/owner/car-discounts`  
+**Request Body**:
+```json
+{
+  "car_id": 4, 
+  "name": "Weekend Discount",
+  "description": "Promotion for weekends",
+  "type": "percentage", 
+  "value": 15.00,
+  "max_discount_amount": 50.00,
+  "min_total_amount": 150.00,
+  "min_days": 2,
+  "starts_at": "2026-08-10",
+  "ends_at": "2026-08-15",
+  "priority": 5,
+  "is_active": true
+}
+```
+*(ملاحظة: حقل `car_id` اختياري. إذا أرسل `null` يطبق الخصم على كل سيارات المكتب).*
+
+**Response (211 Created)**:
+```json
+{
+  "status": "success",
+  "message": "تم إنشاء خصم السيارة بنجاح.",
+  "data": {
+    "id": 2,
+    "car_id": 4,
+    "car_name": "2021 Chevrolet Camaro",
+    ...
+  }
+}
+```
+
+#### 3. عرض تفاصيل خصم محدد
+**Endpoint**: `GET /api/owner/car-discounts/{id}`  
+**Response (200)**: يرجع بيانات الخصم بنفس هيكلية الـ data في القائمة.
+
+#### 4. تحديث خصم سيارة
+**Endpoint**: `PUT /api/owner/car-discounts/{id}`  
+**Request Body**: نفس حقول الـ POST.
+
+**Response (200)**:
+```json
+{
+  "status": "success",
+  "message": "تم تحديث خصم السيارة بنجاح.",
+  "data": { ... }
+}
+```
+
+#### 5. حذف خصم سيارة
+**Endpoint**: `DELETE /api/owner/car-discounts/{id}`  
+**Response (200)**:
+```json
+{
+  "status": "success",
+  "message": "تم حذف خصم السيارة بنجاح."
+}
+```
+
+#### قواعد الأمان (Security & Scope):
+- الـ `tenant_id` يؤخذ دائماً من المستخدم المصادق عليه ولا يقبل من الـ request body.
+- إذا كان الخصم مرتبطاً بـ `car_id` معين، يتم التحقق من امتلاك الـ tenant للسيارة وامتلاك المستخدم صلاحيات الفرع التابعة له السيارة.
+- جميع رسائل النجاح والـ `type_label` ونصوص "كل السيارات" تترجم ديناميكياً بناءً على `Accept-Language` عبر مفاتيح `owner_api.car_discounts.*`.
+
+

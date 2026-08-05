@@ -4789,6 +4789,8 @@ const saveError = ref(\'',
     ),
     'finance' => 
     array (
+      'fleet_occupancy' => 'نسبة إشغال الأسطول',
+      'top_performing_cars' => 'أفضل السيارات أداءً',
       'cards' => 
       array (
         'total_revenue' => 'إجمالي الإيرادات',
@@ -4830,6 +4832,7 @@ const saveError = ref(\'',
       array (
         'success' => 'تم نقل السيارة بنجاح.',
         'same_branch' => 'السيارة موجودة بالفعل في الفرع المحدد.',
+        'bulk_success' => 'تم نقل :count سيارات بنجاح إلى :branch.',
       ),
       'show' => 
       array (
@@ -5009,6 +5012,35 @@ const saveError = ref(\'',
     array (
       'yesterday' => 'أمس',
       'previous_period' => 'الفترة السابقة',
+    ),
+    'smart_opportunities' => 
+    array (
+      'idle_cars_title' => 'السيارات المتاحة الآن',
+      'idle_cars_subtitle' => 'سيارات متاحة',
+      'section_title' => 'فرص ذكية',
+      'section_subtitle' => 'اقتراحات مدعومة بالذكاء الاصطناعي لزيادة الإيرادات',
+      'redistribution_title' => 'اقتراح إعادة توزيع',
+      'redistribution_description' => 'طلب مرتفع في :target_branch. نقترح نقل :count سيارات من :source_branch.',
+      'expected_revenue_increase' => 'الزيادة المتوقعة في الإيرادات',
+      'view_details' => 'عرض التفاصيل',
+      'promotional_title' => 'اقتراح عرض ترويجي',
+      'promotional_description' => 'ينخفض الطلب خلال :period. نوصي بإنشاء عرض خصم :discount% لزيادة الحجوزات.',
+      'expected_booking_increase' => 'الزيادة المتوقعة في الحجوزات',
+      'create_offer' => 'إنشاء عرض',
+      'weekend' => 'عطلة نهاية الأسبوع',
+      'pricing_title' => 'اقتراح تعديل السعر',
+      'pricing_description' => ':car_name عليها طلب عالي (:days يوم تأجير). نقترح زيادة السعر بنسبة :percent%.',
+      'suggested_new_price' => 'السعر الجديد المقترح',
+      'low_demand' => 'طلب منخفض / فائض سيارات',
+      'high_demand' => 'طلب مرتفع / نقص سيارات',
+      'redistribution_reason' => ':target_branch سجّل :target_reservations حجز خلال 30 يوم مع :target_available سيارات متاحة فقط. :source_branch لديه :source_available سيارات فارغة.',
+    ),
+    'car_discounts' => 
+    array (
+      'created' => 'تم إنشاء خصم السيارة بنجاح.',
+      'updated' => 'تم تحديث خصم السيارة بنجاح.',
+      'deleted' => 'تم حذف خصم السيارة بنجاح.',
+      'all_cars' => 'كل السيارات',
     ),
     'errors' => 
     array (
