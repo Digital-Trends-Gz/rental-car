@@ -622,3 +622,141 @@ Implementation Status (2026-08-03):
 - **Routes**: أضيفت في `routes/api.php` داخل group `/api/owner/`.
 - **Security**: كل endpoint يمر على `authorizedOwner()` + `abort_unless(tenant_id match)` + `branchAccess->canAccessBranchId()`.
 - **Tests**: 8 اختبارات آلية تغطي النجاح والفشل والتحقق – جميعها PASS (55 assertions).
+
+---
+
+### GET /api/owner/finance/summary
+
+تم التحديث بتصاميم الشاشات الجديدة لمالك التطبيق (الملخص المالي، نسبة إشغال الأسطول، وأفضل السيارات أداءً).
+
+**Endpoint**: `GET /api/owner/finance/summary`  
+**Query Parameters**:
+- `branch_id` (optional): رقم الفرع (أو `null` / ملغى لكل الفروع).
+- `date_from` (optional): تاريخ بداية الفترة (مثال: `2026-07-23`).
+- `date_to` (optional): تاريخ نهاية الفترة (مثال: `2026-07-29` - حد أقصى 7 أيام).
+
+**Response (200 OK)**:
+```json
+{
+  "status": "success",
+  "locale": "ar",
+  "tenant_id": 1,
+  "branch_id": 2,
+  "date_range": {
+    "from": "2026-07-23",
+    "to": "2026-07-29",
+    "max_days": 7
+  },
+  "currency": {
+    "code": "OMR",
+    "symbol": "ر.ع.",
+    "name": "ريال عماني"
+  },
+  "cards": [
+    {
+      "key": "total_revenue",
+      "title": "إجمالي الإيرادات",
+      "value": 12450.0,
+      "value_type": "money",
+      "formatted_value": "ر.ع. 12,450.00",
+      "accent": "#14B8A6",
+      "change": {
+        "value": 1200.0,
+        "percent": 10.66,
+        "direction": "up",
+        "comparison": "previous_period",
+        "comparison_label": "الفترة السابقة",
+        "comparison_period": { "from": "2026-07-16", "to": "2026-07-22" }
+      }
+    }
+  ],
+  "fleet_occupancy": {
+    "occupancy_rate": 68.0,
+    "formatted_occupancy_rate": "68%",
+    "total_fleet": 42,
+    "change": {
+      "value": 8.0,
+      "percent": 8.0,
+      "direction": "up",
+      "comparison": "previous_period",
+      "comparison_label": "الفترة السابقة",
+      "comparison_period": { "from": "2026-07-16", "to": "2026-07-22" }
+    }
+  },
+  "top_performing_cars": [
+    {
+      "car_id": 15,
+      "name": "هيونداي توسان 2023",
+      "make": "Hyundai",
+      "model": "Tucson",
+      "year": 2023,
+      "license_plate": "1234 A",
+      "total_revenue": 18750.0,
+      "formatted_total_revenue": "ر.ع. 18,750.00",
+      "reservations_count": 14,
+      "image_url": "http://..."
+    },
+    {
+      "car_id": 8,
+      "name": "تويوتا كامري 2022",
+      "make": "Toyota",
+      "model": "Camry",
+      "year": 2022,
+      "license_plate": "5678 B",
+      "total_revenue": 16240.0,
+      "formatted_total_revenue": "ر.ع. 16,240.00",
+      "reservations_count": 11,
+      "image_url": "http://..."
+    },
+    {
+      "car_id": 22,
+      "name": "سبورتاج 2023",
+      "make": "Kia",
+      "model": "Sportage",
+      "year": 2023,
+      "license_plate": "9101 C",
+      "total_revenue": 14980.0,
+      "formatted_total_revenue": "ر.ع. 14,980.00",
+      "reservations_count": 9,
+      "image_url": "http://..."
+    }
+  ],
+  "revenue_chart": [
+    { "date": "2026-07-23", "label": "Jul 23", "value": 1500.0 }
+  ],
+  "branch_breakdown": [
+    {
+      "branch_id": 1,
+      "branch_name": "مدريد",
+      "amount": 5229.0,
+      "formatted_amount": "ر.ع. 5,229.00",
+      "percent": 42.0
+    },
+    {
+      "branch_id": 2,
+      "branch_name": "برشلونة",
+      "amount": 4109.0,
+      "formatted_amount": "ر.ع. 4,109.00",
+      "percent": 33.0
+    },
+    {
+      "branch_id": 3,
+      "branch_name": "فالنسيا",
+      "amount": 3112.0,
+      "formatted_amount": "ر.ع. 3,112.00",
+      "percent": 25.0
+    }
+  ]
+}
+```
+
+---
+
+### Implementation Notes (2026-08-05)
+
+- **Controller**: `OwnerFinanceController.php` (طريقة `summary()`).
+- **الميزات الجديدة**:
+  - `fleet_occupancy`: تحسب نسبة إشغال أسطول السيارات المتاحة خلال النطاق الزمني المحدد بناءً على أيام التشغيل الفعلية وتقاطعات الحجوزات مع النطاق، مقاسة ومقارنة بالفترة السابقة.
+  - `top_performing_cars`: ترجع أعلى السيارات طلباً وتحقيقاً للإيرادات (Top 3 cars) مجمعة حسب دفعات الحجوزات أو مبالغ الحجز، متضمنة اسم السيارة الكامل وصورتها وإجمالي إيراداتها وعدد حجوزاتها.
+  - دعم كامل لفلترة الفروع سواء لكل الفروع (`branch_id = null`) أو لفرع محدد (`branch_id = X`).
+

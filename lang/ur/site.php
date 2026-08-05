@@ -4581,6 +4581,28 @@ Sunday: 10:00 AM - 4:00 PM',
         'next_reservation' => 'اگلی ریزرویشن',
         'return_date' => 'واپسی کی تاریخ',
       ),
+      'maintenance' => 
+      array (
+        'created' => 'مینٹیننس کا شیڈول کامیابی سے طے ہو گیا الماری۔',
+      ),
+      'transfer' => 
+      array (
+        'success' => 'گاڑی کامیابی سے منتقل ہو گئی۔',
+        'same_branch' => 'گاڑی پہلے ہی منتخب کردہ برانچ میں موجود ہے۔',
+      ),
+      'show' => 
+      array (
+        'upcoming_one' => '1 آنے والی ریزرویشن',
+        'upcoming_plural' => '%d آنے والی ریزرویشنز',
+        'no_upcoming' => 'کوئی آنے والی ریزرویشن نہیں ہے',
+        'no_maintenance' => 'کوئی مینٹیننس رکارڈ نہیں ہے',
+        'status_good' => 'بہتر',
+        'days_ago' => '%d دن پہلے',
+        'no_damages' => 'کوئی نقصان کا رکارڈ نہیں ہے',
+        'damages_count' => '%d نقصانات کا رکارڈ',
+        'status_excellent' => 'بہترین',
+        'status_attention' => 'توجہ کی ضرورت',
+      ),
     ),
     'reservations' => 
     array (

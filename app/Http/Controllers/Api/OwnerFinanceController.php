@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\Car;
 use App\Models\DamageRepair;
 use App\Models\Payment;
 use App\Models\Reservation;
@@ -146,6 +147,8 @@ class OwnerFinanceController extends Controller
                     )
                 ),
             ],
+            'fleet_occupancy' => $this->fleetOccupancy($tenantId, $branchId, $dateFrom, $dateTo, $previousRange, $locale),
+            'top_performing_cars' => $this->topPerformingCars($tenantId, $branchId, $dateFrom, $dateTo, $currency),
             'revenue_chart' => $this->dashboardMetrics->revenueChart(
                 $this->dashboardMetrics->paymentsQuery($tenantId, $branchId),
                 $dateFrom,
@@ -366,13 +369,16 @@ class OwnerFinanceController extends Controller
     private function periodChange(float $current, float $previous, array $previousRange, string $locale): array
     {
         $difference = round($current - $previous, 2);
-        $percent = $previous > 0
-            ? round(($difference / $previous) * 100, 2)
-            : ($current == 0.0 ? 0.0 : null);
+
+        if ($previous != 0.0) {
+            $percent = round(($difference / abs($previous)) * 100, 2);
+        } else {
+            $percent = $current > 0 ? 100.0 : 0.0;
+        }
 
         return [
             'value' => $difference,
-            'percent' => $percent === null ? null : abs($percent),
+            'percent' => abs($percent),
             'direction' => $difference > 0 ? 'up' : ($difference < 0 ? 'down' : 'flat'),
             'comparison' => 'previous_period',
             'comparison_label' => $this->ownerText('comparisons.previous_period', $locale, 'Previous period'),
@@ -417,5 +423,150 @@ class OwnerFinanceController extends Controller
         }
 
         return in_array($fallback, $supportedLocales, true) ? $fallback : ($supportedLocales[0] ?? 'en');
+    }
+
+    private function fleetOccupancy(int $tenantId, ?int $branchId, Carbon $from, Carbon $to, array $previousRange, string $locale): array
+    {
+        $carsQuery = Car::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId);
+
+        if ($branchId) {
+            $carsQuery->where('branch_id', $branchId);
+        }
+
+        $totalFleet = $carsQuery->count();
+        $days = $from->diffInDays($to) + 1;
+        $totalCapacityDays = $totalFleet * $days;
+
+        $occupiedDays = $this->calculateOccupiedCarDays($tenantId, $branchId, $from, $to);
+        $occupancyRate = $totalCapacityDays > 0
+            ? round(min(100.0, ($occupiedDays / $totalCapacityDays) * 100), 2)
+            : 0.0;
+
+        $prevDays = $previousRange['from']->diffInDays($previousRange['to']) + 1;
+        $prevCapacityDays = $totalFleet * $prevDays;
+        $prevOccupiedDays = $this->calculateOccupiedCarDays($tenantId, $branchId, $previousRange['from'], $previousRange['to']);
+        $prevOccupancyRate = $prevCapacityDays > 0
+            ? round(min(100.0, ($prevOccupiedDays / $prevCapacityDays) * 100), 2)
+            : 0.0;
+
+        return [
+            'occupancy_rate' => $occupancyRate,
+            'formatted_occupancy_rate' => number_format($occupancyRate, 0).'%',
+            'total_fleet' => $totalFleet,
+            'change' => $this->periodChange($occupancyRate, $prevOccupancyRate, $previousRange, $locale),
+        ];
+    }
+
+    private function calculateOccupiedCarDays(int $tenantId, ?int $branchId, Carbon $from, Carbon $to): int
+    {
+        $query = Reservation::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->where('status', '!=', \App\Enums\ReservationStatus::CANCELLED->value)
+            ->where(function (Builder $query) use ($from, $to): void {
+                $query->whereDate('start_date', '<=', $to->toDateString())
+                    ->whereDate('end_date', '>=', $from->toDateString());
+            });
+
+        $this->applyReservationBranchScope($query, $branchId);
+
+        $reservations = $query->get(['car_id', 'start_date', 'end_date']);
+        $carOccupiedDays = [];
+        $totalPeriodDays = $from->diffInDays($to) + 1;
+
+        foreach ($reservations as $reservation) {
+            if (!$reservation->car_id || !$reservation->start_date || !$reservation->end_date) {
+                continue;
+            }
+
+            $resFrom = Carbon::parse($reservation->start_date)->startOfDay();
+            $resTo = Carbon::parse($reservation->end_date)->startOfDay();
+
+            $overlapFrom = $resFrom->greaterThan($from) ? $resFrom : $from->copy();
+            $overlapTo = $resTo->lessThan($to) ? $resTo : $to->copy();
+
+            if ($overlapFrom->lessThanOrEqualTo($overlapTo)) {
+                $days = $overlapFrom->diffInDays($overlapTo) + 1;
+                $carId = (int) $reservation->car_id;
+                $carOccupiedDays[$carId] = min($totalPeriodDays, ($carOccupiedDays[$carId] ?? 0) + $days);
+            }
+        }
+
+        return (int) array_sum($carOccupiedDays);
+    }
+
+    private function topPerformingCars(int $tenantId, ?int $branchId, Carbon $from, Carbon $to, array $currency, int $limit = 3): array
+    {
+        $rows = Payment::query()
+            ->withoutGlobalScope('tenant')
+            ->join('reservations', 'reservations.id', '=', 'payments.reservation_id')
+            ->join('cars', 'cars.id', '=', 'reservations.car_id')
+            ->where('payments.tenant_id', $tenantId)
+            ->where('payments.status', PaymentStatus::COMPLETED->value)
+            ->whereRaw('DATE(COALESCE(payments.processed_at, payments.created_at)) between ? and ?', [$from->toDateString(), $to->toDateString()])
+            ->when($branchId, fn (Builder $query): Builder => $query->where('cars.branch_id', $branchId))
+            ->selectRaw('cars.id as car_id, COALESCE(SUM(COALESCE(payments.base_amount, payments.amount)), 0) as total_revenue, COUNT(DISTINCT reservations.id) as reservations_count')
+            ->groupBy('cars.id')
+            ->orderByDesc('total_revenue')
+            ->limit($limit)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            $rows = Reservation::query()
+                ->withoutGlobalScope('tenant')
+                ->join('cars', 'cars.id', '=', 'reservations.car_id')
+                ->where('reservations.tenant_id', $tenantId)
+                ->whereBetween(DB::raw('DATE(reservations.created_at)'), [$from->toDateString(), $to->toDateString()])
+                ->when($branchId, fn (Builder $query): Builder => $query->where('cars.branch_id', $branchId))
+                ->selectRaw('cars.id as car_id, COALESCE(SUM(reservations.total_amount), 0) as total_revenue, COUNT(reservations.id) as reservations_count')
+                ->groupBy('cars.id')
+                ->orderByDesc('total_revenue')
+                ->limit($limit)
+                ->get();
+        }
+
+        $carIds = $rows->pluck('car_id')->all();
+        if (empty($carIds)) {
+            return [];
+        }
+
+        $cars = Car::query()
+            ->withoutGlobalScope('tenant')
+            ->whereIn('id', $carIds)
+            ->get()
+            ->keyBy('id');
+
+        return $rows
+            ->map(function ($row) use ($cars, $currency): ?array {
+                /** @var Car|null $car */
+                $car = $cars->get($row->car_id);
+                if (!$car) {
+                    return null;
+                }
+
+                $revenue = round((float) $row->total_revenue, 2);
+                $make = trim((string) $car->make);
+                $model = trim((string) $car->model);
+                $year = (int) $car->year;
+                $fullName = trim("{$make} {$model} {$year}");
+
+                return [
+                    'car_id' => (int) $car->id,
+                    'name' => $fullName !== '' ? $fullName : "Car #{$car->id}",
+                    'make' => $car->make,
+                    'model' => $car->model,
+                    'year' => $year,
+                    'license_plate' => $car->license_plate,
+                    'total_revenue' => $revenue,
+                    'formatted_total_revenue' => $this->formatMoney($revenue, $currency),
+                    'reservations_count' => (int) $row->reservations_count,
+                    'image_url' => $car->image_url,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 }
