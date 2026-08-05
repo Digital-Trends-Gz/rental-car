@@ -5028,10 +5028,11 @@ Sunday: 10:00 AM - 4:00 PM',
       'deleted' => 'Car discount deleted successfully.',
       'all_cars' => 'All cars',
     ),
-    'errors' => 
+    'errors' =>
     array (
       'branch_invalid' => 'Selected branch is invalid or not accessible.',
       'date_range_too_long' => 'The chart date range cannot exceed 7 days.',
+      'reports_module_not_available' => 'Your current plan does not include access to AI reports.',
     ),
   ),
 );

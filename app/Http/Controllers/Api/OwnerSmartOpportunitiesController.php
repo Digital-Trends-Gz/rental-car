@@ -35,7 +35,12 @@ class OwnerSmartOpportunitiesController extends Controller
         $branchId = $this->resolveOwnerBranchId($request, $user);
 
         $tenantId = (int) $user->tenant_id;
-        $tenant = Tenant::query()->with('siteSetting')->findOrFail($tenantId);
+        $tenant = Tenant::query()->with(['siteSetting', 'subscriptionPlan'])->findOrFail($tenantId);
+
+        if ($deniedResponse = $this->reportsModuleDeniedResponse($tenant, $locale)) {
+            return $deniedResponse;
+        }
+
         $currency = CurrencyCatalog::forTenant($tenant, null, $locale);
 
         $idleCars = $this->idleCarsCount($tenantId, $branchId);
@@ -417,6 +422,21 @@ class OwnerSmartOpportunitiesController extends Controller
         abort_unless($this->branchAccess->canAccessAllBranches($user), 403);
 
         return $user;
+    }
+
+    private function reportsModuleDeniedResponse(Tenant $tenant, string $locale): ?JsonResponse
+    {
+        if ($tenant->supportsFeature('reports_module')) {
+            return null;
+        }
+
+        return response()->json([
+            'message' => $this->ownerText(
+                'errors.reports_module_not_available',
+                $locale,
+                'Your current plan does not include access to AI reports.'
+            ),
+        ], 403);
     }
 
     private function resolveOwnerBranchId(Request $request, User $user): ?int

@@ -56,6 +56,38 @@ class LandingTranslationsControllerTest extends TestCase
             );
     }
 
+    public function test_landing_translations_page_includes_owner_api_reports_module_message(): void
+    {
+        $user = User::factory()->create([
+            'role' => UserRole::SUPER_ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+        $permission = Permission::withoutGlobalScope('tenant')->create([
+            'name' => 'manage-settings',
+            'display_name' => 'Manage Settings',
+            'description' => 'Manage settings',
+        ]);
+        $user->syncPermissions([$permission->id]);
+
+        $this->withoutMiddleware([
+            \App\Http\Middleware\SuperAdminMiddleware::class,
+            \App\Http\Middleware\CheckUserActive::class,
+            'verified',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('superadmin.settings.landing-translations', [
+                'search' => 'owner_api.errors.reports_module_not_available',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('SuperAdmin/Settings/LandingTranslations')
+                ->where('rows', fn ($rows): bool => collect($rows)->pluck('key')->contains('owner_api.errors.reports_module_not_available'))
+                ->where('rows.0.default', 'Your current plan does not include access to AI reports.')
+            );
+    }
+
     public function test_api_labels_can_use_global_landing_translation_overrides(): void
     {
         SiteSetting::query()->create([

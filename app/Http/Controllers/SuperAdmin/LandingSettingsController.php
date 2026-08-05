@@ -892,6 +892,7 @@ class LandingSettingsController extends Controller
             'validation.letters_only' => 'This field must contain letters only and cannot include numbers.',
             'validation.password.mixed' => 'The password field must contain at least one uppercase and one lowercase letter.',
             'validation.confirmed' => 'The password field confirmation does not match.',
+            'owner_api.errors.reports_module_not_available' => 'Your current plan does not include access to AI reports.',
         ]);
 
         foreach ($this->translationGroups() as $group) {
