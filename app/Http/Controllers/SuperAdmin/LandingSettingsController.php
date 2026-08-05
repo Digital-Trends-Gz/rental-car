@@ -893,6 +893,7 @@ class LandingSettingsController extends Controller
             'validation.password.mixed' => 'The password field must contain at least one uppercase and one lowercase letter.',
             'validation.confirmed' => 'The password field confirmation does not match.',
             'owner_api.errors.reports_module_not_available' => 'Your current plan does not include access to AI reports.',
+            'owner_api.errors.auto_discounts_not_available' => 'Your current plan does not include access to auto discounts.',
         ]);
 
         foreach ($this->translationGroups() as $group) {

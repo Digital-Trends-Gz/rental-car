@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Car;
 use App\Models\CarDiscount;
+use App\Models\Plan;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -16,6 +17,15 @@ use Laravel\Sanctum\Sanctum;
 function createOwnerWithDiscountSetup(): array
 {
     $tenant = Tenant::factory()->create(['is_active' => true]);
+
+    $plan = Plan::factory()->create([
+        'feature_flags' => array_fill_keys(Plan::FEATURE_KEYS, true),
+    ]);
+
+    $tenant->update([
+        'plan_id' => $plan->id,
+        'trial_ends_at' => now()->addMonth(),
+    ]);
 
     $branch = Branch::create([
         'tenant_id' => $tenant->id,
@@ -58,6 +68,29 @@ function createOwnerWithDiscountSetup(): array
 
     return compact('tenant', 'branch', 'owner', 'car');
 }
+
+test('owner car discounts returns forbidden when auto discounts feature is disabled', function () {
+    ['owner' => $owner] = createOwnerWithDiscountSetup();
+
+    $tenant = Tenant::query()->findOrFail($owner->tenant_id);
+    $plan = Plan::factory()->create([
+        'feature_flags' => array_merge(
+            array_fill_keys(Plan::FEATURE_KEYS, true),
+            ['auto_discounts' => false]
+        ),
+    ]);
+    $tenant->update(['plan_id' => $plan->id]);
+
+    Sanctum::actingAs($owner);
+
+    $this->getJson(route('api.owner.car-discounts.index'), [
+        'Accept-Language' => 'ar',
+    ])
+        ->assertForbidden()
+        ->assertExactJson([
+            'message' => 'خطتك الحالية لا تتضمن صلاحية الوصول للخصومات التلقائية.',
+        ]);
+});
 
 test('owner can list car discounts', function () {
     ['tenant' => $tenant, 'owner' => $owner, 'car' => $car] = createOwnerWithDiscountSetup();

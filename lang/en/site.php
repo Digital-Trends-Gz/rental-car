@@ -5033,6 +5033,7 @@ Sunday: 10:00 AM - 4:00 PM',
       'branch_invalid' => 'Selected branch is invalid or not accessible.',
       'date_range_too_long' => 'The chart date range cannot exceed 7 days.',
       'reports_module_not_available' => 'Your current plan does not include access to AI reports.',
+      'auto_discounts_not_available' => 'Your current plan does not include access to auto discounts.',
     ),
   ),
 );

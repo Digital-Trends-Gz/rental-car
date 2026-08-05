@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Support\BranchAccess;
 use App\Support\CurrencyCatalog;
 use App\Support\TenantTranslations;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -25,10 +26,8 @@ class OwnerCarDiscountsController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $user = $this->authorizedOwner($request);
-        $locale = $this->resolveLocale($request);
+        [$user, $locale, $tenant] = $this->beginOwnerRequest($request);
         $tenantId = (int) $user->tenant_id;
-        $tenant = Tenant::query()->with('siteSetting')->findOrFail($tenantId);
         $currency = CurrencyCatalog::forTenant($tenant, null, $locale);
 
         $search = trim((string) $request->query('search', ''));
@@ -77,10 +76,8 @@ class OwnerCarDiscountsController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $user = $this->authorizedOwner($request);
-        $locale = $this->resolveLocale($request);
+        [$user, $locale, $tenant] = $this->beginOwnerRequest($request);
         $tenantId = (int) $user->tenant_id;
-        $tenant = Tenant::query()->with('siteSetting')->findOrFail($tenantId);
         $currency = CurrencyCatalog::forTenant($tenant, null, $locale);
 
         $validated = $this->validateDiscount($request, $tenantId);
@@ -116,10 +113,8 @@ class OwnerCarDiscountsController extends Controller
 
     public function show(Request $request, int $id): JsonResponse
     {
-        $user = $this->authorizedOwner($request);
-        $locale = $this->resolveLocale($request);
+        [$user, $locale, $tenant] = $this->beginOwnerRequest($request);
         $tenantId = (int) $user->tenant_id;
-        $tenant = Tenant::query()->with('siteSetting')->findOrFail($tenantId);
         $currency = CurrencyCatalog::forTenant($tenant, null, $locale);
 
         $discount = CarDiscount::query()
@@ -141,10 +136,8 @@ class OwnerCarDiscountsController extends Controller
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $user = $this->authorizedOwner($request);
-        $locale = $this->resolveLocale($request);
+        [$user, $locale, $tenant] = $this->beginOwnerRequest($request);
         $tenantId = (int) $user->tenant_id;
-        $tenant = Tenant::query()->with('siteSetting')->findOrFail($tenantId);
         $currency = CurrencyCatalog::forTenant($tenant, null, $locale);
 
         $discount = CarDiscount::query()
@@ -188,8 +181,7 @@ class OwnerCarDiscountsController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $user = $this->authorizedOwner($request);
-        $locale = $this->resolveLocale($request);
+        [$user, $locale] = $this->beginOwnerRequest($request);
         $tenantId = (int) $user->tenant_id;
 
         $discount = CarDiscount::query()
@@ -218,6 +210,37 @@ class OwnerCarDiscountsController extends Controller
         abort_unless($this->branchAccess->canAccessAllBranches($user), 403);
 
         return $user;
+    }
+
+    /**
+     * @return array{0: User, 1: string, 2: Tenant}
+     */
+    private function beginOwnerRequest(Request $request): array
+    {
+        $user = $this->authorizedOwner($request);
+        $locale = $this->resolveLocale($request);
+        $tenant = Tenant::query()
+            ->with(['siteSetting', 'subscriptionPlan'])
+            ->findOrFail((int) $user->tenant_id);
+
+        $this->ensureAutoDiscountsFeature($tenant, $locale);
+
+        return [$user, $locale, $tenant];
+    }
+
+    private function ensureAutoDiscountsFeature(Tenant $tenant, string $locale): void
+    {
+        if ($tenant->supportsFeature('auto_discounts')) {
+            return;
+        }
+
+        throw new HttpResponseException(response()->json([
+            'message' => $this->ownerText(
+                'errors.auto_discounts_not_available',
+                $locale,
+                'Your current plan does not include access to auto discounts.'
+            ),
+        ], 403));
     }
 
     private function validateDiscount(Request $request, int $tenantId): array
