@@ -25,8 +25,7 @@ const { car, history, imageFiles } = defineProps<{
     imageFiles: Array<{ id: number; url: string }>;
 }>();
 
-const { t, locale } = useTrans();
-const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const { t } = useTrans();
 
 const isEditing = computed(() => !!history);
 
@@ -38,11 +37,11 @@ const form = useForm({
 });
 
 const reasons = computed(() => [
-    { value: 'before_delivery', label: localize('Before Delivery', 'قبل التسليم') },
-    { value: 'after_return', label: localize('After Return', 'بعد الاستلام') },
-    { value: 'new_damage', label: localize('New Damage', 'ضرر جديد') },
-    { value: 'after_cleaning', label: localize('After Cleaning', 'بعد التنظيف') },
-    { value: 'after_maintenance', label: localize('After Maintenance', 'بعد الصيانة') },
+    { value: 'before_delivery', label: t('dashboard.admin.cars.photo_history.reason_before_delivery') },
+    { value: 'after_return', label: t('dashboard.admin.cars.photo_history.reason_after_return') },
+    { value: 'new_damage', label: t('dashboard.admin.cars.photo_history.reason_new_damage') },
+    { value: 'after_cleaning', label: t('dashboard.admin.cars.photo_history.reason_after_cleaning') },
+    { value: 'after_maintenance', label: t('dashboard.admin.cars.photo_history.reason_after_maintenance') },
 ]);
 
 const handleFileRemoved = (data: { type: string; fileId?: number }) => {
@@ -52,7 +51,7 @@ const handleFileRemoved = (data: { type: string; fileId?: number }) => {
 };
 
 const submit = () => {
-    if (isEditing.value) {
+    if (isEditing.value && history) {
         form.put(`/admin/cars/${car.id}/photo-histories/${history.id}`);
     } else {
         form.post(`/admin/cars/${car.id}/photo-histories`);
@@ -61,14 +60,14 @@ const submit = () => {
 </script>
 
 <template>
-    <Head :title="`${isEditing ? localize('Edit Record', 'تعديل السجل') : localize('New Record', 'سجل جديد')} - ${car.make} ${car.model}`" />
+    <Head :title="`${isEditing ? t('dashboard.admin.cars.photo_history.edit_record') : t('dashboard.admin.cars.photo_history.new_record')} - ${car.make} ${car.model}`" />
 
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
                     <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                        {{ isEditing ? localize('Edit Record', 'تعديل السجل') : localize('New Record', 'سجل جديد') }}
+                        {{ isEditing ? t('dashboard.admin.cars.photo_history.edit_record') : t('dashboard.admin.cars.photo_history.new_record') }}
                     </h2>
                     <p class="mt-1 text-sm text-gray-500">
                         {{ car.make }} {{ car.model }} ({{ car.year }}) - {{ car.license_plate }}
@@ -76,7 +75,7 @@ const submit = () => {
                 </div>
                 <div class="flex gap-2">
                     <Link :href="`/admin/cars/${car.id}/photo-histories`">
-                        <Button variant="outline">{{ localize('Back to History', 'العودة للسجلات') }}</Button>
+                        <Button variant="outline">{{ t('dashboard.admin.cars.photo_history.back_to_history') }}</Button>
                     </Link>
                 </div>
             </div>
@@ -86,13 +85,13 @@ const submit = () => {
                     <CardContent class="p-6">
                         <form @submit.prevent="submit" class="space-y-6">
                             <div class="grid gap-2">
-                                <Label htmlFor="reason">{{ localize('Reason', 'السبب') }} <span class="text-red-500">*</span></Label>
+                                <Label htmlFor="reason">{{ t('dashboard.admin.cars.photo_history.reason') }} <span class="text-red-500">*</span></Label>
                                 <select 
                                     id="reason" 
                                     v-model="form.reason" 
                                     class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    <option value="" disabled>{{ localize('Select Reason', 'اختر السبب') }}</option>
+                                    <option value="" disabled>{{ t('dashboard.admin.cars.photo_history.select_reason') }}</option>
                                     <option v-for="r in reasons" :key="r.value" :value="r.value">
                                         {{ r.label }}
                                     </option>
@@ -101,7 +100,7 @@ const submit = () => {
                             </div>
 
                             <div class="grid gap-2">
-                                <Label>{{ localize('Photos', 'الصور') }}</Label>
+                                <Label>{{ t('dashboard.admin.cars.photo_history.photos') }}</Label>
                                 <FilePondUpload
                                     v-model="form.photos_temp_folders"
                                     :initial-files="imageFiles"
@@ -115,11 +114,11 @@ const submit = () => {
                             </div>
 
                             <div class="grid gap-2">
-                                <Label htmlFor="notes">{{ localize('Notes (Optional)', 'ملاحظات (اختياري)') }}</Label>
+                                <Label htmlFor="notes">{{ t('dashboard.admin.cars.photo_history.notes_optional') }}</Label>
                                 <Textarea 
                                     id="notes" 
                                     v-model="form.notes" 
-                                    :placeholder="localize('Enter notes here...', 'اكتب ملاحظات هنا...')" 
+                                    :placeholder="t('dashboard.admin.cars.photo_history.notes_placeholder')" 
                                     rows="4"
                                 />
                                 <p v-if="form.errors.notes" class="text-sm text-red-500">{{ form.errors.notes }}</p>
@@ -127,10 +126,10 @@ const submit = () => {
 
                             <div class="flex justify-end gap-3">
                                 <Link :href="`/admin/cars/${car.id}/photo-histories`">
-                                    <Button type="button" variant="outline">{{ localize('Cancel', 'إلغاء') }}</Button>
+                                    <Button type="button" variant="outline">{{ t('dashboard.admin.cars.photo_history.cancel') }}</Button>
                                 </Link>
                                 <Button type="submit" :disabled="form.processing">
-                                    {{ localize('Save', 'حفظ') }}
+                                    {{ t('dashboard.admin.cars.photo_history.save') }}
                                 </Button>
                             </div>
                         </form>
