@@ -2903,6 +2903,86 @@ Sunday: 10:00 AM - 4:00 PM',
           'saving' => 'محفوظ ہو رہا ہے...',
           'save_note' => 'نوٹ محفوظ کریں',
         ),
+        'documents' =>
+        array (
+          'title' => 'کلائنٹ دستاویزات',
+          'back_to_client' => 'کلائنٹ کی طرف واپس',
+          'document_file' => 'دستاویز فائل',
+          'run_ocr_extraction' => 'OCR استخراج چلائیں',
+          'extracting' => 'استخراج ہو رہا ہے...',
+          'apply_extracted_to_all_fields' => 'استخراج شدہ ڈیٹا تمام فیلڈز پر لاگو کریں',
+          'save_document' => 'دستاویز محفوظ کریں',
+          'saving' => 'محفوظ ہو رہا ہے...',
+          'document_saved' => 'دستاویز محفوظ ہو گیا۔',
+          'document_save_failed' => 'دستاویز محفوظ نہیں ہوا۔ فیلڈز چیک کریں اور دوبارہ کوشش کریں۔',
+          'upload_file_first' => 'پہلے فائل اپلوڈ کریں، پھر استخراج چلائیں۔',
+          'extraction_completed' => 'دستاویز استخراج مکمل ہو گیا۔',
+          'extraction_failed' => 'دستاویز استخراج ناکام ہوا۔',
+          'extraction_request_failed' => 'دستاویز استخراج کی درخواست ناکام ہوئی۔',
+          'raw_ocr_output' => 'خام OCR آؤٹ پٹ',
+          'raw_text' => 'خام متن',
+          'json' => 'JSON',
+          'no_ocr_text_yet' => 'ابھی تک کوئی OCR متن نہیں۔',
+          'confidence' => 'اعتماد',
+          'local_ocr_enabled' => 'فعال',
+          'local_ocr_disabled' => 'غیر فعال',
+          'local_ocr_status' => 'مقامی OCR :status.',
+          'python_binary' => 'Pythonバイنری',
+          'extraction_status' =>
+          array (
+            'reviewed' => 'جائزہ لیا گیا',
+            'completed' => 'مکمل',
+            'failed' => 'ناکام',
+            'pending' => 'زیر التوا',
+          ),
+          'statuses' =>
+          array (
+            'not_requested' => 'درخواست نہیں کی گئی',
+            'completed' => 'مکمل',
+            'failed' => 'ناکام',
+            'reviewed' => 'جائزہ لیا گیا',
+          ),
+          'types' =>
+          array (
+            'driver_license_front' =>
+            array (
+              'label' => 'ڈرائیور لائسنس (سامنے)',
+              'description' => 'ڈائیور لائسنس کا سامنے والا حصہ۔',
+            ),
+            'driver_license_back' =>
+            array (
+              'label' => 'ڈرائیور لائسنس (پیچھے)',
+              'description' => 'ڈائیور لائسنس کا پیچھے والا حصہ۔',
+            ),
+            'id_card_front' =>
+            array (
+              'label' => 'شناختی کارڈ (سامنے)',
+              'description' => 'قومی شناختی کارڈ کا سامنے والا حصہ۔',
+            ),
+            'id_card_back' =>
+            array (
+              'label' => 'شناختی کارڈ (پیچھے)',
+              'description' => 'قومی شناختی کارڈ کا پیچھے والا حصہ۔',
+            ),
+            'passport' =>
+            array (
+              'label' => 'پاسپورٹ',
+              'description' => 'پاسپورٹ دستاویز۔',
+            ),
+          ),
+          'fields' =>
+          array (
+            'document_number' => 'دستاویز نمبر',
+            'full_name' => 'پورا نام',
+            'date_of_birth' => 'تاریخ پیدائش',
+            'expiry_date' => 'میعاد ختم ہونے کی تاریخ',
+            'issue_date' => 'اجرا کی تاریخ',
+            'nationality' => 'قومیت',
+            'license_class' => 'لائسنس کلاس',
+            'address' => 'پتہ',
+            'place_of_issue' => 'اجرا کی جگہ',
+          ),
+        ),
       ),
       'support' => 
       array (
@@ -3796,6 +3876,77 @@ Sunday: 10:00 AM - 4:00 PM',
           'branch' => 'برانچ',
           'no_branch' => 'کوئی برانچ نہیں',
         ),
+      ),
+      'discount_requests' =>
+      array (
+        'summary' =>
+        array (
+          'title' => 'زیر التوا منظوری کی درخواستیں',
+          'description' => 'آپ کے جائزے اور فیصلے کی ضرورت ہے۔',
+        ),
+        'index' =>
+        array (
+          'approve_this_discount_request' => 'کیا آپ اس ڈسکاؤنٹ کی درخواست کو منظور کرنا چاہتے ہیں؟',
+          'rejection_note' => 'مسترد کرنے کا نوٹ',
+          'discount_requests' => 'ڈسکاؤنٹ کی درخواستیں',
+          'review_employee_discount_requests_before_collection' => 'وصولی سے پہلے ملازمین کی ڈسکاؤنٹ درخواستوں کا جائزہ لیں۔',
+          'search_reservation_client_employee' => 'ریزرویشن، کلائنٹ یا ملازم تلاش کریں...',
+          'all_statuses' => 'تمام حالتیں',
+          'all_branches' => 'تمام برانچیں',
+          'search' => 'تلاش',
+          'clear' => 'صاف کریں',
+          'request' => 'درخواست',
+          'customer' => 'کلائنٹ',
+          'employee' => 'ملازم',
+          'amounts' => 'رقم',
+          'reason' => 'وجہ',
+          'status' => 'حالت',
+          'actions' => 'ایکشنز',
+          'remaining' => 'باقی',
+          'requested' => 'درخواست کردہ',
+          'discount' => 'ڈسکاؤنٹ',
+          'after' => 'بعد',
+          'review_note' => 'جائزہ نوٹ',
+          'previous_approved_discounts' => 'پچھلی منظور شدہ ڈسکاؤنٹس',
+          'approved_at' => 'منظوری کا وقت',
+          'approve' => 'منظور کریں',
+          'reject' => 'مسترد کریں',
+          'no_discount_requests_found' => 'کوئی ڈسکاؤنٹ درخواست نہیں ملی۔',
+        ),
+        'statuses' =>
+        array (
+          'pending' => 'فیصلے کا انتظار',
+          'approved' => 'منظور شدہ',
+          'rejected' => 'مسترد شدہ',
+          'cancelled' => 'منسوخ شدہ',
+        ),
+      ),
+      'stripe_connect' =>
+      array (
+        'title' => 'Stripe Connect',
+        'description' => 'اس ٹیننٹ کو Stripe سے جوڑیں تاکہ کلائنٹ بکنگ آن لائن ادا کی جا سکے۔',
+        'connection_status' => 'کنکشن کی حالت',
+        'tenant' => 'ٹیننٹ',
+        'stripe_account_id' => 'Stripe اکاؤنٹ ID',
+        'not_connected' => 'منسلک نہیں',
+        'charges_enabled' => 'چارجز فعال',
+        'payouts_enabled' => 'پے آؤٹس فعال',
+        'details_submitted' => 'تفصیلات جمع کرائی گئیں',
+        'default_currency' => 'پہلے سے طے شدہ کرنسی',
+        'not_set' => 'سیٹ نہیں',
+        'actions' => 'ایکشنز',
+        'platform_stripe' => 'پلیٹ فارم Stripe',
+        'configured' => 'ترتیب شدہ',
+        'not_configured' => 'ترتیب شدہ نہیں',
+        'checkout_ready' => 'چیک آؤٹ تیار',
+        'ready_for_booking_payments' => 'بکنگ ادائیگیوں کے لیے تیار',
+        'not_ready_yet' => 'ابھی تیار نہیں',
+        'connect_stripe' => 'Stripe منسلک کریں',
+        'continue_stripe_onboarding' => 'Stripe سیٹ اپ جاری رکھیں',
+        'refresh_onboarding_link' => 'سیٹ اپ لنک ریفریش کریں',
+        'open_stripe_express_dashboard' => 'Stripe Express ڈیش بورڈ کھولیں',
+        'yes' => 'ہاں',
+        'no' => 'نہیں',
       ),
     ),
     'coupons' => 

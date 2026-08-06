@@ -3,6 +3,7 @@ import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTrans } from '@/composables/useTrans';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { reactive } from 'vue';
@@ -46,6 +47,19 @@ const props = defineProps<{
 }>();
 
 const page = usePage<any>();
+const { raw } = useTrans();
+const translationRoot = 'dashboard.admin.clients.documents';
+const translate = (key: string, fallback = '') => {
+    const value = raw(`${translationRoot}.${key}`, fallback);
+    return typeof value === 'string' && value !== '' ? value : fallback;
+};
+const translateTypeLabel = (type: string, fallback = '') =>
+    translate(`types.${type}.label`, fallback);
+const translateTypeDescription = (type: string, fallback = '') =>
+    translate(`types.${type}.description`, fallback);
+const translateStatusLabel = (status: string, fallback = '') =>
+    translate(`statuses.${status}`, fallback);
+
 const allowedFileTypes = [
     'application/pdf',
     'image/jpeg',
@@ -127,7 +141,7 @@ function applyExtracted(documentType: string, force = false) {
 async function extractDocument(documentType: string) {
     if (extracting[documentType]) return;
     if (!tempFolders[documentType]?.length) {
-        errors[documentType] = 'Upload a file first, then run extraction.';
+        errors[documentType] = translate('upload_file_first');
         return;
     }
 
@@ -151,7 +165,7 @@ async function extractDocument(documentType: string) {
 
         const payload = await response.json();
         if (!response.ok) {
-            errors[documentType] = payload?.message || 'Document extraction failed.';
+            errors[documentType] = payload?.message || translate('extraction_failed');
             return;
         }
 
@@ -161,10 +175,10 @@ async function extractDocument(documentType: string) {
         confidence[documentType] = payload?.confidence ?? null;
         extractionProvider[documentType] = payload?.provider || '';
         extractionEngine[documentType] = payload?.engine || '';
-        messages[documentType] = payload?.message || 'Document extraction completed.';
+        messages[documentType] = payload?.message || translate('extraction_completed');
         applyExtracted(documentType, false);
     } catch {
-        errors[documentType] = 'Document extraction request failed.';
+        errors[documentType] = translate('extraction_request_failed');
     } finally {
         extracting[documentType] = false;
     }
@@ -181,7 +195,7 @@ function saveDocument(documentType: string) {
         document_type: documentType,
         approved_data: approvedData[documentType],
         extracted_data: extractedData[documentType],
-        raw_output: rawOutput[documentType],
+        raw_output: rawOutput[documentType] ? JSON.stringify(rawOutput[documentType]) : null,
         raw_text: rawText[documentType],
         confidence: confidence[documentType],
         extraction_provider: extractionProvider[documentType],
@@ -191,12 +205,12 @@ function saveDocument(documentType: string) {
     }, {
         preserveScroll: true,
         onSuccess: () => {
-            messages[documentType] = 'Document saved.';
+            messages[documentType] = translate('document_saved');
             tempFolders[documentType] = [];
             removedFileIds[documentType] = [];
         },
         onError: () => {
-            errors[documentType] = 'Document save failed. Check the fields and try again.';
+            errors[documentType] = translate('document_save_failed');
         },
         onFinish: () => {
             saving[documentType] = false;
@@ -206,23 +220,23 @@ function saveDocument(documentType: string) {
 </script>
 
 <template>
-    <Head :title="`Client Documents - ${client.name}`" />
+    <Head :title="`${translate('title')} - ${client.name}`" />
     <AdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-semibold">Client Documents</h1>
+                    <h1 class="text-2xl font-semibold">{{ translate('title') }}</h1>
                     <p class="text-sm text-muted-foreground">
                         {{ client.name }} · {{ client.email }}
                         <span v-if="client.branch_name">· {{ client.branch_name }}</span>
                     </p>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Local OCR is {{ ocr.enabled ? 'enabled' : 'disabled' }}.
-                        Python binary: <code>{{ ocr.python_binary }}</code>
+                        {{ translate('local_ocr_status').replace(':status', translate(ocr.enabled ? 'local_ocr_enabled' : 'local_ocr_disabled')) }}
+                        {{ translate('python_binary') }}: <code>{{ ocr.python_binary }}</code>
                     </p>
                 </div>
                 <Link :href="actions.back">
-                    <Button variant="outline">Back To Client</Button>
+                    <Button variant="outline">{{ translate('back_to_client') }}</Button>
                 </Link>
             </div>
 
@@ -234,24 +248,24 @@ function saveDocument(documentType: string) {
                 >
                     <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
-                            <h2 class="text-lg font-semibold">{{ document.label }}</h2>
-                            <p class="text-sm text-muted-foreground">{{ document.description }}</p>
+                            <h2 class="text-lg font-semibold">{{ translateTypeLabel(document.document_type, document.label) }}</h2>
+                            <p class="text-sm text-muted-foreground">{{ translateTypeDescription(document.document_type, document.description) }}</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <span
                                 class="rounded-full px-2.5 py-1 text-xs font-medium"
                                 :class="statusClasses(document.extraction_status)"
                             >
-                                {{ document.extraction_status_label }}
+                                {{ translateStatusLabel(document.extraction_status, document.extraction_status_label) }}
                             </span>
                             <span v-if="confidence[document.document_type] !== null" class="text-xs text-muted-foreground">
-                                Confidence {{ Number(confidence[document.document_type]).toFixed(2) }}
+                                {{ translate('confidence') }} {{ Number(confidence[document.document_type]).toFixed(2) }}
                             </span>
                         </div>
                     </div>
 
                     <div class="mt-4">
-                        <Label class="mb-2 block">Document File</Label>
+                        <Label class="mb-2 block">{{ translate('document_file') }}</Label>
                         <FileUpload
                             v-model="tempFolders[document.document_type]"
                             :initial-files="document.files || []"
@@ -272,21 +286,21 @@ function saveDocument(documentType: string) {
                             :disabled="extracting[document.document_type]"
                             @click="extractDocument(document.document_type)"
                         >
-                            {{ extracting[document.document_type] ? 'Extracting...' : 'Run OCR Extraction' }}
+                            {{ extracting[document.document_type] ? translate('extracting') : translate('run_ocr_extraction') }}
                         </Button>
                         <Button
                             type="button"
                             variant="outline"
                             @click="applyExtracted(document.document_type, true)"
                         >
-                            Apply Extracted To All Fields
+                            {{ translate('apply_extracted_to_all_fields') }}
                         </Button>
                         <Button
                             type="button"
                             :disabled="saving[document.document_type]"
                             @click="saveDocument(document.document_type)"
                         >
-                            {{ saving[document.document_type] ? 'Saving...' : 'Save Document' }}
+                            {{ saving[document.document_type] ? translate('saving') : translate('save_document') }}
                         </Button>
                     </div>
 
@@ -306,7 +320,7 @@ function saveDocument(documentType: string) {
 
                     <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <div v-for="field in fieldSchema" :key="`${document.document_type}-${field.key}`">
-                            <Label :for="`${document.document_type}-${field.key}`">{{ field.label }}</Label>
+                            <Label :for="`${document.document_type}-${field.key}`">{{ translate(`fields.${field.key}`, field.label) }}</Label>
                             <Input
                                 :id="`${document.document_type}-${field.key}`"
                                 v-model="approvedData[document.document_type][field.key]"
@@ -316,14 +330,14 @@ function saveDocument(documentType: string) {
                     </div>
 
                     <details class="mt-5 rounded-md border bg-slate-50 p-3">
-                        <summary class="cursor-pointer text-sm font-medium">Raw OCR Output</summary>
+                        <summary class="cursor-pointer text-sm font-medium">{{ translate('raw_ocr_output') }}</summary>
                         <div class="mt-3 grid gap-3">
                             <div>
-                                <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Raw Text</div>
-                                <pre class="mt-1 overflow-x-auto whitespace-pre-wrap text-xs">{{ rawText[document.document_type] || 'No OCR text yet.' }}</pre>
+                                <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ translate('raw_text') }}</div>
+                                <pre class="mt-1 overflow-x-auto whitespace-pre-wrap text-xs">{{ rawText[document.document_type] || translate('no_ocr_text_yet') }}</pre>
                             </div>
                             <div>
-                                <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground">JSON</div>
+                                <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ translate('json') }}</div>
                                 <pre class="mt-1 overflow-x-auto whitespace-pre-wrap text-xs">{{ JSON.stringify(rawOutput[document.document_type] || {}, null, 2) }}</pre>
                             </div>
                         </div>

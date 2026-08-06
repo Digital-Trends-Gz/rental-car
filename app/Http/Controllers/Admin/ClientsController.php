@@ -506,16 +506,18 @@ class ClientsController extends Controller
      */
     private function documentFieldSchema(): array
     {
+        $root = 'site.dashboard.admin.clients.documents.fields';
+
         return [
-            ['key' => 'document_number', 'label' => 'Document Number'],
-            ['key' => 'full_name', 'label' => 'Full Name'],
-            ['key' => 'date_of_birth', 'label' => 'Date Of Birth'],
-            ['key' => 'expiry_date', 'label' => 'Expiry Date'],
-            ['key' => 'issue_date', 'label' => 'Issue Date'],
-            ['key' => 'nationality', 'label' => 'Nationality'],
-            ['key' => 'license_class', 'label' => 'License Class'],
-            ['key' => 'address', 'label' => 'Address'],
-            ['key' => 'place_of_issue', 'label' => 'Place Of Issue'],
+            ['key' => 'document_number', 'label' => __("$root.document_number")],
+            ['key' => 'full_name', 'label' => __("$root.full_name")],
+            ['key' => 'date_of_birth', 'label' => __("$root.date_of_birth")],
+            ['key' => 'expiry_date', 'label' => __("$root.expiry_date")],
+            ['key' => 'issue_date', 'label' => __("$root.issue_date")],
+            ['key' => 'nationality', 'label' => __("$root.nationality")],
+            ['key' => 'license_class', 'label' => __("$root.license_class")],
+            ['key' => 'address', 'label' => __("$root.address")],
+            ['key' => 'place_of_issue', 'label' => __("$root.place_of_issue")],
         ];
     }
 

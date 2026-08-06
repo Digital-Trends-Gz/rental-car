@@ -13,22 +13,22 @@ enum ClientDocumentType: string
     public function label(): string
     {
         return match ($this) {
-            self::DRIVER_LICENSE_FRONT => 'Driver License Front',
-            self::DRIVER_LICENSE_BACK => 'Driver License Back',
-            self::ID_CARD_FRONT => 'ID Card Front',
-            self::ID_CARD_BACK => 'ID Card Back',
-            self::PASSPORT => 'Passport',
+            self::DRIVER_LICENSE_FRONT => __('site.dashboard.admin.clients.documents.types.driver_license_front.label'),
+            self::DRIVER_LICENSE_BACK => __('site.dashboard.admin.clients.documents.types.driver_license_back.label'),
+            self::ID_CARD_FRONT => __('site.dashboard.admin.clients.documents.types.id_card_front.label'),
+            self::ID_CARD_BACK => __('site.dashboard.admin.clients.documents.types.id_card_back.label'),
+            self::PASSPORT => __('site.dashboard.admin.clients.documents.types.passport.label'),
         };
     }
 
     public function description(): string
     {
         return match ($this) {
-            self::DRIVER_LICENSE_FRONT => 'Upload the front side of the driver license.',
-            self::DRIVER_LICENSE_BACK => 'Upload the back side of the driver license if available.',
-            self::ID_CARD_FRONT => 'Upload the front side of the national ID card.',
-            self::ID_CARD_BACK => 'Upload the back side of the national ID card if available.',
-            self::PASSPORT => 'Upload the passport identification page.',
+            self::DRIVER_LICENSE_FRONT => __('site.dashboard.admin.clients.documents.types.driver_license_front.description'),
+            self::DRIVER_LICENSE_BACK => __('site.dashboard.admin.clients.documents.types.driver_license_back.description'),
+            self::ID_CARD_FRONT => __('site.dashboard.admin.clients.documents.types.id_card_front.description'),
+            self::ID_CARD_BACK => __('site.dashboard.admin.clients.documents.types.id_card_back.description'),
+            self::PASSPORT => __('site.dashboard.admin.clients.documents.types.passport.description'),
         };
     }
 
