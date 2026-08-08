@@ -677,20 +677,20 @@ class ReservationsController extends Controller
 
         if ($car && $days >= 30 && (float) ($car->price_per_month ?? 0) > 0) {
             return [
-                'label' => 'Monthly Rate',
+                'label' => 'dashboard.admin.reservations.show.fields.monthly_rate',
                 'rate' => (float) $car->price_per_month,
             ];
         }
 
         if ($car && $days >= 7 && (float) ($car->price_per_week ?? 0) > 0) {
             return [
-                'label' => 'Weekly Rate',
+                'label' => 'dashboard.admin.reservations.show.fields.weekly_rate',
                 'rate' => (float) $car->price_per_week,
             ];
         }
 
         return [
-            'label' => trans('client_pages.reservations.show.fields.daily_rate'),
+            'label' => 'dashboard.admin.reservations.show.fields.daily_rate',
             'rate' => (float) ($reservation->daily_rate ?? $car?->price_per_day ?? 0),
         ];
     }

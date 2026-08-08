@@ -42,6 +42,11 @@ const pricingLabel = computed(() => {
     'Weekly Rate': tr('fields.weekly_rate', 'Weekly Rate'),
     'Monthly Rate': tr('fields.monthly_rate', 'Monthly Rate'),
   }
+  if (typeof raw === 'string' && raw.includes('.')) {
+    const translated = t(raw)
+    return translated === raw ? tr('fields.daily_rate', 'Daily Rate') : translated
+  }
+
   return (map[raw] ?? raw) || tr('fields.daily_rate', 'Daily Rate')
 })
 const isLocked = computed(() => Boolean(reservation.value?.is_locked))

@@ -1091,6 +1091,15 @@ class LandingSettingsController extends Controller
             'dashboard.admin.stripe_connect.yes' => 'Yes',
             'dashboard.admin.stripe_connect.no' => 'No',
 
+            // Payment Providers
+            'dashboard.admin.settings.payment_providers.global_card_payments_stripe_connect_can_be_used_for_supported_countries' => 'Global card payments. Stripe Connect can be used for supported countries.',
+            'dashboard.admin.settings.payment_providers.strong_gcc_coverage_good_option_for_oman_and_mena_hosted_checkout' => 'Strong GCC coverage. Good option for Oman and MENA hosted checkout.',
+            'dashboard.admin.settings.payment_providers.webhook_secret_optional' => 'Webhook Secret (Optional)',
+            'dashboard.admin.settings.payment_providers.this_will_be_used_by_tenant_booking_checkout_when_multiple_tenant_providers_are_enabled' => 'This will be used by tenant booking checkout when multiple tenant providers are enabled.',
+            'dashboard.admin.settings.payment_providers.uses_stripe_connect_manage_onboarding_and_account_status_in_the_stripe_connect_page' => 'Uses Stripe Connect. Manage onboarding and account status in the Stripe Connect page.',
+            'dashboard.admin.settings.payment_providers.use_a_valid_myfatoorah_method_id_example_visa_mastercard_we_can_remove_this_later_when_boo' => 'Use a valid MyFatoorah method ID (example: Visa/Mastercard). We can remove this later when booking methods are loaded dynamically.',
+            'dashboard.admin.settings.payment_providers.use_only_if_you_need_overrides_or_a_fixed_default_method' => 'Use only if you need overrides or a fixed default method.',
+
             // Reservation / Contract outstanding balance notice
             'dashboard.admin.contracts.edit.client_has_outstanding_balance' => 'Client has outstanding balance',
             'dashboard.admin.contracts.edit.client_has_outstanding_balance_amount_admin_can_continue' => 'Client has outstanding balance (:amount). Admin can continue creating the contract if approved.',

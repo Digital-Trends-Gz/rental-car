@@ -1777,6 +1777,8 @@ return array (
           'disabled_by_super_admin' => 'معطل من المشرف العام',
           'mode' => 'الوضع',
           'hosted_checkout_for_gcc_mena' => 'دفع مستضاف لمنطقة الخليج/الشرق الأوسط وشمال أفريقيا',
+          'global_card_payments_stripe_connect_can_be_used_for_supported_countries' => 'مدفوعات بطاقات عالمية. يمكن استخدام Stripe Connect للدول المدعومة.',
+          'strong_gcc_coverage_good_option_for_oman_and_mena_hosted_checkout' => 'تغطية قوية لدول الخليج. خيار مناسب لعمان والدفع المستضاف في الشرق الأوسط وشمال أفريقيا.',
           'default_booking_provider' => 'مزود الحجز الافتراضي',
           'default_provider' => 'المزود الافتراضي',
           'none_manual_fallback' => 'لا شيء (يدوي / احتياطي)',

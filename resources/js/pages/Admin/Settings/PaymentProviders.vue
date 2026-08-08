@@ -88,6 +88,26 @@ const myfatoorahAutoBaseUrl = computed(() => myfatoorahPlatformMode.value === 'l
     ? 'https://api.myfatoorah.com'
     : 'https://apitest.myfatoorah.com');
 
+const platformProviderDescription = (provider: PlatformProvider | null) => {
+    if (provider?.code === 'stripe') {
+        return localize(
+            'Global card payments. Stripe Connect can be used for supported countries.',
+            'مدفوعات بطاقات عالمية. يمكن استخدام Stripe Connect للدول المدعومة.',
+            'عالمی کارڈ ادائیگیاں۔ Stripe Connect معاون ممالک کے لیے استعمال کیا جا سکتا ہے.',
+        );
+    }
+
+    if (provider?.code === 'myfatoorah') {
+        return localize(
+            'Strong GCC coverage. Good option for Oman and MENA hosted checkout.',
+            'تغطية قوية لدول الخليج. خيار مناسب لعمان والدفع المستضاف في الشرق الأوسط وشمال أفريقيا.',
+            'خلیجی ممالک میں مضبوط کوریج۔ عمان اور MENA hosted checkout کے لیے اچھا اختیار.',
+        );
+    }
+
+    return provider?.description || '';
+};
+
 const form = useForm({
     default_provider: props.tenant.settings?.default_provider ?? null,
     stripe: {
@@ -155,7 +175,7 @@ function submit() {
                                 <div>
                                     <div class="font-medium">Stripe</div>
                                     <div class="text-xs text-muted-foreground">
-                                        {{ stripePlatform?.description || localize('Stripe Connect / platform-managed Stripe payments', 'Stripe Connect / مدفوعات Stripe المُدارة من المنصة', 'Stripe Connect / پلیٹ فارم کے زیر انتظام Stripe ادائیگیاں') }}
+                                        {{ platformProviderDescription(stripePlatform) }}
                                     </div>
                                 </div>
                                 <span
@@ -175,7 +195,7 @@ function submit() {
                                 <div>
                                     <div class="font-medium">MyFatoorah</div>
                                     <div class="text-xs text-muted-foreground">
-                                        {{ myfatoorahPlatform?.description || localize('Hosted checkout for GCC/MENA', 'دفع مستضاف لمنطقة الخليج/الشرق الأوسط وشمال أفريقيا', 'جی سی سی / مشرقِ وسطیٰ اور شمالی افریقہ کے لیے ہوسٹڈ چیک آؤٹ') }}
+                                        {{ platformProviderDescription(myfatoorahPlatform) }}
                                     </div>
                                 </div>
                                 <span
