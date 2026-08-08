@@ -21,7 +21,7 @@ class EnsureTenantSubscriptionIsActive
         }
 
         if (!$tenant->is_active) {
-            return $this->redirectToMainLogin($request, 'This tenant account is inactive. Please contact support.');
+            return $this->redirectToMainLogin($request, 'auth.tenant_account_inactive');
         }
 
         $tenant->loadMissing('subscriptionPlan:id,is_active');

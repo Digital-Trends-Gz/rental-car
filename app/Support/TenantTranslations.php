@@ -39,6 +39,18 @@ class TenantTranslations
             }
         }
 
+        if (!str_starts_with($key, 'site.')) {
+            $siteKey = 'site.'.$key;
+
+            if (Lang::has($siteKey, $locale)) {
+                $translated = Lang::get($siteKey, [], $locale);
+
+                if (is_string($translated) && $translated !== '') {
+                    return $translated;
+                }
+            }
+        }
+
         return $fallback ?? $key;
     }
 

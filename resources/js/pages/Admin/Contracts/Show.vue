@@ -70,6 +70,7 @@ const props = defineProps<{
             quantity: number;
             notes: string | null;
             first_detected_at: string | null;
+            source_type?: string | null;
         }>;
         damage_reports?: Array<{
             id: number;
@@ -87,6 +88,7 @@ const props = defineProps<{
                 severity: string;
                 quantity: number;
                 notes: string | null;
+                source_type?: string | null;
             }>;
             edit_url: string;
         }>;
@@ -425,14 +427,14 @@ function submitRequestExtension() {
                         variant="secondary"
                         @click="openRequestDialog"
                     >
-                        {{ localize('Extension Request', 'طلب تمديد') }}
+                        {{ t('dashboard.admin.contracts.show.extension_request') }}
                     </Button>
                     <Button
                         v-if="canExtendRental && !isLocked"
                         type="button"
                         @click="openExtendDialog"
                     >
-                        {{ localize('Force Extend', 'تمديد الإيجار') }}
+                        {{ t('dashboard.admin.contracts.show.force_extend') }}
                     </Button>
                 </div>
             </div>
@@ -639,7 +641,7 @@ function submitRequestExtension() {
                     class="rounded-md border p-4 md:col-span-2"
                 >
                     <h2 class="mb-3 font-semibold">
-                        {{ localize('Extension Requests', 'طلبات التمديد') }}
+                        {{ t('dashboard.admin.contracts.show.extension_requests_title') }}
                     </h2>
                     <div class="space-y-3">
                         <div
@@ -766,8 +768,8 @@ function submitRequestExtension() {
                                         {{ damage.quantity }}
                                     </td>
                                     <td class="px-3 py-2">
-                                        <span v-if="damage.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">AI</span>
-                                        <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Employee</span>
+                                        <span v-if="damage.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">{{ t('dashboard.admin.contracts.show.sources.ai') }}</span>
+                                        <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ t('dashboard.admin.contracts.show.sources.employee') }}</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -945,8 +947,8 @@ function submitRequestExtension() {
                                                 {{ item.quantity }}
                                             </td>
                                             <td class="px-3 py-2">
-                                                <span v-if="item.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">AI</span>
-                                                <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Employee</span>
+                                                <span v-if="item.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">{{ t('dashboard.admin.contracts.show.sources.ai') }}</span>
+                                                <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ t('dashboard.admin.contracts.show.sources.employee') }}</span>
                                             </td>
                                             <td class="px-3 py-2 text-gray-600">
                                                 {{ item.notes || '-' }}
@@ -1080,7 +1082,7 @@ function submitRequestExtension() {
             <DialogContent class="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>
-                        {{ localize('Force Extend', 'تمديد الإيجار') }}
+                        {{ t('dashboard.admin.contracts.show.force_extend') }}
                     </DialogTitle>
                     <DialogDescription>
                         {{ localize('Choose a new end date. The system will update the contract immediately, create the extra cash payment, and notify the client.', 'اختر تاريخ انتهاء جديدًا. سيحسب النظام المبلغ الإضافي ويُنشئ دفعة نقدية مكتملة تلقائيًا.') }}
@@ -1164,7 +1166,7 @@ function submitRequestExtension() {
                         {{
                             extendForm.processing
                                 ? localize('Saving...', 'جاري الحفظ...')
-                                : localize('Force Extend', 'تمديد الإيجار')
+                                : t('dashboard.admin.contracts.show.force_extend')
                         }}
                     </Button>
                 </DialogFooter>
@@ -1231,7 +1233,7 @@ function submitRequestExtension() {
             <DialogContent class="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>
-                        {{ localize('Extension Request', 'طلب تمديد') }}
+                        {{ t('dashboard.admin.contracts.show.extension_request') }}
                     </DialogTitle>
                     <DialogDescription>
                         {{ localize('Send a pending request to the client. The client will approve or reject it from their dashboard.', 'أرسل طلب تمديد معلق للعميل. سيقوم العميل بالموافقة أو الرفض من لوحته.') }}

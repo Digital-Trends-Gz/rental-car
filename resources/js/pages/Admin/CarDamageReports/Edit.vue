@@ -81,6 +81,7 @@ const props = defineProps<{
         damage_timing: string;
         damage_timing_label: string;
         quantity: number;
+        source_type?: string | null;
         notes: string | null;
         first_detected_at: string | null;
     }>;
@@ -889,8 +890,8 @@ function submit() {
                                             <td class="px-3 py-2">{{ damage.damage_timing_label || '-' }}</td>
                                             <td class="px-3 py-2">{{ damage.quantity }}</td>
                                             <td class="px-3 py-2">
-                                                <span v-if="damage.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">AI</span>
-                                                <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Employee</span>
+                                                <span v-if="damage.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">{{ t('dashboard.admin.contracts.show.sources.ai') }}</span>
+                                                <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ t('dashboard.admin.contracts.show.sources.employee') }}</span>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -1011,8 +1012,8 @@ function submit() {
                                         {{ item.estimated_cost ?? '-' }}
                                     </td>
                                     <td class="px-3 py-3">
-                                        <span v-if="item.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">AI</span>
-                                        <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Employee</span>
+                                        <span v-if="item.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">{{ t('dashboard.admin.contracts.show.sources.ai') }}</span>
+                                        <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ t('dashboard.admin.contracts.show.sources.employee') }}</span>
                                     </td>
                                     <td class="px-3 py-3 text-slate-600">
                                         {{ item.notes || '-' }}

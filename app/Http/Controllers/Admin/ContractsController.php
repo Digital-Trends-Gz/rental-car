@@ -40,6 +40,7 @@ use App\Support\CurrencyCatalog;
 use App\Support\PaidReturnReportLock;
 use App\Support\PdfRuntime;
 use App\Support\TenantPdfTemplateRegistry;
+use App\Support\TenantTranslations;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -1487,14 +1488,21 @@ class ContractsController extends Controller
             ];
         }
 
-        $message = app()->getLocale() === 'ar'
-            ? 'العميل عليه مديونية (:amount). يجب تسوية المديونية قبل إنشاء عقد.'
-            : 'Client has outstanding balance (:amount). Admin can continue creating the contract if approved.';
+        $formattedDebtAmount = number_format($debtAmount, 2);
+        $message = str_replace(
+            ':amount',
+            $formattedDebtAmount,
+            TenantTranslations::get(
+                'dashboard.admin.contracts.edit.client_has_outstanding_balance_amount_admin_can_continue',
+                app()->getLocale(),
+                "Client has outstanding balance ({$formattedDebtAmount}). Admin can continue creating the contract if approved."
+            )
+        );
 
         return [
             'blocked' => true,
             'debt_amount' => $debtAmount,
-            'message' => str_replace(':amount', number_format($debtAmount, 2), $message),
+            'message' => $message,
         ];
     }
 
@@ -1510,8 +1518,14 @@ class ContractsController extends Controller
             return;
         }
 
+        $fallbackMessage = TenantTranslations::get(
+            'dashboard.admin.contracts.edit.client_has_outstanding_balance',
+            app()->getLocale(),
+            'Client has outstanding balance.'
+        );
+
         throw ValidationException::withMessages([
-            'reservation_id' => $block['message'] ?? (app()->getLocale() === 'ar' ? 'العميل عليه مديونية.' : 'Client has outstanding balance.'),
+            'reservation_id' => $block['message'] ?? $fallbackMessage,
         ]);
     }
 

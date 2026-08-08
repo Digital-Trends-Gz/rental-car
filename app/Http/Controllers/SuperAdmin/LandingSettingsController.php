@@ -829,6 +829,11 @@ class LandingSettingsController extends Controller
             'auth.or_continue_with' => 'Or continue with',
             'auth.google' => 'Google',
             'auth.apple' => 'Apple',
+            'auth.tenant_account_inactive' => 'This tenant account is inactive. Please contact support.',
+            'auth.tenant_subscription_expired' => 'This tenant subscription has expired. Please contact your administrator.',
+            'auth.plan_expired' => 'Your plan has expired. Please login and renew your subscription.',
+            'auth.trial_ended' => 'Your trial period has ended. Please contact your administrator.',
+            'auth.unauthorized_access' => 'You are not authorized to access this area.',
             'pagination.previous' => 'Previous',
             'pagination.next' => 'Next',
             'dashboard.admin.car_statuses.draft' => 'Draft',
@@ -1085,6 +1090,15 @@ class LandingSettingsController extends Controller
             'dashboard.admin.stripe_connect.open_stripe_express_dashboard' => 'Open Stripe Express Dashboard',
             'dashboard.admin.stripe_connect.yes' => 'Yes',
             'dashboard.admin.stripe_connect.no' => 'No',
+
+            // Reservation / Contract outstanding balance notice
+            'dashboard.admin.contracts.edit.client_has_outstanding_balance' => 'Client has outstanding balance',
+            'dashboard.admin.contracts.edit.client_has_outstanding_balance_amount_admin_can_continue' => 'Client has outstanding balance (:amount). Admin can continue creating the contract if approved.',
+
+            // Reservation show pricing label
+            'dashboard.admin.reservations.show.fields.daily_rate' => 'Daily Rate',
+            'dashboard.admin.reservations.show.fields.weekly_rate' => 'Weekly Rate',
+            'dashboard.admin.reservations.show.fields.monthly_rate' => 'Monthly Rate',
         ]);
 
         foreach ($this->translationGroups() as $group) {

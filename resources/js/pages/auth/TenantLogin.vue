@@ -21,12 +21,36 @@ import { computed } from 'vue';
 const { t } = useTrans();
 const { themeVars } = useBrandTheme();
 
+const ERROR_MESSAGES: Record<string, string> = {
+    'This tenant account is inactive. Please contact support.': 'auth.tenant_account_inactive',
+    'This tenant subscription has expired. Please contact your administrator.': 'auth.tenant_subscription_expired',
+    'Your plan has expired. Please login and renew your subscription.': 'auth.plan_expired',
+    'Your trial period has ended. Please contact your administrator.': 'auth.trial_ended',
+    'You are not authorized to access this area.': 'auth.unauthorized_access',
+};
+
 defineProps<{
     status?: string;
     canResetPassword: boolean;
 }>();
 
 const page = usePage<any>();
+
+const translateError = (message?: string) => {
+    if (!message) return message;
+    const key = ERROR_MESSAGES[message] || (message.startsWith('auth.') ? message : undefined);
+    if (key) {
+        const translated = t(key);
+        return translated !== key ? translated : message;
+    }
+    return message;
+};
+
+const flashError = computed(() => {
+    const error = page.props.flash?.error;
+    if (!error) return undefined;
+    return translateError(error);
+});
 const currentTenant = computed(() => page.props.current_tenant);
 const authSideImage = computed(() => {
     const images = page.props.app_branding?.register_hero_images || {};
@@ -101,6 +125,13 @@ const landingUrl = computed(() => {
                     {{ status }}
                 </div>
 
+                <div
+                    v-if="flashError"
+                    class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                    {{ flashError }}
+                </div>
+
                 <Form
                     v-bind="loginAction"
                     :reset-on-success="['password']"
@@ -123,7 +154,7 @@ const landingUrl = computed(() => {
                             autocomplete="email"
                             class="h-11 border-gray-300"
                         />
-                        <InputError :message="errors.email" />
+                        <InputError :message="translateError(errors.email)" />
                     </div>
 
                     <div class="space-y-2">

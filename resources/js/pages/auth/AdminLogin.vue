@@ -19,6 +19,26 @@ const page = usePage<any>();
 const { t } = useTrans();
 const currentTenant = computed(() => page.props.current_tenant as any);
 
+const ERROR_MESSAGES: Record<string, string> = {
+    'This tenant account is inactive. Please contact support.': 'auth.tenant_account_inactive',
+    'This tenant subscription has expired. Please contact your administrator.': 'auth.tenant_subscription_expired',
+    'Your plan has expired. Please login and renew your subscription.': 'auth.plan_expired',
+    'Your trial period has ended. Please contact your administrator.': 'auth.trial_ended',
+    'You are not authorized to access this area.': 'auth.unauthorized_access',
+    'You are not authorized to access the admin area.': 'auth.unauthorized_access',
+    'Your trial period has ended.': 'auth.trial_ended',
+};
+
+const translateError = (message?: string) => {
+    if (!message) return message;
+    const key = ERROR_MESSAGES[message] || (message.startsWith('auth.') ? message : undefined);
+    if (key) {
+        const translated = t(key);
+        return translated !== key ? translated : message;
+    }
+    return message;
+};
+
 const adminLoginAction = computed(() => {
     const slug = currentTenant.value?.slug;
     return (slug ? tenantAdminLoginStore(slug).form() : mainAdminLoginStore().form()) as any;
@@ -88,7 +108,7 @@ const adminLoginAction = computed(() => {
                                     class="w-full rounded-lg border border-slate-600 bg-slate-700/50 px-4 py-3 text-white placeholder-slate-400 transition-colors focus:border-orange-500 focus:bg-slate-700 focus:ring-2 focus:ring-orange-500/20"
                                 />
                                 <InputError
-                                    :message="errors.email"
+                                    :message="translateError(errors.email)"
                                     class="mt-1"
                                 />
                             </div>

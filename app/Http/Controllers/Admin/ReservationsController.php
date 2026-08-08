@@ -15,6 +15,7 @@ use App\Support\ClientReturnDebt;
 use App\Support\CurrencyCatalog;
 use App\Support\PaidReturnReportLock;
 use App\Support\PdfRuntime;
+use App\Support\TenantTranslations;
 use App\Enums\CarStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\PaymentMethod;
@@ -411,14 +412,21 @@ class ReservationsController extends Controller
             ];
         }
 
-        $message = app()->getLocale() === 'ar'
-            ? 'العميل عليه مديونية (:amount). يجب تسوية المديونية قبل إنشاء عقد.'
-            : 'Client has outstanding balance (:amount). Admin can continue creating the contract if approved.';
+        $formattedDebtAmount = number_format($debtAmount, 2);
+        $message = str_replace(
+            ':amount',
+            $formattedDebtAmount,
+            TenantTranslations::get(
+                'dashboard.admin.contracts.edit.client_has_outstanding_balance_amount_admin_can_continue',
+                app()->getLocale(),
+                "Client has outstanding balance ({$formattedDebtAmount}). Admin can continue creating the contract if approved."
+            )
+        );
 
         return [
             'blocked' => true,
             'debt_amount' => $debtAmount,
-            'message' => str_replace(':amount', number_format($debtAmount, 2), $message),
+            'message' => $message,
         ];
     }
 

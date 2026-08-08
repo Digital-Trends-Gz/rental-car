@@ -35,6 +35,15 @@ const hasFeature = (feature: string) => {
   return Boolean(flags[feature])
 }
 const reservation = computed(() => props.reservation)
+const pricingLabel = computed(() => {
+  const raw = reservation.value?.pricing_label
+  const map: Record<string, string> = {
+    'Daily Rate': tr('fields.daily_rate', 'Daily Rate'),
+    'Weekly Rate': tr('fields.weekly_rate', 'Weekly Rate'),
+    'Monthly Rate': tr('fields.monthly_rate', 'Monthly Rate'),
+  }
+  return map[raw] ?? raw || tr('fields.daily_rate', 'Daily Rate')
+})
 const isLocked = computed(() => Boolean(reservation.value?.is_locked))
 const canCreateContract = computed(() => Boolean(reservation.value?.can_create_contract))
 const contractBlockMessage = computed(() => reservation.value?.contract_block_message || '')
@@ -219,7 +228,7 @@ function collectFinalCash() {
           <div class="border-b px-4 py-3 font-medium">{{ tr('sections.amounts', 'Amounts') }}</div>
           <div class="p-4 space-y-2">
             <div class="flex items-center justify-between">
-              <div class="text-sm">{{ reservation.pricing_label || tr('fields.daily_rate', 'Daily Rate') }}</div>
+              <div class="text-sm">{{ pricingLabel }}</div>
               <div class="font-medium">{{ fmtMoney(reservation.pricing_rate ?? reservation.daily_rate) }}</div>
             </div>
             <div class="flex items-center justify-between">

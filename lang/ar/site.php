@@ -329,6 +329,11 @@ return array (
       'confirm_password_placeholder' => 'تأكيد كلمة المرور',
       'reset_password' => 'إعادة تعيين كلمة المرور',
     ),
+    'tenant_account_inactive' => 'حساب هذه الشركة غير فعال. يرجى التواصل مع الدعم.',
+    'tenant_subscription_expired' => 'اشتراك هذه الشركة منتهي الصلاحية. يرجى التواصل مع المسؤول.',
+    'plan_expired' => 'خطتك منتهية. يرجى تسجيل الدخول وتجديد اشتراكك.',
+    'trial_ended' => 'فترة التجربة انتهت. يرجى التواصل مع المسؤول.',
+    'unauthorized_access' => 'غير مصرح لك بالوصول إلى هذه المنطقة.',
     'forgot_password_page' => 
     array (
       'head_title' => 'إعادة تعيين كلمة المرور',
@@ -2938,6 +2943,8 @@ return array (
             'cancelled_at' => 'تاريخ الإلغاء',
             'reason' => 'السبب',
             'daily_rate' => 'السعر اليومي',
+            'weekly_rate' => 'السعر الأسبوعي',
+            'monthly_rate' => 'السعر الشهري',
             'subtotal' => 'المجموع الفرعي',
             'tax' => 'الضريبة',
             'discount' => 'الخصم',
@@ -3903,37 +3910,16 @@ return array (
           'not_clean' => 'غير نظيف',
           'no_extracted_value' => 'لا توجد قيمة مستخرجة',
           'already_linked_to_another_contract' => 'هذه الحجز مرتبط بعقد آخر',
-          'this_reservation_already_has_a_contract_and_cannot_be_used_for_a_new_contract' => 'هذا الحجز مرتبط بعقد آخر ولا يمكن استخدامه لإنشاء عقد جديد.\',
-      ),
-    };
-  }
-
-  if (selectedReservationBlockedByDebt.value) {
-    return {
-      tone: \'warning\',
-      title: localize(\'Client has outstanding balance\', \'العميل عليه مديونية',
-          'this_client_has_outstanding_balance_admin_can_continue_creating_the_contract_if_' => 'العميل عليه مديونية. يمكن للإدارة المتابعة بإنشاء العقد عند الموافقة.\',
-      ),
-    };
-  }
-
-  if (status === \'completed_wait_contract',
+          'client_has_outstanding_balance' => 'العميل عليه رصيد مستحق',
+          'client_has_outstanding_balance_amount_admin_can_continue' => 'العميل عليه رصيد مستحق (:amount). يمكن للإدارة متابعة إنشاء العقد إذا تمت الموافقة.',
+          'complete' => 'إكمال',
+          'completed' => 'مكتمل',
+          'employee' => 'موظف',
+          'this_reservation_already_has_a_contract_and_cannot_be_used_for_a_new_contract' => 'هذا الحجز مرتبط بعقد آخر ولا يمكن استخدامه لإنشاء عقد جديد.',
+          'this_client_has_outstanding_balance_admin_can_continue_creating_the_contract_if_' => 'العميل عليه مديونية. يمكن للإدارة المتابعة بإنشاء العقد عند الموافقة.',
           'completed_waiting_for_contract' => 'مكتمل - بانتظار العقد',
-          'this_reservation_is_completed_and_waiting_for_contract_creation_you_can_save_the' => 'هذا الحجز مكتمل وينتظر إنشاء العقد. يمكنك حفظ العقد من هنا.\',
-      ),
-    };
-  }
-
-  return {
-    tone: \'info\',
-    title: selectedReservation.value.status_label || localize(\'Reservation selected\', \'تم اختيار الحجز',
-          'this_reservation_can_be_used_for_the_contract' => 'يمكن استخدام هذا الحجز لإنشاء العقد.\',
-    ),
-  };
-});
-const reservationClients = computed(() => props.reservationFormOptions?.clients ?? []);
-const reservationCars = computed(() => props.reservationFormOptions?.cars ?? []);
-const saveError = ref(\'',
+          'this_reservation_is_completed_and_waiting_for_contract_creation_you_can_save_the' => 'هذا الحجز مكتمل وينتظر إنشاء العقد. يمكنك حفظ العقد من هنا.',
+          'this_reservation_can_be_used_for_the_contract' => 'يمكن استخدام هذا الحجز لإنشاء العقد.',
           'damage' => 'ضرر',
           'odometer' => 'عداد',
           'fuel' => 'وقود',
@@ -4113,6 +4099,9 @@ const saveError = ref(\'',
           'no_file_uploaded' => 'No file uploaded.',
           'disabled' => 'Disabled',
           'no_extracted_data' => 'No extracted data available.',
+          'extension_request' => 'طلب تمديد',
+          'extension_requests_title' => 'طلبات التمديد',
+          'force_extend' => 'تمديد إجباري',
           'sections' => 
           array (
             'details' => 'Contract Details',
@@ -4149,7 +4138,13 @@ const saveError = ref(\'',
             'type' => 'Type',
             'severity' => 'Severity',
             'qty' => 'Qty',
+            'source' => 'المصدر',
             'notes' => 'Notes',
+          ),
+          'sources' =>
+          array (
+            'ai' => 'الذكاء الاصطناعي',
+            'employee' => 'موظف',
           ),
           'return_status' => 'تقرير الإرجاع',
           'contract_status' => 'حالة العقد',
@@ -4926,6 +4921,8 @@ const saveError = ref(\'',
           'cancelled_at' => 'تاريخ الإلغاء',
           'reason' => 'السبب',
           'daily_rate' => 'السعر اليومي',
+          'weekly_rate' => 'السعر الأسبوعي',
+          'monthly_rate' => 'السعر الشهري',
           'subtotal' => 'المجموع الفرعي',
           'tax' => 'الضريبة',
           'discount' => 'الخصم',

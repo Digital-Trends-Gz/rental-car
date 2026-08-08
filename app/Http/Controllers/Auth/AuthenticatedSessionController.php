@@ -95,7 +95,7 @@ class AuthenticatedSessionController extends Controller
 
         if ($user->role === UserRole::ADMIN && $tenant && !$tenant->is_active) {
             return back()->withErrors([
-                'email' => 'This tenant account is inactive. Please contact support.',
+                'email' => 'auth.tenant_account_inactive',
             ])->onlyInput('email');
         }
 
@@ -173,7 +173,7 @@ class AuthenticatedSessionController extends Controller
 
         if ($tenant && !$tenant->is_active) {
             return back()->withErrors([
-                'email' => 'This tenant account is inactive. Please contact support.',
+                'email' => 'auth.tenant_account_inactive',
             ])->onlyInput('email');
         }
 

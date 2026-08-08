@@ -503,7 +503,12 @@ class AuthController extends Controller
         if ($user->role === UserRole::ADMIN && $tenant && !$tenant->is_active) {
             return [
                 'status' => 403,
-                'body' => ['message' => 'This tenant account is inactive. Please contact support.'],
+                'body' => ['message' => TenantTranslations::get(
+                    'auth.tenant_account_inactive',
+                    app()->getLocale(),
+                    trans('site.auth.tenant_account_inactive'),
+                    $tenant,
+                )],
             ];
         }
 

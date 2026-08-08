@@ -1755,8 +1755,8 @@ function submit() {
                     <td class="px-2 py-2">{{ damage.severity_label }}</td>
                     <td class="px-2 py-2">{{ damage.quantity }}</td>
                     <td class="px-2 py-2">
-                        <span v-if="damage.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">AI</span>
-                        <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Employee</span>
+                        <span v-if="damage.source_type === 'ai'" class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">{{ t('dashboard.admin.contracts.show.sources.ai') }}</span>
+                        <span v-else class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ localize('Employee', 'موظف') }}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -2176,8 +2176,6 @@ function submit() {
     </main>
   </AdminLayout>
 </template>
-
-
 
 
 
