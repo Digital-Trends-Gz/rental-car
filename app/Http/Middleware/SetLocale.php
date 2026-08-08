@@ -20,10 +20,17 @@ class SetLocale
         $isDashboard = $this->isDashboardRequest($request, $supported);
         $sessionKey = $isDashboard ? 'dashboard_locale' : 'site_locale';
 
-        $locale = $request->session()->get(
-            $sessionKey,
-            $isDashboard ? $fallback : $request->session()->get('locale', config('app.locale', $fallback))
-        );
+        $segments = $request->segments();
+        $urlLocale = $segments[0] ?? null;
+
+        if ($urlLocale && in_array($urlLocale, $supported, true)) {
+            $locale = $urlLocale;
+        } else {
+            $locale = $request->session()->get(
+                $sessionKey,
+                $isDashboard ? $fallback : $request->session()->get('locale', config('app.locale', $fallback))
+            );
+        }
 
         if (!in_array($locale, $supported, true)) {
             $locale = $fallback;

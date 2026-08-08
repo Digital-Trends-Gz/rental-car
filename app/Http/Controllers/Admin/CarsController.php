@@ -430,7 +430,9 @@ class CarsController extends Controller
                 'seats' => $car->seats,
                 'engine_power' => $car->engine_power,
                 'color' => $car->color instanceof \BackedEnum ? (string) $car->color->value : (string) $car->color,
-                'description' => $car->description,
+                'description' => method_exists($car, 'localizedDescription')
+                    ? $car->localizedDescription(app()->getLocale())
+                    : $car->description,
                 'image_url' => $car->image_url,
                 'additional_photos' => $car->additional_photos,
             ],

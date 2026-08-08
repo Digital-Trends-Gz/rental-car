@@ -172,6 +172,26 @@ const localize = (en: string, ar: string) => {
 
     return locale.value === 'ar' ? ar : en;
 };
+
+const valueKeyFor = (value: string | null | undefined) =>
+    String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/&/g, ' and ')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+const translateValue = (value: string | null | undefined, fallback = '') => {
+    const normalized = valueKeyFor(value);
+    const key = `${showTranslationRoot}.values.${normalized}`;
+    const translated = t(key);
+
+    if (translated !== key) {
+        return translated;
+    }
+
+    return fallback || String(value ?? '');
+};
 const tenantFeatureFlags = computed<Record<string, boolean>>(
     () => page.props.current_tenant?.subscription_plan?.feature_flags || {},
 );
@@ -217,7 +237,7 @@ function statusVariant(key: string) {
                             class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium text-white"
                             :style="{ backgroundColor: car.status_color }"
                         >
-                            {{ car.status_label }}
+                             {{ translateValue(car.status, car.status_label) }}
                         </span>
                     </div>
                     <div class="text-sm text-muted-foreground">
@@ -261,10 +281,10 @@ function statusVariant(key: string) {
                             <div class="grid grid-cols-2 gap-3 text-sm">
                                 <div><div class="text-muted-foreground">{{ localize('Price / Day', 'السعر / يوم') }}</div><div class="font-medium">{{ money(car.price_per_day) }}</div></div>
                                 <div><div class="text-muted-foreground">{{ localize('Mileage', 'الممشى') }}</div><div class="font-medium">{{ car.mileage ?? '-' }}</div></div>
-                                <div><div class="text-muted-foreground">{{ localize('Fuel', 'الوقود') }}</div><div class="font-medium">{{ car.fuel_type ?? '-' }}</div></div>
-                                <div><div class="text-muted-foreground">{{ localize('Transmission', 'ناقل الحركة') }}</div><div class="font-medium">{{ car.transmission ?? '-' }}</div></div>
-                                <div><div class="text-muted-foreground">{{ localize('Seats', 'المقاعد') }}</div><div class="font-medium">{{ car.seats ?? '-' }}</div></div>
-                                <div><div class="text-muted-foreground">{{ localize('Color', 'اللون') }}</div><div class="font-medium">{{ car.color ?? '-' }}</div></div>
+                                 <div><div class="text-muted-foreground">{{ localize('Fuel', 'الوقود') }}</div><div class="font-medium">{{ translateValue(car.fuel_type ?? '', car.fuel_type ?? '-') }}</div></div>
+                                 <div><div class="text-muted-foreground">{{ localize('Transmission', 'ناقل الحركة') }}</div><div class="font-medium">{{ translateValue(car.transmission ?? '', car.transmission ?? '-') }}</div></div>
+                                 <div><div class="text-muted-foreground">{{ localize('Seats', 'المقاعد') }}</div><div class="font-medium">{{ car.seats ?? '-' }}</div></div>
+                                 <div><div class="text-muted-foreground">{{ localize('Color', 'اللون') }}</div><div class="font-medium">{{ translateValue(car.color ?? '', car.color ?? '-') }}</div></div>
                             </div>
 
                             <div v-if="car.description">
@@ -276,7 +296,7 @@ function statusVariant(key: string) {
                                 <div class="text-sm font-medium">{{ localize('Additional Photos', 'صور إضافية') }}</div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div v-for="(photo, type) in car.additional_photos" :key="type" class="space-y-1">
-                                        <div class="text-xs capitalize text-muted-foreground">{{ type }}</div>
+                                        <div class="text-xs capitalize text-muted-foreground">{{ translateValue(String(type), String(type)) }}</div>
                                         <img v-if="photo.url" :src="photo.url" :alt="photo.alt" class="h-24 w-full rounded-md object-cover" />
                                         <div v-else class="flex h-24 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground">
                                             {{ localize('No photo', 'لا توجد صورة') }}
@@ -316,7 +336,7 @@ function statusVariant(key: string) {
                                         <div v-if="item.contract" class="mt-1 text-xs text-muted-foreground">{{ localize('Contract', 'العقد') }}: {{ item.contract.number }}</div>
                                     </div>
                                     <div class="flex flex-col items-end gap-2">
-                                        <Badge variant="outline">{{ item.status_label }}</Badge>
+                                        <Badge variant="outline">{{ translateValue(item.status, item.status_label) }}</Badge>
                                         <Link :href="item.show_url"><Button size="sm" variant="outline">{{ localize('Open', 'فتح') }}</Button></Link>
                                     </div>
                                 </div>
@@ -344,16 +364,16 @@ function statusVariant(key: string) {
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
                                         <div class="font-medium">{{ item.repair_number }}</div>
-                                        <div class="text-sm text-muted-foreground">{{ item.damage_zone }}<span v-if="item.damage_type"> • {{ item.damage_type }}</span></div>
+                                        <div class="text-sm text-muted-foreground">{{ translateValue(item.damage_zone, item.damage_zone) }}<span v-if="item.damage_type"> • {{ translateValue(item.damage_type, item.damage_type) }}</span></div>
                                         <div class="text-sm text-muted-foreground">{{ item.workshop_name || localize('No workshop', 'لا توجد ورشة') }}</div>
                                         <div class="text-sm text-muted-foreground">{{ item.opened_at || '-' }}<span v-if="item.completed_at"> • {{ localize('Completed', 'مكتمل') }}: {{ item.completed_at }}</span></div>
                                         <div v-if="item.actual_cost !== null || item.estimated_cost !== null" class="text-sm text-muted-foreground">
-                                            {{ localize('Cost', 'التكلفة') }}:
+                                            {{ translateValue('cost', localize('Cost', 'التكلفة')) }}:
                                             {{ money(item.actual_cost ?? item.estimated_cost) }}
                                         </div>
                                     </div>
                                     <div class="flex flex-col items-end gap-2">
-                                        <Badge variant="outline">{{ item.status_label }}</Badge>
+                                        <Badge variant="outline">{{ translateValue(item.status, item.status_label) }}</Badge>
                                         <Link :href="item.edit_url"><Button size="sm" variant="outline">{{ localize('Open', 'فتح') }}</Button></Link>
                                     </div>
                                 </div>
@@ -378,13 +398,13 @@ function statusVariant(key: string) {
                             <div v-for="item in maintenances" :key="item.id" class="rounded-lg border p-4">
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
-                                        <div class="font-medium">{{ item.type }}</div>
+                                        <div class="font-medium">{{ translateValue(item.type, item.type) }}</div>
                                         <div class="text-sm text-muted-foreground">{{ item.workshop_name || localize('No workshop', 'لا توجد ورشة') }}</div>
                                         <div class="text-sm text-muted-foreground">{{ item.scheduled_date || '-' }}</div>
-                                        <div v-if="item.cost !== null" class="text-sm text-muted-foreground">{{ localize('Cost', 'التكلفة') }}: {{ money(item.cost) }}</div>
+                                        <div v-if="item.cost !== null" class="text-sm text-muted-foreground">{{ translateValue('cost', localize('Cost', 'التكلفة')) }}: {{ money(item.cost) }}</div>
                                     </div>
                                     <div class="flex flex-col items-end gap-2">
-                                        <Badge variant="outline">{{ item.status_label }}</Badge>
+                                        <Badge variant="outline">{{ translateValue(item.status, item.status_label) }}</Badge>
                                         <Link :href="item.edit_url"><Button size="sm" variant="outline">{{ localize('Open', 'فتح') }}</Button></Link>
                                     </div>
                                 </div>
@@ -399,13 +419,13 @@ function statusVariant(key: string) {
                             <div v-for="item in documents" :key="item.id" class="rounded-lg border p-4">
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
-                                        <div class="font-medium">{{ item.type_label }}</div>
+                                        <div class="font-medium">{{ translateValue(item.type, item.type_label) }}</div>
                                         <div class="text-sm text-muted-foreground">{{ item.number || '-' }}<span v-if="item.issuer"> • {{ item.issuer }}</span></div>
                                         <div class="text-sm text-muted-foreground">{{ localize('Expiry', 'الانتهاء') }}: {{ item.expiry_date || '-' }}</div>
                                         <div v-if="item.days_remaining !== null" class="text-sm text-muted-foreground">{{ localize('Days remaining', 'الأيام المتبقية') }}: {{ item.days_remaining }}</div>
                                     </div>
                                     <div class="flex flex-col items-end gap-2">
-                                        <Badge :variant="statusVariant(item.status_key) as any">{{ item.status_key }}</Badge>
+                                        <Badge :variant="statusVariant(item.status_key) as any">{{ translateValue(item.status_key, item.status_key) }}</Badge>
                                         <Link :href="item.edit_url"><Button size="sm" variant="outline">{{ localize('Open', 'فتح') }}</Button></Link>
                                     </div>
                                 </div>
@@ -421,7 +441,7 @@ function statusVariant(key: string) {
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
                                         <div class="font-medium">{{ item.number }}</div>
-                                        <div class="text-sm text-muted-foreground">{{ item.report_type_label }} • {{ item.status_label }}</div>
+                                        <div class="text-sm text-muted-foreground">{{ translateValue(item.report_type, item.report_type_label) }} • {{ translateValue(item.status, item.status_label) }}</div>
                                         <div class="text-sm text-muted-foreground">{{ item.inspected_at || '-' }}</div>
                                         <div class="text-sm text-muted-foreground">{{ localize('Items', 'العناصر') }}: {{ item.items_count }}</div>
                                     </div>
@@ -439,12 +459,12 @@ function statusVariant(key: string) {
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
                                         <div class="font-medium">{{ item.number || '-' }}</div>
-                                        <div class="text-sm text-muted-foreground">{{ item.type || '-' }}<span v-if="item.authority"> • {{ item.authority }}</span></div>
+                                        <div class="text-sm text-muted-foreground">{{ translateValue(item.type, item.type || '-') }}<span v-if="item.authority"> • {{ item.authority }}</span></div>
                                         <div class="text-sm text-muted-foreground">{{ item.violation_date || '-' }}<span v-if="item.due_date"> • {{ localize('Due', 'الاستحقاق') }}: {{ item.due_date }}</span></div>
                                         <div v-if="item.amount !== null" class="text-sm text-muted-foreground">{{ localize('Amount', 'القيمة') }}: {{ money(item.amount) }}</div>
                                     </div>
                                     <div class="flex flex-col items-end gap-2">
-                                        <Badge variant="outline">{{ item.status_label }}</Badge>
+                                        <Badge variant="outline">{{ translateValue(item.status, item.status_label) }}</Badge>
                                         <Link :href="item.edit_url"><Button size="sm" variant="outline">{{ localize('Open', 'فتح') }}</Button></Link>
                                     </div>
                                 </div>
@@ -477,7 +497,7 @@ function statusVariant(key: string) {
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
                                         <div class="font-medium">{{ item.name }}</div>
-                                        <div class="text-sm text-muted-foreground">{{ item.type }}<span v-if="item.value !== null"> • {{ item.value }}</span></div>
+                                        <div class="text-sm text-muted-foreground">{{ translateValue(item.type, item.type) }}<span v-if="item.value !== null"> • {{ item.value }}</span></div>
                                         <div class="text-sm text-muted-foreground">{{ item.starts_at || '-' }} → {{ item.ends_at || '-' }}</div>
                                     </div>
                                     <div class="flex flex-col items-end gap-2">
