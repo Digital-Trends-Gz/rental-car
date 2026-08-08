@@ -77,19 +77,31 @@ class HandleInertiaRequests extends Middleware
 
                 return empty($filtered) ? $supported : $filtered;
             },
-            'translations' => function () {
+            'translations' => function () use ($request) {
                 $base = __('site');
                 $locale = app()->getLocale();
+                $supportedLocales = LaravelLocalization::getSupportedLanguagesKeys();
+                $isDashboardRequest = $this->isDashboardRequest($request, $supportedLocales);
                 $landingSettings = SiteSetting::query()
                     ->where('key', LandingPageSettings::KEY)
                     ->first()
                     ?->value;
-                $landingOverrides = is_array($landingSettings)
-                    ? data_get(LandingPageSettings::normalize($landingSettings), "translations.$locale", [])
-                    : [];
-                $landingOverrides = is_array($landingOverrides)
-                    ? $this->expandTranslationOverrides($landingOverrides)
-                    : [];
+                $landingOverrides = [];
+
+                if (is_array($landingSettings)) {
+                    $normalizedLandingSettings = LandingPageSettings::normalize($landingSettings);
+
+                    foreach ($this->landingTranslationLocales($locale, $isDashboardRequest) as $landingLocale) {
+                        $localeOverrides = data_get($normalizedLandingSettings, "translations.$landingLocale", []);
+
+                        if (is_array($localeOverrides) && !empty($localeOverrides)) {
+                            $landingOverrides = array_replace_recursive(
+                                $landingOverrides,
+                                $this->expandTranslationOverrides($localeOverrides),
+                            );
+                        }
+                    }
+                }
 
                 if (is_array($landingOverrides) && !empty($landingOverrides)) {
                     $base = array_replace_recursive($base, $landingOverrides);
@@ -109,6 +121,10 @@ class HandleInertiaRequests extends Middleware
                 }
 
                 $overrides = $this->expandTranslationOverrides($overrides);
+
+                if ($isDashboardRequest && !empty($landingOverrides)) {
+                    return array_replace_recursive($base, $overrides, $landingOverrides);
+                }
 
                 return array_replace_recursive($base, $overrides);
             },
@@ -214,6 +230,23 @@ class HandleInertiaRequests extends Middleware
         }
 
         return in_array($segments[0] ?? null, ['admin', 'superadmin', 'client', 'dashboard'], true);
+    }
+
+    /**
+     * Some existing dashboard URLs use /ur while the editable dashboard strings
+     * are maintained in the Arabic Landing Translation column. Keep /ur-specific
+     * values authoritative when they exist, but allow Arabic landing overrides
+     * to fill missing dashboard strings.
+     *
+     * @return array<int, string>
+     */
+    private function landingTranslationLocales(string $locale, bool $isDashboardRequest): array
+    {
+        if ($isDashboardRequest && $locale === 'ur') {
+            return ['ar', 'ur'];
+        }
+
+        return [$locale];
     }
 
     /**
