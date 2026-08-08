@@ -9,6 +9,7 @@ use App\Models\TenantSiteSetting;
 use App\Support\CurrencyCatalog;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Inertia\Middleware;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
@@ -86,6 +87,9 @@ class HandleInertiaRequests extends Middleware
                 $landingOverrides = is_array($landingSettings)
                     ? data_get(LandingPageSettings::normalize($landingSettings), "translations.$locale", [])
                     : [];
+                $landingOverrides = is_array($landingOverrides)
+                    ? $this->expandTranslationOverrides($landingOverrides)
+                    : [];
 
                 if (is_array($landingOverrides) && !empty($landingOverrides)) {
                     $base = array_replace_recursive($base, $landingOverrides);
@@ -103,6 +107,8 @@ class HandleInertiaRequests extends Middleware
                 if (!is_array($overrides) || empty($overrides)) {
                     return $base;
                 }
+
+                $overrides = $this->expandTranslationOverrides($overrides);
 
                 return array_replace_recursive($base, $overrides);
             },
@@ -208,5 +214,30 @@ class HandleInertiaRequests extends Middleware
         }
 
         return in_array($segments[0] ?? null, ['admin', 'superadmin', 'client', 'dashboard'], true);
+    }
+
+    /**
+     * Older/custom translation payloads can contain flat dot keys. Inertia's
+     * frontend translator expects nested arrays, so normalize both shapes.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function expandTranslationOverrides(array $overrides): array
+    {
+        $expanded = [];
+
+        foreach ($overrides as $key => $value) {
+            if (is_string($key) && str_contains($key, '.')) {
+                Arr::set($expanded, $key, is_array($value) ? $this->expandTranslationOverrides($value) : $value);
+                continue;
+            }
+
+            $expanded[$key] = is_array($value)
+                ? $this->expandTranslationOverrides($value)
+                : $value;
+        }
+
+        return $expanded;
     }
 }

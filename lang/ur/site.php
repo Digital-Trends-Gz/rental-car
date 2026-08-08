@@ -437,7 +437,7 @@ Sunday: 10:00 AM - 4:00 PM',
     'tenant' => 'Tenant',
     'tenant_logo' => 'Tenant logo',
     'location_not_set' => 'Location not set',
-    'statuses' => 
+    'statuses' =>
     array (
       'available' => 'Available',
       'reserved' => 'Reserved',
@@ -1154,7 +1154,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'completed' => 'مکمل',
           'cost' => 'لاگت',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'damage_case' => 'نقصان کیس',
           'status' => 'حالت',
@@ -1167,7 +1167,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'notes' => 'نوٹس',
           'completion_notes' => 'مکمل ہونے کے نوٹس',
         ),
-        'statuses' => 
+        'statuses' =>
         array (
           'open' => 'کھلی',
           'in_progress' => 'جاری',
@@ -1308,7 +1308,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'date' => 'تاریخ',
           'actions' => 'کارروائیاں',
         ),
-        'statuses' => 
+        'statuses' =>
         array (
           'reported' => 'رپورٹ شدہ',
           'under_review' => 'زیر جائزہ',
@@ -2409,7 +2409,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'insurance' => 'گاڑی انشورنس',
             'purchase_contract' => 'خریداری معاہدہ',
           ),
-          'statuses' => 
+          'statuses' =>
           array (
             'expired' => 'میعاد ختم',
             'expiring_soon' => 'جلد ختم ہونے والا',
@@ -2600,7 +2600,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'amounts' => 'رقوم',
             'payments' => 'ادائیگیاں',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'status' => 'اسٹیٹس',
             'total' => 'کل',
@@ -2705,7 +2705,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'description' => 'ضرورت پر لاگو ہونے والی مقررہ صفائی فیس سیٹ کریں۔',
           ),
         ),
-        'fields' => 
+        'fields' =>
         array (
           'policy' => 'پالیسی',
           'fixed_return_time' => 'مقررہ واپسی وقت',
@@ -2784,7 +2784,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'all_statuses' => 'تمام حالتیں',
           'converted_to' => 'میں تبدیل کیا گیا',
           'rate' => 'شرح',
-          'statuses' => 
+          'statuses' =>
           array (
             'pending' => 'زیر التواء',
             'completed' => 'مکمل',
@@ -2912,7 +2912,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'client_status' => 'کلائنٹ حالت',
           'notes' => 'نوٹ',
           'empty' => 'No clients found.',
-          'statuses' => 
+          'statuses' =>
           array (
             'active' => 'فعال',
             'suspended' => 'معطل',
@@ -2991,6 +2991,40 @@ Sunday: 10:00 AM - 4:00 PM',
           'example_customer_needs_manual_review_before_next_booking' => 'مثال: کلائنٹ کو اگلی بکنگ سے پہلے دستی جائزہ چاہیے۔',
           'saving' => 'محفوظ ہو رہا ہے...',
           'save_note' => 'نوٹ محفوظ کریں',
+          'overall_statuses' =>
+          array (
+            'good' => 'اچھا',
+            'info' => 'معلومات',
+            'warning' => 'جائزہ درکار ہے',
+            'danger' => 'بلاک شدہ',
+          ),
+          'flags' =>
+          array (
+            'types' =>
+            array (
+              'blocked' => 'بلاک شدہ',
+              'needs_review' => 'جائزہ درکار ہے',
+              'debt' => 'مقروض',
+              'expired_license' => 'میعاد ختم شدہ لائسنس',
+              'expired_passport' => 'میعاد ختم شدہ پاسپورٹ',
+              'expired_residency' => 'میعاد ختم شدہ رہائش',
+              'expired_document' => 'میعاد ختم شدہ دستاویز',
+              'late_return' => 'تاخیر سے واپسی کی تاریخ',
+              'new_customer' => 'نیا کلائنٹ',
+            ),
+            'descriptions' =>
+            array (
+              'blocked' => 'یہ کلائنٹ دستی طور پر بلاک ہے.',
+              'needs_review' => 'اس کلائنٹ کو دستی جائزہ درکار ہے.',
+              'debt' => 'بقایا رقم: :amount.',
+              'expired_license' => 'لائسنس کی میعاد :date کو ختم ہوئی.',
+              'expired_passport' => 'پاسپورٹ کی میعاد :date کو ختم ہوئی.',
+              'expired_residency' => 'رہائش کی میعاد :date کو ختم ہوئی.',
+              'expired_document' => 'کلائنٹ کی ایک دستاویز :date کو ختم ہوئی.',
+              'late_return' => 'آخری تاخیر سے واپسی: :contract، تاریخ: :date.',
+              'new_customer' => 'ابھی کوئی مکمل معاہدہ نہیں.',
+            ),
+          ),
         ),
         'documents' =>
         array (
@@ -3073,9 +3107,9 @@ Sunday: 10:00 AM - 4:00 PM',
           ),
         ),
       ),
-      'support' => 
+      'support' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Support',
           'title' => 'Support Tickets',
@@ -3087,7 +3121,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'empty' => 'No support tickets found.',
         ),
       ),
-      'support_platform' => 
+      'support_platform' =>
       array (
         'platform_support' => 'پلیٹ فارم سپورٹ',
         'create_tickets_for_super_admin_and_track_responses' => 'سپر ایڈمن کے لیے ٹکٹس بنائیں اور جوابات ٹریک کریں۔',
@@ -3112,16 +3146,16 @@ Sunday: 10:00 AM - 4:00 PM',
         'no_messages_yet' => 'ابھی کوئی پیغام نہیں۔',
         'reply' => 'جواب',
         'send_reply' => 'جواب بھیجیں',
-        'statuses' => 
+        'statuses' =>
         array (
           'new' => 'نیا',
           'in_progress' => 'جاری ہے',
           'closed' => 'بند',
         ),
       ),
-      'contracts' => 
+      'contracts' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Contracts',
           'title' => 'Contracts',
@@ -3137,7 +3171,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'view' => 'View',
           'edit' => 'Edit',
           'empty' => 'No contracts found.',
-          'table' => 
+          'table' =>
           array (
             'contract_number' => 'Contract Number',
             'reservation' => 'Reservation',
@@ -3148,7 +3182,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'actions' => 'Actions',
           ),
         ),
-        'return_status_report' => 
+        'return_status_report' =>
         array (
           'n_a' => 'N/A',
           'no_extracted_value' => 'No extracted value',
@@ -3287,7 +3321,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'payment' => '???????',
           'converted_amount' => '????? ??? ???',
         ),
-        'edit' => 
+        'edit' =>
         array (
           'select_document_type' => 'دستاویز کی قسم منتخب کریں',
           'passport_tourist' => 'Passport (Tourist)',
@@ -3487,7 +3521,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'damage_report' => 'نقصان رپورٹ',
           'extracted_value' => 'نکالی گئی قدر',
         ),
-        'show' => 
+        'show' =>
         array (
           'head_title' => 'Contract :number',
           'pdf_en' => 'PDF EN',
@@ -3508,7 +3542,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'extension_request' => 'توسیع کی درخواست',
           'extension_requests_title' => 'توسیع کی درخواستیں',
           'force_extend' => 'زبردستی توسیع',
-          'sections' => 
+          'sections' =>
           array (
             'details' => 'Contract Details',
             'renter' => 'Renter',
@@ -3520,7 +3554,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'ai_extraction' => 'AI Extraction',
             'notes' => 'Notes',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'status' => 'Status',
             'date' => 'Date',
@@ -3537,7 +3571,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'client' => 'Client',
             'car' => 'Car',
           ),
-          'table' => 
+          'table' =>
           array (
             'zone' => 'Zone',
             'view' => 'View',
@@ -3561,7 +3595,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'daily_rate' => 'روزانہ ریٹ',
           'vehicle_odometer' => 'گاڑی اوڈومیٹر',
           'fuel_in_vehicle' => 'گاڑی میں ایندھن',
-          'contract_statuses' => 
+          'contract_statuses' =>
           array (
             'draft' => 'ڈرافٹ',
             'pending' => 'زیر التواء',
@@ -3569,7 +3603,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'completed' => 'مکمل',
             'cancelled' => 'منسوخ',
           ),
-          'reservation_statuses' => 
+          'reservation_statuses' =>
           array (
             'pending' => 'زیر التواء',
             'confirmed' => 'تصدیق شدہ',
@@ -3579,7 +3613,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'cancelled' => 'منسوخ',
             'no_show' => 'حاضر نہیں ہوا',
           ),
-          'finance_statuses' => 
+          'finance_statuses' =>
           array (
             'no_charge' => 'کوئی چارج نہیں',
             'paid' => 'ادا شدہ',
@@ -3588,7 +3622,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'partial_with_return_debt' => 'جزوی + واپسی قرض',
             'return_debt' => 'واپسی قرض',
           ),
-          'car_statuses' => 
+          'car_statuses' =>
           array (
             'draft' => 'ڈرافٹ',
             'available' => 'دستیاب',
@@ -3619,7 +3653,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'no_file_uploaded' => 'No file uploaded.',
         'disabled' => 'Disabled',
         'no_extracted_data' => 'No extracted data available.',
-        'sections' => 
+        'sections' =>
         array (
           'details' => 'Contract Details',
           'renter' => 'Renter',
@@ -3631,7 +3665,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'ai_extraction' => 'AI Extraction',
           'notes' => 'Notes',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'status' => 'Status',
           'date' => 'Date',
@@ -3648,7 +3682,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'client' => 'Client',
           'car' => 'Car',
         ),
-        'table' => 
+        'table' =>
         array (
           'zone' => 'Zone',
           'view' => 'View',
@@ -3658,7 +3692,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'notes' => 'Notes',
         ),
       ),
-      'car_discounts' => 
+      'car_discounts' =>
       array (
         'delete_this_automatic_discount' => 'یہ خودکار ڈسکاؤنٹ حذف کریں؟',
         'automatic_discounts' => 'خودکار رعایتیں',
@@ -3696,7 +3730,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'save_changes' => 'تبدیلیاں محفوظ کریں',
         'cancel' => 'منسوخ کریں',
       ),
-      'reports' => 
+      'reports' =>
       array (
         'all_branches' => 'تمام شاخیں',
         'this_month' => 'اس مہینے',
@@ -3925,14 +3959,14 @@ Sunday: 10:00 AM - 4:00 PM',
         'avg_per_reservation' => 'Avg per Reservation',
         'zero_amount' => '0.00',
       ),
-      'car_violations' => 
+      'car_violations' =>
       array (
-        'edit' => 
+        'edit' =>
         array (
           'select_car_first' => 'پہلے گاڑی منتخب کریں',
           'branch_owner' => 'برانچ مالک',
           'payment_details' => 'ادائیگی کی تفصیلات',
-          'statuses' => 
+          'statuses' =>
           array (
             'pending' => 'زیر التواء',
             'paid' => 'ادا شدہ',
@@ -3946,13 +3980,13 @@ Sunday: 10:00 AM - 4:00 PM',
           'not_specified' => 'متعین نہیں',
           'saving' => 'محفوظ کیا جا رہا ہے...',
           'create_violation' => 'خلاف ورزی بنائیں',
-          'placeholders' => 
+          'placeholders' =>
           array (
             'unique_number' => 'منفرد خلاف ورزی نمبر',
             'type' => 'خلاف ورزی کی قسم',
             'authority' => 'جاری کرنے والی اتھارٹی',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'car' => 'گاڑی',
             'reservation_optional' => 'ریزرویشن (اختیاری)',
@@ -3972,9 +4006,9 @@ Sunday: 10:00 AM - 4:00 PM',
           ),
         ),
       ),
-      'employees' => 
+      'employees' =>
       array (
-        'table' => 
+        'table' =>
         array (
           'branch' => 'برانچ',
           'no_branch' => 'کوئی برانچ نہیں',
@@ -4052,7 +4086,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'no' => 'نہیں',
       ),
     ),
-    'coupons' => 
+    'coupons' =>
     array (
       'index' => 
       array (
@@ -4063,7 +4097,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'active' => 'فعال',
         'inactive' => 'غیر فعال',
       ),
-      'edit' => 
+      'edit' =>
       array (
         'head_title_edit' => 'کوپن میں ترمیم',
         'head_title_create' => 'کوپن بنائیں',
@@ -4074,12 +4108,12 @@ Sunday: 10:00 AM - 4:00 PM',
         'save_changes' => 'تبدیلیاں محفوظ کریں',
         'create_coupon' => 'کوپن بنائیں',
         'cancel' => 'منسوخ',
-        'types' => 
+        'types' =>
         array (
           'percentage' => 'فیصد',
           'fixed' => 'مقررہ رقم',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'name' => 'نام',
           'code' => 'کوڈ',
@@ -4096,9 +4130,9 @@ Sunday: 10:00 AM - 4:00 PM',
         ),
       ),
     ),
-    'car_violations' => 
+    'car_violations' =>
     array (
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'Car Violations',
         'title' => 'Car Violations',
@@ -4111,7 +4145,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'this_violation' => 'this violation',
         'delete_confirm' => 'Delete :label?',
         'empty' => 'No car violations found.',
-        'table' => 
+        'table' =>
         array (
           'number' => 'Number',
           'car' => 'Car',
@@ -4121,7 +4155,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'date' => 'Date',
         ),
       ),
-      'edit' => 
+      'edit' =>
       array (
         'head_title_edit' => 'Edit Violation',
         'head_title_create' => 'Create Violation',
@@ -4130,13 +4164,13 @@ Sunday: 10:00 AM - 4:00 PM',
         'not_specified' => 'Not specified',
         'saving' => 'Saving...',
         'create_violation' => 'Create Violation',
-        'placeholders' => 
+        'placeholders' =>
         array (
           'unique_number' => 'Unique violation number',
           'type' => 'Violation type',
           'authority' => 'Issuing authority',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'car' => 'Car',
           'reservation_optional' => 'Reservation (optional)',
@@ -4156,9 +4190,9 @@ Sunday: 10:00 AM - 4:00 PM',
         ),
       ),
     ),
-    'damage_reports' => 
+    'damage_reports' =>
     array (
-      'view_sides' => 
+      'view_sides' =>
       array (
         'left' => 'Left',
         'front' => 'Front',
@@ -4166,7 +4200,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'rear' => 'Rear',
         'top' => 'Top',
       ),
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'Damage Reports',
         'title' => 'Damage Reports',
@@ -4182,7 +4216,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'linked_reservation' => 'Reservation',
         'entries_count' => ':count entries',
         'empty' => 'No damage reports found.',
-        'table' => 
+        'table' =>
         array (
           'report' => 'Report',
           'car' => 'Car',
@@ -4192,13 +4226,13 @@ Sunday: 10:00 AM - 4:00 PM',
           'date' => 'Date',
         ),
       ),
-      'edit' => 
+      'edit' =>
       array (
         'head_title_create' => 'Create Damage Report',
         'head_title_edit' => 'Damage Report :number',
         'save_report' => 'Save Report',
         'create_report' => 'Create Report',
-        'sections' => 
+        'sections' =>
         array (
           'add_damage_item' => 'Add damage item',
           'edit_damage_item' => 'Edit damage item',
@@ -4208,7 +4242,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'damage_items' => 'Damage Items',
           'inspection_snapshot' => 'Each row becomes part of the inspection snapshot.',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'report_number' => 'Report Number',
           'contract' => 'Contract',
@@ -4227,7 +4261,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'estimated_cost' => 'Estimated Cost',
           'notes' => 'Notes',
         ),
-        'placeholders' => 
+        'placeholders' =>
         array (
           'select_contract' => 'Select contract',
           'reservation_derived' => 'Reservation is derived from the selected contract.',
@@ -4236,7 +4270,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'select_zone' => 'Select zone',
           'notes' => 'Example: long scratch below the handle.',
         ),
-        'actions' => 
+        'actions' =>
         array (
           'cancel_edit' => 'Cancel edit',
           'update_item' => 'Update Item',
@@ -4245,24 +4279,24 @@ Sunday: 10:00 AM - 4:00 PM',
           'edit_item' => 'Edit',
           'delete_item' => 'Delete',
         ),
-        'totals' => 
+        'totals' =>
         array (
           'damage_entries' => 'Damage entries: :count',
           'total_quantity' => 'Total quantity: :count',
           'estimated_cost' => 'Estimated cost: :amount',
         ),
-        'empty' => 
+        'empty' =>
         array (
           'no_current_damages' => 'No open damage cases recorded for this car yet.',
           'no_damage_items' => 'No damage items added yet.',
         ),
-        'errors' => 
+        'errors' =>
         array (
           'select_contract_first' => 'Select the contract first.',
           'select_zone_first' => 'Select a zone on the vehicle first.',
           'damage_fields_required' => 'Damage type, severity, and quantity are required.',
         ),
-        'table' => 
+        'table' =>
         array (
           'zone' => 'Zone',
           'view' => 'View',
@@ -4276,7 +4310,7 @@ Sunday: 10:00 AM - 4:00 PM',
         ),
       ),
     ),
-    'branches' => 
+    'branches' =>
     array (
       'head_title' => 'Branches',
       'title' => 'Branches',
@@ -4284,7 +4318,7 @@ Sunday: 10:00 AM - 4:00 PM',
       'edit_branch' => 'Edit Branch',
       'search_placeholder' => 'Search name, CR, manager, phone...',
       'empty' => 'No branches found.',
-      'form' => 
+      'form' =>
       array (
         'branch_name' => 'Branch Name',
         'branch_name_placeholder' => 'Main Showroom',
@@ -4321,7 +4355,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'email_placeholder' => 'branch@example.com',
         'showroom_image' => 'Car Rental Showroom Image',
       ),
-      'table' => 
+      'table' =>
       array (
         'name' => 'Name',
         'cr_number' => 'CR',
@@ -4331,7 +4365,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'phone' => 'Phone',
         'email' => 'Email',
       ),
-      'delete_dialog' => 
+      'delete_dialog' =>
       array (
         'title' => 'Delete Branch',
         'description' => 'Are you sure you want to delete this branch? This action cannot be undone.',
@@ -4339,9 +4373,9 @@ Sunday: 10:00 AM - 4:00 PM',
         'confirm' => 'Delete Branch',
       ),
     ),
-    'maintenance_types' => 
+    'maintenance_types' =>
     array (
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'Maintenance Types',
         'title' => 'Maintenance Types',
@@ -4350,7 +4384,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'new_type' => 'New Type',
         'search' => 'Search',
       ),
-      'table' => 
+      'table' =>
       array (
         'name' => 'Name',
         'description' => 'Description',
@@ -4358,33 +4392,33 @@ Sunday: 10:00 AM - 4:00 PM',
         'workshops' => 'Workshops',
         'sort' => 'Sort Order',
       ),
-      'status' => 
+      'status' =>
       array (
         'active' => 'Active',
         'inactive' => 'Inactive',
       ),
-      'edit' => 
+      'edit' =>
       array (
         'head_title_create' => 'مینٹیننس قسم بنائیں',
         'head_title_edit' => 'مینٹیننس قسم میں ترمیم',
         'title_create' => 'مینٹیننس قسم بنائیں',
         'title_edit' => 'مینٹیننس قسم میں ترمیم',
         'create_type' => 'قسم بنائیں',
-        'fields' => 
+        'fields' =>
         array (
           'name' => 'نام',
           'description' => 'تفصیل',
           'sort_order' => 'ترتیب',
           'active' => 'Active',
         ),
-        'workshops' => 
+        'workshops' =>
         array (
           'title' => 'ورکشاپس',
           'subtitle' => 'اس مینٹیننس قسم کے لئے ایک یا زیادہ ورکشاپس شامل کریں۔',
           'add' => 'ورکشاپ شامل کریں',
           'empty' => 'ابھی تک کوئی ورکشاپ شامل نہیں ہوئی۔',
           'item_title' => 'ورکشاپ :index',
-          'fields' => 
+          'fields' =>
           array (
             'name' => 'نام',
             'phone' => 'فون',
@@ -4399,7 +4433,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'google_map_url' => 'Google Map URL',
             'front_image' => 'سامنے کی تصویر (اختیاری)',
           ),
-          'placeholders' => 
+          'placeholders' =>
           array (
             'select_country' => 'ملک منتخب کریں',
             'select_city' => 'شہر منتخب کریں',
@@ -4408,9 +4442,9 @@ Sunday: 10:00 AM - 4:00 PM',
         ),
       ),
     ),
-    'maintenance_records' => 
+    'maintenance_records' =>
     array (
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'مینٹیننس ریکارڈز',
         'title' => 'مینٹیننس ریکارڈز',
@@ -4423,7 +4457,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'clear' => 'صاف کریں',
         'delete_confirm' => 'کیا آپ ":car" کے لئے مینٹیننس ریکارڈ حذف کرنا چاہتے ہیں؟',
         'empty' => 'کوئی مینٹیننس ریکارڈ موجود نہیں۔',
-        'table' => 
+        'table' =>
         array (
           'car' => 'گاڑی',
           'type' => 'قسم',
@@ -4433,14 +4467,14 @@ Sunday: 10:00 AM - 4:00 PM',
           'branch' => 'برانچ',
         ),
       ),
-      'edit' => 
+      'edit' =>
       array (
         'head_title_create' => 'مینٹیننس ریکارڈ بنائیں',
         'head_title_edit' => 'مینٹیننس ریکارڈ میں ترمیم',
         'title_create' => 'مینٹیننس ریکارڈ بنائیں',
         'title_edit' => 'مینٹیننس ریکارڈ میں ترمیم',
         'create_record' => 'ریکارڈ بنائیں',
-        'fields' => 
+        'fields' =>
         array (
           'car' => 'گاڑی',
           'maintenance_type' => 'مینٹیننس قسم',
@@ -4453,7 +4487,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'workshop' => 'ورکشاپ',
           'notes' => 'نوٹس',
         ),
-        'placeholders' => 
+        'placeholders' =>
         array (
           'select_car' => 'گاڑی منتخب کریں',
           'select_type' => 'قسم منتخب کریں',
@@ -4462,7 +4496,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'search_workshop' => 'ورکشاپ تلاش کریں...',
         ),
         'empty_workshops' => 'کوئی ورکشاپ نہیں ملی۔',
-        'statuses' => 
+        'statuses' =>
         array (
           'scheduled' => 'شیڈول',
           'in_progress' => 'جاری',
@@ -4471,9 +4505,9 @@ Sunday: 10:00 AM - 4:00 PM',
         ),
       ),
     ),
-    'violation_types' => 
+    'violation_types' =>
     array (
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'Violation Types',
         'title' => 'Violation Types',
@@ -4482,26 +4516,26 @@ Sunday: 10:00 AM - 4:00 PM',
         'new_type' => 'New Type',
         'search' => 'Search',
       ),
-      'table' => 
+      'table' =>
       array (
         'name' => 'Name',
         'description' => 'Description',
         'status' => 'Status',
         'sort' => 'Sort Order',
       ),
-      'status' => 
+      'status' =>
       array (
         'active' => 'Active',
         'inactive' => 'Inactive',
       ),
-      'edit' => 
+      'edit' =>
       array (
         'head_title_create' => 'خلاف ورزی کی قسم بنائیں',
         'head_title_edit' => 'خلاف ورزی کی قسم میں ترمیم',
         'title_create' => 'خلاف ورزی کی قسم بنائیں',
         'title_edit' => 'خلاف ورزی کی قسم میں ترمیم',
         'create_type' => 'قسم بنائیں',
-        'fields' => 
+        'fields' =>
         array (
           'name' => 'نام',
           'description' => 'تفصیل',
@@ -4510,7 +4544,7 @@ Sunday: 10:00 AM - 4:00 PM',
         ),
       ),
     ),
-    'employees' => 
+    'employees' =>
     array (
       'head_title' => 'ملازمین',
       'title' => 'ملازمین',
@@ -4519,7 +4553,7 @@ Sunday: 10:00 AM - 4:00 PM',
       'search_placeholder' => 'Search name, email, civil number...',
       'empty' => 'کوئی ملازم نہیں ملا۔',
       'all_branches' => 'تمام برانچز',
-      'table' => 
+      'table' =>
       array (
         'name' => 'نام',
         'email' => 'Email',
@@ -4529,7 +4563,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'roles_permissions' => 'کردار اور اجازتیں',
         'no_branch' => 'کوئی برانچ نہیں',
       ),
-      'form' => 
+      'form' =>
       array (
         'civil_number' => 'Civil No.',
         'civil_number_placeholder' => '123456789',
@@ -4542,7 +4576,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'tenant_partner_role_description' => 'Full-access partner role for this tenant.',
         'partner_seat_limit_reached' => 'Partner seat limit reached. Contact the Super Admin to increase partner seats for this tenant.',
       ),
-      'delete_dialog' => 
+      'delete_dialog' =>
       array (
         'title' => 'ملازم حذف کریں',
         'description' => 'کیا آپ واقعی اس ملازم کو حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں ہو سکتا۔',
@@ -4550,7 +4584,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'confirm' => 'ملازم حذف کریں',
       ),
     ),
-    'roles' => 
+    'roles' =>
     array (
       'head_title' => 'کردار',
       'title' => 'کردار',
@@ -4558,20 +4592,20 @@ Sunday: 10:00 AM - 4:00 PM',
       'edit_role' => 'کردار میں ترمیم',
       'search_placeholder' => 'کردار کا نام تلاش کریں...',
       'empty' => 'کوئی کردار نہیں ملا۔',
-      'table' => 
+      'table' =>
       array (
         'display_name' => 'کردار کا نام',
         'description' => 'تفصیل',
         'permissions_count' => 'اجازتیں',
       ),
-      'form' => 
+      'form' =>
       array (
         'display_name' => 'ظاہری نام',
         'description' => 'تفصیل',
         'permissions' => 'اجازتیں',
         'permissions_help' => 'اس کردار کو دینے کے لیے اجازتیں منتخب کریں۔',
       ),
-      'delete_dialog' => 
+      'delete_dialog' =>
       array (
         'title' => 'کردار حذف کریں',
         'description' => 'کیا آپ واقعی اس کردار کو حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں ہو سکتا۔',
@@ -4580,17 +4614,17 @@ Sunday: 10:00 AM - 4:00 PM',
       ),
     ),
   ),
-  'client_pages' => 
+  'client_pages' =>
   array (
-    'layout' => 
+    'layout' =>
     array (
-      'nav' => 
+      'nav' =>
       array (
         'reservations' => 'Reservations',
         'support' => 'Support',
         'navigation_menu' => 'Navigation Menu',
       ),
-      'notifications' => 
+      'notifications' =>
       array (
         'title' => 'Notifications',
         'mark_all_read' => 'Mark all read',
@@ -4599,9 +4633,9 @@ Sunday: 10:00 AM - 4:00 PM',
         'empty' => 'No notifications.',
       ),
     ),
-    'reservations' => 
+    'reservations' =>
     array (
-      'statuses' => 
+      'statuses' =>
       array (
         'all' => 'All',
         'pending' => 'Pending',
@@ -4611,7 +4645,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'cancelled' => 'Cancelled',
         'no_show' => 'No show',
       ),
-      'payment_statuses' => 
+      'payment_statuses' =>
       array (
         'pending' => 'Pending',
         'completed' => 'Completed',
@@ -4619,7 +4653,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'refunded' => 'Refunded',
         'cancelled' => 'Cancelled',
       ),
-      'payment_methods' => 
+      'payment_methods' =>
       array (
         'cash' => 'Cash',
         'card' => 'Card',
@@ -4628,18 +4662,18 @@ Sunday: 10:00 AM - 4:00 PM',
         'stripe' => 'Stripe',
         'myfatoorah' => 'MyFatoorah',
       ),
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'My Reservations',
         'title' => 'My Reservations',
         'days' => ':count days',
         'empty' => 'No reservations found.',
-        'force_extension' => 
+        'force_extension' =>
         array (
           'rental_update' => 'Rental update',
           'open' => 'Open',
         ),
-        'extension_requests' => 
+        'extension_requests' =>
         array (
           'title' => 'Extension Requests',
           'pending' => ':count pending',
@@ -4650,14 +4684,14 @@ Sunday: 10:00 AM - 4:00 PM',
           'reason' => 'Reason',
           'approve' => 'Approve',
           'reject' => 'Reject',
-          'statuses' => 
+          'statuses' =>
           array (
             'pending' => 'Pending',
             'approved' => 'Approved',
             'rejected' => 'Rejected',
           ),
         ),
-        'table' => 
+        'table' =>
         array (
           'car' => 'Car',
           'dates' => 'Dates',
@@ -4665,14 +4699,14 @@ Sunday: 10:00 AM - 4:00 PM',
           'status' => 'Status',
         ),
       ),
-      'show' => 
+      'show' =>
       array (
         'head_title' => 'Reservation :number',
         'back' => 'Back',
         'print' => 'Print',
         'days' => ':count days',
         'no_payments' => 'No payments recorded yet.',
-        'sections' => 
+        'sections' =>
         array (
           'client' => 'Client',
           'car' => 'Car',
@@ -4680,7 +4714,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'amounts' => 'Amounts',
           'payments' => 'Payments',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'status' => 'Status',
           'total' => 'Total',
@@ -4702,7 +4736,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'tax' => 'Tax',
           'discount' => 'Discount',
         ),
-        'payment_table' => 
+        'payment_table' =>
         array (
           'amount' => 'Amount',
           'method' => 'Method',
@@ -4711,29 +4745,29 @@ Sunday: 10:00 AM - 4:00 PM',
         ),
       ),
     ),
-    'support' => 
+    'support' =>
     array (
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'Support Tickets',
         'title' => 'Support Tickets',
         'new_ticket' => 'New Ticket',
         'empty' => 'No support tickets found.',
-        'table' => 
+        'table' =>
         array (
           'ticket_number' => 'Ticket #',
           'subject' => 'Subject',
           'status' => 'Status',
           'created' => 'Created',
         ),
-        'statuses' => 
+        'statuses' =>
         array (
           'open' => 'Open',
           'in_progress' => 'In Progress',
           'closed' => 'Closed',
         ),
       ),
-      'create' => 
+      'create' =>
       array (
         'head_title' => 'Create New Ticket',
         'title' => 'Create New Support Ticket',
@@ -4745,22 +4779,22 @@ Sunday: 10:00 AM - 4:00 PM',
         'subject_counter' => ':count/255 characters',
         'detail_help' => 'Please provide as much detail as possible to help us assist you better.',
         'tips_title' => 'Tips for submitting a ticket',
-        'fields' => 
+        'fields' =>
         array (
           'subject' => 'Subject',
           'message' => 'Message',
         ),
-        'placeholders' => 
+        'placeholders' =>
         array (
           'subject' => 'Brief description of your issue',
           'message' => 'Provide detailed information about your issue...',
         ),
-        'aria' => 
+        'aria' =>
         array (
           'subject' => 'Ticket subject',
           'message' => 'Ticket message',
         ),
-        'tips' => 
+        'tips' =>
         array (
           1 => 'Use a clear and descriptive subject line.',
           2 => 'Include relevant details such as error messages or screenshots.',
@@ -4768,7 +4802,7 @@ Sunday: 10:00 AM - 4:00 PM',
           4 => 'Our support team typically responds within 24 hours.',
         ),
       ),
-      'show' => 
+      'show' =>
       array (
         'head_title' => 'Ticket #:id',
         'back' => 'Back',
@@ -4779,7 +4813,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'reply_placeholder' => 'Type your message here... (Ctrl+Enter to send)',
         'send' => 'Send',
         'sending' => 'Sending...',
-        'statuses' => 
+        'statuses' =>
         array (
           'open' => 'Open',
           'in_progress' => 'In Progress',
@@ -4788,13 +4822,13 @@ Sunday: 10:00 AM - 4:00 PM',
       ),
     ),
   ),
-  'owner_api' => 
+  'owner_api' =>
   array (
-    'branches' => 
+    'branches' =>
     array (
       'all' => 'تمام برانچز',
     ),
-    'metrics' => 
+    'metrics' =>
     array (
       'today_revenue' => 'آج کی آمدنی',
       'available_cars' => 'دستیاب گاڑیاں',
@@ -4802,9 +4836,9 @@ Sunday: 10:00 AM - 4:00 PM',
       'late_returns' => 'تاخیر سے واپسی',
       'rented_cars' => 'کرائے پر گاڑیاں',
     ),
-    'finance' => 
+    'finance' =>
     array (
-      'cards' => 
+      'cards' =>
       array (
         'total_revenue' => 'کل آمدنی',
         'collected_amount' => 'وصول شدہ',
@@ -4813,14 +4847,14 @@ Sunday: 10:00 AM - 4:00 PM',
         'net_profit' => 'خالص منافع',
       ),
     ),
-    'fleet' => 
+    'fleet' =>
     array (
-      'summary' => 
+      'summary' =>
       array (
         'total_cars' => 'کل گاڑیاں',
         'total_reservations' => 'کل ریزرویشنز',
       ),
-      'statuses' => 
+      'statuses' =>
       array (
         'all' => 'سب',
         'draft' => 'مسودہ',
@@ -4832,21 +4866,21 @@ Sunday: 10:00 AM - 4:00 PM',
         'unavailable' => 'دستیاب نہیں',
         'retired' => 'سروس سے باہر',
       ),
-      'next_events' => 
+      'next_events' =>
       array (
         'next_reservation' => 'اگلی ریزرویشن',
         'return_date' => 'واپسی کی تاریخ',
       ),
-      'maintenance' => 
+      'maintenance' =>
       array (
         'created' => 'مینٹیننس کا شیڈول کامیابی سے طے ہو گیا الماری۔',
       ),
-      'transfer' => 
+      'transfer' =>
       array (
         'success' => 'گاڑی کامیابی سے منتقل ہو گئی۔',
         'same_branch' => 'گاڑی پہلے ہی منتخب کردہ برانچ میں موجود ہے۔',
       ),
-      'show' => 
+      'show' =>
       array (
         'upcoming_one' => '1 آنے والی ریزرویشن',
         'upcoming_plural' => '%d آنے والی ریزرویشنز',
@@ -4860,15 +4894,15 @@ Sunday: 10:00 AM - 4:00 PM',
         'status_attention' => 'توجہ کی ضرورت',
       ),
     ),
-    'reservations' => 
+    'reservations' =>
     array (
-      'summary' => 
+      'summary' =>
       array (
         'total_reservations' => 'Total reservations',
         'today_reservations' => 'Today reservations',
         'waiting_pickup' => 'Waiting pickup',
       ),
-      'statuses' => 
+      'statuses' =>
       array (
         'pending' => 'Pending',
         'confirmed' => 'Confirmed',
@@ -4878,31 +4912,31 @@ Sunday: 10:00 AM - 4:00 PM',
         'cancelled' => 'Cancelled',
         'no_show' => 'No show',
       ),
-      'payment_statuses' => 
+      'payment_statuses' =>
       array (
         'paid' => 'Paid',
         'partial' => 'Partially paid',
         'not_paid' => 'Unpaid',
       ),
-      'date_types' => 
+      'date_types' =>
       array (
         'pickup' => 'Pickup date',
         'return' => 'Return date',
         'created' => 'Created date',
       ),
-      'labels' => 
+      'labels' =>
       array (
         'unknown_client' => 'Client',
         'unknown_branch' => 'No branch',
       ),
-      'timeline' => 
+      'timeline' =>
       array (
         'reservation_created' => 'Reservation created',
         'contract_created' => 'Contract created',
         'return_report_created' => 'Return report created',
       ),
     ),
-    'alerts' => 
+    'alerts' =>
     array (
       'late_returns' => 'گاڑیوں کی واپسی میں تاخیر',
       'late_returns_description' => ':count واپسی کے تاخیری عمل',
@@ -4911,58 +4945,58 @@ Sunday: 10:00 AM - 4:00 PM',
       'maintenance_cars' => 'مرمت کی ضرورت والی گاڑیاں',
       'maintenance_cars_description' => ':count گاڑیوں کو معائنہ یا مرمت کی ضرورت ہے',
     ),
-    'notifications' => 
+    'notifications' =>
     array (
-      'sections' => 
+      'sections' =>
       array (
         'active_alerts' => 'فعال الرٹس',
         'latest_notifications' => 'تازہ ترین اطلاعات',
       ),
-      'late_return' => 
+      'late_return' =>
       array (
         'title' => 'گاڑی کی واپسی میں تاخیر',
         'description' => ':car کی واپسی میں تاخیر - کلائنٹ :client',
       ),
-      'unpaid_violation' => 
+      'unpaid_violation' =>
       array (
         'title' => 'واجب الادا جرمانہ',
         'description' => ':amount کا نیا جرمانہ - کلائنٹ :client',
       ),
-      'maintenance_required' => 
+      'maintenance_required' =>
       array (
         'title' => 'مرمت درکار',
         'description' => ':car کو فوری معائنہ چاہیے',
       ),
-      'new_reservation' => 
+      'new_reservation' =>
       array (
         'title' => 'نئی ریزرویشن',
         'description' => ':branch میں نئی ریزرویشن - :days دن',
       ),
-      'payment_received' => 
+      'payment_received' =>
       array (
         'title' => 'ادائیگی موصول ہوئی',
         'description' => 'کلائنٹ :client سے :amount موصول ہوئے',
       ),
-      'discount_request' => 
+      'discount_request' =>
       array (
         'title' => 'رعایت کی درخواست',
         'description' => ':employee نے کلائنٹ :client کے لیے :discount رعایت کی درخواست کی',
       ),
       'unknown_client' => 'کلائنٹ',
       'unknown_employee' => 'ملازم',
-      'messages' => 
+      'messages' =>
       array (
         'marked_read' => 'اطلاعات پڑھی ہوئی نشان زد کر دی گئیں۔',
       ),
     ),
-    'discount_requests' => 
+    'discount_requests' =>
     array (
-      'summary' => 
+      'summary' =>
       array (
         'title' => 'Pending approval requests',
         'description' => 'Need your review and decision.',
       ),
-      'index' => 
+      'index' =>
       array (
         'approve_this_discount_request' => '?? ??????? ??????? ?? ????? ?????',
         'rejection_note' => '?? ???? ?? ???',
@@ -4994,33 +5028,33 @@ Sunday: 10:00 AM - 4:00 PM',
       'type_label' => 'Discount request',
       'description' => 'Discount :discount requested - client :client',
       'unknown_client' => 'Client',
-      'statuses' => 
+      'statuses' =>
       array (
         'pending' => 'Pending decision',
         'approved' => 'Approved',
         'rejected' => 'Rejected',
         'cancelled' => 'Cancelled',
       ),
-      'timeline' => 
+      'timeline' =>
       array (
         'reservation_created' => 'Reservation created',
         'contract_created' => 'Contract created',
         'return_report_created' => 'Return report created',
         'approval_requested' => 'Approval request submitted',
       ),
-      'messages' => 
+      'messages' =>
       array (
         'approved' => 'Discount request approved.',
         'rejected' => 'Discount request rejected.',
       ),
     ),
-    'time' => 
+    'time' =>
     array (
       'minutes_ago' => ':count منٹ',
       'hours_ago' => ':count گھنٹے',
       'days_ago' => ':count دن',
     ),
-    'comparisons' => 
+    'comparisons' =>
     array (
       'yesterday' => 'گزشتہ روز',
       'previous_period' => 'پچھلی مدت',

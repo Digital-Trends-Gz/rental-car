@@ -78,7 +78,7 @@ const props = defineProps<{
   actions?: { documents?: string; store_note?: string };
 }>();
 
-const { locale, t, raw } = useTrans();
+const { locale, t } = useTrans();
 const translationRoot = 'dashboard.admin.clients.show';
 const translationKeyFor = (value: string) =>
   `${translationRoot}.${value
@@ -98,11 +98,24 @@ const localize = (en: string, ar: string) => {
   return locale.value === 'ar' ? ar : en;
 };
 
+const translateKey = (key: string, fallback: string) => {
+  const translated = t(key);
+
+  return translated === key ? fallback : translated;
+};
+
 const translateOverallLabel = (status: string, fallback: string) =>
-  raw(`dashboard.admin.clients.show.overall_statuses.${status}`, fallback);
+  translateKey(`dashboard.admin.clients.show.overall_statuses.${status}`, fallback);
 
 const translateFlagLabel = (flag: { label_key?: string; label: string }) => {
   if (flag.label_key) {
+    const singularKey = flag.label_key.replace('.flags.', '.flag.');
+    const singularTranslated = t(singularKey);
+
+    if (singularTranslated !== singularKey) {
+      return singularTranslated;
+    }
+
     const translated = t(flag.label_key);
 
     if (translated !== flag.label_key) {
@@ -119,6 +132,13 @@ const translateFlagDescription = (flag: {
   description: string;
 }) => {
   if (flag.description_key) {
+    const singularKey = flag.description_key.replace('.flags.', '.flag.');
+    const singularTranslated = t(singularKey, flag.description_params || {});
+
+    if (singularTranslated !== singularKey) {
+      return singularTranslated;
+    }
+
     const translated = t(flag.description_key, flag.description_params || {});
 
     if (translated !== flag.description_key) {
@@ -130,13 +150,13 @@ const translateFlagDescription = (flag: {
 };
 
 const translateReservationStatus = (status: string) =>
-  raw(`dashboard.admin.reservation_statuses.${status}`, status);
+  translateKey(`dashboard.admin.reservation_statuses.${status}`, status);
 
 const translatePaymentStatus = (status: string) =>
-  raw(`dashboard.admin.payments.index.statuses.${status}`, status);
+  translateKey(`dashboard.admin.payments.index.statuses.${status}`, status);
 
 const translatePaymentMethod = (method: string) =>
-  raw(`dashboard.admin.payments.index.payment_methods.${method}`, method);
+  translateKey(`dashboard.admin.payments.index.payment_methods.${method}`, method);
 
 const showSuspendDialog = ref(false);
 const processingSuspend = ref(false);
@@ -389,7 +409,7 @@ const flagStyle = (severity: string) => {
                   </div>
                 </td>
                 <td class="px-4 py-3">{{ fmtMoney(r.total_amount) }}</td>
-                <td class="px-4 py-3">{{ r.status }}</td>
+                <td class="px-4 py-3">{{ translateReservationStatus(r.status) }}</td>
                 <td class="px-4 py-3 text-right">
                   <Link :href="`/admin/reservations/${r.id}`">
                     <Button variant="outline" size="sm">{{ localize('View', 'عرض') }}</Button>
@@ -439,8 +459,8 @@ const flagStyle = (severity: string) => {
                   <div class="font-medium">{{ p.reservation?.reservation_number || '—' }}</div>
                 </td>
                 <td class="px-4 py-3">{{ fmtMoney(p.amount) }}</td>
-                <td class="px-4 py-3">{{ p.payment_method }}</td>
-                <td class="px-4 py-3">{{ p.status }}</td>
+                <td class="px-4 py-3">{{ translatePaymentMethod(p.payment_method) }}</td>
+                <td class="px-4 py-3">{{ translatePaymentStatus(p.status) }}</td>
                 <td class="px-4 py-3">{{ p.processed_at ? new Date(p.processed_at).toLocaleString() : '—' }}</td>
               </tr>
               <tr v-if="payments.data.length === 0">

@@ -521,7 +521,7 @@ return array (
     'tenant' => 'المستأجر',
     'tenant_logo' => 'شعار المستأجر',
     'location_not_set' => 'لم يتم تحديد الموقع',
-    'statuses' => 
+    'statuses' =>
     array (
       'available' => 'متاحة',
       'reserved' => 'محجوزة',
@@ -829,7 +829,7 @@ return array (
           'percentage' => 'نسبة مئوية',
           'fixed' => 'مبلغ ثابت',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'name' => 'الاسم',
           'code' => 'الرمز',
@@ -1469,7 +1469,7 @@ return array (
           'completed' => 'الإنهاء',
           'cost' => 'التكلفة',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'damage_case' => 'حالة الضرر',
           'status' => 'الحالة',
@@ -1482,7 +1482,7 @@ return array (
           'notes' => 'ملاحظات',
           'completion_notes' => 'ملاحظات الإنهاء',
         ),
-        'statuses' => 
+        'statuses' =>
         array (
           'open' => 'مفتوحة',
           'in_progress' => 'قيد التنفيذ',
@@ -1623,7 +1623,7 @@ return array (
           'date' => 'التاريخ',
           'actions' => 'إجراءات',
         ),
-        'statuses' => 
+        'statuses' =>
         array (
           'reported' => 'مبلغ عنه',
           'under_review' => 'قيد المراجعة',
@@ -2736,7 +2736,7 @@ return array (
             'insurance' => 'تأمين السيارة',
             'purchase_contract' => 'عقد الشراء',
           ),
-          'statuses' => 
+          'statuses' =>
           array (
             'expired' => 'منتهي',
             'expiring_soon' => 'قريب الانتهاء',
@@ -2929,7 +2929,7 @@ return array (
             'amounts' => 'المبالغ',
             'payments' => 'المدفوعات',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'status' => 'الحالة',
             'total' => 'الإجمالي',
@@ -3034,7 +3034,7 @@ return array (
             'description' => 'حدد رسوم تنظيف ثابتة لتطبيقها عند الحاجة.',
           ),
         ),
-        'fields' => 
+        'fields' =>
         array (
           'policy' => 'الطريقة',
           'fixed_return_time' => 'وقت الإرجاع الثابت',
@@ -3113,7 +3113,7 @@ return array (
           'all_statuses' => 'كل الحالات',
           'converted_to' => 'محول إلى',
           'rate' => 'سعر الصرف',
-          'statuses' => 
+          'statuses' =>
           array (
             'pending' => 'قيد الانتظار',
             'completed' => 'مكتملة',
@@ -3241,7 +3241,7 @@ return array (
           'client_status' => 'حالة العميل',
           'notes' => 'ملاحظة',
           'empty' => 'لا يوجد عملاء.',
-          'statuses' => 
+          'statuses' =>
           array (
             'active' => 'نشط',
             'suspended' => 'موقوف',
@@ -3320,6 +3320,40 @@ return array (
           'example_customer_needs_manual_review_before_next_booking' => 'مثال: العميل يحتاج مراجعة قبل الحجز القادم.',
           'saving' => 'جارٍ الحفظ...',
           'save_note' => 'حفظ الملاحظة',
+          'overall_statuses' =>
+          array (
+            'good' => 'جيد',
+            'info' => 'معلومة',
+            'warning' => 'يحتاج مراجعة',
+            'danger' => 'محظور',
+          ),
+          'flags' =>
+          array (
+            'types' =>
+            array (
+              'blocked' => 'محظور',
+              'needs_review' => 'يحتاج مراجعة',
+              'debt' => 'مدين',
+              'expired_license' => 'رخصة منتهية',
+              'expired_passport' => 'جواز منتهي',
+              'expired_residency' => 'إقامة منتهية',
+              'expired_document' => 'وثيقة منتهية',
+              'late_return' => 'سجل إرجاع متأخر',
+              'new_customer' => 'عميل جديد',
+            ),
+            'descriptions' =>
+            array (
+              'blocked' => 'هذا العميل محظور يدوياً.',
+              'needs_review' => 'هذا العميل يحتاج مراجعة يدوية.',
+              'debt' => 'المبلغ المستحق: :amount.',
+              'expired_license' => 'انتهت الرخصة بتاريخ :date.',
+              'expired_passport' => 'انتهى الجواز بتاريخ :date.',
+              'expired_residency' => 'انتهت الإقامة بتاريخ :date.',
+              'expired_document' => 'توجد وثيقة عميل منتهية بتاريخ :date.',
+              'late_return' => 'آخر إرجاع متأخر: :contract بتاريخ :date.',
+              'new_customer' => 'لا توجد عقود مكتملة بعد.',
+            ),
+          ),
         ),
         'documents' =>
         array (
@@ -3402,7 +3436,7 @@ return array (
           ),
         ),
       ),
-      'support' => 
+      'support' =>
       array (
         'index' => 
         array (
@@ -3416,7 +3450,7 @@ return array (
           'empty' => 'لا توجد تذاكر دعم.',
         ),
       ),
-      'support_platform' => 
+      'support_platform' =>
       array (
         'platform_support' => 'دعم المنصة',
         'create_tickets_for_super_admin_and_track_responses' => 'أنشئ تذاكر للسوبر أدمن وتابع الردود عليها.',
@@ -3441,14 +3475,14 @@ return array (
         'no_messages_yet' => 'لا توجد رسائل بعد.',
         'reply' => 'رد',
         'send_reply' => 'إرسال الرد',
-        'statuses' => 
+        'statuses' =>
         array (
           'new' => 'جديدة',
           'in_progress' => 'قيد المعالجة',
           'closed' => 'مغلقة',
         ),
       ),
-      'car_discounts' => 
+      'car_discounts' =>
       array (
         'delete_this_automatic_discount' => 'حذف هذا الخصم التلقائي؟',
         'automatic_discounts' => 'الخصومات التلقائية',
@@ -3486,7 +3520,7 @@ return array (
         'save_changes' => 'حفظ التغييرات',
         'cancel' => 'إلغاء',
       ),
-      'reports' => 
+      'reports' =>
       array (
         'all_branches' => 'كل الفروع',
         'this_month' => 'هذا الشهر',
@@ -3715,9 +3749,9 @@ return array (
         'avg_per_reservation' => 'متوسط لكل حجز',
         'zero_amount' => '0.00',
       ),
-      'contracts' => 
+      'contracts' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Contracts',
           'title' => 'Contracts',
@@ -3733,7 +3767,7 @@ return array (
           'view' => 'View',
           'edit' => 'Edit',
           'empty' => 'No contracts found.',
-          'table' => 
+          'table' =>
           array (
             'contract_number' => 'Contract Number',
             'reservation' => 'Reservation',
@@ -3744,7 +3778,7 @@ return array (
             'actions' => 'Actions',
           ),
         ),
-        'return_status_report' => 
+        'return_status_report' =>
         array (
           'n_a' => 'N/A',
           'no_extracted_value' => 'No extracted value',
@@ -3883,7 +3917,7 @@ return array (
           'payment' => 'الدفعة',
           'converted_amount' => 'المبلغ بعد التحويل',
         ),
-        'edit' => 
+        'edit' =>
         array (
           'select_document_type' => 'اختر نوع المستند',
           'passport_tourist' => 'جواز سفر (سائح)',
@@ -4083,7 +4117,7 @@ return array (
           'damage_report' => 'تقرير الضرر',
           'extracted_value' => 'القيمة المستخرجة',
         ),
-        'show' => 
+        'show' =>
         array (
           'head_title' => 'Contract :number',
           'pdf_en' => 'PDF EN',
@@ -4104,7 +4138,7 @@ return array (
           'extension_request' => 'طلب تمديد',
           'extension_requests_title' => 'طلبات التمديد',
           'force_extend' => 'تمديد إجباري',
-          'sections' => 
+          'sections' =>
           array (
             'details' => 'Contract Details',
             'renter' => 'Renter',
@@ -4116,7 +4150,7 @@ return array (
             'ai_extraction' => 'AI Extraction',
             'notes' => 'Notes',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'status' => 'Status',
             'date' => 'Date',
@@ -4133,7 +4167,7 @@ return array (
             'client' => 'Client',
             'car' => 'Car',
           ),
-          'table' => 
+          'table' =>
           array (
             'zone' => 'Zone',
             'view' => 'View',
@@ -4157,7 +4191,7 @@ return array (
           'daily_rate' => 'السعر اليومي',
           'vehicle_odometer' => 'عداد السيارة',
           'fuel_in_vehicle' => 'الوقود الموجود في السيارة',
-          'contract_statuses' => 
+          'contract_statuses' =>
           array (
             'draft' => 'مسودة',
             'pending' => 'قيد الانتظار',
@@ -4165,7 +4199,7 @@ return array (
             'completed' => 'مكتمل',
             'cancelled' => 'ملغي',
           ),
-          'reservation_statuses' => 
+          'reservation_statuses' =>
           array (
             'pending' => 'قيد الانتظار',
             'confirmed' => 'مؤكد',
@@ -4175,7 +4209,7 @@ return array (
             'cancelled' => 'ملغي',
             'no_show' => 'لم يحضر',
           ),
-          'finance_statuses' => 
+          'finance_statuses' =>
           array (
             'no_charge' => 'لا توجد رسوم',
             'paid' => 'مدفوع',
@@ -4184,7 +4218,7 @@ return array (
             'partial_with_return_debt' => 'جزئي + دين إرجاع',
             'return_debt' => 'دين إرجاع',
           ),
-          'car_statuses' => 
+          'car_statuses' =>
           array (
             'draft' => 'مسودة',
             'available' => 'متاحة',
@@ -4197,9 +4231,9 @@ return array (
           ),
         ),
       ),
-      'coupons' => 
+      'coupons' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Coupons',
           'title' => 'Coupons',
@@ -4208,7 +4242,7 @@ return array (
           'active' => 'Active',
           'inactive' => 'Inactive',
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_edit' => 'تعديل كوبون',
           'head_title_create' => 'إنشاء كوبون',
@@ -4219,12 +4253,12 @@ return array (
           'save_changes' => 'حفظ التغييرات',
           'create_coupon' => 'إنشاء كوبون',
           'cancel' => 'إلغاء',
-          'types' => 
+          'types' =>
           array (
             'percentage' => 'نسبة مئوية',
             'fixed' => 'مبلغ ثابت',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'name' => 'الاسم',
             'code' => 'الرمز',
@@ -4241,9 +4275,9 @@ return array (
           ),
         ),
       ),
-      'car_violations' => 
+      'car_violations' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Car Violations',
           'title' => 'Car Violations',
@@ -4256,7 +4290,7 @@ return array (
           'this_violation' => 'this violation',
           'delete_confirm' => 'Delete :label?',
           'empty' => 'No car violations found.',
-          'table' => 
+          'table' =>
           array (
             'number' => 'Number',
             'car' => 'Car',
@@ -4266,7 +4300,7 @@ return array (
             'date' => 'Date',
           ),
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_edit' => 'تعديل مخالفة',
           'head_title_create' => 'إنشاء مخالفة',
@@ -4275,13 +4309,13 @@ return array (
           'not_specified' => 'غير محدد',
           'saving' => 'جارٍ الحفظ...',
           'create_violation' => 'إنشاء مخالفة',
-          'placeholders' => 
+          'placeholders' =>
           array (
             'unique_number' => 'رقم مخالفة فريد',
             'type' => 'نوع المخالفة',
             'authority' => 'جهة الإصدار',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'car' => 'السيارة',
             'reservation_optional' => 'الحجز (اختياري)',
@@ -4302,7 +4336,7 @@ return array (
           'select_car_first' => 'اختر السيارة أولاً',
           'branch_owner' => 'مسؤول الفرع',
           'payment_details' => 'تفاصيل الدفع',
-          'statuses' => 
+          'statuses' =>
           array (
             'pending' => 'قيد الانتظار',
             'paid' => 'مدفوعة',
@@ -4311,9 +4345,9 @@ return array (
           ),
         ),
       ),
-      'damage_reports' => 
+      'damage_reports' =>
       array (
-        'view_sides' => 
+        'view_sides' =>
         array (
           'left' => 'Left',
           'front' => 'Front',
@@ -4321,7 +4355,7 @@ return array (
           'rear' => 'Rear',
           'top' => 'Top',
         ),
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Damage Reports',
           'title' => 'Damage Reports',
@@ -4337,7 +4371,7 @@ return array (
           'linked_reservation' => 'Reservation',
           'entries_count' => ':count entries',
           'empty' => 'No damage reports found.',
-          'table' => 
+          'table' =>
           array (
             'report' => 'Report',
             'car' => 'Car',
@@ -4347,13 +4381,13 @@ return array (
             'date' => 'Date',
           ),
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_create' => 'Create Damage Report',
           'head_title_edit' => 'Damage Report :number',
           'save_report' => 'Save Report',
           'create_report' => 'Create Report',
-          'sections' => 
+          'sections' =>
           array (
             'add_damage_item' => 'Add damage item',
             'edit_damage_item' => 'Edit damage item',
@@ -4363,7 +4397,7 @@ return array (
             'damage_items' => 'Damage Items',
             'inspection_snapshot' => 'Each row becomes part of the inspection snapshot.',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'report_number' => 'Report Number',
             'contract' => 'Contract',
@@ -4382,7 +4416,7 @@ return array (
             'estimated_cost' => 'Estimated Cost',
             'notes' => 'Notes',
           ),
-          'placeholders' => 
+          'placeholders' =>
           array (
             'select_contract' => 'Select contract',
             'reservation_derived' => 'Reservation is derived from the selected contract.',
@@ -4391,7 +4425,7 @@ return array (
             'select_zone' => 'Select zone',
             'notes' => 'Example: long scratch below the handle.',
           ),
-          'actions' => 
+          'actions' =>
           array (
             'cancel_edit' => 'Cancel edit',
             'update_item' => 'Update Item',
@@ -4400,24 +4434,24 @@ return array (
             'edit_item' => 'Edit',
             'delete_item' => 'Delete',
           ),
-          'totals' => 
+          'totals' =>
           array (
             'damage_entries' => 'Damage entries: :count',
             'total_quantity' => 'Total quantity: :count',
             'estimated_cost' => 'Estimated cost: :amount',
           ),
-          'empty' => 
+          'empty' =>
           array (
             'no_current_damages' => 'No open damage cases recorded for this car yet.',
             'no_damage_items' => 'No damage items added yet.',
           ),
-          'errors' => 
+          'errors' =>
           array (
             'select_contract_first' => 'Select the contract first.',
             'select_zone_first' => 'Select a zone on the vehicle first.',
             'damage_fields_required' => 'Damage type, severity, and quantity are required.',
           ),
-          'table' => 
+          'table' =>
           array (
             'zone' => 'Zone',
             'view' => 'View',
@@ -4431,7 +4465,7 @@ return array (
           ),
         ),
       ),
-      'branches' => 
+      'branches' =>
       array (
         'head_title' => 'Branches',
         'title' => 'Branches',
@@ -4439,7 +4473,7 @@ return array (
         'edit_branch' => 'Edit Branch',
         'search_placeholder' => 'Search name, CR, manager, phone...',
         'empty' => 'No branches found.',
-        'form' => 
+        'form' =>
         array (
           'branch_name' => 'Branch Name',
           'branch_name_placeholder' => 'Main Showroom',
@@ -4476,7 +4510,7 @@ return array (
           'email_placeholder' => 'branch@example.com',
           'showroom_image' => 'Car Rental Showroom Image',
         ),
-        'table' => 
+        'table' =>
         array (
           'name' => 'Name',
           'cr_number' => 'CR',
@@ -4486,7 +4520,7 @@ return array (
           'phone' => 'Phone',
           'email' => 'Email',
         ),
-        'delete_dialog' => 
+        'delete_dialog' =>
         array (
           'title' => 'Delete Branch',
           'description' => 'Are you sure you want to delete this branch? This action cannot be undone.',
@@ -4494,9 +4528,9 @@ return array (
           'confirm' => 'Delete Branch',
         ),
       ),
-      'maintenance_types' => 
+      'maintenance_types' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Maintenance Types',
           'title' => 'Maintenance Types',
@@ -4505,7 +4539,7 @@ return array (
           'new_type' => 'New Type',
           'search' => 'Search',
         ),
-        'table' => 
+        'table' =>
         array (
           'name' => 'Name',
           'description' => 'Description',
@@ -4513,33 +4547,33 @@ return array (
           'workshops' => 'Workshops',
           'sort' => 'Sort Order',
         ),
-        'status' => 
+        'status' =>
         array (
           'active' => 'Active',
           'inactive' => 'Inactive',
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_create' => 'Create Maintenance Type',
           'head_title_edit' => 'Edit Maintenance Type',
           'title_create' => 'Create Maintenance Type',
           'title_edit' => 'Edit Maintenance Type',
           'create_type' => 'Create Type',
-          'fields' => 
+          'fields' =>
           array (
             'name' => 'Name',
             'description' => 'Description',
             'sort_order' => 'Sort Order',
             'active' => 'Active',
           ),
-          'workshops' => 
+          'workshops' =>
           array (
             'title' => 'Workshops',
             'subtitle' => 'Add one or more workshops for this maintenance type.',
             'add' => 'Add Workshop',
             'empty' => 'No workshops added yet.',
             'item_title' => 'Workshop :index',
-            'fields' => 
+            'fields' =>
             array (
               'name' => 'Name',
               'phone' => 'Phone',
@@ -4554,7 +4588,7 @@ return array (
               'google_map_url' => 'Google Map URL',
               'front_image' => 'Front Image (Optional)',
             ),
-            'placeholders' => 
+            'placeholders' =>
             array (
               'select_country' => 'Select country',
               'select_city' => 'Select city',
@@ -4563,9 +4597,9 @@ return array (
           ),
         ),
       ),
-      'maintenance_records' => 
+      'maintenance_records' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Maintenance Records',
           'title' => 'Maintenance Records',
@@ -4578,7 +4612,7 @@ return array (
           'clear' => 'Clear',
           'delete_confirm' => 'Delete maintenance record for ":car"?',
           'empty' => 'No maintenance records found.',
-          'table' => 
+          'table' =>
           array (
             'car' => 'Car',
             'type' => 'Type',
@@ -4588,14 +4622,14 @@ return array (
             'branch' => 'Branch',
           ),
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_create' => 'Create Maintenance Record',
           'head_title_edit' => 'Edit Maintenance Record',
           'title_create' => 'Create Maintenance Record',
           'title_edit' => 'Edit Maintenance Record',
           'create_record' => 'Create Record',
-          'fields' => 
+          'fields' =>
           array (
             'car' => 'Car',
             'maintenance_type' => 'Maintenance Type',
@@ -4608,7 +4642,7 @@ return array (
             'workshop' => 'Workshop',
             'notes' => 'Notes',
           ),
-          'placeholders' => 
+          'placeholders' =>
           array (
             'select_car' => 'Select a car',
             'select_type' => 'Select type',
@@ -4617,7 +4651,7 @@ return array (
             'search_workshop' => 'Search workshop...',
           ),
           'empty_workshops' => 'No workshops found.',
-          'statuses' => 
+          'statuses' =>
           array (
             'scheduled' => 'Scheduled',
             'in_progress' => 'In Progress',
@@ -4626,9 +4660,9 @@ return array (
           ),
         ),
       ),
-      'violation_types' => 
+      'violation_types' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Violation Types',
           'title' => 'Violation Types',
@@ -4637,26 +4671,26 @@ return array (
           'new_type' => 'New Type',
           'search' => 'Search',
         ),
-        'table' => 
+        'table' =>
         array (
           'name' => 'Name',
           'description' => 'Description',
           'status' => 'Status',
           'sort' => 'Sort Order',
         ),
-        'status' => 
+        'status' =>
         array (
           'active' => 'Active',
           'inactive' => 'Inactive',
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_create' => 'Create Violation Type',
           'head_title_edit' => 'Edit Violation Type',
           'title_create' => 'Create Violation Type',
           'title_edit' => 'Edit Violation Type',
           'create_type' => 'Create Type',
-          'fields' => 
+          'fields' =>
           array (
             'name' => 'Name',
             'description' => 'Description',
@@ -4665,7 +4699,7 @@ return array (
           ),
         ),
       ),
-      'employees' => 
+      'employees' =>
       array (
         'head_title' => 'Employees',
         'title' => 'Employees',
@@ -4674,7 +4708,7 @@ return array (
         'search_placeholder' => 'Search name, email, civil number...',
         'empty' => 'No employees found.',
         'all_branches' => 'All branches',
-        'table' => 
+        'table' =>
         array (
           'name' => 'Name',
           'email' => 'Email',
@@ -4684,7 +4718,7 @@ return array (
           'roles_permissions' => 'Roles & Permissions',
           'no_branch' => 'لا يوجد فرع',
         ),
-        'form' => 
+        'form' =>
         array (
           'civil_number' => 'Civil Number',
           'civil_number_placeholder' => '123456789',
@@ -4697,7 +4731,7 @@ return array (
           'tenant_partner_role_description' => 'دور شريك بصلاحية كاملة لهذا المستأجر.',
           'partner_seat_limit_reached' => 'تم الوصول إلى الحد المسموح للشركاء. تواصل مع السوبر أدمن لزيادة عدد الشركاء لهذا المستأجر.',
         ),
-        'delete_dialog' => 
+        'delete_dialog' =>
         array (
           'title' => 'Delete Employee',
           'description' => 'Are you sure you want to delete this employee? This action cannot be undone.',
@@ -4705,7 +4739,7 @@ return array (
           'confirm' => 'Delete Employee',
         ),
       ),
-      'roles' => 
+      'roles' =>
       array (
         'head_title' => 'Roles',
         'title' => 'Roles',
@@ -4713,20 +4747,20 @@ return array (
         'edit_role' => 'Edit Role',
         'search_placeholder' => 'Search role name...',
         'empty' => 'No roles found.',
-        'table' => 
+        'table' =>
         array (
           'display_name' => 'Role Name',
           'description' => 'Description',
           'permissions_count' => 'Permissions',
         ),
-        'form' => 
+        'form' =>
         array (
           'display_name' => 'Display Name',
           'description' => 'Description',
           'permissions' => 'Permissions',
           'permissions_help' => 'Select the permissions to assign to this role.',
         ),
-        'delete_dialog' => 
+        'delete_dialog' =>
         array (
           'title' => 'Delete Role',
           'description' => 'Are you sure you want to delete this role? This action cannot be undone.',
@@ -4807,17 +4841,17 @@ return array (
       ),
     ),
   ),
-  'client_pages' => 
+  'client_pages' =>
   array (
-    'layout' => 
+    'layout' =>
     array (
-      'nav' => 
+      'nav' =>
       array (
         'reservations' => 'الحجوزات',
         'support' => 'الدعم',
         'navigation_menu' => 'قائمة التنقل',
       ),
-      'notifications' => 
+      'notifications' =>
       array (
         'title' => 'الإشعارات',
         'mark_all_read' => 'تحديد الكل كمقروء',
@@ -4826,9 +4860,9 @@ return array (
         'empty' => 'لا توجد إشعارات.',
       ),
     ),
-    'reservations' => 
+    'reservations' =>
     array (
-      'statuses' => 
+      'statuses' =>
       array (
         'all' => 'الكل',
         'pending' => 'قيد الانتظار',
@@ -4838,7 +4872,7 @@ return array (
         'cancelled' => 'ملغي',
         'no_show' => 'لم يحضر',
       ),
-      'payment_statuses' => 
+      'payment_statuses' =>
       array (
         'pending' => 'قيد الانتظار',
         'completed' => 'مكتملة',
@@ -4846,7 +4880,7 @@ return array (
         'refunded' => 'مستردة',
         'cancelled' => 'ملغاة',
       ),
-      'payment_methods' => 
+      'payment_methods' =>
       array (
         'cash' => 'نقداً',
         'card' => 'بطاقة',
@@ -4855,18 +4889,18 @@ return array (
         'stripe' => 'Stripe',
         'myfatoorah' => 'MyFatoorah',
       ),
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'حجوزاتي',
         'title' => 'حجوزاتي',
         'days' => ':count يوم',
         'empty' => 'لا توجد حجوزات.',
-        'force_extension' => 
+        'force_extension' =>
         array (
           'rental_update' => 'تحديث على الحجز',
           'open' => 'فتح',
         ),
-        'extension_requests' => 
+        'extension_requests' =>
         array (
           'title' => 'طلبات التمديد',
           'pending' => ':count قيد الانتظار',
@@ -4877,14 +4911,14 @@ return array (
           'reason' => 'السبب',
           'approve' => 'موافقة',
           'reject' => 'رفض',
-          'statuses' => 
+          'statuses' =>
           array (
             'pending' => 'قيد الانتظار',
             'approved' => 'تمت الموافقة',
             'rejected' => 'مرفوض',
           ),
         ),
-        'table' => 
+        'table' =>
         array (
           'car' => 'السيارة',
           'dates' => 'التواريخ',
@@ -4892,14 +4926,14 @@ return array (
           'status' => 'الحالة',
         ),
       ),
-      'show' => 
+      'show' =>
       array (
         'head_title' => 'الحجز :number',
         'back' => 'رجوع',
         'print' => 'طباعة',
         'days' => ':count يوم',
         'no_payments' => 'لا توجد دفعات مسجلة بعد.',
-        'sections' => 
+        'sections' =>
         array (
           'client' => 'العميل',
           'car' => 'السيارة',
@@ -4907,7 +4941,7 @@ return array (
           'amounts' => 'المبالغ',
           'payments' => 'الدفعات',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'status' => 'الحالة',
           'total' => 'الإجمالي',
@@ -4929,7 +4963,7 @@ return array (
           'tax' => 'الضريبة',
           'discount' => 'الخصم',
         ),
-        'payment_table' => 
+        'payment_table' =>
         array (
           'amount' => 'المبلغ',
           'method' => 'الطريقة',
@@ -4938,29 +4972,29 @@ return array (
         ),
       ),
     ),
-    'support' => 
+    'support' =>
     array (
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'تذاكر الدعم',
         'title' => 'تذاكر الدعم',
         'new_ticket' => 'تذكرة جديدة',
         'empty' => 'لا توجد تذاكر دعم.',
-        'table' => 
+        'table' =>
         array (
           'ticket_number' => 'رقم التذكرة',
           'subject' => 'الموضوع',
           'status' => 'الحالة',
           'created' => 'تاريخ الإنشاء',
         ),
-        'statuses' => 
+        'statuses' =>
         array (
           'open' => 'مفتوحة',
           'in_progress' => 'قيد المعالجة',
           'closed' => 'مغلقة',
         ),
       ),
-      'create' => 
+      'create' =>
       array (
         'head_title' => 'إنشاء تذكرة جديدة',
         'title' => 'إنشاء تذكرة دعم جديدة',
@@ -4972,22 +5006,22 @@ return array (
         'subject_counter' => ':count/255 حرف',
         'detail_help' => 'يرجى إضافة أكبر قدر ممكن من التفاصيل حتى نتمكن من مساعدتك بشكل أفضل.',
         'tips_title' => 'نصائح لإرسال التذكرة',
-        'fields' => 
+        'fields' =>
         array (
           'subject' => 'الموضوع',
           'message' => 'الرسالة',
         ),
-        'placeholders' => 
+        'placeholders' =>
         array (
           'subject' => 'وصف مختصر للمشكلة',
           'message' => 'اكتب تفاصيل المشكلة...',
         ),
-        'aria' => 
+        'aria' =>
         array (
           'subject' => 'موضوع التذكرة',
           'message' => 'رسالة التذكرة',
         ),
-        'tips' => 
+        'tips' =>
         array (
           1 => 'استخدم عنواناً واضحاً يصف المشكلة.',
           2 => 'أرفق التفاصيل المهمة مثل رسائل الخطأ أو لقطات الشاشة.',
@@ -4995,7 +5029,7 @@ return array (
           4 => 'عادةً يرد فريق الدعم خلال 24 ساعة.',
         ),
       ),
-      'show' => 
+      'show' =>
       array (
         'head_title' => 'تذكرة رقم :id',
         'back' => 'رجوع',
@@ -5006,7 +5040,7 @@ return array (
         'reply_placeholder' => 'اكتب رسالتك هنا... (Ctrl+Enter للإرسال)',
         'send' => 'إرسال',
         'sending' => 'جاري الإرسال...',
-        'statuses' => 
+        'statuses' =>
         array (
           'open' => 'مفتوحة',
           'in_progress' => 'قيد المعالجة',
@@ -5015,13 +5049,13 @@ return array (
       ),
     ),
   ),
-  'owner_api' => 
+  'owner_api' =>
   array (
-    'branches' => 
+    'branches' =>
     array (
       'all' => 'كل الفروع',
     ),
-    'metrics' => 
+    'metrics' =>
     array (
       'today_revenue' => 'إيرادات اليوم',
       'available_cars' => 'السيارات المتاحة',
@@ -5029,11 +5063,11 @@ return array (
       'late_returns' => 'تأخيرات الإرجاع',
       'rented_cars' => 'سيارات مؤجرة',
     ),
-    'finance' => 
+    'finance' =>
     array (
       'fleet_occupancy' => 'نسبة إشغال الأسطول',
       'top_performing_cars' => 'أفضل السيارات أداءً',
-      'cards' => 
+      'cards' =>
       array (
         'total_revenue' => 'إجمالي الإيرادات',
         'collected_amount' => 'المحصل',
@@ -5042,14 +5076,14 @@ return array (
         'net_profit' => 'صافي الربح',
       ),
     ),
-    'fleet' => 
+    'fleet' =>
     array (
-      'summary' => 
+      'summary' =>
       array (
         'total_cars' => 'إجمالي السيارات',
         'total_reservations' => 'إجمالي الحجوزات',
       ),
-      'statuses' => 
+      'statuses' =>
       array (
         'all' => 'الكل',
         'draft' => 'مسودة',
@@ -5061,22 +5095,22 @@ return array (
         'unavailable' => 'غير متاحة',
         'retired' => 'خارج الخدمة',
       ),
-      'next_events' => 
+      'next_events' =>
       array (
         'next_reservation' => 'أقرب حجز',
         'return_date' => 'تاريخ الإرجاع',
       ),
-      'maintenance' => 
+      'maintenance' =>
       array (
         'created' => 'تم جدولة الصيانة بنجاح.',
       ),
-      'transfer' => 
+      'transfer' =>
       array (
         'success' => 'تم نقل السيارة بنجاح.',
         'same_branch' => 'السيارة موجودة بالفعل في الفرع المحدد.',
         'bulk_success' => 'تم نقل :count سيارات بنجاح إلى :branch.',
       ),
-      'show' => 
+      'show' =>
       array (
         'upcoming_one' => 'حجز واحد قادم',
         'upcoming_plural' => '%d حجوزات قادمة',
@@ -5090,15 +5124,15 @@ return array (
         'status_attention' => 'يحتاج متابعة',
       ),
     ),
-    'reservations' => 
+    'reservations' =>
     array (
-      'summary' => 
+      'summary' =>
       array (
         'total_reservations' => 'إجمالي الحجوزات',
         'today_reservations' => 'حجوزات اليوم',
         'waiting_pickup' => 'بانتظار الاستلام',
       ),
-      'statuses' => 
+      'statuses' =>
       array (
         'pending' => 'قيد الانتظار',
         'confirmed' => 'مؤكد',
@@ -5108,31 +5142,31 @@ return array (
         'cancelled' => 'ملغي',
         'no_show' => 'لم يحضر',
       ),
-      'payment_statuses' => 
+      'payment_statuses' =>
       array (
         'paid' => 'مدفوع',
         'partial' => 'مدفوع جزئياً',
         'not_paid' => 'غير مدفوع',
       ),
-      'date_types' => 
+      'date_types' =>
       array (
         'pickup' => 'تاريخ الاستلام',
         'return' => 'تاريخ الإرجاع',
         'created' => 'تاريخ الإنشاء',
       ),
-      'labels' => 
+      'labels' =>
       array (
         'unknown_client' => 'العميل',
         'unknown_branch' => 'لا يوجد فرع',
       ),
-      'timeline' => 
+      'timeline' =>
       array (
         'reservation_created' => 'تم إنشاء الحجز',
         'contract_created' => 'تم إنشاء العقد',
         'return_report_created' => 'تم إنشاء تقرير الإرجاع',
       ),
     ),
-    'alerts' => 
+    'alerts' =>
     array (
       'late_returns' => 'تأخيرات في إرجاع السيارات',
       'late_returns_description' => ':count عمليات تأخير في الإرجاع',
@@ -5141,58 +5175,58 @@ return array (
       'maintenance_cars' => 'سيارات بحاجة لصيانة',
       'maintenance_cars_description' => ':count سيارات تحتاج فحص وصيانة',
     ),
-    'notifications' => 
+    'notifications' =>
     array (
-      'sections' => 
+      'sections' =>
       array (
         'active_alerts' => 'تنبيهات نشطة',
         'latest_notifications' => 'آخر الإشعارات',
       ),
-      'late_return' => 
+      'late_return' =>
       array (
         'title' => 'تأخر إرجاع سيارة',
         'description' => 'تأخر إرجاع :car - العميل :client',
       ),
-      'unpaid_violation' => 
+      'unpaid_violation' =>
       array (
         'title' => 'غرامة مستحقة',
         'description' => 'غرامة جديدة بقيمة :amount - العميل :client',
       ),
-      'maintenance_required' => 
+      'maintenance_required' =>
       array (
         'title' => 'صيانة مطلوبة',
         'description' => ':car تحتاج فحص دوري عاجل',
       ),
-      'new_reservation' => 
+      'new_reservation' =>
       array (
         'title' => 'حجز جديد',
         'description' => 'حجز جديد في :branch - :days أيام',
       ),
-      'payment_received' => 
+      'payment_received' =>
       array (
         'title' => 'دفعة مستلمة',
         'description' => 'تم استلام دفعة :amount من العميل :client',
       ),
-      'discount_request' => 
+      'discount_request' =>
       array (
         'title' => 'طلب خصم',
         'description' => ':employee طلب خصم :discount للعميل :client',
       ),
       'unknown_client' => 'العميل',
       'unknown_employee' => 'الموظف',
-      'messages' => 
+      'messages' =>
       array (
         'marked_read' => 'تم تحديد الإشعارات كمقروءة.',
       ),
     ),
-    'discount_requests' => 
+    'discount_requests' =>
     array (
-      'summary' => 
+      'summary' =>
       array (
         'title' => 'طلبات الموافقة المعلقة',
         'description' => 'تحتاج إلى مراجعتك واتخاذ قرار.',
       ),
-      'index' => 
+      'index' =>
       array (
         'approve_this_discount_request' => '???????? ??? ??? ??????',
         'rejection_note' => '?????? ?????',
@@ -5224,38 +5258,38 @@ return array (
       'type_label' => 'طلب خصم',
       'description' => 'طلب خصم :discount - العميل :client',
       'unknown_client' => 'العميل',
-      'statuses' => 
+      'statuses' =>
       array (
         'pending' => 'بانتظار القرار',
         'approved' => 'تمت الموافقة',
         'rejected' => 'مرفوض',
         'cancelled' => 'ملغي',
       ),
-      'timeline' => 
+      'timeline' =>
       array (
         'reservation_created' => 'تم إنشاء الحجز',
         'contract_created' => 'تم إنشاء العقد',
         'return_report_created' => 'تم إنشاء تقرير الإرجاع',
         'approval_requested' => 'تم تقديم طلب الموافقة',
       ),
-      'messages' => 
+      'messages' =>
       array (
         'approved' => 'تمت الموافقة على طلب الخصم.',
         'rejected' => 'تم رفض طلب الخصم.',
       ),
     ),
-    'time' => 
+    'time' =>
     array (
       'minutes_ago' => ':count دقيقة',
       'hours_ago' => ':count ساعة',
       'days_ago' => ':count يوم',
     ),
-    'comparisons' => 
+    'comparisons' =>
     array (
       'yesterday' => 'أمس',
       'previous_period' => 'الفترة السابقة',
     ),
-    'smart_opportunities' => 
+    'smart_opportunities' =>
     array (
       'idle_cars_title' => 'السيارات المتاحة الآن',
       'idle_cars_subtitle' => 'سيارات متاحة',
@@ -5277,14 +5311,14 @@ return array (
       'high_demand' => 'طلب مرتفع / نقص سيارات',
       'redistribution_reason' => ':target_branch سجّل :target_reservations حجز خلال 30 يوم مع :target_available سيارات متاحة فقط. :source_branch لديه :source_available سيارات فارغة.',
     ),
-    'car_discounts' => 
+    'car_discounts' =>
     array (
       'created' => 'تم إنشاء خصم السيارة بنجاح.',
       'updated' => 'تم تحديث خصم السيارة بنجاح.',
       'deleted' => 'تم حذف خصم السيارة بنجاح.',
       'all_cars' => 'كل السيارات',
     ),
-    'errors' => 
+    'errors' =>
     array (
       'branch_invalid' => 'الفرع المحدد غير صحيح أو غير متاح.',
       'date_range_too_long' => 'نطاق التاريخ للرسم البياني يجب ألا يتجاوز 7 أيام.',

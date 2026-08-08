@@ -525,7 +525,7 @@ Sunday: 10:00 AM - 4:00 PM',
     'tenant' => 'Tenant',
     'tenant_logo' => 'Tenant logo',
     'location_not_set' => 'Location not set',
-    'statuses' => 
+    'statuses' =>
     array (
       'available' => 'Available',
       'reserved' => 'Reserved',
@@ -1434,7 +1434,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'completed' => 'Completed',
           'cost' => 'Cost',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'damage_case' => 'Damage Case',
           'status' => 'Status',
@@ -1447,7 +1447,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'notes' => 'Notes',
           'completion_notes' => 'Completion Notes',
         ),
-        'statuses' => 
+        'statuses' =>
         array (
           'open' => 'Open',
           'in_progress' => 'In Progress',
@@ -1588,7 +1588,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'date' => 'Date',
           'actions' => 'Actions',
         ),
-        'statuses' => 
+        'statuses' =>
         array (
           'reported' => 'Reported',
           'under_review' => 'Under review',
@@ -2701,7 +2701,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'insurance' => 'Car Insurance',
             'purchase_contract' => 'Purchase Contract',
           ),
-          'statuses' => 
+          'statuses' =>
           array (
             'expired' => 'Expired',
             'expiring_soon' => 'Expiring Soon',
@@ -2894,7 +2894,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'amounts' => 'Amounts',
             'payments' => 'Payments',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'status' => 'Status',
             'total' => 'Total',
@@ -2999,7 +2999,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'description' => 'Set a fixed cleaning fee to apply when needed.',
           ),
         ),
-        'fields' => 
+        'fields' =>
         array (
           'policy' => 'Policy',
           'fixed_return_time' => 'Fixed Return Time',
@@ -3078,7 +3078,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'all_statuses' => 'All statuses',
           'converted_to' => 'Converted to',
           'rate' => 'Rate',
-          'statuses' => 
+          'statuses' =>
           array (
             'pending' => 'Pending',
             'completed' => 'Completed',
@@ -3206,7 +3206,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'client_status' => 'Client status',
           'notes' => 'note(s)',
           'empty' => 'No clients found.',
-          'statuses' => 
+          'statuses' =>
           array (
             'active' => 'Active',
             'suspended' => 'Suspended',
@@ -3285,6 +3285,40 @@ Sunday: 10:00 AM - 4:00 PM',
           'example_customer_needs_manual_review_before_next_booking' => 'Example: customer needs manual review before next booking.',
           'saving' => 'Saving...',
           'save_note' => 'Save Note',
+          'overall_statuses' =>
+          array (
+            'good' => 'Good',
+            'info' => 'Info',
+            'warning' => 'Needs review',
+            'danger' => 'Blocked',
+          ),
+          'flags' =>
+          array (
+            'types' =>
+            array (
+              'blocked' => 'Blocked',
+              'needs_review' => 'Needs review',
+              'debt' => 'Debtor',
+              'expired_license' => 'Expired license',
+              'expired_passport' => 'Expired passport',
+              'expired_residency' => 'Expired residency',
+              'expired_document' => 'Expired document',
+              'late_return' => 'Late return history',
+              'new_customer' => 'New customer',
+            ),
+            'descriptions' =>
+            array (
+              'blocked' => 'This client is manually blocked.',
+              'needs_review' => 'This client needs manual review.',
+              'debt' => 'Outstanding amount: :amount.',
+              'expired_license' => 'The license expired on :date.',
+              'expired_passport' => 'The passport expired on :date.',
+              'expired_residency' => 'The residency expired on :date.',
+              'expired_document' => 'A client document expired on :date.',
+              'late_return' => 'Last late return: :contract at :date.',
+              'new_customer' => 'No completed contracts yet.',
+            ),
+          ),
         ),
         'documents' =>
         array (
@@ -3367,9 +3401,9 @@ Sunday: 10:00 AM - 4:00 PM',
           ),
         ),
       ),
-      'support' => 
+      'support' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Support',
           'title' => 'Support Tickets',
@@ -3381,7 +3415,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'empty' => 'No support tickets found.',
         ),
       ),
-      'support_platform' => 
+      'support_platform' =>
       array (
         'platform_support' => 'Platform Support',
         'create_tickets_for_super_admin_and_track_responses' => 'Create tickets for Super Admin and track responses.',
@@ -3406,16 +3440,16 @@ Sunday: 10:00 AM - 4:00 PM',
         'no_messages_yet' => 'No messages yet.',
         'reply' => 'Reply',
         'send_reply' => 'Send Reply',
-        'statuses' => 
+        'statuses' =>
         array (
           'new' => 'New',
           'in_progress' => 'In Progress',
           'closed' => 'Closed',
         ),
       ),
-      'contracts' => 
+      'contracts' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Contracts',
           'title' => 'Contracts',
@@ -3431,7 +3465,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'view' => 'View',
           'edit' => 'Edit',
           'empty' => 'No contracts found.',
-          'table' => 
+          'table' =>
           array (
             'contract_number' => 'Contract Number',
             'reservation' => 'Reservation',
@@ -3442,7 +3476,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'actions' => 'Actions',
           ),
         ),
-        'return_status_report' => 
+        'return_status_report' =>
         array (
           'n_a' => 'N/A',
           'no_extracted_value' => 'No extracted value',
@@ -3581,7 +3615,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'payment' => 'Payment',
           'converted_amount' => 'Converted Amount',
         ),
-        'edit' => 
+        'edit' =>
         array (
           'select_document_type' => 'Select document type',
           'passport_tourist' => 'Passport (Tourist)',
@@ -3781,7 +3815,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'damage_report' => 'Damage Report',
           'extracted_value' => 'Extracted Value',
         ),
-        'show' => 
+        'show' =>
         array (
           'head_title' => 'Contract :number',
           'pdf_en' => 'PDF EN',
@@ -3802,7 +3836,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'extension_request' => 'Extension Request',
           'extension_requests_title' => 'Extension Requests',
           'force_extend' => 'Force Extend',
-          'sections' => 
+          'sections' =>
           array (
             'details' => 'Contract Details',
             'renter' => 'Renter',
@@ -3814,7 +3848,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'ai_extraction' => 'AI Extraction',
             'notes' => 'Notes',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'status' => 'Status',
             'date' => 'Date',
@@ -3831,7 +3865,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'client' => 'Client',
             'car' => 'Car',
           ),
-          'table' => 
+          'table' =>
           array (
             'zone' => 'Zone',
             'view' => 'View',
@@ -3855,7 +3889,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'daily_rate' => 'Daily Rate',
           'vehicle_odometer' => 'Vehicle Odometer',
           'fuel_in_vehicle' => 'Fuel In Vehicle',
-          'contract_statuses' => 
+          'contract_statuses' =>
           array (
             'draft' => 'Draft',
             'pending' => 'Pending',
@@ -3863,7 +3897,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'completed' => 'Completed',
             'cancelled' => 'Cancelled',
           ),
-          'reservation_statuses' => 
+          'reservation_statuses' =>
           array (
             'pending' => 'Pending',
             'confirmed' => 'Confirmed',
@@ -3873,7 +3907,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'cancelled' => 'Cancelled',
             'no_show' => 'No Show',
           ),
-          'finance_statuses' => 
+          'finance_statuses' =>
           array (
             'no_charge' => 'No Charge',
             'paid' => 'Paid',
@@ -3882,7 +3916,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'partial_with_return_debt' => 'Partial + Return Debt',
             'return_debt' => 'Return Debt',
           ),
-          'car_statuses' => 
+          'car_statuses' =>
           array (
             'draft' => 'Draft',
             'available' => 'Available',
@@ -3895,7 +3929,7 @@ Sunday: 10:00 AM - 4:00 PM',
           ),
         ),
       ),
-      'show' => 
+      'show' =>
       array (
         'head_title' => 'Contract :number',
         'pdf_en' => 'PDF EN',
@@ -3913,7 +3947,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'no_file_uploaded' => 'No file uploaded.',
         'disabled' => 'Disabled',
         'no_extracted_data' => 'No extracted data available.',
-        'sections' => 
+        'sections' =>
         array (
           'details' => 'Contract Details',
           'renter' => 'Renter',
@@ -3925,7 +3959,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'ai_extraction' => 'AI Extraction',
           'notes' => 'Notes',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'status' => 'Status',
           'date' => 'Date',
@@ -3942,7 +3976,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'client' => 'Client',
           'car' => 'Car',
         ),
-        'table' => 
+        'table' =>
         array (
           'zone' => 'Zone',
           'view' => 'View',
@@ -3952,7 +3986,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'notes' => 'Notes',
         ),
       ),
-      'car_discounts' => 
+      'car_discounts' =>
       array (
         'delete_this_automatic_discount' => 'Delete this automatic discount?',
         'automatic_discounts' => 'Automatic Discounts',
@@ -3990,7 +4024,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'save_changes' => 'Save Changes',
         'cancel' => 'Cancel',
       ),
-      'reports' => 
+      'reports' =>
       array (
         'all_branches' => 'All branches',
         'this_month' => 'This Month',
@@ -4219,9 +4253,9 @@ Sunday: 10:00 AM - 4:00 PM',
         'avg_per_reservation' => 'Avg per Reservation',
         'zero_amount' => '0.00',
       ),
-      'car_violations' => 
+      'car_violations' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Car Violations',
           'title' => 'Car Violations',
@@ -4234,7 +4268,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'this_violation' => 'this violation',
           'delete_confirm' => 'Delete :label?',
           'empty' => 'No car violations found.',
-          'table' => 
+          'table' =>
           array (
             'number' => 'Number',
             'car' => 'Car',
@@ -4244,7 +4278,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'date' => 'Date',
           ),
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_edit' => 'Edit Violation',
           'head_title_create' => 'Create Violation',
@@ -4253,13 +4287,13 @@ Sunday: 10:00 AM - 4:00 PM',
           'not_specified' => 'Not specified',
           'saving' => 'Saving...',
           'create_violation' => 'Create Violation',
-          'placeholders' => 
+          'placeholders' =>
           array (
             'unique_number' => 'Unique violation number',
             'type' => 'Violation type',
             'authority' => 'Issuing authority',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'car' => 'Car',
             'reservation_optional' => 'Reservation (optional)',
@@ -4279,9 +4313,9 @@ Sunday: 10:00 AM - 4:00 PM',
           ),
         ),
       ),
-      'employees' => 
+      'employees' =>
       array (
-        'table' => 
+        'table' =>
         array (
           'branch' => 'Branch',
           'no_branch' => 'No Branch',
@@ -4298,7 +4332,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'search_placeholder' => 'Search name, email, civil number...',
         'empty' => 'No employees found.',
         'all_branches' => 'All branches',
-        'form' => 
+        'form' =>
         array (
           'civil_number' => 'Civil Number',
           'civil_number_placeholder' => '123456789',
@@ -4311,7 +4345,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'tenant_partner_role_description' => 'Full-access partner role for this tenant.',
           'partner_seat_limit_reached' => 'Partner seat limit reached. Contact the Super Admin to increase partner seats for this tenant.',
         ),
-        'delete_dialog' => 
+        'delete_dialog' =>
         array (
           'title' => 'Delete Employee',
           'description' => 'Are you sure you want to delete this employee? This action cannot be undone.',
@@ -4319,9 +4353,9 @@ Sunday: 10:00 AM - 4:00 PM',
           'confirm' => 'Delete Employee',
         ),
       ),
-      'damage_reports' => 
+      'damage_reports' =>
       array (
-        'view_sides' => 
+        'view_sides' =>
         array (
           'left' => 'Left',
           'front' => 'Front',
@@ -4329,7 +4363,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'rear' => 'Rear',
           'top' => 'Top',
         ),
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Damage Reports',
           'title' => 'Damage Reports',
@@ -4345,7 +4379,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'linked_reservation' => 'Reservation',
           'entries_count' => ':count entries',
           'empty' => 'No damage reports found.',
-          'table' => 
+          'table' =>
           array (
             'report' => 'Report',
             'car' => 'Car',
@@ -4355,13 +4389,13 @@ Sunday: 10:00 AM - 4:00 PM',
             'date' => 'Date',
           ),
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_create' => 'Create Damage Report',
           'head_title_edit' => 'Damage Report :number',
           'save_report' => 'Save Report',
           'create_report' => 'Create Report',
-          'sections' => 
+          'sections' =>
           array (
             'add_damage_item' => 'Add damage item',
             'edit_damage_item' => 'Edit damage item',
@@ -4371,7 +4405,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'damage_items' => 'Damage Items',
             'inspection_snapshot' => 'Each row becomes part of the inspection snapshot.',
           ),
-          'fields' => 
+          'fields' =>
           array (
             'report_number' => 'Report Number',
             'contract' => 'Contract',
@@ -4390,7 +4424,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'estimated_cost' => 'Estimated Cost',
             'notes' => 'Notes',
           ),
-          'placeholders' => 
+          'placeholders' =>
           array (
             'select_contract' => 'Select contract',
             'reservation_derived' => 'Reservation is derived from the selected contract.',
@@ -4399,7 +4433,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'select_zone' => 'Select zone',
             'notes' => 'Example: long scratch below the handle.',
           ),
-          'actions' => 
+          'actions' =>
           array (
             'cancel_edit' => 'Cancel edit',
             'update_item' => 'Update Item',
@@ -4408,24 +4442,24 @@ Sunday: 10:00 AM - 4:00 PM',
             'edit_item' => 'Edit',
             'delete_item' => 'Delete',
           ),
-          'totals' => 
+          'totals' =>
           array (
             'damage_entries' => 'Damage entries: :count',
             'total_quantity' => 'Total quantity: :count',
             'estimated_cost' => 'Estimated cost: :amount',
           ),
-          'empty' => 
+          'empty' =>
           array (
             'no_current_damages' => 'No open damage cases recorded for this car yet.',
             'no_damage_items' => 'No damage items added yet.',
           ),
-          'errors' => 
+          'errors' =>
           array (
             'select_contract_first' => 'Select the contract first.',
             'select_zone_first' => 'Select a zone on the vehicle first.',
             'damage_fields_required' => 'Damage type, severity, and quantity are required.',
           ),
-          'table' => 
+          'table' =>
           array (
             'zone' => 'Zone',
             'view' => 'View',
@@ -4439,7 +4473,7 @@ Sunday: 10:00 AM - 4:00 PM',
           ),
         ),
       ),
-      'branches' => 
+      'branches' =>
       array (
         'head_title' => 'Branches',
         'title' => 'Branches',
@@ -4447,7 +4481,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'edit_branch' => 'Edit Branch',
         'search_placeholder' => 'Search name, CR, manager, phone...',
         'empty' => 'No branches found.',
-        'form' => 
+        'form' =>
         array (
           'branch_name' => 'Branch Name',
           'branch_name_placeholder' => 'Main Showroom',
@@ -4484,7 +4518,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'email_placeholder' => 'branch@example.com',
           'showroom_image' => 'Car Rental Showroom Image',
         ),
-        'table' => 
+        'table' =>
         array (
           'name' => 'Name',
           'cr_number' => 'CR',
@@ -4494,7 +4528,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'phone' => 'Phone',
           'email' => 'Email',
         ),
-        'delete_dialog' => 
+        'delete_dialog' =>
         array (
           'title' => 'Delete Branch',
           'description' => 'Are you sure you want to delete this branch? This action cannot be undone.',
@@ -4502,9 +4536,9 @@ Sunday: 10:00 AM - 4:00 PM',
           'confirm' => 'Delete Branch',
         ),
       ),
-      'maintenance_types' => 
+      'maintenance_types' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Maintenance Types',
           'title' => 'Maintenance Types',
@@ -4513,7 +4547,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'new_type' => 'New Type',
           'search' => 'Search',
         ),
-        'table' => 
+        'table' =>
         array (
           'name' => 'Name',
           'description' => 'Description',
@@ -4521,33 +4555,33 @@ Sunday: 10:00 AM - 4:00 PM',
           'workshops' => 'Workshops',
           'sort' => 'Sort Order',
         ),
-        'status' => 
+        'status' =>
         array (
           'active' => 'Active',
           'inactive' => 'Inactive',
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_create' => 'Create Maintenance Type',
           'head_title_edit' => 'Edit Maintenance Type',
           'title_create' => 'Create Maintenance Type',
           'title_edit' => 'Edit Maintenance Type',
           'create_type' => 'Create Type',
-          'fields' => 
+          'fields' =>
           array (
             'name' => 'Name',
             'description' => 'Description',
             'sort_order' => 'Sort Order',
             'active' => 'Active',
           ),
-          'workshops' => 
+          'workshops' =>
           array (
             'title' => 'Workshops',
             'subtitle' => 'Add one or more workshops for this maintenance type.',
             'add' => 'Add Workshop',
             'empty' => 'No workshops added yet.',
             'item_title' => 'Workshop :index',
-            'fields' => 
+            'fields' =>
             array (
               'name' => 'Name',
               'phone' => 'Phone',
@@ -4562,7 +4596,7 @@ Sunday: 10:00 AM - 4:00 PM',
               'google_map_url' => 'Google Map URL',
               'front_image' => 'Front Image (Optional)',
             ),
-            'placeholders' => 
+            'placeholders' =>
             array (
               'select_country' => 'Select country',
               'select_city' => 'Select city',
@@ -4571,9 +4605,9 @@ Sunday: 10:00 AM - 4:00 PM',
           ),
         ),
       ),
-      'maintenance_records' => 
+      'maintenance_records' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Maintenance Records',
           'title' => 'Maintenance Records',
@@ -4586,7 +4620,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'clear' => 'Clear',
           'delete_confirm' => 'Delete maintenance record for ":car"?',
           'empty' => 'No maintenance records found.',
-          'table' => 
+          'table' =>
           array (
             'car' => 'Car',
             'type' => 'Type',
@@ -4596,14 +4630,14 @@ Sunday: 10:00 AM - 4:00 PM',
             'branch' => 'Branch',
           ),
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_create' => 'Create Maintenance Record',
           'head_title_edit' => 'Edit Maintenance Record',
           'title_create' => 'Create Maintenance Record',
           'title_edit' => 'Edit Maintenance Record',
           'create_record' => 'Create Record',
-          'fields' => 
+          'fields' =>
           array (
             'car' => 'Car',
             'maintenance_type' => 'Maintenance Type',
@@ -4616,7 +4650,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'workshop' => 'Workshop',
             'notes' => 'Notes',
           ),
-          'placeholders' => 
+          'placeholders' =>
           array (
             'select_car' => 'Select a car',
             'select_type' => 'Select type',
@@ -4625,7 +4659,7 @@ Sunday: 10:00 AM - 4:00 PM',
             'search_workshop' => 'Search workshop...',
           ),
           'empty_workshops' => 'No workshops found.',
-          'statuses' => 
+          'statuses' =>
           array (
             'scheduled' => 'Scheduled',
             'in_progress' => 'In Progress',
@@ -4634,9 +4668,9 @@ Sunday: 10:00 AM - 4:00 PM',
           ),
         ),
       ),
-      'violation_types' => 
+      'violation_types' =>
       array (
-        'index' => 
+        'index' =>
         array (
           'head_title' => 'Violation Types',
           'title' => 'Violation Types',
@@ -4645,26 +4679,26 @@ Sunday: 10:00 AM - 4:00 PM',
           'new_type' => 'New Type',
           'search' => 'Search',
         ),
-        'table' => 
+        'table' =>
         array (
           'name' => 'Name',
           'description' => 'Description',
           'status' => 'Status',
           'sort' => 'Sort Order',
         ),
-        'status' => 
+        'status' =>
         array (
           'active' => 'Active',
           'inactive' => 'Inactive',
         ),
-        'edit' => 
+        'edit' =>
         array (
           'head_title_create' => 'Create Violation Type',
           'head_title_edit' => 'Edit Violation Type',
           'title_create' => 'Create Violation Type',
           'title_edit' => 'Edit Violation Type',
           'create_type' => 'Create Type',
-          'fields' => 
+          'fields' =>
           array (
             'name' => 'Name',
             'description' => 'Description',
@@ -4673,7 +4707,7 @@ Sunday: 10:00 AM - 4:00 PM',
           ),
         ),
       ),
-      'roles' => 
+      'roles' =>
       array (
         'head_title' => 'Roles',
         'title' => 'Roles',
@@ -4681,20 +4715,20 @@ Sunday: 10:00 AM - 4:00 PM',
         'edit_role' => 'Edit Role',
         'search_placeholder' => 'Search role name...',
         'empty' => 'No roles found.',
-        'table' => 
+        'table' =>
         array (
           'display_name' => 'Role Name',
           'description' => 'Description',
           'permissions_count' => 'Permissions',
         ),
-        'form' => 
+        'form' =>
         array (
           'display_name' => 'Display Name',
           'description' => 'Description',
           'permissions' => 'Permissions',
           'permissions_help' => 'Select the permissions to assign to this role.',
         ),
-        'delete_dialog' => 
+        'delete_dialog' =>
         array (
           'title' => 'Delete Role',
           'description' => 'Are you sure you want to delete this role? This action cannot be undone.',
@@ -4774,9 +4808,9 @@ Sunday: 10:00 AM - 4:00 PM',
         'no' => 'No',
       ),
     ),
-    'coupons' => 
+    'coupons' =>
     array (
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'Coupons',
         'title' => 'Coupons',
@@ -4785,7 +4819,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'active' => 'Active',
         'inactive' => 'Inactive',
       ),
-      'edit' => 
+      'edit' =>
       array (
         'head_title_edit' => 'Edit Coupon',
         'head_title_create' => 'Create Coupon',
@@ -4796,12 +4830,12 @@ Sunday: 10:00 AM - 4:00 PM',
         'save_changes' => 'Save Changes',
         'create_coupon' => 'Create Coupon',
         'cancel' => 'Cancel',
-        'types' => 
+        'types' =>
         array (
           'percentage' => 'Percentage',
           'fixed' => 'Fixed Amount',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'name' => 'Name',
           'code' => 'Code',
@@ -4819,17 +4853,17 @@ Sunday: 10:00 AM - 4:00 PM',
       ),
     ),
   ),
-  'client_pages' => 
+  'client_pages' =>
   array (
-    'layout' => 
+    'layout' =>
     array (
-      'nav' => 
+      'nav' =>
       array (
         'reservations' => 'Reservations',
         'support' => 'Support',
         'navigation_menu' => 'Navigation Menu',
       ),
-      'notifications' => 
+      'notifications' =>
       array (
         'title' => 'Notifications',
         'mark_all_read' => 'Mark all read',
@@ -4838,9 +4872,9 @@ Sunday: 10:00 AM - 4:00 PM',
         'empty' => 'No notifications.',
       ),
     ),
-    'reservations' => 
+    'reservations' =>
     array (
-      'statuses' => 
+      'statuses' =>
       array (
         'all' => 'All',
         'pending' => 'Pending',
@@ -4850,7 +4884,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'cancelled' => 'Cancelled',
         'no_show' => 'No show',
       ),
-      'payment_statuses' => 
+      'payment_statuses' =>
       array (
         'pending' => 'Pending',
         'completed' => 'Completed',
@@ -4858,7 +4892,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'refunded' => 'Refunded',
         'cancelled' => 'Cancelled',
       ),
-      'payment_methods' => 
+      'payment_methods' =>
       array (
         'cash' => 'Cash',
         'card' => 'Card',
@@ -4867,18 +4901,18 @@ Sunday: 10:00 AM - 4:00 PM',
         'stripe' => 'Stripe',
         'myfatoorah' => 'MyFatoorah',
       ),
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'My Reservations',
         'title' => 'My Reservations',
         'days' => ':count days',
         'empty' => 'No reservations found.',
-        'force_extension' => 
+        'force_extension' =>
         array (
           'rental_update' => 'Rental update',
           'open' => 'Open',
         ),
-        'extension_requests' => 
+        'extension_requests' =>
         array (
           'title' => 'Extension Requests',
           'pending' => ':count pending',
@@ -4889,14 +4923,14 @@ Sunday: 10:00 AM - 4:00 PM',
           'reason' => 'Reason',
           'approve' => 'Approve',
           'reject' => 'Reject',
-          'statuses' => 
+          'statuses' =>
           array (
             'pending' => 'Pending',
             'approved' => 'Approved',
             'rejected' => 'Rejected',
           ),
         ),
-        'table' => 
+        'table' =>
         array (
           'car' => 'Car',
           'dates' => 'Dates',
@@ -4904,14 +4938,14 @@ Sunday: 10:00 AM - 4:00 PM',
           'status' => 'Status',
         ),
       ),
-      'show' => 
+      'show' =>
       array (
         'head_title' => 'Reservation :number',
         'back' => 'Back',
         'print' => 'Print',
         'days' => ':count days',
         'no_payments' => 'No payments recorded yet.',
-        'sections' => 
+        'sections' =>
         array (
           'client' => 'Client',
           'car' => 'Car',
@@ -4919,7 +4953,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'amounts' => 'Amounts',
           'payments' => 'Payments',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'status' => 'Status',
           'total' => 'Total',
@@ -4941,7 +4975,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'tax' => 'Tax',
           'discount' => 'Discount',
         ),
-        'payment_table' => 
+        'payment_table' =>
         array (
           'amount' => 'Amount',
           'method' => 'Method',
@@ -4950,29 +4984,29 @@ Sunday: 10:00 AM - 4:00 PM',
         ),
       ),
     ),
-    'support' => 
+    'support' =>
     array (
-      'index' => 
+      'index' =>
       array (
         'head_title' => 'Support Tickets',
         'title' => 'Support Tickets',
         'new_ticket' => 'New Ticket',
         'empty' => 'No support tickets found.',
-        'table' => 
+        'table' =>
         array (
           'ticket_number' => 'Ticket #',
           'subject' => 'Subject',
           'status' => 'Status',
           'created' => 'Created',
         ),
-        'statuses' => 
+        'statuses' =>
         array (
           'open' => 'Open',
           'in_progress' => 'In Progress',
           'closed' => 'Closed',
         ),
       ),
-      'create' => 
+      'create' =>
       array (
         'head_title' => 'Create New Ticket',
         'title' => 'Create New Support Ticket',
@@ -4984,22 +5018,22 @@ Sunday: 10:00 AM - 4:00 PM',
         'subject_counter' => ':count/255 characters',
         'detail_help' => 'Please provide as much detail as possible to help us assist you better.',
         'tips_title' => 'Tips for submitting a ticket',
-        'fields' => 
+        'fields' =>
         array (
           'subject' => 'Subject',
           'message' => 'Message',
         ),
-        'placeholders' => 
+        'placeholders' =>
         array (
           'subject' => 'Brief description of your issue',
           'message' => 'Provide detailed information about your issue...',
         ),
-        'aria' => 
+        'aria' =>
         array (
           'subject' => 'Ticket subject',
           'message' => 'Ticket message',
         ),
-        'tips' => 
+        'tips' =>
         array (
           1 => 'Use a clear and descriptive subject line.',
           2 => 'Include relevant details such as error messages or screenshots.',
@@ -5007,7 +5041,7 @@ Sunday: 10:00 AM - 4:00 PM',
           4 => 'Our support team typically responds within 24 hours.',
         ),
       ),
-      'show' => 
+      'show' =>
       array (
         'head_title' => 'Ticket #:id',
         'back' => 'Back',
@@ -5018,7 +5052,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'reply_placeholder' => 'Type your message here... (Ctrl+Enter to send)',
         'send' => 'Send',
         'sending' => 'Sending...',
-        'statuses' => 
+        'statuses' =>
         array (
           'open' => 'Open',
           'in_progress' => 'In Progress',
@@ -5027,13 +5061,13 @@ Sunday: 10:00 AM - 4:00 PM',
       ),
     ),
   ),
-  'owner_api' => 
+  'owner_api' =>
   array (
-    'branches' => 
+    'branches' =>
     array (
       'all' => 'All branches',
     ),
-    'metrics' => 
+    'metrics' =>
     array (
       'today_revenue' => 'Today revenue',
       'available_cars' => 'Available cars',
@@ -5041,11 +5075,11 @@ Sunday: 10:00 AM - 4:00 PM',
       'late_returns' => 'Late returns',
       'rented_cars' => 'Rented cars',
     ),
-    'finance' => 
+    'finance' =>
     array (
       'fleet_occupancy' => 'Fleet occupancy rate',
       'top_performing_cars' => 'Top performing cars',
-      'cards' => 
+      'cards' =>
       array (
         'total_revenue' => 'Total revenue',
         'collected_amount' => 'Collected',
@@ -5054,14 +5088,14 @@ Sunday: 10:00 AM - 4:00 PM',
         'net_profit' => 'Net profit',
       ),
     ),
-    'fleet' => 
+    'fleet' =>
     array (
-      'summary' => 
+      'summary' =>
       array (
         'total_cars' => 'Total cars',
         'total_reservations' => 'Total reservations',
       ),
-      'statuses' => 
+      'statuses' =>
       array (
         'all' => 'All',
         'draft' => 'Draft',
@@ -5073,22 +5107,22 @@ Sunday: 10:00 AM - 4:00 PM',
         'unavailable' => 'Unavailable',
         'retired' => 'Retired',
       ),
-      'next_events' => 
+      'next_events' =>
       array (
         'next_reservation' => 'Next reservation',
         'return_date' => 'Return date',
       ),
-      'maintenance' => 
+      'maintenance' =>
       array (
         'created' => 'Maintenance scheduled successfully.',
       ),
-      'transfer' => 
+      'transfer' =>
       array (
         'success' => 'Car transferred successfully.',
         'same_branch' => 'Car is already in the selected branch.',
         'bulk_success' => 'Successfully transferred :count cars to :branch.',
       ),
-      'show' => 
+      'show' =>
       array (
         'upcoming_one' => '1 upcoming reservation',
         'upcoming_plural' => '%d upcoming reservations',
@@ -5102,15 +5136,15 @@ Sunday: 10:00 AM - 4:00 PM',
         'status_attention' => 'Attention needed',
       ),
     ),
-    'reservations' => 
+    'reservations' =>
     array (
-      'summary' => 
+      'summary' =>
       array (
         'total_reservations' => 'Total reservations',
         'today_reservations' => 'Today reservations',
         'waiting_pickup' => 'Waiting pickup',
       ),
-      'statuses' => 
+      'statuses' =>
       array (
         'pending' => 'Pending',
         'confirmed' => 'Confirmed',
@@ -5120,31 +5154,31 @@ Sunday: 10:00 AM - 4:00 PM',
         'cancelled' => 'Cancelled',
         'no_show' => 'No show',
       ),
-      'payment_statuses' => 
+      'payment_statuses' =>
       array (
         'paid' => 'Paid',
         'partial' => 'Partially paid',
         'not_paid' => 'Unpaid',
       ),
-      'date_types' => 
+      'date_types' =>
       array (
         'pickup' => 'Pickup date',
         'return' => 'Return date',
         'created' => 'Created date',
       ),
-      'labels' => 
+      'labels' =>
       array (
         'unknown_client' => 'Client',
         'unknown_branch' => 'No branch',
       ),
-      'timeline' => 
+      'timeline' =>
       array (
         'reservation_created' => 'Reservation created',
         'contract_created' => 'Contract created',
         'return_report_created' => 'Return report created',
       ),
     ),
-    'alerts' => 
+    'alerts' =>
     array (
       'late_returns' => 'Late car returns',
       'late_returns_description' => ':count delayed return operations',
@@ -5153,62 +5187,62 @@ Sunday: 10:00 AM - 4:00 PM',
       'maintenance_cars' => 'Cars need maintenance',
       'maintenance_cars_description' => ':count cars need inspection or maintenance',
     ),
-    'notifications' => 
+    'notifications' =>
     array (
-      'sections' => 
+      'sections' =>
       array (
         'active_alerts' => 'Active alerts',
         'latest_notifications' => 'Latest notifications',
       ),
-      'late_return' => 
+      'late_return' =>
       array (
         'title' => 'Car return delayed',
         'description' => ':car return is delayed - client :client',
       ),
-      'unpaid_violation' => 
+      'unpaid_violation' =>
       array (
         'title' => 'Violation due',
         'description' => 'New violation of :amount - client :client',
       ),
-      'maintenance_required' => 
+      'maintenance_required' =>
       array (
         'title' => 'Maintenance required',
         'description' => ':car needs urgent inspection',
       ),
-      'new_reservation' => 
+      'new_reservation' =>
       array (
         'title' => 'New reservation',
         'description' => 'New reservation in :branch - :days days',
       ),
-      'payment_received' => 
+      'payment_received' =>
       array (
         'title' => 'Payment received',
         'description' => 'Received :amount from client :client',
       ),
-      'discount_request' => 
+      'discount_request' =>
       array (
         'title' => 'Discount request',
         'description' => ':employee requested a :discount discount for client :client',
       ),
       'unknown_client' => 'Client',
       'unknown_employee' => 'Employee',
-      'messages' => 
+      'messages' =>
       array (
         'marked_read' => 'Notifications marked as read.',
       ),
     ),
-    'time' => 
+    'time' =>
     array (
       'minutes_ago' => ':count min',
       'hours_ago' => ':count h',
       'days_ago' => ':count d',
     ),
-    'comparisons' => 
+    'comparisons' =>
     array (
       'yesterday' => 'Yesterday',
       'previous_period' => 'Previous period',
     ),
-    'smart_opportunities' => 
+    'smart_opportunities' =>
     array (
       'idle_cars_title' => 'Idle cars now',
       'idle_cars_subtitle' => 'idle cars',
@@ -5230,7 +5264,7 @@ Sunday: 10:00 AM - 4:00 PM',
       'high_demand' => 'High demand / low supply',
       'redistribution_reason' => ':target_branch had :target_reservations reservations in 30 days with only :target_available available cars. :source_branch has :source_available idle cars.',
     ),
-    'car_discounts' => 
+    'car_discounts' =>
     array (
       'created' => 'Car discount created successfully.',
       'updated' => 'Car discount updated successfully.',
@@ -5245,14 +5279,14 @@ Sunday: 10:00 AM - 4:00 PM',
       'auto_discounts_not_available' => 'Your current plan does not include access to auto discounts.',
     ),
   ),
-    'show' => 
+    'show' =>
       array (
         'head_title' => 'Reservation :number',
         'back' => 'Back',
         'print' => 'Print',
         'days' => ':count days',
         'no_payments' => 'No payments recorded yet.',
-        'sections' => 
+        'sections' =>
         array (
           'client' => 'Client',
           'car' => 'Car',
@@ -5260,7 +5294,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'amounts' => 'Amounts',
           'payments' => 'Payments',
         ),
-        'fields' => 
+        'fields' =>
         array (
           'status' => 'Status',
           'total' => 'Total',
@@ -5282,7 +5316,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'tax' => 'Tax',
           'discount' => 'Discount',
         ),
-        'payment_table' => 
+        'payment_table' =>
         array (
           'amount' => 'Amount',
           'method' => 'Method',
