@@ -1099,6 +1099,9 @@ class LandingSettingsController extends Controller
             'dashboard.admin.reservations.show.fields.daily_rate' => 'Daily Rate',
             'dashboard.admin.reservations.show.fields.weekly_rate' => 'Weekly Rate',
             'dashboard.admin.reservations.show.fields.monthly_rate' => 'Monthly Rate',
+            'client_pages.reservations.show.fields.daily_rate' => 'Daily Rate',
+            'client_pages.reservations.show.fields.weekly_rate' => 'Weekly Rate',
+            'client_pages.reservations.show.fields.monthly_rate' => 'Monthly Rate',
         ]);
 
         foreach ($this->translationGroups() as $group) {

@@ -42,7 +42,7 @@ const pricingLabel = computed(() => {
     'Weekly Rate': tr('fields.weekly_rate', 'Weekly Rate'),
     'Monthly Rate': tr('fields.monthly_rate', 'Monthly Rate'),
   }
-  return map[raw] ?? raw || tr('fields.daily_rate', 'Daily Rate')
+  return (map[raw] ?? raw) || tr('fields.daily_rate', 'Daily Rate')
 })
 const isLocked = computed(() => Boolean(reservation.value?.is_locked))
 const canCreateContract = computed(() => Boolean(reservation.value?.can_create_contract))

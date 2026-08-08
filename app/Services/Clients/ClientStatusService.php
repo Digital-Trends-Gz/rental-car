@@ -85,6 +85,9 @@ class ClientStatusService
                     'severity' => $this->normalizeSeverity($flag->severity),
                     'label' => $flag->title ?: $this->label("type.{$type}", $locale),
                     'description' => $flag->description ?: $this->label("description.{$type}", $locale),
+                    'label_key' => "dashboard.admin.clients.show.flags.types.{$type}",
+                    'description_key' => "dashboard.admin.clients.show.flags.descriptions.{$type}",
+                    'description_params' => [],
                     'source' => 'manual',
                     'source_type' => $flag->source_type,
                     'source_id' => $flag->source_id,
@@ -109,6 +112,9 @@ class ClientStatusService
                 'severity' => 'danger',
                 'label' => $this->label('type.blocked', $locale),
                 'description' => $this->label('description.blocked', $locale),
+                'label_key' => 'dashboard.admin.clients.show.flags.types.blocked',
+                'description_key' => 'dashboard.admin.clients.show.flags.descriptions.blocked',
+                'description_params' => [],
                 'source' => 'automatic',
                 'blocks_booking' => true,
             ];
@@ -123,6 +129,11 @@ class ClientStatusService
                 'description' => $this->label('description.debt', $locale, [
                     'amount' => number_format($debt['total'], 2),
                 ]),
+                'label_key' => 'dashboard.admin.clients.show.flags.types.debt',
+                'description_key' => 'dashboard.admin.clients.show.flags.descriptions.debt',
+                'description_params' => [
+                    'amount' => number_format($debt['total'], 2),
+                ],
                 'source' => 'automatic',
                 'meta' => $debt,
                 'blocks_booking' => true,
@@ -143,6 +154,12 @@ class ClientStatusService
                     'contract' => (string) $lateReturn->contract_number,
                     'date' => optional($lateReturn->actual_return_time)->format('Y-m-d H:i') ?? '-',
                 ]),
+                'label_key' => 'dashboard.admin.clients.show.flags.types.late_return',
+                'description_key' => 'dashboard.admin.clients.show.flags.descriptions.late_return',
+                'description_params' => [
+                    'contract' => (string) $lateReturn->contract_number,
+                    'date' => optional($lateReturn->actual_return_time)->format('Y-m-d H:i') ?? '-',
+                ],
                 'source' => 'automatic',
                 'source_type' => Contract::class,
                 'source_id' => $lateReturn->id,
@@ -156,6 +173,9 @@ class ClientStatusService
                 'severity' => 'info',
                 'label' => $this->label('type.new_customer', $locale),
                 'description' => $this->label('description.new_customer', $locale),
+                'label_key' => 'dashboard.admin.clients.show.flags.types.new_customer',
+                'description_key' => 'dashboard.admin.clients.show.flags.descriptions.new_customer',
+                'description_params' => [],
                 'source' => 'automatic',
                 'blocks_booking' => false,
             ];
@@ -221,6 +241,11 @@ class ClientStatusService
                     'description' => $this->label("description.{$type}", $locale, [
                         'date' => $expiryDate->toDateString(),
                     ]),
+                    'label_key' => "dashboard.admin.clients.show.flags.types.{$type}",
+                    'description_key' => "dashboard.admin.clients.show.flags.descriptions.{$type}",
+                    'description_params' => [
+                        'date' => $expiryDate->toDateString(),
+                    ],
                     'source' => 'automatic',
                     'source_type' => ClientDocument::class,
                     'source_id' => $document->id,

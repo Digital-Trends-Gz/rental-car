@@ -29,6 +29,25 @@ defineProps<{
 const page = usePage<any>();
 const { t } = useTrans();
 const currentTenant = computed(() => page.props.current_tenant);
+
+const ERROR_MESSAGES: Record<string, string> = {
+    'This tenant account is inactive. Please contact support.': 'auth.tenant_account_inactive',
+    'This tenant subscription has expired. Please contact your administrator.': 'auth.tenant_subscription_expired',
+    'Your plan has expired. Please login and renew your subscription.': 'auth.plan_expired',
+    'Your trial period has ended. Please contact your administrator.': 'auth.trial_ended',
+    'You are not authorized to access this area.': 'auth.unauthorized_access',
+};
+
+const translateError = (message?: string) => {
+    if (!message) return message;
+    const key = ERROR_MESSAGES[message] || (message.startsWith('auth.') ? message : undefined);
+    if (key) {
+        const translated = t(key);
+        return translated !== key ? translated : message;
+    }
+    return message;
+};
+
 const socialLoginLabel = (provider: 'apple' | 'google') => {
     const translated = t(`auth.${provider}`);
 
@@ -120,7 +139,7 @@ const forgotPasswordUrl = computed(() => {
                                 :placeholder="t('auth.placeholder_email')"
                                 class="w-full rounded-lg border border-gray-300 px-4 py-3 transition-colors focus:border-primary focus:ring-2 focus:ring-primary"
                             />
-                            <InputError :message="errors.email" class="mt-1" />
+                            <InputError :message="translateError(errors.email)" class="mt-1" />
                         </div>
 
                         <!-- Password Field -->

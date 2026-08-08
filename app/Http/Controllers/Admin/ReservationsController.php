@@ -690,7 +690,7 @@ class ReservationsController extends Controller
         }
 
         return [
-            'label' => 'Daily Rate',
+            'label' => trans('client_pages.reservations.show.fields.daily_rate'),
             'rate' => (float) ($reservation->daily_rate ?? $car?->price_per_day ?? 0),
         ];
     }

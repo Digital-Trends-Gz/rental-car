@@ -5243,4 +5243,50 @@ Sunday: 10:00 AM - 4:00 PM',
       'auto_discounts_not_available' => 'Your current plan does not include access to auto discounts.',
     ),
   ),
+    'show' => 
+      array (
+        'head_title' => 'Reservation :number',
+        'back' => 'Back',
+        'print' => 'Print',
+        'days' => ':count days',
+        'no_payments' => 'No payments recorded yet.',
+        'sections' => 
+        array (
+          'client' => 'Client',
+          'car' => 'Car',
+          'reservation_details' => 'Reservation Details',
+          'amounts' => 'Amounts',
+          'payments' => 'Payments',
+        ),
+        'fields' => 
+        array (
+          'status' => 'Status',
+          'total' => 'Total',
+          'name' => 'Name',
+          'email' => 'Email',
+          'car' => 'Car',
+          'plate' => 'Plate',
+          'start_date' => 'Start Date',
+          'end_date' => 'End Date',
+          'duration' => 'Duration',
+          'pickup_location' => 'Pickup Location',
+          'return_location' => 'Return Location',
+          'cancelled_at' => 'Cancelled At',
+          'reason' => 'Reason',
+          'daily_rate' => 'Daily Rate',
+          'weekly_rate' => 'Weekly Rate',
+          'monthly_rate' => 'Monthly Rate',
+          'subtotal' => 'Subtotal',
+          'tax' => 'Tax',
+          'discount' => 'Discount',
+        ),
+        'payment_table' => 
+        array (
+          'amount' => 'Amount',
+          'method' => 'Method',
+          'status' => 'Status',
+          'processed' => 'Processed',
+        ),
+      ),
+
 );

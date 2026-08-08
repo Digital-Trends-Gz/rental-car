@@ -34,6 +34,9 @@ const props = defineProps<{
       severity: 'info' | 'warning' | 'danger';
       label: string;
       description: string;
+      label_key?: string;
+      description_key?: string;
+      description_params?: Record<string, string | number>;
       source: string;
       blocks_booking: boolean;
     }>;
@@ -75,7 +78,7 @@ const props = defineProps<{
   actions?: { documents?: string; store_note?: string };
 }>();
 
-const { locale, t } = useTrans();
+const { locale, t, raw } = useTrans();
 const translationRoot = 'dashboard.admin.clients.show';
 const translationKeyFor = (value: string) =>
   `${translationRoot}.${value
@@ -94,6 +97,46 @@ const localize = (en: string, ar: string) => {
 
   return locale.value === 'ar' ? ar : en;
 };
+
+const translateOverallLabel = (status: string, fallback: string) =>
+  raw(`dashboard.admin.clients.show.overall_statuses.${status}`, fallback);
+
+const translateFlagLabel = (flag: { label_key?: string; label: string }) => {
+  if (flag.label_key) {
+    const translated = t(flag.label_key);
+
+    if (translated !== flag.label_key) {
+      return translated;
+    }
+  }
+
+  return flag.label;
+};
+
+const translateFlagDescription = (flag: {
+  description_key?: string;
+  description_params?: Record<string, string | number>;
+  description: string;
+}) => {
+  if (flag.description_key) {
+    const translated = t(flag.description_key, flag.description_params || {});
+
+    if (translated !== flag.description_key) {
+      return translated;
+    }
+  }
+
+  return flag.description;
+};
+
+const translateReservationStatus = (status: string) =>
+  raw(`dashboard.admin.reservation_statuses.${status}`, status);
+
+const translatePaymentStatus = (status: string) =>
+  raw(`dashboard.admin.payments.index.statuses.${status}`, status);
+
+const translatePaymentMethod = (method: string) =>
+  raw(`dashboard.admin.payments.index.payment_methods.${method}`, method);
 
 const showSuspendDialog = ref(false);
 const processingSuspend = ref(false);
@@ -165,7 +208,9 @@ const statusStyle = computed(() => {
     bg: `rgba(${r}, ${g}, ${b}, 0.1)`,
     dot: hex,
     text: hex,
-    label: props.clientStatus?.overall_label || (props.client.is_active ? localize('Active', 'نشط') : localize('Suspended', 'موقوف')),
+    label: props.clientStatus?.overall_status
+      ? translateOverallLabel(props.clientStatus.overall_status, props.clientStatus.overall_label || '')
+      : (props.client.is_active ? localize('Active', 'نشط') : localize('Suspended', 'موقوف')),
   };
 });
 
@@ -273,7 +318,9 @@ const flagStyle = (severity: string) => {
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div class="text-sm text-muted-foreground">{{ localize('Customer Status', 'حالة العميل') }}</div>
-            <div class="mt-1 text-xl font-semibold">{{ clientStatus?.overall_label || statusStyle.label }}</div>
+            <div class="mt-1 text-xl font-semibold">
+              {{ clientStatus?.overall_status ? translateOverallLabel(clientStatus.overall_status, clientStatus.overall_label || '') : statusStyle.label }}
+            </div>
             <div class="mt-1 text-sm text-muted-foreground">
               {{
                 clientStatus?.can_book
@@ -287,7 +334,7 @@ const flagStyle = (severity: string) => {
             :style="{ backgroundColor: statusStyle.bg, color: statusStyle.text }"
           >
             <span class="size-2 rounded-full" :style="{ backgroundColor: statusStyle.dot }" />
-            {{ clientStatus?.overall_label || statusStyle.label }}
+            {{ clientStatus?.overall_status ? translateOverallLabel(clientStatus.overall_status, clientStatus.overall_label || '') : statusStyle.label }}
           </span>
         </div>
 
@@ -299,12 +346,12 @@ const flagStyle = (severity: string) => {
             :class="flagStyle(flag.severity)"
           >
             <div class="flex items-center justify-between gap-2">
-              <div class="font-semibold">{{ flag.label }}</div>
+              <div class="font-semibold">{{ translateFlagLabel(flag) }}</div>
               <span v-if="flag.blocks_booking" class="rounded-full bg-white/70 px-2 py-0.5 text-xs">
                 {{ localize('Blocks booking', 'يمنع الحجز') }}
               </span>
             </div>
-            <div class="mt-1 text-sm opacity-90">{{ flag.description }}</div>
+            <div class="mt-1 text-sm opacity-90">{{ translateFlagDescription(flag) }}</div>
           </div>
         </div>
 

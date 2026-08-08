@@ -94,6 +94,11 @@ function fmtMoney(n?: number | string) {
     const v = Number(n ?? 0);
     return `${props.currency.symbol}${v.toFixed(2)}`;
 }
+
+function tr(key: string, fallback: string) {
+    const value = t(key);
+    return value === key ? fallback : value;
+}
 </script>
 
 <template>
@@ -314,8 +319,9 @@ function fmtMoney(n?: number | string) {
                         <div class="flex items-center justify-between">
                             <div class="text-sm">
                                 {{
-                                    t(
+                                    tr(
                                         'client_pages.reservations.show.fields.daily_rate',
+                                        'Daily Rate',
                                     )
                                 }}
                             </div>
