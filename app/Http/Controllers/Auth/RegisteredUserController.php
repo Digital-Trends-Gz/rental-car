@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Models\SubscriptionPaymentTransaction;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\CompanyOwners;
 use App\Support\Payments\MyFatoorahSubscriptionProvider;
 use App\Support\PlanTranslations;
 use App\Support\PlanPricing;
@@ -50,6 +51,18 @@ class RegisteredUserController extends Controller
     public function create(Request $request): Response
     {
         $registration = $request->session()->get(self::REGISTRATION_SESSION_KEY, []);
+        $companyOwners = CompanyOwners::normalize(data_get($registration, 'company_owners', []));
+
+        if ($companyOwners === [] && data_get($registration, 'company_identifiers')) {
+            $companyOwners = CompanyOwners::normalize([[
+                'name' => $registration['name'] ?? '',
+                'commercial_registration_number' => data_get($registration, 'company_identifiers.commercial_registration_number'),
+                'tax_number' => data_get($registration, 'company_identifiers.tax_number'),
+                'civil_number' => data_get($registration, 'company_identifiers.civil_number'),
+            ]]);
+        }
+
+        $firstOwner = $companyOwners[0] ?? [];
 
         return Inertia::render('auth/Register', [
             'prefill' => [
@@ -60,9 +73,10 @@ class RegisteredUserController extends Controller
                 'phone_country_code' => $registration['phone_country_code'] ?? null,
                 'phone_national' => $registration['phone_national'] ?? null,
                 'phone' => $registration['phone'] ?? null,
-                'commercial_registration_number' => data_get($registration, 'company_identifiers.commercial_registration_number'),
-                'tax_number' => data_get($registration, 'company_identifiers.tax_number'),
-                'civil_number' => data_get($registration, 'company_identifiers.civil_number'),
+                'company_owners' => $companyOwners,
+                'commercial_registration_number' => $firstOwner['commercial_registration_number'] ?? data_get($registration, 'company_identifiers.commercial_registration_number'),
+                'tax_number' => $firstOwner['tax_number'] ?? data_get($registration, 'company_identifiers.tax_number'),
+                'civil_number' => $firstOwner['civil_number'] ?? data_get($registration, 'company_identifiers.civil_number'),
                 'partner_seats' => $registration['partner_seats'] ?? 0,
             ],
             'countries' => $this->registrationCountries(),
@@ -143,12 +157,20 @@ class RegisteredUserController extends Controller
                 'max:30',
                 'required_with:country_iso2',
             ],
-            'commercial_registration_number' => ['required', 'string', 'max:255', new DigitsOnly()],
-            'tax_number' => ['required', 'string', 'max:255', new DigitsOnly()],
-            'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'company_owners' => ['required', 'array', 'min:1'],
+            'company_owners.*.name' => ['required', 'string', 'max:255', new LettersOnly()],
+            'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'company_owners.*.tax_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'company_owners.*.civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'commercial_registration_number' => ['nullable', 'string', 'max:255', new DigitsOnly()],
+            'tax_number' => ['nullable', 'string', 'max:255', new DigitsOnly()],
+            'civil_number' => ['nullable', 'string', 'max:255', new DigitsOnly()],
             'partner_seats' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_REGISTRATION_PARTNER_SEATS],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ], $this->registrationValidationMessages());
+
+        $companyOwners = CompanyOwners::normalize($validated['company_owners'] ?? []);
+        $primaryOwner = $companyOwners[0] ?? CompanyOwners::blankRow();
 
         [$phoneE164, $phoneCountryCode, $phoneNational] = $this->normalizeRegistrationPhone(
             $validated['country_iso2'] ?? null,
@@ -167,16 +189,17 @@ class RegisteredUserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'custom_domain' => $validated['custom_domain'] ?? null,
-            'civil_number' => trim((string) $validated['civil_number']),
+            'civil_number' => $primaryOwner['civil_number'],
             'country_iso2' => strtoupper(trim((string) ($validated['country_iso2'] ?? ''))) ?: null,
             'phone_country_code' => $phoneCountryCode,
             'phone_national' => $phoneNational,
             'phone' => $phoneE164,
             'partner_seats' => (int) ($validated['partner_seats'] ?? 0),
+            'company_owners' => $companyOwners,
             'company_identifiers' => [
-                'commercial_registration_number' => trim((string) $validated['commercial_registration_number']),
-                'tax_number' => trim((string) $validated['tax_number']),
-                'civil_number' => trim((string) $validated['civil_number']),
+                'commercial_registration_number' => $primaryOwner['commercial_registration_number'],
+                'tax_number' => $primaryOwner['tax_number'],
+                'civil_number' => $primaryOwner['civil_number'],
             ],
             'password_hash' => Hash::make($validated['password']),
         ]);
@@ -207,6 +230,22 @@ class RegisteredUserController extends Controller
         $line = trans($key, $replace);
 
         return $line === $key ? $fallback : $line;
+    }
+
+    private function registrationCompanyOwners(array $registration): array
+    {
+        $companyOwners = CompanyOwners::normalize($registration['company_owners'] ?? []);
+
+        if ($companyOwners !== [] || !data_get($registration, 'company_identifiers')) {
+            return $companyOwners;
+        }
+
+        return CompanyOwners::normalize([[
+            'name' => $registration['name'] ?? '',
+            'commercial_registration_number' => data_get($registration, 'company_identifiers.commercial_registration_number'),
+            'tax_number' => data_get($registration, 'company_identifiers.tax_number'),
+            'civil_number' => data_get($registration, 'company_identifiers.civil_number'),
+        ]]);
     }
 
     public function plans(Request $request): Response|RedirectResponse
@@ -407,6 +446,19 @@ class RegisteredUserController extends Controller
             return to_route($this->authRouteName('register'))->with('error', 'Please restart registration.');
         }
 
+        if (($registration['mode'] ?? null) !== 'existing_tenant') {
+            $companyOwners = $this->registrationCompanyOwners($registration);
+            $primaryOwner = $companyOwners[0] ?? CompanyOwners::blankRow();
+            $registration['company_owners'] = $companyOwners;
+            $registration['company_identifiers'] = [
+                'commercial_registration_number' => $primaryOwner['commercial_registration_number'],
+                'tax_number' => $primaryOwner['tax_number'],
+                'civil_number' => $primaryOwner['civil_number'],
+            ];
+            $registration['civil_number'] = $primaryOwner['civil_number'];
+            $request->session()->put(self::REGISTRATION_SESSION_KEY, $registration);
+        }
+
         $request->validate([
             'accept_terms' => ['accepted'],
             'payment_provider_code' => ['nullable', 'string', 'max:50'],
@@ -441,6 +493,11 @@ class RegisteredUserController extends Controller
                 'unique:tenants,domain',
             ],
             'civil_number' => ['required', 'string', 'max:255'],
+            'company_owners' => ['required', 'array', 'min:1'],
+            'company_owners.*.name' => ['required', 'string', 'max:255'],
+            'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255'],
+            'company_owners.*.tax_number' => ['required', 'string', 'max:255'],
+            'company_owners.*.civil_number' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'partner_seats' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_REGISTRATION_PARTNER_SEATS],
             'password_hash' => ['required', 'string'],
@@ -718,6 +775,19 @@ class RegisteredUserController extends Controller
             return to_route($this->authRouteName('register'))->with('error', 'Registration session expired. Please register again.');
         }
 
+        if (($registration['mode'] ?? null) !== 'existing_tenant') {
+            $companyOwners = $this->registrationCompanyOwners($registration);
+            $primaryOwner = $companyOwners[0] ?? CompanyOwners::blankRow();
+            $registration['company_owners'] = $companyOwners;
+            $registration['company_identifiers'] = [
+                'commercial_registration_number' => $primaryOwner['commercial_registration_number'],
+                'tax_number' => $primaryOwner['tax_number'],
+                'civil_number' => $primaryOwner['civil_number'],
+            ];
+            $registration['civil_number'] = $primaryOwner['civil_number'];
+            $request->session()->put(self::REGISTRATION_SESSION_KEY, $registration);
+        }
+
         $isExistingTenantFlow = ($registration['mode'] ?? null) === 'existing_tenant';
 
         Validator::make($registration, $isExistingTenantFlow ? [
@@ -745,6 +815,12 @@ class RegisteredUserController extends Controller
                 'regex:/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i',
                 'unique:tenants,domain',
             ],
+            'civil_number' => ['required', 'string', 'max:255'],
+            'company_owners' => ['required', 'array', 'min:1'],
+            'company_owners.*.name' => ['required', 'string', 'max:255'],
+            'company_owners.*.commercial_registration_number' => ['required', 'string', 'max:255'],
+            'company_owners.*.tax_number' => ['required', 'string', 'max:255'],
+            'company_owners.*.civil_number' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'password_hash' => ['required', 'string'],
         ])->validate();
@@ -796,8 +872,10 @@ class RegisteredUserController extends Controller
             );
         } else {
             $accessEndsAt = $this->resolveAccessEndsAt((string) $selection['billing_cycle']);
+            $companyOwners = CompanyOwners::normalize($registration['company_owners'] ?? []);
+            $primaryOwner = $companyOwners[0] ?? CompanyOwners::blankRow();
 
-            [$tenant, $user] = DB::transaction(function () use ($registration, $plan, $accessEndsAt) {
+            [$tenant, $user] = DB::transaction(function () use ($registration, $plan, $accessEndsAt, $companyOwners, $primaryOwner) {
                 $tenant = Tenant::create([
                     'name' => $registration['name'],
                     'slug' => $this->generateUniqueSlug($registration['name']),
@@ -811,6 +889,7 @@ class RegisteredUserController extends Controller
                     'plan_id' => $plan->id,
                     'partner_seats' => (int) ($registration['partner_seats'] ?? 0),
                     'settings' => [
+                        'company_owners' => $companyOwners,
                         'company_identifiers' => $registration['company_identifiers'] ?? [],
                     ],
                     'trial_ends_at' => $accessEndsAt,
@@ -819,7 +898,7 @@ class RegisteredUserController extends Controller
 
                 $user = User::withoutGlobalScope('tenant')->create([
                     'name' => $registration['name'],
-                    'civil_number' => trim((string) ($registration['civil_number'] ?? data_get($registration, 'company_identifiers.civil_number', ''))),
+                    'civil_number' => $primaryOwner['civil_number'] ?: trim((string) ($registration['civil_number'] ?? data_get($registration, 'company_identifiers.civil_number', ''))),
                     'email' => $registration['email'],
                     'password' => $registration['password_hash'],
                     'role' => UserRole::ADMIN,

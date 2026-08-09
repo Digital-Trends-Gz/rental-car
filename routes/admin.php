@@ -43,6 +43,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::redirect('/', '/admin/dashboard')->name('home');
 
         // Cars
+        Route::post('cars/catalog-entries', [CarsController::class, 'storeCatalogEntry'])
+            ->middleware('permission:tenant-manage-cars')
+            ->name('cars.catalog-entries.store');
         Route::resource('cars', CarsController::class)
             ->middleware('permission:tenant-manage-cars');
         Route::get('cars/{car}/calendar', [CarsController::class, 'calendar'])

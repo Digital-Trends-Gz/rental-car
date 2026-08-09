@@ -177,7 +177,7 @@ class CarsController extends Controller
 
         return Inertia::render('Admin/Cars/Edit', [
             'car' => null,
-            'selectedPlateFormat' => 'custom',
+            'selectedPlateFormat' => null,
             'plateFormats' => $plateFormats,
             'imageFiles' => [],
             'additionalPhotoFiles' => [],

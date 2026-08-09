@@ -32,7 +32,15 @@ type RegisterPrefill = {
     commercial_registration_number?: string | null;
     tax_number?: string | null;
     civil_number?: string | null;
+    company_owners?: CompanyOwner[] | null;
     partner_seats?: number | string | null;
+};
+
+type CompanyOwner = {
+    name: string;
+    commercial_registration_number: string;
+    tax_number: string;
+    civil_number: string;
 };
 
 type CountryOption = {
@@ -102,9 +110,65 @@ const initial = computed(() => ({
     partner_seats: props.prefill?.partner_seats ?? 0,
 }));
 
+const blankCompanyOwner = (): CompanyOwner => ({
+    name: '',
+    commercial_registration_number: '',
+    tax_number: '',
+    civil_number: '',
+});
+
+const initialCompanyOwners = computed<CompanyOwner[]>(() => {
+    const owners = Array.isArray(props.prefill?.company_owners)
+        ? props.prefill.company_owners
+        : [];
+
+    if (owners.length > 0) {
+        return owners.map((owner) => ({
+            name: owner?.name ?? '',
+            commercial_registration_number: owner?.commercial_registration_number ?? '',
+            tax_number: owner?.tax_number ?? '',
+            civil_number: owner?.civil_number ?? '',
+        }));
+    }
+
+    if (initial.value.commercial_registration_number || initial.value.tax_number || initial.value.civil_number) {
+        return [{
+            name: initial.value.name,
+            commercial_registration_number: initial.value.commercial_registration_number,
+            tax_number: initial.value.tax_number,
+            civil_number: initial.value.civil_number,
+        }];
+    }
+
+    return [blankCompanyOwner()];
+});
+
+const companyOwners = ref<CompanyOwner[]>(initialCompanyOwners.value);
 const selectedCountryIso2 = ref(initial.value.country_iso2);
 const phoneCountryCode = ref(initial.value.phone_country_code);
 const phoneNational = ref(initial.value.phone_national || initial.value.phone);
+
+const companyOwnerFieldName = (index: number, field: keyof CompanyOwner) =>
+    `company_owners[${index}][${field}]`;
+
+const companyOwnerError = (
+    errors: Record<string, string | undefined>,
+    index: number,
+    field: keyof CompanyOwner,
+) => errors[`company_owners.${index}.${field}`];
+
+const addCompanyOwner = () => {
+    companyOwners.value.push(blankCompanyOwner());
+};
+
+const removeCompanyOwner = (index: number) => {
+    if (companyOwners.value.length <= 1) {
+        companyOwners.value = [blankCompanyOwner()];
+        return;
+    }
+
+    companyOwners.value.splice(index, 1);
+};
 
 const selectedCountry = computed(() =>
     (props.countries || []).find((country) => country.iso2 === selectedCountryIso2.value),
@@ -350,62 +414,109 @@ watch(
                         </div>
 
                         <div class="space-y-4 rounded-2xl border border-gray-200 bg-gray-50/60 p-4">
-                            <div class="space-y-1">
-                                <h3 class="text-base font-semibold text-gray-900">
-                                    {{ t('auth.company_registration_details') }}
-                                </h3>
-                                <p class="text-xs text-gray-500">
-                                    {{ t('auth.company_registration_help') }}
-                                </p>
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="space-y-1">
+                                    <h3 class="text-base font-semibold text-gray-900">
+                                        {{ t('dashboard.super_admin.tenants.form.company_owners') }}
+                                    </h3>
+                                    <p class="text-xs text-gray-500">
+                                        {{ t('dashboard.super_admin.tenants.form.company_owners_help') }}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="shrink-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-50"
+                                    @click="addCompanyOwner"
+                                >
+                                    {{ t('dashboard.super_admin.tenants.form.add_owner') }}
+                                </button>
                             </div>
 
-                            <div class="grid gap-4 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label for="commercial_registration_number" class="text-sm font-semibold text-gray-800">
-                                        {{ t('auth.commercial_registration_no') }}
-                                    </Label>
-                                    <Input
-                                        id="commercial_registration_number"
-                                        name="commercial_registration_number"
-                                        type="text"
-                                        :default-value="initial.commercial_registration_number"
-                                        :placeholder="t('auth.commercial_registration_no')"
-                                        required
-                                        class="h-11 border-gray-300"
-                                    />
-                                    <InputError :message="errors.commercial_registration_number" />
+                            <InputError :message="errors.company_owners" />
+
+                            <div
+                                v-for="(owner, index) in companyOwners"
+                                :key="index"
+                                class="space-y-4 rounded-xl border border-gray-200 bg-white p-4"
+                            >
+                                <div class="flex items-center justify-between gap-3">
+                                    <h4 class="text-sm font-semibold text-gray-900">
+                                        {{ t('dashboard.super_admin.tenants.form.owner_block', { index: index + 1 }) }}
+                                    </h4>
+                                    <button
+                                        type="button"
+                                        class="rounded-lg bg-red-400 px-3 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                        :disabled="companyOwners.length === 1"
+                                        @click="removeCompanyOwner(index)"
+                                    >
+                                        {{ t('dashboard.super_admin.tenants.form.remove_owner') }}
+                                    </button>
                                 </div>
 
-                                <div class="space-y-2">
-                                    <Label for="tax_number" class="text-sm font-semibold text-gray-800">
-                                        {{ t('auth.tax_no') }}
-                                    </Label>
-                                    <Input
-                                        id="tax_number"
-                                        name="tax_number"
-                                        type="text"
-                                        :default-value="initial.tax_number"
-                                        :placeholder="t('auth.tax_no')"
-                                        required
-                                        class="h-11 border-gray-300"
-                                    />
-                                    <InputError :message="errors.tax_number" />
-                                </div>
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div class="space-y-2">
+                                        <Label :for="companyOwnerFieldName(index, 'name')" class="text-sm font-semibold text-gray-800">
+                                            {{ t('dashboard.super_admin.tenants.form.owner_name') }} *
+                                        </Label>
+                                        <Input
+                                            :id="companyOwnerFieldName(index, 'name')"
+                                            :name="companyOwnerFieldName(index, 'name')"
+                                            v-model="owner.name"
+                                            type="text"
+                                            :placeholder="t('dashboard.super_admin.tenants.form.owner_name_placeholder')"
+                                            required
+                                            class="h-11 border-gray-300"
+                                        />
+                                        <InputError :message="companyOwnerError(errors, index, 'name')" />
+                                    </div>
 
-                                <div class="space-y-2 md:col-span-2">
-                                    <Label for="civil_number" class="text-sm font-semibold text-gray-800">
-                                        {{ t('auth.civil_number') }}
-                                    </Label>
-                                    <Input
-                                        id="civil_number"
-                                        name="civil_number"
-                                        type="text"
-                                        :default-value="initial.civil_number"
-                                        :placeholder="t('auth.civil_number')"
-                                        required
-                                        class="h-11 border-gray-300"
-                                    />
-                                    <InputError :message="errors.civil_number" />
+                                    <div class="space-y-2">
+                                        <Label :for="companyOwnerFieldName(index, 'commercial_registration_number')" class="text-sm font-semibold text-gray-800">
+                                            {{ t('dashboard.super_admin.tenants.form.commercial_registration_number') }} *
+                                        </Label>
+                                        <Input
+                                            :id="companyOwnerFieldName(index, 'commercial_registration_number')"
+                                            :name="companyOwnerFieldName(index, 'commercial_registration_number')"
+                                            v-model="owner.commercial_registration_number"
+                                            type="text"
+                                            :placeholder="t('dashboard.super_admin.tenants.form.commercial_registration_number_placeholder')"
+                                            required
+                                            class="h-11 border-gray-300"
+                                        />
+                                        <InputError :message="companyOwnerError(errors, index, 'commercial_registration_number')" />
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label :for="companyOwnerFieldName(index, 'tax_number')" class="text-sm font-semibold text-gray-800">
+                                            {{ t('dashboard.super_admin.tenants.form.tax_number') }} *
+                                        </Label>
+                                        <Input
+                                            :id="companyOwnerFieldName(index, 'tax_number')"
+                                            :name="companyOwnerFieldName(index, 'tax_number')"
+                                            v-model="owner.tax_number"
+                                            type="text"
+                                            :placeholder="t('dashboard.super_admin.tenants.form.tax_number_placeholder')"
+                                            required
+                                            class="h-11 border-gray-300"
+                                        />
+                                        <InputError :message="companyOwnerError(errors, index, 'tax_number')" />
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label :for="companyOwnerFieldName(index, 'civil_number')" class="text-sm font-semibold text-gray-800">
+                                            {{ t('dashboard.super_admin.tenants.form.civil_number') }} *
+                                        </Label>
+                                        <Input
+                                            :id="companyOwnerFieldName(index, 'civil_number')"
+                                            :name="companyOwnerFieldName(index, 'civil_number')"
+                                            v-model="owner.civil_number"
+                                            type="text"
+                                            :placeholder="t('dashboard.super_admin.tenants.form.civil_number_placeholder')"
+                                            required
+                                            class="h-11 border-gray-300"
+                                        />
+                                        <InputError :message="companyOwnerError(errors, index, 'civil_number')" />
+                                    </div>
                                 </div>
                             </div>
                         </div>

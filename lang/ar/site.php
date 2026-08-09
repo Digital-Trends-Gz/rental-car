@@ -922,6 +922,7 @@ return array (
         'settings' => 'الإعدادات',
         'general_settings' => 'الإعدادات العامة',
         'stripe_settings' => 'إعدادات Stripe',
+        'landing_translations' => 'ترجمات الصفحة',
       ),
     ),
     'admin_page' => 
@@ -1109,11 +1110,13 @@ return array (
       'all' => 'الكل',
       'amount' => 'المبلغ',
       'bookings' => 'الحجوزات',
+      'branches' => 'الفروع',
       'car' => 'السيارة',
       'cars' => 'السيارات',
       'client' => 'العميل',
       'company' => 'الشركة',
       'contact' => 'جهة الاتصال',
+      'contracts' => 'العقود',
       'created' => 'تاريخ الإنشاء',
       'customer' => 'العميل',
       'date' => 'التاريخ',
@@ -1122,6 +1125,7 @@ return array (
       'delete' => 'حذف',
       'edit' => 'تعديل',
       'email' => 'البريد الإلكتروني',
+      'employees' => 'الموظفون',
       'guest' => 'زائر',
       'inactive' => 'غير نشط',
       'license_plate' => 'لوحة السيارة',
@@ -1175,6 +1179,13 @@ return array (
         'subtitle' => 'أحدث شركات التأجير المسجلة',
         'view_all' => 'عرض الكل',
         'empty' => 'لا يوجد مستأجرون مسجلون بعد',
+      ),
+      'common' =>
+      array (
+        'back' => 'رجوع',
+        'cancel' => 'إلغاء',
+        'creating' => 'جاري الإنشاء...',
+        'saving' => 'جاري الحفظ...',
       ),
       'cars' => 
       array (
@@ -1308,6 +1319,7 @@ return array (
           'company_owners_help' => 'Add one or more company owners with their commercial registration, tax number, and civil number.',
           'add_owner' => 'Add Owner',
           'remove_owner' => 'Remove Owner',
+          'owner' => 'المالك',
           'owner_block' => 'Owner :index',
           'owner_name' => 'Owner Name',
           'owner_name_placeholder' => 'John Doe',

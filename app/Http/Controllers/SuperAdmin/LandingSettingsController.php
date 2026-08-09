@@ -821,6 +821,7 @@ class LandingSettingsController extends Controller
             LandingPageSettings::contentKeys()
         ));
         $rows = array_merge($rows, $this->flatten(PlanTranslations::defaultTranslationTree()));
+        $rows = array_merge($rows, $this->siteDashboardTranslationRows($locale));
         $rows = array_merge($rows, [
             'fleet.fuel_types.gasoline' => 'Gasoline',
             'fleet.fuel_types.diesel' => 'Diesel',
@@ -889,6 +890,49 @@ class LandingSettingsController extends Controller
             'dashboard.admin.payments.index.payment_methods.paypal' => 'PayPal',
             'dashboard.admin.payments.index.payment_methods.stripe' => 'Stripe',
             'dashboard.admin.payments.index.payment_methods.myfatoorah' => 'MyFatoorah',
+            'dashboard.super_admin.head_title' => 'Super Admin Dashboard',
+            'dashboard.super_admin.title' => 'Super Admin Dashboard',
+            'dashboard.super_admin.subtitle' => 'Manage all tenants and system-wide settings',
+            'dashboard.super_admin.new_tenant' => 'New Tenant',
+            'dashboard.super_admin.cards.total_tenants' => 'Total Tenants',
+            'dashboard.super_admin.cards.active_tenants' => ':count active',
+            'dashboard.super_admin.cards.total_users' => 'Total Users',
+            'dashboard.super_admin.cards.across_all_tenants' => 'Across all tenants',
+            'dashboard.super_admin.cards.total_reservations' => 'Total Reservations',
+            'dashboard.super_admin.cards.all_time_bookings' => 'All-time bookings',
+            'dashboard.super_admin.cards.total_revenue' => 'Total Revenue',
+            'dashboard.super_admin.cards.platform_wide' => 'Platform-wide',
+            'dashboard.super_admin.cards.growth_rate' => 'Growth Rate',
+            'dashboard.super_admin.cards.vs_last_month' => 'vs last month',
+            'dashboard.super_admin.recent_tenants.title' => 'Recent Tenants',
+            'dashboard.super_admin.recent_tenants.subtitle' => 'Latest registered rental companies',
+            'dashboard.super_admin.recent_tenants.view_all' => 'View all',
+            'dashboard.super_admin.recent_tenants.empty' => 'No tenants registered yet',
+            'dashboard.super_admin.status.active' => 'Active',
+            'dashboard.super_admin.status.inactive' => 'Inactive',
+            'dashboard.super_admin.users.index.user' => 'User',
+            'dashboard.common.tenant' => 'Tenant',
+            'dashboard.common.method' => 'Method',
+            'dashboard.common.amount' => 'Amount',
+            'dashboard.common.date' => 'Date',
+            'dashboard.sidebar.super_admin_section' => 'Super Admin',
+            'dashboard.sidebar.super_admin.dashboard' => 'Dashboard',
+            'dashboard.sidebar.super_admin.revenue' => 'Revenue',
+            'dashboard.sidebar.super_admin.subscription' => 'Subscription',
+            'dashboard.sidebar.super_admin.transactions' => 'Transactions',
+            'dashboard.sidebar.super_admin.user_management' => 'User Management',
+            'dashboard.sidebar.super_admin.users' => 'Users',
+            'dashboard.sidebar.super_admin.roles' => 'Roles',
+            'dashboard.sidebar.super_admin.tenants' => 'Tenants',
+            'dashboard.sidebar.super_admin.product_management' => 'Product Management',
+            'dashboard.sidebar.super_admin.plans' => 'Plans',
+            'dashboard.sidebar.super_admin.discounts' => 'Discounts',
+            'dashboard.sidebar.super_admin.cars' => 'Cars',
+            'dashboard.sidebar.super_admin.cars_description' => 'All cars with tenant name',
+            'dashboard.sidebar.super_admin.reservations' => 'Reservations',
+            'dashboard.sidebar.super_admin.settings' => 'Settings',
+            'dashboard.sidebar.super_admin.general_settings' => 'General Settings',
+            'dashboard.sidebar.super_admin.landing_translations' => 'Landing Translations',
             'navigation.nav_clients' => 'Clients',
             'navigation.nav_contact' => 'Contact',
             'static_pages.privacy_policy.title' => 'Privacy Policy',
@@ -1243,6 +1287,33 @@ class LandingSettingsController extends Controller
             ->sort()
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<string, scalar|null>
+     */
+    private function siteDashboardTranslationRows(string $locale): array
+    {
+        $path = lang_path("{$locale}/site.php");
+
+        if (!is_file($path)) {
+            $path = lang_path('en/site.php');
+        }
+
+        $translations = require $path;
+        $dashboard = is_array($translations) ? (array) ($translations['dashboard'] ?? []) : [];
+        $sidebar = (array) ($dashboard['sidebar'] ?? []);
+
+        return $this->flatten([
+            'dashboard' => [
+                'common' => (array) ($dashboard['common'] ?? []),
+                'super_admin' => (array) ($dashboard['super_admin'] ?? []),
+                'sidebar' => [
+                    'super_admin_section' => $sidebar['super_admin_section'] ?? null,
+                    'super_admin' => (array) ($sidebar['super_admin'] ?? []),
+                ],
+            ],
+        ]);
     }
 
     private function persistLandingSettings(array $settings): SiteSetting

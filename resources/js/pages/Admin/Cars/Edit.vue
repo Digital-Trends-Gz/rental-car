@@ -125,7 +125,7 @@ const props = defineProps<{
     branches: Branch[];
     countries: CountryOption[];
     plateFormats?: PlateFormatOption[];
-    selectedPlateFormat?: string;
+    selectedPlateFormat?: string | null;
     canAccessAllBranches: boolean;
     supportedLocales: SupportedLocale[];
     enums: Enums;
@@ -189,7 +189,7 @@ const requiresStatusTaskTime = computed(() => ['cleaning', 'maintenance'].includ
 const availableBranches = ref<Branch[]>(Array.isArray(props.branches) ? [...props.branches] : []);
 const branchOptions = computed(() => availableBranches.value.map((branch) => ({ value: String(branch.id), label: branch.name })));
 const plateFormatOptions = computed<PlateFormatOption[]>(() => Array.isArray(props.plateFormats) ? props.plateFormats : []);
-const selectedPlateFormat = computed(() => form.license_plate_format || props.selectedPlateFormat || 'custom');
+const selectedPlateFormat = computed(() => form.license_plate_format || props.selectedPlateFormat || '');
 const selectedPlateFormatOption = computed(() => plateFormatOptions.value.find((option) => option.value === selectedPlateFormat.value) ?? null);
 const plateFormatHelper = computed(() => {
     const selected = selectedPlateFormatOption.value;
@@ -304,7 +304,7 @@ const form = useForm({
     model: safeStr(props.car?.model),
     year: safeNum(props.car?.year),
     license_plate: safeStr(props.car?.license_plate),
-    license_plate_format: safeStr(props.car?.license_plate_format, props.selectedPlateFormat ?? 'custom'),
+    license_plate_format: safeStr(props.car?.license_plate_format, props.selectedPlateFormat ?? ''),
     branch_id: safeStr(props.car?.branch_id),
     color: safeLower(props.car?.color, 'white'),
     price_per_day: safeNum(props.car?.price_per_day),
@@ -314,13 +314,13 @@ const form = useForm({
     allowed_km_per_week: safeNum(props.car?.allowed_km_per_week),
     allowed_km_per_month: safeNum(props.car?.allowed_km_per_month),
     mileage: safeNum(props.car?.mileage),
-    transmission: safeStr(props.car?.transmission, 'automatic'),
+    transmission: safeStr(props.car?.transmission),
     seats: safeNum(props.car?.seats),
     engine_power: safeNum(props.car?.engine_power),
-    fuel_type: safeLower(props.car?.fuel_type, 'gasoline'),
+    fuel_type: safeLower(props.car?.fuel_type, ''),
     description: safeStr(props.car?.description),
     description_translations: localizedTextRecord(props.car?.description_translations, safeStr(props.car?.description)),
-    status: safeStr(props.car?.status, 'available'),
+    status: safeStr(props.car?.status),
     status_task_time: safeStr(props.car?.status_task_time),
     image: [] as string[],
     image_temp_folders: [] as string[],
@@ -1060,7 +1060,7 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
 
                     <div>
                         <Label for="branch-phone-modal">{{ localize('Phone', 'الهاتف') }}</Label>
-                        <Input id="branch-phone-modal" v-model="branchForm.phone_1" :placeholder="localize('Phone number', 'رقم الهاتف')" />
+                        <Input id="branch-phone-modal" v-model="branchForm.phone_1" dir="ltr" class="text-left" :placeholder="localize('Phone number', 'رقم الهاتف')" />
                         <InputError :message="branchForm.errors.phone_1" class="mt-1" />
                     </div>
 

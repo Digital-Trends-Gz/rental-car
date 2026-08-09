@@ -28,7 +28,7 @@ class RevenueTransactionsController
             )
             ->first();
 
-        $rows = $rowsQuery
+        $rows = (clone $rowsQuery)
             ->orderByDesc('paid_at')
             ->paginate(25)
             ->withQueryString();
@@ -42,7 +42,7 @@ class RevenueTransactionsController
                     ELSE 0
                  END) as revenue"
             )
-            ->groupBy('currency')
+            ->groupByRaw("UPPER(COALESCE(currency, 'USD'))")
             ->orderBy('currency')
             ->get();
 
@@ -72,7 +72,7 @@ class RevenueTransactionsController
     {
         [$rowsQuery, $filters] = $this->buildFilteredRowsQuery($request);
 
-        $rows = $rowsQuery
+        $rows = (clone $rowsQuery)
             ->orderByDesc('paid_at')
             ->get();
 
@@ -128,7 +128,7 @@ class RevenueTransactionsController
     {
         [$rowsQuery, $filters] = $this->buildFilteredRowsQuery($request);
 
-        $rows = $rowsQuery
+        $rows = (clone $rowsQuery)
             ->orderByDesc('paid_at')
             ->get();
 

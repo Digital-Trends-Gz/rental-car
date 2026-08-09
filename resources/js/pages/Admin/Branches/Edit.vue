@@ -236,25 +236,25 @@ function submit() {
 
                         <div>
                             <Label for="google_map_url">{{ t('dashboard.admin.branches.form.google_map_url') }}</Label>
-                            <Input id="google_map_url" v-model="form.google_map_url" :placeholder="t('dashboard.admin.branches.form.google_map_url_placeholder')" />
+                            <Input id="google_map_url" v-model="form.google_map_url" dir="ltr" class="text-left" :placeholder="t('dashboard.admin.branches.form.google_map_url_placeholder')" />
                             <InputError :message="form.errors.google_map_url" class="mt-1" />
                         </div>
 
                         <div>
                             <Label for="phone_1">{{ t('dashboard.admin.branches.form.phone_1') }}</Label>
-                            <Input id="phone_1" v-model="form.phone_1" :placeholder="t('dashboard.admin.branches.form.phone_placeholder')" />
+                            <Input id="phone_1" v-model="form.phone_1" dir="ltr" class="text-left" :placeholder="t('dashboard.admin.branches.form.phone_placeholder')" />
                             <InputError :message="form.errors.phone_1" class="mt-1" />
                         </div>
 
                         <div>
                             <Label for="phone_2">{{ t('dashboard.admin.branches.form.phone_2') }}</Label>
-                            <Input id="phone_2" v-model="form.phone_2" :placeholder="t('dashboard.admin.branches.form.phone_placeholder')" />
+                            <Input id="phone_2" v-model="form.phone_2" dir="ltr" class="text-left" :placeholder="t('dashboard.admin.branches.form.phone_placeholder')" />
                             <InputError :message="form.errors.phone_2" class="mt-1" />
                         </div>
 
                         <div>
                             <Label for="whatsapp">{{ t('dashboard.admin.branches.form.whatsapp') }}</Label>
-                            <Input id="whatsapp" v-model="form.whatsapp" :placeholder="t('dashboard.admin.branches.form.phone_placeholder')" />
+                            <Input id="whatsapp" v-model="form.whatsapp" dir="ltr" class="text-left" :placeholder="t('dashboard.admin.branches.form.phone_placeholder')" />
                             <InputError :message="form.errors.whatsapp" class="mt-1" />
                         </div>
 

@@ -69,6 +69,11 @@ const props = defineProps<{
 const { t, locale } = useTrans();
 const numberLocale = computed(() => (locale.value === 'ar' ? 'ar' : 'en-US'));
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const tr = (key: string, fallback: string, params: Record<string, string | number> = {}) => {
+    const translated = t(key, params);
+
+    return translated === key ? fallback : translated;
+};
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat(numberLocale.value, {
@@ -124,17 +129,17 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
 </script>
 
 <template>
-    <Head :title="t('dashboard.super_admin.head_title')" />
+    <Head :title="tr('dashboard.super_admin.head_title', 'Super Admin Dashboard')" />
     <SuperAdminLayout>
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold">{{ t('dashboard.super_admin.title') }}</h1>
-                    <p class="text-muted-foreground">{{ t('dashboard.super_admin.subtitle') }}</p>
+                    <h1 class="text-3xl font-bold">{{ tr('dashboard.super_admin.title', 'Super Admin Dashboard') }}</h1>
+                    <p class="text-muted-foreground">{{ tr('dashboard.super_admin.subtitle', 'Manage all tenants and system-wide settings') }}</p>
                 </div>
                 <Link href="/superadmin/tenants/create">
                     <button class="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90">
-                        + {{ t('dashboard.super_admin.new_tenant') }}
+                        + {{ tr('dashboard.super_admin.new_tenant', 'New Tenant') }}
                     </button>
                 </Link>
             </div>
@@ -142,56 +147,56 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">{{ t('dashboard.super_admin.cards.total_tenants') }}</CardTitle>
+                        <CardTitle class="text-sm font-medium">{{ tr('dashboard.super_admin.cards.total_tenants', 'Total Tenants') }}</CardTitle>
                         <Building2 class="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div class="text-2xl font-bold">{{ props.stats.total_tenants }}</div>
-                        <p class="text-xs text-muted-foreground">{{ t('dashboard.super_admin.cards.active_tenants', { count: props.stats.active_tenants }) }}</p>
+                        <p class="text-xs text-muted-foreground">{{ tr('dashboard.super_admin.cards.active_tenants', ':count active', { count: props.stats.active_tenants }) }}</p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">{{ t('dashboard.super_admin.cards.total_users') }}</CardTitle>
+                        <CardTitle class="text-sm font-medium">{{ tr('dashboard.super_admin.cards.total_users', 'Total Users') }}</CardTitle>
                         <Users class="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div class="text-2xl font-bold">{{ props.stats.total_users }}</div>
-                        <p class="text-xs text-muted-foreground">{{ t('dashboard.super_admin.cards.across_all_tenants') }}</p>
+                        <p class="text-xs text-muted-foreground">{{ tr('dashboard.super_admin.cards.across_all_tenants', 'Across all tenants') }}</p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">{{ t('dashboard.super_admin.cards.total_reservations') }}</CardTitle>
+                        <CardTitle class="text-sm font-medium">{{ tr('dashboard.super_admin.cards.total_reservations', 'Total Reservations') }}</CardTitle>
                         <Car class="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div class="text-2xl font-bold">{{ props.stats.total_reservations }}</div>
-                        <p class="text-xs text-muted-foreground">{{ t('dashboard.super_admin.cards.all_time_bookings') }}</p>
+                        <p class="text-xs text-muted-foreground">{{ tr('dashboard.super_admin.cards.all_time_bookings', 'All-time bookings') }}</p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">{{ t('dashboard.super_admin.cards.total_revenue') }}</CardTitle>
+                        <CardTitle class="text-sm font-medium">{{ tr('dashboard.super_admin.cards.total_revenue', 'Total Revenue') }}</CardTitle>
                         <DollarSign class="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div class="text-2xl font-bold">{{ formatCurrency(props.stats.total_revenue) }}</div>
-                        <p class="text-xs text-muted-foreground">{{ t('dashboard.super_admin.cards.platform_wide') }}</p>
+                        <p class="text-xs text-muted-foreground">{{ tr('dashboard.super_admin.cards.platform_wide', 'Platform-wide') }}</p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">{{ t('dashboard.super_admin.cards.growth_rate') }}</CardTitle>
+                        <CardTitle class="text-sm font-medium">{{ tr('dashboard.super_admin.cards.growth_rate', 'Growth Rate') }}</CardTitle>
                         <TrendingUp class="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div class="text-2xl font-bold">+12.5%</div>
-                        <p class="text-xs text-muted-foreground">{{ t('dashboard.super_admin.cards.vs_last_month') }}</p>
+                        <p class="text-xs text-muted-foreground">{{ tr('dashboard.super_admin.cards.vs_last_month', 'vs last month') }}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -200,11 +205,11 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                 <CardHeader>
                     <div class="flex items-center justify-between">
                         <div>
-                            <CardTitle>{{ t('dashboard.super_admin.recent_tenants.title') }}</CardTitle>
-                            <CardDescription>{{ t('dashboard.super_admin.recent_tenants.subtitle') }}</CardDescription>
+                            <CardTitle>{{ tr('dashboard.super_admin.recent_tenants.title', 'Recent Tenants') }}</CardTitle>
+                            <CardDescription>{{ tr('dashboard.super_admin.recent_tenants.subtitle', 'Latest registered rental companies') }}</CardDescription>
                         </div>
                         <Link href="/superadmin/tenants" class="text-sm text-primary hover:underline">
-                            {{ t('dashboard.super_admin.recent_tenants.view_all') }} ->
+                            {{ tr('dashboard.super_admin.recent_tenants.view_all', 'View all') }} ->
                         </Link>
                     </div>
                 </CardHeader>
@@ -230,7 +235,7 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                                         class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
                                         :class="tenant.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'"
                                     >
-                                        {{ tenant.is_active ? t('dashboard.super_admin.status.active') : t('dashboard.super_admin.status.inactive') }}
+                                        {{ tenant.is_active ? tr('dashboard.super_admin.status.active', 'Active') : tr('dashboard.super_admin.status.inactive', 'Inactive') }}
                                     </span>
                                     <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
                                         {{ tenant.subscription_plan?.name || localize('Unassigned', 'غير معيّن') }}
@@ -244,7 +249,7 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                         </div>
 
                         <div v-if="!props.recentTenants || props.recentTenants.length === 0" class="py-8 text-center text-muted-foreground">
-                            {{ t('dashboard.super_admin.recent_tenants.empty') }}
+                            {{ tr('dashboard.super_admin.recent_tenants.empty', 'No tenants registered yet') }}
                         </div>
                     </div>
                 </CardContent>
@@ -252,7 +257,7 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
 
             <Card>
                 <CardHeader>
-                    <CardTitle>{{ t('dashboard.sidebar.super_admin.subscription') }}</CardTitle>
+                    <CardTitle>{{ tr('dashboard.sidebar.super_admin.subscription', 'Subscription') }}</CardTitle>
                     <CardDescription>{{ localize('Latest tenant subscription payments', 'أحدث مدفوعات اشتراكات المستأجرين') }}</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -261,19 +266,19 @@ const formatSubscriptionAmount = (amount: number | null, currency: string | null
                             <thead>
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                        {{ t('dashboard.common.tenant') }}
+                                        {{ tr('dashboard.common.tenant', 'Tenant') }}
                                     </th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                        {{ t('dashboard.common.method') }}
+                                        {{ tr('dashboard.common.method', 'Method') }}
                                     </th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                        {{ t('dashboard.common.amount') }}
+                                        {{ tr('dashboard.common.amount', 'Amount') }}
                                     </th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                        {{ t('dashboard.super_admin.users.index.user') }}
+                                        {{ tr('dashboard.super_admin.users.index.user', 'User') }}
                                     </th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                        {{ t('dashboard.common.date') }}
+                                        {{ tr('dashboard.common.date', 'Date') }}
                                     </th>
                                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                                         {{ localize('Trial End Date', 'تاريخ انتهاء الفترة التجريبية') }}

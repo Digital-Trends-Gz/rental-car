@@ -43,6 +43,11 @@ import { type NavItem } from '@/types';
 
 const page = usePage();
 const { t } = useTrans();
+const tr = (key: string, fallback: string) => {
+    const translated = t(key);
+
+    return translated === key ? fallback : translated;
+};
 const authPermissions = computed<string[]>(() =>
     Array.isArray(page.props.auth?.permissions) ? page.props.auth.permissions : [],
 );
@@ -72,47 +77,47 @@ const hasPermission = (permission?: string) =>
 
 const superAdminNav = computed<NavItem[]>(() => [
     {
-        title: t('dashboard.sidebar.super_admin.dashboard'),
+        title: tr('dashboard.sidebar.super_admin.dashboard', 'Dashboard'),
         href: '/superadmin',
         icon: LayoutDashboard,
         permission: 'view-dashboard',
     },
     {
-        title: t('dashboard.sidebar.super_admin.revenue'),
+        title: tr('dashboard.sidebar.super_admin.revenue', 'Revenue'),
         icon: DollarSign,
         permission: 'manage-revenue',
         children: [
-            { title: t('dashboard.sidebar.super_admin.subscription'), href: '/superadmin/revenue/subscription', icon: CreditCard },
-            { title: t('dashboard.sidebar.super_admin.transactions'), href: '/superadmin/revenue/transactions', icon: Receipt },
+            { title: tr('dashboard.sidebar.super_admin.subscription', 'Subscription'), href: '/superadmin/revenue/subscription', icon: CreditCard },
+            { title: tr('dashboard.sidebar.super_admin.transactions', 'Transactions'), href: '/superadmin/revenue/transactions', icon: Receipt },
         ],
     },
     {
-        title: t('dashboard.sidebar.super_admin.user_management'),
+        title: tr('dashboard.sidebar.super_admin.user_management', 'User Management'),
         icon: Users,
         children: [
-            { title: t('dashboard.sidebar.super_admin.users'), href: '/superadmin/users', icon: UserCircle, permission: 'manage-users' },
-            { title: t('dashboard.sidebar.super_admin.roles'), href: '/superadmin/roles', icon: Shield, permission: 'manage-roles' },
-            { title: t('dashboard.sidebar.super_admin.tenants'), href: '/superadmin/tenants', icon: Users, permission: 'manage-tenants' },
+            { title: tr('dashboard.sidebar.super_admin.users', 'Users'), href: '/superadmin/users', icon: UserCircle, permission: 'manage-users' },
+            { title: tr('dashboard.sidebar.super_admin.roles', 'Roles'), href: '/superadmin/roles', icon: Shield, permission: 'manage-roles' },
+            { title: tr('dashboard.sidebar.super_admin.tenants', 'Tenants'), href: '/superadmin/tenants', icon: Users, permission: 'manage-tenants' },
         ].filter(item => hasPermission(item.permission)),
     },
     {
-        title: t('dashboard.sidebar.super_admin.product_management'),
+        title: tr('dashboard.sidebar.super_admin.product_management', 'Product Management'),
         icon: Package,
         permission: 'manage-settings',
         children: [
-            { title: t('dashboard.sidebar.super_admin.plans'), href: '/superadmin/plans', icon: Tag },
-            { title: t('dashboard.sidebar.super_admin.discounts'), href: '/superadmin/discounts', icon: Percent },
+            { title: tr('dashboard.sidebar.super_admin.plans', 'Plans'), href: '/superadmin/plans', icon: Tag },
+            { title: tr('dashboard.sidebar.super_admin.discounts', 'Discounts'), href: '/superadmin/discounts', icon: Percent },
         ],
     },
     {
-        title: t('dashboard.sidebar.super_admin.cars'),
+        title: tr('dashboard.sidebar.super_admin.cars', 'Cars'),
         href: '/superadmin/cars',
         icon: CarFront,
-        description: t('dashboard.sidebar.super_admin.cars_description'),
+        description: tr('dashboard.sidebar.super_admin.cars_description', 'All cars with tenant name'),
         permission: 'manage-cars',
     },
     {
-        title: t('dashboard.sidebar.super_admin.reservations'),
+        title: tr('dashboard.sidebar.super_admin.reservations', 'Reservations'),
         href: '/superadmin/reservations',
         icon: CalendarDays,
         permission: 'manage-reservations',
@@ -127,16 +132,16 @@ const superAdminNav = computed<NavItem[]>(() => [
         ].filter(item => hasPermission(item.permission)),
     },
     {
-        title: t('dashboard.sidebar.super_admin.settings'),
+        title: tr('dashboard.sidebar.super_admin.settings', 'Settings'),
         icon: Settings,
         permission: 'manage-settings',
         children: [
-            { title: t('dashboard.sidebar.super_admin.general_settings'), href: '/superadmin/settings/general', icon: Cog },
+            { title: tr('dashboard.sidebar.super_admin.general_settings', 'General Settings'), href: '/superadmin/settings/general', icon: Cog },
             { title: 'Branding', href: '/superadmin/settings/branding', icon: Cog },
             { title: 'Design', href: '/superadmin/settings/design', icon: Palette },
             { title: 'Applications Page', href: '/superadmin/settings/applications-page', icon: Smartphone },
             { title: 'Plans Page', href: '/superadmin/settings/plans-page', icon: DollarSign },
-            { title: 'Landing Translations', href: '/superadmin/settings/landing-translations', icon: Languages },
+            { title: tr('dashboard.sidebar.super_admin.landing_translations', 'Landing Translations'), href: '/superadmin/settings/landing-translations', icon: Languages },
             { title: 'Login Settings', href: '/superadmin/settings/login', icon: Shield },
             { title: 'Payment Providers', href: '/superadmin/settings/payment-providers', icon: CreditCard },
             { title: 'Plate Format Templates', href: '/superadmin/settings/plate-format-templates', icon: Tag },
@@ -180,7 +185,7 @@ const filteredNav = computed(() => {
 
 <template>
     <SidebarGroup class="px-2 py-0">
-        <SidebarGroupLabel>{{ t('dashboard.sidebar.super_admin_section') }}</SidebarGroupLabel>
+        <SidebarGroupLabel>{{ tr('dashboard.sidebar.super_admin_section', 'Super Admin') }}</SidebarGroupLabel>
         <SidebarMenu>
             <template v-for="item in filteredNav" :key="item.title">
                 <!-- Single link (no children) -->
