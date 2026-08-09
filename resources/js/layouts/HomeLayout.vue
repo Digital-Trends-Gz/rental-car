@@ -887,9 +887,16 @@ onBeforeUnmount(() => {
                     <div class="space-y-6">
                         <div class="flex items-center space-x-2">
                             <div
-                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600"
+                                class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 to-orange-600"
                             >
+                                <img
+                                    v-if="siteLogoUrl"
+                                    :src="siteLogoUrl"
+                                    :alt="siteName"
+                                    class="h-full w-full bg-white object-contain p-1"
+                                />
                                 <svg
+                                    v-else
                                     class="h-6 w-6 text-white"
                                     fill="none"
                                     stroke="currentColor"
