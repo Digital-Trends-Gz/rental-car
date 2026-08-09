@@ -1051,7 +1051,7 @@ onMounted(() => {
                 <!-- Total Revenue -->
                 <div class="overflow-hidden rounded-lg bg-white shadow">
                     <div class="p-5">
-                        <div class="flex items-center">
+                        <div class="flex items-center gap-5">
                             <div class="flex-shrink-0">
                                 <div
                                     class="flex h-8 w-8 items-center justify-center rounded-md bg-green-500"
@@ -1071,7 +1071,7 @@ onMounted(() => {
                                     </svg>
                                 </div>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="min-w-0 flex-1">
                                 <dl>
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
@@ -1092,7 +1092,7 @@ onMounted(() => {
                 <!-- Platform Visits -->
                 <div class="overflow-hidden rounded-lg bg-white shadow">
                     <div class="p-5">
-                        <div class="flex items-center">
+                        <div class="flex items-center gap-5">
                             <div class="flex-shrink-0">
                                 <div
                                     class="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500"
@@ -1118,7 +1118,7 @@ onMounted(() => {
                                     </svg>
                                 </div>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="min-w-0 flex-1">
                                 <dl>
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
@@ -1139,7 +1139,7 @@ onMounted(() => {
                 <!-- Active Reservations -->
                 <div class="overflow-hidden rounded-lg bg-white shadow">
                     <div class="p-5">
-                        <div class="flex items-center">
+                        <div class="flex items-center gap-5">
                             <div class="flex-shrink-0">
                                 <div
                                     class="flex h-8 w-8 items-center justify-center rounded-md bg-yellow-500"
@@ -1159,7 +1159,7 @@ onMounted(() => {
                                     </svg>
                                 </div>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="min-w-0 flex-1">
                                 <dl>
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
@@ -1180,7 +1180,7 @@ onMounted(() => {
                 <!-- New Clients -->
                 <div class="overflow-hidden rounded-lg bg-white shadow">
                     <div class="p-5">
-                        <div class="flex items-center">
+                        <div class="flex items-center gap-5">
                             <div class="flex-shrink-0">
                                 <div
                                     class="flex h-8 w-8 items-center justify-center rounded-md bg-purple-500"
@@ -1200,7 +1200,7 @@ onMounted(() => {
                                     </svg>
                                 </div>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="min-w-0 flex-1">
                                 <dl>
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
@@ -1224,7 +1224,7 @@ onMounted(() => {
                 <!-- Total Cars -->
                 <div class="overflow-hidden rounded-lg bg-white shadow">
                     <div class="p-5">
-                        <div class="flex items-center">
+                        <div class="flex items-center gap-5">
                             <div class="flex-shrink-0">
                                 <div
                                     class="flex h-8 w-8 items-center justify-center rounded-md"
@@ -1248,7 +1248,7 @@ onMounted(() => {
                                     </svg>
                                 </div>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="min-w-0 flex-1">
                                 <dl>
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
@@ -1269,7 +1269,7 @@ onMounted(() => {
                 <!-- Available Cars -->
                 <div class="overflow-hidden rounded-lg bg-white shadow">
                     <div class="p-5">
-                        <div class="flex items-center">
+                        <div class="flex items-center gap-5">
                             <div class="flex-shrink-0">
                                 <div
                                     class="flex h-8 w-8 items-center justify-center rounded-md"
@@ -1293,7 +1293,7 @@ onMounted(() => {
                                     </svg>
                                 </div>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="min-w-0 flex-1">
                                 <dl>
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
@@ -1314,7 +1314,7 @@ onMounted(() => {
                 <!-- Rented Cars -->
                 <div class="overflow-hidden rounded-lg bg-white shadow">
                     <div class="p-5">
-                        <div class="flex items-center">
+                        <div class="flex items-center gap-5">
                             <div class="flex-shrink-0">
                                 <div
                                     class="flex h-8 w-8 items-center justify-center rounded-md"
@@ -1338,7 +1338,7 @@ onMounted(() => {
                                     </svg>
                                 </div>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="min-w-0 flex-1">
                                 <dl>
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
@@ -1359,7 +1359,7 @@ onMounted(() => {
                 <!-- Unavailable Cars -->
                 <div class="overflow-hidden rounded-lg bg-white shadow">
                     <div class="p-5">
-                        <div class="flex items-center">
+                        <div class="flex items-center gap-5">
                             <div class="flex-shrink-0">
                                 <div
                                     class="flex h-8 w-8 items-center justify-center rounded-md"
@@ -1383,7 +1383,7 @@ onMounted(() => {
                                     </svg>
                                 </div>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="min-w-0 flex-1">
                                 <dl>
                                     <dt
                                         class="truncate text-sm font-medium text-gray-500"
