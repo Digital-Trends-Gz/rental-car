@@ -83,6 +83,12 @@ interface PlateFormatOption {
 
 interface ModelOption extends CatalogOption {
     years: CatalogOption[];
+    specs?: {
+        fuel_type?: string | null;
+        transmission?: string | null;
+        seats?: number | string | null;
+        engine_power?: number | string | null;
+    } | null;
 }
 
 interface MakeOption extends CatalogOption {
@@ -209,9 +215,13 @@ const transmissionOptions = computed(() => [
 ]);
 const fuelTypeOptions = computed(() => fuelTypes.value.map((fuel) => ({ value: fuel.value, label: fuel.label })));
 const countryOptions = computed(() => props.countries.map((country) => ({ value: country.value, label: country.label })));
+const availableCatalog = ref({
+    years: [...props.catalog.years],
+    makes: [...props.catalog.makes],
+});
 
 const makeOptions = computed<MakeOption[]>(() => {
-    const options = [...props.catalog.makes];
+    const options = [...availableCatalog.value.makes];
     const currentMake = safeStr(form.make).trim();
 
     if (currentMake && !options.some((option) => option.value === currentMake)) {
@@ -228,7 +238,7 @@ const makeOptions = computed<MakeOption[]>(() => {
 const yearOptions = computed<CatalogOption[]>(() => {
     const selectedMake = makeOptions.value.find((option) => option.value === form.make);
     const selectedModel = selectedMake?.models.find((option) => option.value === form.model);
-    const options = [...(selectedModel?.years?.length ? selectedModel.years : props.catalog.years)];
+    const options = [...(selectedModel?.years?.length ? selectedModel.years : availableCatalog.value.years)];
     const currentYear = safeStr(form.year).trim();
 
     if (currentYear && !options.some((option) => option.value === currentYear)) {
@@ -331,6 +341,8 @@ const form = useForm({
 
 const showBranchModal = ref(false);
 const branchSubmitting = ref(false);
+const showCatalogModal = ref(false);
+const catalogSubmitting = ref(false);
 const branchForm = useForm({
     name: '',
     country: '',
@@ -341,6 +353,20 @@ const branchForm = useForm({
     cr_number: '',
     manager_name: '',
     manager_civil_number: '',
+});
+const catalogEntryForm = useForm({
+    make: '',
+    model: '',
+    year: '',
+    fuel_type: '',
+    transmission: '',
+    seats: '',
+    engine_power: '',
+});
+
+const selectedCatalogModel = computed<ModelOption | null>(() => {
+    const selectedMake = makeOptions.value.find((option) => option.value === form.make);
+    return selectedMake?.models.find((option) => option.value === form.model) ?? null;
 });
 
 watch(
@@ -361,7 +387,7 @@ watch(
         const selectedModel = makeOptions.value
             .find((option) => option.value === nextMake)
             ?.models.find((option) => option.value === form.model);
-        const validYearValues = new Set((selectedModel?.years?.length ? selectedModel.years : props.catalog.years).map((option) => option.value));
+        const validYearValues = new Set((selectedModel?.years?.length ? selectedModel.years : availableCatalog.value.years).map((option) => option.value));
 
         if (form.year && validYearValues.size > 0 && !validYearValues.has(form.year)) {
             form.year = '';
@@ -381,6 +407,8 @@ watch(
         if (form.year && validYearValues.size > 0 && !validYearValues.has(form.year)) {
             form.year = '';
         }
+
+        applyCatalogSpecs(selectedCatalogModel.value);
     },
 );
 
@@ -512,6 +540,111 @@ function appendBranch(branch: { id: number; name: string }) {
     }
 
     availableBranches.value = [...availableBranches.value, { id: branch.id, name: branch.name }];
+}
+
+function applyCatalogSpecs(model: ModelOption | null) {
+    const specs = model?.specs;
+
+    if (!specs) {
+        return;
+    }
+
+    if (specs.fuel_type) form.fuel_type = String(specs.fuel_type).toLowerCase();
+    if (specs.transmission) form.transmission = String(specs.transmission);
+    if (specs.seats) form.seats = String(specs.seats);
+    if (specs.engine_power) form.engine_power = String(specs.engine_power);
+}
+
+function resetCatalogEntryForm() {
+    catalogEntryForm.clearErrors();
+    catalogEntryForm.reset();
+    catalogEntryForm.make = safeStr(form.make);
+    catalogEntryForm.model = '';
+    catalogEntryForm.year = safeStr(form.year);
+    catalogEntryForm.fuel_type = safeStr(form.fuel_type);
+    catalogEntryForm.transmission = safeStr(form.transmission);
+    catalogEntryForm.seats = safeStr(form.seats);
+    catalogEntryForm.engine_power = safeStr(form.engine_power);
+}
+
+function openCatalogModal() {
+    resetCatalogEntryForm();
+    showCatalogModal.value = true;
+}
+
+function adminCatalogEntryUrl() {
+    const localeCode = String(page.props.locale || '').trim();
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    const localePrefix = localeCode && path.startsWith(`/${localeCode}/`) ? `/${localeCode}` : '';
+
+    return `${localePrefix}/admin/cars/catalog-entries`;
+}
+
+async function createCatalogEntryFromModal() {
+    catalogEntryForm.clearErrors();
+    catalogSubmitting.value = true;
+
+    try {
+        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '';
+        const formData = new FormData();
+
+        formData.append('make', catalogEntryForm.make);
+        formData.append('model', catalogEntryForm.model);
+        formData.append('year', catalogEntryForm.year);
+        formData.append('fuel_type', catalogEntryForm.fuel_type);
+        formData.append('transmission', catalogEntryForm.transmission);
+        formData.append('seats', catalogEntryForm.seats);
+        formData.append('engine_power', catalogEntryForm.engine_power);
+
+        const response = await fetch(adminCatalogEntryUrl(), {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                Accept: 'application/json',
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+            },
+            body: formData,
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            if (response.status === 422 && payload?.errors && typeof payload.errors === 'object') {
+                Object.entries(payload.errors as Record<string, string[]>).forEach(([field, messages]) => {
+                    catalogEntryForm.setError(field, Array.isArray(messages) ? String(messages[0] || '') : String(messages || ''));
+                });
+                return;
+            }
+
+            dispatchToast('error', String(payload?.message || localize('Vehicle model creation failed.', 'فشل إنشاء موديل السيارة.')));
+            return;
+        }
+
+        if (payload?.catalog) {
+            availableCatalog.value = {
+                years: Array.isArray(payload.catalog.years) ? payload.catalog.years : availableCatalog.value.years,
+                makes: Array.isArray(payload.catalog.makes) ? payload.catalog.makes : availableCatalog.value.makes,
+            };
+        }
+
+        if (payload?.entry) {
+            form.make = safeStr(payload.entry.make);
+            form.model = safeStr(payload.entry.model);
+            if (payload.entry.year) form.year = safeStr(payload.entry.year);
+            if (payload.entry.fuel_type) form.fuel_type = safeStr(payload.entry.fuel_type).toLowerCase();
+            if (payload.entry.transmission) form.transmission = safeStr(payload.entry.transmission);
+            if (payload.entry.seats) form.seats = safeStr(payload.entry.seats);
+            if (payload.entry.engine_power) form.engine_power = safeStr(payload.entry.engine_power);
+        }
+
+        dispatchToast('success', localize('Vehicle model saved successfully.', 'تم حفظ موديل السيارة بنجاح.'));
+        showCatalogModal.value = false;
+        resetCatalogEntryForm();
+    } catch (error) {
+        dispatchToast('error', error instanceof Error ? error.message : localize('Vehicle model creation failed.', 'فشل إنشاء موديل السيارة.'));
+    } finally {
+        catalogSubmitting.value = false;
+    }
 }
 
 async function createBranchFromModal() {
@@ -837,7 +970,12 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                     </div>
 
                     <div>
-                        <Label for="model">{{ localize('Model', 'الموديل') }}</Label>
+                        <div class="mb-1 flex items-center justify-between gap-3">
+                            <Label for="model">{{ localize('Model', 'الموديل') }}</Label>
+                            <Button type="button" variant="outline" size="sm" @click="openCatalogModal">
+                                {{ localize('New Model', 'موديل جديد') }}
+                            </Button>
+                        </div>
                         <SearchableSelect
                             v-model="form.model"
                             :options="modelOptions"
@@ -999,6 +1137,97 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                 </div>
             </form>
         </main>
+
+        <Dialog v-model:open="showCatalogModal">
+            <DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{{ localize('Add Vehicle Model', 'إضافة موديل سيارة') }}</DialogTitle>
+                    <DialogDescription>
+                        {{ localize('Save a model and its default specifications for this tenant only.', 'احفظ موديلًا ومواصفاته الافتراضية لهذا التيننت فقط.') }}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form class="grid gap-4 md:grid-cols-2" @submit.prevent="createCatalogEntryFromModal">
+                    <div>
+                        <Label for="catalog-make-modal">{{ localize('Make', 'الشركة المصنعة') }}</Label>
+                        <SearchableSelect
+                            v-model="catalogEntryForm.make"
+                            :options="makeOptions"
+                            :placeholder="localize('Select make', 'اختر الشركة المصنعة')"
+                            :search-placeholder="localize('Search make...', 'ابحث عن الشركة المصنعة...')"
+                            :empty-text="localize('No makes found.', 'لا توجد شركات مصنعة.')"
+                        />
+                        <InputError :message="catalogEntryForm.errors.make" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="catalog-model-modal">{{ localize('Model', 'الموديل') }}</Label>
+                        <Input id="catalog-model-modal" v-model="catalogEntryForm.model" :placeholder="localize('e.g., Tucson', 'مثال: Tucson')" />
+                        <InputError :message="catalogEntryForm.errors.model" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="catalog-year-modal">{{ localize('Year', 'السنة') }}</Label>
+                        <SearchableSelect
+                            v-model="catalogEntryForm.year"
+                            :options="availableCatalog.years"
+                            :placeholder="localize('Select year', 'اختر السنة')"
+                            :search-placeholder="localize('Search year...', 'ابحث عن السنة...')"
+                            :empty-text="localize('No years found.', 'لا توجد سنوات.')"
+                            clearable
+                        />
+                        <InputError :message="catalogEntryForm.errors.year" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="catalog-fuel-modal">{{ localize('Fuel Type', 'نوع الوقود') }}</Label>
+                        <SearchableSelect
+                            v-model="catalogEntryForm.fuel_type"
+                            :options="fuelTypeOptions"
+                            :placeholder="localize('Select fuel type', 'اختر نوع الوقود')"
+                            :search-placeholder="localize('Search fuel type...', 'ابحث عن نوع الوقود...')"
+                            :empty-text="localize('No fuel types found.', 'لا توجد أنواع وقود.')"
+                            clearable
+                        />
+                        <InputError :message="catalogEntryForm.errors.fuel_type" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="catalog-transmission-modal">{{ localize('Transmission', 'ناقل الحركة') }}</Label>
+                        <SearchableSelect
+                            v-model="catalogEntryForm.transmission"
+                            :options="transmissionOptions"
+                            :placeholder="localize('Select transmission', 'اختر ناقل الحركة')"
+                            :search-placeholder="localize('Search transmission...', 'ابحث عن ناقل الحركة...')"
+                            :empty-text="localize('No transmission types found.', 'لا توجد أنواع ناقل حركة.')"
+                            clearable
+                        />
+                        <InputError :message="catalogEntryForm.errors.transmission" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="catalog-seats-modal">{{ localize('Seats', 'عدد المقاعد') }}</Label>
+                        <Input id="catalog-seats-modal" v-model="catalogEntryForm.seats" type="number" min="1" max="20" :placeholder="localize('e.g., 5', 'مثال: 5')" />
+                        <InputError :message="catalogEntryForm.errors.seats" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <Label for="catalog-engine-power-modal">{{ localize('Engine Power (HP)', 'قدرة المحرك (حصان)') }}</Label>
+                        <Input id="catalog-engine-power-modal" v-model="catalogEntryForm.engine_power" type="number" min="1" :placeholder="localize('e.g., 150', 'مثال: 150')" />
+                        <InputError :message="catalogEntryForm.errors.engine_power" class="mt-1" />
+                    </div>
+
+                    <DialogFooter class="md:col-span-2">
+                        <Button type="button" variant="outline" :disabled="catalogSubmitting" @click="showCatalogModal = false">
+                            {{ localize('Cancel', 'إلغاء') }}
+                        </Button>
+                        <Button type="submit" :disabled="catalogSubmitting">
+                            {{ catalogSubmitting ? localize('Saving...', 'جارٍ الحفظ...') : localize('Save Model', 'حفظ الموديل') }}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
 
         <Dialog v-model:open="showBranchModal">
             <DialogContent class="sm:max-w-2xl">

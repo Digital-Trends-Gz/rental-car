@@ -329,6 +329,12 @@ class WebsiteSettingsController extends Controller
             $baseCurrencyCode
         );
 
+        $aboutTeamMembers = $this->sanitizeTeamMembersPreservingImages(
+            data_get($validated, 'about.team_members', []),
+            $existingSettings,
+            $request
+        );
+
         $siteSetting = TenantSiteSetting::updateOrCreate(
             ['tenant_id' => $tenant->id],
             [
@@ -363,7 +369,7 @@ class WebsiteSettingsController extends Controller
                         'ar' => $this->nullableString(data_get($validated, 'hero.button_text.ar')),
                     ],
                     'button_link' => $this->nullableString(data_get($validated, 'hero.button_link')),
-                    'image_url' => $this->nullableString(data_get($validated, 'hero.image_url')),
+                    'image_url' => $this->preservedJsonImageValue($request, $existingSettings, 'hero_image', 'hero.image_url', data_get($validated, 'hero.image_url')),
                 ],
                 'about' => [
                     'title' => [
@@ -395,7 +401,7 @@ class WebsiteSettingsController extends Controller
                         'ar' => $this->nullableString(data_get($validated, 'about.mission_subtitle.ar')),
                     ],
                     'values' => $this->sanitizeRepeatItems(data_get($validated, 'about.values', []), ['icon']),
-                    'team_members' => $this->sanitizeRepeatItems(data_get($validated, 'about.team_members', []), ['role', 'image_url']),
+                    'team_members' => $aboutTeamMembers,
                     'cta_title' => [
                         'en' => $this->nullableString(data_get($validated, 'about.cta_title.en')),
                         'ar' => $this->nullableString(data_get($validated, 'about.cta_title.ar')),
@@ -413,9 +419,9 @@ class WebsiteSettingsController extends Controller
                         'ar' => $this->nullableString(data_get($validated, 'about.cta_contact_text.ar')),
                     ],
                     'team_images' => [
-                        'sarah' => $this->nullableString(data_get($validated, 'about.team_images.sarah')),
-                        'michael' => $this->nullableString(data_get($validated, 'about.team_images.michael')),
-                        'emily' => $this->nullableString(data_get($validated, 'about.team_images.emily')),
+                        'sarah' => $this->preservedJsonImageValue($request, $existingSettings, 'about_team_sarah_image', 'about.team_images.sarah', data_get($validated, 'about.team_images.sarah')),
+                        'michael' => $this->preservedJsonImageValue($request, $existingSettings, 'about_team_michael_image', 'about.team_images.michael', data_get($validated, 'about.team_images.michael')),
+                        'emily' => $this->preservedJsonImageValue($request, $existingSettings, 'about_team_emily_image', 'about.team_images.emily', data_get($validated, 'about.team_images.emily')),
                     ],
                 ],
                 'contact' => [
@@ -462,7 +468,7 @@ class WebsiteSettingsController extends Controller
                             'en' => $this->nullableString(data_get($validated, 'seo.defaults.default_description.en')),
                             'ar' => $this->nullableString(data_get($validated, 'seo.defaults.default_description.ar')),
                         ],
-                        'og_image' => $this->nullableString(data_get($validated, 'seo.defaults.og_image')),
+                        'og_image' => $this->preservedJsonImageValue($request, $existingSettings, 'seo_og_image', 'seo.defaults.og_image', data_get($validated, 'seo.defaults.og_image')),
                         'og_image_alt' => [
                             'en' => $this->nullableString(data_get($validated, 'seo.defaults.og_image_alt.en')),
                             'ar' => $this->nullableString(data_get($validated, 'seo.defaults.og_image_alt.ar')),
@@ -1070,6 +1076,91 @@ class WebsiteSettingsController extends Controller
             ->filter()
             ->values()
             ->all();
+    }
+
+    private function sanitizeTeamMembersPreservingImages(mixed $items, ?TenantSiteSetting $existingSettings, Request $request): array
+    {
+        return collect(is_array($items) ? $items : [])
+            ->map(function ($item, $index) use ($existingSettings, $request) {
+                if (! is_array($item)) {
+                    return null;
+                }
+
+                $collection = 'about_team_member_image_'.$index;
+                $imageUrl = $this->nullableString(data_get($item, 'image_url'));
+
+                if ($imageUrl === null && ! $this->indexedImageUploadTouched($request, $index)) {
+                    $imageUrl = $this->latestSiteSettingFileUrl($existingSettings, $collection)
+                        ?: $this->nullableString(data_get($existingSettings?->about, "team_members.{$index}.image_url"));
+                }
+
+                $normalized = [
+                    'title' => [
+                        'en' => $this->nullableString(data_get($item, 'title.en')),
+                        'ar' => $this->nullableString(data_get($item, 'title.ar')),
+                    ],
+                    'description' => [
+                        'en' => $this->nullableString(data_get($item, 'description.en')),
+                        'ar' => $this->nullableString(data_get($item, 'description.ar')),
+                    ],
+                    'role' => $this->nullableString(data_get($item, 'role')),
+                    'image_url' => $imageUrl,
+                ];
+
+                $hasContent = collect($normalized)->flatten()->filter(fn ($value) => $this->nullableString($value) !== null)->isNotEmpty();
+
+                return $hasContent ? $normalized : null;
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function preservedJsonImageValue(Request $request, ?TenantSiteSetting $existingSettings, string $collection, string $jsonPath, mixed $submittedValue): ?string
+    {
+        $value = $this->nullableString($submittedValue);
+
+        if ($value !== null) {
+            return $value;
+        }
+
+        if ($this->imageUploadTouched($request, $collection)) {
+            return null;
+        }
+
+        return $this->latestSiteSettingFileUrl($existingSettings, $collection)
+            ?: $this->nullableString(data_get($existingSettings, $jsonPath));
+    }
+
+    private function imageUploadTouched(Request $request, string $collection): bool
+    {
+        $tempFolders = $request->input("{$collection}_temp_folders", []);
+        $removedFiles = $request->input("{$collection}_removed_files", []);
+
+        return (is_array($tempFolders) && array_filter($tempFolders) !== [])
+            || (is_array($removedFiles) && array_filter($removedFiles) !== []);
+    }
+
+    private function indexedImageUploadTouched(Request $request, int|string $index): bool
+    {
+        $tempFolders = data_get($request->input('about_team_member_image_temp_folders', []), (string) $index, []);
+        $removedFiles = data_get($request->input('about_team_member_image_removed_files', []), (string) $index, []);
+
+        return (is_array($tempFolders) && array_filter($tempFolders) !== [])
+            || (is_array($removedFiles) && array_filter($removedFiles) !== []);
+    }
+
+    private function latestSiteSettingFileUrl(?TenantSiteSetting $siteSetting, string $collection): ?string
+    {
+        if (! $siteSetting) {
+            return null;
+        }
+
+        $file = $siteSetting->relationLoaded('files')
+            ? $siteSetting->files->where('collection', $collection)->sortByDesc('id')->first()
+            : $siteSetting->files()->where('collection', $collection)->latest('id')->first();
+
+        return $file && $file->path ? TenantSiteSetting::publicUrlFromPath($file->path) : null;
     }
 
     /**

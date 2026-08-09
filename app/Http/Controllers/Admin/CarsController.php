@@ -20,6 +20,7 @@ use App\Models\CarMaintenance;
 use App\Models\CarViolation;
 use App\Models\Reservation;
 use App\Models\TenantSiteSetting;
+use App\Models\TenantCarCatalogEntry;
 use App\Services\Plans\PlanUsageLimits;
 use App\Support\BranchAccess;
 use App\Support\BranchLocationOptions;
@@ -183,7 +184,7 @@ class CarsController extends Controller
             'additionalPhotoFiles' => [],
             'catalog' => [
                 'years' => CarCatalogOptions::yearOptions(),
-                'makes' => CarCatalogOptions::makeOptions(),
+                'makes' => $this->carCatalogForTenant($user),
             ],
             'branches' => $this->branchAccess->availableBranchesForUser($user)->map(fn ($branch) => [
                 'id' => $branch->id,
@@ -202,6 +203,140 @@ class CarsController extends Controller
                 ], CarStatus::cases()),
             ],
         ]);
+    }
+
+    public function storeCatalogEntry(Request $request): JsonResponse
+    {
+        $tenantId = TenantContext::id() ?: (int) ($request->user()?->tenant_id ?? 0);
+
+        abort_if($tenantId <= 0, 403);
+
+        $validated = $request->validate([
+            'make' => ['required', 'string', 'max:255'],
+            'model' => ['required', 'string', 'max:255'],
+            'year' => ['nullable', 'integer', 'min:1990', 'max:'.((int) now()->format('Y') + 1)],
+            'fuel_type' => ['nullable', 'string', Rule::enum(FuelType::class)],
+            'transmission' => ['nullable', Rule::in(['automatic', 'manual'])],
+            'seats' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'engine_power' => ['nullable', 'integer', 'min:1', 'max:5000'],
+        ]);
+
+        $entry = TenantCarCatalogEntry::query()->updateOrCreate(
+            [
+                'tenant_id' => $tenantId,
+                'make' => trim((string) $validated['make']),
+                'model' => trim((string) $validated['model']),
+                'year' => $validated['year'] ?? null,
+            ],
+            [
+                'fuel_type' => $validated['fuel_type'] ?? null,
+                'transmission' => $validated['transmission'] ?? null,
+                'seats' => $validated['seats'] ?? null,
+                'engine_power' => $validated['engine_power'] ?? null,
+            ],
+        );
+
+        return response()->json([
+            'message' => 'Vehicle model saved successfully.',
+            'entry' => $this->catalogEntryPayload($entry),
+            'catalog' => [
+                'years' => CarCatalogOptions::yearOptions(),
+                'makes' => $this->carCatalogForTenant($request->user()),
+            ],
+        ]);
+    }
+
+    private function carCatalogForTenant(?\App\Models\User $user): array
+    {
+        $makes = collect(CarCatalogOptions::makeOptions())
+            ->mapWithKeys(fn (array $make) => [(string) $make['value'] => $make])
+            ->all();
+
+        $tenantId = TenantContext::id() ?: (int) ($user?->tenant_id ?? 0);
+        if ($tenantId <= 0) {
+            return array_values($makes);
+        }
+
+        TenantCarCatalogEntry::query()
+            ->where('tenant_id', $tenantId)
+            ->orderBy('make')
+            ->orderBy('model')
+            ->orderByDesc('year')
+            ->get()
+            ->each(function (TenantCarCatalogEntry $entry) use (&$makes): void {
+                $makeName = trim((string) $entry->make);
+                $modelName = trim((string) $entry->model);
+
+                if ($makeName === '' || $modelName === '') {
+                    return;
+                }
+
+                if (!isset($makes[$makeName])) {
+                    $makes[$makeName] = [
+                        'value' => $makeName,
+                        'label' => $makeName,
+                        'models' => [],
+                    ];
+                }
+
+                $models = collect($makes[$makeName]['models'] ?? [])
+                    ->mapWithKeys(fn (array $model) => [(string) $model['value'] => $model])
+                    ->all();
+
+                if (!isset($models[$modelName])) {
+                    $models[$modelName] = [
+                        'value' => $modelName,
+                        'label' => $modelName,
+                        'years' => [],
+                        'specs' => null,
+                    ];
+                }
+
+                if ($entry->year) {
+                    $years = collect($models[$modelName]['years'] ?? [])
+                        ->mapWithKeys(fn (array $year) => [(string) $year['value'] => $year])
+                        ->all();
+                    $years[(string) $entry->year] = [
+                        'value' => (string) $entry->year,
+                        'label' => (string) $entry->year,
+                    ];
+                    $models[$modelName]['years'] = collect($years)
+                        ->sortByDesc(fn (array $year) => (int) $year['value'])
+                        ->values()
+                        ->all();
+                }
+
+                $models[$modelName]['specs'] = array_filter([
+                    'fuel_type' => $entry->fuel_type,
+                    'transmission' => $entry->transmission,
+                    'seats' => $entry->seats,
+                    'engine_power' => $entry->engine_power,
+                ], static fn ($value) => $value !== null && $value !== '');
+
+                $makes[$makeName]['models'] = collect($models)
+                    ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+                    ->values()
+                    ->all();
+            });
+
+        return collect($makes)
+            ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+    }
+
+    private function catalogEntryPayload(TenantCarCatalogEntry $entry): array
+    {
+        return [
+            'id' => $entry->id,
+            'make' => $entry->make,
+            'model' => $entry->model,
+            'year' => $entry->year,
+            'fuel_type' => $entry->fuel_type,
+            'transmission' => $entry->transmission,
+            'seats' => $entry->seats,
+            'engine_power' => $entry->engine_power,
+        ];
     }
 
     /**
@@ -631,7 +766,7 @@ class CarsController extends Controller
             'additionalPhotoFiles' => $additionalPhotoFiles,
             'catalog' => [
                 'years' => CarCatalogOptions::yearOptions(),
-                'makes' => CarCatalogOptions::makeOptions(),
+                'makes' => $this->carCatalogForTenant(request()->user()),
             ],
             'branches' => $this->branchAccess->availableBranchesForUser(request()->user())->map(fn ($branch) => [
                 'id' => $branch->id,

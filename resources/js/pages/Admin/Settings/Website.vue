@@ -1312,42 +1312,35 @@ function submit() {
             form.logo_temp_folders = [];
             form.logo_removed_files = [];
             logoRemovedFileIds.value = [];
-            fileUploadRef.value?.resetFiles();
 
             faviconTempFolders.value = [];
             form.favicon_temp_folders = [];
             form.favicon_removed_files = [];
             faviconRemovedFileIds.value = [];
-            faviconUploadRef.value?.resetFiles();
 
             form.seo_og_image_temp_folders = [];
             form.seo_og_image_removed_files = [];
             seoOgImageRemovedFileIds.value = [];
-            seoFileUploadRef.value?.resetFiles();
 
             heroImageTempFolders.value = [];
             form.hero_image_temp_folders = [];
             form.hero_image_removed_files = [];
             heroImageRemovedFileIds.value = [];
-            heroImageUploadRef.value?.resetFiles();
 
             aboutSarahImageTempFolders.value = [];
             form.about_team_sarah_image_temp_folders = [];
             form.about_team_sarah_image_removed_files = [];
             aboutSarahImageRemovedFileIds.value = [];
-            aboutSarahImageUploadRef.value?.resetFiles();
 
             aboutMichaelImageTempFolders.value = [];
             form.about_team_michael_image_temp_folders = [];
             form.about_team_michael_image_removed_files = [];
             aboutMichaelImageRemovedFileIds.value = [];
-            aboutMichaelImageUploadRef.value?.resetFiles();
 
             aboutEmilyImageTempFolders.value = [];
             form.about_team_emily_image_temp_folders = [];
             form.about_team_emily_image_removed_files = [];
             aboutEmilyImageRemovedFileIds.value = [];
-            aboutEmilyImageUploadRef.value?.resetFiles();
 
             teamMemberImageTempFolders.value = [];
             teamMemberImageRemovedFileIds.value = [];
