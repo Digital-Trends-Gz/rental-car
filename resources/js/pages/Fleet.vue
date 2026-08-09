@@ -67,7 +67,7 @@ const applyFilters = () => {
     if (selectedYear.value) params.year = selectedYear.value;
     if (sortBy.value && sortBy.value !== 'make_asc') params.sort = sortBy.value;
 
-    router.get('/fleet', params, {
+    router.post('/fleet', params, {
         preserveState: true,
         preserveScroll: true,
         onFinish: () => {
@@ -88,7 +88,7 @@ const clearFilters = () => {
     sortBy.value = 'make_asc';
 
     isLoading.value = true;
-    router.get(
+    router.post(
         '/fleet',
         {},
         {

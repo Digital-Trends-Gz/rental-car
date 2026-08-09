@@ -34,6 +34,7 @@ Route::domain('{subdomain}.' . $baseDomain)->group(function () use ($localizedGr
         Route::middleware(['tenant.subscription', 'tenant.seo.redirects'])->group(function () {
             Route::get('/', [HomePagesController::class, 'index'])->name('tenant.home');
             Route::get('/fleet', [HomePagesController::class, 'fleet'])->name('tenant.fleet');
+            Route::post('/fleet', [HomePagesController::class, 'fleet'])->name('tenant.fleet.search');
             Route::get('/about', [HomePagesController::class, 'about'])->name('tenant.about');
             Route::get('/contact', [HomePagesController::class, 'contact'])->name('tenant.contact');
             Route::get('/privacy-policy', [HomePagesController::class, 'privacyPolicy'])->name('tenant.privacy-policy');
@@ -91,6 +92,7 @@ Route::domain($baseDomain)->group(function () use ($localizedGroup) {
             Route::get('/', [HomePagesController::class, 'index'])->name('home');
             Route::post('/', [HomePagesController::class, 'index'])->name('home.search');
             Route::get('/fleet', [HomePagesController::class, 'fleet'])->name('fleet');
+            Route::post('/fleet', [HomePagesController::class, 'fleet'])->name('fleet.search');
             Route::redirect('/applications', '/car-rental-apps')->name('applications');
             Route::get('/car-rental-apps', [HomePagesController::class, 'applications'])->name('car-rental-apps');
             Route::redirect('/plans', '/pricing-plans')->name('plans');

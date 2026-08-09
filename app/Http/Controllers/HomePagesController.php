@@ -251,6 +251,27 @@ class HomePagesController extends Controller
     public function fleet(Request $request)
     {
         $tenantId = TenantContext::id();
+        $filterKeys = ['search', 'tenant_id', 'branch_id', 'make', 'fuel_type', 'min_price', 'max_price', 'year', 'sort'];
+        $sessionKey = $tenantId ? "tenant_fleet_filters.{$tenantId}" : 'main_fleet_filters';
+        $submittedFilters = array_filter(
+            $request->only($filterKeys),
+            static fn ($value) => filled($value)
+        );
+
+        if ($request->isMethod('post')) {
+            $request->session()->put($sessionKey, $submittedFilters);
+        } elseif (!empty($submittedFilters)) {
+            $request->session()->put($sessionKey, $submittedFilters);
+
+            return redirect()->to($request->url());
+        }
+
+        $filters = $request->isMethod('post')
+            ? $submittedFilters
+            : array_merge(
+                (array) $request->session()->get($sessionKey, []),
+                array_filter($request->only(['page']), static fn ($value) => filled($value))
+            );
 
         $query = Car::withoutTenantScope()->whereIn('status', $this->publicFleetStatuses())
             ->where('tenant_id', '>', 0)
@@ -262,8 +283,8 @@ class HomePagesController extends Controller
             ])
             ->select('id', 'tenant_id', 'branch_id', 'make', 'model', 'year', 'price_per_day', 'description', 'description_translations', 'fuel_type', 'status');
         // Search functionality
-        if ($request->filled('search')) {
-            $searchTerm = $request->search;
+        if (filled($filters['search'] ?? null)) {
+            $searchTerm = $filters['search'];
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('make', 'like', "%{$searchTerm}%")
                     ->orWhere('model', 'like', "%{$searchTerm}%")
@@ -271,36 +292,36 @@ class HomePagesController extends Controller
             });
         }
 
-        if (!$tenantId && $request->filled('tenant_id')) {
-            $query->where('tenant_id', $request->integer('tenant_id'));
+        if (!$tenantId && filled($filters['tenant_id'] ?? null)) {
+            $query->where('tenant_id', (int) $filters['tenant_id']);
         }
 
-        if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->integer('branch_id'));
+        if (filled($filters['branch_id'] ?? null)) {
+            $query->where('branch_id', (int) $filters['branch_id']);
         }
 
         // Make filter
-        if ($request->filled('make')) {
-            $query->where('make', $request->make);
+        if (filled($filters['make'] ?? null)) {
+            $query->where('make', $filters['make']);
         }
 
         // Fuel type filter
-        if ($request->filled('fuel_type')) {
-            $query->where('fuel_type', $request->fuel_type);
+        if (filled($filters['fuel_type'] ?? null)) {
+            $query->where('fuel_type', $filters['fuel_type']);
         }
 
         // Year filter
-        if ($request->filled('year')) {
-            $query->where('year', $request->year);
+        if (filled($filters['year'] ?? null)) {
+            $query->where('year', $filters['year']);
         }
 
         // Price range filter
-        if ($request->filled('min_price')) {
-            $query->where('price_per_day', '>=', $request->min_price);
+        if (filled($filters['min_price'] ?? null)) {
+            $query->where('price_per_day', '>=', $filters['min_price']);
         }
 
-        if ($request->filled('max_price')) {
-            $query->where('price_per_day', '<=', $request->max_price);
+        if (filled($filters['max_price'] ?? null)) {
+            $query->where('price_per_day', '<=', $filters['max_price']);
         }
 
         $cars = $query
@@ -310,8 +331,7 @@ class HomePagesController extends Controller
                 CarStatus::RENTED->value,
             ])
             ->paginate(10)
-            ->through(fn (Car $car) => $this->carCardData($car))
-            ->withQueryString();
+            ->through(fn (Car $car) => $this->carCardData($car));
 
         // Get filter options
         $makes = Car::withoutTenantScope()
@@ -380,7 +400,7 @@ class HomePagesController extends Controller
             ])
             ->values();
 
-        $filters = $request->only(['search', 'tenant_id', 'branch_id', 'make', 'fuel_type', 'min_price', 'max_price', 'year']);
+        $filters = array_intersect_key($filters, array_flip($filterKeys));
         $seo = TenantSeoResolver::forPage(TenantContext::get(), 'fleet');
         $landingSettings = null;
         $availableLocales = null;
