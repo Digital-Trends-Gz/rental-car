@@ -3240,6 +3240,8 @@ return array (
           'rental_days' => 'أيام تأجير',
           'no_demand_pattern_detected' => 'لا يوجد نمط طلب واضح.',
           'today' => 'اليوم',
+          'now' => 'الآن',
+          'this_week' => 'هذا الأسبوع',
           'last_7_days' => 'آخر 7 أيام',
           'last_30_days' => 'آخر 30 يومًا',
           'this_month' => 'هذا الشهر',

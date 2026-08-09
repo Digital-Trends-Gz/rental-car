@@ -246,6 +246,16 @@ const severityLabel = (severity: string) => {
     return labels[severity.toLowerCase()] ?? severity;
 };
 
+const priorityLabel = (priority: string) => {
+    const labels: Record<string, string> = {
+        now: localize('Now', 'الآن'),
+        this_week: localize('This week', 'هذا الأسبوع'),
+        this_month: localize('This month', 'هذا الشهر'),
+    };
+
+    return labels[priority] ?? priority;
+};
+
 const lossLabel = (loss: LossItem) => {
     const labels: Record<string, string> = {
         unpaid_return_charges: localize('Unpaid return charges', 'رسوم رجوع غير مدفوعة'),
@@ -700,7 +710,7 @@ const hasData = computed(() =>
                             <div v-for="item in latestReport.ai_result.action_plan" :key="item.action" class="rounded-md border border-slate-100 bg-slate-50 p-3">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="text-sm font-semibold text-slate-950">{{ item.action }}</p>
-                                    <span class="text-xs font-semibold text-slate-500">{{ item.priority }}</span>
+                                    <span class="text-xs font-semibold text-slate-500">{{ priorityLabel(item.priority) }}</span>
                                 </div>
                                 <p class="mt-2 text-sm text-slate-600">{{ item.owner }} · {{ item.metric_to_watch }}</p>
                             </div>
