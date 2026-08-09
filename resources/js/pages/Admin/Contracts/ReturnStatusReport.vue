@@ -339,6 +339,26 @@ const localize = (en: string, ar: string) => {
     return locale.value === 'ar' ? (arabicTranslations[en] ?? ar) : en;
 };
 
+const translateReturnReportOption = (group: string, value: string, fallback: string) => {
+    const normalized = String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    const key = `${translationRoot}.${group}.${normalized}`;
+    const translated = t(key);
+
+    return translated === key ? fallback : translated;
+};
+
+const fuelLevelLabel = (value: string, fallback: string) =>
+    translateReturnReportOption('fuel_levels', value, fallback);
+
+const vehicleConditionLabel = (value: string, fallback: string) =>
+    translateReturnReportOption('vehicle_conditions', value, fallback);
+
+const statusLabel = (value: string, fallback: string) =>
+    translateReturnReportOption('statuses', value, fallback);
+
 // Ensure options is always defined from props
 const options = props.options ?? { fuelLevels: [], vehicleConditions: [], currencies: [] };
 
@@ -424,6 +444,25 @@ const cashPaymentForm = useForm({
     attachments: [] as File[],
 });
 
+const cashPaymentAttachmentLabel = computed(() => {
+    const count = cashPaymentForm.attachments.length;
+
+    if (count === 0) {
+        return localize('No file chosen', 'لم يتم اختيار ملف');
+    }
+
+    if (count === 1) {
+        return cashPaymentForm.attachments[0]?.name ?? localize('1 file chosen', 'تم اختيار ملف واحد');
+    }
+
+    const key = `${translationRoot}.files_chosen`;
+    const translated = t(key, { count });
+
+    return translated === key
+        ? (locale.value === 'ar' ? `تم اختيار ${count} ملفات` : `${count} files chosen`)
+        : translated;
+});
+
 const isLocked = computed(() => props.report.id !== null && (props.report.payment_status ?? 'not_paid') === 'paid');
 const canEditReturnReport = computed(() => Boolean(props.permissions?.can_edit_return_report) && !isLocked.value);
 
@@ -435,7 +474,7 @@ function handoverPhotoValueLabel(value: unknown) {
     const normalized = fuelLevelStorageValue(String(value));
     const fuelOption = options.fuelLevels.find((item) => item.value === normalized);
 
-    return fuelOption?.label ?? String(value);
+    return fuelLevelLabel(normalized, fuelOption?.label ?? String(value));
 }
 
 function photoHasExtractedValue(photo: Record<string, any> | null | undefined) {
@@ -550,8 +589,10 @@ const cleaningFeeDescription = computed(() => {
         return '';
     }
     
-    const beforeLabel = options.vehicleConditions.find(c => c.value === before)?.label ?? before;
-    const afterLabel = options.vehicleConditions.find(c => c.value === after)?.label ?? after;
+    const beforeOption = options.vehicleConditions.find(c => c.value === before);
+    const afterOption = options.vehicleConditions.find(c => c.value === after);
+    const beforeLabel = vehicleConditionLabel(before, beforeOption?.label ?? before);
+    const afterLabel = vehicleConditionLabel(after, afterOption?.label ?? after);
     
     if (before === 'clean' && after === 'not_clean') {
         return localize('Car was clean at delivery, returned dirty - cleaning fee applies', 'السيارة كانت نظيفة عند التسليم وعادت متسخة - تنطبق رسوم التنظيف');
@@ -606,13 +647,18 @@ const fuelLossDescription = computed(() => {
         return '';
     }
 
-    const startLabel = options.fuelLevels.find((item) => item.value === startLevel)?.label ?? startLevel;
-    const returnLabel = options.fuelLevels.find((item) => item.value === returnLevel)?.label ?? returnLevel;
+    const startOption = options.fuelLevels.find((item) => item.value === startLevel);
+    const returnOption = options.fuelLevels.find((item) => item.value === returnLevel);
+    const startLabel = fuelLevelLabel(startLevel, startOption?.label ?? startLevel);
+    const returnLabel = fuelLevelLabel(returnLevel, returnOption?.label ?? returnLevel);
     const start = fuelLevelOrder[startLevel] ?? null;
     const end = fuelLevelOrder[returnLevel] ?? null;
     if (start === null || end === null || start <= end) {
         const gainLabel = fuelGainLevel.value
-            ? (options.fuelLevels.find((item) => item.value === fuelGainLevel.value)?.label ?? fuelGainLevel.value)
+            ? fuelLevelLabel(
+                fuelGainLevel.value,
+                options.fuelLevels.find((item) => item.value === fuelGainLevel.value)?.label ?? fuelGainLevel.value,
+            )
             : '';
 
         return gainLabel
@@ -621,7 +667,10 @@ const fuelLossDescription = computed(() => {
     }
 
     const lossSteps = start - end;
-    const lossLabel = options.fuelLevels.find((item) => item.value === (Object.entries(fuelLevelOrder).find(([, value]) => value === lossSteps)?.[0] ?? ''))?.label ?? '';
+    const lossValue = Object.entries(fuelLevelOrder).find(([, value]) => value === lossSteps)?.[0] ?? '';
+    const lossLabel = lossValue
+        ? fuelLevelLabel(lossValue, options.fuelLevels.find((item) => item.value === lossValue)?.label ?? lossValue)
+        : '';
 
     return lossLabel
         ? `${startLabel} -> ${returnLabel} (${localize('Fuel loss:', 'نقص الوقود:')} ${lossLabel})`
@@ -635,13 +684,21 @@ const fuelComparisonSummary = computed(() => {
         return '';
     }
 
-    const startLabel = options.fuelLevels.find((item) => item.value === startLevel)?.label ?? startLevel;
-    const returnLabel = options.fuelLevels.find((item) => item.value === returnLevel)?.label ?? returnLevel;
+    const startOption = options.fuelLevels.find((item) => item.value === startLevel);
+    const returnOption = options.fuelLevels.find((item) => item.value === returnLevel);
+    const startLabel = fuelLevelLabel(startLevel, startOption?.label ?? startLevel);
+    const returnLabel = fuelLevelLabel(returnLevel, returnOption?.label ?? returnLevel);
     const lossLabel = fuelLossLevel.value
-        ? (options.fuelLevels.find((item) => item.value === fuelLossLevel.value)?.label ?? fuelLossLevel.value)
+        ? fuelLevelLabel(
+            fuelLossLevel.value,
+            options.fuelLevels.find((item) => item.value === fuelLossLevel.value)?.label ?? fuelLossLevel.value,
+        )
         : null;
     const gainLabel = fuelGainLevel.value
-        ? (options.fuelLevels.find((item) => item.value === fuelGainLevel.value)?.label ?? fuelGainLevel.value)
+        ? fuelLevelLabel(
+            fuelGainLevel.value,
+            options.fuelLevels.find((item) => item.value === fuelGainLevel.value)?.label ?? fuelGainLevel.value,
+        )
         : null;
     const fuelState = lossLabel
         ? `${localize('Loss', 'نقص')}: ${lossLabel}`
@@ -1047,6 +1104,10 @@ function handleCashPaymentAttachments(event: Event) {
     cashPaymentForm.attachments = Array.from(input.files ?? []);
 }
 
+function triggerCashPaymentAttachments() {
+    document.getElementById('cash_payment_attachments')?.click();
+}
+
 watch(
     [() => cashPaymentForm.currency_code, reportCurrencyCode],
     ([currency, baseCurrency]) => {
@@ -1338,7 +1399,7 @@ function submitCashPayment() {
                             <div class="mt-1 flex gap-2">
                                 <select id="return_fuel_level" v-model="form.return_fuel_level" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
                                     <option value="">{{ localize('Select fuel level', 'اختر كمية البنزين') }}</option>
-                                    <option v-for="fuelLevel in options.fuelLevels" :key="fuelLevel.value" :value="fuelLevel.value">{{ fuelLevel.label }}</option>
+                                    <option v-for="fuelLevel in options.fuelLevels" :key="fuelLevel.value" :value="fuelLevel.value">{{ fuelLevelLabel(fuelLevel.value, fuelLevel.label) }}</option>
                                 </select>
                                 <Button
                                     v-if="returnFuelPhoto"
@@ -1358,7 +1419,7 @@ function submitCashPayment() {
                         <div>
                             <Label for="vehicle_condition_after">{{ localize('Vehicle Condition After Return', 'حالة السيارة بعد الإرجاع') }}</Label>
                             <select id="vehicle_condition_after" v-model="form.vehicle_condition_after" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
-                                <option v-for="condition in options.vehicleConditions" :key="condition.value" :value="condition.value">{{ condition.label }}</option>
+                                <option v-for="condition in options.vehicleConditions" :key="condition.value" :value="condition.value">{{ vehicleConditionLabel(condition.value, condition.label) }}</option>
                             </select>
                             <InputError :message="form.errors.vehicle_condition_after" class="mt-1" />
                         </div>
@@ -1390,7 +1451,7 @@ function submitCashPayment() {
                         <div>
                             <Label>{{ localize('Payment Status', 'حالة الدفع') }}</Label>
                             <div class="mt-1 rounded-md border bg-muted/20 px-3 py-2 text-sm font-medium">
-                                {{ props.report.payment_status === 'paid' ? localize('Paid', 'مدفوعة') : props.report.payment_status === 'partial' ? localize('Partial', 'مدفوعة جزئياً') : localize('Not Paid', 'غير مدفوعة') }}
+                                {{ props.report.payment_status === 'paid' ? statusLabel('paid', localize('Paid', 'مدفوعة')) : props.report.payment_status === 'partial' ? statusLabel('partial', localize('Partial', 'مدفوعة جزئياً')) : statusLabel('not_paid', localize('Not Paid', 'غير مدفوعة')) }}
                             </div>
                             <p class="mt-1 text-xs text-muted-foreground">
                                 {{ localize('Cash payments are added separately after saving the return report.', 'تتم إضافة دفعات الكاش بشكل منفصل بعد حفظ تقرير الإرجاع.') }}
@@ -1562,7 +1623,7 @@ function submitCashPayment() {
                                             {{ currencySymbol }}{{ Number(damageReport.total_estimated_cost).toFixed(2) }}
                                         </td>
                                         <td class="px-3 py-3">
-                                            {{ damageReport.status }}
+                                            {{ statusLabel(damageReport.status, damageReport.status) }}
                                         </td>
                                         <td class="px-3 py-3">
                                             <div class="max-w-[280px] truncate text-muted-foreground">
@@ -1819,15 +1880,26 @@ function submitCashPayment() {
                         </div>
                         <div class="md:col-span-2">
                             <Label for="cash_payment_attachments">{{ localize('Attachments', 'المرفقات') }}</Label>
-                            <Input
-                                id="cash_payment_attachments"
-                                type="file"
-                                multiple
-                                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                                class="mt-1"
-                                :disabled="!canCollectCashPayment || cashPaymentForm.processing"
-                                @change="handleCashPaymentAttachments"
-                            />
+                            <div class="mt-1 flex items-center gap-3">
+                                <Input
+                                    id="cash_payment_attachments"
+                                    type="file"
+                                    multiple
+                                    accept=".jpg,.jpeg,.png,.webp,.pdf"
+                                    class="sr-only"
+                                    :disabled="!canCollectCashPayment || cashPaymentForm.processing"
+                                    @change="handleCashPaymentAttachments"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    :disabled="!canCollectCashPayment || cashPaymentForm.processing"
+                                    @click="triggerCashPaymentAttachments"
+                                >
+                                    {{ localize('Choose Files', 'اختر الملفات') }}
+                                </Button>
+                                <span class="text-sm text-muted-foreground">{{ cashPaymentAttachmentLabel }}</span>
+                            </div>
                             <InputError :message="cashPaymentForm.errors.attachments" class="mt-1" />
                         </div>
                         <div class="md:col-span-2">

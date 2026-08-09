@@ -1153,6 +1153,24 @@ class LandingSettingsController extends Controller
             'client_pages.reservations.show.fields.daily_rate' => 'Daily Rate',
             'client_pages.reservations.show.fields.weekly_rate' => 'Weekly Rate',
             'client_pages.reservations.show.fields.monthly_rate' => 'Monthly Rate',
+
+            // Return status report dynamic options
+            'dashboard.admin.contracts.return_status_report.choose_files' => 'Choose Files',
+            'dashboard.admin.contracts.return_status_report.no_file_chosen' => 'No file chosen',
+            'dashboard.admin.contracts.return_status_report.1_file_chosen' => '1 file chosen',
+            'dashboard.admin.contracts.return_status_report.files_chosen' => ':count files chosen',
+            'dashboard.admin.contracts.return_status_report.fuel_levels.empty' => 'Empty',
+            'dashboard.admin.contracts.return_status_report.fuel_levels.quarter' => '1/4 Tank',
+            'dashboard.admin.contracts.return_status_report.fuel_levels.half' => '1/2 Tank',
+            'dashboard.admin.contracts.return_status_report.fuel_levels.three_quarters' => '3/4 Tank',
+            'dashboard.admin.contracts.return_status_report.fuel_levels.full' => 'Full',
+            'dashboard.admin.contracts.return_status_report.vehicle_conditions.clean' => 'Clean',
+            'dashboard.admin.contracts.return_status_report.vehicle_conditions.not_clean' => 'Not Clean',
+            'dashboard.admin.contracts.return_status_report.statuses.pending' => 'Pending',
+            'dashboard.admin.contracts.return_status_report.statuses.completed' => 'Completed',
+            'dashboard.admin.contracts.return_status_report.statuses.paid' => 'Paid',
+            'dashboard.admin.contracts.return_status_report.statuses.partial' => 'Partial',
+            'dashboard.admin.contracts.return_status_report.statuses.not_paid' => 'Not Paid',
         ]);
 
         foreach ($this->translationGroups() as $group) {

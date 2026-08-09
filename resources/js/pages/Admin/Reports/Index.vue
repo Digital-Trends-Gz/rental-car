@@ -443,6 +443,10 @@ const translateLabel = (label: string) => {
 
     const labels: Record<string, string> = {
         'all branches': localize('All branches', 'كل الفروع', 'تمام شاخیں'),
+        today: localize('Today', 'اليوم', 'آج'),
+        yesterday: localize('Yesterday', 'أمس', 'گزشتہ کل'),
+        'this week': localize('This Week', 'هذا الأسبوع', 'اس ہفتے'),
+        'last week': localize('Last Week', 'الأسبوع الماضي', 'پچھلے ہفتے'),
         'this month': localize('This Month', 'هذا الشهر', 'اس مہینے'),
         'last month': localize('Last Month', 'الشهر الماضي', 'پچھلے مہینے'),
         'this year': localize('This Year', 'هذه السنة', 'اس سال'),
@@ -500,12 +504,38 @@ const financialReportSections = computed(() => page.props.financialReportSection
 const financialAlerts = computed(() => page.props.financialAlerts ?? []);
 const financialReportExports = computed(() => page.props.financialReportExports);
 const isArabic = computed(() => locale.value === 'ar');
-const financialSectionTitle = (section: FinancialReportSection): string => isArabic.value ? section.title.ar : section.title.en;
-const financialItemTitle = (item: FinancialReportSection['items'][number]): string => isArabic.value ? item.ar : item.en;
+const financialTextLabel = (en: string, ar: string): string => {
+    const normalized = en.trim().toLowerCase();
+    const labels: Record<string, string> = {
+        revenue: localize('Revenue', 'الإيرادات', 'آمدنی'),
+        payments: localize('Payments', 'المدفوعات', 'ادائیگیاں'),
+        receivables: localize('Receivables', 'الذمم المدينة', 'قابل وصول رقمیں'),
+        discounts: localize('Discounts', 'الخصومات', 'رعایتیں'),
+        'rental income': localize('Rental income', 'إيرادات الإيجارات', 'کرایہ آمدنی'),
+        'late fees': localize('Late fees', 'رسوم التأخير', 'تاخیر فیس'),
+        'damage fees': localize('Damage fees', 'رسوم الأضرار', 'نقصان فیس'),
+        'fuel fees': localize('Fuel fees', 'رسوم الوقود', 'ایندھن فیس'),
+        'cleaning fees': localize('Cleaning fees', 'رسوم التنظيف', 'صفائی فیس'),
+        'additional services revenue': localize('Additional services revenue', 'إيرادات الخدمات الإضافية', 'اضافی خدمات کی آمدنی'),
+        cash: localize('Cash', 'نقدي', 'نقد'),
+        card: localize('Card', 'بطاقة', 'کارڈ'),
+        'bank transfer': localize('Bank transfer', 'تحويل بنكي', 'بینک ٹرانسفر'),
+        online: localize('Online', 'أونلاين', 'آن لائن'),
+        debtors: localize('Debtors', 'العملاء المدينون', 'مقروض صارفین'),
+        'outstanding amounts': localize('Outstanding amounts', 'المبالغ المستحقة', 'واجب الادا رقوم'),
+        'overdue balances': localize('Overdue balances', 'المتأخرات', 'تاخیر شدہ بیلنس'),
+        coupons: localize('Coupons', 'كوبونات', 'کوپنز'),
+        'manual discounts': localize('Manual discounts', 'خصومات يدوية', 'دستی رعایتیں'),
+    };
+
+    return labels[normalized] ?? localize(en, ar);
+};
+const financialSectionTitle = (section: FinancialReportSection): string => financialTextLabel(section.title.en, section.title.ar);
+const financialItemTitle = (item: FinancialReportSection['items'][number]): string => financialTextLabel(item.en, item.ar);
 const financialRecordLabel = (count?: number): string => {
     const safeCount = Number(count ?? 0);
 
-    return isArabic.value ? `${safeCount} سجلات` : `${safeCount} records`;
+    return `${safeCount} ${localize('records', 'سجلات', 'ریکارڈز')}`;
 };
 const reservationsReport = computed(() => page.props.reservationsReport);
 const reservationsReportExports = computed(() => page.props.reservationsReportExports);
@@ -656,6 +686,45 @@ const reportDescription = (description: string) => {
     };
 
     return descriptions[normalized] ?? description;
+};
+
+const paymentStatusLabel = (label: string): string => {
+    const normalized = label.trim().toLowerCase().replace(/[_-]+/g, ' ');
+    const labels: Record<string, string> = {
+        paid: localize('Paid', 'مدفوع', 'ادا شدہ'),
+        unpaid: localize('Unpaid', 'غير مدفوع', 'غیر ادا شدہ'),
+        partial: localize('Partial', 'جزئي', 'جزوی'),
+        pending: localize('Pending', 'قيد الانتظار', 'زیر التواء'),
+        completed: localize('Completed', 'مكتمل', 'مکمل'),
+        cancelled: localize('Cancelled', 'ملغي', 'منسوخ'),
+        canceled: localize('Canceled', 'ملغي', 'منسوخ'),
+        'not paid': localize('Not Paid', 'غير مدفوع', 'غیر ادا شدہ'),
+    };
+
+    return labels[normalized] ?? translateLabel(label);
+};
+
+const collectionSourceLabel = (label: string): string => {
+    const normalized = label.trim().toLowerCase();
+    const labels: Record<string, string> = {
+        'reservation balance': localize('Reservation balance', 'رصيد الحجز', 'بکنگ بیلنس'),
+        'return charge': localize('Return charge', 'رسوم الرجوع', 'واپسی چارج'),
+    };
+
+    return labels[normalized] ?? reportLabel(label);
+};
+
+const collectionBucketLabel = (label: string): string => {
+    const normalized = label.trim().toLowerCase();
+    const labels: Record<string, string> = {
+        current: localize('Current', 'حالي', 'موجودہ'),
+        '1-7 days': localize('1-7 days', '1-7 أيام', '1-7 دن'),
+        '8-30 days': localize('8-30 days', '8-30 يوم', '8-30 دن'),
+        '31-60 days': localize('31-60 days', '31-60 يوم', '31-60 دن'),
+        'more than 60 days': localize('More than 60 days', 'أكثر من 60 يوم', '60 دن سے زیادہ'),
+    };
+
+    return labels[normalized] ?? label;
 };
 
 const severityClasses = (severity: ReportAlert['severity']) => {
@@ -1597,7 +1666,7 @@ onMounted(() => {
                                         'text-blue-800'
                                     ]"
                                 >
-                                    {{ locale === 'ar' && alert.label_ar ? alert.label_ar : reportLabel(alert.label) }}
+                                    {{ reportLabel(alert.label) }}
                                 </p>
 
                                 <!-- Description -->
@@ -1610,7 +1679,7 @@ onMounted(() => {
                                         'text-blue-700'
                                     ]"
                                 >
-                                    {{ locale === 'ar' && alert.description_ar ? alert.description_ar : alert.description }}
+                                    {{ reportDescription(alert.description) }}
                                 </p>
 
                                 <!-- Amount -->
@@ -2641,7 +2710,7 @@ onMounted(() => {
                                             <p class="text-sm text-gray-500">{{ violation.license_plate }}</p>
                                         </td>
                                         <td class="px-4 py-4">{{ violation.type_name }}</td>
-                                        <td class="px-4 py-4">{{ violation.status_label }}</td>
+                                        <td class="px-4 py-4">{{ paymentStatusLabel(violation.status_label) }}</td>
                                         <td class="px-4 py-4 font-bold text-sky-800">{{ violation.formatted_amount }}</td>
                                     </tr>
                                     <tr v-if="trafficViolationsReport.recent_violations.length === 0">
@@ -2765,7 +2834,7 @@ onMounted(() => {
                                                 class="inline-flex rounded-full px-2 py-1 text-xs font-semibold"
                                                 :class="contract.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'"
                                             >
-                                                {{ contract.payment_status_label }}
+                                                {{ paymentStatusLabel(contract.payment_status_label) }}
                                             </span>
                                         </td>
                                         <td class="px-4 py-4 font-bold text-sky-800">{{ contract.formatted_outstanding_amount }}</td>
@@ -2857,7 +2926,7 @@ onMounted(() => {
                             :key="bucket.key"
                             class="rounded-xl border border-gray-100 bg-white p-5 shadow-sm"
                         >
-                            <p class="text-sm font-semibold text-gray-600">{{ isArabic ? bucket.label_ar : bucket.label }}</p>
+                            <p class="text-sm font-semibold text-gray-600">{{ collectionBucketLabel(bucket.label) }}</p>
                             <div class="mt-4 flex items-end justify-between gap-4">
                                 <p class="text-3xl font-bold text-gray-950">{{ bucket.count }}</p>
                                 <p class="text-sm font-bold text-blue-700">{{ bucket.formatted_amount }}</p>
@@ -2890,7 +2959,7 @@ onMounted(() => {
                                         </td>
                                         <td class="px-4 py-4">
                                             <p class="font-semibold text-gray-900">{{ row.reference ?? '-' }}</p>
-                                            <p class="text-sm text-gray-500">{{ row.source_label }}</p>
+                                            <p class="text-sm text-gray-500">{{ collectionSourceLabel(row.source_label) }}</p>
                                         </td>
                                         <td class="px-4 py-4 font-bold text-blue-800">{{ row.formatted_amount }}</td>
                                         <td class="px-4 py-4">{{ row.due_date ?? '-' }}</td>
@@ -2902,7 +2971,7 @@ onMounted(() => {
                                                 {{ row.days_overdue }}
                                             </span>
                                         </td>
-                                        <td class="px-4 py-4">{{ row.bucket_label }}</td>
+                                        <td class="px-4 py-4">{{ collectionBucketLabel(row.bucket_label) }}</td>
                                         <td class="px-4 py-4">
                                             <p class="font-semibold text-gray-900">{{ row.car_name }}</p>
                                             <p class="text-sm text-gray-500">{{ row.license_plate }}</p>
