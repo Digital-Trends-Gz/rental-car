@@ -956,14 +956,14 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 >
                     <div class="absolute inset-x-0 top-0 h-1 rounded-t-xl" :style="{ background: card.accent }" />
                     <CardHeader class="pb-3 pt-6">
-                        <div class="flex items-center justify-between gap-3">
-                            <CardTitle class="text-[.9rem] font-semibold leading-tight text-muted-foreground">{{ card.title }}</CardTitle>
+                        <div class="flex items-center justify-between gap-6">
+                            <CardTitle class="min-w-0 flex-1 text-[.9rem] font-semibold leading-tight text-muted-foreground">{{ card.title }}</CardTitle>
                             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" :style="{ background: card.bg }">
                                 <component :is="card.icon" class="h-5 w-5" :style="{ color: card.accent }" />
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent :class="isRtl ? 'text-right' : ''">
+                    <CardContent :class="isRtl ? 'pe-14 text-right' : 'ps-6'">
                         <div class="text-3xl font-bold leading-none tracking-tight">{{ card.value }}</div>
                         <p class="mt-3 text-[.9rem] leading-snug text-muted-foreground">{{ card.sub }}</p>
                     </CardContent>
