@@ -202,10 +202,112 @@ const localize = (en: string, ar: string) => {
 
 function adminUrl(path: string) {
     const currentUrl = String(page.url || '');
-    const prefix = currentUrl.startsWith('/ar/') ? '/ar' : currentUrl.startsWith('/fr/') ? '/fr' : '';
+    const prefix = currentUrl.match(/^\/(ar|ur|fr)(?=\/)/)?.[0] ?? '';
 
     return `${prefix}/admin${path}`;
 }
+
+const periodLabel = (label: string) => {
+    const labels: Record<string, string> = {
+        today: localize('Today', 'اليوم'),
+        'last 7 days': localize('Last 7 days', 'آخر 7 أيام'),
+        'last 30 days': localize('Last 30 days', 'آخر 30 يومًا'),
+        'this month': localize('This month', 'هذا الشهر'),
+        'last month': localize('Last month', 'الشهر الماضي'),
+    };
+
+    return labels[label.trim().toLowerCase()] ?? label;
+};
+
+const statusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+        internal_ready: localize('Internal ready', 'الداخلي جاهز'),
+        completed: localize('Completed', 'مكتمل'),
+        failed: localize('Failed', 'فشل'),
+        running: localize('Running', 'قيد التشغيل'),
+        pending: localize('Pending', 'قيد الانتظار'),
+    };
+
+    return labels[status] ?? status;
+};
+
+const severityLabel = (severity: string) => {
+    const labels: Record<string, string> = {
+        critical: localize('Critical', 'حرج'),
+        danger: localize('Danger', 'خطر'),
+        warning: localize('Warning', 'تحذير'),
+        high: localize('High', 'عالٍ'),
+        medium: localize('Medium', 'متوسط'),
+        info: localize('Info', 'معلومات'),
+        low: localize('Low', 'منخفض'),
+        success: localize('Success', 'ناجح'),
+    };
+
+    return labels[severity.toLowerCase()] ?? severity;
+};
+
+const lossLabel = (loss: LossItem) => {
+    const labels: Record<string, string> = {
+        unpaid_return_charges: localize('Unpaid return charges', 'رسوم رجوع غير مدفوعة'),
+        open_violations: localize('Open traffic violations', 'مخالفات مرورية مفتوحة'),
+        pending_payments: localize('Pending payments', 'مدفوعات معلقة'),
+    };
+
+    return labels[loss.key] ?? loss.label;
+};
+
+const recommendationText = (text: string) => {
+    const normalized = text.trim();
+    const rateIncrease = normalized.match(/^Test a ([\d.]+)% daily rate increase for future bookings\.$/);
+
+    if (rateIncrease) {
+        return localize(
+            'Test a :percent% daily rate increase for future bookings.',
+            'جرّب زيادة سعر اليوم بنسبة :percent% للحجوزات القادمة.',
+        ).replace(':percent', rateIncrease[1]);
+    }
+
+    const labels: Record<string, string> = {
+        'Contact the customer and schedule immediate return follow-up.': localize(
+            'Contact the customer and schedule immediate return follow-up.',
+            'تواصل مع العميل وجدول متابعة رجوع فورية.',
+        ),
+        'Review unpaid return charges before closing.': localize(
+            'Review unpaid return charges before closing.',
+            'راجع رسوم الرجوع غير المدفوعة قبل الإغلاق.',
+        ),
+        'Keep more cars ready and review pricing for this demand pattern.': localize(
+            'Keep more cars ready and review pricing for this demand pattern.',
+            'جهز المزيد من السيارات وراجع التسعير لهذا نمط الطلب.',
+        ),
+        'Review pricing, maintenance cost, and whether the car should stay active.': localize(
+            'Review pricing, maintenance cost, and whether the car should stay active.',
+            'راجع التسعير وتكاليف الصيانة وما إذا كانت السيارة يجب أن تبقى نشطة.',
+        ),
+        'Inspect recurring damage causes before increasing utilization.': localize(
+            'Inspect recurring damage causes before increasing utilization.',
+            'افحص أسباب الأضرار المتكررة قبل زيادة التشغيل.',
+        ),
+        'Good candidate for pricing optimization.': localize(
+            'Good candidate for pricing optimization.',
+            'مرشح جيد لتحسين التسعير.',
+        ),
+        'Monitor for the next reporting period.': localize(
+            'Monitor for the next reporting period.',
+            'راقب خلال فترة التقرير القادمة.',
+        ),
+        'Require manual approval and higher deposit before the next booking.': localize(
+            'Require manual approval and higher deposit before the next booking.',
+            'اطلب موافقة يدوية وتأمينًا أعلى قبل الحجز القادم.',
+        ),
+        'Review the customer before approving long bookings.': localize(
+            'Review the customer before approving long bookings.',
+            'راجع العميل قبل الموافقة على الحجوزات الطويلة.',
+        ),
+    };
+
+    return labels[normalized] ?? text;
+};
 
 function refreshInsights() {
     router.get(
@@ -391,7 +493,7 @@ const hasData = computed(() =>
                         @change="refreshInsights"
                     >
                         <option v-for="period in periodOptions" :key="period.value" :value="period.value">
-                            {{ period.label }}
+                            {{ periodLabel(period.label) }}
                         </option>
                     </select>
 
@@ -514,7 +616,7 @@ const hasData = computed(() =>
                                     class="text-xs font-semibold px-1.5 py-0.5 rounded"
                                     :class="report.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : report.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'"
                                 >
-                                    {{ report.status }}
+                                    {{ statusLabel(report.status) }}
                                 </span>
                             </div>
                             <p class="mt-1 text-xs text-slate-500">{{ report.period_start }} → {{ report.period_end }}</p>
@@ -535,7 +637,7 @@ const hasData = computed(() =>
                             <p class="mt-1 text-sm text-slate-500">{{ latestReport.ai_result.market_summary }}</p>
                         </div>
                         <span class="rounded-md border px-2 py-1 text-xs font-semibold" :class="severityClasses(latestReport.ai_result.risk_level)">
-                            {{ latestReport.ai_result.risk_level }}
+                            {{ severityLabel(latestReport.ai_result.risk_level) }}
                         </span>
                     </div>
                     <p class="mt-4 text-sm leading-6 text-slate-700">{{ latestReport.ai_result.executive_summary }}</p>
@@ -548,7 +650,7 @@ const hasData = computed(() =>
                             <div v-for="item in latestReport.ai_result.risks" :key="item.title" class="rounded-md border border-slate-100 bg-slate-50 p-3">
                                 <div class="flex items-start justify-between gap-3">
                                     <p class="text-sm font-semibold text-slate-950">{{ item.title }}</p>
-                                    <span class="rounded border px-2 py-0.5 text-xs" :class="severityClasses(item.severity)">{{ item.severity }}</span>
+                                    <span class="rounded border px-2 py-0.5 text-xs" :class="severityClasses(item.severity)">{{ severityLabel(item.severity) }}</span>
                                 </div>
                                 <p class="mt-2 text-sm text-slate-600">{{ item.reason }}</p>
                                 <p class="mt-2 text-sm font-medium text-slate-800">{{ item.recommendation }}</p>
@@ -562,7 +664,7 @@ const hasData = computed(() =>
                             <div v-for="item in latestReport.ai_result.opportunities" :key="item.title" class="rounded-md border border-slate-100 bg-slate-50 p-3">
                                 <div class="flex items-start justify-between gap-3">
                                     <p class="text-sm font-semibold text-slate-950">{{ item.title }}</p>
-                                    <span class="rounded border px-2 py-0.5 text-xs" :class="severityClasses(item.severity)">{{ item.severity }}</span>
+                                    <span class="rounded border px-2 py-0.5 text-xs" :class="severityClasses(item.severity)">{{ severityLabel(item.severity) }}</span>
                                 </div>
                                 <p class="mt-2 text-sm text-slate-600">{{ item.reason }}</p>
                                 <p class="mt-2 text-sm font-medium text-slate-800">{{ item.recommendation }}</p>
@@ -688,7 +790,7 @@ const hasData = computed(() =>
                                 <span>{{ localize('Costs', 'التكاليف') }}: {{ car.formatted_costs }}</span>
                                 <span>{{ localize('Margin', 'الهامش') }}: {{ car.profit_margin }}%</span>
                             </div>
-                            <p class="mt-3 text-sm text-slate-600">{{ car.recommendation }}</p>
+                            <p class="mt-3 text-sm text-slate-600">{{ recommendationText(car.recommendation) }}</p>
                         </div>
                         <p v-if="insights.unprofitable_cars.length === 0" class="p-4 text-sm text-slate-500">
                             {{ localize('No unprofitable cars detected.', 'لا توجد سيارات خاسرة.') }}
@@ -720,7 +822,7 @@ const hasData = computed(() =>
                                 <span>{{ localize('Accidents', 'حوادث') }}: {{ car.accidents_count }}</span>
                                 <span>{{ localize('Days used', 'أيام تشغيل') }}: {{ car.utilization_days }}</span>
                             </div>
-                            <p class="mt-3 text-sm text-slate-600">{{ car.recommendation }}</p>
+                            <p class="mt-3 text-sm text-slate-600">{{ recommendationText(car.recommendation) }}</p>
                         </div>
                         <p v-if="insights.repeated_damage_cars.length === 0" class="p-4 text-sm text-slate-500">
                             {{ localize('No repeated damage pattern detected.', 'لا يوجد نمط أضرار متكرر.') }}
@@ -755,7 +857,7 @@ const hasData = computed(() =>
                                 <span>{{ localize('Damages', 'أضرار') }}: {{ customer.damage_reports_count }}</span>
                                 <span>{{ localize('Unpaid', 'غير محصل') }}: {{ customer.formatted_unpaid_amount }}</span>
                             </div>
-                            <p class="mt-3 text-sm text-slate-600">{{ customer.recommendation }}</p>
+                            <p class="mt-3 text-sm text-slate-600">{{ recommendationText(customer.recommendation) }}</p>
                         </div>
                         <p v-if="insights.high_risk_customers.length === 0" class="p-4 text-sm text-slate-500">
                             {{ localize('No high-risk customers detected.', 'لا يوجد عملاء عالي الخطورة.') }}
@@ -787,7 +889,7 @@ const hasData = computed(() =>
                                 <span>{{ localize('Late days', 'أيام التأخير') }}: {{ contract.days_late }}</span>
                                 <span>{{ localize('Unpaid', 'غير مدفوع') }}: {{ contract.formatted_unpaid_return_charges }}</span>
                             </div>
-                            <p class="mt-3 text-sm text-slate-600">{{ contract.recommendation }}</p>
+                            <p class="mt-3 text-sm text-slate-600">{{ recommendationText(contract.recommendation) }}</p>
                         </div>
                         <p v-if="insights.problem_contracts.length === 0" class="p-4 text-sm text-slate-500">
                             {{ localize('No problem contracts detected.', 'لا توجد عقود معرضة للمشاكل.') }}
@@ -814,7 +916,7 @@ const hasData = computed(() =>
                                 </span>
                             </div>
                             <div class="mt-3 flex items-center justify-between gap-3">
-                                <p class="text-sm text-slate-600">{{ item.recommendation }}</p>
+                                <p class="text-sm text-slate-600">{{ recommendationText(item.recommendation) }}</p>
                                 <Button
                                     type="button"
                                     size="sm"
@@ -844,7 +946,7 @@ const hasData = computed(() =>
                                 <span class="text-sm font-semibold text-blue-700">{{ day.reservations_count }}</span>
                             </div>
                             <p class="mt-1 text-sm text-slate-500">{{ day.rental_days }} {{ localize('rental days', 'أيام تأجير') }}</p>
-                            <p class="mt-3 text-sm text-slate-600">{{ day.recommendation }}</p>
+                            <p class="mt-3 text-sm text-slate-600">{{ recommendationText(day.recommendation) }}</p>
                         </div>
                         <p v-if="insights.demand_days.length === 0" class="p-4 text-sm text-slate-500">
                             {{ localize('No demand pattern detected.', 'لا يوجد نمط طلب واضح.') }}
@@ -859,7 +961,7 @@ const hasData = computed(() =>
                     </div>
                     <div class="divide-y divide-slate-100">
                         <div v-for="loss in insights.uncollected_losses" :key="loss.key" class="flex items-center justify-between gap-3 p-4">
-                            <p class="text-sm font-medium text-slate-700">{{ loss.label }}</p>
+                            <p class="text-sm font-medium text-slate-700">{{ lossLabel(loss) }}</p>
                             <p class="text-sm font-semibold text-amber-700">{{ loss.formatted_amount }}</p>
                         </div>
                     </div>
