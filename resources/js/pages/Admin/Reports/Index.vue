@@ -678,6 +678,26 @@ const reportDescription = (description: string) => {
             'تقارير رجوع عليها رسوم إضافية غير مدفوعة.',
             'واپسی رپورٹس جن پر اضافی چارجز باقی ہیں۔',
         ),
+        'completed payments collected in the selected period.': localize(
+            'Completed payments collected in the selected period.',
+            'المدفوعات المكتملة المحصلة خلال الفترة المحددة.',
+            'منتخب مدت میں وصول شدہ مکمل ادائیگیاں۔',
+        ),
+        'payments not yet collected in the selected period.': localize(
+            'Payments not yet collected in the selected period.',
+            'مدفوعات لم يتم تحصيلها بعد خلال الفترة المحددة.',
+            'منتخب مدت میں ابھی تک وصول نہ ہونے والی ادائیگیاں۔',
+        ),
+        'unpaid extra charges from contract return reports.': localize(
+            'Unpaid extra charges from contract return reports.',
+            'رسوم إضافية غير مدفوعة من تقارير رجوع العقود.',
+            'معاہدہ واپسی رپورٹس سے غیر ادا شدہ اضافی چارجز۔',
+        ),
+        'reservation discounts granted in the selected period.': localize(
+            'Reservation discounts granted in the selected period.',
+            'خصومات الحجوزات الممنوحة خلال الفترة المحددة.',
+            'منتخب مدت میں دی گئی بکنگ رعایتیں۔',
+        ),
         'damage reports waiting for review or completion.': localize(
             'Damage reports waiting for review or completion.',
             'تقارير أضرار بانتظار المراجعة أو الإكمال.',

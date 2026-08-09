@@ -152,6 +152,16 @@ const localize = (en: string, ar: string) => {
 
     return locale.value === 'ar' ? ar : en;
 };
+const translateCarValue = (value: string, fallback: string) => {
+    const normalized = String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    const key = `dashboard.admin.cars.show.values.${normalized}`;
+    const translated = t(key);
+
+    return translated === key ? fallback : translated;
+};
 const supportedLocales = computed<SupportedLocale[]>(() =>
     props.supportedLocales?.length
         ? props.supportedLocales
@@ -162,19 +172,19 @@ const carColors = computed(() =>
     props.enums.colors.map((color) => ({
         ...color,
         value: color.value.toLowerCase(),
-        name: color.name.charAt(0).toUpperCase() + color.name.slice(1),
+        name: translateCarValue(color.value, color.name.charAt(0).toUpperCase() + color.name.slice(1)),
     })),
 );
 
 const fuelTypes = computed(() =>
     props.enums.fuelTypes.map((fuel) => ({
         value: fuel.toLowerCase(),
-        label: fuel.charAt(0).toUpperCase() + fuel.slice(1),
+        label: translateCarValue(fuel, fuel.charAt(0).toUpperCase() + fuel.slice(1)),
     })),
 );
 
 const statuses = computed(() => props.enums.statuses);
-const statusOptions = computed(() => statuses.value.map((status) => ({ value: status.value, label: status.label })));
+const statusOptions = computed(() => statuses.value.map((status) => ({ value: status.value, label: translateCarValue(status.value, status.label) })));
 const requiresStatusTaskTime = computed(() => ['cleaning', 'maintenance'].includes(String(form.status)));
 const availableBranches = ref<Branch[]>(Array.isArray(props.branches) ? [...props.branches] : []);
 const branchOptions = computed(() => availableBranches.value.map((branch) => ({ value: String(branch.id), label: branch.name })));
@@ -186,8 +196,8 @@ const plateFormatHelper = computed(() => {
     if (!selected) return '';
 
     const parts = [
-        selected.mask ? `Mask: ${selected.mask}` : '',
-        selected.example ? `Example: ${selected.example}` : '',
+        selected.mask ? `${localize('Mask', 'النمط')}: ${selected.mask}` : '',
+        selected.example ? `${localize('Example', 'مثال')}: ${selected.example}` : '',
     ].filter(Boolean);
 
     return parts.join(' | ');
