@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Core\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
@@ -11,7 +12,9 @@ class LocalizationController extends Controller
     public function switch(Request $request, string $locale): RedirectResponse
     {
         $supported = LaravelLocalization::getSupportedLanguagesKeys();
-        if (!in_array($locale, $supported, true)) {
+        $enabled = $this->enabledLocales($supported);
+
+        if (!in_array($locale, $enabled, true)) {
             abort(404);
         }
 
@@ -82,5 +85,27 @@ class LocalizationController extends Controller
         }
 
         return in_array($segments[0] ?? null, ['admin', 'superadmin', 'client', 'dashboard'], true);
+    }
+
+    private function enabledLocales(array $supportedLocales): array
+    {
+        $tenant = TenantContext::get();
+
+        if (! $tenant) {
+            return $supportedLocales;
+        }
+
+        $tenant->loadMissing('siteSetting');
+        $enabled = $tenant->siteSetting?->enabled_locales;
+
+        if (! is_array($enabled) || $enabled === []) {
+            $default = (string) ($tenant->siteSetting?->default_locale ?: config('app.locale', 'en'));
+
+            return in_array($default, $supportedLocales, true) ? [$default] : [$supportedLocales[0] ?? 'en'];
+        }
+
+        $filtered = array_values(array_intersect($supportedLocales, array_map('strval', $enabled)));
+
+        return $filtered !== [] ? $filtered : [$supportedLocales[0] ?? 'en'];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Core\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
@@ -15,7 +16,9 @@ class SetLocale
     public function handle(Request $request, Closure $next): Response
     {
         $supported = LaravelLocalization::getSupportedLanguagesKeys();
-        $fallback = config('app.fallback_locale', config('app.locale', 'en'));
+        $tenant = TenantContext::get();
+        $enabled = $this->tenantEnabledLocales($supported);
+        $fallback = $this->tenantDefaultLocale($enabled) ?: config('app.fallback_locale', config('app.locale', 'en'));
 
         $isDashboard = $this->isDashboardRequest($request, $supported);
         $sessionKey = $isDashboard ? 'dashboard_locale' : 'site_locale';
@@ -32,7 +35,15 @@ class SetLocale
             );
         }
 
-        if (!in_array($locale, $supported, true)) {
+        if ($tenant && $urlLocale && in_array($urlLocale, $supported, true) && !in_array($urlLocale, $enabled, true)) {
+            $locale = $fallback;
+
+            if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
+                return redirect()->to($this->fallbackLocalizedPath($request, $supported, $fallback));
+            }
+        }
+
+        if (!in_array($locale, $enabled, true)) {
             $locale = $fallback;
         }
 
@@ -60,5 +71,58 @@ class SetLocale
         }
 
         return in_array($segments[0] ?? null, ['admin', 'superadmin', 'client', 'dashboard'], true);
+    }
+
+    private function tenantEnabledLocales(array $supportedLocales): array
+    {
+        $tenant = TenantContext::get();
+
+        if (! $tenant) {
+            return $supportedLocales;
+        }
+
+        $tenant->loadMissing('siteSetting');
+        $enabled = $tenant->siteSetting?->enabled_locales;
+
+        if (! is_array($enabled) || $enabled === []) {
+            $default = $this->tenantDefaultLocale($supportedLocales) ?: (string) config('app.locale', 'en');
+
+            return in_array($default, $supportedLocales, true) ? [$default] : [$supportedLocales[0] ?? 'en'];
+        }
+
+        $filtered = array_values(array_intersect($supportedLocales, array_map('strval', $enabled)));
+
+        return $filtered !== [] ? $filtered : [$supportedLocales[0] ?? 'en'];
+    }
+
+    private function tenantDefaultLocale(array $enabledLocales): ?string
+    {
+        $tenant = TenantContext::get();
+
+        if (! $tenant) {
+            return null;
+        }
+
+        $tenant->loadMissing('siteSetting');
+        $default = (string) ($tenant->siteSetting?->default_locale ?: config('app.locale', 'en'));
+
+        return in_array($default, $enabledLocales, true) ? $default : ($enabledLocales[0] ?? null);
+    }
+
+    private function fallbackLocalizedPath(Request $request, array $supportedLocales, string $fallbackLocale): string
+    {
+        $path = '/'.ltrim($request->path(), '/');
+        $escapedLocales = array_map(static fn (string $locale): string => preg_quote($locale, '#'), $supportedLocales);
+        $path = preg_replace('#^/('.implode('|', $escapedLocales).')(?=/|$)#', '', $path, 1) ?: '/';
+        $path = '/'.ltrim($path, '/');
+
+        $shouldHideLocale = (bool) config('laravellocalization.hideDefaultLocaleInURL', false);
+        if (! ($shouldHideLocale && $fallbackLocale === config('app.locale', 'en'))) {
+            $path = '/'.$fallbackLocale.($path === '/' ? '' : $path);
+        }
+
+        $query = $request->getQueryString();
+
+        return $path.($query ? '?'.$query : '');
     }
 }

@@ -55,11 +55,6 @@ class HandleInertiaRequests extends Middleware
             'direction' => LaravelLocalization::getCurrentLocaleDirection(),
             'available_locales' => function () use ($request) {
                 $supported = LaravelLocalization::getSupportedLanguagesKeys();
-
-                if ($this->isDashboardRequest($request, $supported)) {
-                    return $supported;
-                }
-
                 $tenant = \App\Core\TenantContext::get();
 
                 if (!$tenant) {
@@ -70,12 +65,14 @@ class HandleInertiaRequests extends Middleware
                 $enabled = $tenant->siteSetting?->enabled_locales;
 
                 if (!is_array($enabled) || empty($enabled)) {
-                    return $supported;
+                    $default = (string) ($tenant->siteSetting?->default_locale ?: config('app.locale', 'en'));
+
+                    return in_array($default, $supported, true) ? [$default] : [$supported[0] ?? 'en'];
                 }
 
                 $filtered = array_values(array_intersect($supported, array_map('strval', $enabled)));
 
-                return empty($filtered) ? $supported : $filtered;
+                return empty($filtered) ? [$supported[0] ?? 'en'] : $filtered;
             },
             'translations' => function () use ($request) {
                 $base = __('site');
