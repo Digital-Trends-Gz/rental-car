@@ -766,16 +766,11 @@ onBeforeUnmount(() => {
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <nav class="flex h-16 items-center justify-between">
                     <!--  Logo -->
-                    <div class="flex flex-col items-center space-x-2">
-                        <img v-if="siteLogoUrl" :src="siteLogoUrl" alt="logo" class="h-8 object-contain" />
-                        <img v-else src="/logo/logo.png" alt="logo" class="h-6" />
-                        <p v-if="!siteLogoUrl" class="font-bold">
-                            <template v-if="currentTenant">
-                                <span class="truncate max-w-[180px] inline-block align-bottom">{{ siteName }}</span>
-                            </template>
-                            <template v-else>
-                                {{ appName }}
-                            </template>
+                    <div class="flex min-w-0 items-center gap-3">
+                        <img v-if="siteLogoUrl" :src="siteLogoUrl" :alt="siteName" class="h-8 shrink-0 object-contain" />
+                        <img v-else src="/logo/logo.png" :alt="appName" class="h-6 shrink-0" />
+                        <p class="max-w-[180px] truncate text-base font-bold text-gray-900 sm:max-w-[240px]">
+                            {{ siteName }}
                         </p>
                     </div>
 
