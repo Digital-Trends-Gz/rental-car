@@ -66,6 +66,89 @@ const tenantTranslation = (key: string, fallback = ''): string => {
 const translatedHeroTitle = computed(() => tenantTranslation('tenant_website.hero.title', heroTitle.value));
 const translatedHeroDescription = computed(() => tenantTranslation('tenant_website.hero.description', heroDescription.value));
 const translatedHeroButtonText = computed(() => tenantTranslation('tenant_website.hero.button_text', heroButtonText.value));
+const translatedHeroTitleParts = computed(() => {
+    const title = translatedHeroTitle.value.trim();
+
+    if (title === '') {
+        return { start: '', highlight: '' };
+    }
+
+    const words = title.split(/\s+/);
+
+    if (words.length === 1) {
+        return { start: '', highlight: title };
+    }
+
+    return {
+        start: words.slice(0, -1).join(' '),
+        highlight: words[words.length - 1] || '',
+    };
+});
+const homeWhyChooseContent = computed(() => tenantSiteSettings.value?.home?.why_choose ?? null);
+const homeWhyChooseTitleStart = computed(() =>
+    tenantTranslation('tenant_home.why_choose.title_start', localizedText(homeWhyChooseContent.value?.title_start, t('welcome.why_choose_start'))),
+);
+const homeWhyChooseTitleHighlight = computed(() =>
+    tenantTranslation('tenant_home.why_choose.title_highlight', localizedText(homeWhyChooseContent.value?.title_highlight, t('welcome.why_choose_highlight'))),
+);
+const homeWhyChooseDescription = computed(() =>
+    tenantTranslation('tenant_home.why_choose.description', localizedText(homeWhyChooseContent.value?.description, t('welcome.why_choose_desc'))),
+);
+const homeWhyChooseFallbackItems = computed(() => [
+    {
+        icon_url: '',
+        icon_color: '#ffffff',
+        icon_path: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+        title: t('welcome.feature_quality_title'),
+        description: t('welcome.feature_quality_desc'),
+    },
+    {
+        icon_url: '',
+        icon_color: '#ffffff',
+        icon_path: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+        title: t('welcome.feature_support_title'),
+        description: t('welcome.feature_support_desc'),
+    },
+    {
+        icon_url: '',
+        icon_color: '#ffffff',
+        icon_path: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1',
+        title: t('welcome.feature_value_title'),
+        description: t('welcome.feature_value_desc'),
+    },
+]);
+const homeWhyChooseItems = computed(() => {
+    const items = Array.isArray(homeWhyChooseContent.value?.items)
+        ? homeWhyChooseContent.value.items
+        : Object.values(homeWhyChooseContent.value?.items || {});
+    const normalized = items
+        .map((item: any, index: number) => ({
+            icon_url: String(item?.icon_url || '').trim(),
+            icon_color: String(item?.icon_color || primaryColor.value).trim(),
+            icon_path: homeWhyChooseFallbackItems.value[index % homeWhyChooseFallbackItems.value.length]?.icon_path,
+            title: localizedText(item?.title, ''),
+            description: localizedText(item?.description, ''),
+        }))
+        .filter((item: any) => item.title || item.description || item.icon_url);
+
+    return normalized.length ? normalized : homeWhyChooseFallbackItems.value;
+});
+const homeWhyChooseItemText = (item: any, index: number, field: 'title' | 'description'): string =>
+    tenantTranslation(`tenant_home.why_choose.items.${index}.${field}`, String(item?.[field] || ''));
+const homeWhyChooseIconColor = (item: any): string => {
+    const color = String(item?.icon_color || '').trim();
+
+    return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ? color : primaryColor.value;
+};
+const homeWhyChooseIconMaskStyle = (item: any) => {
+    const url = String(item?.icon_url || '').trim();
+
+    return {
+        backgroundColor: homeWhyChooseIconColor(item),
+        mask: `url("${url}") center / 2.5rem 2.5rem no-repeat`,
+        WebkitMask: `url("${url}") center / 2.5rem 2.5rem no-repeat`,
+    };
+};
 const normalizeCtaLabel = (label: string) =>
     label
         .replace(/^\s*[←→]\s*/, '')
@@ -191,7 +274,16 @@ const heroButtonHref = computed(() => {
                                     class="text-3xl leading-normal font-bold text-gray-900 lg:text-6xl py-2"
                                 >
                                     <template v-if="hasCustomHeroTitle">
-                                        {{ translatedHeroTitle }}
+                                        <span v-if="translatedHeroTitleParts.start">
+                                            {{ translatedHeroTitleParts.start }}
+                                        </span>
+                                        <span
+                                            class="inline-block py-1 bg-clip-text text-transparent"
+                                            :class="{ 'ms-2': translatedHeroTitleParts.start }"
+                                            :style="{ backgroundImage: accentGradient }"
+                                        >
+                                            {{ translatedHeroTitleParts.highlight }}
+                                        </span>
                                     </template>
                                     <template v-else>
                                         {{ t('welcome.hero_title_start') }}
@@ -375,25 +467,32 @@ const heroButtonHref = computed(() => {
                         <h2
                             class="mb-6 text-4xl font-bold leading-normal text-gray-900 lg:text-5xl py-2"
                         >
-                            {{ t('welcome.why_choose_start') }}
+                            {{ homeWhyChooseTitleStart }}
                             <span
                                 :class="isRtl
                                     ? 'text-orange-600'
                                     : 'inline-block py-1 bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent'"
                             >
-                                {{ t('welcome.why_choose_highlight') }} </span
+                                {{ homeWhyChooseTitleHighlight }} </span
                             >{{ questionMark }}
                         </h2>
-                        <p class="mx-auto max-w-2xl text-xl text-gray-600">{{ t('welcome.why_choose_desc') }}</p>
+                        <p class="mx-auto max-w-2xl text-xl text-gray-600">{{ homeWhyChooseDescription }}</p>
                     </div>
 
                     <div class="grid gap-12 md:grid-cols-3">
-                        <div class="group text-center">
+                        <div v-for="(item, index) in homeWhyChooseItems" :key="`home-why-choose-${index}`" class="group text-center">
                             <div
                                 class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-xl transition-transform duration-200 group-hover:scale-110"
                             >
+                                <span
+                                    v-if="item.icon_url"
+                                    class="h-10 w-10"
+                                    :style="homeWhyChooseIconMaskStyle(item)"
+                                />
                                 <svg
+                                    v-else
                                     class="h-10 w-10 text-white"
+                                    :style="{ color: homeWhyChooseIconColor(item) }"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -402,62 +501,14 @@ const heroButtonHref = computed(() => {
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
                                         stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        :d="item.icon_path"
                                     ></path>
                                 </svg>
                             </div>
                             <h3 class="mb-4 text-2xl font-bold text-gray-900">
-                                {{ t('welcome.feature_quality_title') }}
+                                {{ homeWhyChooseItemText(item, index, 'title') }}
                             </h3>
-                            <p class="leading-relaxed text-gray-600">{{ t('welcome.feature_quality_desc') }}</p>
-                        </div>
-
-                        <div class="group text-center">
-                            <div
-                                class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-xl transition-transform duration-200 group-hover:scale-110"
-                            >
-                                <svg
-                                    class="h-10 w-10 text-white"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    ></path>
-                                </svg>
-                            </div>
-                            <h3 class="mb-4 text-2xl font-bold text-gray-900">
-                                {{ t('welcome.feature_support_title') }}
-                            </h3>
-                            <p class="leading-relaxed text-gray-600">{{ t('welcome.feature_support_desc') }}</p>
-                        </div>
-
-                        <div class="group text-center">
-                            <div
-                                class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-xl transition-transform duration-200 group-hover:scale-110"
-                            >
-                                <svg
-                                    class="h-10 w-10 text-white"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                                    ></path>
-                                </svg>
-                            </div>
-                            <h3 class="mb-4 text-2xl font-bold text-gray-900">
-                                {{ t('welcome.feature_value_title') }}
-                            </h3>
-                            <p class="leading-relaxed text-gray-600">{{ t('welcome.feature_value_desc') }}</p>
+                            <p class="leading-relaxed text-gray-600">{{ homeWhyChooseItemText(item, index, 'description') }}</p>
                         </div>
                     </div>
                 </div>

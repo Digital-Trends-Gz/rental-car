@@ -34,6 +34,12 @@ type AboutWhyChoose = {
     title: LocalizedText;
     items: AboutWhyChooseItem[];
 };
+type HomeWhyChoose = {
+    title_start: LocalizedText;
+    title_highlight: LocalizedText;
+    description: LocalizedText;
+    items: AboutWhyChooseItem[];
+};
 type PdfTemplateOption = {
     value: string;
     label: LocalizedText;
@@ -79,6 +85,9 @@ const props = defineProps<{
             button_text: LocalizedText;
             button_link: string | null;
             image_url?: string | null;
+        };
+        home?: {
+            why_choose?: HomeWhyChoose;
         };
         about: {
             title: LocalizedText;
@@ -190,6 +199,7 @@ const props = defineProps<{
         michael?: UploadedFilePreview[];
         emily?: UploadedFilePreview[];
     };
+    homeWhyChooseIconFiles?: Record<number, UploadedFilePreview[]>;
     aboutWhyChooseIconFiles?: Record<number, UploadedFilePreview[]>;
     aboutTeamMemberImageFiles?: Record<number, UploadedFilePreview[]>;
     actions: {
@@ -220,9 +230,10 @@ const localize = (en: string, ar: string) => {
     return locale.value === 'ar' ? ar : en;
 };
 const selectClass = 'h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm';
-type ContentSectionKey = 'hero' | 'about' | 'pdfHeader' | 'contactPage' | 'contactFooter';
+type ContentSectionKey = 'hero' | 'homeWhyChoose' | 'about' | 'pdfHeader' | 'contactPage' | 'contactFooter';
 const contentSectionOpen = ref<Record<ContentSectionKey, boolean>>({
     hero: true,
+    homeWhyChoose: false,
     about: false,
     pdfHeader: false,
     contactPage: false,
@@ -311,6 +322,70 @@ const normalizeWhyChooseForm = (value?: AboutWhyChoose | null): AboutWhyChoose =
         title: {
             en: value?.title?.en ?? fallback.title.en,
             ar: value?.title?.ar ?? fallback.title.ar,
+        },
+        items: normalizedItems.length ? normalizedItems : fallback.items,
+    };
+};
+const fallbackHomeWhyChoose = (): HomeWhyChoose => ({
+    title_start: { en: 'Why Choose', ar: 'لماذا تختار' },
+    title_highlight: { en: 'Car4u', ar: 'كار فور يو' },
+    description: {
+        en: 'We provide an unparalleled car rental experience with premium service at every touchpoint.',
+        ar: 'نقدم تجربة تأجير سيارات متكاملة بخدمة مميزة في كل خطوة.',
+    },
+    items: [
+        {
+            icon_url: null,
+            icon_color: '#ffffff',
+            title: { en: 'Premium Quality', ar: 'جودة مميزة' },
+            description: { en: 'Every vehicle is inspected and maintained for safety, comfort, and peace of mind.', ar: 'يتم فحص وصيانة كل مركبة لضمان السلامة والراحة وراحة البال.' },
+        },
+        {
+            icon_url: null,
+            icon_color: '#ffffff',
+            title: { en: '24/7 Support', ar: 'دعم على مدار الساعة' },
+            description: { en: 'Our support team is available around the clock during your rental.', ar: 'فريق الدعم لدينا متاح على مدار الساعة أثناء فترة الإيجار.' },
+        },
+        {
+            icon_url: null,
+            icon_color: '#ffffff',
+            title: { en: 'Best Value', ar: 'أفضل قيمة' },
+            description: { en: 'Competitive prices with no hidden fees and flexible rental options.', ar: 'أسعار تنافسية بدون رسوم مخفية وخيارات إيجار مرنة.' },
+        },
+    ],
+});
+const normalizeHomeWhyChooseForm = (value?: HomeWhyChoose | null): HomeWhyChoose => {
+    const fallback = fallbackHomeWhyChoose();
+    const rawItems = Array.isArray(value?.items) ? value.items : Object.values(value?.items || {});
+    const normalizedItems = rawItems.map((item, index) => {
+        const fallbackItem = fallback.items[index] || fallback.items[0];
+
+        return {
+            icon_url: item?.icon_url ?? fallbackItem.icon_url,
+            icon_color: item?.icon_color || fallbackItem.icon_color || '#ffffff',
+            title: {
+                en: item?.title?.en ?? fallbackItem.title.en,
+                ar: item?.title?.ar ?? fallbackItem.title.ar,
+            },
+            description: {
+                en: item?.description?.en ?? fallbackItem.description.en,
+                ar: item?.description?.ar ?? fallbackItem.description.ar,
+            },
+        };
+    });
+
+    return {
+        title_start: {
+            en: value?.title_start?.en ?? fallback.title_start.en,
+            ar: value?.title_start?.ar ?? fallback.title_start.ar,
+        },
+        title_highlight: {
+            en: value?.title_highlight?.en ?? fallback.title_highlight.en,
+            ar: value?.title_highlight?.ar ?? fallback.title_highlight.ar,
+        },
+        description: {
+            en: value?.description?.en ?? fallback.description.en,
+            ar: value?.description?.ar ?? fallback.description.ar,
         },
         items: normalizedItems.length ? normalizedItems : fallback.items,
     };
@@ -463,6 +538,8 @@ const form = useForm({
     favicon_removed_files: [] as number[],
     hero_image_temp_folders: [] as string[],
     hero_image_removed_files: [] as number[],
+    home_why_choose_icon_temp_folders: [] as string[][],
+    home_why_choose_icon_removed_files: [] as number[][],
     about_team_sarah_image_temp_folders: [] as string[],
     about_team_sarah_image_removed_files: [] as number[],
     about_team_michael_image_temp_folders: [] as string[],
@@ -503,6 +580,9 @@ const form = useForm({
         },
         button_link: props.settings.hero?.button_link ?? '',
         image_url: props.settings.hero?.image_url ?? '',
+    },
+    home: {
+        why_choose: normalizeHomeWhyChooseForm(props.settings.home?.why_choose),
     },
     about: {
         title: {
@@ -1103,6 +1183,7 @@ const aboutSarahImageTempFolders = ref<string[]>([]);
 const aboutMichaelImageTempFolders = ref<string[]>([]);
 const aboutEmilyImageTempFolders = ref<string[]>([]);
 const teamMemberImageTempFolders = ref<string[][]>([]);
+const homeWhyChooseIconTempFolders = ref<string[][]>(form.home.why_choose.items.map(() => []));
 const whyChooseIconTempFolders = ref<string[][]>(form.about.why_choose.items.map(() => []));
 const logoRemovedFileIds = ref<number[]>([]);
 const faviconRemovedFileIds = ref<number[]>([]);
@@ -1112,6 +1193,7 @@ const aboutSarahImageRemovedFileIds = ref<number[]>([]);
 const aboutMichaelImageRemovedFileIds = ref<number[]>([]);
 const aboutEmilyImageRemovedFileIds = ref<number[]>([]);
 const teamMemberImageRemovedFileIds = ref<number[][]>([]);
+const homeWhyChooseIconRemovedFileIds = ref<number[][]>(form.home.why_choose.items.map(() => []));
 const whyChooseIconRemovedFileIds = ref<number[][]>(form.about.why_choose.items.map(() => []));
 const openAboutValueItems = ref<Record<number, boolean>>({});
 const openTeamMemberItems = ref<Record<number, boolean>>({});
@@ -1180,6 +1262,13 @@ watch(
     },
     { deep: true },
 );
+watch(
+    homeWhyChooseIconTempFolders,
+    (value) => {
+        form.home_why_choose_icon_temp_folders = value.map((folders) => [...(folders || [])]);
+    },
+    { deep: true },
+);
 
 function teamMemberInitialFiles(index: number): UploadedFilePreview[] {
     return props.aboutTeamMemberImageFiles?.[index] || [];
@@ -1187,6 +1276,10 @@ function teamMemberInitialFiles(index: number): UploadedFilePreview[] {
 
 function whyChooseIconInitialFiles(index: number): UploadedFilePreview[] {
     return props.aboutWhyChooseIconFiles?.[index] || [];
+}
+
+function homeWhyChooseIconInitialFiles(index: number): UploadedFilePreview[] {
+    return props.homeWhyChooseIconFiles?.[index] || [];
 }
 
 function copySeoMetaSummary(preview: {
@@ -1358,6 +1451,34 @@ function handleWhyChooseIconFileRemoved(index: number, data: { type: string; fil
     }
 }
 
+function handleHomeWhyChooseIconFileRemoved(index: number, data: { type: string; fileId?: number }) {
+    if (data.type === 'existing' && data.fileId) {
+        const current = homeWhyChooseIconRemovedFileIds.value[index] || [];
+        homeWhyChooseIconRemovedFileIds.value[index] = [...new Set([...current, data.fileId])];
+        form.home_why_choose_icon_removed_files = homeWhyChooseIconRemovedFileIds.value.map((ids) => [...(ids || [])]);
+        form.home.why_choose.items[index].icon_url = '';
+    }
+}
+
+function addHomeWhyChooseItem() {
+    form.home.why_choose.items.push({
+        icon_url: '',
+        icon_color: '#ffffff',
+        title: { en: '', ar: '' },
+        description: { en: '', ar: '' },
+    });
+    homeWhyChooseIconTempFolders.value.push([]);
+    homeWhyChooseIconRemovedFileIds.value.push([]);
+}
+
+function removeHomeWhyChooseItem(index: number) {
+    form.home.why_choose.items.splice(index, 1);
+    homeWhyChooseIconTempFolders.value.splice(index, 1);
+    homeWhyChooseIconRemovedFileIds.value.splice(index, 1);
+    form.home_why_choose_icon_temp_folders = homeWhyChooseIconTempFolders.value.map((folders) => [...(folders || [])]);
+    form.home_why_choose_icon_removed_files = homeWhyChooseIconRemovedFileIds.value.map((ids) => [...(ids || [])]);
+}
+
 function addWhyChooseItem() {
     form.about.why_choose.items.push({
         icon_url: '',
@@ -1480,6 +1601,11 @@ function submit() {
             teamMemberImageRemovedFileIds.value = [];
             form.about_team_member_image_temp_folders = [];
             form.about_team_member_image_removed_files = [];
+
+            homeWhyChooseIconTempFolders.value = form.home.why_choose.items.map(() => []);
+            homeWhyChooseIconRemovedFileIds.value = form.home.why_choose.items.map(() => []);
+            form.home_why_choose_icon_temp_folders = form.home.why_choose.items.map(() => []);
+            form.home_why_choose_icon_removed_files = form.home.why_choose.items.map(() => []);
 
             whyChooseIconTempFolders.value = form.about.why_choose.items.map(() => []);
             whyChooseIconRemovedFileIds.value = form.about.why_choose.items.map(() => []);
@@ -2938,6 +3064,119 @@ function submit() {
                             <Label for="contact_page_quick_links_title_ar">{{ localize('Quick Links Title (AR)', 'عنوان الروابط السريعة (AR)') }}</Label>
                             <Input id="contact_page_quick_links_title_ar" v-model="form.contact_page.quick_links_title.ar" dir="rtl" />
                             <p v-if="form.errors['contact_page.quick_links_title.ar']" class="text-sm text-red-600">{{ form.errors['contact_page.quick_links_title.ar'] }}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="rounded-lg border">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-4 p-5 text-start"
+                        :aria-expanded="contentSectionOpen.homeWhyChoose"
+                        @click="toggleContentSection('homeWhyChoose')"
+                    >
+                        <div>
+                            <h2 class="text-lg font-semibold">{{ localize('Home Why Choose Section', 'قسم لماذا تختارنا في الرئيسية') }}</h2>
+                            <p class="text-sm text-muted-foreground">{{ localize('Repeatable feature cards shown on the homepage.', 'بطاقات مزايا قابلة للتكرار تظهر في الصفحة الرئيسية.') }}</p>
+                        </div>
+                        <ChevronDown class="h-5 w-5 shrink-0 text-muted-foreground transition-transform" :class="{ 'rotate-180': contentSectionOpen.homeWhyChoose }" />
+                    </button>
+
+                    <div v-show="contentSectionOpen.homeWhyChoose" class="grid gap-4 border-t p-5 pt-4 md:grid-cols-2">
+                        <div class="space-y-2">
+                            <Label>{{ localize('Title Start (EN)', 'بداية العنوان (EN)') }}</Label>
+                            <Input v-model="form.home.why_choose.title_start.en" />
+                            <p v-if="form.errors['home.why_choose.title_start.en']" class="text-sm text-red-600">{{ form.errors['home.why_choose.title_start.en'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label>{{ localize('Title Start (AR)', 'بداية العنوان (AR)') }}</Label>
+                            <Input v-model="form.home.why_choose.title_start.ar" dir="rtl" />
+                            <p v-if="form.errors['home.why_choose.title_start.ar']" class="text-sm text-red-600">{{ form.errors['home.why_choose.title_start.ar'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label>{{ localize('Highlighted Title (EN)', 'العنوان المميز (EN)') }}</Label>
+                            <Input v-model="form.home.why_choose.title_highlight.en" />
+                            <p v-if="form.errors['home.why_choose.title_highlight.en']" class="text-sm text-red-600">{{ form.errors['home.why_choose.title_highlight.en'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label>{{ localize('Highlighted Title (AR)', 'العنوان المميز (AR)') }}</Label>
+                            <Input v-model="form.home.why_choose.title_highlight.ar" dir="rtl" />
+                            <p v-if="form.errors['home.why_choose.title_highlight.ar']" class="text-sm text-red-600">{{ form.errors['home.why_choose.title_highlight.ar'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label>{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
+                            <textarea v-model="form.home.why_choose.description.en" rows="3" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            <p v-if="form.errors['home.why_choose.description.en']" class="text-sm text-red-600">{{ form.errors['home.why_choose.description.en'] }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <Label>{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
+                            <textarea v-model="form.home.why_choose.description.ar" rows="3" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                            <p v-if="form.errors['home.why_choose.description.ar']" class="text-sm text-red-600">{{ form.errors['home.why_choose.description.ar'] }}</p>
+                        </div>
+
+                        <div class="space-y-4 rounded-md border bg-muted/20 p-4 md:col-span-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold">{{ localize('Feature Items', 'عناصر المزايا') }}</h3>
+                                    <p class="text-xs text-muted-foreground">{{ localize('Add, remove, translate, and style homepage feature cards.', 'أضف واحذف وترجم ونسق بطاقات مزايا الصفحة الرئيسية.') }}</p>
+                                </div>
+                                <Button type="button" variant="outline" size="sm" @click="addHomeWhyChooseItem">
+                                    {{ localize('Add Item', 'إضافة عنصر') }}
+                                </Button>
+                            </div>
+
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div v-for="(item, index) in form.home.why_choose.items" :key="`home-why-choose-${index}`" class="rounded-md border bg-background p-4">
+                                    <div class="mb-3 flex items-center justify-between gap-3">
+                                        <h4 class="text-sm font-semibold">
+                                            {{ item.title.en || item.title.ar || `${localize('Item', 'عنصر')} #${index + 1}` }}
+                                        </h4>
+                                        <Button type="button" variant="outline" size="sm" @click="removeHomeWhyChooseItem(index)">
+                                            {{ localize('Remove', 'حذف') }}
+                                        </Button>
+                                    </div>
+                                    <div class="grid gap-3">
+                                        <div class="space-y-2">
+                                            <Label>{{ localize('Icon SVG', 'أيقونة SVG') }}</Label>
+                                            <FileUpload
+                                                v-model="homeWhyChooseIconTempFolders[index]"
+                                                :initial-files="homeWhyChooseIconInitialFiles(index)"
+                                                :allow-multiple="false"
+                                                :max-files="1"
+                                                :allowed-file-types="['image/svg+xml']"
+                                                :collection="`home_why_choose_icon_${index}`"
+                                                theme="light"
+                                                width="100%"
+                                                @file-removed="(data) => handleHomeWhyChooseIconFileRemoved(index, data)"
+                                            />
+                                            <Input v-model="item.icon_url" type="hidden" />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label>{{ localize('Icon Color', 'لون الأيقونة') }}</Label>
+                                            <div class="flex gap-2">
+                                                <Input v-model="item.icon_color" type="color" class="h-10 w-14 p-1" />
+                                                <Input v-model="item.icon_color" placeholder="#f97316" />
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label>{{ localize('Title (EN)', 'العنوان (EN)') }}</Label>
+                                            <Input v-model="item.title.en" />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label>{{ localize('Title (AR)', 'العنوان (AR)') }}</Label>
+                                            <Input v-model="item.title.ar" dir="rtl" />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label>{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
+                                            <textarea v-model="item.description.en" rows="2" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label>{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
+                                            <textarea v-model="item.description.ar" rows="2" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>

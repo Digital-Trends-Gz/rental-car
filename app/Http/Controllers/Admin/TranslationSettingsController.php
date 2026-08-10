@@ -334,6 +334,38 @@ class TranslationSettingsController extends Controller
             $keyPool
         );
 
+        $homeWhyChoose = data_get($settings, 'home.why_choose', []);
+        foreach ([
+            'title_start',
+            'title_highlight',
+            'description',
+        ] as $field) {
+            $this->addLocalizedContentRow(
+                "tenant_home.why_choose.$field",
+                data_get($homeWhyChoose, $field, []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+        }
+
+        foreach ((array) data_get($homeWhyChoose, 'items', []) as $key => $item) {
+            $this->addLocalizedContentRow(
+                "tenant_home.why_choose.items.$key.title",
+                data_get($item, 'title', []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+            $this->addLocalizedContentRow(
+                "tenant_home.why_choose.items.$key.description",
+                data_get($item, 'description', []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+        }
+
         $this->addLocalizedContentRow(
             'tenant_about.why_choose.title',
             data_get($about, 'why_choose.title', []),

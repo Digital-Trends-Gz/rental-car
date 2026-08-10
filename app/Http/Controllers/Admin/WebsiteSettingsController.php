@@ -144,6 +144,26 @@ class WebsiteSettingsController extends Controller
             'hero_image_removed_files' => ['array'],
             'hero_image_removed_files.*' => ['integer'],
 
+            'home.why_choose.title_start.en' => ['nullable', 'string', 'max:255'],
+            'home.why_choose.title_start.ar' => ['nullable', 'string', 'max:255'],
+            'home.why_choose.title_highlight.en' => ['nullable', 'string', 'max:255'],
+            'home.why_choose.title_highlight.ar' => ['nullable', 'string', 'max:255'],
+            'home.why_choose.description.en' => ['nullable', 'string', 'max:2000'],
+            'home.why_choose.description.ar' => ['nullable', 'string', 'max:2000'],
+            'home.why_choose.items' => ['nullable', 'array'],
+            'home.why_choose.items.*.icon_url' => ['nullable', 'string', 'max:1000'],
+            'home.why_choose.items.*.icon_color' => ['nullable', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
+            'home.why_choose.items.*.title.en' => ['nullable', 'string', 'max:255'],
+            'home.why_choose.items.*.title.ar' => ['nullable', 'string', 'max:255'],
+            'home.why_choose.items.*.description.en' => ['nullable', 'string', 'max:1000'],
+            'home.why_choose.items.*.description.ar' => ['nullable', 'string', 'max:1000'],
+            'home_why_choose_icon_temp_folders' => ['nullable', 'array'],
+            'home_why_choose_icon_temp_folders.*' => ['nullable', 'array'],
+            'home_why_choose_icon_temp_folders.*.*' => ['string'],
+            'home_why_choose_icon_removed_files' => ['nullable', 'array'],
+            'home_why_choose_icon_removed_files.*' => ['nullable', 'array'],
+            'home_why_choose_icon_removed_files.*.*' => ['integer'],
+
             'about.title.en' => ['nullable', 'string', 'max:255'],
             'about.title.ar' => ['nullable', 'string', 'max:255'],
             'about.subtitle.en' => ['nullable', 'string', 'max:2000'],
@@ -385,6 +405,9 @@ class WebsiteSettingsController extends Controller
                     ],
                     'button_link' => $this->nullableString(data_get($validated, 'hero.button_link')),
                     'image_url' => $this->preservedJsonImageValue($request, $existingSettings, 'hero_image', 'hero.image_url', data_get($validated, 'hero.image_url')),
+                ],
+                'home' => [
+                    'why_choose' => $this->sanitizeHomeWhyChoosePayload(data_get($validated, 'home.why_choose', []), $existingSettings, $request),
                 ],
                 'about' => [
                     'title' => [
@@ -652,6 +675,7 @@ class WebsiteSettingsController extends Controller
         $this->syncJsonImageUpload($request, $siteSetting, 'about_team_sarah_image', 'about.team_images.sarah');
         $this->syncJsonImageUpload($request, $siteSetting, 'about_team_michael_image', 'about.team_images.michael');
         $this->syncJsonImageUpload($request, $siteSetting, 'about_team_emily_image', 'about.team_images.emily');
+        $this->syncHomeWhyChooseIconUploads($request, $siteSetting);
         $this->syncWhyChooseIconUploads($request, $siteSetting);
         $this->syncTeamMemberImageUploads($request, $siteSetting);
 
@@ -1201,6 +1225,72 @@ class WebsiteSettingsController extends Controller
             ?: $this->nullableString(data_get($existingSettings?->about, "why_choose.items.{$index}.icon_url"));
     }
 
+    private function sanitizeHomeWhyChoosePayload(mixed $value, ?TenantSiteSetting $existingSettings, Request $request): array
+    {
+        $value = is_array($value) ? $value : [];
+        $items = data_get($value, 'items');
+        $items = is_array($items) ? $items : [];
+
+        return [
+            'title_start' => [
+                'en' => $this->nullableString(data_get($value, 'title_start.en')),
+                'ar' => $this->nullableString(data_get($value, 'title_start.ar')),
+            ],
+            'title_highlight' => [
+                'en' => $this->nullableString(data_get($value, 'title_highlight.en')),
+                'ar' => $this->nullableString(data_get($value, 'title_highlight.ar')),
+            ],
+            'description' => [
+                'en' => $this->nullableString(data_get($value, 'description.en')),
+                'ar' => $this->nullableString(data_get($value, 'description.ar')),
+            ],
+            'items' => collect($items)
+                ->map(function (mixed $item, int|string $index) use ($request, $existingSettings): ?array {
+                    if (! is_array($item)) {
+                        return null;
+                    }
+
+                    $normalized = [
+                        'icon_url' => $this->preservedHomeWhyChooseIconUrl($request, $existingSettings, (string) $index, data_get($item, 'icon_url')),
+                        'icon_color' => strtolower($this->nullableString(data_get($item, 'icon_color')) ?? '#ffffff'),
+                        'title' => [
+                            'en' => $this->nullableString(data_get($item, 'title.en')),
+                            'ar' => $this->nullableString(data_get($item, 'title.ar')),
+                        ],
+                        'description' => [
+                            'en' => $this->nullableString(data_get($item, 'description.en')),
+                            'ar' => $this->nullableString(data_get($item, 'description.ar')),
+                        ],
+                    ];
+
+                    $hasContent = collect($normalized)->flatten()->filter(fn ($item) => $this->nullableString($item) !== null)->isNotEmpty();
+
+                    return $hasContent ? $normalized : null;
+                })
+                ->filter()
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function preservedHomeWhyChooseIconUrl(Request $request, ?TenantSiteSetting $existingSettings, string $index, mixed $submittedValue): ?string
+    {
+        $value = $this->nullableString($submittedValue);
+
+        if ($value !== null) {
+            return $value;
+        }
+
+        if ($this->homeWhyChooseIconUploadTouched($request, $index)) {
+            return null;
+        }
+
+        $collection = 'home_why_choose_icon_'.$index;
+
+        return $this->latestSiteSettingFileUrl($existingSettings, $collection)
+            ?: $this->nullableString(data_get($existingSettings?->home, "why_choose.items.{$index}.icon_url"));
+    }
+
     private function preservedJsonImageValue(Request $request, ?TenantSiteSetting $existingSettings, string $collection, string $jsonPath, mixed $submittedValue): ?string
     {
         $value = $this->nullableString($submittedValue);
@@ -1239,6 +1329,15 @@ class WebsiteSettingsController extends Controller
     {
         $tempFolders = data_get($request->input('about_why_choose_icon_temp_folders', []), $key, []);
         $removedFiles = data_get($request->input('about_why_choose_icon_removed_files', []), $key, []);
+
+        return (is_array($tempFolders) && array_filter($tempFolders) !== [])
+            || (is_array($removedFiles) && array_filter($removedFiles) !== []);
+    }
+
+    private function homeWhyChooseIconUploadTouched(Request $request, string $key): bool
+    {
+        $tempFolders = data_get($request->input('home_why_choose_icon_temp_folders', []), $key, []);
+        $removedFiles = data_get($request->input('home_why_choose_icon_removed_files', []), $key, []);
 
         return (is_array($tempFolders) && array_filter($tempFolders) !== [])
             || (is_array($removedFiles) && array_filter($removedFiles) !== []);
@@ -1787,6 +1886,7 @@ class WebsiteSettingsController extends Controller
                 'michael' => $this->siteSettingFiles($tenant->siteSetting, 'about_team_michael_image'),
                 'emily' => $this->siteSettingFiles($tenant->siteSetting, 'about_team_emily_image'),
             ],
+            'homeWhyChooseIconFiles' => $this->homeWhyChooseIconFiles($tenant->siteSetting),
             'aboutWhyChooseIconFiles' => $this->aboutWhyChooseIconFiles($tenant->siteSetting),
             'aboutTeamMemberImageFiles' => $this->aboutTeamMemberImageFiles($tenant->siteSetting),
             'actions' => [
@@ -1926,6 +2026,20 @@ class WebsiteSettingsController extends Controller
 
                 return [$index => $files];
             })
+            ->all();
+    }
+
+    private function homeWhyChooseIconFiles(?TenantSiteSetting $siteSetting): array
+    {
+        $items = is_array(data_get($siteSetting?->home, 'why_choose.items'))
+            ? data_get($siteSetting?->home, 'why_choose.items')
+            : [];
+        $count = max(count($items), 3);
+
+        return collect(range(0, max(0, $count - 1)))
+            ->mapWithKeys(fn (int $index): array => [
+                $index => $this->siteSettingFiles($siteSetting, 'home_why_choose_icon_'.$index),
+            ])
             ->all();
     }
 
@@ -2098,6 +2212,63 @@ class WebsiteSettingsController extends Controller
         }
 
         $settings->update(['about' => $about]);
+    }
+
+    private function syncHomeWhyChooseIconUploads(Request $request, TenantSiteSetting $siteSetting): void
+    {
+        $tempFoldersByIndex = is_array($request->input('home_why_choose_icon_temp_folders', []))
+            ? $request->input('home_why_choose_icon_temp_folders', [])
+            : [];
+        $removedIdsByIndex = is_array($request->input('home_why_choose_icon_removed_files', []))
+            ? $request->input('home_why_choose_icon_removed_files', [])
+            : [];
+        $indexes = array_unique(array_merge(array_keys($tempFoldersByIndex), array_keys($removedIdsByIndex)));
+
+        if ($indexes === []) {
+            return;
+        }
+
+        $settings = $siteSetting->fresh();
+        if (! $settings) {
+            return;
+        }
+
+        $home = is_array($settings->home) ? $settings->home : [];
+        $items = is_array(data_get($home, 'why_choose.items')) ? data_get($home, 'why_choose.items') : [];
+
+        foreach ($indexes as $index) {
+            if (! array_key_exists($index, $items)) {
+                continue;
+            }
+
+            $collection = 'home_why_choose_icon_'.$index;
+            $tempFolders = is_array($tempFoldersByIndex[$index] ?? null)
+                ? array_values(array_filter($tempFoldersByIndex[$index]))
+                : [];
+            $removedIds = is_array($removedIdsByIndex[$index] ?? null)
+                ? array_values(array_filter($removedIdsByIndex[$index]))
+                : [];
+
+            if (! empty($tempFolders)) {
+                $existingIds = $settings->files()->where('collection', $collection)->pluck('id')->all();
+                $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+            }
+
+            $this->filePondService->handleFileUpdates($settings, $tempFolders, $removedIds, $collection);
+
+            $file = $settings->files()
+                ->where('collection', $collection)
+                ->latest('id')
+                ->first();
+
+            data_set(
+                $home,
+                "why_choose.items.{$index}.icon_url",
+                $file && $file->path ? TenantSiteSetting::publicUrlFromPath($file->path) : null
+            );
+        }
+
+        $settings->update(['home' => $home]);
     }
 
     private function syncTeamMemberImageUploads(Request $request, TenantSiteSetting $siteSetting): void

@@ -27,6 +27,7 @@ class TenantSiteSetting extends Model
         'document_extraction_daily_limit',
         'enabled_locales',
         'hero',
+        'home',
         'about',
         'contact',
         'contact_page',
@@ -49,6 +50,7 @@ class TenantSiteSetting extends Model
         'document_extraction_daily_limit' => 'integer',
         'enabled_locales' => 'array',
         'hero' => 'array',
+        'home' => 'array',
         'about' => 'array',
         'contact' => 'array',
         'contact_page' => 'array',
@@ -113,6 +115,18 @@ class TenantSiteSetting extends Model
                 ],
                 'button_link' => null,
                 'image_url' => null,
+            ],
+            'home' => [
+                'why_choose' => [
+                    'title_start' => ['en' => null, 'ar' => null],
+                    'title_highlight' => ['en' => null, 'ar' => null],
+                    'description' => ['en' => null, 'ar' => null],
+                    'items' => [
+                        ['icon_url' => null, 'icon_color' => '#ffffff', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        ['icon_url' => null, 'icon_color' => '#ffffff', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        ['icon_url' => null, 'icon_color' => '#ffffff', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                    ],
+                ],
             ],
             'about' => [
                 'title' => [
@@ -671,6 +685,9 @@ class TenantSiteSetting extends Model
                 'button_link' => self::nullableString(data_get($data, 'hero.button_link')),
                 'image_url' => self::nullableString(data_get($data, 'hero.image_url')),
             ],
+            'home' => [
+                'why_choose' => self::normalizeHomeWhyChoose(data_get($data, 'home.why_choose')),
+            ],
             'about' => [
                 'title' => [
                     'en' => self::nullableString(data_get($data, 'about.title.en')),
@@ -1176,6 +1193,54 @@ class TenantSiteSetting extends Model
                     $normalized = [
                         'icon_url' => self::nullableString(data_get($item, 'icon_url')),
                         'icon_color' => self::normalizeHexColor(data_get($item, 'icon_color'), '#f97316'),
+                        'title' => [
+                            'en' => self::nullableString(data_get($item, 'title.en')),
+                            'ar' => self::nullableString(data_get($item, 'title.ar')),
+                        ],
+                        'description' => [
+                            'en' => self::nullableString(data_get($item, 'description.en')),
+                            'ar' => self::nullableString(data_get($item, 'description.ar')),
+                        ],
+                    ];
+
+                    $hasContent = collect($normalized)->flatten()->filter(fn ($item) => self::nullableString($item) !== null)->isNotEmpty();
+
+                    return $hasContent ? $normalized : null;
+                })
+                ->filter()
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private static function normalizeHomeWhyChoose(mixed $value): array
+    {
+        $value = is_array($value) ? $value : [];
+        $items = data_get($value, 'items');
+        $items = is_array($items) ? $items : [];
+
+        return [
+            'title_start' => [
+                'en' => self::nullableString(data_get($value, 'title_start.en')),
+                'ar' => self::nullableString(data_get($value, 'title_start.ar')),
+            ],
+            'title_highlight' => [
+                'en' => self::nullableString(data_get($value, 'title_highlight.en')),
+                'ar' => self::nullableString(data_get($value, 'title_highlight.ar')),
+            ],
+            'description' => [
+                'en' => self::nullableString(data_get($value, 'description.en')),
+                'ar' => self::nullableString(data_get($value, 'description.ar')),
+            ],
+            'items' => collect($items)
+                ->map(function (mixed $item): ?array {
+                    if (! is_array($item)) {
+                        return null;
+                    }
+
+                    $normalized = [
+                        'icon_url' => self::nullableString(data_get($item, 'icon_url')),
+                        'icon_color' => self::normalizeHexColor(data_get($item, 'icon_color'), '#ffffff'),
                         'title' => [
                             'en' => self::nullableString(data_get($item, 'title.en')),
                             'ar' => self::nullableString(data_get($item, 'title.ar')),
