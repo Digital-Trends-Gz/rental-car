@@ -143,6 +143,20 @@ class TenantSiteSetting extends Model
                     'en' => null,
                     'ar' => null,
                 ],
+                'why_choose' => [
+                    'title' => [
+                        'en' => null,
+                        'ar' => null,
+                    ],
+                    'items' => [
+                        'premium_fleet' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        'support' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        'flexible_booking' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        'competitive_pricing' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        'multiple_locations' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        'safety_first' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                    ],
+                ],
                 'values' => [],
                 'team_members' => [],
                 'cta_title' => [
@@ -686,6 +700,7 @@ class TenantSiteSetting extends Model
                     'en' => self::nullableString(data_get($data, 'about.mission_subtitle.en')),
                     'ar' => self::nullableString(data_get($data, 'about.mission_subtitle.ar')),
                 ],
+                'why_choose' => self::normalizeWhyChoose(data_get($data, 'about.why_choose')),
                 'values' => self::normalizeAboutItems(data_get($data, 'about.values'), ['icon']),
                 'team_members' => self::normalizeAboutItems(data_get($data, 'about.team_members'), ['role', 'image_url']),
                 'cta_title' => [
@@ -1139,6 +1154,42 @@ class TenantSiteSetting extends Model
             ->filter()
             ->values()
             ->all();
+    }
+
+    private static function normalizeWhyChoose(mixed $value): array
+    {
+        $value = is_array($value) ? $value : [];
+        $keys = [
+            'premium_fleet',
+            'support',
+            'flexible_booking',
+            'competitive_pricing',
+            'multiple_locations',
+            'safety_first',
+        ];
+
+        return [
+            'title' => [
+                'en' => self::nullableString(data_get($value, 'title.en')),
+                'ar' => self::nullableString(data_get($value, 'title.ar')),
+            ],
+            'items' => collect($keys)
+                ->mapWithKeys(fn (string $key): array => [
+                    $key => [
+                        'icon_url' => self::nullableString(data_get($value, "items.{$key}.icon_url")),
+                        'icon_color' => self::normalizeHexColor(data_get($value, "items.{$key}.icon_color"), '#f97316'),
+                        'title' => [
+                            'en' => self::nullableString(data_get($value, "items.{$key}.title.en")),
+                            'ar' => self::nullableString(data_get($value, "items.{$key}.title.ar")),
+                        ],
+                        'description' => [
+                            'en' => self::nullableString(data_get($value, "items.{$key}.description.en")),
+                            'ar' => self::nullableString(data_get($value, "items.{$key}.description.ar")),
+                        ],
+                    ],
+                ])
+                ->all(),
+        ];
     }
 
     private static function normalizeCountryCode(mixed $value): ?string

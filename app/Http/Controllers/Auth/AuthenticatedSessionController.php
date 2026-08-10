@@ -301,7 +301,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         if (($user->role ?? null) === UserRole::ADMIN && $tenantSlug) {
-            return route('admin.cars.index', ['subdomain' => $tenantSlug]);
+            return route('admin.dashboard', ['subdomain' => $tenantSlug]);
         }
 
         if (($user->role ?? null) === UserRole::CLIENT && $tenantSlug) {

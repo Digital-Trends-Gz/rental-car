@@ -158,6 +158,21 @@ class WebsiteSettingsController extends Controller
             'about.mission_title.ar' => ['nullable', 'string', 'max:255'],
             'about.mission_subtitle.en' => ['nullable', 'string', 'max:2000'],
             'about.mission_subtitle.ar' => ['nullable', 'string', 'max:2000'],
+            'about.why_choose.title.en' => ['nullable', 'string', 'max:255'],
+            'about.why_choose.title.ar' => ['nullable', 'string', 'max:255'],
+            'about.why_choose.items' => ['nullable', 'array'],
+            'about.why_choose.items.*.icon_url' => ['nullable', 'string', 'max:1000'],
+            'about.why_choose.items.*.icon_color' => ['nullable', 'regex:/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/'],
+            'about.why_choose.items.*.title.en' => ['nullable', 'string', 'max:255'],
+            'about.why_choose.items.*.title.ar' => ['nullable', 'string', 'max:255'],
+            'about.why_choose.items.*.description.en' => ['nullable', 'string', 'max:1000'],
+            'about.why_choose.items.*.description.ar' => ['nullable', 'string', 'max:1000'],
+            'about_why_choose_icon_temp_folders' => ['nullable', 'array'],
+            'about_why_choose_icon_temp_folders.*' => ['nullable', 'array'],
+            'about_why_choose_icon_temp_folders.*.*' => ['string'],
+            'about_why_choose_icon_removed_files' => ['nullable', 'array'],
+            'about_why_choose_icon_removed_files.*' => ['nullable', 'array'],
+            'about_why_choose_icon_removed_files.*.*' => ['integer'],
             'about.values' => ['nullable', 'array'],
             'about.values.*.icon' => ['nullable', 'string', 'max:50'],
             'about.values.*.title.en' => ['nullable', 'string', 'max:255'],
@@ -400,6 +415,7 @@ class WebsiteSettingsController extends Controller
                         'en' => $this->nullableString(data_get($validated, 'about.mission_subtitle.en')),
                         'ar' => $this->nullableString(data_get($validated, 'about.mission_subtitle.ar')),
                     ],
+                    'why_choose' => $this->sanitizeWhyChoosePayload(data_get($validated, 'about.why_choose', []), $existingSettings, $request),
                     'values' => $this->sanitizeRepeatItems(data_get($validated, 'about.values', []), ['icon']),
                     'team_members' => $aboutTeamMembers,
                     'cta_title' => [
@@ -636,6 +652,7 @@ class WebsiteSettingsController extends Controller
         $this->syncJsonImageUpload($request, $siteSetting, 'about_team_sarah_image', 'about.team_images.sarah');
         $this->syncJsonImageUpload($request, $siteSetting, 'about_team_michael_image', 'about.team_images.michael');
         $this->syncJsonImageUpload($request, $siteSetting, 'about_team_emily_image', 'about.team_images.emily');
+        $this->syncWhyChooseIconUploads($request, $siteSetting);
         $this->syncTeamMemberImageUploads($request, $siteSetting);
 
         return back()->with('success', 'Website settings updated successfully.');
@@ -1116,6 +1133,60 @@ class WebsiteSettingsController extends Controller
             ->all();
     }
 
+    private function sanitizeWhyChoosePayload(mixed $value, ?TenantSiteSetting $existingSettings, Request $request): array
+    {
+        $value = is_array($value) ? $value : [];
+        $allowedKeys = [
+            'premium_fleet',
+            'support',
+            'flexible_booking',
+            'competitive_pricing',
+            'multiple_locations',
+            'safety_first',
+        ];
+
+        return [
+            'title' => [
+                'en' => $this->nullableString(data_get($value, 'title.en')),
+                'ar' => $this->nullableString(data_get($value, 'title.ar')),
+            ],
+            'items' => collect($allowedKeys)
+                ->mapWithKeys(fn (string $key): array => [
+                    $key => [
+                        'icon_url' => $this->preservedWhyChooseIconUrl($request, $existingSettings, $key, data_get($value, "items.{$key}.icon_url")),
+                        'icon_color' => strtolower($this->nullableString(data_get($value, "items.{$key}.icon_color")) ?? '#f97316'),
+                        'title' => [
+                            'en' => $this->nullableString(data_get($value, "items.{$key}.title.en")),
+                            'ar' => $this->nullableString(data_get($value, "items.{$key}.title.ar")),
+                        ],
+                        'description' => [
+                            'en' => $this->nullableString(data_get($value, "items.{$key}.description.en")),
+                            'ar' => $this->nullableString(data_get($value, "items.{$key}.description.ar")),
+                        ],
+                    ],
+                ])
+                ->all(),
+        ];
+    }
+
+    private function preservedWhyChooseIconUrl(Request $request, ?TenantSiteSetting $existingSettings, string $key, mixed $submittedValue): ?string
+    {
+        $value = $this->nullableString($submittedValue);
+
+        if ($value !== null) {
+            return $value;
+        }
+
+        if ($this->whyChooseIconUploadTouched($request, $key)) {
+            return null;
+        }
+
+        $collection = 'about_why_choose_icon_'.$key;
+
+        return $this->latestSiteSettingFileUrl($existingSettings, $collection)
+            ?: $this->nullableString(data_get($existingSettings?->about, "why_choose.items.{$key}.icon_url"));
+    }
+
     private function preservedJsonImageValue(Request $request, ?TenantSiteSetting $existingSettings, string $collection, string $jsonPath, mixed $submittedValue): ?string
     {
         $value = $this->nullableString($submittedValue);
@@ -1145,6 +1216,15 @@ class WebsiteSettingsController extends Controller
     {
         $tempFolders = data_get($request->input('about_team_member_image_temp_folders', []), (string) $index, []);
         $removedFiles = data_get($request->input('about_team_member_image_removed_files', []), (string) $index, []);
+
+        return (is_array($tempFolders) && array_filter($tempFolders) !== [])
+            || (is_array($removedFiles) && array_filter($removedFiles) !== []);
+    }
+
+    private function whyChooseIconUploadTouched(Request $request, string $key): bool
+    {
+        $tempFolders = data_get($request->input('about_why_choose_icon_temp_folders', []), $key, []);
+        $removedFiles = data_get($request->input('about_why_choose_icon_removed_files', []), $key, []);
 
         return (is_array($tempFolders) && array_filter($tempFolders) !== [])
             || (is_array($removedFiles) && array_filter($removedFiles) !== []);
@@ -1693,6 +1773,7 @@ class WebsiteSettingsController extends Controller
                 'michael' => $this->siteSettingFiles($tenant->siteSetting, 'about_team_michael_image'),
                 'emily' => $this->siteSettingFiles($tenant->siteSetting, 'about_team_emily_image'),
             ],
+            'aboutWhyChooseIconFiles' => $this->aboutWhyChooseIconFiles($tenant->siteSetting),
             'aboutTeamMemberImageFiles' => $this->aboutTeamMemberImageFiles($tenant->siteSetting),
             'actions' => [
                 'update' => route('admin.settings.website.update'),
@@ -1802,6 +1883,24 @@ class WebsiteSettingsController extends Controller
             ->keys()
             ->mapWithKeys(fn ($index) => [
                 $index => $this->siteSettingFiles($siteSetting, 'about_team_member_image_'.$index),
+            ])
+            ->all();
+    }
+
+    private function aboutWhyChooseIconFiles(?TenantSiteSetting $siteSetting): array
+    {
+        $keys = [
+            'premium_fleet',
+            'support',
+            'flexible_booking',
+            'competitive_pricing',
+            'multiple_locations',
+            'safety_first',
+        ];
+
+        return collect($keys)
+            ->mapWithKeys(fn (string $key): array => [
+                $key => $this->siteSettingFiles($siteSetting, 'about_why_choose_icon_'.$key),
             ])
             ->all();
     }
@@ -1918,6 +2017,63 @@ class WebsiteSettingsController extends Controller
         $payload = is_array($settings->{$column}) ? $settings->{$column} : [];
         data_set($payload, substr($jsonPath, strlen($column) + 1), $value);
         $settings->update([$column => $payload]);
+    }
+
+    private function syncWhyChooseIconUploads(Request $request, TenantSiteSetting $siteSetting): void
+    {
+        $tempFoldersByKey = is_array($request->input('about_why_choose_icon_temp_folders', []))
+            ? $request->input('about_why_choose_icon_temp_folders', [])
+            : [];
+        $removedIdsByKey = is_array($request->input('about_why_choose_icon_removed_files', []))
+            ? $request->input('about_why_choose_icon_removed_files', [])
+            : [];
+        $keys = array_unique(array_merge(array_keys($tempFoldersByKey), array_keys($removedIdsByKey)));
+
+        if ($keys === []) {
+            return;
+        }
+
+        $settings = $siteSetting->fresh();
+        if (! $settings) {
+            return;
+        }
+
+        $about = is_array($settings->about) ? $settings->about : [];
+        $items = is_array(data_get($about, 'why_choose.items')) ? data_get($about, 'why_choose.items') : [];
+
+        foreach ($keys as $key) {
+            if (! array_key_exists($key, $items)) {
+                continue;
+            }
+
+            $collection = 'about_why_choose_icon_'.$key;
+            $tempFolders = is_array($tempFoldersByKey[$key] ?? null)
+                ? array_values(array_filter($tempFoldersByKey[$key]))
+                : [];
+            $removedIds = is_array($removedIdsByKey[$key] ?? null)
+                ? array_values(array_filter($removedIdsByKey[$key]))
+                : [];
+
+            if (!empty($tempFolders)) {
+                $existingIds = $settings->files()->where('collection', $collection)->pluck('id')->all();
+                $removedIds = array_values(array_unique(array_merge($removedIds, $existingIds)));
+            }
+
+            $this->filePondService->handleFileUpdates($settings, $tempFolders, $removedIds, $collection);
+
+            $file = $settings->files()
+                ->where('collection', $collection)
+                ->latest('id')
+                ->first();
+
+            data_set(
+                $about,
+                "why_choose.items.{$key}.icon_url",
+                $file && $file->path ? TenantSiteSetting::publicUrlFromPath($file->path) : null
+            );
+        }
+
+        $settings->update(['about' => $about]);
     }
 
     private function syncTeamMemberImageUploads(Request $request, TenantSiteSetting $siteSetting): void
