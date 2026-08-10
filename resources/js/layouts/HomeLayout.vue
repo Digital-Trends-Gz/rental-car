@@ -219,6 +219,25 @@ const translatedLabel = (key: string, fallback: string) => {
 const activeLocaleBase = computed(() => String(locale.value || 'en').toLowerCase().split('-')[0]);
 const localizedFallback = (fallback: string, localized: Partial<Record<string, string>> = {}) =>
     localized[activeLocaleBase.value] || fallback;
+const localizedTenantText = (value: any, fallback = ''): string => {
+    if (typeof value === 'string') {
+        return value.trim() !== '' ? value : fallback;
+    }
+
+    if (value && typeof value === 'object') {
+        const candidate = value[activeLocaleBase.value] || value.en || value.ar;
+        if (typeof candidate === 'string' && candidate.trim() !== '') {
+            return candidate;
+        }
+    }
+
+    return fallback;
+};
+const tenantTranslation = (key: string, fallback = ''): string => {
+    const translated = t(key);
+
+    return translated && translated !== key ? translated : fallback;
+};
 const translatedLandingLabel = (key: string, fallback: string, localized: Partial<Record<string, string>> = {}) => {
     const localizedValue = localized[activeLocaleBase.value];
     if (localizedValue) {
@@ -915,7 +934,7 @@ onBeforeUnmount(() => {
                             </div>
                         </div>
                         <p class="leading-relaxed text-gray-400">
-                            {{ tenantSiteSettings?.footer?.description?.[locale] || tenantSiteSettings?.footer?.description?.en || t('footer.description') }}
+                            {{ tenantTranslation('tenant_website.footer.description', localizedTenantText(tenantSiteSettings?.footer?.description, t('footer.description'))) }}
                         </p>
                     </div>
 
@@ -1031,7 +1050,7 @@ onBeforeUnmount(() => {
                                         d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                                     ></path>
                                 </svg>
-                                <span>{{ tenantSiteSettings?.contact?.address?.[locale] || tenantSiteSettings?.contact?.address?.en || '123 Business Ave, City' }}</span>
+                                <span>{{ tenantTranslation('tenant_website.contact.address', localizedTenantText(tenantSiteSettings?.contact?.address, '123 Business Ave, City')) }}</span>
                             </div>
                         </div>
                     </div>

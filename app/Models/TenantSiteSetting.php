@@ -149,12 +149,12 @@ class TenantSiteSetting extends Model
                         'ar' => null,
                     ],
                     'items' => [
-                        'premium_fleet' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
-                        'support' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
-                        'flexible_booking' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
-                        'competitive_pricing' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
-                        'multiple_locations' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
-                        'safety_first' => ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
+                        ['icon_url' => null, 'icon_color' => '#f97316', 'title' => ['en' => null, 'ar' => null], 'description' => ['en' => null, 'ar' => null]],
                     ],
                 ],
                 'values' => [],
@@ -1159,35 +1159,39 @@ class TenantSiteSetting extends Model
     private static function normalizeWhyChoose(mixed $value): array
     {
         $value = is_array($value) ? $value : [];
-        $keys = [
-            'premium_fleet',
-            'support',
-            'flexible_booking',
-            'competitive_pricing',
-            'multiple_locations',
-            'safety_first',
-        ];
+        $items = data_get($value, 'items');
+        $items = is_array($items) ? $items : [];
 
         return [
             'title' => [
                 'en' => self::nullableString(data_get($value, 'title.en')),
                 'ar' => self::nullableString(data_get($value, 'title.ar')),
             ],
-            'items' => collect($keys)
-                ->mapWithKeys(fn (string $key): array => [
-                    $key => [
-                        'icon_url' => self::nullableString(data_get($value, "items.{$key}.icon_url")),
-                        'icon_color' => self::normalizeHexColor(data_get($value, "items.{$key}.icon_color"), '#f97316'),
+            'items' => collect($items)
+                ->map(function (mixed $item): ?array {
+                    if (! is_array($item)) {
+                        return null;
+                    }
+
+                    $normalized = [
+                        'icon_url' => self::nullableString(data_get($item, 'icon_url')),
+                        'icon_color' => self::normalizeHexColor(data_get($item, 'icon_color'), '#f97316'),
                         'title' => [
-                            'en' => self::nullableString(data_get($value, "items.{$key}.title.en")),
-                            'ar' => self::nullableString(data_get($value, "items.{$key}.title.ar")),
+                            'en' => self::nullableString(data_get($item, 'title.en')),
+                            'ar' => self::nullableString(data_get($item, 'title.ar')),
                         ],
                         'description' => [
-                            'en' => self::nullableString(data_get($value, "items.{$key}.description.en")),
-                            'ar' => self::nullableString(data_get($value, "items.{$key}.description.ar")),
+                            'en' => self::nullableString(data_get($item, 'description.en')),
+                            'ar' => self::nullableString(data_get($item, 'description.ar')),
                         ],
-                    ],
-                ])
+                    ];
+
+                    $hasContent = collect($normalized)->flatten()->filter(fn ($item) => self::nullableString($item) !== null)->isNotEmpty();
+
+                    return $hasContent ? $normalized : null;
+                })
+                ->filter()
+                ->values()
                 ->all(),
         ];
     }

@@ -58,15 +58,23 @@ function localizedText(node: any, fallback: string): string {
 const heroTitle = computed(() => localizedText(tenantSiteSettings.value?.hero?.title, ''));
 const heroDescription = computed(() => localizedText(tenantSiteSettings.value?.hero?.description, ''));
 const heroButtonText = computed(() => localizedText(tenantSiteSettings.value?.hero?.button_text, ''));
+const tenantTranslation = (key: string, fallback = ''): string => {
+    const translated = t(key);
+
+    return translated && translated !== key ? translated : fallback;
+};
+const translatedHeroTitle = computed(() => tenantTranslation('tenant_website.hero.title', heroTitle.value));
+const translatedHeroDescription = computed(() => tenantTranslation('tenant_website.hero.description', heroDescription.value));
+const translatedHeroButtonText = computed(() => tenantTranslation('tenant_website.hero.button_text', heroButtonText.value));
 const normalizeCtaLabel = (label: string) =>
     label
         .replace(/^\s*[←→]\s*/, '')
         .replace(/\s*[←→]\s*$/, '')
         .trim();
-const heroButtonLabel = computed(() => normalizeCtaLabel(heroButtonText.value || t('welcome.browse_fleet')));
+const heroButtonLabel = computed(() => normalizeCtaLabel(translatedHeroButtonText.value || t('welcome.browse_fleet')));
 const heroButtonLink = computed(() => tenantSiteSettings.value?.hero?.button_link || null);
 const heroImageUrl = computed(() => tenantSiteSettings.value?.hero?.image_url || '/images/hero_image.png');
-const hasCustomHeroTitle = computed(() => heroTitle.value.trim() !== '');
+const hasCustomHeroTitle = computed(() => translatedHeroTitle.value.trim() !== '');
 const localeAwarePathname = (pathname: string) => {
     const normalizedPath = (pathname.startsWith('/') ? pathname : `/${pathname}`) || '/';
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : String($page.url || '/');
@@ -183,7 +191,7 @@ const heroButtonHref = computed(() => {
                                     class="text-3xl leading-normal font-bold text-gray-900 lg:text-6xl py-2"
                                 >
                                     <template v-if="hasCustomHeroTitle">
-                                        {{ heroTitle }}
+                                        {{ translatedHeroTitle }}
                                     </template>
                                     <template v-else>
                                         {{ t('welcome.hero_title_start') }}
@@ -199,7 +207,7 @@ const heroButtonHref = computed(() => {
                                 <p
                                     class="max-w-lg text-lg leading-relaxed text-gray-600"
                                 >
-                                    {{ heroDescription || t('welcome.hero_desc') }}
+                                    {{ translatedHeroDescription || t('welcome.hero_desc') }}
                                 </p>
                             </div>
 

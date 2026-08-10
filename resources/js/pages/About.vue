@@ -113,6 +113,50 @@ const whyChooseTitle = computed(() =>
         localizedText(whyChooseContent.value?.title, t('about.why_choose_title')),
     ),
 );
+const fallbackWhyChooseItems = computed(() => [
+    { icon_color: '#f97316', icon_url: '', title: t('about.why_choose.premium_fleet.title'), description: t('about.why_choose.premium_fleet.desc') },
+    { icon_color: '#f97316', icon_url: '', title: t('about.why_choose.support.title'), description: t('about.why_choose.support.desc') },
+    { icon_color: '#f97316', icon_url: '', title: t('about.why_choose.flexible_booking.title'), description: t('about.why_choose.flexible_booking.desc') },
+    { icon_color: '#f97316', icon_url: '', title: t('about.why_choose.competitive_pricing.title'), description: t('about.why_choose.competitive_pricing.desc') },
+    { icon_color: '#f97316', icon_url: '', title: t('about.why_choose.multiple_locations.title'), description: t('about.why_choose.multiple_locations.desc') },
+    { icon_color: '#f97316', icon_url: '', title: t('about.why_choose.safety_first.title'), description: t('about.why_choose.safety_first.desc') },
+]);
+const whyChooseItems = computed(() => {
+    const items = Array.isArray(whyChooseContent.value?.items)
+        ? whyChooseContent.value.items
+        : Object.values(whyChooseContent.value?.items || {});
+    const normalized = items
+        .map((item: any) => ({
+            icon_url: String(item?.icon_url || '').trim(),
+            icon_color: String(item?.icon_color || '#f97316').trim(),
+            title: localizedText(item?.title, ''),
+            description: localizedText(item?.description, ''),
+        }))
+        .filter((item: any) => item.title || item.description || item.icon_url);
+
+    return normalized.length ? normalized : fallbackWhyChooseItems.value;
+});
+const whyChooseDisplayText = (item: any, index: number, field: 'title' | 'description'): string =>
+    tenantTranslation(`tenant_about.why_choose.items.${index}.${field}`, String(item?.[field] || ''));
+const whyChooseDisplayIconColor = (item: any): string => {
+    const color = String(item?.icon_color || '').trim();
+
+    return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ? color : '#f97316';
+};
+const whyChooseDisplayIconMaskStyle = (item: any) => {
+    const url = String(item?.icon_url || '').trim();
+
+    return {
+        backgroundColor: whyChooseDisplayIconColor(item),
+        mask: `url("${url}") center / contain no-repeat`,
+        WebkitMask: `url("${url}") center / contain no-repeat`,
+    };
+};
+const whyChooseFallbackIconPath = (index: number): string => {
+    const keys = ['star', 'headset', 'calendar_check', 'hand_coins', 'map_pin', 'user_shield'];
+
+    return whyChooseIconPaths[keys[index % keys.length]] || whyChooseIconPaths.star;
+};
 const whyChooseItemText = (key: string, field: 'title' | 'description'): string => {
     const fallbackKey = field === 'title' ? 'title' : 'desc';
 
@@ -227,12 +271,12 @@ const contactUrl = computed(() =>
                 <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                     <div class="text-center">
                         <h1 class="mb-6 text-4xl font-bold md:text-5xl">
-                            {{ localizedText(aboutContent?.title, t('about.title')) }}
+                            {{ tenantTranslation('tenant_website.about.title', localizedText(aboutContent?.title, t('about.title'))) }}
                         </h1>
                         <p
                             class="mx-auto max-w-3xl text-xl leading-relaxed text-gray-300"
                         >
-                            {{ localizedText(aboutContent?.subtitle, t('about.subtitle')) }}
+                            {{ tenantTranslation('tenant_website.about.subtitle', localizedText(aboutContent?.subtitle, t('about.subtitle'))) }}
                         </p>
                     </div>
                 </div>
@@ -243,16 +287,16 @@ const contactUrl = computed(() =>
                     <div class="grid items-center gap-12 lg:grid-cols-2">
                         <div>
                             <h2 class="mb-6 text-3xl font-bold text-gray-900">
-                                {{ localizedText(aboutContent?.story_title, t('about.story_title')) }}
+                                {{ tenantTranslation('tenant_website.about.story_title', localizedText(aboutContent?.story_title, t('about.story_title'))) }}
                             </h2>
                             <div
                                 class="space-y-4 leading-relaxed text-gray-600"
                             >
                                 <p>
-                                    {{ localizedText(aboutContent?.story_p1, t('about.story_p1')) }}
+                                    {{ tenantTranslation('tenant_website.about.story_p1', localizedText(aboutContent?.story_p1, t('about.story_p1'))) }}
                                 </p>
                                 <p>
-                                    {{ localizedText(aboutContent?.story_p2, t('about.story_p2')) }}
+                                    {{ tenantTranslation('tenant_website.about.story_p2', localizedText(aboutContent?.story_p2, t('about.story_p2'))) }}
                                 </p>
                             </div>
                         </div>
@@ -302,10 +346,10 @@ const contactUrl = computed(() =>
                 <div class="mb-20">
                     <div class="mb-12 text-center">
                         <h2 class="mb-4 text-3xl font-bold text-gray-900">
-                            {{ localizedText(aboutContent?.mission_title, t('about.mission_title')) }}
+                            {{ tenantTranslation('tenant_website.about.mission_title', localizedText(aboutContent?.mission_title, t('about.mission_title'))) }}
                         </h2>
                         <p class="mx-auto max-w-2xl text-gray-600">
-                            {{ localizedText(aboutContent?.mission_subtitle, t('about.mission_subtitle')) }}
+                            {{ tenantTranslation('tenant_website.about.mission_subtitle', localizedText(aboutContent?.mission_subtitle, t('about.mission_subtitle'))) }}
                         </p>
                     </div>
 
@@ -344,7 +388,34 @@ const contactUrl = computed(() =>
                             {{ whyChooseTitle }}
                         </h2>
 
-                        <div class="grid gap-8 md:grid-cols-2">
+                        <div class="grid gap-6 md:grid-cols-2">
+                            <div v-for="(item, index) in whyChooseItems" :key="`why-choose-display-${index}`" class="flex items-start space-x-4">
+                                <span
+                                    v-if="item.icon_url"
+                                    class="h-8 w-8 shrink-0"
+                                    :style="whyChooseDisplayIconMaskStyle(item)"
+                                />
+                                <svg
+                                    v-else
+                                    class="h-8 w-8 shrink-0 fill-current"
+                                    :style="{ color: whyChooseDisplayIconColor(item) }"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 640 640"
+                                >
+                                    <path :d="whyChooseFallbackIconPath(index)" />
+                                </svg>
+                                <div>
+                                    <h4 class="mb-1 font-semibold text-gray-900">
+                                        {{ whyChooseDisplayText(item, index, 'title') }}
+                                    </h4>
+                                    <p class="text-gray-600">
+                                        {{ whyChooseDisplayText(item, index, 'description') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="false" class="grid gap-8 md:grid-cols-2">
                             <div class="space-y-6">
                                 <div class="flex items-start space-x-4">
                                     <span
@@ -550,23 +621,23 @@ const contactUrl = computed(() =>
                     class="rounded-lg bg-gray-900 p-8 text-center text-white md:p-12"
                 >
                     <h2 class="mb-4 text-3xl font-bold">
-                        {{ localizedText(aboutContent?.cta_title, t('about.cta_title')) }}
+                        {{ tenantTranslation('tenant_website.about.cta_title', localizedText(aboutContent?.cta_title, t('about.cta_title'))) }}
                     </h2>
                     <p class="mx-auto mb-8 max-w-2xl text-gray-300">
-                        {{ localizedText(aboutContent?.cta_subtitle, t('about.cta_subtitle')) }}
+                        {{ tenantTranslation('tenant_website.about.cta_subtitle', localizedText(aboutContent?.cta_subtitle, t('about.cta_subtitle'))) }}
                     </p>
                     <div class="flex flex-col justify-center gap-4 sm:flex-row">
                         <a
                             :href="fleetUrl"
                             class="rounded-lg bg-orange-500 px-8 py-3 font-semibold text-white transition-colors duration-200 hover:bg-orange-600"
                         >
-                            {{ localizedText(aboutContent?.cta_browse_text, t('about.cta_browse')) }}
+                            {{ tenantTranslation('tenant_website.about.cta_browse_text', localizedText(aboutContent?.cta_browse_text, t('about.cta_browse'))) }}
                         </a>
                         <a
                             :href="contactUrl"
                             class="rounded-lg border-2 border-white bg-transparent px-8 py-3 font-semibold text-white transition-colors duration-200 hover:bg-white hover:text-gray-900"
                         >
-                            {{ localizedText(aboutContent?.cta_contact_text, t('about.cta_contact')) }}
+                            {{ tenantTranslation('tenant_website.about.cta_contact_text', localizedText(aboutContent?.cta_contact_text, t('about.cta_contact'))) }}
                         </a>
                     </div>
                 </div>

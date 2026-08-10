@@ -1136,40 +1136,44 @@ class WebsiteSettingsController extends Controller
     private function sanitizeWhyChoosePayload(mixed $value, ?TenantSiteSetting $existingSettings, Request $request): array
     {
         $value = is_array($value) ? $value : [];
-        $allowedKeys = [
-            'premium_fleet',
-            'support',
-            'flexible_booking',
-            'competitive_pricing',
-            'multiple_locations',
-            'safety_first',
-        ];
+        $items = data_get($value, 'items');
+        $items = is_array($items) ? $items : [];
 
         return [
             'title' => [
                 'en' => $this->nullableString(data_get($value, 'title.en')),
                 'ar' => $this->nullableString(data_get($value, 'title.ar')),
             ],
-            'items' => collect($allowedKeys)
-                ->mapWithKeys(fn (string $key): array => [
-                    $key => [
-                        'icon_url' => $this->preservedWhyChooseIconUrl($request, $existingSettings, $key, data_get($value, "items.{$key}.icon_url")),
-                        'icon_color' => strtolower($this->nullableString(data_get($value, "items.{$key}.icon_color")) ?? '#f97316'),
+            'items' => collect($items)
+                ->map(function (mixed $item, int|string $index) use ($request, $existingSettings): ?array {
+                    if (! is_array($item)) {
+                        return null;
+                    }
+
+                    $normalized = [
+                        'icon_url' => $this->preservedWhyChooseIconUrl($request, $existingSettings, (string) $index, data_get($item, 'icon_url')),
+                        'icon_color' => strtolower($this->nullableString(data_get($item, 'icon_color')) ?? '#f97316'),
                         'title' => [
-                            'en' => $this->nullableString(data_get($value, "items.{$key}.title.en")),
-                            'ar' => $this->nullableString(data_get($value, "items.{$key}.title.ar")),
+                            'en' => $this->nullableString(data_get($item, 'title.en')),
+                            'ar' => $this->nullableString(data_get($item, 'title.ar')),
                         ],
                         'description' => [
-                            'en' => $this->nullableString(data_get($value, "items.{$key}.description.en")),
-                            'ar' => $this->nullableString(data_get($value, "items.{$key}.description.ar")),
+                            'en' => $this->nullableString(data_get($item, 'description.en')),
+                            'ar' => $this->nullableString(data_get($item, 'description.ar')),
                         ],
-                    ],
-                ])
+                    ];
+
+                    $hasContent = collect($normalized)->flatten()->filter(fn ($item) => $this->nullableString($item) !== null)->isNotEmpty();
+
+                    return $hasContent ? $normalized : null;
+                })
+                ->filter()
+                ->values()
                 ->all(),
         ];
     }
 
-    private function preservedWhyChooseIconUrl(Request $request, ?TenantSiteSetting $existingSettings, string $key, mixed $submittedValue): ?string
+    private function preservedWhyChooseIconUrl(Request $request, ?TenantSiteSetting $existingSettings, string $index, mixed $submittedValue): ?string
     {
         $value = $this->nullableString($submittedValue);
 
@@ -1177,14 +1181,24 @@ class WebsiteSettingsController extends Controller
             return $value;
         }
 
-        if ($this->whyChooseIconUploadTouched($request, $key)) {
+        if ($this->whyChooseIconUploadTouched($request, $index)) {
             return null;
         }
 
-        $collection = 'about_why_choose_icon_'.$key;
+        $collection = 'about_why_choose_icon_'.$index;
+        $legacyKeys = [
+            'premium_fleet',
+            'support',
+            'flexible_booking',
+            'competitive_pricing',
+            'multiple_locations',
+            'safety_first',
+        ];
+        $legacyCollection = isset($legacyKeys[(int) $index]) ? 'about_why_choose_icon_'.$legacyKeys[(int) $index] : null;
 
         return $this->latestSiteSettingFileUrl($existingSettings, $collection)
-            ?: $this->nullableString(data_get($existingSettings?->about, "why_choose.items.{$key}.icon_url"));
+            ?: ($legacyCollection ? $this->latestSiteSettingFileUrl($existingSettings, $legacyCollection) : null)
+            ?: $this->nullableString(data_get($existingSettings?->about, "why_choose.items.{$index}.icon_url"));
     }
 
     private function preservedJsonImageValue(Request $request, ?TenantSiteSetting $existingSettings, string $collection, string $jsonPath, mixed $submittedValue): ?string
@@ -1889,7 +1903,7 @@ class WebsiteSettingsController extends Controller
 
     private function aboutWhyChooseIconFiles(?TenantSiteSetting $siteSetting): array
     {
-        $keys = [
+        $legacyKeys = [
             'premium_fleet',
             'support',
             'flexible_booking',
@@ -1897,11 +1911,21 @@ class WebsiteSettingsController extends Controller
             'multiple_locations',
             'safety_first',
         ];
+        $items = is_array(data_get($siteSetting?->about, 'why_choose.items'))
+            ? data_get($siteSetting?->about, 'why_choose.items')
+            : [];
+        $count = max(count($items), count($legacyKeys));
 
-        return collect($keys)
-            ->mapWithKeys(fn (string $key): array => [
-                $key => $this->siteSettingFiles($siteSetting, 'about_why_choose_icon_'.$key),
-            ])
+        return collect(range(0, max(0, $count - 1)))
+            ->mapWithKeys(function (int $index) use ($siteSetting, $legacyKeys): array {
+                $files = $this->siteSettingFiles($siteSetting, 'about_why_choose_icon_'.$index);
+
+                if ($files === [] && isset($legacyKeys[$index])) {
+                    $files = $this->siteSettingFiles($siteSetting, 'about_why_choose_icon_'.$legacyKeys[$index]);
+                }
+
+                return [$index => $files];
+            })
             ->all();
     }
 

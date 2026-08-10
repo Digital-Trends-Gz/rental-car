@@ -42,6 +42,12 @@ const localizedText = (value: any, fallback = ''): string => {
     return fallback;
 };
 
+const tenantTranslation = (key: string, fallback = ''): string => {
+    const translated = t(key);
+
+    return translated && translated !== key ? translated : fallback;
+};
+
 const localeAwarePathname = (pathname: string) => {
     const normalizedPath = (pathname.startsWith('/') ? pathname : `/${pathname}`) || '/';
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : String(page.url || '/');
@@ -96,15 +102,21 @@ const aboutUrl = computed(() =>
 const contactPhone = computed(() => tenantSiteSettings.value?.contact?.phone || '+1 (555) 123-4567');
 const contactEmail = computed(() => tenantSiteSettings.value?.contact?.email || 'info@realrentcar.com');
 const contactAddress = computed(() =>
-    localizedText(
-        tenantSiteSettings.value?.contact?.address,
-        t('contact.default_address')
+    tenantTranslation(
+        'tenant_website.contact.address',
+        localizedText(
+            tenantSiteSettings.value?.contact?.address,
+            t('contact.default_address')
+        )
     )
 );
 const contactHours = computed(() =>
-    localizedText(
-        contactPageContent.value?.hours,
-        t('contact.default_hours')
+    tenantTranslation(
+        'tenant_website.contact_page.hours',
+        localizedText(
+            contactPageContent.value?.hours,
+            t('contact.default_hours')
+        )
     )
 );
 const contactHoursLines = computed(() =>
@@ -165,10 +177,10 @@ const sendTicket = () => {
                 <!-- Header Section -->
                 <div class="mb-16 text-center">
                     <h1 class="mb-4 text-4xl font-bold text-gray-900">
-                        {{ localizedText(contactPageContent?.title, t('contact.title')) }}
+                        {{ tenantTranslation('tenant_website.contact_page.title', localizedText(contactPageContent?.title, t('contact.title'))) }}
                     </h1>
                     <p class="mx-auto max-w-2xl text-xl text-gray-600">
-                        {{ localizedText(contactPageContent?.subtitle, t('contact.subtitle')) }}
+                        {{ tenantTranslation('tenant_website.contact_page.subtitle', localizedText(contactPageContent?.subtitle, t('contact.subtitle'))) }}
                     </p>
                 </div>
 
@@ -179,7 +191,7 @@ const sendTicket = () => {
                             class="rounded-lg border border-gray-200 bg-white p-8 shadow-sm"
                         >
                             <h2 class="mb-6 text-2xl font-bold text-gray-900">
-                                {{ localizedText(contactPageContent?.form_title, t('contact.send_message')) }}
+                                {{ tenantTranslation('tenant_website.contact_page.form_title', localizedText(contactPageContent?.form_title, t('contact.send_message'))) }}
                             </h2>
 
                             <form class="space-y-6"
@@ -280,7 +292,7 @@ const sendTicket = () => {
                             class="rounded-lg border border-gray-200 bg-gray-50 p-8"
                         >
                             <h3 class="mb-6 text-xl font-bold text-gray-900">
-                                {{ localizedText(contactPageContent?.info_title, t('contact.get_in_touch')) }}
+                                {{ tenantTranslation('tenant_website.contact_page.info_title', localizedText(contactPageContent?.info_title, t('contact.get_in_touch'))) }}
                             </h3>
 
                             <div class="space-y-6">
@@ -337,7 +349,7 @@ const sendTicket = () => {
                             class="mt-8 rounded-lg border border-gray-200 bg-white p-6"
                         >
                             <h3 class="mb-4 text-lg font-bold text-gray-900">
-                                {{ localizedText(contactPageContent?.quick_links_title, t('contact.quick_links')) }}
+                                {{ tenantTranslation('tenant_website.contact_page.quick_links_title', localizedText(contactPageContent?.quick_links_title, t('contact.quick_links'))) }}
                             </h3>
                             <div class="space-y-3">
                                 <a

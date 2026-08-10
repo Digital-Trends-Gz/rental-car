@@ -32,7 +32,7 @@ type AboutWhyChooseItem = {
 };
 type AboutWhyChoose = {
     title: LocalizedText;
-    items: Record<string, AboutWhyChooseItem>;
+    items: AboutWhyChooseItem[];
 };
 type PdfTemplateOption = {
     value: string;
@@ -190,7 +190,7 @@ const props = defineProps<{
         michael?: UploadedFilePreview[];
         emily?: UploadedFilePreview[];
     };
-    aboutWhyChooseIconFiles?: Record<string, UploadedFilePreview[]>;
+    aboutWhyChooseIconFiles?: Record<number, UploadedFilePreview[]>;
     aboutTeamMemberImageFiles?: Record<number, UploadedFilePreview[]>;
     actions: {
         update: string;
@@ -248,75 +248,71 @@ const whyChooseKeys = [
 ];
 const fallbackWhyChoose = (): AboutWhyChoose => ({
     title: { en: 'Why Choose Car4u?', ar: 'لماذا تختار ريال رينت كار؟' },
-    items: {
-        premium_fleet: {
+    items: [
+        {
             icon_url: null,
             icon_color: '#f97316',
             title: { en: 'Premium Fleet', ar: 'أسطول مميز' },
             description: { en: 'Modern, well-maintained vehicles from top manufacturers', ar: 'سيارات حديثة ومُعتنى بها من أفضل الشركات المصنعة' },
         },
-        support: {
+        {
             icon_url: null,
             icon_color: '#f97316',
             title: { en: '24/7 Support', ar: 'دعم على مدار الساعة' },
             description: { en: 'Round-the-clock customer service and roadside assistance', ar: 'خدمة عملاء ومساعدة على الطريق على مدار الساعة' },
         },
-        flexible_booking: {
+        {
             icon_url: null,
             icon_color: '#f97316',
             title: { en: 'Flexible Booking', ar: 'حجز مرن' },
             description: { en: 'Easy online booking with flexible pickup and return options', ar: 'حجز إلكتروني سهل مع خيارات مرنة للاستلام والإرجاع' },
         },
-        competitive_pricing: {
+        {
             icon_url: null,
             icon_color: '#f97316',
             title: { en: 'Competitive Pricing', ar: 'أسعار تنافسية' },
             description: { en: 'Best rates in the market with no hidden fees', ar: 'أفضل الأسعار في السوق بدون رسوم مخفية' },
         },
-        multiple_locations: {
+        {
             icon_url: null,
             icon_color: '#f97316',
             title: { en: 'Multiple Locations', ar: 'مواقع متعددة' },
             description: { en: 'Convenient pickup points across the city', ar: 'نقاط استلام مناسبة في أنحاء المدينة' },
         },
-        safety_first: {
+        {
             icon_url: null,
             icon_color: '#f97316',
             title: { en: 'Safety First', ar: 'السلامة أولاً' },
             description: { en: 'All vehicles undergo rigorous safety inspections', ar: 'تخضع جميع السيارات لفحوصات سلامة دقيقة' },
         },
-    },
+    ],
 });
 const normalizeWhyChooseForm = (value?: AboutWhyChoose | null): AboutWhyChoose => {
     const fallback = fallbackWhyChoose();
+    const rawItems = Array.isArray(value?.items) ? value.items : Object.values(value?.items || {});
+    const normalizedItems = rawItems.map((item, index) => {
+        const fallbackItem = fallback.items[index] || fallback.items[0];
+
+        return {
+            icon_url: item?.icon_url ?? fallbackItem.icon_url,
+            icon_color: item?.icon_color || fallbackItem.icon_color || '#f97316',
+            title: {
+                en: item?.title?.en ?? fallbackItem.title.en,
+                ar: item?.title?.ar ?? fallbackItem.title.ar,
+            },
+            description: {
+                en: item?.description?.en ?? fallbackItem.description.en,
+                ar: item?.description?.ar ?? fallbackItem.description.ar,
+            },
+        };
+    });
 
     return {
         title: {
             en: value?.title?.en ?? fallback.title.en,
             ar: value?.title?.ar ?? fallback.title.ar,
         },
-        items: Object.fromEntries(
-            whyChooseKeys.map(({ key }) => {
-                const item = value?.items?.[key];
-                const fallbackItem = fallback.items[key];
-
-                return [
-                    key,
-                    {
-                        icon_url: item?.icon_url ?? fallbackItem.icon_url,
-                        icon_color: item?.icon_color || fallbackItem.icon_color || '#f97316',
-                        title: {
-                            en: item?.title?.en ?? fallbackItem.title.en,
-                            ar: item?.title?.ar ?? fallbackItem.title.ar,
-                        },
-                        description: {
-                            en: item?.description?.en ?? fallbackItem.description.en,
-                            ar: item?.description?.ar ?? fallbackItem.description.ar,
-                        },
-                    },
-                ];
-            }),
-        ) as Record<string, AboutWhyChooseItem>,
+        items: normalizedItems.length ? normalizedItems : fallback.items,
     };
 };
 const fallbackAboutValues = (): AboutValueItem[] => [
@@ -475,8 +471,8 @@ const form = useForm({
     about_team_emily_image_removed_files: [] as number[],
     about_team_member_image_temp_folders: [] as string[][],
     about_team_member_image_removed_files: [] as number[][],
-    about_why_choose_icon_temp_folders: {} as Record<string, string[]>,
-    about_why_choose_icon_removed_files: {} as Record<string, number[]>,
+    about_why_choose_icon_temp_folders: [] as string[][],
+    about_why_choose_icon_removed_files: [] as number[][],
     seo_og_image_temp_folders: [] as string[],
     seo_og_image_removed_files: [] as number[],
     primary_color: props.settings.primary_color || '#f97316',
@@ -1107,9 +1103,7 @@ const aboutSarahImageTempFolders = ref<string[]>([]);
 const aboutMichaelImageTempFolders = ref<string[]>([]);
 const aboutEmilyImageTempFolders = ref<string[]>([]);
 const teamMemberImageTempFolders = ref<string[][]>([]);
-const whyChooseIconTempFolders = ref<Record<string, string[]>>(
-    Object.fromEntries(whyChooseKeys.map(({ key }) => [key, []])),
-);
+const whyChooseIconTempFolders = ref<string[][]>(form.about.why_choose.items.map(() => []));
 const logoRemovedFileIds = ref<number[]>([]);
 const faviconRemovedFileIds = ref<number[]>([]);
 const seoOgImageRemovedFileIds = ref<number[]>([]);
@@ -1118,9 +1112,7 @@ const aboutSarahImageRemovedFileIds = ref<number[]>([]);
 const aboutMichaelImageRemovedFileIds = ref<number[]>([]);
 const aboutEmilyImageRemovedFileIds = ref<number[]>([]);
 const teamMemberImageRemovedFileIds = ref<number[][]>([]);
-const whyChooseIconRemovedFileIds = ref<Record<string, number[]>>(
-    Object.fromEntries(whyChooseKeys.map(({ key }) => [key, []])),
-);
+const whyChooseIconRemovedFileIds = ref<number[][]>(form.about.why_choose.items.map(() => []));
 const openAboutValueItems = ref<Record<number, boolean>>({});
 const openTeamMemberItems = ref<Record<number, boolean>>({});
 const showAdvancedBranding = ref(false);
@@ -1184,9 +1176,7 @@ watch(
 watch(
     whyChooseIconTempFolders,
     (value) => {
-        form.about_why_choose_icon_temp_folders = Object.fromEntries(
-            whyChooseKeys.map(({ key }) => [key, [...(value[key] || [])]]),
-        );
+        form.about_why_choose_icon_temp_folders = value.map((folders) => [...(folders || [])]);
     },
     { deep: true },
 );
@@ -1195,8 +1185,8 @@ function teamMemberInitialFiles(index: number): UploadedFilePreview[] {
     return props.aboutTeamMemberImageFiles?.[index] || [];
 }
 
-function whyChooseIconInitialFiles(key: string): UploadedFilePreview[] {
-    return props.aboutWhyChooseIconFiles?.[key] || [];
+function whyChooseIconInitialFiles(index: number): UploadedFilePreview[] {
+    return props.aboutWhyChooseIconFiles?.[index] || [];
 }
 
 function copySeoMetaSummary(preview: {
@@ -1359,15 +1349,32 @@ function handleTeamMemberImageFileRemoved(index: number, data: { type: string; f
     }
 }
 
-function handleWhyChooseIconFileRemoved(key: string, data: { type: string; fileId?: number }) {
+function handleWhyChooseIconFileRemoved(index: number, data: { type: string; fileId?: number }) {
     if (data.type === 'existing' && data.fileId) {
-        const current = whyChooseIconRemovedFileIds.value[key] || [];
-        whyChooseIconRemovedFileIds.value[key] = [...new Set([...current, data.fileId])];
-        form.about_why_choose_icon_removed_files = Object.fromEntries(
-            whyChooseKeys.map(({ key }) => [key, [...(whyChooseIconRemovedFileIds.value[key] || [])]]),
-        );
-        form.about.why_choose.items[key].icon_url = '';
+        const current = whyChooseIconRemovedFileIds.value[index] || [];
+        whyChooseIconRemovedFileIds.value[index] = [...new Set([...current, data.fileId])];
+        form.about_why_choose_icon_removed_files = whyChooseIconRemovedFileIds.value.map((ids) => [...(ids || [])]);
+        form.about.why_choose.items[index].icon_url = '';
     }
+}
+
+function addWhyChooseItem() {
+    form.about.why_choose.items.push({
+        icon_url: '',
+        icon_color: '#f97316',
+        title: { en: '', ar: '' },
+        description: { en: '', ar: '' },
+    });
+    whyChooseIconTempFolders.value.push([]);
+    whyChooseIconRemovedFileIds.value.push([]);
+}
+
+function removeWhyChooseItem(index: number) {
+    form.about.why_choose.items.splice(index, 1);
+    whyChooseIconTempFolders.value.splice(index, 1);
+    whyChooseIconRemovedFileIds.value.splice(index, 1);
+    form.about_why_choose_icon_temp_folders = whyChooseIconTempFolders.value.map((folders) => [...(folders || [])]);
+    form.about_why_choose_icon_removed_files = whyChooseIconRemovedFileIds.value.map((ids) => [...(ids || [])]);
 }
 
 function addAboutValue() {
@@ -1474,10 +1481,10 @@ function submit() {
             form.about_team_member_image_temp_folders = [];
             form.about_team_member_image_removed_files = [];
 
-            whyChooseIconTempFolders.value = Object.fromEntries(whyChooseKeys.map(({ key }) => [key, []]));
-            whyChooseIconRemovedFileIds.value = Object.fromEntries(whyChooseKeys.map(({ key }) => [key, []]));
-            form.about_why_choose_icon_temp_folders = {};
-            form.about_why_choose_icon_removed_files = {};
+            whyChooseIconTempFolders.value = form.about.why_choose.items.map(() => []);
+            whyChooseIconRemovedFileIds.value = form.about.why_choose.items.map(() => []);
+            form.about_why_choose_icon_temp_folders = form.about.why_choose.items.map(() => []);
+            form.about_why_choose_icon_removed_files = form.about.why_choose.items.map(() => []);
         },
     });
 }
@@ -2637,46 +2644,58 @@ function submit() {
                             </div>
 
                             <div class="grid gap-4 md:grid-cols-2">
-                                <div v-for="item in whyChooseKeys" :key="`why-choose-${item.key}`" class="rounded-md border bg-background p-4">
-                                    <h4 class="mb-3 text-sm font-semibold">{{ item.label }}</h4>
+                                <div class="md:col-span-2 flex justify-end">
+                                    <Button type="button" variant="outline" size="sm" @click="addWhyChooseItem">
+                                        {{ localize('Add Item', 'إضافة عنصر') }}
+                                    </Button>
+                                </div>
+                                <div v-for="(item, index) in form.about.why_choose.items" :key="`why-choose-${index}`" class="rounded-md border bg-background p-4">
+                                    <div class="mb-3 flex items-center justify-between gap-3">
+                                        <h4 class="text-sm font-semibold">
+                                            {{ item.title.en || item.title.ar || `${localize('Item', 'عنصر')} #${index + 1}` }}
+                                        </h4>
+                                        <Button type="button" variant="outline" size="sm" @click="removeWhyChooseItem(index)">
+                                            {{ localize('Remove', 'حذف') }}
+                                        </Button>
+                                    </div>
                                     <div class="grid gap-3">
                                         <div class="space-y-2">
-                                            <Label>{{ localize('Icon SVG', 'ط£ظٹظ‚ظˆظ†ط© SVG') }}</Label>
+                                            <Label>{{ localize('Icon SVG', 'أيقونة SVG') }}</Label>
                                             <FileUpload
-                                                v-model="whyChooseIconTempFolders[item.key]"
-                                                :initial-files="whyChooseIconInitialFiles(item.key)"
+                                                v-model="whyChooseIconTempFolders[index]"
+                                                :initial-files="whyChooseIconInitialFiles(index)"
                                                 :allow-multiple="false"
                                                 :max-files="1"
                                                 :allowed-file-types="['image/svg+xml']"
-                                                :collection="`about_why_choose_icon_${item.key}`"
+                                                :collection="`about_why_choose_icon_${index}`"
                                                 theme="light"
                                                 width="100%"
-                                                @file-removed="(data) => handleWhyChooseIconFileRemoved(item.key, data)"
+                                                @file-removed="(data) => handleWhyChooseIconFileRemoved(index, data)"
                                             />
-                                            <Input v-model="form.about.why_choose.items[item.key].icon_url" type="hidden" />
+                                            <Input v-model="item.icon_url" type="hidden" />
                                         </div>
                                         <div class="space-y-2">
                                             <Label>{{ localize('Icon Color', 'لون الأيقونة') }}</Label>
                                             <div class="flex gap-2">
-                                                <Input v-model="form.about.why_choose.items[item.key].icon_color" type="color" class="h-10 w-14 p-1" />
-                                                <Input v-model="form.about.why_choose.items[item.key].icon_color" placeholder="#f97316" />
+                                                <Input v-model="item.icon_color" type="color" class="h-10 w-14 p-1" />
+                                                <Input v-model="item.icon_color" placeholder="#f97316" />
                                             </div>
                                         </div>
                                         <div class="space-y-2">
                                             <Label>{{ localize('Title (EN)', 'العنوان (EN)') }}</Label>
-                                            <Input v-model="form.about.why_choose.items[item.key].title.en" />
+                                            <Input v-model="item.title.en" />
                                         </div>
                                         <div class="space-y-2">
                                             <Label>{{ localize('Title (AR)', 'العنوان (AR)') }}</Label>
-                                            <Input v-model="form.about.why_choose.items[item.key].title.ar" dir="rtl" />
+                                            <Input v-model="item.title.ar" dir="rtl" />
                                         </div>
                                         <div class="space-y-2">
                                             <Label>{{ localize('Description (EN)', 'الوصف (EN)') }}</Label>
-                                            <textarea v-model="form.about.why_choose.items[item.key].description.en" rows="2" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                            <textarea v-model="item.description.en" rows="2" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                                         </div>
                                         <div class="space-y-2">
                                             <Label>{{ localize('Description (AR)', 'الوصف (AR)') }}</Label>
-                                            <textarea v-model="form.about.why_choose.items[item.key].description.ar" rows="2" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                                            <textarea v-model="item.description.ar" rows="2" dir="rtl" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                                         </div>
                                     </div>
                                 </div>

@@ -260,6 +260,104 @@ class TranslationSettingsController extends Controller
         array &$keyPool
     ): void {
         $about = is_array(data_get($settings, 'about')) ? data_get($settings, 'about') : [];
+        $hero = is_array(data_get($settings, 'hero')) ? data_get($settings, 'hero') : [];
+        $contact = is_array(data_get($settings, 'contact')) ? data_get($settings, 'contact') : [];
+        $contactPage = is_array(data_get($settings, 'contact_page')) ? data_get($settings, 'contact_page') : [];
+        $footer = is_array(data_get($settings, 'footer')) ? data_get($settings, 'footer') : [];
+
+        foreach ([
+            'title',
+            'description',
+            'button_text',
+        ] as $field) {
+            $this->addLocalizedContentRow(
+                "tenant_website.hero.$field",
+                data_get($hero, $field, []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+        }
+
+        foreach ([
+            'title',
+            'subtitle',
+            'story_title',
+            'story_p1',
+            'story_p2',
+            'mission_title',
+            'mission_subtitle',
+            'cta_title',
+            'cta_subtitle',
+            'cta_browse_text',
+            'cta_contact_text',
+        ] as $field) {
+            $this->addLocalizedContentRow(
+                "tenant_website.about.$field",
+                data_get($about, $field, []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+        }
+
+        $this->addLocalizedContentRow(
+            'tenant_website.contact.address',
+            data_get($contact, 'address', []),
+            $supportedLocales,
+            $flatBaseByLocale,
+            $keyPool
+        );
+
+        foreach ([
+            'title',
+            'subtitle',
+            'form_title',
+            'info_title',
+            'hours',
+            'quick_links_title',
+        ] as $field) {
+            $this->addLocalizedContentRow(
+                "tenant_website.contact_page.$field",
+                data_get($contactPage, $field, []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+        }
+
+        $this->addLocalizedContentRow(
+            'tenant_website.footer.description',
+            data_get($footer, 'description', []),
+            $supportedLocales,
+            $flatBaseByLocale,
+            $keyPool
+        );
+
+        $this->addLocalizedContentRow(
+            'tenant_about.why_choose.title',
+            data_get($about, 'why_choose.title', []),
+            $supportedLocales,
+            $flatBaseByLocale,
+            $keyPool
+        );
+
+        foreach ((array) data_get($about, 'why_choose.items', []) as $key => $item) {
+            $this->addLocalizedContentRow(
+                "tenant_about.why_choose.items.$key.title",
+                data_get($item, 'title', []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+            $this->addLocalizedContentRow(
+                "tenant_about.why_choose.items.$key.description",
+                data_get($item, 'description', []),
+                $supportedLocales,
+                $flatBaseByLocale,
+                $keyPool
+            );
+        }
 
         foreach ((array) data_get($about, 'values', []) as $index => $item) {
             $this->addLocalizedContentRow(
