@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Core\AppBrandingSettings;
 use App\Core\LandingPageSettings;
 use App\Models\SiteSetting;
+use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Support\CurrencyCatalog;
 use Illuminate\Foundation\Inspiring;
@@ -172,8 +173,8 @@ class HandleInertiaRequests extends Middleware
                 return CurrencyCatalog::find(config('app.currency_code', 'USD'));
             },
             'app_url_base' => parse_url(config('app.url'), PHP_URL_HOST),
-            'current_tenant' => function () {
-                $tenant = \App\Core\TenantContext::get();
+            'current_tenant' => function () use ($request) {
+                $tenant = $this->resolveTenantForRequest($request);
 
                 if (!$tenant) {
                     return null;
@@ -195,8 +196,8 @@ class HandleInertiaRequests extends Middleware
 
                 return $tenant;
             },
-            'tenant_site_settings' => function () {
-                $tenant = \App\Core\TenantContext::get();
+            'tenant_site_settings' => function () use ($request) {
+                $tenant = $this->resolveTenantForRequest($request);
 
                 if (!$tenant) {
                     return null;
@@ -269,5 +270,22 @@ class HandleInertiaRequests extends Middleware
         }
 
         return $expanded;
+    }
+
+    private function resolveTenantForRequest(Request $request): ?Tenant
+    {
+        $tenant = \App\Core\TenantContext::get();
+
+        if ($tenant) {
+            return $tenant;
+        }
+
+        $tenantId = (int) ($request->user()?->tenant_id ?? 0);
+
+        if ($tenantId <= 0) {
+            return null;
+        }
+
+        return Tenant::query()->whereKey($tenantId)->first();
     }
 }

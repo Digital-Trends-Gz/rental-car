@@ -4,7 +4,7 @@ import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const page = usePage<any>();
-const hasCustomLogo = computed(() => !!page.props.app_branding?.logo_url);
+const hasCustomLogo = computed(() => !!(page.props.tenant_site_settings?.logo_url || page.props.app_branding?.logo_url));
 </script>
 
 <template>
