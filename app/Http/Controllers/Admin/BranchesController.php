@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Core\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\Tenant;
 use App\Services\Plans\PlanUsageLimits;
 use App\Rules\DigitsOnly;
 use App\Rules\LettersOnly;
@@ -49,19 +51,33 @@ class BranchesController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $branchUsage = $this->planUsageLimits->branchUsage($this->currentTenant($request));
+
         return Inertia::render('Admin/Branches/Index', [
             'branches' => $branches,
             'filters' => [
                 'search' => $request->string('search')->toString(),
             ],
+            'branchUsage' => $branchUsage,
+            'canCreateBranch' => !($branchUsage['at_limit'] ?? false),
         ]);
     }
 
     /**
      * Show the form for creating a new branch.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        $tenant = $this->currentTenant($request);
+
+        if (!$tenant) {
+            abort(403, 'Tenant context is required to check plan limits.');
+        }
+
+        if ($message = $this->planUsageLimits->branchLimitMessage($tenant)) {
+            abort(403, $message);
+        }
+
         return Inertia::render('Admin/Branches/Edit', [
             'branch' => null,
             'showroomFiles' => [],
@@ -107,7 +123,17 @@ class BranchesController extends Controller
                 ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
         }
 
-        if ($message = $this->planUsageLimits->branchLimitMessage()) {
+        $tenant = $this->currentTenant($request);
+
+        if (!$tenant) {
+            abort(403, 'Tenant context is required to check plan limits.');
+        }
+
+        if ($message = $this->planUsageLimits->branchLimitMessage($tenant)) {
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
             return redirect()->back()->with('error', $message);
         }
 
@@ -199,10 +225,6 @@ class BranchesController extends Controller
             return redirect()
                 ->back()
                 ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
-        }
-
-        if ($message = $this->planUsageLimits->branchLimitMessage()) {
-            return redirect()->back()->with('error', $message);
         }
 
         Branch::withoutGlobalScope('tenant')
@@ -301,5 +323,37 @@ class BranchesController extends Controller
         $value = trim((string) ($value ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    private function currentTenant(?Request $request = null): ?Tenant
+    {
+        $tenant = TenantContext::get();
+
+        if ($tenant) {
+            return $tenant->loadMissing('subscriptionPlan');
+        }
+
+        $tenantId = (int) (($request?->user()?->tenant_id) ?? auth()->user()?->tenant_id ?? 0);
+
+        if ($tenantId <= 0) {
+            $slug = (string) (($request?->route('subdomain')) ?? request()->route('subdomain') ?? '');
+
+            if ($slug === '') {
+                $host = strtolower(request()->getHost());
+                $baseHost = strtolower((string) parse_url(config('app.url'), PHP_URL_HOST));
+
+                if ($baseHost !== '' && str_ends_with($host, '.'.$baseHost)) {
+                    $slug = explode('.', substr($host, 0, -strlen('.'.$baseHost)))[0] ?? '';
+                }
+            }
+
+            if ($slug === '') {
+                return null;
+            }
+
+            return Tenant::query()->where('slug', $slug)->with('subscriptionPlan')->first();
+        }
+
+        return Tenant::query()->with('subscriptionPlan')->find($tenantId);
     }
 }

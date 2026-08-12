@@ -267,7 +267,9 @@ const submit = () => {
                                         <div class="flex items-center justify-between gap-3">
                                             <Label :for="field.key" class="text-sm font-medium">{{ field.label }}</Label>
                                             <div class="flex items-center gap-2">
-                                                <span class="text-xs text-muted-foreground">Unlimited</span>
+                                                <span class="text-xs text-muted-foreground">
+                                                    {{ isLimitEnabled(field.key) ? 'Limited' : 'Unlimited' }}
+                                                </span>
                                                 <Switch
                                                     :checked="isLimitEnabled(field.key)"
                                                     @update:checked="(val: boolean) => setLimitEnabled(field.key, val)"

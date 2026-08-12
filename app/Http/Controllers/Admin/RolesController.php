@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Core\TenantContext;
 use App\Http\Controllers\Controller;
-use App\Models\Permission;
 use App\Models\Role;
+use App\Services\Plans\PlanPermissionAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -14,6 +14,10 @@ use Inertia\Response;
 
 class RolesController extends Controller
 {
+    public function __construct(
+        private readonly PlanPermissionAccess $planPermissionAccess,
+    ) {}
+
     public function index(): Response
     {
         $roles = Role::query()
@@ -28,11 +32,7 @@ class RolesController extends Controller
 
     public function create(): Response
     {
-        $permissions = Permission::withoutGlobalScope('tenant')
-            ->whereNull('tenant_id')
-            ->where('name', 'like', 'tenant-%')
-            ->orderBy('display_name')
-            ->get(['id', 'name', 'display_name', 'description']);
+        $permissions = $this->planPermissionAccess->tenantPermissions();
 
         return Inertia::render('Admin/Roles/Edit', [
             'role' => null,
@@ -48,6 +48,7 @@ class RolesController extends Controller
         }
 
         $tenantId = $this->tenantId();
+        $allowedPermissionIds = $this->planPermissionAccess->tenantPermissionQuery()->pluck('id')->map(fn ($id) => (int) $id)->all();
 
         $request->merge([
             'name' => Str::slug((string) $request->input('display_name')),
@@ -63,11 +64,7 @@ class RolesController extends Controller
             ],
             'description' => ['nullable', 'string', 'max:500'],
             'permission_ids' => ['nullable', 'array'],
-            'permission_ids.*' => [
-                Rule::exists('permissions', 'id')->where(fn ($query) => $query
-                    ->whereNull('tenant_id')
-                    ->where('name', 'like', 'tenant-%')),
-            ],
+            'permission_ids.*' => [Rule::in($allowedPermissionIds)],
         ]);
 
         $role = Role::create([
@@ -77,11 +74,7 @@ class RolesController extends Controller
             'tenant_id' => $tenantId,
         ]);
 
-        $permissionIds = collect($validated['permission_ids'] ?? [])
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
+        $permissionIds = $this->planPermissionAccess->allowedIdsFromInput($validated['permission_ids'] ?? []);
 
         $role->permissions()->sync($permissionIds);
 
@@ -96,11 +89,8 @@ class RolesController extends Controller
             'permissions' => fn ($query) => $query->select('permissions.id'),
         ]);
         
-        $permissions = Permission::withoutGlobalScope('tenant')
-            ->whereNull('tenant_id')
-            ->where('name', 'like', 'tenant-%')
-            ->orderBy('display_name')
-            ->get(['id', 'name', 'display_name', 'description']);
+        $permissions = $this->planPermissionAccess->tenantPermissions();
+        $allowedPermissionIds = $permissions->pluck('id')->map(fn ($id) => (int) $id)->all();
 
         return Inertia::render('Admin/Roles/Edit', [
             'role' => [
@@ -108,7 +98,12 @@ class RolesController extends Controller
                 'name' => $role->name,
                 'display_name' => $role->display_name,
                 'description' => $role->description,
-                'permission_ids' => $role->permissions->pluck('id')->toArray(),
+                'permission_ids' => $role->permissions
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->intersect($allowedPermissionIds)
+                    ->values()
+                    ->toArray(),
             ],
             'permissions' => $permissions,
         ]);
@@ -122,6 +117,7 @@ class RolesController extends Controller
         }
 
         $tenantId = $this->tenantId();
+        $allowedPermissionIds = $this->planPermissionAccess->tenantPermissionQuery()->pluck('id')->map(fn ($id) => (int) $id)->all();
 
         $request->merge([
             'name' => Str::slug((string) $request->input('display_name')),
@@ -139,11 +135,7 @@ class RolesController extends Controller
             ],
             'description' => ['nullable', 'string', 'max:500'],
             'permission_ids' => ['nullable', 'array'],
-            'permission_ids.*' => [
-                Rule::exists('permissions', 'id')->where(fn ($query) => $query
-                    ->whereNull('tenant_id')
-                    ->where('name', 'like', 'tenant-%')),
-            ],
+            'permission_ids.*' => [Rule::in($allowedPermissionIds)],
         ]);
 
         $role->update([
@@ -152,11 +144,7 @@ class RolesController extends Controller
             'description' => $validated['description'],
         ]);
 
-        $permissionIds = collect($validated['permission_ids'] ?? [])
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
+        $permissionIds = $this->planPermissionAccess->allowedIdsFromInput($validated['permission_ids'] ?? []);
 
         $role->permissions()->sync($permissionIds);
 

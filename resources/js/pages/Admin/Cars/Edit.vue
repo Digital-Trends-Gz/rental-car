@@ -63,6 +63,14 @@ interface Branch {
     name: string;
 }
 
+interface UsageLimit {
+    current: number;
+    limit: number | null;
+    remaining: number | null;
+    at_limit: boolean;
+    message: string | null;
+}
+
 interface CountryOption {
     value: string;
     label: string;
@@ -133,6 +141,7 @@ const props = defineProps<{
     plateFormats?: PlateFormatOption[];
     selectedPlateFormat?: string | null;
     canAccessAllBranches: boolean;
+    branchUsage?: UsageLimit;
     supportedLocales: SupportedLocale[];
     enums: Enums;
 }>();
@@ -194,6 +203,8 @@ const statusOptions = computed(() => statuses.value.map((status) => ({ value: st
 const requiresStatusTaskTime = computed(() => ['cleaning', 'maintenance'].includes(String(form.status)));
 const availableBranches = ref<Branch[]>(Array.isArray(props.branches) ? [...props.branches] : []);
 const branchOptions = computed(() => availableBranches.value.map((branch) => ({ value: String(branch.id), label: branch.name })));
+const canCreateBranch = computed(() => !props.branchUsage?.at_limit);
+const branchLimitMessage = computed(() => props.branchUsage?.message || t('dashboard.admin.branches.plan_limit_reached_fallback'));
 const plateFormatOptions = computed<PlateFormatOption[]>(() => Array.isArray(props.plateFormats) ? props.plateFormats : []);
 const selectedPlateFormat = computed(() => form.license_plate_format || props.selectedPlateFormat || '');
 const selectedPlateFormatOption = computed(() => plateFormatOptions.value.find((option) => option.value === selectedPlateFormat.value) ?? null);
@@ -653,6 +664,12 @@ async function createBranchFromModal() {
         return;
     }
 
+    if (!canCreateBranch.value) {
+        dispatchToast('error', branchLimitMessage.value);
+        showBranchModal.value = false;
+        return;
+    }
+
     branchForm.clearErrors();
     branchSubmitting.value = true;
 
@@ -1020,17 +1037,18 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                     <div>
                         <div class="mb-1 flex items-center justify-between gap-3">
                             <Label for="branch_id">{{ localize('Branch', 'الفرع') }}</Label>
-                            <Button type="button" variant="outline" size="sm" @click="showBranchModal = true">
+                            <Button type="button" variant="outline" size="sm" :disabled="!canCreateBranch" @click="showBranchModal = true">
                                 {{ localize('New Branch', 'فرع جديد') }}
                             </Button>
                         </div>
+                        <p v-if="!canCreateBranch" class="mb-2 text-xs text-destructive">{{ branchLimitMessage }}</p>
                         <SearchableSelect
                             v-model="form.branch_id"
                             :options="branchOptions"
                             :placeholder="localize('Select branch', 'اختر الفرع')"
                             :search-placeholder="localize('Search branch...', 'ابحث عن الفرع...')"
                             :empty-text="localize('No branches found.', 'لا توجد فروع.')"
-                            :disabled="!canAccessAllBranches && branches.length <= 1"
+                            :disabled="!canAccessAllBranches && availableBranches.length <= 1"
                         />
                         <InputError :message="form.errors.branch_id" class="mt-1" />
                     </div>
@@ -1229,7 +1247,7 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
             </DialogContent>
         </Dialog>
 
-        <Dialog v-model:open="showBranchModal">
+        <Dialog v-if="canCreateBranch" v-model:open="showBranchModal">
             <DialogContent class="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>{{ localize('Create Branch', 'إنشاء فرع') }}</DialogTitle>

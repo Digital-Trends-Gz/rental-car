@@ -1113,6 +1113,8 @@ Sunday: 10:00 AM - 4:00 PM',
       'unknown' => 'Unknown',
       'users' => 'Users',
       'view' => 'View',
+      'plan_limit_reached' => 'Your plan allows up to :limit :resource. Upgrade your plan to add more.',
+      'feature_not_in_plan' => 'This feature is not included in your current plan.',
     ),
     'super_admin' => 
     array (
@@ -2409,6 +2411,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'all' => 'All',
         'all_branches' => 'All branches',
         'empty' => 'No cars found.',
+        'plan_limit_reached_fallback' => 'Your plan car limit has been reached.',
         'table' => 
         array (
           'image' => 'Image',
@@ -3528,6 +3531,7 @@ Sunday: 10:00 AM - 4:00 PM',
           'view' => 'View',
           'edit' => 'Edit',
           'empty' => 'No contracts found.',
+          'plan_limit_reached_fallback' => 'Your plan contract limit has been reached.',
           'table' =>
           array (
             'contract_number' => 'Contract Number',
@@ -4440,6 +4444,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'search_placeholder' => 'Search name, email, civil number...',
         'empty' => 'No employees found.',
         'all_branches' => 'All branches',
+        'plan_limit_reached_fallback' => 'Your plan employee limit has been reached.',
         'form' =>
         array (
           'civil_number' => 'Civil Number',
@@ -4589,6 +4594,7 @@ Sunday: 10:00 AM - 4:00 PM',
         'edit_branch' => 'Edit Branch',
         'search_placeholder' => 'Search name, CR, manager, phone...',
         'empty' => 'No branches found.',
+        'plan_limit_reached_fallback' => 'Your plan branch limit has been reached.',
         'form' =>
         array (
           'branch_name' => 'Branch Name',
@@ -4914,6 +4920,36 @@ Sunday: 10:00 AM - 4:00 PM',
         'open_stripe_express_dashboard' => 'Open Stripe Express Dashboard',
         'yes' => 'Yes',
         'no' => 'No',
+      ),
+      'coupons' =>
+      array (
+        'index' =>
+        array (
+          'head_title' => 'Coupons',
+          'title' => 'Coupons',
+          'subtitle' => 'Create tenant coupons for all cars or a specific car.',
+          'new_coupon' => 'New Coupon',
+          'search_placeholder' => 'Search code or name...',
+          'all_statuses' => 'All statuses',
+          'all_cars' => 'All cars',
+          'active' => 'Active',
+          'inactive' => 'Inactive',
+          'search' => 'Search',
+          'clear' => 'Clear',
+          'edit' => 'Edit',
+          'delete' => 'Delete',
+          'delete_confirm' => 'Delete this coupon?',
+          'empty' => 'No coupons found.',
+          'table' =>
+          array (
+            'code' => 'Code',
+            'name' => 'Name',
+            'scope' => 'Scope',
+            'value' => 'Value',
+            'usage' => 'Usage',
+            'status' => 'Status',
+          ),
+        ),
       ),
     ),
     'coupons' =>

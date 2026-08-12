@@ -10,6 +10,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\Plans\PlanPermissionAccess;
 use App\Services\Plans\PlanUsageLimits;
 use App\Rules\DigitsOnly;
 use App\Rules\LettersOnly;
@@ -28,7 +29,8 @@ class EmployeesController extends Controller
 
     public function __construct(
         private BranchAccess $branchAccess,
-        private PlanUsageLimits $planUsageLimits
+        private PlanUsageLimits $planUsageLimits,
+        private PlanPermissionAccess $planPermissionAccess
     )
     {
     }
@@ -80,26 +82,27 @@ class EmployeesController extends Controller
             ],
             'branches' => $branchOptions,
             'canAccessAllBranches' => $canAccessAllBranches,
+            'employeeUsage' => $this->planUsageLimits->employeeUsage($this->currentTenant()),
         ]);
     }
 
     public function create(): Response
     {
-        $this->ensureTenantFullAccessRole(self::TENANT_PARTNER_ROLE, 'Tenant Partner', 'Full-access partner role for this tenant.');
+        if ($message = $this->planUsageLimits->employeeLimitMessage($this->currentTenant())) {
+            abort(403, $message);
+        }
 
         $branches = $this->branchAccess->availableBranchesForUser(request()->user());
-        $roles = $this->assignableRoles();
-        $permissions = Permission::withoutGlobalScope('tenant')
-            ->whereNull('tenant_id')
-            ->where('name', 'like', 'tenant-%')
-            ->orderBy('display_name')
-            ->get(['id', 'display_name', 'description']);
+        $canManageRolesAndPermissions = $this->canManageRolesAndPermissions();
+        $roles = $canManageRolesAndPermissions ? $this->assignableRoles() : collect();
+        $permissions = $canManageRolesAndPermissions ? $this->planPermissionAccess->tenantPermissions() : collect();
 
         return Inertia::render('Admin/Employees/Edit', [
             'employee' => null,
             'branches' => $branches,
             'roles' => $roles,
             'permissions' => $permissions,
+            'canManageRolesAndPermissions' => $canManageRolesAndPermissions,
         ]);
     }
 
@@ -110,11 +113,13 @@ class EmployeesController extends Controller
             return redirect()->back()->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
         }
 
-        if ($message = $this->planUsageLimits->employeeLimitMessage()) {
+        if ($message = $this->planUsageLimits->employeeLimitMessage($this->currentTenant())) {
             return redirect()->back()->with('error', $message);
         }
 
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($request->user());
+        $canManageRolesAndPermissions = $this->canManageRolesAndPermissions();
+        $allowedPermissionIds = $this->planPermissionAccess->tenantPermissionQuery()->pluck('id')->map(fn ($id) => (int) $id)->all();
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', new LettersOnly()],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')],
@@ -125,28 +130,24 @@ class EmployeesController extends Controller
                 Rule::exists('branches', 'id')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
             ],
             'is_active' => ['required', 'boolean'],
-            'role_ids' => ['array'],
+            'role_ids' => [$canManageRolesAndPermissions ? 'array' : 'prohibited'],
             'role_ids.*' => [
                 Rule::exists('roles', 'id')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
             ],
-            'permission_ids' => ['array'],
-            'permission_ids.*' => [
-                Rule::exists('permissions', 'id')->where(fn ($query) => $query
-                    ->whereNull('tenant_id')
-                    ->where('name', 'like', 'tenant-%')),
-            ],
+            'permission_ids' => [$canManageRolesAndPermissions ? 'array' : 'prohibited'],
+            'permission_ids.*' => [Rule::in($allowedPermissionIds)],
         ]);
 
         $validated['branch_id'] = $this->branchAccess->resolveWritableBranchId(
             $request->user(),
             $this->branchAccess->normalizeRequestedBranchId($validated['branch_id'] ?? null)
         );
-        $roleIds = $this->normalizeAssignableRoleIds(
+        $roleIds = $canManageRolesAndPermissions ? $this->normalizeAssignableRoleIds(
             $validated['role_ids'] ?? [],
             (string) $validated['email']
-        );
+        ) : [];
 
-        if ($this->roleIdsIncludePartner($roleIds) && !$this->canAssignPartnerRole()) {
+        if ($canManageRolesAndPermissions && $this->roleIdsIncludePartner($roleIds) && !$this->canAssignPartnerRole()) {
             return redirect()->back()
                 ->withErrors(['role_ids' => $this->partnerLimitMessage()])
                 ->withInput();
@@ -166,13 +167,9 @@ class EmployeesController extends Controller
 
         $employee->syncRoles($roleIds);
 
-        if (!empty($validated['permission_ids'])) {
+        if ($canManageRolesAndPermissions && !empty($validated['permission_ids'])) {
             $employee->permissions()->sync(
-                collect($validated['permission_ids'])
-                    ->map(fn ($id) => (int) $id)
-                    ->unique()
-                    ->values()
-                    ->all()
+                $this->planPermissionAccess->allowedIdsFromInput($validated['permission_ids'])
             );
         }
 
@@ -185,15 +182,12 @@ class EmployeesController extends Controller
     {
         abort_unless($this->isAdminEmployee($employee), 403);
         abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $employee->branch_id ? (int) $employee->branch_id : null), 403);
-        $this->ensureTenantFullAccessRole(self::TENANT_PARTNER_ROLE, 'Tenant Partner', 'Full-access partner role for this tenant.');
 
         $branches = $this->branchAccess->availableBranchesForUser(request()->user());
-        $roles = $this->assignableRoles($employee);
-        $permissions = Permission::withoutGlobalScope('tenant')
-            ->whereNull('tenant_id')
-            ->where('name', 'like', 'tenant-%')
-            ->orderBy('display_name')
-            ->get(['id', 'display_name', 'description']);
+        $canManageRolesAndPermissions = $this->canManageRolesAndPermissions();
+        $roles = $canManageRolesAndPermissions ? $this->assignableRoles($employee) : collect();
+        $permissions = $canManageRolesAndPermissions ? $this->planPermissionAccess->tenantPermissions() : collect();
+        $allowedPermissionIds = $permissions->pluck('id')->map(fn ($id) => (int) $id)->all();
 
         return Inertia::render('Admin/Employees/Edit', [
             'employee' => [
@@ -204,11 +198,16 @@ class EmployeesController extends Controller
                 'branch_id' => $employee->branch_id,
                 'is_active' => (bool) $employee->is_active,
                 'role_ids' => $employee->roles->pluck('id')->toArray(),
-                'permission_ids' => $employee->permissions()->withoutGlobalScope('tenant')->pluck('permissions.id')->toArray(),
+                'permission_ids' => $employee->permissions()
+                    ->withoutGlobalScope('tenant')
+                    ->whereIn('permissions.id', $allowedPermissionIds)
+                    ->pluck('permissions.id')
+                    ->toArray(),
             ],
             'branches' => $branches,
             'roles' => $roles,
             'permissions' => $permissions,
+            'canManageRolesAndPermissions' => $canManageRolesAndPermissions,
         ]);
     }
 
@@ -223,6 +222,8 @@ class EmployeesController extends Controller
         }
 
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($request->user());
+        $canManageRolesAndPermissions = $this->canManageRolesAndPermissions();
+        $allowedPermissionIds = $this->planPermissionAccess->tenantPermissionQuery()->pluck('id')->map(fn ($id) => (int) $id)->all();
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', new LettersOnly()],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($employee->id)],
@@ -233,29 +234,25 @@ class EmployeesController extends Controller
                 Rule::exists('branches', 'id')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
             ],
             'is_active' => ['required', 'boolean'],
-            'role_ids' => ['array'],
+            'role_ids' => [$canManageRolesAndPermissions ? 'array' : 'prohibited'],
             'role_ids.*' => [
                 Rule::exists('roles', 'id')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
             ],
-            'permission_ids' => ['array'],
-            'permission_ids.*' => [
-                Rule::exists('permissions', 'id')->where(fn ($query) => $query
-                    ->whereNull('tenant_id')
-                    ->where('name', 'like', 'tenant-%')),
-            ],
+            'permission_ids' => [$canManageRolesAndPermissions ? 'array' : 'prohibited'],
+            'permission_ids.*' => [Rule::in($allowedPermissionIds)],
         ]);
 
         $validated['branch_id'] = $this->branchAccess->resolveWritableBranchId(
             $request->user(),
             $this->branchAccess->normalizeRequestedBranchId($validated['branch_id'] ?? null)
         );
-        $roleIds = $this->normalizeAssignableRoleIds(
+        $roleIds = $canManageRolesAndPermissions ? $this->normalizeAssignableRoleIds(
             $validated['role_ids'] ?? [],
             (string) $validated['email'],
             $employee
-        );
+        ) : [];
 
-        if ($this->roleIdsIncludePartner($roleIds) && !$this->canAssignPartnerRole($employee)) {
+        if ($canManageRolesAndPermissions && $this->roleIdsIncludePartner($roleIds) && !$this->canAssignPartnerRole($employee)) {
             return redirect()->back()
                 ->withErrors(['role_ids' => $this->partnerLimitMessage()])
                 ->withInput();
@@ -273,14 +270,12 @@ class EmployeesController extends Controller
             $employee->update(['password' => Hash::make($validated['password'])]);
         }
 
-        $employee->syncRoles($roleIds);
-        $employee->permissions()->sync(
-            collect($validated['permission_ids'] ?? [])
-                ->map(fn ($id) => (int) $id)
-                ->unique()
-                ->values()
-                ->all()
-        );
+        if ($canManageRolesAndPermissions) {
+            $employee->syncRoles($roleIds);
+            $employee->permissions()->sync(
+                $this->planPermissionAccess->allowedIdsFromInput($validated['permission_ids'] ?? [])
+            );
+        }
 
         return redirect()
             ->route('admin.employees.index', ['subdomain' => request('subdomain')])
@@ -312,6 +307,35 @@ class EmployeesController extends Controller
     private function tenantId(): int
     {
         return (int) (TenantContext::id() ?? auth()->user()?->tenant_id ?? 0);
+    }
+
+    private function currentTenant(): ?Tenant
+    {
+        $tenantId = $this->tenantId();
+
+        if ($tenantId <= 0) {
+            return null;
+        }
+
+        return Tenant::query()->with('subscriptionPlan')->find($tenantId);
+    }
+
+    private function canManageRolesAndPermissions(): bool
+    {
+        $tenant = TenantContext::get();
+
+        if (!$tenant) {
+            $tenantId = $this->tenantId();
+            $tenant = $tenantId > 0 ? Tenant::query()->find($tenantId) : null;
+        }
+
+        if (!$tenant) {
+            return false;
+        }
+
+        $tenant->loadMissing('subscriptionPlan');
+
+        return $tenant->supportsFeature('roles_and_permissions');
     }
 
     /**

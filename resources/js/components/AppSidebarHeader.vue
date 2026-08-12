@@ -36,7 +36,7 @@ const availableLocales = computed<string[]>(() =>
 
 const isRtl = computed(() => direction.value === 'rtl');
 const notificationsAlign = computed<'start' | 'end'>(() => (isRtl.value ? 'start' : 'end'));
-const showLocaleDropdown = computed(() => availableLocales.value.length > 2);
+const showLocaleDropdown = computed(() => availableLocales.value.length > 1);
 
 const normalizedRedirectPath = computed(() => {
     const currentPath = String(page.url || '/');

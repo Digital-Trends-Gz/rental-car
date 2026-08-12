@@ -82,6 +82,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.subscription' => \App\Http\Middleware\EnsureTenantSubscriptionIsActive::class,
             'tenant.seo.redirects' => \App\Http\Middleware\ApplyTenantSeoRedirects::class,
             'tenant.feature' => \App\Http\Middleware\EnsureTenantFeatureEnabled::class,
+            'tenant.plan.limit' => \App\Http\Middleware\EnsureTenantPlanLimitNotExceeded::class,
             'restricted' => \App\Http\Middleware\restricted::class,
             'can_manage_roles' => \App\Http\Middleware\CanManageRoles::class,
             'permission' => \App\Http\Middleware\PermissionMiddleware::class,

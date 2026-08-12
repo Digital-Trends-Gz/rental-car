@@ -19,6 +19,7 @@ use App\Models\Contract;
 use App\Models\CarMaintenance;
 use App\Models\CarViolation;
 use App\Models\Reservation;
+use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Models\TenantCarCatalogEntry;
 use App\Services\Plans\PlanUsageLimits;
@@ -154,6 +155,8 @@ class CarsController extends Controller
             ];
         })->toArray();
 
+        $carUsage = $this->planUsageLimits->carUsage($this->currentTenant($request));
+
         return Inertia::render('Admin/Cars/Index', [
             'cars' => $cars,
             'filters' => [
@@ -165,14 +168,26 @@ class CarsController extends Controller
             'statuses' => $statuses,
             'branches' => $branchOptions,
             'canAccessAllBranches' => $canAccessAllBranches,
+            'carUsage' => $carUsage,
+            'canCreateCar' => !($carUsage['at_limit'] ?? false),
         ]);
     }
 
     /**
      * Show the form for creating a new car.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        $tenant = $this->currentTenant($request);
+
+        if (!$tenant) {
+            abort(403, 'Tenant context is required to check plan limits.');
+        }
+
+        if ($message = $this->planUsageLimits->carLimitMessage($tenant)) {
+            abort(403, $message);
+        }
+
         $user = request()->user();
         $plateFormats = $this->plateFormatOptions($user);
 
@@ -193,6 +208,7 @@ class CarsController extends Controller
             'countries' => BranchLocationOptions::countrySelectOptions(app()->getLocale()),
             'supportedLocales' => $this->supportedLocaleMeta(),
             'canAccessAllBranches' => $this->branchAccess->canAccessAllBranches($user),
+            'branchUsage' => $this->planUsageLimits->branchUsage(),
             'enums' => [
                 'colors' => CarColor::forFrontend(),
                 'fuelTypes' => FuelType::forFrontend(),
@@ -607,11 +623,29 @@ class CarsController extends Controller
     {
         $user = $request->user();
         $tenantId = (int) ($user?->tenant_id ?? 0);
+
+        if (config('app.demo_mode')) {
+            return redirect()
+                ->back()
+                ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
+        }
+
+        $tenant = $this->currentTenant($request);
+
+        if (!$tenant) {
+            abort(403, 'Tenant context is required to check plan limits.');
+        }
+
+        if ($message = $this->planUsageLimits->carLimitMessage($tenant)) {
+            return redirect()->back()->with('error', $message);
+        }
+
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
         $isDraftSubmission = $request->boolean('save_as_draft') || $request->input('status') === CarStatus::DRAFT->value;
         $requiredRule = $isDraftSubmission ? 'nullable' : 'required';
         $plateFormats = $this->plateFormatOptions($user);
         $allowedPlateFormatCodes = array_map(static fn (array $format) => (string) ($format['value'] ?? ''), $plateFormats);
+        $this->normalizeLicensePlateInput($request);
 
         $validated = $request->validate([
             'make' => [$requiredRule, 'string', 'max:255'],
@@ -667,20 +701,10 @@ class CarsController extends Controller
             ])->withInput();
         }
 
-        if (config('app.demo_mode')) {
-            return redirect()
-                ->back()
-                ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
-        }
-
         $validated['description_translations'] = $this->localizedTextPayload(
             (array) ($validated['description_translations'] ?? []),
             $validated['description'] ?? null
         );
-
-        if ($message = $this->planUsageLimits->carLimitMessage()) {
-            return redirect()->back()->with('error', $message);
-        }
 
         $car = Car::create(collect($this->normalizeCarPayload($validated, $isDraftSubmission))->except([
             'image',
@@ -775,6 +799,7 @@ class CarsController extends Controller
             'countries' => BranchLocationOptions::countrySelectOptions(app()->getLocale()),
             'supportedLocales' => $this->supportedLocaleMeta(),
             'canAccessAllBranches' => $this->branchAccess->canAccessAllBranches(request()->user()),
+            'branchUsage' => $this->planUsageLimits->branchUsage(),
             'enums' => [
                 'colors' => CarColor::forFrontend(),
                 'fuelTypes' => FuelType::forFrontend(),
@@ -937,6 +962,7 @@ class CarsController extends Controller
         $requiredRule = $isDraftSubmission ? 'nullable' : 'required';
         $plateFormats = $this->plateFormatOptions($user);
         $allowedPlateFormatCodes = array_map(static fn (array $format) => (string) ($format['value'] ?? ''), $plateFormats);
+        $this->normalizeLicensePlateInput($request);
 
         $validated = $request->validate([
             'make' => [$requiredRule, 'string', 'max:255'],
@@ -1337,6 +1363,19 @@ class CarsController extends Controller
         }
     }
 
+    private function normalizeLicensePlateInput(Request $request): void
+    {
+        if (!$request->has('license_plate')) {
+            return;
+        }
+
+        $plate = PlateFormatSettingsCore::normalizePlate($request->input('license_plate'));
+
+        $request->merge([
+            'license_plate' => $plate === '' ? null : $plate,
+        ]);
+    }
+
     private function fallbackString(mixed $value, mixed $current, string $default): string
     {
         $resolved = $value ?? $current ?? $default;
@@ -1376,6 +1415,38 @@ class CarsController extends Controller
         return redirect()
             ->back()
             ->with('success', 'Car deleted successfully.');
+    }
+
+    private function currentTenant(?Request $request = null): ?Tenant
+    {
+        $tenant = TenantContext::get();
+
+        if ($tenant) {
+            return $tenant->loadMissing('subscriptionPlan');
+        }
+
+        $tenantId = (int) (($request?->user()?->tenant_id) ?? auth()->user()?->tenant_id ?? 0);
+
+        if ($tenantId <= 0) {
+            $slug = (string) (($request?->route('subdomain')) ?? request()->route('subdomain') ?? '');
+
+            if ($slug === '') {
+                $host = strtolower(request()->getHost());
+                $baseHost = strtolower((string) parse_url(config('app.url'), PHP_URL_HOST));
+
+                if ($baseHost !== '' && str_ends_with($host, '.'.$baseHost)) {
+                    $slug = explode('.', substr($host, 0, -strlen('.'.$baseHost)))[0] ?? '';
+                }
+            }
+
+            if ($slug === '') {
+                return null;
+            }
+
+            return Tenant::query()->where('slug', $slug)->with('subscriptionPlan')->first();
+        }
+
+        return Tenant::query()->with('subscriptionPlan')->find($tenantId);
     }
 }
 

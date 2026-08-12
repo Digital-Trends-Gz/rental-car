@@ -14,6 +14,7 @@ const props = defineProps<{
     branches: Array<{ id: number; name: string }>;
     roles: Array<{ id: number; name?: string; display_name: string }>;
     permissions: Array<{ id: number; display_name: string; description: string }>;
+    canManageRolesAndPermissions: boolean;
 }>();
 
 const { t } = useTrans();
@@ -155,7 +156,7 @@ function roleDisplayName(role: { name?: string; display_name: string }) {
                         </div>
 
                         <!-- Roles -->
-                        <div class="md:col-span-2 space-y-3">
+                        <div v-if="props.canManageRolesAndPermissions" class="md:col-span-2 space-y-3">
                             <Label>{{ t('dashboard.admin.roles.title') }}</Label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border rounded-md p-4">
                                 <div v-for="role in props.roles" :key="role.id" class="flex items-center space-x-2">
@@ -178,7 +179,7 @@ function roleDisplayName(role: { name?: string; display_name: string }) {
                         </div>
 
                         <!-- Direct Permissions -->
-                        <div class="md:col-span-2 space-y-3 border-t pt-6">
+                        <div v-if="props.canManageRolesAndPermissions" class="md:col-span-2 space-y-3 border-t pt-6">
                             <div>
                                 <Label>{{ t('dashboard.admin.employees.form.direct_permissions') }}</Label>
                                 <p class="text-[13px] text-muted-foreground">

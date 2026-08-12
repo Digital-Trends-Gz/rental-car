@@ -10,10 +10,8 @@ import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { withLocalePrefix } from '@/lib/utils';
 import { register as mainRegister } from '@/routes';
-import { store as mainLoginStore } from '@/routes/login';
 import { request as mainPasswordRequest } from '@/routes/password';
 import { register as tenantRegister } from '@/routes/tenant/index.ts';
-import { store as tenantLoginStore } from '@/routes/tenant/login/index.ts';
 import { request as tenantPasswordRequest } from '@/routes/tenant/password/index.ts';
 import { Form, Head, usePage } from '@inertiajs/vue3';
 import {
@@ -62,8 +60,10 @@ const buildUrl = (host: string, path: string) =>
     `${baseProtocol.value}//${host}${path}`;
 
 const loginAction = computed(() => {
-    const slug = currentTenant.value?.slug;
-    return (slug ? tenantLoginStore.form(slug) : mainLoginStore.form()) as any;
+    return {
+        action: localizedAuthUrl('/login'),
+        method: 'post',
+    };
 });
 const localizedAuthUrl = (url: string) =>
     withLocalePrefix(url, page.props.locale, page.props.available_locales);

@@ -7,8 +7,10 @@ use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Car;
 use App\Models\Contract;
+use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\TenantTranslations;
 
 class PlanUsageLimits
 {
@@ -19,12 +21,14 @@ class PlanUsageLimits
         return $this->limitMessage(
             'max_employees',
             'employees',
-            User::query()
-                ->where('tenant_id', $tenant?->id)
-                ->where('role', UserRole::ADMIN->value)
-                ->count(),
+            $this->employeeCount($tenant),
             $tenant
         );
+    }
+
+    public function employeeUsage(?Tenant $tenant = null): array
+    {
+        return $this->usage('max_employees', 'employees', $this->resolveTenant($tenant), fn (?Tenant $tenant): int => $this->employeeCount($tenant));
     }
 
     public function branchLimitMessage(?Tenant $tenant = null): ?string
@@ -34,11 +38,24 @@ class PlanUsageLimits
         return $this->limitMessage(
             'max_branches',
             'branches',
-            Branch::query()
-                ->where('tenant_id', $tenant?->id)
-                ->count(),
+            $this->branchCount($tenant),
             $tenant
         );
+    }
+
+    public function branchUsage(?Tenant $tenant = null): array
+    {
+        $tenant = $this->resolveTenant($tenant);
+        $limit = $this->limitFor($tenant, 'max_branches');
+        $current = $this->branchCount($tenant);
+
+        return [
+            'current' => $current,
+            'limit' => $limit,
+            'remaining' => $limit === null ? null : max(0, $limit - $current),
+            'at_limit' => $limit !== null && $current >= $limit,
+            'message' => $this->limitMessage('max_branches', 'branches', $current, $tenant),
+        ];
     }
 
     public function carLimitMessage(?Tenant $tenant = null): ?string
@@ -48,11 +65,14 @@ class PlanUsageLimits
         return $this->limitMessage(
             'max_cars',
             'cars',
-            Car::query()
-                ->where('tenant_id', $tenant?->id)
-                ->count(),
+            $this->carCount($tenant),
             $tenant
         );
+    }
+
+    public function carUsage(?Tenant $tenant = null): array
+    {
+        return $this->usage('max_cars', 'cars', $this->resolveTenant($tenant), fn (?Tenant $tenant): int => $this->carCount($tenant));
     }
 
     public function contractLimitMessage(?Tenant $tenant = null): ?string
@@ -62,11 +82,14 @@ class PlanUsageLimits
         return $this->limitMessage(
             'max_contracts',
             'contracts',
-            Contract::query()
-                ->where('tenant_id', $tenant?->id)
-                ->count(),
+            $this->contractCount($tenant),
             $tenant
         );
+    }
+
+    public function contractUsage(?Tenant $tenant = null): array
+    {
+        return $this->usage('max_contracts', 'contracts', $this->resolveTenant($tenant), fn (?Tenant $tenant): int => $this->contractCount($tenant));
     }
 
     public function openAiRequestsPerDayLimit(?Tenant $tenant = null): ?int
@@ -82,9 +105,15 @@ class PlanUsageLimits
             return null;
         }
 
-        $tenant->loadMissing('subscriptionPlan');
+        if (!$tenant->plan_id) {
+            return null;
+        }
 
-        return $this->normalizeLimit(data_get($tenant->subscriptionPlan, $field));
+        return $this->normalizeLimit(
+            Plan::query()
+                ->whereKey((int) $tenant->plan_id)
+                ->value($field)
+        );
     }
 
     private function limitMessage(string $field, string $label, int $currentCount, ?Tenant $tenant = null): ?string
@@ -95,7 +124,87 @@ class PlanUsageLimits
             return null;
         }
 
-        return "Your plan allows up to {$limit} {$label}. Upgrade your plan to add more.";
+        $locale = app()->getLocale();
+        $resource = TenantTranslations::get("dashboard.common.{$label}", $locale, $label, $tenant);
+
+        if ($resource === "dashboard.common.{$label}" || $resource === "site.dashboard.common.{$label}") {
+            $resource = $label;
+        }
+
+        if ($locale === 'en') {
+            $resource = strtolower((string) $resource);
+        }
+
+        $message = TenantTranslations::get(
+            'dashboard.common.plan_limit_reached',
+            $locale,
+            trans('site.dashboard.common.plan_limit_reached'),
+            $tenant
+        );
+
+        return strtr($message, [
+            ':limit' => (string) $limit,
+            ':resource' => (string) $resource,
+        ]);
+    }
+
+    private function usage(string $field, string $label, ?Tenant $tenant, callable $counter): array
+    {
+        $limit = $this->limitFor($tenant, $field);
+        $current = $counter($tenant);
+
+        return [
+            'current' => $current,
+            'limit' => $limit,
+            'remaining' => $limit === null ? null : max(0, $limit - $current),
+            'at_limit' => $limit !== null && $current >= $limit,
+            'message' => $this->limitMessage($field, $label, $current, $tenant),
+        ];
+    }
+
+    private function employeeCount(?Tenant $tenant): int
+    {
+        if (!$tenant?->id) {
+            return 0;
+        }
+
+        return User::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('role', UserRole::ADMIN->value)
+            ->count();
+    }
+
+    private function branchCount(?Tenant $tenant): int
+    {
+        if (!$tenant?->id) {
+            return 0;
+        }
+
+        return Branch::withoutTenantScope()
+            ->where('tenant_id', $tenant->id)
+            ->count();
+    }
+
+    private function carCount(?Tenant $tenant): int
+    {
+        if (!$tenant?->id) {
+            return 0;
+        }
+
+        return Car::withoutTenantScope()
+            ->where('tenant_id', $tenant->id)
+            ->count();
+    }
+
+    private function contractCount(?Tenant $tenant): int
+    {
+        if (!$tenant?->id) {
+            return 0;
+        }
+
+        return Contract::withoutTenantScope()
+            ->where('tenant_id', $tenant->id)
+            ->count();
     }
 
     private function normalizeLimit(mixed $value): ?int

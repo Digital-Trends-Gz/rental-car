@@ -18,6 +18,8 @@ export interface NavItem {
     isActive?: boolean;
     permission?: string;
     feature?: string;
+    disabled?: boolean;
+    disabledReason?: string;
     description?: string;
     children?: NavItem[];
 }

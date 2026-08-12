@@ -137,6 +137,75 @@ class CarsPlateFormatValidationTest extends TestCase
         ]);
     }
 
+    public function test_car_creation_rejects_duplicate_plate_after_normalization(): void
+    {
+        $tenant = $this->tenantWithPlateFormats();
+        TenantContext::set($tenant);
+
+        $branch = Branch::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::SUPER_ADMIN,
+            'branch_id' => $branch->id,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'make' => 'Toyota',
+            'model' => 'Camry',
+            'year' => 2024,
+            'license_plate' => '12345 A',
+            'license_plate_format' => 'oman-standard-a',
+            'color' => CarColor::WHITE->value,
+            'price_per_day' => 25,
+            'mileage' => 1000,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'fuel_type' => FuelType::GASOLINE->value,
+            'status' => CarStatus::AVAILABLE->value,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.cars.store', ['subdomain' => $tenant->slug]), [
+                'make' => 'Honda',
+                'model' => 'Civic',
+                'year' => 2025,
+                'license_plate' => ' 12345   a ',
+                'license_plate_format' => 'oman-standard-a',
+                'branch_id' => $branch->id,
+                'color' => CarColor::BLACK->value,
+                'price_per_day' => 30,
+                'price_per_week' => 180,
+                'price_per_month' => 600,
+                'allowed_km_per_day' => 200,
+                'allowed_km_per_week' => 1200,
+                'allowed_km_per_month' => 4000,
+                'mileage' => 500,
+                'transmission' => 'automatic',
+                'seats' => 5,
+                'fuel_type' => FuelType::GASOLINE->value,
+                'status' => CarStatus::AVAILABLE->value,
+                'description' => 'Duplicate plate',
+                'image' => [],
+                'additional_photos' => [],
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('license_plate');
+
+        $this->assertDatabaseMissing('cars', [
+            'tenant_id' => $tenant->id,
+            'make' => 'Honda',
+            'license_plate' => '12345 A',
+        ]);
+    }
+
     public function test_car_creation_can_use_global_plate_format_templates(): void
     {
         SiteSetting::query()->updateOrCreate(

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useTrans } from '@/composables/useTrans';
 import AdminLayout from '@/layouts/AdminLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ref } from 'vue';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { computed, ref } from 'vue';
 
 type StatusPayload = {
     value: string;
@@ -36,6 +37,7 @@ const props = defineProps<{
             has_end_contract: boolean;
         }>;
         links: Array<{ url: string | null; label: string; active: boolean }>;
+        total?: number;
     };
     filters: {
         search?: string;
@@ -49,6 +51,14 @@ const props = defineProps<{
         index: string;
         create: string;
     };
+    contractUsage?: {
+        current: number;
+        limit: number | null;
+        remaining: number | null;
+        at_limit: boolean;
+        message: string | null;
+    };
+    canCreateContract?: boolean;
 }>();
 
 const search = ref(props.filters?.search ?? '');
@@ -57,6 +67,57 @@ const branchId = ref<string>(
     props.filters?.branch_id ? String(props.filters.branch_id) : 'all',
 );
 const { t } = useTrans();
+const page = usePage<any>();
+const contractUsage = computed(() => props.contractUsage);
+const tenantContractLimit = computed(() => page.props.current_tenant?.subscription_plan?.max_contracts ?? null);
+const contractCount = computed(() => contractUsage.value?.current ?? props.contracts.total ?? props.contracts.data.length);
+const canCreateContract = computed(() => {
+    if (props.canCreateContract === false || contractUsage.value?.at_limit) {
+        return false;
+    }
+
+    const limit = tenantContractLimit.value;
+
+    return limit === null || Number(contractCount.value) < Number(limit);
+});
+const contractLimitText = computed(() => {
+    const usage = props.contractUsage;
+
+    if (!usage || usage.limit === null) {
+        const limit = tenantContractLimit.value;
+
+        if (limit === null) {
+            return null;
+        }
+
+        return `${contractCount.value} / ${limit}`;
+    }
+
+    return `${usage.current} / ${usage.limit}`;
+});
+const showContractLimitAlert = computed(() => {
+    if (contractUsage.value?.at_limit) {
+        return true;
+    }
+
+    return !canCreateContract.value && contractLimitText.value !== null;
+});
+const contractLimitMessage = computed(() => {
+    if (contractUsage.value?.message) {
+        return contractUsage.value.message;
+    }
+
+    const limit = tenantContractLimit.value;
+
+    if (limit !== null) {
+        return t('dashboard.common.plan_limit_reached', {
+            limit: Number(limit),
+            resource: t('dashboard.common.contracts'),
+        });
+    }
+
+    return t('dashboard.admin.contracts.index.plan_limit_reached_fallback');
+});
 
 const submitFilters = () => {
     router.get(
@@ -131,12 +192,22 @@ const translatedContractStatusFilter = (value: string): string =>
                 <h1 class="text-2xl font-semibold">
                     {{ t('dashboard.admin.contracts.index.title') }}
                 </h1>
-                <Link :href="actions.create">
+                <Link v-if="canCreateContract" :href="actions.create">
                     <Button>{{
                         t('dashboard.admin.contracts.index.create_contract')
                     }}</Button>
                 </Link>
+                <Button v-else disabled>{{
+                    t('dashboard.admin.contracts.index.create_contract')
+                }}</Button>
             </div>
+
+            <Alert v-if="showContractLimitAlert" variant="destructive">
+                <AlertDescription>
+                    {{ contractLimitMessage }}
+                    <span v-if="contractLimitText" class="ms-1">({{ contractLimitText }})</span>
+                </AlertDescription>
+            </Alert>
 
             <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
                 <Input

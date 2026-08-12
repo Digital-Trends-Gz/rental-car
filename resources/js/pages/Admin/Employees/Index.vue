@@ -51,11 +51,29 @@ const props = defineProps<{
   }
   branches: Array<{ id: number; name: string }>
   canAccessAllBranches: boolean
+  employeeUsage?: {
+    current: number
+    limit: number | null
+    remaining: number | null
+    at_limit: boolean
+    message: string | null
+  }
 }>()
 
 const { t } = useTrans();
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
+const employeeUsage = computed(() => props.employeeUsage);
+const canCreateEmployee = computed(() => !employeeUsage.value?.at_limit);
+const employeeLimitText = computed(() => {
+  const usage = employeeUsage.value;
+
+  if (!usage || usage.limit === null) {
+    return null;
+  }
+
+  return `${usage.current} / ${usage.limit}`;
+});
 
 const search = ref(props.filters?.search || '')
 const branchFilter = ref(props.filters?.branch_id ? String(props.filters.branch_id) : 'all')
@@ -105,13 +123,25 @@ const destroyEmployee = () => {
         <main class="flex-1 p-8 space-y-6">
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.employees.title') }}</h1>
-                <Link v-if="subdomain" :href="create(subdomain).url">
+                <Link v-if="subdomain && canCreateEmployee" :href="create(subdomain).url">
                     <Button>
                         <Plus class="mr-2 h-4 w-4" />
                         {{ t('dashboard.admin.employees.new_employee') }}
                     </Button>
                 </Link>
+                <Button v-else-if="subdomain" disabled>
+                    <Plus class="mr-2 h-4 w-4" />
+                    {{ t('dashboard.admin.employees.new_employee') }}
+                </Button>
             </div>
+
+            <Alert v-if="employeeUsage?.at_limit" variant="destructive">
+                <AlertCircle class="h-4 w-4" />
+                <AlertDescription>
+                    {{ employeeUsage.message || t('dashboard.admin.employees.plan_limit_reached_fallback') }}
+                    <span v-if="employeeLimitText" class="ms-1">({{ employeeLimitText }})</span>
+                </AlertDescription>
+            </Alert>
 
             <div class="flex flex-col gap-4">
                 <div class="flex items-center gap-2">

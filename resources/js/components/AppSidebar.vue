@@ -113,6 +113,11 @@ const authPermissions = computed<string[]>(() =>
 );
 const hasTenantFeature = (feature?: string) =>
     !feature || !hasFeatureFlags.value || Boolean(tenantFeatureFlags.value[feature]);
+const lockedFeatureReason = computed(
+    () =>
+        t('dashboard.common.feature_not_in_plan') ||
+        'This feature is not included in your current plan.',
+);
 
 const filterNavItems = (items: SidebarNavItem[]): SidebarNavItem[] =>
     items
@@ -120,18 +125,17 @@ const filterNavItems = (items: SidebarNavItem[]): SidebarNavItem[] =>
             const children = item.children?.length
                 ? filterNavItems(item.children)
                 : undefined;
+            const featureEnabled = hasTenantFeature(item.feature);
 
             return {
                 ...item,
                 children,
+                disabled: !featureEnabled,
+                disabledReason: !featureEnabled ? lockedFeatureReason.value : item.disabledReason,
             };
         })
         .filter((item) => {
             if (item.permission && !authPermissions.value.includes(item.permission)) {
-                return false;
-            }
-
-            if (!hasTenantFeature(item.feature)) {
                 return false;
             }
 
@@ -185,6 +189,7 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     href: adminHref('/settings/contract-pdf'),
                     icon: FileText,
                     permission: 'tenant-manage-settings',
+                    feature: 'pdf_export',
                 },
                 {
                     key: 'mrta-pdf-template',
@@ -192,6 +197,7 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     href: adminHref('/settings/mrta-pdf'),
                     icon: FileText,
                     permission: 'tenant-manage-settings',
+                    feature: 'pdf_export',
                 },
             ],
         },
@@ -261,6 +267,7 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     href: adminHref('/accident-reports'),
                     icon: Siren,
                     permission: 'tenant-manage-reservations',
+                    feature: 'damage_reports',
                 },
             ],
         },
@@ -296,6 +303,7 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     href: rolesIndex(slug).url,
                     icon: Shield,
                     permission: 'tenant-manage-employees',
+                    feature: 'roles_and_permissions',
                 },
             ],
         },
@@ -310,6 +318,7 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     href: paymentsIndex(slug).url,
                     icon: CreditCard,
                     permission: 'tenant-manage-payments',
+                    feature: 'cash_payments',
                 },
                 {
                     key: 'debtors',
@@ -317,6 +326,7 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     href: adminHref('/payments/debtors'),
                     icon: CreditCard,
                     permission: 'tenant-view-debtors',
+                    feature: 'cash_payments',
                 },
                 {
                     key: 'discount-requests',
@@ -324,6 +334,7 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     href: adminHref('/discount-requests'),
                     icon: Percent,
                     permission: 'tenant-manage-payments',
+                    feature: 'cash_payments',
                 },
                 {
                     key: 'payment-providers',
@@ -413,6 +424,7 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                     href: adminHref('/settings/website'),
                     icon: Settings,
                     permission: 'tenant-manage-settings',
+                    feature: 'custom_branding',
                 },
                 {
                     key: 'static-pages',

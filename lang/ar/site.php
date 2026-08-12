@@ -1148,6 +1148,8 @@ return array (
       'users' => 'المستخدمون',
       'view' => 'عرض',
       'clear' => 'Clear',
+      'plan_limit_reached' => 'تسمح خطتك بحد أقصى :limit :resource. قم بترقية خطتك لإضافة المزيد.',
+      'feature_not_in_plan' => 'هذه الميزة غير متاحة ضمن خطتك الحالية.',
     ),
     'super_admin' => 
     array (
@@ -2444,6 +2446,7 @@ return array (
         'all' => 'الكل',
         'all_branches' => 'كل الفروع',
         'empty' => 'لا توجد سيارات.',
+        'plan_limit_reached_fallback' => 'وصلت إلى حد السيارات في خطتك.',
         'table' => 
         array (
           'image' => 'الصورة',
@@ -3850,6 +3853,7 @@ return array (
           'view' => 'View',
           'edit' => 'Edit',
           'empty' => 'No contracts found.',
+          'plan_limit_reached_fallback' => 'وصلت إلى حد العقود في خطتك.',
           'table' =>
           array (
             'contract_number' => 'Contract Number',
@@ -4581,6 +4585,7 @@ return array (
         'edit_branch' => 'Edit Branch',
         'search_placeholder' => 'Search name, CR, manager, phone...',
         'empty' => 'No branches found.',
+        'plan_limit_reached_fallback' => 'وصلت إلى حد الفروع في خطتك.',
         'form' =>
         array (
           'branch_name' => 'Branch Name',
@@ -4816,6 +4821,7 @@ return array (
         'search_placeholder' => 'Search name, email, civil number...',
         'empty' => 'No employees found.',
         'all_branches' => 'All branches',
+        'plan_limit_reached_fallback' => 'وصلت إلى حد الموظفين في خطتك.',
         'table' =>
         array (
           'name' => 'Name',
@@ -4946,6 +4952,36 @@ return array (
         'open_stripe_express_dashboard' => 'فتح لوحة تحكم Stripe Express',
         'yes' => 'نعم',
         'no' => 'لا',
+      ),
+      'coupons' =>
+      array (
+        'index' =>
+        array (
+          'head_title' => 'الكوبونات',
+          'title' => 'الكوبونات',
+          'subtitle' => 'أنشئ كوبونات للمستأجر لكل السيارات أو لسيارة محددة.',
+          'new_coupon' => 'كوبون جديد',
+          'search_placeholder' => 'ابحث بالرمز أو الاسم...',
+          'all_statuses' => 'كل الحالات',
+          'all_cars' => 'كل السيارات',
+          'active' => 'نشط',
+          'inactive' => 'غير نشط',
+          'search' => 'بحث',
+          'clear' => 'مسح',
+          'edit' => 'تعديل',
+          'delete' => 'حذف',
+          'delete_confirm' => 'هل تريد حذف هذا الكوبون؟',
+          'empty' => 'لا توجد كوبونات.',
+          'table' =>
+          array (
+            'code' => 'الرمز',
+            'name' => 'الاسم',
+            'scope' => 'النطاق',
+            'value' => 'القيمة',
+            'usage' => 'الاستخدام',
+            'status' => 'الحالة',
+          ),
+        ),
       ),
     ),
   ),

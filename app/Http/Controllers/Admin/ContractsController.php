@@ -197,6 +197,8 @@ class ContractsController extends Controller
             ];
         });
 
+        $contractUsage = $this->planUsageLimits->contractUsage($this->currentTenant($request));
+
         return Inertia::render('Admin/Contracts/Index', [
             'contracts' => $contracts,
             'filters' => [
@@ -213,11 +215,23 @@ class ContractsController extends Controller
                 'create' => route('admin.contracts.create', ['subdomain' => $request->route('subdomain')]),
                 'extract' => route('admin.contracts.extract', ['subdomain' => $request->route('subdomain')]),
             ],
+            'contractUsage' => $contractUsage,
+            'canCreateContract' => !($contractUsage['at_limit'] ?? false),
         ]);
     }
 
     public function create(Request $request): Response
     {
+        $tenant = $this->currentTenant($request);
+
+        if (!$tenant) {
+            abort(403, 'Tenant context is required to check plan limits.');
+        }
+
+        if ($message = $this->planUsageLimits->contractLimitMessage($tenant)) {
+            abort(403, $message);
+        }
+
         $reservation = null;
         if ($request->filled('reservation_id')) {
             $reservation = Reservation::query()
@@ -285,25 +299,14 @@ class ContractsController extends Controller
             abort(404);
         }
 
-        if ($message = $this->planUsageLimits->contractLimitMessage()) {
-            return redirect()->back()->with('error', $message);
+        $tenant = $this->currentTenant($request);
+
+        if (!$tenant) {
+            abort(403, 'Tenant context is required to check plan limits.');
         }
 
-        $tenant = Tenant::query()
-            ->with('subscriptionPlan')
-            ->find($tenantId);
-
-        if ($tenant?->subscriptionPlan?->max_contracts !== null) {
-            $contractCount = Contract::withoutGlobalScope('tenant')
-                ->where('tenant_id', $tenant->id)
-                ->count();
-
-            if ($contractCount >= (int) $tenant->subscriptionPlan->max_contracts) {
-                return redirect()->back()->with(
-                    'error',
-                    "Your plan allows up to {$tenant->subscriptionPlan->max_contracts} contracts. Upgrade your plan to add more."
-                );
-            }
+        if ($message = $this->planUsageLimits->contractLimitMessage($tenant)) {
+            return redirect()->back()->with('error', $message);
         }
 
         $validated = $this->validatePayload($request, $tenantId);
@@ -3145,5 +3148,37 @@ class ContractsController extends Controller
             'x' => round((float) $viewLayout['x'] + ($mappedX * $scaleX), 1),
             'y' => round((float) $viewLayout['y'] + ($mappedY * $scaleY), 1),
         ];
+    }
+
+    private function currentTenant(?Request $request = null): ?Tenant
+    {
+        $tenant = TenantContext::get();
+
+        if ($tenant) {
+            return $tenant->loadMissing('subscriptionPlan');
+        }
+
+        $tenantId = (int) (($request?->user()?->tenant_id) ?? auth()->user()?->tenant_id ?? 0);
+
+        if ($tenantId <= 0) {
+            $slug = (string) (($request?->route('subdomain')) ?? request()->route('subdomain') ?? '');
+
+            if ($slug === '') {
+                $host = strtolower(request()->getHost());
+                $baseHost = strtolower((string) parse_url(config('app.url'), PHP_URL_HOST));
+
+                if ($baseHost !== '' && str_ends_with($host, '.'.$baseHost)) {
+                    $slug = explode('.', substr($host, 0, -strlen('.'.$baseHost)))[0] ?? '';
+                }
+            }
+
+            if ($slug === '') {
+                return null;
+            }
+
+            return Tenant::query()->where('slug', $slug)->with('subscriptionPlan')->first();
+        }
+
+        return Tenant::query()->with('subscriptionPlan')->find($tenantId);
     }
 }

@@ -46,13 +46,18 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::post('cars/catalog-entries', [CarsController::class, 'storeCatalogEntry'])
             ->middleware('permission:tenant-manage-cars')
             ->name('cars.catalog-entries.store');
+        Route::get('cars/create', [CarsController::class, 'create'])
+            ->middleware(['tenant.plan.limit:cars', 'permission:tenant-manage-cars'])
+            ->name('cars.create');
         Route::resource('cars', CarsController::class)
+            ->except(['create'])
+            ->middlewareFor(['store'], 'tenant.plan.limit:cars')
             ->middleware('permission:tenant-manage-cars');
         Route::get('cars/{car}/calendar', [CarsController::class, 'calendar'])
-            ->middleware('permission:tenant-manage-cars')
+            ->middleware(['permission:tenant-manage-cars', 'tenant.feature:booking_calendar'])
             ->name('cars.calendar');
         Route::get('cars/{car}/availability-calendar', [CarsController::class, 'availabilityCalendar'])
-            ->middleware('permission:tenant-manage-cars')
+            ->middleware(['permission:tenant-manage-cars', 'tenant.feature:booking_calendar'])
             ->name('cars.availability-calendar');
             
         Route::resource('cars.photo-histories', CarPhotoHistoryController::class)
@@ -134,7 +139,7 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:cash_payments'])
             ->name('reservations.cash-payment');
         Route::get('reservations/{reservation}/print', [ReservationsController::class, 'print'])
-            ->middleware('permission:tenant-manage-reservations')
+            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:pdf_export'])
             ->name('reservations.print');
 
         // Contracts
@@ -168,20 +173,24 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:cash_payments'])
             ->name('contracts.return-report.cash-payment');
         Route::get('contracts/{contractId}/return-status-report/pdf', [ContractReturnReportsController::class, 'pdf'])
-            ->middleware('permission:tenant-manage-reservations')
+            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:pdf_export'])
             ->name('contracts.return-report.pdf');
         Route::get('contracts/{contract}/pdf', [ContractsController::class, 'pdf'])
             ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:pdf_export'])
             ->name('contracts.pdf');
+        Route::get('contracts/create', [ContractsController::class, 'create'])
+            ->middleware(['tenant.plan.limit:contracts', 'permission:tenant-manage-reservations'])
+            ->name('contracts.create');
         Route::resource('contracts', ContractsController::class)
-            ->only(['index', 'create', 'store', 'show', 'edit', 'update'])
+            ->only(['index', 'store', 'show', 'edit', 'update'])
+            ->middlewareFor(['store'], 'tenant.plan.limit:contracts')
             ->middleware('permission:tenant-manage-reservations');
         Route::get('accident-reports/{accidentReport}/mrta-form', [AccidentReportsController::class, 'mrtaForm'])
-            ->middleware('permission:tenant-manage-reservations')
+            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:damage_reports'])
             ->name('accident-reports.mrta-form');
         Route::resource('accident-reports', AccidentReportsController::class)
             ->only(['index', 'create', 'store', 'show'])
-            ->middleware('permission:tenant-manage-reservations');
+            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:damage_reports']);
 
         // Clients
         Route::resource('clients', ClientsController::class)
@@ -208,19 +217,19 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
 
         // Payments
         Route::get('payments/debtors', [PaymentsController::class, 'debtors'])
-            ->middleware('permission:tenant-view-debtors')
+            ->middleware(['permission:tenant-view-debtors', 'tenant.feature:cash_payments'])
             ->name('payments.debtors');
         Route::resource('payments', PaymentsController::class)
             ->only(['index'])
-            ->middleware('permission:tenant-manage-payments');
+            ->middleware(['permission:tenant-manage-payments', 'tenant.feature:cash_payments']);
         Route::get('discount-requests', [DiscountRequestsController::class, 'index'])
-            ->middleware('permission:tenant-manage-payments')
+            ->middleware(['permission:tenant-manage-payments', 'tenant.feature:cash_payments'])
             ->name('discount-requests.index');
         Route::post('discount-requests/{discountRequest}/approve', [DiscountRequestsController::class, 'approve'])
-            ->middleware('permission:tenant-manage-payments')
+            ->middleware(['permission:tenant-manage-payments', 'tenant.feature:cash_payments'])
             ->name('discount-requests.approve');
         Route::post('discount-requests/{discountRequest}/reject', [DiscountRequestsController::class, 'reject'])
-            ->middleware('permission:tenant-manage-payments')
+            ->middleware(['permission:tenant-manage-payments', 'tenant.feature:cash_payments'])
             ->name('discount-requests.reject');
 
         // Coupons
@@ -341,19 +350,24 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::get('branches/location-options/cities', [BranchesController::class, 'cities'])
             ->middleware('permission:tenant-manage-branches')
             ->name('branches.cities');
+        Route::get('branches/create', [BranchesController::class, 'create'])
+            ->middleware(['tenant.plan.limit:branches', 'permission:tenant-manage-branches'])
+            ->name('branches.create');
         Route::resource('branches', BranchesController::class)
-            ->except(['show'])
+            ->except(['show', 'create'])
+            ->middlewareFor(['store'], 'tenant.plan.limit:branches')
             ->middleware('permission:tenant-manage-branches');
 
         // Employees
         Route::resource('employees', EmployeesController::class)
             ->except(['show'])
+            ->middlewareFor(['create', 'store'], 'tenant.plan.limit:employees')
             ->middleware('permission:tenant-manage-employees');
 
         // Roles
         Route::resource('roles', RolesController::class)
             ->except(['show'])
-            ->middleware('permission:tenant-manage-employees');
+            ->middleware(['permission:tenant-manage-employees', 'tenant.feature:roles_and_permissions']);
 
         // Tenant payment gateway (Stripe Connect)
         Route::get('settings/payment-providers', [PaymentProvidersController::class, 'edit'])
@@ -364,7 +378,7 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->name('settings.payment-providers.update');
 
         Route::get('settings/website', [WebsiteSettingsController::class, 'edit'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:custom_branding'])
             ->name('settings.website.edit');
         Route::get('settings/static-pages', [WebsiteSettingsController::class, 'staticPagesEdit'])
             ->middleware('permission:tenant-manage-settings')
@@ -376,7 +390,7 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.seo-audit');
         Route::put('settings/website', [WebsiteSettingsController::class, 'update'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:custom_branding'])
             ->name('settings.website.update');
         Route::put('settings/static-pages', [WebsiteSettingsController::class, 'staticPagesUpdate'])
             ->middleware('permission:tenant-manage-settings')
@@ -403,16 +417,16 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->middleware('permission:tenant-manage-settings')
             ->name('settings.police-notice.update');
         Route::get('settings/contract-pdf', [WebsiteSettingsController::class, 'contractPdfEdit'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:pdf_export'])
             ->name('settings.contract-pdf.edit');
         Route::put('settings/contract-pdf', [WebsiteSettingsController::class, 'contractPdfUpdate'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:pdf_export'])
             ->name('settings.contract-pdf.update');
         Route::get('settings/mrta-pdf', [WebsiteSettingsController::class, 'mrtaPdfEdit'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:pdf_export'])
             ->name('settings.mrta-pdf.edit');
         Route::put('settings/mrta-pdf', [WebsiteSettingsController::class, 'mrtaPdfUpdate'])
-            ->middleware('permission:tenant-manage-settings')
+            ->middleware(['permission:tenant-manage-settings', 'tenant.feature:pdf_export'])
             ->name('settings.mrta-pdf.update');
         Route::get('settings/translations', [TranslationSettingsController::class, 'edit'])
             ->middleware('permission:tenant-manage-settings')

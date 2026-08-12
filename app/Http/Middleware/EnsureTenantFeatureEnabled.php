@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Core\TenantContext;
 use App\Models\Tenant;
+use App\Support\TenantTranslations;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,6 +27,11 @@ class EnsureTenantFeatureEnabled
             return $next($request);
         }
 
-        abort(403, 'This feature is not included in your current plan.');
+        abort(403, TenantTranslations::get(
+            'dashboard.common.feature_not_in_plan',
+            app()->getLocale(),
+            'This feature is not included in your current plan.',
+            $tenant
+        ));
     }
 }

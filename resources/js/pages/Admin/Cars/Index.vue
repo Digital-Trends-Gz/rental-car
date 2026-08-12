@@ -37,6 +37,7 @@ const props = defineProps<{
       branch_name?: string | null
     }>
     links: Array<{ url: string | null; label: string; active: boolean }>
+    total?: number
   }
   filters: { 
     search?: string
@@ -51,10 +52,69 @@ const props = defineProps<{
   branches: Array<{ id: number; name: string }>
   canAccessAllBranches: boolean
   currency: { symbol: string; code: string }
+  carUsage?: {
+    current: number
+    limit: number | null
+    remaining: number | null
+    at_limit: boolean
+    message: string | null
+  }
+  canCreateCar?: boolean
 }>()
 const { t } = useTrans();
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
+const carUsage = computed(() => props.carUsage);
+const tenantCarLimit = computed(() => page.props.current_tenant?.subscription_plan?.max_cars ?? null);
+const statusCarCount = computed(() => Object.values(props.statuses || {}).reduce((total, status) => total + Number(status.count || 0), 0));
+const carCount = computed(() => carUsage.value?.current ?? props.cars.total ?? statusCarCount.value ?? props.cars.data.length);
+const canCreateCar = computed(() => {
+  if (props.canCreateCar === false || carUsage.value?.at_limit) {
+    return false;
+  }
+
+  const limit = tenantCarLimit.value;
+
+  return limit === null || Number(carCount.value) < Number(limit);
+});
+const carLimitText = computed(() => {
+  const usage = carUsage.value;
+
+  if (!usage || usage.limit === null) {
+    const limit = tenantCarLimit.value;
+
+    if (limit === null) {
+      return null;
+    }
+
+    return `${carCount.value} / ${limit}`;
+  }
+
+  return `${usage.current} / ${usage.limit}`;
+});
+const showCarLimitAlert = computed(() => {
+  if (carUsage.value?.at_limit) {
+    return true;
+  }
+
+  return !canCreateCar.value && carLimitText.value !== null;
+});
+const carLimitMessage = computed(() => {
+  if (carUsage.value?.message) {
+    return carUsage.value.message;
+  }
+
+  const limit = tenantCarLimit.value;
+
+  if (limit !== null) {
+    return t('dashboard.common.plan_limit_reached', {
+      limit: Number(limit),
+      resource: t('dashboard.common.cars'),
+    });
+  }
+
+  return t('dashboard.admin.cars.plan_limit_reached_fallback');
+});
 
 
 // Generate status colors based on the colors from the backend
@@ -155,12 +215,23 @@ const destroyCar = () => {
         <main class="flex-1 p-8 space-y-6">
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.cars.title') }}</h1>
-                <Link v-if="subdomain" :href="create(subdomain).url">
+                <Link v-if="subdomain && canCreateCar" :href="create(subdomain).url">
                     <Button >
                         + {{ t('dashboard.admin.cars.new_car') }}
                     </Button>
                 </Link>
+                <Button v-else-if="subdomain" disabled>
+                    + {{ t('dashboard.admin.cars.new_car') }}
+                </Button>
             </div>
+
+            <Alert v-if="showCarLimitAlert" variant="destructive">
+                <AlertCircle class="h-4 w-4" />
+                <AlertDescription>
+                    {{ carLimitMessage }}
+                    <span v-if="carLimitText" class="ms-1">({{ carLimitText }})</span>
+                </AlertDescription>
+            </Alert>
 
             <div class="flex flex-col gap-4">
                 <div class="flex items-center gap-2">
