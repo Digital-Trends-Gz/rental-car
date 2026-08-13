@@ -17,6 +17,7 @@ const props = withDefaults(
         restrictedAction?: string | null;
         triggerKey?: string | number;
         timeoutMs?: number;
+        positionClass?: string;
     }>(),
     {
         success: null,
@@ -24,6 +25,7 @@ const props = withDefaults(
         restrictedAction: null,
         triggerKey: '',
         timeoutMs: 4500,
+        positionClass: 'right-4 top-4 sm:right-6 sm:top-6',
     },
 );
 
@@ -109,7 +111,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="pointer-events-none fixed right-4 top-4 z-50 w-[calc(100vw-2rem)] max-w-sm sm:right-6 sm:top-6">
+    <div class="pointer-events-none fixed z-50 w-[calc(100vw-2rem)] max-w-sm" :class="props.positionClass">
         <TransitionGroup name="toast-stack" tag="div" class="flex flex-col gap-3">
             <div
                 v-for="toast in toasts"

@@ -448,6 +448,7 @@ return array (
     'book_now' => 'احجز الآن',
     'alert_admin_cannot_book' => 'لا يمكنك الحجز كمدير.',
     'alert_role_not_allowed' => 'دورك لا يسمح بالحجز.',
+    'locked_plan_limit_success' => 'تم استلام طلب الحجز بنجاح. سيقوم المكتب بمراجعته والتواصل معك قريبا.',
     'locations' => 
     array (
       'downtown_office' => 'مكتب وسط المدينة',

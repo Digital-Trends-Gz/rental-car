@@ -94,7 +94,7 @@ class BookingPlanLimitTest extends TestCase
                 'return_location' => 'Office',
             ])
             ->assertRedirect(route('tenant.fleet.show', ['subdomain' => $tenant->slug, 'car' => $car->id]))
-            ->assertSessionHas('success');
+            ->assertSessionHas('success', 'Your booking request was received successfully. The office will review it and contact you soon.');
 
         $this->assertDatabaseCount('reservations', 1);
         $this->assertDatabaseCount('payments', 0);

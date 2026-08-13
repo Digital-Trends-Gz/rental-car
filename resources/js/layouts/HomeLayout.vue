@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import FlashToastStack from '@/components/FlashToastStack.vue';
 import { Button } from '@/components/ui/button';
 import { useBrandTheme } from '@/composables/useBrandTheme';
 import { login as mainLogin, register as mainRegister, home as mainHome, fleet as mainFleet, about as mainAbout, contact as mainContact, privacyPolicy as mainPrivacyPolicy, termsOfUse as mainTermsOfUse } from '@/routes';
@@ -587,6 +588,13 @@ onBeforeUnmount(() => {
 <template>
     <template v-if="isLandingShell">
         <div class="min-h-screen bg-background" :style="themeVars">
+            <FlashToastStack
+                :success="$page.props.flash?.success ?? null"
+                :error="$page.props.flash?.error ?? null"
+                :restricted-action="$page.props.flash?.restricted_action ?? null"
+                :trigger-key="$page.url"
+                position-class="left-1/2 top-20 -translate-x-1/2"
+            />
             <nav class="fixed left-0 right-0 top-0 z-50 border-b border-border bg-background/95 shadow-sm backdrop-blur-lg">
                 <div class="section-container relative flex h-16 max-w-7xl items-center justify-center">
                     <Link :href="landingHomeUrl" class="absolute left-4 inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground sm:left-6 lg:left-8">
@@ -780,6 +788,13 @@ onBeforeUnmount(() => {
 
     <template v-else>
     <div class="tenant-public-theme" :style="themeVars">
+        <FlashToastStack
+            :success="$page.props.flash?.success ?? null"
+            :error="$page.props.flash?.error ?? null"
+            :restricted-action="$page.props.flash?.restricted_action ?? null"
+            :trigger-key="$page.url"
+            position-class="left-1/2 top-20 -translate-x-1/2"
+        />
         <header
             class="sticky top-0 z-50 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur-md"
         >

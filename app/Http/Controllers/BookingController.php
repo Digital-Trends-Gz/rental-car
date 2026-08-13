@@ -23,6 +23,7 @@ use App\Support\Payments\MyFatoorahSubscriptionProvider;
 use App\Support\ClientReturnDebt;
 use App\Support\CurrencyCatalog;
 use App\Support\TenantSeoResolver;
+use App\Support\TenantTranslations;
 use App\Support\TenantStripeConnect;
 use App\Services\Plans\PlanUsageLimits;
 use App\Services\Plans\PlanUsageNotifier;
@@ -386,7 +387,12 @@ class BookingController extends Controller
                 'car' => $car->id,
             ])->with(
                 'success',
-                'Your booking request was received. The office will review availability before payment.'
+                TenantTranslations::get(
+                    'booking.locked_plan_limit_success',
+                    app()->getLocale(),
+                    'Your booking request was received successfully. The office will review it and contact you soon.',
+                    $tenant
+                )
             )->with('locked_booking_request_id', $bookingRequest->id);
         }
 

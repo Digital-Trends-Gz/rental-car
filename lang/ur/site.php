@@ -393,6 +393,7 @@ Sunday: 10:00 AM - 4:00 PM',
     'book_now' => 'Book Now',
     'alert_admin_cannot_book' => 'You cannot book as an admin.',
     'alert_role_not_allowed' => 'Your role does not allow booking.',
+    'locked_plan_limit_success' => 'آپ کی بکنگ کی درخواست کامیابی سے موصول ہو گئی ہے۔ دفتر اس کا جائزہ لے کر جلد آپ سے رابطہ کرے گا۔',
     'locations' => 
     array (
       'downtown_office' => 'Downtown Office',
