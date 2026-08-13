@@ -21,12 +21,20 @@ class PermissionMiddleware
      */
     public function handle(Request $request, Closure $next, string $permission): Response
     {
-        if (!Auth::check() || !Auth::user()->hasPermission($permission)) {
+        $permissions = collect(preg_split('/[|]/', $permission) ?: [])
+            ->map(fn (string $value): string => trim($value))
+            ->filter()
+            ->values();
+
+        $hasPermission = Auth::check()
+            && $permissions->contains(fn (string $name): bool => Auth::user()->hasPermission($name));
+
+        if (!$hasPermission) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthorized.'], 403);
             }
 
-            $message = "You do not have permission to access this page ($permission).";
+            $message = "You do not have permission to access this page ({$permissions->implode(' or ')}).";
 
             $routeName = (string) optional($request->route())->getName();
             $tenantSlug = TenantContext::get()?->slug;

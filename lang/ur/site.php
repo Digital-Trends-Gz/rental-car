@@ -1095,6 +1095,8 @@ Sunday: 10:00 AM - 4:00 PM',
     ),
     'admin_page' => 
     array (
+      'no_dashboard_access' => 'ڈیش بورڈ تک رسائی نہیں',
+      'no_permissions_are_enabled_for_your_account_contact_the_company_administrator' => 'آپ کے اکاؤنٹ کے لیے کوئی اجازت فعال نہیں ہے۔ کمپنی ایڈمن سے رابطہ کریں۔',
       'today_pickups' => 'آج کی وصولیاں',
       'reservation_number' => 'ریزرویشن #',
       'pickup_date' => 'وصولی کی تاریخ',

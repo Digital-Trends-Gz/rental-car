@@ -239,13 +239,28 @@ const numberLocale = computed(() => (locale.value === 'ar' ? 'ar' : locale.value
 const authPermissions = computed<string[]>(() =>
     Array.isArray(page.props?.auth?.permissions) ? page.props.auth.permissions : [],
 );
-const hasFinancialAccess = computed(() => !!page.props.canViewFinancials);
+const hasFinancialAccess = computed(() => Boolean(props.canViewFinancials));
+const hasPermission = (permission?: string) => !permission || authPermissions.value.includes(permission);
+const canManageCars = computed(() => hasPermission('tenant-manage-cars'));
+const canManageReservations = computed(() => hasPermission('tenant-manage-reservations'));
+const canManageClients = computed(() => hasPermission('tenant-manage-clients'));
+const canManagePayments = computed(() => hasPermission('tenant-manage-payments'));
+const canViewDebtors = computed(() => hasPermission('tenant-view-debtors'));
+const canManageSupport = computed(() => hasPermission('tenant-manage-support'));
+const hasAnyDashboardAccess = computed(() =>
+    canManageCars.value
+    || canManageReservations.value
+    || canManageClients.value
+    || canManagePayments.value
+    || canViewDebtors.value
+    || canManageSupport.value
+    || hasFinancialAccess.value,
+);
 
 const fmt = (n: number) =>
     new Intl.NumberFormat(numberLocale.value, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 const fmtCurrency = (n: number) => (hasFinancialAccess.value ? `${currency.value}${fmt(n)}` : '*******');
-const hasPermission = (permission?: string) => !permission || authPermissions.value.includes(permission);
 
 const fmtDate = (d: string | null) =>
     d
@@ -384,11 +399,15 @@ const loadTaskItems = async () => {
 };
 
 watch(taskType, () => {
-    loadTaskItems();
+    if (canManageReservations.value) {
+        loadTaskItems();
+    }
 });
 
 onMounted(() => {
-    loadTaskItems();
+    if (canManageReservations.value) {
+        loadTaskItems();
+    }
 });
 
 const selectedBranch = ref<number | null>(props.filters.branch_id ?? null);
@@ -494,6 +513,7 @@ const quickActions = computed(() => {
             icon: Calendar,
             accent: '#F59E0B',
             bg: 'rgba(245,158,11,0.10)',
+            permission: 'tenant-manage-reservations',
         },
         {
             title: localize('New Contract', 'عقد جديد'),
@@ -502,6 +522,7 @@ const quickActions = computed(() => {
             icon: FileText,
             accent: '#8B5CF6',
             bg: 'rgba(139,92,246,0.10)',
+            permission: 'tenant-manage-reservations',
         },
         {
             title: localize('Add Car', 'إضافة سيارة'),
@@ -510,6 +531,7 @@ const quickActions = computed(() => {
             icon: Car,
             accent: '#3B82F6',
             bg: 'rgba(59,130,246,0.10)',
+            permission: 'tenant-manage-cars',
         },
         {
             title: localize('Add Client', 'إضافة عميل'),
@@ -518,6 +540,7 @@ const quickActions = computed(() => {
             icon: Users,
             accent: '#EC4899',
             bg: 'rgba(236,72,153,0.10)',
+            permission: 'tenant-manage-clients',
         },
         {
             title: localize('Payments', 'المدفوعات'),
@@ -544,6 +567,7 @@ const quickActions = computed(() => {
             icon: Siren,
             accent: '#F97316',
             bg: 'rgba(249,115,22,0.10)',
+            permission: 'tenant-manage-reservations',
         },
         {
             title: localize('Violations', 'المخالفات'),
@@ -552,6 +576,7 @@ const quickActions = computed(() => {
             icon: AlertTriangle,
             accent: '#DC2626',
             bg: 'rgba(220,38,38,0.10)',
+            permission: 'tenant-manage-cars',
         },
         {
             title: localize('Support', 'الدعم'),
@@ -560,6 +585,7 @@ const quickActions = computed(() => {
             icon: LifeBuoy,
             accent: '#14B8A6',
             bg: 'rgba(20,184,166,0.10)',
+            permission: 'tenant-manage-support',
         },
     ].filter((item) => hasPermission(item.permission));
 });
@@ -575,6 +601,7 @@ const operationalHighlights = computed(() => {
             count: props.stats.cars_to_deliver_today,
             href: reservationsIndex(slug, { query: { scope: 'today_delivery' } }).url,
             accent: '#F59E0B',
+            permission: 'tenant-manage-reservations',
         },
         {
             title: localize('Receive today', 'الاستلام اليوم'),
@@ -582,6 +609,7 @@ const operationalHighlights = computed(() => {
             count: props.stats.cars_to_receive_today,
             href: contractsIndex(slug, { query: { scope: 'today_return' } }).url,
             accent: '#06B6D4',
+            permission: 'tenant-manage-reservations',
         },
         {
             title: localize('Overdue cars', 'السيارات المتأخرة'),
@@ -589,6 +617,7 @@ const operationalHighlights = computed(() => {
             count: props.stats.overdue_cars,
             href: contractsIndex(slug, { query: { scope: 'overdue' } }).url,
             accent: '#EF4444',
+            permission: 'tenant-manage-reservations',
         },
         {
             title: localize('Pending violations', 'المخالفات المعلقة'),
@@ -596,6 +625,7 @@ const operationalHighlights = computed(() => {
             count: props.stats.pending_violations,
             href: carViolationsIndex(slug, { query: { status: 'pending' } }).url,
             accent: '#8B5CF6',
+            permission: 'tenant-manage-cars',
         },
         {
             title: localize('Expiring documents', 'وثائق تنتهي قريبًا'),
@@ -603,6 +633,7 @@ const operationalHighlights = computed(() => {
             count: props.expiringCarDocuments.length,
             href: carsIndex(slug, { query: { scope: 'expiring_documents' } }).url,
             accent: '#3B82F6',
+            permission: 'tenant-manage-cars',
         },
         {
             title: localize('Ending contracts', 'عقود تنتهي قريبًا'),
@@ -610,8 +641,9 @@ const operationalHighlights = computed(() => {
             count: props.expiringContracts.length,
             href: contractsIndex(slug, { query: { scope: 'ending_soon' } }).url,
             accent: '#10B981',
+            permission: 'tenant-manage-reservations',
         },
-    ];
+    ].filter((item) => hasPermission(item.permission));
 });
 
 const kpiCards = computed(() => [
@@ -622,6 +654,7 @@ const kpiCards = computed(() => [
         icon: Car,
         accent: '#3B82F6',
         bg: 'rgba(59,130,246,0.1)',
+        permission: 'tenant-manage-cars',
     },
     {
         title: localize('Available Cars', 'السيارات المتاحة'),
@@ -630,6 +663,7 @@ const kpiCards = computed(() => [
         icon: TrendingUp,
         accent: '#06B6D4',
         bg: 'rgba(6,182,212,0.1)',
+        permission: 'tenant-manage-cars',
     },
     {
         title: localize('Active Reservations', 'الحجوزات النشطة'),
@@ -638,6 +672,7 @@ const kpiCards = computed(() => [
         icon: Calendar,
         accent: '#F59E0B',
         bg: 'rgba(245,158,11,0.1)',
+        permission: 'tenant-manage-reservations',
     },
     {
         title: localize('Total Reservations', 'إجمالي الحجوزات'),
@@ -646,6 +681,7 @@ const kpiCards = computed(() => [
         icon: CheckCircle2,
         accent: '#8B5CF6',
         bg: 'rgba(139,92,246,0.1)',
+        permission: 'tenant-manage-reservations',
     },
     {
         title: localize('Cars to Deliver Today', 'السيارات المراد تسليمها اليوم'),
@@ -654,6 +690,7 @@ const kpiCards = computed(() => [
         icon: Calendar,
         accent: '#F59E0B',
         bg: 'rgba(245,158,11,0.1)',
+        permission: 'tenant-manage-reservations',
     },
     {
         title: localize('Cars to Receive Today', 'السيارات التي سيتم استلامها اليوم'),
@@ -662,6 +699,7 @@ const kpiCards = computed(() => [
         icon: RefreshCcw,
         accent: '#06B6D4',
         bg: 'rgba(6,182,212,0.1)',
+        permission: 'tenant-manage-reservations',
     },
     {
         title: localize('Overdue Cars', 'السيارات المتأخرة'),
@@ -670,6 +708,7 @@ const kpiCards = computed(() => [
         icon: Clock,
         accent: '#EF4444',
         bg: 'rgba(239,68,68,0.1)',
+        permission: 'tenant-manage-reservations',
     },
     {
         title: localize('Pending Violations', 'المخالفات المعلقة'),
@@ -678,6 +717,7 @@ const kpiCards = computed(() => [
         icon: Clock,
         accent: '#EF4444',
         bg: 'rgba(239,68,68,0.1)',
+        permission: 'tenant-manage-cars',
     },
     {
         title: localize('Total Revenue', 'إجمالي الإيرادات'),
@@ -686,6 +726,7 @@ const kpiCards = computed(() => [
         icon: DollarSign,
         accent: '#10B981',
         bg: 'rgba(16,185,129,0.1)',
+        visible: hasFinancialAccess.value,
     },
     {
         title: localize('Total Clients', 'إجمالي العملاء'),
@@ -694,8 +735,9 @@ const kpiCards = computed(() => [
         icon: Users,
         accent: '#EC4899',
         bg: 'rgba(236,72,153,0.1)',
+        permission: 'tenant-manage-clients',
     },
-]);
+].filter((card) => (card.visible ?? true) && hasPermission(card.permission)));
 
 const dailyTaskPreview = computed(() => props.dailyTasks?.tasks?.slice(0, 8) ?? []);
 
@@ -750,7 +792,19 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 </div>
             </div>
 
-            <Card class="overflow-hidden border-0 shadow-sm">
+            <Card v-if="!hasAnyDashboardAccess" class="border-0 shadow-sm">
+                <CardContent class="py-12 text-center">
+                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                        <LayoutDashboard class="h-6 w-6" />
+                    </div>
+                    <h2 class="text-lg font-semibold">{{ localize('No dashboard access', 'لا توجد صلاحيات للوحة التحكم') }}</h2>
+                    <p class="mt-2 text-sm text-muted-foreground">
+                        {{ localize('No permissions are enabled for your account. Contact the company administrator.', 'لا توجد صلاحيات مفعلة لحسابك. تواصل مع مدير الشركة.') }}
+                    </p>
+                </CardContent>
+            </Card>
+
+            <Card v-if="canManageReservations" class="overflow-hidden border-0 shadow-sm">
                 <CardHeader class="border-b bg-muted/20">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div class="flex items-center gap-3">
@@ -871,8 +925,8 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 </CardContent>
             </Card>
 
-            <div class="grid gap-4 xl:grid-cols-3">
-                <Card class="border-0 shadow-sm xl:col-span-2">
+            <div v-if="quickActions.length || operationalHighlights.length" class="grid gap-4 xl:grid-cols-3">
+                <Card v-if="quickActions.length" class="border-0 shadow-sm xl:col-span-2">
                     <CardHeader class="pb-3">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex items-center gap-2">
@@ -911,7 +965,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                     </CardContent>
                 </Card>
 
-                <Card class="border-0 shadow-sm">
+                <Card v-if="operationalHighlights.length" class="border-0 shadow-sm">
                     <CardHeader class="pb-3">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex items-center gap-2">
@@ -948,7 +1002,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 </Card>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+            <div v-if="kpiCards.length" class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
                 <Card
                     v-for="card in kpiCards"
                     :key="card.title"
@@ -970,7 +1024,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 </Card>
             </div>
 
-            <Card class="border-0 shadow-sm">
+            <Card v-if="canManageCars" class="border-0 shadow-sm">
                 <CardHeader>
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-center gap-2">
@@ -1027,7 +1081,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 </CardContent>
             </Card>
 
-            <Card class="border-0 shadow-sm">
+            <Card v-if="canManageReservations" class="border-0 shadow-sm">
                 <CardHeader>
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-center gap-2">
@@ -1095,7 +1149,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 </CardContent>
             </Card>
 
-            <Card class="border-0 shadow-sm">
+            <Card v-if="canManageReservations" class="border-0 shadow-sm">
                 <CardHeader>
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-center gap-2">
@@ -1167,7 +1221,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 </CardContent>
             </Card>
 
-            <Card class="border-0 shadow-sm">
+            <Card v-if="canManageCars" class="border-0 shadow-sm">
                 <CardHeader>
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-center gap-2">
@@ -1233,8 +1287,8 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 </CardContent>
             </Card>
 
-            <div class="grid gap-4 lg:grid-cols-2">
-                <Card class="border-0 shadow-sm">
+            <div v-if="hasFinancialAccess || canManageReservations" class="grid gap-4 lg:grid-cols-2">
+                <Card v-if="hasFinancialAccess" class="border-0 shadow-sm">
                     <CardHeader>
                         <div class="flex items-center justify-between gap-4">
                             <div class="flex items-center gap-2">
@@ -1273,7 +1327,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                     </CardContent>
                 </Card>
 
-                <Card class="border-0 shadow-sm">
+                <Card v-if="canManageReservations" class="border-0 shadow-sm">
                     <CardHeader>
                         <div class="flex items-center justify-between gap-4">
                             <div class="flex items-center gap-2">
@@ -1312,7 +1366,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 </Card>
             </div>
 
-            <Card class="border-0 shadow-sm">
+            <Card v-if="canManageCars" class="border-0 shadow-sm">
                 <CardHeader>
                     <div class="flex items-center gap-2">
                         <Car class="h-4 w-4 text-primary" />
@@ -1335,8 +1389,8 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                 </CardContent>
             </Card>
 
-            <div class="grid gap-4 lg:grid-cols-2">
-                <Card class="border-0 shadow-sm">
+            <div v-if="canManageReservations || canManageCars" class="grid gap-4 lg:grid-cols-2">
+                <Card v-if="canManageReservations" class="border-0 shadow-sm">
                     <CardHeader>
                         <div class="flex items-center justify-between gap-4">
                             <div class="flex items-center gap-2">
@@ -1425,7 +1479,7 @@ const dailyTaskRemainingLabel = (minutes: number, isLate: boolean) => {
                     </CardContent>
                 </Card>
 
-                <Card class="border-0 shadow-sm">
+                <Card v-if="canManageCars" class="border-0 shadow-sm">
                     <CardHeader>
                         <div class="flex items-center justify-between gap-4">
                             <div class="flex items-center gap-2">

@@ -170,6 +170,7 @@ class ContractReturnReportsController extends Controller
             ],
             'permissions' => [
                 'can_edit_return_report' => $this->canEditReturnReport($request->user()),
+                'can_collect_debtors' => $this->canCollectDebtors($request->user()),
             ],
         ]);
     }
@@ -560,7 +561,7 @@ class ContractReturnReportsController extends Controller
     {
         $contract = $this->findContractFromRequest($request);
         abort_unless($this->canAccessContract($contract, $request->user()), 403);
-        abort_unless($this->canEditReturnReport($request->user()), 403);
+        abort_unless($this->canCollectDebtors($request->user()), 403);
 
         if (config('app.demo_mode')) {
             return back()->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
@@ -865,6 +866,23 @@ class ContractReturnReportsController extends Controller
         }
 
         return method_exists($user, 'hasPermission') && $user->hasPermission('tenant-edit-return-reports');
+    }
+
+    private function canCollectDebtors(?\App\Models\User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        $role = $user->role instanceof UserRole
+            ? $user->role
+            : UserRole::tryFrom((string) $user->role);
+
+        if ($role === UserRole::SUPER_ADMIN) {
+            return true;
+        }
+
+        return method_exists($user, 'hasPermission') && $user->hasPermission('tenant-collect-debtors');
     }
 
     private function reportIsPaid(?ContractReturnReport $report): bool

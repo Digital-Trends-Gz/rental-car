@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Notifications\TenantAwareVerifyEmailNotification;
+use App\Core\TenantContext;
 use App\Enums\UserRole;
 use App\Traits\BelongsToTenant;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -47,6 +49,29 @@ class User extends Authenticatable implements LaratrustUser, MustVerifyEmail
     public function branch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function permissions(): MorphToMany
+    {
+        $relation = $this->morphToMany(Permission::class, 'user', 'permission_user', 'user_id', 'permission_id')
+            ->withoutGlobalScope('tenant');
+
+        if ($this->role === UserRole::SUPER_ADMIN) {
+            return $relation;
+        }
+
+        $tenantId = TenantContext::id() ?? $this->tenant_id ?? auth()->user()?->tenant_id;
+
+        if ($tenantId) {
+            $relation->where(function ($query) use ($tenantId) {
+                $query->whereNull('permissions.tenant_id')
+                    ->orWhere('permissions.tenant_id', $tenantId);
+            });
+        } else {
+            $relation->whereNull('permissions.tenant_id');
+        }
+
+        return $relation;
     }
 
     /**

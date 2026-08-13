@@ -6,6 +6,7 @@ use App\Core\TenantContext;
 use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Permission;
+use App\Models\Plan;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -208,6 +209,13 @@ class EmployeesControllerTest extends TestCase
             'email' => 'owner@example.com',
             'partner_seats' => 1,
         ]);
+        $tenant->update(['plan_id' => Plan::create([
+            'name' => 'Roles Plan',
+            'monthly_price' => 10,
+            'yearly_price' => 100,
+            'feature_flags' => ['roles_and_permissions' => true],
+            'is_active' => true,
+        ])->id]);
         TenantContext::set($tenant);
 
         $branch = Branch::query()->create([
@@ -266,6 +274,13 @@ class EmployeesControllerTest extends TestCase
             'email' => 'owner@example.com',
             'partner_seats' => 1,
         ]);
+        $tenant->update(['plan_id' => Plan::create([
+            'name' => 'Roles Limit Plan',
+            'monthly_price' => 10,
+            'yearly_price' => 100,
+            'feature_flags' => ['roles_and_permissions' => true],
+            'is_active' => true,
+        ])->id]);
         TenantContext::set($tenant);
 
         $branch = Branch::query()->create([

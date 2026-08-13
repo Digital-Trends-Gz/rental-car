@@ -1004,6 +1004,8 @@ return array (
       'value_remaining' => 'متبقي :value',
       'dashboard' => 'لوحة التحكم',
       'your_rental_business_at_a_glance' => 'نظرة سريعة على أعمال التأجير الخاصة بك',
+      'no_dashboard_access' => 'لا توجد صلاحيات للوحة التحكم',
+      'no_permissions_are_enabled_for_your_account_contact_the_company_administrator' => 'لا توجد صلاحيات مفعلة لحسابك. تواصل مع مدير الشركة.',
       'all_branches' => 'كل الفروع',
       'today_tasks' => 'مهام اليوم',
       'pickups_returns_and_maintenance_ordered_by_time' => 'تسليم واستلام وصيانة مرتبة حسب الوقت.',

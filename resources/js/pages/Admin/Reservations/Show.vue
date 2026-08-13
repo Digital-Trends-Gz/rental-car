@@ -11,6 +11,7 @@ const props = defineProps<{
   statusMeta: Array<{ value: string; label: string; color: string }>
   paymentStatusMeta: Array<{ value: string; label: string }>
   currency: { symbol: string; code: string }
+  permissions?: { can_collect_debtors?: boolean }
 }>()
 const page = usePage<any>()
 const { t } = useTrans()
@@ -53,7 +54,10 @@ const isLocked = computed(() => Boolean(reservation.value?.is_locked))
 const canCreateContract = computed(() => Boolean(reservation.value?.can_create_contract))
 const contractBlockMessage = computed(() => reservation.value?.contract_block_message || '')
 const canCollectFinalCash = computed(
-  () => hasFeature('cash_payments') && Boolean(reservation.value?.can_collect_final_cash) && !isLocked.value,
+  () => hasFeature('cash_payments')
+    && Boolean(props.permissions?.can_collect_debtors)
+    && Boolean(reservation.value?.can_collect_final_cash)
+    && !isLocked.value,
 )
 
 const statusMap = computed(() => {

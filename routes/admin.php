@@ -143,7 +143,7 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->middleware(['tenant.plan.limit:reservations', 'permission:tenant-manage-reservations'])
             ->name('booking-requests.convert');
         Route::post('reservations/{reservation}/cash-payment', [ReservationsController::class, 'collectCashPayment'])
-            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:cash_payments'])
+            ->middleware(['permission:tenant-collect-debtors', 'tenant.feature:cash_payments'])
             ->name('reservations.cash-payment');
         Route::get('reservations/{reservation}/print', [ReservationsController::class, 'print'])
             ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:pdf_export'])
@@ -171,13 +171,13 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
             ->middleware('permission:tenant-manage-reservations')
             ->name('contracts.deliver');
         Route::get('contracts/{contract}/return-status-report', [ContractReturnReportsController::class, 'create'])
-            ->middleware('permission:tenant-manage-reservations')
+            ->middleware('permission:tenant-manage-reservations|tenant-edit-return-reports|tenant-collect-debtors')
             ->name('contracts.return-report');
         Route::post('contracts/{contract}/return-status-report', [ContractReturnReportsController::class, 'store'])
-            ->middleware('permission:tenant-manage-reservations')
+            ->middleware('permission:tenant-edit-return-reports')
             ->name('contracts.return-report.store');
         Route::post('contracts/{contract}/return-status-report/cash-payment', [ContractReturnReportsController::class, 'collectCashPayment'])
-            ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:cash_payments'])
+            ->middleware(['permission:tenant-collect-debtors', 'tenant.feature:cash_payments'])
             ->name('contracts.return-report.cash-payment');
         Route::get('contracts/{contractId}/return-status-report/pdf', [ContractReturnReportsController::class, 'pdf'])
             ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:pdf_export'])

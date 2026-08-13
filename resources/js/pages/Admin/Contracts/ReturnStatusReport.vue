@@ -178,6 +178,7 @@ const props = defineProps<{
     };
     permissions?: {
         can_edit_return_report?: boolean;
+        can_collect_debtors?: boolean;
     };
 }>();
 
@@ -1040,7 +1041,13 @@ const formatSummaryAmount = (amount: number) => {
 
 const returnReportPayments = computed(() => props.report.payments ?? []);
 const canCollectCashPayment = computed(() => {
-    return Boolean(props.actions.cashPayment && props.report.id && canEditReturnReport.value && remainingAmount.value > 0);
+    return Boolean(
+        props.actions.cashPayment
+        && props.report.id
+        && props.permissions?.can_collect_debtors
+        && !isLocked.value
+        && remainingAmount.value > 0,
+    );
 });
 
 const exchangeRateLoading = ref(false);

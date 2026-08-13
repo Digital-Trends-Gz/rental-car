@@ -519,7 +519,7 @@ class ReservationsController extends Controller
     /**
      * Display the specified reservation details.
      */
-    public function show(Reservation $reservation): Response
+    public function show(Request $request, Reservation $reservation): Response
     {
         abort_unless($this->canAccessReservation($reservation, request()->user()), 403);
         $reservation->load(['user', 'car', 'payments', 'contract']);
@@ -556,6 +556,9 @@ class ReservationsController extends Controller
             'reservation' => $reservation,
             'statusMeta' => ReservationStatus::getMeta(),
             'paymentStatusMeta' => PaymentStatus::getMeta(),
+            'permissions' => [
+                'can_collect_debtors' => $this->canCollectDebtors($request->user()),
+            ],
         ]);
     }
 
@@ -891,6 +894,7 @@ class ReservationsController extends Controller
             ->findOrFail($reservationId);
 
         abort_unless($this->canAccessReservation($reservationModel, $request->user()), 403);
+        abort_unless($this->canCollectDebtors($request->user()), 403);
         $this->abortIfReservationLocked($reservationModel);
 
         if (config('app.demo_mode')) {
@@ -1072,6 +1076,23 @@ class ReservationsController extends Controller
         $reservation->loadMissing('car:id,branch_id');
 
         return $this->branchAccess->canAccessBranchId($user, $reservation->car?->branch_id ? (int) $reservation->car->branch_id : null);
+    }
+
+    private function canCollectDebtors(?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        $role = $user->role instanceof UserRole
+            ? $user->role
+            : UserRole::tryFrom((string) $user->role);
+
+        if ($role === UserRole::SUPER_ADMIN) {
+            return true;
+        }
+
+        return method_exists($user, 'hasPermission') && $user->hasPermission('tenant-collect-debtors');
     }
 
     private function clientForBookingRequest(Tenant $tenant, BookingRequest $bookingRequest): User
