@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Tenant;
+use App\Support\CaptchaVerifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -70,6 +71,10 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse|BaseResponse
     {
+        if (TenantContext::get()) {
+            CaptchaVerifier::validate($request, 'login');
+        }
+
         $user = $request->validateCredentials();
         $tenant = $this->resolveTenant($user);
         $tenantSlug = $tenant?->slug;

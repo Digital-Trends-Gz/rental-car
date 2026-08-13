@@ -20,8 +20,20 @@ interface SocialLoginSettings {
     };
 }
 
+interface CaptchaSettings {
+    enabled: boolean;
+    provider: 'turnstile';
+    site_key: string;
+    secret_key: string;
+    forms: {
+        login: boolean;
+        register: boolean;
+    };
+}
+
 const props = defineProps<{
     socialLoginSettings: SocialLoginSettings;
+    captchaSettings: CaptchaSettings;
 }>();
 
 const { locale } = useTrans();
@@ -29,10 +41,18 @@ const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
 
 const form = useForm<{
     social_login: SocialLoginSettings;
+    captcha: CaptchaSettings;
 }>({
     social_login: JSON.parse(JSON.stringify(props.socialLoginSettings || {
         google: { enabled: false, client_id: '', client_secret: '' },
         apple: { enabled: false, client_id: '', client_secret: '' },
+    })),
+    captcha: JSON.parse(JSON.stringify(props.captchaSettings || {
+        enabled: false,
+        provider: 'turnstile',
+        site_key: '',
+        secret_key: '',
+        forms: { login: false, register: false },
     })),
 });
 
@@ -116,6 +136,56 @@ const submit = () => {
                                     <p v-if="form.errors['social_login.apple.client_secret']" class="text-sm text-red-600">
                                         {{ form.errors['social_login.apple.client_secret'] }}
                                     </p>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{{ localize('CAPTCHA Protection', 'حماية CAPTCHA') }}</CardTitle>
+                        <CardDescription>
+                            {{ localize('Enable Cloudflare Turnstile on tenant authentication forms.', 'فعّل Cloudflare Turnstile على نماذج تسجيل الدخول والتسجيل للمستأجرين.') }}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent class="space-y-6">
+                        <div class="space-y-4 rounded-md border p-4">
+                            <h3 class="text-sm font-semibold">{{ localize('Cloudflare Turnstile', 'Cloudflare Turnstile') }}</h3>
+
+                            <label class="flex items-center gap-3">
+                                <input v-model="form.captcha.enabled" type="checkbox" class="h-4 w-4" />
+                                <span class="text-sm font-medium">{{ localize('Enable CAPTCHA', 'تفعيل CAPTCHA') }}</span>
+                            </label>
+
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label for="captcha_site_key">{{ localize('Site Key', 'مفتاح الموقع') }}</Label>
+                                    <Input id="captcha_site_key" v-model="form.captcha.site_key" />
+                                    <p v-if="form.errors['captcha.site_key']" class="text-sm text-red-600">
+                                        {{ form.errors['captcha.site_key'] }}
+                                    </p>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="captcha_secret_key">{{ localize('Secret Key', 'المفتاح السري') }}</Label>
+                                    <Input id="captcha_secret_key" v-model="form.captcha.secret_key" type="password" />
+                                    <p v-if="form.errors['captcha.secret_key']" class="text-sm text-red-600">
+                                        {{ form.errors['captcha.secret_key'] }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <p class="text-sm font-medium">{{ localize('Show CAPTCHA on', 'إظهار CAPTCHA في') }}</p>
+                                <div class="flex flex-wrap gap-6">
+                                    <label class="flex items-center gap-3">
+                                        <input v-model="form.captcha.forms.login" type="checkbox" class="h-4 w-4" />
+                                        <span class="text-sm">{{ localize('Tenant Login', 'تسجيل دخول المستأجر') }}</span>
+                                    </label>
+                                    <label class="flex items-center gap-3">
+                                        <input v-model="form.captcha.forms.register" type="checkbox" class="h-4 w-4" />
+                                        <span class="text-sm">{{ localize('Tenant Register', 'تسجيل عميل المستأجر') }}</span>
+                                    </label>
                                 </div>
                             </div>
                         </div>

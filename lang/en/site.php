@@ -1125,6 +1125,13 @@ Sunday: 10:00 AM - 4:00 PM',
       'plan_limit_reached' => 'Your plan allows up to :limit :resource. Upgrade your plan to add more.',
       'feature_not_in_plan' => 'This feature is not included in your current plan.',
     ),
+    'notifications' =>
+    array (
+      'plan_limit_near_title' => 'Plan limit almost reached',
+      'plan_limit_near_body' => 'You have used :current of :limit :resource. Upgrade your plan soon to avoid interruption.',
+      'plan_limit_reached_title' => 'Plan limit reached',
+      'plan_limit_reached_body' => 'You have used :current of :limit :resource. Upgrade your plan to add more.',
+    ),
     'super_admin' => 
     array (
       'head_title' => 'Super Admin Dashboard',

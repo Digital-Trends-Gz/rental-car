@@ -832,6 +832,13 @@ Sunday: 10:00 AM - 4:00 PM',
       'plan_limit_reached' => 'Your plan allows up to :limit :resource. Upgrade your plan to add more.',
       'feature_not_in_plan' => 'This feature is not included in your current plan.',
     ),
+    'notifications' =>
+    array (
+      'plan_limit_near_title' => 'پلان کی حد قریب ہے',
+      'plan_limit_near_body' => 'آپ نے :limit میں سے :current :resource استعمال کر لیے ہیں۔ رکاوٹ سے بچنے کے لیے جلد اپنا پلان اپ گریڈ کریں۔',
+      'plan_limit_reached_title' => 'پلان کی حد مکمل ہو گئی',
+      'plan_limit_reached_body' => 'آپ نے :limit میں سے :current :resource استعمال کر لیے ہیں۔ مزید شامل کرنے کے لیے اپنا پلان اپ گریڈ کریں۔',
+    ),
     'super_admin' => 
     array (
       'head_title' => 'Super Admin Dashboard',

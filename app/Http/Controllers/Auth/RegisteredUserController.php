@@ -13,6 +13,7 @@ use App\Models\SubscriptionPaymentTransaction;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\CompanyOwners;
+use App\Support\CaptchaVerifier;
 use App\Support\Payments\MyFatoorahSubscriptionProvider;
 use App\Support\PlanTranslations;
 use App\Support\PlanPricing;
@@ -101,6 +102,8 @@ class RegisteredUserController extends Controller
         $tenantId = TenantContext::id();
         $tenantSlug = TenantContext::get()?->slug;
         if ($tenantId) {
+            CaptchaVerifier::validate($request, 'register');
+
             $validated = $request->validate([
                 'name' => ['required', 'string', 'max:255', new LettersOnly()],
                 'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,

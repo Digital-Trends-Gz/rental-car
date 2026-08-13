@@ -2,6 +2,7 @@
 import authHero from '@/assets/auth-hero.jpg';
 import InputError from '@/components/InputError.vue';
 import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
+import TurnstileCaptcha from '@/components/TurnstileCaptcha.vue';
 import { useBrandTheme } from '@/composables/useBrandTheme';
 import { useTrans } from '@/composables/useTrans';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,11 @@ const socialLogin = computed(() => page.props.social_login || {});
 const googleLoginEnabled = computed(() => Boolean(socialLogin.value?.google?.enabled));
 const appleLoginEnabled = computed(() => Boolean(socialLogin.value?.apple?.enabled));
 const socialLoginEnabled = computed(() => googleLoginEnabled.value || appleLoginEnabled.value);
+const captcha = computed(() => page.props.captcha || {});
+const registerCaptchaEnabled = computed(() =>
+    Boolean(currentTenant.value && captcha.value?.enabled && captcha.value?.forms?.register && captcha.value?.site_key),
+);
+const captchaResetKey = ref(0);
 const availableLocaleCodes = computed<string[]>(() =>
     Array.isArray(page.props.available_locales) ? page.props.available_locales.map(String) : [],
 );
@@ -238,6 +244,7 @@ watch(
                         :reset-on-success="['password', 'password_confirmation']"
                         v-slot="{ errors, processing }"
                         class="space-y-5"
+                        @finish="captchaResetKey++"
                     >
                         <!-- Full Name -->
                         <div class="space-y-2">
@@ -326,6 +333,11 @@ watch(
                                 class="h-11 border-gray-300 focus:border-primary focus:ring-primary"
                             />
                             <InputError :message="errors.password_confirmation" />
+                        </div>
+
+                        <div v-if="registerCaptchaEnabled">
+                            <TurnstileCaptcha :site-key="captcha.site_key" :reset-key="captchaResetKey" />
+                            <InputError :message="errors.captcha" />
                         </div>
 
                         <!-- Submit -->

@@ -1338,6 +1338,7 @@ class LandingSettingsController extends Controller
         return $this->flatten([
             'dashboard' => [
                 'common' => (array) ($dashboard['common'] ?? []),
+                'notifications' => (array) ($dashboard['notifications'] ?? []),
                 'super_admin' => (array) ($dashboard['super_admin'] ?? []),
                 'sidebar' => [
                     'super_admin_section' => $sidebar['super_admin_section'] ?? null,

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Core\AppBrandingSettings;
+use App\Core\CaptchaSettings;
 use App\Core\LandingPageSettings;
 use App\Core\SocialLoginSettings;
 use App\Models\SiteSetting;
@@ -176,6 +177,21 @@ class HandleInertiaRequests extends Middleware
                     return [
                         'google' => ['enabled' => false],
                         'apple' => ['enabled' => false],
+                    ];
+                }
+            },
+            'captcha' => function () {
+                try {
+                    return CaptchaSettings::publicConfig();
+                } catch (\Throwable) {
+                    return [
+                        'enabled' => false,
+                        'provider' => 'turnstile',
+                        'site_key' => '',
+                        'forms' => [
+                            'login' => false,
+                            'register' => false,
+                        ],
                     ];
                 }
             },

@@ -1160,6 +1160,13 @@ return array (
       'plan_limit_reached' => 'تسمح خطتك بحد أقصى :limit :resource. قم بترقية خطتك لإضافة المزيد.',
       'feature_not_in_plan' => 'هذه الميزة غير متاحة ضمن خطتك الحالية.',
     ),
+    'notifications' =>
+    array (
+      'plan_limit_near_title' => 'اقتربت من حد الخطة',
+      'plan_limit_near_body' => 'استخدمت :current من :limit :resource. قم بترقية خطتك قريبًا لتجنب التوقف.',
+      'plan_limit_reached_title' => 'وصلت إلى حد الخطة',
+      'plan_limit_reached_body' => 'استخدمت :current من :limit :resource. قم بترقية خطتك لإضافة المزيد.',
+    ),
     'super_admin' => 
     array (
       'head_title' => 'لوحة تحكم الإدارة العليا',

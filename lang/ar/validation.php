@@ -25,6 +25,8 @@ return [
     'required_unless' => "حقل :attribute مطلوب إلا إذا كان :other هو :values.",
     'string' => "يجب أن يكون :attribute نصا.",
 
+    'captcha' => 'فشل التحقق من CAPTCHA. يرجى المحاولة مرة أخرى.',
+
     'custom' => [
         'contract_id' => [
             'required_if' => "حقل العقد مطلوب عندما يكون نوع الحادث مع العميل.",

@@ -2,6 +2,7 @@
 import InputError from '@/components/InputError.vue';
 import AuthLanguageSwitcher from '@/components/AuthLanguageSwitcher.vue';
 import TextLink from '@/components/TextLink.vue';
+import TurnstileCaptcha from '@/components/TurnstileCaptcha.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ import { Form, Head, usePage } from '@inertiajs/vue3';
 import {
     LoaderCircle,
 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 defineProps<{
     status?: string;
@@ -31,6 +32,11 @@ const socialLogin = computed(() => page.props.social_login || {});
 const googleLoginEnabled = computed(() => Boolean(socialLogin.value?.google?.enabled));
 const appleLoginEnabled = computed(() => Boolean(socialLogin.value?.apple?.enabled));
 const socialLoginEnabled = computed(() => googleLoginEnabled.value || appleLoginEnabled.value);
+const captcha = computed(() => page.props.captcha || {});
+const loginCaptchaEnabled = computed(() =>
+    Boolean(currentTenant.value && captcha.value?.enabled && captcha.value?.forms?.login && captcha.value?.site_key),
+);
+const captchaResetKey = ref(0);
 
 const ERROR_MESSAGES: Record<string, string> = {
     'This tenant account is inactive. Please contact support.': 'auth.tenant_account_inactive',
@@ -123,6 +129,7 @@ const forgotPasswordUrl = computed(() => {
                         :reset-on-success="['password']"
                         v-slot="{ errors, processing }"
                         class="space-y-6"
+                        @finish="captchaResetKey++"
                     >
                         <!-- Email Field -->
                         <div>
@@ -196,6 +203,11 @@ const forgotPasswordUrl = computed(() => {
                                     t('auth.remember_me')
                                 }}</span>
                             </Label>
+                        </div>
+
+                        <div v-if="loginCaptchaEnabled">
+                            <TurnstileCaptcha :site-key="captcha.site_key" :reset-key="captchaResetKey" />
+                            <InputError :message="errors.captcha" class="mt-1" />
                         </div>
 
                         <!-- Submit Button -->
