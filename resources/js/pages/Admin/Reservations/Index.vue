@@ -41,21 +41,24 @@ const props = defineProps<{
     reservationUsage?: { current: number; limit: number | null; at_limit: boolean; message?: string | null };
     canCreateReservation?: boolean;
     lockedBookingRequestsCount?: number;
-    lockedBookingRequests?: Array<{
-        id: number;
-        car: { id: number; make: string; model: string; year: number; license_plate: string } | null;
-        start_date: string | null;
-        end_date: string | null;
-        total_days: number | null;
-        total_amount: number | string | null;
-        currency: string | null;
-        created_at: string | null;
-        customer_name: string | null;
-        customer_email: string | null;
-        customer_phone: string | null;
-        pickup_location: string | null;
-        return_location: string | null;
-    }>;
+    lockedBookingRequests?: {
+        data: Array<{
+            id: number;
+            car: { id: number; make: string; model: string; year: number; license_plate: string } | null;
+            start_date: string | null;
+            end_date: string | null;
+            total_days: number | null;
+            total_amount: number | string | null;
+            currency: string | null;
+            created_at: string | null;
+            customer_name: string | null;
+            customer_email: string | null;
+            customer_phone: string | null;
+            pickup_location: string | null;
+            return_location: string | null;
+        }>;
+        links: Array<{ url: string | null; label: string; active: boolean }>;
+    };
     canRevealLockedBookingRequests?: boolean;
     currency: { symbol: string; code: string }
 }>();
@@ -140,6 +143,20 @@ const lockedBookingLabels = computed(() => ({
     actions: raw('dashboard.common.actions', 'Actions'),
     convert: raw('dashboard.admin.reservations.index.convert_locked_booking_request', 'Convert to reservation'),
 }));
+
+const paginationLabel = (label: string): string => {
+    const normalized = label.replace(/&laquo;|&raquo;/g, '').trim().toLowerCase();
+
+    if (normalized === 'previous') {
+        return raw('dashboard.common.pagination.previous', raw('pagination.previous', 'Previous'));
+    }
+
+    if (normalized === 'next') {
+        return raw('dashboard.common.pagination.next', raw('pagination.next', 'Next'));
+    }
+
+    return label;
+};
 
 const money = (amount: number | string | null | undefined, currency?: string | null) => {
     const value = Number(amount || 0);
@@ -241,7 +258,7 @@ watch(search, (v, ov) => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="request in props.lockedBookingRequests || []" :key="request.id">
+                            <tr v-for="request in props.lockedBookingRequests?.data || []" :key="request.id">
                                 <td class="px-4 py-3">
                                     <template v-if="props.canRevealLockedBookingRequests">
                                         <div class="font-medium text-gray-900">{{ request.customer_name || '-' }}</div>
@@ -286,6 +303,23 @@ watch(search, (v, ov) => {
                         </tbody>
                     </table>
                 </div>
+                <nav v-if="props.lockedBookingRequests?.links?.length" class="flex flex-wrap gap-2 border-t border-amber-100 px-4 py-3">
+                    <Link
+                        v-for="(link, i) in props.lockedBookingRequests.links"
+                        :key="i"
+                        :href="link.url || ''"
+                        :class="[
+                            'rounded px-3 py-1 text-sm',
+                            link.active
+                                ? 'bg-amber-500 text-white'
+                                : 'bg-amber-50 text-amber-800',
+                            !link.url && 'pointer-events-none opacity-50',
+                        ]"
+                        preserve-scroll
+                    >
+                        {{ paginationLabel(link.label) }}
+                    </Link>
+                </nav>
             </section>
 
             <div class="flex flex-col gap-4">

@@ -27,6 +27,10 @@ defineProps<{
 const page = usePage<any>();
 const { t } = useTrans();
 const currentTenant = computed(() => page.props.current_tenant);
+const socialLogin = computed(() => page.props.social_login || {});
+const googleLoginEnabled = computed(() => Boolean(socialLogin.value?.google?.enabled));
+const appleLoginEnabled = computed(() => Boolean(socialLogin.value?.apple?.enabled));
+const socialLoginEnabled = computed(() => googleLoginEnabled.value || appleLoginEnabled.value);
 
 const ERROR_MESSAGES: Record<string, string> = {
     'This tenant account is inactive. Please contact support.': 'auth.tenant_account_inactive',
@@ -228,15 +232,16 @@ const forgotPasswordUrl = computed(() => {
                         </div>
                     </Form>
 
-                    <template v-if="currentTenant">
+                    <template v-if="currentTenant && socialLoginEnabled">
                         <div class="relative flex items-center py-6">
                             <div class="flex-grow border-t border-gray-200"></div>
                             <span class="flex-shrink-0 px-4 text-xs font-medium text-gray-500 uppercase">{{ t('auth.or_continue_with') }}</span>
                             <div class="flex-grow border-t border-gray-200"></div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid gap-4" :class="googleLoginEnabled && appleLoginEnabled ? 'grid-cols-2' : 'grid-cols-1'">
                             <a
+                                v-if="googleLoginEnabled"
                                 :href="buildUrl(page.props.app_url_base, `/auth/google/redirect?tenant=${currentTenant.slug}`)"
                                 class="flex h-11 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
                             >
@@ -249,6 +254,7 @@ const forgotPasswordUrl = computed(() => {
                                 <span>{{ socialLoginLabel('google') }}</span>
                             </a>
                             <a
+                                v-if="appleLoginEnabled"
                                 :href="buildUrl(page.props.app_url_base, `/auth/apple/redirect?tenant=${currentTenant.slug}`)"
                                 class="flex h-11 items-center justify-center gap-2 rounded-lg border border-primary bg-primary font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
                             >

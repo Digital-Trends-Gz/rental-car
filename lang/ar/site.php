@@ -1152,6 +1152,11 @@ return array (
       'view' => 'عرض',
       'actions' => 'الإجراءات',
       'clear' => 'Clear',
+      'pagination' => 
+      array (
+        'previous' => 'السابق',
+        'next' => 'التالي',
+      ),
       'plan_limit_reached' => 'تسمح خطتك بحد أقصى :limit :resource. قم بترقية خطتك لإضافة المزيد.',
       'feature_not_in_plan' => 'هذه الميزة غير متاحة ضمن خطتك الحالية.',
     ),

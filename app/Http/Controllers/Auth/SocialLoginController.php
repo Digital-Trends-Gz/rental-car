@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Core\SocialLoginSettings;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
@@ -20,6 +21,10 @@ class SocialLoginController extends Controller
      */
     public function redirect(Request $request, $provider)
     {
+        if (!$this->providerIsEnabled($provider)) {
+            abort(404);
+        }
+
         $tenantSubdomain = $request->query('tenant');
         
         if ($tenantSubdomain) {
@@ -34,6 +39,10 @@ class SocialLoginController extends Controller
      */
     public function callback(Request $request, $provider)
     {
+        if (!$this->providerIsEnabled($provider)) {
+            abort(404);
+        }
+
         try {
             $socialUser = Socialite::driver($provider)->user();
         } catch (\Exception $e) {
@@ -106,5 +115,16 @@ class SocialLoginController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('client.home', ['subdomain' => $user->tenant->slug ?? $request->route('subdomain')]);
+    }
+
+    private function providerIsEnabled(string $provider): bool
+    {
+        if (!in_array($provider, ['google', 'apple'], true)) {
+            return false;
+        }
+
+        $settings = SocialLoginSettings::load();
+
+        return (bool) data_get($settings, "{$provider}.enabled");
     }
 }

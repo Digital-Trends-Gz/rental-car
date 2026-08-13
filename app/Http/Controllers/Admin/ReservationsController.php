@@ -175,9 +175,10 @@ class ReservationsController extends Controller
             ->where('tenant_id', $request->user()?->tenant_id)
             ->where('status', BookingRequest::STATUS_LOCKED_PLAN_LIMIT)
             ->latest()
-            ->limit(10)
-            ->get()
-            ->map(fn (BookingRequest $bookingRequest) => [
+            ->paginate(10, ['*'], 'locked_page')
+            ->withQueryString();
+
+        $lockedBookingRequests->getCollection()->transform(fn (BookingRequest $bookingRequest) => [
                 'id' => $bookingRequest->id,
                 'car' => $bookingRequest->car ? [
                     'id' => $bookingRequest->car->id,
@@ -197,8 +198,7 @@ class ReservationsController extends Controller
                 'customer_phone' => $canRevealLockedBookingRequests ? $bookingRequest->customer_phone : null,
                 'pickup_location' => $canRevealLockedBookingRequests ? $bookingRequest->pickup_location : null,
                 'return_location' => $canRevealLockedBookingRequests ? $bookingRequest->return_location : null,
-            ])
-            ->values();
+            ]);
 
         return Inertia::render('Admin/Reservations/Index', [
             'reservations' => $reservations,

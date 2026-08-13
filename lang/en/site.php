@@ -1117,6 +1117,11 @@ Sunday: 10:00 AM - 4:00 PM',
       'users' => 'Users',
       'view' => 'View',
       'actions' => 'Actions',
+      'pagination' => 
+      array (
+        'previous' => 'Previous',
+        'next' => 'Next',
+      ),
       'plan_limit_reached' => 'Your plan allows up to :limit :resource. Upgrade your plan to add more.',
       'feature_not_in_plan' => 'This feature is not included in your current plan.',
     ),

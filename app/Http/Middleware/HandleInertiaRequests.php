@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Core\AppBrandingSettings;
 use App\Core\LandingPageSettings;
+use App\Core\SocialLoginSettings;
 use App\Models\SiteSetting;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
@@ -163,6 +164,21 @@ class HandleInertiaRequests extends Middleware
                 'locale' => config('vilt-filepond.locale'),
                 'chunkSize' => config('vilt-filepond.chunk_size'),
             ],
+            'social_login' => function () {
+                try {
+                    $settings = SocialLoginSettings::load();
+
+                    return [
+                        'google' => ['enabled' => (bool) data_get($settings, 'google.enabled')],
+                        'apple' => ['enabled' => (bool) data_get($settings, 'apple.enabled')],
+                    ];
+                } catch (\Throwable) {
+                    return [
+                        'google' => ['enabled' => false],
+                        'apple' => ['enabled' => false],
+                    ];
+                }
+            },
             'currency' => function () {
                 $tenant = \App\Core\TenantContext::get();
 
