@@ -12,6 +12,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Plans\PlanPermissionAccess;
 use App\Services\Plans\PlanUsageLimits;
+use App\Services\Plans\PlanUsageNotifier;
 use App\Rules\DigitsOnly;
 use App\Rules\LettersOnly;
 use App\Support\BranchAccess;
@@ -30,6 +31,7 @@ class EmployeesController extends Controller
     public function __construct(
         private BranchAccess $branchAccess,
         private PlanUsageLimits $planUsageLimits,
+        private PlanUsageNotifier $planUsageNotifier,
         private PlanPermissionAccess $planPermissionAccess
     )
     {
@@ -172,6 +174,8 @@ class EmployeesController extends Controller
                 $this->planPermissionAccess->allowedIdsFromInput($validated['permission_ids'])
             );
         }
+
+        $this->planUsageNotifier->checkEmployees($this->currentTenant()?->refresh());
 
         return redirect()
             ->route('admin.employees.index', ['subdomain' => request('subdomain')])

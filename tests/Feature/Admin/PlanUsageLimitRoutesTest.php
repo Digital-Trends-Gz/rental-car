@@ -5,12 +5,14 @@ namespace Tests\Feature\Admin;
 use App\Enums\CarColor;
 use App\Enums\CarStatus;
 use App\Enums\FuelType;
+use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Car;
 use App\Models\Contract;
 use App\Models\Permission;
 use App\Models\Plan;
+use App\Models\Reservation;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Plans\PlanUsageLimits;
@@ -97,6 +99,40 @@ class PlanUsageLimitRoutesTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_reservation_create_route_is_blocked_by_monthly_plan_limit(): void
+    {
+        $tenant = $this->tenantWithPlan(['max_reservations_per_month' => 1]);
+        $branch = Branch::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+        ]);
+
+        $admin = $this->adminWithPermission($tenant, 'tenant-manage-reservations');
+        $car = $this->carForTenant($tenant, $branch, 'RES-LIMIT-1');
+
+        Reservation::withoutEvents(fn () => Reservation::create([
+            'tenant_id' => $tenant->id,
+            'reservation_number' => 'RES-ROUTE-LIMIT-1',
+            'user_id' => $admin->id,
+            'car_id' => $car->id,
+            'start_date' => today()->toDateString(),
+            'end_date' => today()->addDay()->toDateString(),
+            'total_days' => 2,
+            'daily_rate' => 25,
+            'subtotal' => 50,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'total_amount' => 50,
+            'status' => ReservationStatus::CONFIRMED,
+        ]));
+
+        $this->assertNotNull(app(PlanUsageLimits::class)->reservationLimitMessage($tenant->refresh()));
+
+        $this->actingAs($admin)
+            ->get(route('admin.reservations.create', ['subdomain' => $tenant->slug]))
+            ->assertForbidden();
+    }
+
     private function adminWithPermission(Tenant $tenant, string $permissionName): User
     {
         $permission = Permission::withoutGlobalScope('tenant')->create([
@@ -136,5 +172,24 @@ class PlanUsageLimitRoutesTest extends TestCase
         $tenant->update(['plan_id' => $plan->id]);
 
         return $tenant->refresh();
+    }
+
+    private function carForTenant(Tenant $tenant, Branch $branch, string $plate): Car
+    {
+        return Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'make' => 'Toyota',
+            'model' => 'Corolla',
+            'year' => 2024,
+            'license_plate' => $plate,
+            'color' => CarColor::WHITE,
+            'price_per_day' => 25,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'mileage' => 0,
+            'fuel_type' => FuelType::GASOLINE,
+            'status' => CarStatus::AVAILABLE,
+        ]);
     }
 }

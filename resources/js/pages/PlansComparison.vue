@@ -3,7 +3,7 @@ import SeoHead from '@/components/SeoHead.vue';
 import { useTrans } from '@/composables/useTrans';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { register as mainRegister } from '@/routes';
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { ArrowLeftRight, Check, CheckCircle2, Sparkles, XCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 
@@ -28,6 +28,7 @@ type Plan = {
     max_employees?: number | null;
     max_branches?: number | null;
     max_cars?: number | null;
+    max_reservations_per_month?: number | null;
     max_contracts?: number | null;
     pricing_meta?: Record<string, PricingMeta>;
 };
@@ -114,7 +115,8 @@ const localizedPath = (path: string) => {
 
     return path;
 };
-const registerUrl = computed(() => localizedPath(mainRegister().url));
+const isTenantAdmin = computed(() => page.props.auth?.user?.role === 'admin' && page.props.auth?.user?.tenant_id);
+const registerUrl = computed(() => localizedPath(isTenantAdmin.value ? '/register/upgrade' : mainRegister().url));
 const visiblePlans = computed(() => (props.plans || []).slice(0, 4));
 const showHero = computed(() => props.plansPage.hero_enabled !== false);
 const showSummary = computed(() => props.plansPage.summary_enabled !== false);
@@ -156,8 +158,8 @@ const pluralize = (value: number, singular: string, plural: string) => (value ==
 const limitWithPrefix = (value: number | null | undefined, singular: string, plural: string) =>
     value === null || value === undefined ? `${props.plansPage.unlimited_label} ${plural}` : `Up to ${formatNumber(value)} ${pluralize(value, singular, plural)}`;
 
-const bookingLimit = (value: number | null | undefined) =>
-    value === null || value === undefined ? `${props.plansPage.unlimited_label} bookings` : `${formatNumber(value)} monthly bookings`;
+const reservationLimit = (value: number | null | undefined) =>
+    value === null || value === undefined ? `${props.plansPage.unlimited_label} reservations` : `${formatNumber(value)} monthly reservations`;
 
 const branchLimit = (value: number | null | undefined) => {
     if (value === null || value === undefined) {
@@ -219,8 +221,8 @@ const planLimits = (plan: Plan, planIndex: number) => {
 
     return [
         comparisonLimit(planIndex, 0, 'cars') || limitWithPrefix(plan.max_cars, 'car', 'cars'),
-        comparisonLimit(planIndex, 1, 'users') || limitWithPrefix(plan.max_employees, 'user', 'users'),
-        comparisonLimit(planIndex, 2, 'monthly bookings') || bookingLimit(plan.max_contracts),
+        comparisonLimit(planIndex, 1, 'employees') || limitWithPrefix(plan.max_employees, 'employee', 'employees'),
+        comparisonLimit(planIndex, 2, 'monthly reservations') || reservationLimit(plan.max_reservations_per_month),
         comparisonBranchLimit(planIndex) || branchLimit(plan.max_branches),
     ];
 };
@@ -353,12 +355,12 @@ const cellClass = (value: string) => {
                             </li>
                         </ul>
 
-                        <Link
+                        <a
                             :href="registerUrl"
                             class="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-purple-700 px-6 text-base font-semibold text-white shadow-lg shadow-blue-600/15 transition hover:translate-y-[-1px] hover:shadow-xl"
                         >
                             {{ t('nav.get_started') }}
-                        </Link>
+                        </a>
                     </article>
                 </section>
 
@@ -460,9 +462,9 @@ const cellClass = (value: string) => {
                     <p v-for="paragraph in plansPage.policy_paragraphs" :key="paragraph" class="mt-3 leading-8 text-white/85">
                         {{ paragraph }}
                     </p>
-                    <Link :href="registerUrl" class="mt-6 inline-flex h-12 items-center justify-center rounded-md bg-white px-6 text-sm font-extrabold text-blue-700 shadow-lg transition hover:bg-white/90">
+                    <a :href="registerUrl" class="mt-6 inline-flex h-12 items-center justify-center rounded-md bg-white px-6 text-sm font-extrabold text-blue-700 shadow-lg transition hover:bg-white/90">
                         {{ plansPage.current_price_label }}
-                    </Link>
+                    </a>
                 </section>
 
                 <p v-if="showFooter" class="mt-7 text-center text-sm text-slate-500">

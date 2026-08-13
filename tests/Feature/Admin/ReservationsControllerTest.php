@@ -10,6 +10,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
 use App\Models\Car;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
@@ -567,6 +568,103 @@ class ReservationsControllerTest extends TestCase
         $this->assertDatabaseHas('payments', [
             'reservation_id' => $reservation->id,
             'amount' => '213.00',
+            'payment_method' => PaymentMethod::CASH->value,
+            'status' => PaymentStatus::COMPLETED->value,
+        ]);
+    }
+
+    public function test_admin_cannot_collect_final_cash_when_online_payment_is_pending(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::SUPER_ADMIN,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $client = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::CLIENT,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $car = Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => null,
+            'make' => 'Toyota',
+            'model' => 'Camry',
+            'year' => 2024,
+            'license_plate' => 'RES-PENDING-PAY',
+            'color' => CarColor::WHITE->value,
+            'price_per_day' => 100,
+            'mileage' => 1000,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'fuel_type' => FuelType::GASOLINE->value,
+            'description' => null,
+            'status' => CarStatus::AVAILABLE->value,
+        ]);
+
+        $reservation = Reservation::withoutEvents(fn () => Reservation::create([
+            'tenant_id' => $tenant->id,
+            'reservation_number' => 'RES-PENDING-PAYMENT',
+            'user_id' => $client->id,
+            'car_id' => $car->id,
+            'start_date' => '2026-04-25',
+            'end_date' => '2026-04-27',
+            'total_days' => 3,
+            'daily_rate' => 100,
+            'subtotal' => 300,
+            'tax_amount' => 63,
+            'discount_amount' => 0,
+            'total_amount' => 363,
+            'status' => ReservationStatus::CONFIRMED,
+        ]));
+
+        Payment::create([
+            'tenant_id' => $tenant->id,
+            'reservation_id' => $reservation->id,
+            'user_id' => $client->id,
+            'amount' => 114.59,
+            'currency' => 'AED',
+            'payment_method' => PaymentMethod::MYFATOORAH,
+            'status' => PaymentStatus::PENDING,
+        ]);
+
+        $this->assertDatabaseHas('payments', [
+            'reservation_id' => $reservation->id,
+            'payment_method' => PaymentMethod::MYFATOORAH->value,
+            'status' => PaymentStatus::PENDING->value,
+        ]);
+        $this->assertTrue(\Illuminate\Support\Facades\DB::table('payments')
+            ->where('reservation_id', $reservation->id)
+            ->where('status', PaymentStatus::PENDING->value)
+            ->where('payment_method', '!=', PaymentMethod::CASH->value)
+            ->whereNull('deleted_at')
+            ->exists());
+
+        $this->actingAs($admin)
+            ->get(route('admin.reservations.show', [
+                'subdomain' => $tenant->slug,
+                'reservation' => $reservation->id,
+            ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('reservation.can_collect_final_cash', false)
+            );
+
+        $this->actingAs($admin)
+            ->post('http://' . $tenant->slug . '.real-rent-car-main.test/admin/reservations/' . $reservation->id . '/cash-payment')
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseMissing('payments', [
+            'reservation_id' => $reservation->id,
             'payment_method' => PaymentMethod::CASH->value,
             'status' => PaymentStatus::COMPLETED->value,
         ]);

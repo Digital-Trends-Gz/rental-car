@@ -17,6 +17,7 @@ class PlansController extends Controller
         'max_employees',
         'max_branches',
         'max_cars',
+        'max_reservations_per_month',
         'max_contracts',
         'openai_requests_per_day',
     ];
@@ -89,6 +90,7 @@ class PlansController extends Controller
             'max_employees' => 'nullable|integer|min:1',
             'max_branches' => 'nullable|integer|min:1',
             'max_cars' => 'nullable|integer|min:1',
+            'max_reservations_per_month' => 'nullable|integer|min:1',
             'max_contracts' => 'nullable|integer|min:1',
             'openai_requests_per_day' => 'nullable|integer|min:1',
             'is_active' => 'required|boolean',
@@ -144,6 +146,7 @@ class PlansController extends Controller
             'max_employees' => 'nullable|integer|min:1',
             'max_branches' => 'nullable|integer|min:1',
             'max_cars' => 'nullable|integer|min:1',
+            'max_reservations_per_month' => 'nullable|integer|min:1',
             'max_contracts' => 'nullable|integer|min:1',
             'openai_requests_per_day' => 'nullable|integer|min:1',
             'is_active' => 'required|boolean',

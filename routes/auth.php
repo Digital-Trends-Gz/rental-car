@@ -28,31 +28,33 @@ Route::middleware('guest')->group(function () {
 
     Route::post('register', [RegisteredUserController::class, 'store'])
         ->name('register.store');
+});
 
-    Route::get('register/plans', [RegisteredUserController::class, 'plans'])
-        ->name('register.plans');
+Route::get('register/plans', [RegisteredUserController::class, 'plans'])
+    ->name('register.plans');
 
-    Route::post('register/plans', [RegisteredUserController::class, 'storePlan'])
-        ->name('register.plans.store');
+Route::post('register/plans', [RegisteredUserController::class, 'storePlan'])
+    ->name('register.plans.store');
 
-    Route::get('register/checkout', [RegisteredUserController::class, 'checkout'])
-        ->name('register.checkout');
+Route::get('register/checkout', [RegisteredUserController::class, 'checkout'])
+    ->name('register.checkout');
 
-    Route::post('register/checkout', [RegisteredUserController::class, 'completeCheckout'])
-        ->name('register.checkout.store');
+Route::post('register/checkout', [RegisteredUserController::class, 'completeCheckout'])
+    ->name('register.checkout.store');
 
-    Route::get('register/checkout/success', [RegisteredUserController::class, 'checkoutSuccess'])
-        ->name('register.checkout.success');
+Route::get('register/checkout/success', [RegisteredUserController::class, 'checkoutSuccess'])
+    ->name('register.checkout.success');
 
-    Route::get('register/checkout/cancel', [RegisteredUserController::class, 'checkoutCancel'])
-        ->name('register.checkout.cancel');
+Route::get('register/checkout/cancel', [RegisteredUserController::class, 'checkoutCancel'])
+    ->name('register.checkout.cancel');
 
-    Route::get('register/checkout/provider/{provider}/return', [RegisteredUserController::class, 'checkoutProviderReturn'])
-        ->name('register.checkout.provider.return');
+Route::get('register/checkout/provider/{provider}/return', [RegisteredUserController::class, 'checkoutProviderReturn'])
+    ->name('register.checkout.provider.return');
 
-    Route::get('register/checkout/provider/{provider}/cancel', [RegisteredUserController::class, 'checkoutProviderCancel'])
-        ->name('register.checkout.provider.cancel');
+Route::get('register/checkout/provider/{provider}/cancel', [RegisteredUserController::class, 'checkoutProviderCancel'])
+    ->name('register.checkout.provider.cancel');
 
+Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
@@ -89,6 +91,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/two-factor-challenge', [TwoFactorAuthenticatedSessionController::class, 'store'])
         ->name('two-factor.login.store');
 });
+
+Route::get('register/upgrade', [RegisteredUserController::class, 'upgrade'])
+    ->middleware('auth')
+    ->name('register.upgrade');
 
 Route::get('post-payment-login/{user}', [RegisteredUserController::class, 'postPaymentLogin'])
     ->middleware('signed')

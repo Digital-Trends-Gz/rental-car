@@ -17,11 +17,21 @@ const props = defineProps<{
             email: string | null;
             phone: string | null;
             plan_id: number | null;
-            subscription_plan?: { id: number; name: string } | null;
+            subscription_plan?: {
+                id: number;
+                name: string;
+                max_employees: number | null;
+                max_branches: number | null;
+                max_cars: number | null;
+                max_reservations_per_month: number | null;
+                max_contracts: number | null;
+            } | null;
             is_active: boolean;
             users_count?: number;
+            branches_count?: number;
             cars_count?: number;
             reservations_count?: number;
+            contracts_count?: number;
             created_at: string;
         }>;
         links: Array<{ url: string | null; label: string; active: boolean }>;
@@ -140,6 +150,7 @@ const planColors: Record<string, string> = {
                                     <div>{{ t('dashboard.common.employees') }}: {{ formatUsage(tenant.users_count, tenant.subscription_plan.max_employees) }}</div>
                                     <div>{{ t('dashboard.common.branches') }}: {{ formatUsage(tenant.branches_count, tenant.subscription_plan.max_branches) }}</div>
                                     <div>{{ t('dashboard.common.cars') }}: {{ formatUsage(tenant.cars_count, tenant.subscription_plan.max_cars) }}</div>
+                                    <div>{{ t('dashboard.common.reservations') }}: {{ formatUsage(tenant.reservations_count, tenant.subscription_plan.max_reservations_per_month) }}</div>
                                     <div>{{ t('dashboard.common.contracts') }}: {{ formatUsage(tenant.contracts_count, tenant.subscription_plan.max_contracts) }}</div>
                                     <div class="text-gray-500">{{ t('dashboard.common.reservations') }}: {{ tenant.reservations_count || 0 }}</div>
                                 </div>

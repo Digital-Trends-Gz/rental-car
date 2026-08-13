@@ -481,6 +481,7 @@ class HomePagesController extends Controller
                     'max_employees',
                     'max_branches',
                     'max_cars',
+                    'max_reservations_per_month',
                     'max_contracts',
                 ]), app()->getLocale())
         )->values();

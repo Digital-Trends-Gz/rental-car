@@ -27,6 +27,7 @@ class EnsureTenantPlanLimitNotExceeded
             'employees' => $this->planUsageLimits->employeeLimitMessage($tenant),
             'branches' => $this->planUsageLimits->branchLimitMessage($tenant),
             'cars' => $this->planUsageLimits->carLimitMessage($tenant),
+            'reservations' => $this->planUsageLimits->reservationLimitMessage($tenant),
             'contracts' => $this->planUsageLimits->contractLimitMessage($tenant),
             default => abort(500, "Unsupported plan limit resource [{$resource}]."),
         };

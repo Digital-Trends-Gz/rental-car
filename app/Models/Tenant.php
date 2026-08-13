@@ -103,6 +103,11 @@ class Tenant extends Model
         return $this->hasMany(Reservation::class);
     }
 
+    public function bookingRequests(): HasMany
+    {
+        return $this->hasMany(BookingRequest::class);
+    }
+
     public function contracts(): HasMany
     {
         return $this->hasMany(Contract::class);

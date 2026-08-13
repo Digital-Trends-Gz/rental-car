@@ -299,6 +299,33 @@ class RegisteredUserController extends Controller
         ]);
     }
 
+    public function upgrade(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user && ($user->role ?? null) === UserRole::ADMIN && $user->tenant_id, 403);
+
+        $tenant = Tenant::query()->findOrFail((int) $user->tenant_id);
+
+        $request->session()->put(self::REGISTRATION_SESSION_KEY, [
+            'mode' => 'existing_tenant',
+            'existing_user_id' => $user->id,
+            'existing_tenant_id' => $tenant->id,
+            'name' => $tenant->name ?: $user->name,
+            'email' => $user->email,
+            'custom_domain' => $tenant->domain,
+            'phone' => $tenant->phone,
+        ]);
+
+        $request->session()->forget([
+            self::PLAN_SELECTION_SESSION_KEY,
+            self::CHECKOUT_SESSION_KEY,
+            self::SUBSCRIPTION_TXN_SESSION_KEY,
+        ]);
+
+        return to_route($this->authRouteName('register.plans'));
+    }
+
     public function storePlan(Request $request): RedirectResponse
     {
         if (TenantContext::id() && !$this->isExistingTenantPlanFlow($request)) {

@@ -23,6 +23,7 @@ use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Models\TenantCarCatalogEntry;
 use App\Services\Plans\PlanUsageLimits;
+use App\Services\Plans\PlanUsageNotifier;
 use App\Support\BranchAccess;
 use App\Support\BranchLocationOptions;
 use App\Support\CarCatalogOptions;
@@ -50,7 +51,8 @@ class CarsController extends Controller
     public function __construct(
         FilePondService $filePondService,
         BranchAccess $branchAccess,
-        private PlanUsageLimits $planUsageLimits
+        private PlanUsageLimits $planUsageLimits,
+        private PlanUsageNotifier $planUsageNotifier,
     )
     {
         $this->filePondService = $filePondService;
@@ -736,6 +738,8 @@ class CarsController extends Controller
                 Car::additionalPhotoCollection($photo['type'])
             );
         }
+
+        $this->planUsageNotifier->checkCars($tenant->refresh());
 
         return redirect()
             ->route('admin.cars.index', ['subdomain' => $request->route('subdomain')])

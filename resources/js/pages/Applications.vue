@@ -2,7 +2,7 @@
 import SeoHead from '@/components/SeoHead.vue';
 import HomeLayout from '@/layouts/HomeLayout.vue';
 import { register as mainRegister } from '@/routes/index';
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { Apple, ArrowRight, BriefcaseBusiness, Building2, Check, Play, Smartphone, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 
@@ -97,7 +97,8 @@ const localizedPath = (path: string) => {
 
     return path;
 };
-const registerUrl = computed(() => localizedPath(mainRegister().url));
+const isTenantAdmin = computed(() => page.props.auth?.user?.role === 'admin' && page.props.auth?.user?.tenant_id);
+const registerUrl = computed(() => localizedPath(isTenantAdmin.value ? '/register/upgrade' : mainRegister().url));
 const showHero = computed(() => props.applicationsPage.hero_enabled !== false);
 const showApps = computed(() => props.applicationsPage.apps_enabled !== false);
 const showComparison = computed(() => props.applicationsPage.comparison_enabled !== false);
@@ -392,9 +393,9 @@ const storeIconUrl = (store: 'ios' | 'android') =>
                             {{ applicationsPage.ecosystem_description }}
                         </p>
                     </div>
-                    <Link :href="registerUrl" class="inline-flex min-h-[46px] items-center justify-center rounded-xl bg-white px-5 text-sm font-extrabold text-indigo-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-white/90">
+                    <a :href="registerUrl" class="inline-flex min-h-[46px] items-center justify-center rounded-xl bg-white px-5 text-sm font-extrabold text-indigo-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-white/90">
                         {{ applicationsPage.ecosystem_cta_label }}
-                    </Link>
+                    </a>
                 </div>
             </section>
         </div>

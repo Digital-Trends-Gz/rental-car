@@ -51,6 +51,7 @@ class PlanFactory extends Factory
             'max_employees' => 5,
             'max_branches' => 2,
             'max_cars' => 10,
+            'max_reservations_per_month' => 25,
             'max_contracts' => 25,
             'openai_requests_per_day' => 50,
             'is_active' => true,

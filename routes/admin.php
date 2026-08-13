@@ -132,9 +132,16 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         });
 
         // Reservations
+        Route::get('reservations/create', [ReservationsController::class, 'create'])
+            ->middleware(['tenant.plan.limit:reservations', 'permission:tenant-manage-reservations'])
+            ->name('reservations.create');
         Route::resource('reservations', ReservationsController::class)
-            ->only(['index', 'create', 'store', 'show', 'edit', 'update'])
+            ->only(['index', 'store', 'show', 'edit', 'update'])
+            ->middlewareFor(['store'], 'tenant.plan.limit:reservations')
             ->middleware('permission:tenant-manage-reservations');
+        Route::post('booking-requests/{bookingRequest}/convert', [ReservationsController::class, 'convertBookingRequest'])
+            ->middleware(['tenant.plan.limit:reservations', 'permission:tenant-manage-reservations'])
+            ->name('booking-requests.convert');
         Route::post('reservations/{reservation}/cash-payment', [ReservationsController::class, 'collectCashPayment'])
             ->middleware(['permission:tenant-manage-reservations', 'tenant.feature:cash_payments'])
             ->name('reservations.cash-payment');

@@ -77,6 +77,7 @@ const form = useForm({
     max_employees: props.plan.max_employees ?? null,
     max_branches: props.plan.max_branches ?? null,
     max_cars: props.plan.max_cars ?? null,
+    max_reservations_per_month: props.plan.max_reservations_per_month ?? null,
     max_contracts: props.plan.max_contracts ?? null,
     openai_requests_per_day: props.plan.openai_requests_per_day ?? null,
     is_active: props.plan.is_active,
@@ -87,7 +88,8 @@ const limitFields = [
     { key: 'max_employees', label: 'Max Employees', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
     { key: 'max_branches', label: 'Max Branches', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
     { key: 'max_cars', label: 'Max Cars', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
-    { key: 'max_contracts', label: 'Max Rental Contracts', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
+    { key: 'max_reservations_per_month', label: 'Max Reservations / Month', placeholder: 'Unlimited', helper: 'Monthly limit. Resets at the start of each month.' },
+    { key: 'max_contracts', label: 'Max Rental Contracts / Month', placeholder: 'Unlimited', helper: 'Monthly limit. Resets at the start of each month.' },
     { key: 'openai_requests_per_day', label: 'OpenAI Requests / Day', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
 ] as const;
 type LimitFieldKey = (typeof limitFields)[number]['key'];
@@ -111,7 +113,8 @@ const summaryFields = [
     { key: 'max_employees', label: 'Employees limit', value: props.plan.max_employees, highlight: true },
     { key: 'max_branches', label: 'Branches limit', value: props.plan.max_branches, highlight: true },
     { key: 'max_cars', label: 'Cars limit', value: props.plan.max_cars, highlight: true },
-    { key: 'max_contracts', label: 'Contracts limit', value: props.plan.max_contracts, highlight: true },
+    { key: 'max_reservations_per_month', label: 'Reservations / month', value: props.plan.max_reservations_per_month, highlight: true },
+    { key: 'max_contracts', label: 'Contracts / month', value: props.plan.max_contracts, highlight: true },
     { key: 'openai_requests_per_day', label: 'OpenAI requests / day', value: props.plan.openai_requests_per_day, highlight: true },
 ] as const;
 

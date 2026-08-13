@@ -74,6 +74,7 @@ export interface Plan {
     max_employees: number | null;
     max_branches: number | null;
     max_cars: number | null;
+    max_reservations_per_month: number | null;
     max_contracts: number | null;
     openai_requests_per_day: number | null;
     tenants_count?: number;

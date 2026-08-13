@@ -6,6 +6,7 @@ use App\Enums\CarStatus;
 use App\Enums\CarViolationStatus;
 use App\Enums\ContractStatus;
 use App\Enums\DiscountRequestStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
@@ -410,10 +411,13 @@ class ReservationsController extends Controller
         $totalDue = max(0, (float) $reservation->total_amount + $returnReportTotal);
         $balanceDue = max(0, $totalDue - $completedPaymentsTotal);
         $reservationStatus = $this->reservationStatusValue($reservation->status);
+        $hasPendingOnlinePayment = $reservation->payments
+            ->contains(fn (Payment $payment): bool => $this->isPendingOnlinePayment($payment));
 
         $reservation->setAttribute('amount_paid', $completedPaymentsTotal);
         $reservation->setAttribute('balance_due', $balanceDue);
-        $reservation->setAttribute('can_collect_final_cash', $balanceDue > 0 && !in_array($reservationStatus, [
+        $reservation->setAttribute('has_pending_online_payment', $hasPendingOnlinePayment);
+        $reservation->setAttribute('can_collect_final_cash', $balanceDue > 0 && ! $hasPendingOnlinePayment && !in_array($reservationStatus, [
             ReservationStatus::CANCELLED->value,
             ReservationStatus::COMPLETED->value,
         ], true));
@@ -1071,6 +1075,18 @@ class ReservationsController extends Controller
         return $payment->status instanceof PaymentStatus
             ? $payment->status === PaymentStatus::COMPLETED
             : (string) $payment->status === PaymentStatus::COMPLETED->value;
+    }
+
+    private function isPendingOnlinePayment(Payment $payment): bool
+    {
+        $status = $payment->status instanceof PaymentStatus
+            ? $payment->status->value
+            : (string) $payment->status;
+        $method = $payment->payment_method instanceof PaymentMethod
+            ? $payment->payment_method->value
+            : (string) $payment->payment_method;
+
+        return $status === PaymentStatus::PENDING->value && $method !== PaymentMethod::CASH->value;
     }
 
     private function canAccessReservation(Reservation $reservation, User $user): bool

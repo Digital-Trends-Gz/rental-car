@@ -42,6 +42,7 @@ const form = useForm({
     max_employees: null as number | null,
     max_branches: null as number | null,
     max_cars: null as number | null,
+    max_reservations_per_month: null as number | null,
     max_contracts: null as number | null,
     openai_requests_per_day: null as number | null,
     is_active: true,
@@ -52,7 +53,8 @@ const limitFields = [
     { key: 'max_employees', label: 'Max Employees', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
     { key: 'max_branches', label: 'Max Branches', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
     { key: 'max_cars', label: 'Max Cars', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
-    { key: 'max_contracts', label: 'Max Rental Contracts', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
+    { key: 'max_reservations_per_month', label: 'Max Reservations / Month', placeholder: 'Unlimited', helper: 'Monthly limit. Resets at the start of each month.' },
+    { key: 'max_contracts', label: 'Max Rental Contracts / Month', placeholder: 'Unlimited', helper: 'Monthly limit. Resets at the start of each month.' },
     { key: 'openai_requests_per_day', label: 'OpenAI Requests / Day', placeholder: 'Unlimited', helper: 'Leave blank for no limit.' },
 ] as const;
 type LimitFieldKey = (typeof limitFields)[number]['key'];

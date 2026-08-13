@@ -11,6 +11,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Models\Car;
 use App\Models\CarDiscount;
+use App\Models\BookingRequest;
 use App\Models\Coupon;
 use App\Models\CouponRedemption;
 use App\Models\Payment;
@@ -23,6 +24,8 @@ use App\Support\ClientReturnDebt;
 use App\Support\CurrencyCatalog;
 use App\Support\TenantSeoResolver;
 use App\Support\TenantStripeConnect;
+use App\Services\Plans\PlanUsageLimits;
+use App\Services\Plans\PlanUsageNotifier;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +37,13 @@ use Throwable;
 
 class BookingController extends Controller
 {
+    public function __construct(
+        private readonly PlanUsageLimits $planUsageLimits,
+        private readonly PlanUsageNotifier $planUsageNotifier,
+    )
+    {
+    }
+
     private function isWebsiteBookableCarStatus(CarStatus $status): bool
     {
         return in_array($status, [
@@ -337,6 +347,49 @@ class BookingController extends Controller
         $discount = min($subtotal, $autoDiscountAmount + $couponDiscountAmount);
         $total = max(0, $subtotal + $taxAmount + $returnLocationFee - $discount);
         $providerCode = $this->resolveTenantBookingProvider($tenant, $stripeConnect);
+
+        if ($tenant && $this->planUsageLimits->reservationLimitMessage($tenant)) {
+            $bookingRequest = BookingRequest::create([
+                'tenant_id' => $tenant->id,
+                'car_id' => $car->id,
+                'user_id' => Auth::id(),
+                'status' => BookingRequest::STATUS_LOCKED_PLAN_LIMIT,
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $endDate->toDateString(),
+                'total_days' => $days,
+                'daily_rate' => $dailyRate,
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'discount_amount' => $discount,
+                'return_location_fee' => $returnLocationFee,
+                'total_amount' => $total,
+                'currency' => $this->bookingCurrency(),
+                'customer_name' => (string) Auth::user()?->name,
+                'customer_email' => (string) Auth::user()?->email,
+                'customer_phone' => (string) (Auth::user()?->phone ?? ''),
+                'pickup_location' => (string) $request->pickup_location,
+                'return_location' => (string) $request->return_location,
+                'coupon_code' => $coupon?->code ?? ($couponCode !== '' ? $couponCode : null),
+                'locked_reason' => 'reservation_plan_limit',
+                'meta' => [
+                    'auto_discount_id' => $autoDiscount?->id,
+                    'auto_discount_name' => $autoDiscount?->name,
+                    'auto_discount_amount' => $autoDiscountAmount,
+                    'coupon_id' => $coupon?->id,
+                    'coupon_discount_amount' => $couponDiscountAmount,
+                    'provider_code' => $providerCode,
+                ],
+            ]);
+
+            return redirect()->route('tenant.fleet.show', [
+                'subdomain' => $tenantSlug,
+                'car' => $car->id,
+            ])->with(
+                'success',
+                'Your booking request was received. The office will review availability before payment.'
+            )->with('locked_booking_request_id', $bookingRequest->id);
+        }
+
         $reservation = null;
         $payment = null;
 
@@ -441,6 +494,8 @@ class BookingController extends Controller
                 ])->save();
             }
         });
+
+        $this->planUsageNotifier->checkReservations(TenantContext::get());
 
         if ($providerCode) {
             return redirect()->route('tenant.booking.checkout', [

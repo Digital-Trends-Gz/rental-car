@@ -14,6 +14,7 @@ use App\Models\Car;
 use App\Models\Contract;
 use App\Models\Permission;
 use App\Models\Plan;
+use App\Models\Reservation;
 use App\Models\SiteSetting;
 use App\Models\Tenant;
 use App\Models\User;
@@ -804,6 +805,116 @@ class PlanUsageLimitsTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.contracts.create', ['subdomain' => $tenant->slug]))
             ->assertForbidden();
+    }
+
+    public function test_contract_plan_limit_counts_current_month_only(): void
+    {
+        $tenant = $this->tenantWithPlan(['max_contracts' => 1]);
+        TenantContext::set($tenant);
+
+        $branch = Branch::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+        ]);
+
+        $previousMonthContract = Contract::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'contract_number' => 'CTR-PREVIOUS-MONTH',
+            'status' => 'draft',
+            'currency' => 'USD',
+        ]);
+        $previousMonthContract->forceFill(['created_at' => now()->subMonth()->startOfMonth()])->saveQuietly();
+
+        $this->assertNull(app(PlanUsageLimits::class)->contractLimitMessage($tenant->refresh()));
+        $this->assertSame(0, app(PlanUsageLimits::class)->contractUsage($tenant->refresh())['current']);
+
+        Contract::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'contract_number' => 'CTR-CURRENT-MONTH',
+            'status' => 'draft',
+            'currency' => 'USD',
+        ]);
+
+        $this->assertNotNull(app(PlanUsageLimits::class)->contractLimitMessage($tenant->refresh()));
+        $this->assertSame(1, app(PlanUsageLimits::class)->contractUsage($tenant->refresh())['current']);
+    }
+
+    public function test_reservation_plan_limit_counts_current_month_only(): void
+    {
+        $tenant = $this->tenantWithPlan(['max_reservations_per_month' => 1]);
+        TenantContext::set($tenant);
+
+        $branch = Branch::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Main Branch',
+        ]);
+
+        $admin = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'role' => UserRole::SUPER_ADMIN,
+            'name' => 'Owner',
+            'email' => 'owner.reservation.limit@example.com',
+            'civil_number' => '11112235',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $car = Car::create([
+            'tenant_id' => $tenant->id,
+            'branch_id' => $branch->id,
+            'make' => 'Toyota',
+            'model' => 'Camry',
+            'year' => 2024,
+            'license_plate' => 'RES-MONTH-1',
+            'color' => CarColor::WHITE,
+            'price_per_day' => 25,
+            'mileage' => 1000,
+            'transmission' => 'automatic',
+            'seats' => 5,
+            'fuel_type' => FuelType::GASOLINE->value,
+            'status' => CarStatus::AVAILABLE,
+        ]);
+
+        $previousMonthReservation = Reservation::create([
+            'tenant_id' => $tenant->id,
+            'reservation_number' => 'RES-PREVIOUS-MONTH',
+            'user_id' => $admin->id,
+            'car_id' => $car->id,
+            'start_date' => today()->toDateString(),
+            'end_date' => today()->addDay()->toDateString(),
+            'total_days' => 2,
+            'daily_rate' => 25,
+            'subtotal' => 50,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'total_amount' => 50,
+            'status' => ReservationStatus::CONFIRMED,
+        ]);
+        $previousMonthReservation->forceFill(['created_at' => now()->subMonth()->startOfMonth()])->saveQuietly();
+
+        $this->assertNull(app(PlanUsageLimits::class)->reservationLimitMessage($tenant->refresh()));
+        $this->assertSame(0, app(PlanUsageLimits::class)->reservationUsage($tenant->refresh())['current']);
+
+        Reservation::create([
+            'tenant_id' => $tenant->id,
+            'reservation_number' => 'RES-CURRENT-MONTH',
+            'user_id' => $admin->id,
+            'car_id' => $car->id,
+            'start_date' => today()->toDateString(),
+            'end_date' => today()->addDay()->toDateString(),
+            'total_days' => 2,
+            'daily_rate' => 25,
+            'subtotal' => 50,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'total_amount' => 50,
+            'status' => ReservationStatus::CONFIRMED,
+        ]);
+
+        $this->assertNotNull(app(PlanUsageLimits::class)->reservationLimitMessage($tenant->refresh()));
+        $this->assertSame(1, app(PlanUsageLimits::class)->reservationUsage($tenant->refresh())['current']);
     }
 
     private function tenantWithPlan(array $limits): Tenant

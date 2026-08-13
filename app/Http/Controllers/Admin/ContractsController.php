@@ -30,6 +30,7 @@ use App\Services\Clients\ClientStatusService;
 use App\Services\Contracts\ContractAiExtractor;
 use App\Services\Contracts\ContractDriverDocumentExtractor;
 use App\Services\Plans\PlanUsageLimits;
+use App\Services\Plans\PlanUsageNotifier;
 use App\Rules\DigitsOnly;
 use App\Rules\LettersOnly;
 use App\Support\BranchAccess;
@@ -71,7 +72,8 @@ class ContractsController extends Controller
         private ContractDriverDocumentExtractor $contractDriverDocumentExtractor,
         private ContractCustomerPhotoExtractor $contractCustomerPhotoExtractor,
         private ClientStatusService $clientStatusService,
-        private PlanUsageLimits $planUsageLimits
+        private PlanUsageLimits $planUsageLimits,
+        private PlanUsageNotifier $planUsageNotifier,
     ) {
     }
 
@@ -338,6 +340,8 @@ class ContractsController extends Controller
 
             return $contract;
         });
+
+        $this->planUsageNotifier->checkContracts($tenant->refresh());
 
         return redirect()
             ->route('admin.contracts.show', [

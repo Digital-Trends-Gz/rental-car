@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Models\Car;
 use App\Models\Contract;
 use App\Models\Plan;
+use App\Models\Reservation;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\TenantTranslations;
@@ -90,6 +91,23 @@ class PlanUsageLimits
     public function contractUsage(?Tenant $tenant = null): array
     {
         return $this->usage('max_contracts', 'contracts', $this->resolveTenant($tenant), fn (?Tenant $tenant): int => $this->contractCount($tenant));
+    }
+
+    public function reservationLimitMessage(?Tenant $tenant = null): ?string
+    {
+        $tenant = $this->resolveTenant($tenant);
+
+        return $this->limitMessage(
+            'max_reservations_per_month',
+            'reservations',
+            $this->reservationCount($tenant),
+            $tenant
+        );
+    }
+
+    public function reservationUsage(?Tenant $tenant = null): array
+    {
+        return $this->usage('max_reservations_per_month', 'reservations', $this->resolveTenant($tenant), fn (?Tenant $tenant): int => $this->reservationCount($tenant));
     }
 
     public function openAiRequestsPerDayLimit(?Tenant $tenant = null): ?int
@@ -204,7 +222,27 @@ class PlanUsageLimits
 
         return Contract::withoutTenantScope()
             ->where('tenant_id', $tenant->id)
+            ->whereBetween('created_at', $this->currentMonthRange())
             ->count();
+    }
+
+    private function reservationCount(?Tenant $tenant): int
+    {
+        if (!$tenant?->id) {
+            return 0;
+        }
+
+        return Reservation::withoutTenantScope()
+            ->where('tenant_id', $tenant->id)
+            ->whereBetween('created_at', $this->currentMonthRange())
+            ->count();
+    }
+
+    private function currentMonthRange(): array
+    {
+        $start = now()->startOfMonth();
+
+        return [$start, $start->copy()->endOfMonth()];
     }
 
     private function normalizeLimit(mixed $value): ?int

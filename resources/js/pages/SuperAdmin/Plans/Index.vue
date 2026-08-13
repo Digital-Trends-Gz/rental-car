@@ -118,7 +118,8 @@ const deletePlan = (planId: number, planName: string) => {
                                     <div>Employees: {{ formatLimit(plan.max_employees) }}</div>
                                     <div>Branches: {{ formatLimit(plan.max_branches) }}</div>
                                     <div>Cars: {{ formatLimit(plan.max_cars) }}</div>
-                                    <div>Contracts: {{ formatLimit(plan.max_contracts) }}</div>
+                                    <div>Reservations/month: {{ formatLimit(plan.max_reservations_per_month) }}</div>
+                                    <div>Contracts/month: {{ formatLimit(plan.max_contracts) }}</div>
                                     <div>OpenAI/day: {{ formatLimit(plan.openai_requests_per_day) }}</div>
                                 </div>
                             </td>

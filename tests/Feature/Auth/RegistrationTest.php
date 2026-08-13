@@ -1,5 +1,9 @@
 <?php
 
+use App\Enums\UserRole;
+use App\Models\Tenant;
+use App\Models\User;
+
 test('registration screen can be rendered', function () {
     $response = $this->get(route('register'));
 
@@ -37,4 +41,24 @@ test('registration rejects names with digits', function () {
         ]);
 
     $response->assertSessionHasErrors(['name']);
+});
+
+test('tenant admin can start existing tenant plan upgrade flow', function () {
+    $tenant = Tenant::factory()->create([
+        'name' => 'Upgrade Tenant',
+        'is_active' => true,
+    ]);
+
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'role' => UserRole::ADMIN,
+        'email' => 'upgrade-admin@example.com',
+    ]);
+
+    $response = $this->actingAs($admin)->get(route('register.upgrade'));
+
+    $response->assertRedirect(route('register.plans'));
+    $response->assertSessionHas('saas.registration.mode', 'existing_tenant');
+    $response->assertSessionHas('saas.registration.existing_tenant_id', $tenant->id);
+    $response->assertSessionMissing('saas.registration.plan');
 });

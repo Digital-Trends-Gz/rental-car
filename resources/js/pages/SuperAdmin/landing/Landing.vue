@@ -676,7 +676,8 @@ const normalizeCtaLabel = (label: string) => {
             .trim(),
     };
 };
-const registerUrl = computed(() => localizedPath(mainRegister().url));
+const isTenantAdmin = computed(() => page.props.auth?.user?.role === 'admin' && page.props.auth?.user?.tenant_id);
+const registerUrl = computed(() => localizedPath(isTenantAdmin.value ? '/register/upgrade' : mainRegister().url));
 const plansUrl = computed(() => localizedPath('/pricing-plans'));
 const navigationCtaLabel = computed(() => {
     const translatedNavigationLabel = translatedLabel('navigation.cta_label', '');
@@ -1255,9 +1256,9 @@ onUnmounted(() => {
                             class="gradient-button rounded-full px-5"
                             size="sm"
                         >
-                            <Link :href="registerUrl">{{
+                            <a :href="registerUrl">{{
                                 navigationCtaLabel
-                            }}</Link>
+                            }}</a>
                         </Button>
                     </div>
                 </div>
@@ -1324,7 +1325,7 @@ onUnmounted(() => {
                     class="gradient-button mt-2 w-full rounded-full"
                     size="sm"
                 >
-                    <Link :href="registerUrl">{{ navigationCtaLabel }}</Link>
+                    <a :href="registerUrl">{{ navigationCtaLabel }}</a>
                 </Button>
             </div>
         </nav>
@@ -1358,7 +1359,7 @@ onUnmounted(() => {
                                 size="lg"
                                 class="gradient-button h-12 min-w-0 rounded-full px-4 text-sm sm:px-8 sm:text-base"
                             >
-                                <Link
+                                <a
                                     :href="registerUrl"
                                     class="inline-flex items-center justify-center gap-2"
                                     dir="ltr"
@@ -1374,7 +1375,7 @@ onUnmounted(() => {
                                     >
                                         {{ isRtlLocale ? '←' : '→' }}
                                     </span>
-                                </Link>
+                                </a>
                             </Button>
                             <a
                                 :href="browseCarsHref"
@@ -2581,9 +2582,9 @@ onUnmounted(() => {
                                         as-child
                                         class="gradient-button h-12 w-full rounded-2xl text-base font-semibold"
                                     >
-                                        <Link :href="registerUrl">{{
+                                        <a :href="registerUrl">{{
                                             navigationCtaLabel
-                                        }}</Link>
+                                        }}</a>
                                     </Button>
                                 </div>
                             </SwiperSlide>

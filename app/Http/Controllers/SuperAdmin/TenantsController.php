@@ -35,9 +35,18 @@ class TenantsController
      */
     public function index(): Response
     {
+        $monthStart = now()->startOfMonth();
+        $monthEnd = $monthStart->copy()->endOfMonth();
+
         $tenants = Tenant::query()
-            ->with('subscriptionPlan:id,name,max_employees,max_branches,max_cars,max_contracts,openai_requests_per_day')
-            ->withCount(['users', 'branches', 'cars', 'reservations', 'contracts'])
+            ->with('subscriptionPlan:id,name,max_employees,max_branches,max_cars,max_reservations_per_month,max_contracts,openai_requests_per_day')
+            ->withCount([
+                'users',
+                'branches',
+                'cars',
+                'reservations' => fn ($query) => $query->whereBetween('created_at', [$monthStart, $monthEnd]),
+                'contracts' => fn ($query) => $query->whereBetween('created_at', [$monthStart, $monthEnd]),
+            ])
             ->latest()
             ->paginate(20);
 

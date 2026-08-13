@@ -36,6 +36,7 @@ const availableLocales = computed<string[]>(() =>
 const isTenant = computed(() => !!currentTenant.value);
 const isLandingShell = computed(() => props.shellVariant === 'landing');
 const role = computed(() => $page.props.auth.user?.role);
+const isAuthenticatedTenantAdmin = computed(() => role.value === 'admin' && $page.props.auth.user?.tenant_id);
 const mobileOpen = ref(false);
 const showScrollTop = ref(false);
 const publicFooterRef = ref<HTMLElement | null>(null);
@@ -405,7 +406,7 @@ const navigationCtaLabel = computed(() => {
         'Start Free Trial'
     );
 });
-const landingRegisterUrl = computed(() => localizedLandingPath(mainRegister().url));
+const landingRegisterUrl = computed(() => localizedLandingPath(isAuthenticatedTenantAdmin.value ? '/register/upgrade' : mainRegister().url));
 const landingFooterEnabled = computed(() => landingSettings.value?.footer?.enabled !== false);
 const footerDirection = computed(() => (direction.value === 'rtl' ? 'rtl' : 'ltr'));
 const landingFooterCopyright = computed(() => {
@@ -628,7 +629,7 @@ onBeforeUnmount(() => {
                                 </DropdownMenuContent>
                         </DropdownMenu>
                         <Button as-child class="gradient-button rounded-full px-5" size="sm">
-                            <Link :href="landingRegisterUrl">{{ navigationCtaLabel }}</Link>
+                            <a :href="landingRegisterUrl">{{ navigationCtaLabel }}</a>
                         </Button>
                         </div>
                     </div>
@@ -681,12 +682,12 @@ onBeforeUnmount(() => {
                         </DropdownMenuContent>
                     </DropdownMenu>
                     <Button as-child class="gradient-button mt-2 w-full rounded-full" size="sm">
-                        <Link
+                        <a
                             :href="landingRegisterUrl"
                             @click="closeLandingMenu"
                         >
                             {{ navigationCtaLabel }}
-                        </Link>
+                        </a>
                     </Button>
                 </div>
             </nav>

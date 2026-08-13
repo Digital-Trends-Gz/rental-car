@@ -6,11 +6,15 @@ use App\Core\ReservationSettings;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Reservation;
+use App\Models\BookingRequest;
 use App\Models\Car;
 use App\Models\CarDamageCase;
 use App\Models\Payment;
+use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
+use App\Services\Plans\PlanUsageLimits;
+use App\Services\Plans\PlanUsageNotifier;
 use App\Support\ClientReturnDebt;
 use App\Support\CurrencyCatalog;
 use App\Support\PaidReturnReportLock;
@@ -20,9 +24,11 @@ use App\Enums\CarStatus;
 use App\Enums\ReservationStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Enums\UserRole;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Barryvdh\DomPDF\Facade\Pdf as DomPdf;
@@ -39,7 +45,9 @@ class ReservationsController extends Controller
 {
     public function __construct(
         private BranchAccess $branchAccess,
-        private ClientStatusService $clientStatusService
+        private ClientStatusService $clientStatusService,
+        private PlanUsageLimits $planUsageLimits,
+        private PlanUsageNotifier $planUsageNotifier,
     )
     {
     }
@@ -156,6 +164,42 @@ class ReservationsController extends Controller
             ];
         })->toArray();
 
+        $reservationUsage = $this->planUsageLimits->reservationUsage($this->currentTenant($request));
+        $canRevealLockedBookingRequests = !($reservationUsage['at_limit'] ?? false);
+        $lockedBookingRequestsCount = BookingRequest::query()
+            ->where('tenant_id', $request->user()?->tenant_id)
+            ->where('status', BookingRequest::STATUS_LOCKED_PLAN_LIMIT)
+            ->count();
+        $lockedBookingRequests = BookingRequest::query()
+            ->with('car:id,make,model,year,license_plate')
+            ->where('tenant_id', $request->user()?->tenant_id)
+            ->where('status', BookingRequest::STATUS_LOCKED_PLAN_LIMIT)
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(fn (BookingRequest $bookingRequest) => [
+                'id' => $bookingRequest->id,
+                'car' => $bookingRequest->car ? [
+                    'id' => $bookingRequest->car->id,
+                    'make' => $bookingRequest->car->make,
+                    'model' => $bookingRequest->car->model,
+                    'year' => $bookingRequest->car->year,
+                    'license_plate' => $bookingRequest->car->license_plate,
+                ] : null,
+                'start_date' => optional($bookingRequest->start_date)->toDateString(),
+                'end_date' => optional($bookingRequest->end_date)->toDateString(),
+                'total_days' => $bookingRequest->total_days,
+                'total_amount' => $bookingRequest->total_amount,
+                'currency' => $bookingRequest->currency,
+                'created_at' => optional($bookingRequest->created_at)->toDateTimeString(),
+                'customer_name' => $canRevealLockedBookingRequests ? $bookingRequest->customer_name : null,
+                'customer_email' => $canRevealLockedBookingRequests ? $bookingRequest->customer_email : null,
+                'customer_phone' => $canRevealLockedBookingRequests ? $bookingRequest->customer_phone : null,
+                'pickup_location' => $canRevealLockedBookingRequests ? $bookingRequest->pickup_location : null,
+                'return_location' => $canRevealLockedBookingRequests ? $bookingRequest->return_location : null,
+            ])
+            ->values();
+
         return Inertia::render('Admin/Reservations/Index', [
             'reservations' => $reservations,
             'filters' => [
@@ -167,11 +211,26 @@ class ReservationsController extends Controller
             'statuses' => $statuses,
             'branches' => $branchOptions,
             'canAccessAllBranches' => $canAccessAllBranches,
+            'reservationUsage' => $reservationUsage,
+            'canCreateReservation' => !($reservationUsage['at_limit'] ?? false),
+            'lockedBookingRequestsCount' => $lockedBookingRequestsCount,
+            'lockedBookingRequests' => $lockedBookingRequests,
+            'canRevealLockedBookingRequests' => $canRevealLockedBookingRequests,
         ]);
     }
 
     public function create(Request $request): Response
     {
+        $tenant = $this->currentTenant($request);
+
+        if (!$tenant) {
+            abort(403, 'Tenant context is required to check plan limits.');
+        }
+
+        if ($message = $this->planUsageLimits->reservationLimitMessage($tenant)) {
+            abort(403, $message);
+        }
+
         $cars = $this->carOptions($request);
 
         return Inertia::render('Admin/Reservations/Edit', [
@@ -188,6 +247,16 @@ class ReservationsController extends Controller
 
     public function store(Request $request)
     {
+        $tenant = $this->currentTenant($request);
+
+        if (!$tenant) {
+            abort(403, 'Tenant context is required to check plan limits.');
+        }
+
+        if ($message = $this->planUsageLimits->reservationLimitMessage($tenant)) {
+            return redirect()->back()->with('error', $message);
+        }
+
         $validated = $request->validate([
             'user_id' => ['required', 'integer'],
             'car_id' => ['required', 'integer'],
@@ -329,6 +398,8 @@ class ReservationsController extends Controller
             'payments',
         ]);
 
+        $this->planUsageNotifier->checkReservations($tenant->refresh());
+
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Reservation created successfully.',
@@ -343,6 +414,106 @@ class ReservationsController extends Controller
                 'reservation' => $reservation->id,
             ])
             ->with('success', 'Reservation created successfully.');
+    }
+
+    public function convertBookingRequest(Request $request, BookingRequest $bookingRequest)
+    {
+        $tenant = $this->currentTenant($request);
+        $user = $request->user();
+
+        if (!$tenant) {
+            abort(403, 'Tenant context is required to check plan limits.');
+        }
+
+        abort_unless((int) $bookingRequest->tenant_id === (int) $tenant->id, 404);
+
+        if ($message = $this->planUsageLimits->reservationLimitMessage($tenant)) {
+            return redirect()->back()->with('error', $message);
+        }
+
+        $reservation = DB::transaction(function () use ($tenant, $user, $bookingRequest) {
+            $lockedRequest = BookingRequest::query()
+                ->whereKey($bookingRequest->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            abort_unless((int) $lockedRequest->tenant_id === (int) $tenant->id, 404);
+
+            if ($lockedRequest->status !== BookingRequest::STATUS_LOCKED_PLAN_LIMIT) {
+                throw ValidationException::withMessages([
+                    'booking_request' => __('This booking request is no longer waiting for conversion.'),
+                ]);
+            }
+
+            if ($message = $this->planUsageLimits->reservationLimitMessage($tenant->refresh())) {
+                throw ValidationException::withMessages([
+                    'booking_request' => $message,
+                ]);
+            }
+
+            $car = Car::query()
+                ->where('tenant_id', $tenant->id)
+                ->with('branch:id')
+                ->findOrFail($lockedRequest->car_id);
+
+            $carStatus = $car->status instanceof CarStatus ? $car->status->value : (string) $car->status;
+            if (in_array($carStatus, $this->nonBookableCarStatuses(), true)) {
+                throw ValidationException::withMessages([
+                    'booking_request' => __('This car is not available for reservation right now.'),
+                ]);
+            }
+
+            abort_unless($this->branchAccess->canAccessBranchId($user, $car->branch_id), 403);
+
+            $start = Carbon::parse($lockedRequest->start_date);
+            $end = Carbon::parse($lockedRequest->end_date);
+            $this->ensureNoReservationConflict($car->id, $start, $end);
+
+            $client = $this->clientForBookingRequest($tenant, $lockedRequest);
+
+            $reservation = Reservation::create([
+                'tenant_id' => $tenant->id,
+                'user_id' => $client->id,
+                'car_id' => $car->id,
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+                'pickup_time' => '09:00',
+                'return_time' => '18:00',
+                'pickup_location' => $lockedRequest->pickup_location,
+                'return_location' => $lockedRequest->return_location,
+                'return_location_fee' => (float) ($lockedRequest->return_location_fee ?? 0),
+                'total_days' => max(1, (int) $lockedRequest->total_days),
+                'daily_rate' => (float) ($lockedRequest->daily_rate ?? 0),
+                'subtotal' => (float) ($lockedRequest->subtotal ?? 0),
+                'tax_amount' => (float) ($lockedRequest->tax_amount ?? 0),
+                'discount_type' => 'fixed',
+                'discount_value' => (float) ($lockedRequest->discount_amount ?? 0),
+                'discount_amount' => (float) ($lockedRequest->discount_amount ?? 0),
+                'coupon_code' => $lockedRequest->coupon_code,
+                'total_amount' => (float) ($lockedRequest->total_amount ?? 0),
+                'status' => ReservationStatus::PENDING->value,
+                'notes' => 'Converted from locked booking request #'.$lockedRequest->id.'.',
+            ]);
+
+            $lockedRequest->update([
+                'status' => BookingRequest::STATUS_CONVERTED,
+                'user_id' => $client->id,
+                'converted_reservation_id' => $reservation->id,
+                'unlocked_at' => $lockedRequest->unlocked_at ?? now(),
+                'converted_at' => now(),
+            ]);
+
+            return $reservation;
+        });
+
+        $this->planUsageNotifier->checkReservations($tenant->refresh());
+
+        return redirect()
+            ->route('admin.reservations.show', [
+                'subdomain' => $request->route('subdomain'),
+                'reservation' => $reservation->id,
+            ])
+            ->with('success', __('Booking request converted to a reservation.'));
     }
 
     /**
@@ -361,9 +532,11 @@ class ReservationsController extends Controller
         $reservationStatus = $reservation->status instanceof ReservationStatus
             ? $reservation->status->value
             : (string) $reservation->status;
+        $hasPendingOnlinePayment = $this->reservationHasPendingOnlinePaymentId((int) $reservation->id);
         $reservation->setAttribute('amount_paid', $completedPaymentsTotal);
         $reservation->setAttribute('balance_due', $balanceDue);
-        $reservation->setAttribute('can_collect_final_cash', $balanceDue > 0 && !in_array($reservationStatus, [
+        $reservation->setAttribute('has_pending_online_payment', $hasPendingOnlinePayment);
+        $reservation->setAttribute('can_collect_final_cash', $balanceDue > 0 && ! $hasPendingOnlinePayment && !in_array($reservationStatus, [
             ReservationStatus::CANCELLED->value,
             ReservationStatus::COMPLETED->value,
         ], true));
@@ -695,6 +868,16 @@ class ReservationsController extends Controller
         ];
     }
 
+    private function reservationHasPendingOnlinePaymentId(int $reservationId): bool
+    {
+        return DB::table('payments')
+            ->where('reservation_id', $reservationId)
+            ->where('status', PaymentStatus::PENDING->value)
+            ->where('payment_method', '!=', PaymentMethod::CASH->value)
+            ->whereNull('deleted_at')
+            ->exists();
+    }
+
     public function collectCashPayment(Request $request)
     {
         $routeReservation = $request->route('reservation');
@@ -740,6 +923,12 @@ class ReservationsController extends Controller
             return redirect()
                 ->back()
                 ->with('info', 'This reservation is already fully paid.');
+        }
+
+        if ($this->reservationHasPendingOnlinePaymentId((int) $reservationRow->id)) {
+            return redirect()
+                ->back()
+                ->with('error', 'This reservation has a pending online payment. Wait for the payment result before collecting cash.');
         }
 
         DB::transaction(function () use ($reservationRow, $request, $balanceDue) {
@@ -883,6 +1072,47 @@ class ReservationsController extends Controller
         $reservation->loadMissing('car:id,branch_id');
 
         return $this->branchAccess->canAccessBranchId($user, $reservation->car?->branch_id ? (int) $reservation->car->branch_id : null);
+    }
+
+    private function clientForBookingRequest(Tenant $tenant, BookingRequest $bookingRequest): User
+    {
+        $email = Str::lower(trim((string) $bookingRequest->customer_email));
+
+        if ($email === '') {
+            throw ValidationException::withMessages([
+                'booking_request' => __('Customer email is required before this booking request can be converted.'),
+            ]);
+        }
+
+        $existingUser = User::withoutGlobalScope('tenant')
+            ->where('email', $email)
+            ->first();
+
+        if ($existingUser) {
+            if ((int) $existingUser->tenant_id !== (int) $tenant->id) {
+                throw ValidationException::withMessages([
+                    'booking_request' => __('Customer email already belongs to another account.'),
+                ]);
+            }
+
+            if (($existingUser->role instanceof UserRole ? $existingUser->role->value : (string) $existingUser->role) !== UserRole::CLIENT->value) {
+                throw ValidationException::withMessages([
+                    'booking_request' => __('Customer email belongs to a staff account.'),
+                ]);
+            }
+
+            return $existingUser;
+        }
+
+        return User::create([
+            'tenant_id' => $tenant->id,
+            'name' => trim((string) $bookingRequest->customer_name) ?: 'Guest Customer',
+            'email' => $email,
+            'email_verified_at' => now(),
+            'password' => Str::random(32),
+            'role' => UserRole::CLIENT,
+            'is_active' => true,
+        ]);
     }
 
     private function clientOptions(Request $request)
@@ -1079,6 +1309,19 @@ class ReservationsController extends Controller
         if (PaidReturnReportLock::reservation($reservation)) {
             abort(423, 'This reservation is locked because the return report is paid.');
         }
+    }
+
+    private function currentTenant(Request $request): ?Tenant
+    {
+        $tenantId = (int) ($request->user()?->tenant_id ?? 0);
+
+        if ($tenantId <= 0) {
+            return null;
+        }
+
+        return Tenant::query()
+            ->with('subscriptionPlan')
+            ->find($tenantId);
     }
 
     private function serializeCarDamageCaseMap(array $carIds, $user): array

@@ -189,6 +189,7 @@ class HandleInertiaRequests extends Middleware
                         'max_employees',
                         'max_branches',
                         'max_cars',
+                        'max_reservations_per_month',
                         'max_contracts',
                         'openai_requests_per_day',
                     ),

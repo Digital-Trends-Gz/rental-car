@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Tenant;
 use App\Services\Plans\PlanUsageLimits;
+use App\Services\Plans\PlanUsageNotifier;
 use App\Rules\DigitsOnly;
 use App\Rules\LettersOnly;
 use App\Support\BranchLocationOptions;
@@ -24,6 +25,7 @@ class BranchesController extends Controller
     public function __construct(
         private readonly FilePondService $filePondService,
         private readonly PlanUsageLimits $planUsageLimits,
+        private readonly PlanUsageNotifier $planUsageNotifier,
     ) {}
 
     /**
@@ -140,6 +142,7 @@ class BranchesController extends Controller
         $branch = Branch::create($this->branchAttributes($validated));
 
         $this->syncShowroomImage($branch, $request);
+        $this->planUsageNotifier->checkBranches($tenant->refresh());
 
         if ($request->boolean('inline') || $request->expectsJson() || $request->wantsJson()) {
             return response()->json([

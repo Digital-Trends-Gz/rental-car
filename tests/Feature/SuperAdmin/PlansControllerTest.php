@@ -76,6 +76,7 @@ class PlansControllerTest extends TestCase
             'max_employees' => 10,
             'max_branches' => null,
             'max_cars' => 25,
+            'max_reservations_per_month' => 40,
             'max_contracts' => 50,
             'openai_requests_per_day' => 100,
             'is_active' => true,
@@ -90,6 +91,7 @@ class PlansControllerTest extends TestCase
             'monthly_price' => 29.99,
             'max_employees' => 10,
             'max_cars' => 25,
+            'max_reservations_per_month' => 40,
             'max_contracts' => 50,
             'openai_requests_per_day' => 100,
         ]);
@@ -143,6 +145,7 @@ class PlansControllerTest extends TestCase
                 'max_employees' => null,
                 'max_branches' => 4,
                 'max_cars' => 8,
+                'max_reservations_per_month' => 10,
                 'max_contracts' => 12,
                 'openai_requests_per_day' => 20,
                 'is_active' => false,
@@ -155,6 +158,7 @@ class PlansControllerTest extends TestCase
             'name' => 'Updated Plan',
             'is_active' => false,
             'max_branches' => 4,
+            'max_reservations_per_month' => 10,
             'max_contracts' => 12,
         ]);
 

@@ -38,9 +38,28 @@ const props = defineProps<{
     statuses: Record<string, { label: string; count: number; color: string }>;
     branches: Array<{ id: number; name: string }>;
     canAccessAllBranches: boolean;
+    reservationUsage?: { current: number; limit: number | null; at_limit: boolean; message?: string | null };
+    canCreateReservation?: boolean;
+    lockedBookingRequestsCount?: number;
+    lockedBookingRequests?: Array<{
+        id: number;
+        car: { id: number; make: string; model: string; year: number; license_plate: string } | null;
+        start_date: string | null;
+        end_date: string | null;
+        total_days: number | null;
+        total_amount: number | string | null;
+        currency: string | null;
+        created_at: string | null;
+        customer_name: string | null;
+        customer_email: string | null;
+        customer_phone: string | null;
+        pickup_location: string | null;
+        return_location: string | null;
+    }>;
+    canRevealLockedBookingRequests?: boolean;
     currency: { symbol: string; code: string }
 }>();
-const { t, locale } = useTrans();
+const { t, raw, locale } = useTrans();
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
 
@@ -90,10 +109,64 @@ const statusLabel = (key: string, fallback: string) => {
 const search = ref(props.filters?.search || '');
 const statusFilter = ref(props.filters?.status || 'all');
 const branchFilter = ref(props.filters?.branch_id ? String(props.filters.branch_id) : 'all');
+const convertingBookingRequestId = ref<number | null>(null);
+const lockedBookingRequestsMessage = computed(() => raw(
+    'dashboard.admin.reservations.index.locked_booking_requests_notice',
+    locale.value === 'ar'
+        ? ':count طلبات حجز مقفلة بسبب حد الخطة الحالي. تبقى بيانات العملاء مخفية حتى تسمح الخطة بمزيد من الحجوزات.'
+        : ':count locked booking request(s) are waiting behind the current plan limit. Customer details remain hidden until the plan allows more reservations.',
+));
+const lockedBookingRequestsTitle = computed(() => raw(
+    'dashboard.admin.reservations.index.locked_booking_requests_title',
+    locale.value === 'ar' ? 'طلبات الحجز المقفلة' : 'Locked booking requests',
+));
+const lockedBookingRequestsHidden = computed(() => raw(
+    'dashboard.admin.reservations.index.locked_booking_requests_hidden',
+    locale.value === 'ar' ? 'بيانات العميل مخفية حتى تسمح الخطة بمزيد من الحجوزات.' : 'Customer details are hidden until the plan allows more reservations.',
+));
+const lockedBookingRequestsRevealHint = computed(() => raw(
+    'dashboard.admin.reservations.index.locked_booking_requests_reveal_hint',
+    locale.value === 'ar' ? 'الخطة الحالية تسمح بعرض بيانات هذه الطلبات.' : 'The current plan allows these request details to be shown.',
+));
+const lockedBookingLabels = computed(() => ({
+    customer: raw('dashboard.common.customer', locale.value === 'ar' ? 'العميل' : 'Customer'),
+    car: raw('dashboard.common.car', locale.value === 'ar' ? 'السيارة' : 'Car'),
+    period: raw('dashboard.common.period', locale.value === 'ar' ? 'الفترة' : 'Period'),
+    locations: raw('dashboard.common.locations', locale.value === 'ar' ? 'المواقع' : 'Locations'),
+    total: raw('dashboard.common.total', locale.value === 'ar' ? 'الإجمالي' : 'Total'),
+    createdAt: raw('dashboard.common.created_at', locale.value === 'ar' ? 'تاريخ الإنشاء' : 'Created'),
+    hidden: raw('dashboard.common.hidden', locale.value === 'ar' ? 'مخفي' : 'Hidden'),
+    days: raw('dashboard.common.days', locale.value === 'ar' ? 'أيام' : 'days'),
+    actions: raw('dashboard.common.actions', 'Actions'),
+    convert: raw('dashboard.admin.reservations.index.convert_locked_booking_request', 'Convert to reservation'),
+}));
+
+const money = (amount: number | string | null | undefined, currency?: string | null) => {
+    const value = Number(amount || 0);
+    const code = String(currency || props.currency?.code || '').trim();
+
+    return `${code ? `${code} ` : ''}${value.toFixed(2)}`;
+};
 
 const navigateToReservation = (id: number) => {
     if (!subdomain.value) return;
     router.visit(show([subdomain.value, id]).url);
+};
+
+const convertLockedBookingRequest = (id: number) => {
+    if (!subdomain.value || convertingBookingRequestId.value) return;
+
+    convertingBookingRequestId.value = id;
+    router.post(
+        `/admin/booking-requests/${id}/convert`,
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                convertingBookingRequestId.value = null;
+            },
+        },
+    );
 };
 
 function doSearch() {
@@ -125,10 +198,95 @@ watch(search, (v, ov) => {
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">{{ t('dashboard.admin.reservations.index.title') }}</h1>
-                <Link v-if="subdomain" href="/admin/reservations/create">
+                <Link v-if="subdomain && props.canCreateReservation !== false" href="/admin/reservations/create">
                     <Button>{{ t('dashboard.admin.reservations.index.create_reservation') }}</Button>
                 </Link>
+                <Button v-else disabled>{{ t('dashboard.admin.reservations.index.create_reservation') }}</Button>
             </div>
+            <div v-if="props.reservationUsage?.at_limit && props.reservationUsage?.message" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                {{ props.reservationUsage.message }}
+                <span v-if="props.reservationUsage.limit !== null" class="ms-2">
+                    ({{ props.reservationUsage.current }} / {{ props.reservationUsage.limit }})
+                </span>
+            </div>
+            <div v-if="Number(props.lockedBookingRequestsCount || 0) > 0" class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                {{ lockedBookingRequestsMessage.replace(':count', String(Number(props.lockedBookingRequestsCount || 0))) }}
+            </div>
+            <section
+                v-if="Number(props.lockedBookingRequestsCount || 0) > 0"
+                class="overflow-hidden rounded-lg border border-amber-200 bg-white shadow-sm"
+            >
+                <div class="flex flex-col gap-2 border-b border-amber-100 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-base font-semibold text-amber-950">{{ lockedBookingRequestsTitle }}</h2>
+                        <p class="mt-1 text-sm" :class="props.canRevealLockedBookingRequests ? 'text-emerald-700' : 'text-amber-700'">
+                            {{ props.canRevealLockedBookingRequests ? lockedBookingRequestsRevealHint : lockedBookingRequestsHidden }}
+                        </p>
+                    </div>
+                    <span class="w-fit rounded-full bg-white px-3 py-1 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
+                        {{ Number(props.lockedBookingRequestsCount || 0) }}
+                    </span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[900px] text-sm">
+                        <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                            <tr>
+                                <th class="px-4 py-3">{{ lockedBookingLabels.customer }}</th>
+                                <th class="px-4 py-3">{{ lockedBookingLabels.car }}</th>
+                                <th class="px-4 py-3">{{ lockedBookingLabels.period }}</th>
+                                <th class="px-4 py-3">{{ lockedBookingLabels.locations }}</th>
+                                <th class="px-4 py-3">{{ lockedBookingLabels.total }}</th>
+                                <th class="px-4 py-3">{{ lockedBookingLabels.createdAt }}</th>
+                                <th class="px-4 py-3">{{ lockedBookingLabels.actions }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="request in props.lockedBookingRequests || []" :key="request.id">
+                                <td class="px-4 py-3">
+                                    <template v-if="props.canRevealLockedBookingRequests">
+                                        <div class="font-medium text-gray-900">{{ request.customer_name || '-' }}</div>
+                                        <div class="text-gray-500">{{ request.customer_email || '-' }}</div>
+                                        <div class="text-gray-500">{{ request.customer_phone || '-' }}</div>
+                                    </template>
+                                    <span v-else class="rounded bg-gray-100 px-2 py-1 text-gray-500">{{ lockedBookingLabels.hidden }}</span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div v-if="request.car" class="font-medium text-gray-900">
+                                        {{ request.car.year }} {{ request.car.make }} {{ request.car.model }}
+                                    </div>
+                                    <div class="text-gray-500">{{ request.car?.license_plate || '-' }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-gray-700">
+                                    <div>{{ request.start_date || '-' }} - {{ request.end_date || '-' }}</div>
+                                    <div class="text-gray-500">{{ request.total_days || 0 }} {{ lockedBookingLabels.days }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-gray-700">
+                                    <template v-if="props.canRevealLockedBookingRequests">
+                                        <div>{{ request.pickup_location || '-' }}</div>
+                                        <div class="text-gray-500">{{ request.return_location || '-' }}</div>
+                                    </template>
+                                    <span v-else class="rounded bg-gray-100 px-2 py-1 text-gray-500">{{ lockedBookingLabels.hidden }}</span>
+                                </td>
+                                <td class="px-4 py-3 font-medium text-gray-900">
+                                    {{ money(request.total_amount, request.currency) }}
+                                </td>
+                                <td class="px-4 py-3 text-gray-500">{{ request.created_at || '-' }}</td>
+                                <td class="px-4 py-3">
+                                    <Button
+                                        v-if="props.canRevealLockedBookingRequests"
+                                        size="sm"
+                                        :disabled="convertingBookingRequestId === request.id"
+                                        @click="convertLockedBookingRequest(request.id)"
+                                    >
+                                        {{ lockedBookingLabels.convert }}
+                                    </Button>
+                                    <span v-else class="text-gray-400">-</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
 
             <div class="flex flex-col gap-4">
                 <div class="flex items-center gap-2">
