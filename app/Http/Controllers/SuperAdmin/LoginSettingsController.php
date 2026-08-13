@@ -17,6 +17,10 @@ class LoginSettingsController extends Controller
     {
         return Inertia::render('SuperAdmin/Settings/Login', [
             'socialLoginSettings' => SocialLoginSettings::forUi(),
+            'socialLoginRedirectUris' => [
+                'google' => route('social-login.callback', ['provider' => 'google']),
+                'apple' => route('social-login.callback', ['provider' => 'apple']),
+            ],
             'captchaSettings' => CaptchaSettings::forUi(),
         ]);
     }
@@ -42,6 +46,24 @@ class LoginSettingsController extends Controller
         $currentSocialLogin = SocialLoginSettings::load();
         $normalizedSocialLogin = SocialLoginSettings::normalize($validated['social_login'] ?? []);
         $normalizedSocialLogin = SocialLoginSettings::mergeSecrets($currentSocialLogin, $normalizedSocialLogin);
+
+        foreach (['google', 'apple'] as $provider) {
+            if (! (bool) data_get($normalizedSocialLogin, "{$provider}.enabled")) {
+                continue;
+            }
+
+            if (trim((string) data_get($normalizedSocialLogin, "{$provider}.client_id")) === '') {
+                return back()->withErrors([
+                    "social_login.{$provider}.client_id" => 'Client ID is required when this provider is enabled.',
+                ])->withInput();
+            }
+
+            if (trim((string) data_get($normalizedSocialLogin, "{$provider}.client_secret")) === '') {
+                return back()->withErrors([
+                    "social_login.{$provider}.client_secret" => 'Client Secret is required when this provider is enabled.',
+                ])->withInput();
+            }
+        }
 
         SiteSetting::query()->updateOrCreate(
             ['key' => SocialLoginSettings::KEY],

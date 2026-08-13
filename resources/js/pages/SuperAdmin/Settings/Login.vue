@@ -33,6 +33,10 @@ interface CaptchaSettings {
 
 const props = defineProps<{
     socialLoginSettings: SocialLoginSettings;
+    socialLoginRedirectUris: {
+        google: string;
+        apple: string;
+    };
     captchaSettings: CaptchaSettings;
 }>();
 
@@ -112,6 +116,13 @@ const submit = () => {
                                     </p>
                                 </div>
                             </div>
+                            <div class="space-y-2">
+                                <Label for="google_redirect_uri">{{ localize('Authorized redirect URI', 'رابط إعادة التوجيه المعتمد') }}</Label>
+                                <Input id="google_redirect_uri" :model-value="props.socialLoginRedirectUris.google" readonly dir="ltr" class="font-mono text-sm" />
+                                <p class="text-xs text-muted-foreground">
+                                    {{ localize('Add this exact URL in Google Cloud Console.', 'أضف هذا الرابط كما هو داخل Google Cloud Console.') }}
+                                </p>
+                            </div>
                         </div>
 
                         <div class="space-y-4 rounded-md border p-4">
@@ -137,6 +148,10 @@ const submit = () => {
                                         {{ form.errors['social_login.apple.client_secret'] }}
                                     </p>
                                 </div>
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="apple_redirect_uri">{{ localize('Authorized redirect URI', 'رابط إعادة التوجيه المعتمد') }}</Label>
+                                <Input id="apple_redirect_uri" :model-value="props.socialLoginRedirectUris.apple" readonly dir="ltr" class="font-mono text-sm" />
                             </div>
                         </div>
                     </CardContent>

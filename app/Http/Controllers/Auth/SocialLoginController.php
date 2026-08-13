@@ -31,7 +31,9 @@ class SocialLoginController extends Controller
             $request->session()->put('social_login_tenant', $tenantSubdomain);
         }
 
-        return Socialite::driver($provider)->redirect();
+        return Socialite::driver($provider)
+            ->redirectUrl($this->callbackUrl($provider))
+            ->redirect();
     }
 
     /**
@@ -44,7 +46,9 @@ class SocialLoginController extends Controller
         }
 
         try {
-            $socialUser = Socialite::driver($provider)->user();
+            $socialUser = Socialite::driver($provider)
+                ->redirectUrl($this->callbackUrl($provider))
+                ->user();
         } catch (\Exception $e) {
             return redirect('/login')->with('error', 'Authentication failed. Please try again.');
         }
@@ -123,8 +127,11 @@ class SocialLoginController extends Controller
             return false;
         }
 
-        $settings = SocialLoginSettings::load();
+        return SocialLoginSettings::providerIsReady($provider);
+    }
 
-        return (bool) data_get($settings, "{$provider}.enabled");
+    private function callbackUrl(string $provider): string
+    {
+        return route('social-login.callback', ['provider' => $provider]);
     }
 }

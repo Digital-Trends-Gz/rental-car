@@ -167,11 +167,9 @@ class HandleInertiaRequests extends Middleware
             ],
             'social_login' => function () {
                 try {
-                    $settings = SocialLoginSettings::load();
-
                     return [
-                        'google' => ['enabled' => (bool) data_get($settings, 'google.enabled')],
-                        'apple' => ['enabled' => (bool) data_get($settings, 'apple.enabled')],
+                        'google' => ['enabled' => SocialLoginSettings::providerIsReady('google')],
+                        'apple' => ['enabled' => SocialLoginSettings::providerIsReady('apple')],
                     ];
                 } catch (\Throwable) {
                     return [

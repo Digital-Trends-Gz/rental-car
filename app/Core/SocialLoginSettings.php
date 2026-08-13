@@ -95,4 +95,31 @@ class SocialLoginSettings
 
         return $settings;
     }
+
+    public static function providerIsReady(string $provider): bool
+    {
+        if (!in_array($provider, ['google', 'apple'], true)) {
+            return false;
+        }
+
+        $settings = self::load();
+
+        if (! (bool) data_get($settings, "{$provider}.enabled")) {
+            return false;
+        }
+
+        $credentials = self::credentials($provider, $settings);
+
+        return $credentials['client_id'] !== '' && $credentials['client_secret'] !== '';
+    }
+
+    public static function credentials(string $provider, ?array $settings = null): array
+    {
+        $settings ??= self::load();
+
+        return [
+            'client_id' => trim((string) (data_get($settings, "{$provider}.client_id") ?: config("services.{$provider}.client_id", ''))),
+            'client_secret' => trim((string) (data_get($settings, "{$provider}.client_secret") ?: config("services.{$provider}.client_secret", ''))),
+        ];
+    }
 }
