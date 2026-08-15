@@ -106,6 +106,13 @@ const localePrefix = computed(() => {
     return match ? `/${match[1]}` : '';
 });
 const adminHref = (path: string) => `${localePrefix.value}/admin${path}`;
+const tenantHomeHref = computed(() => {
+    if (currentTenant.value) {
+        return localePrefix.value || '/';
+    }
+
+    return typeof home === 'function' ? home().url : '/';
+});
 const authPermissions = computed<string[]>(() =>
     Array.isArray(page.props?.auth?.permissions)
         ? page.props.auth.permissions
@@ -467,9 +474,7 @@ const mainNavItems = computed<SidebarNavItem[]>(() => {
                             :href="
                                 isSuperAdmin
                                     ? '/superadmin'
-                                    : typeof home === 'function'
-                                      ? home().url
-                                      : '/'
+                                    : tenantHomeHref
                             "
                         >
                             <div v-if="currentTenant" class="flex w-full flex-row items-center gap-3">
