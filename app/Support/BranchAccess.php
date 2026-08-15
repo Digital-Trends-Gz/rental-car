@@ -7,8 +7,9 @@ use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class BranchAccess
 {
@@ -39,7 +40,8 @@ class BranchAccess
         }
 
         if (ApiAccessMode::hasTenantRole($user, 'tenant-partner')) {
-            return empty(ApiAccessMode::effectiveBranchId($user));
+            return $this->assignedBranchIds($user) === []
+                && empty(ApiAccessMode::effectiveBranchId($user));
         }
 
         if (ApiAccessMode::isOwnerCapable($user)) {
@@ -68,9 +70,28 @@ class BranchAccess
             return null;
         }
 
-        $branchId = ApiAccessMode::effectiveBranchId($user);
+        $branchIds = $this->accessibleBranchIds($user);
 
-        return $branchId ? (int) $branchId : null;
+        return $branchIds[0] ?? null;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function accessibleBranchIds(?User $user): array
+    {
+        if (!$user || empty($user->tenant_id) || $this->canAccessAllBranches($user)) {
+            return [];
+        }
+
+        $branchIds = $this->assignedBranchIds($user);
+        $legacyBranchId = ApiAccessMode::effectiveBranchId($user);
+
+        if ($legacyBranchId) {
+            $branchIds[] = (int) $legacyBranchId;
+        }
+
+        return array_values(array_unique(array_filter($branchIds)));
     }
 
     public function availableBranchesForUser(?User $user): Collection
@@ -89,14 +110,14 @@ class BranchAccess
                 ->get(['id', 'name']);
         }
 
-        $branchId = ApiAccessMode::effectiveBranchId($user);
+        $branchIds = $this->accessibleBranchIds($user);
 
-        if (empty($branchId)) {
+        if ($branchIds === []) {
             return collect();
         }
 
         $query = Branch::query()
-            ->whereKey((int) $branchId)
+            ->whereIn('id', $branchIds)
             ->orderBy('name');
 
         $this->onlyUnlockedBranches($query);
@@ -120,6 +141,29 @@ class BranchAccess
         return $id > 0 ? $id : null;
     }
 
+    public function resolveAccessibleBranchId(?User $user, ?int $requestedBranchId): ?int
+    {
+        if (!$user) {
+            return null;
+        }
+
+        if ($this->canAccessAllBranches($user)) {
+            return $requestedBranchId;
+        }
+
+        $branchIds = $this->accessibleBranchIds($user);
+
+        if ($branchIds === []) {
+            return null;
+        }
+
+        if ($requestedBranchId && in_array($requestedBranchId, $branchIds, true)) {
+            return $requestedBranchId;
+        }
+
+        return $branchIds[0];
+    }
+
     public function applyToQuery(Builder $query, ?User $user, ?int $requestedBranchId, string $column = 'branch_id'): Builder
     {
         if (!$user) {
@@ -132,13 +176,13 @@ class BranchAccess
                 : $query;
         }
 
-        $branchId = ApiAccessMode::effectiveBranchId($user);
+        $branchIds = $this->accessibleBranchIds($user);
 
-        if (empty($branchId)) {
+        if ($branchIds === []) {
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where($column, (int) $branchId);
+        return $query->whereIn($column, $branchIds);
     }
 
     public function canAccessBranchId(?User $user, ?int $branchId): bool
@@ -155,7 +199,7 @@ class BranchAccess
             return true;
         }
 
-        return (int) (ApiAccessMode::effectiveBranchId($user) ?? 0) === $branchId;
+        return in_array($branchId, $this->accessibleBranchIds($user), true);
     }
 
     public function resolveWritableBranchId(?User $user, ?int $requestedBranchId): ?int
@@ -178,14 +222,24 @@ class BranchAccess
             return $query->exists() ? $requestedBranchId : null;
         }
 
-        $branchId = ApiAccessMode::effectiveBranchId($user);
+        $branchIds = $this->accessibleBranchIds($user);
+
+        if ($branchIds === []) {
+            return null;
+        }
+
+        if ($requestedBranchId && !in_array($requestedBranchId, $branchIds, true)) {
+            return null;
+        }
+
+        $branchId = $requestedBranchId ?: (count($branchIds) === 1 ? $branchIds[0] : null);
 
         if (!$branchId) {
             return null;
         }
 
         $query = Branch::query()
-            ->whereKey((int) $branchId)
+            ->whereKey($branchId)
             ->limit(1);
 
         $this->onlyUnlockedBranches($query);
@@ -198,6 +252,23 @@ class BranchAccess
         if (Schema::hasColumn('branches', 'plan_locked_at')) {
             $query->whereNull('plan_locked_at');
         }
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function assignedBranchIds(User $user): array
+    {
+        if (!Schema::hasTable('branch_user')) {
+            return [];
+        }
+
+        return DB::table('branch_user')
+            ->where('user_id', $user->id)
+            ->where('tenant_id', (int) $user->tenant_id)
+            ->pluck('branch_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
     }
 
     private function tenantHasNoBranches(User $user): bool

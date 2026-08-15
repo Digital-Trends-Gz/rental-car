@@ -28,7 +28,7 @@ const form = useForm({
     name: props.employee?.name ?? '',
     email: props.employee?.email ?? '',
     civil_number: props.employee?.civil_number ?? '',
-    branch_id: props.employee?.branch_id ?? '',
+    branch_ids: props.employee?.branch_ids ?? (props.employee?.branch_id ? [props.employee.branch_id] : []),
     is_active: props.employee?.is_active ?? true,
     role_ids: props.employee?.role_ids ?? [],
     permission_ids: props.employee?.permission_ids ?? [],
@@ -71,6 +71,11 @@ function onRoleCheckboxChange(id: number, event: Event) {
 function onPermissionCheckboxChange(id: number, event: Event) {
     const checked = (event.target as HTMLInputElement).checked;
     toggleArrayValue(form.permission_ids, id, checked);
+}
+
+function onBranchCheckboxChange(id: number, event: Event) {
+    const checked = (event.target as HTMLInputElement).checked;
+    toggleArrayValue(form.branch_ids, id, checked);
 }
 
 function onActiveCheckboxChange(event: Event) {
@@ -139,20 +144,30 @@ function roleDisplayName(role: { name?: string; display_name: string }) {
                             <InputError :message="form.errors.civil_number" class="mt-1" />
                         </div>
 
-                        <!-- Branch -->
-                        <div class="md:col-span-2">
-                            <Label for="branch_id">{{ t('dashboard.admin.employees.table.branch') }}</Label>
-                            <select
-                                id="branch_id"
-                                v-model="form.branch_id"
-                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                <option value="">{{ t('dashboard.admin.employees.table.no_branch') }}</option>
-                                <option v-for="branch in props.branches" :key="branch.id" :value="branch.id">
-                                    {{ branch.name }}
-                                </option>
-                            </select>
-                            <InputError :message="form.errors.branch_id" class="mt-1" />
+                        <!-- Branches -->
+                        <div class="md:col-span-2 space-y-3">
+                            <Label>{{ t('dashboard.admin.employees.table.branch') }}</Label>
+                            <div class="grid grid-cols-1 gap-3 rounded-md border p-4 sm:grid-cols-2">
+                                <div v-for="branch in props.branches" :key="branch.id" class="flex items-center space-x-2">
+                                    <input
+                                        :id="`branch-${branch.id}`"
+                                        type="checkbox"
+                                        :checked="form.branch_ids.includes(branch.id)"
+                                        @change="onBranchCheckboxChange(branch.id, $event)"
+                                        class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                    />
+                                    <Label :for="`branch-${branch.id}`" class="cursor-pointer text-sm font-medium leading-none">
+                                        {{ branch.name }}
+                                    </Label>
+                                </div>
+                                <div v-if="props.branches.length === 0" class="col-span-2 text-sm italic text-gray-500">
+                                    {{ t('dashboard.admin.employees.table.no_branch') }}
+                                </div>
+                            </div>
+                            <p class="text-xs text-muted-foreground">
+                                {{ t('dashboard.admin.employees.table.no_branch') }} = {{ t('dashboard.admin.employees.all_branches') }}
+                            </p>
+                            <InputError :message="form.errors.branch_ids" class="mt-1" />
                         </div>
 
                         <!-- Roles -->

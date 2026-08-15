@@ -16,7 +16,7 @@ import { index as tenantAdminCarsIndex } from '@/routes/admin/cars/index';
 import { index as tenantClientReservationsIndex } from '@/routes/client/reservations/index';
 import { dashboard as superAdminDashboard } from '@/routes/superadmin/index';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Apple, ArrowUp, Check, ChevronDown, Facebook, Instagram, Languages, Linkedin, Menu, MessageCircle, Play, Smartphone, X } from 'lucide-vue-next';
+import { Apple, ArrowUp, Check, ChevronDown, Facebook, Instagram, Languages, Linkedin, Menu, MessageCircle, Play, X } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const $page = usePage<any>();
@@ -333,20 +333,6 @@ const isClientsNavLink = (link: { label: string; href: string }) => {
 
     return href === '#clients' || href === '/#clients';
 };
-const landingStaticPageLinks = computed(() => [
-    {
-        label: footerLabels.privacy(),
-        href: localizedLandingPath('/privacy-policy'),
-    },
-    {
-        label: footerLabels.terms(),
-        href: localizedLandingPath('/terms-of-use'),
-    },
-    {
-        label: footerLabels.securityPolicy(),
-        href: localizedLandingPath('/security-policy'),
-    },
-]);
 const landingNavLinks = computed(() => {
     const fallback = [
         { label: 'Cars', href: '#cars' },
@@ -423,21 +409,6 @@ const landingFooterCopyright = computed(() => {
 });
 const appStoreButtonDirection = computed(() => (footerDirection.value === 'rtl' ? 'rtl' : 'ltr'));
 const appStoreButtonTextClass = computed(() => (footerDirection.value === 'rtl' ? 'text-right' : 'text-left'));
-const landingFooterNavLinks = computed(() => {
-    const links: Array<{ label: string; href: string }> = [];
-
-    if (landingSettings.value?.mobile_apps_section?.enabled !== false) {
-        links.push({ label: footerLabels.application(), href: resolveLandingHref('#application') });
-    }
-
-    if (landingSettings.value?.plans_comparison_page?.enabled !== false) {
-        links.push({ label: footerLabels.plans(), href: resolveLandingHref('#pricing') });
-    }
-
-    links.push(...landingStaticPageLinks.value);
-
-    return links;
-});
 const landingFooterNavColumns = computed(() => [
     [{ label: footerLabels.privacy(), href: localizedLandingPath('/privacy-policy') }],
     [{ label: footerLabels.terms(), href: localizedLandingPath('/terms-of-use') }],
@@ -598,7 +569,7 @@ onBeforeUnmount(() => {
             <nav class="fixed left-0 right-0 top-0 z-50 border-b border-border bg-background/95 shadow-sm backdrop-blur-lg">
                 <div class="section-container relative flex h-16 max-w-7xl items-center justify-center">
                     <Link :href="landingHomeUrl" class="absolute left-4 inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground sm:left-6 lg:left-8">
-                        <AppLogoIcon class="h-6 w-6" />
+                        <AppLogoIcon class="h-8 w-auto max-w-32" prefer-app-branding />
                         <span v-if="!hasAppLogo">{{ appName }}</span>
                     </Link>
 

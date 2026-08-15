@@ -209,17 +209,19 @@ class OwnerReservationsController extends Controller
     {
         $branchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
 
+        $resolvedBranchId = $this->branchAccess->resolveAccessibleBranchId($user, $branchId);
+
         if (!$this->branchAccess->canAccessAllBranches($user)) {
-            return $this->branchAccess->ownerScopedBranchId($user);
+            return $resolvedBranchId;
         }
 
-        if (!$branchId) {
+        if (!$resolvedBranchId) {
             return null;
         }
 
         $exists = Branch::query()
             ->where('tenant_id', (int) $user->tenant_id)
-            ->whereKey($branchId)
+            ->whereKey($resolvedBranchId)
             ->exists();
 
         if (!$exists) {
@@ -228,7 +230,7 @@ class OwnerReservationsController extends Controller
             ]);
         }
 
-        return $branchId;
+        return $resolvedBranchId;
     }
 
     private function baseReservationQuery(int $tenantId): Builder

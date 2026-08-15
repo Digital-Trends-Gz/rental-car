@@ -10,14 +10,27 @@ defineOptions({
 
 interface Props {
     className?: HTMLAttributes['class'];
+    preferAppBranding?: boolean;
 }
 
 const props = defineProps<Props>();
 const attrs = useAttrs();
 
 const page = usePage<any>();
-const logoUrl = computed(() => page.props.tenant_site_settings?.logo_url || page.props.app_branding?.logo_url || '/logo/logo.png');
-const logoAlt = computed(() => page.props.tenant_site_settings?.site_name || page.props.current_tenant?.name || page.props.name || 'Website logo');
+const logoUrl = computed(() => {
+    if (props.preferAppBranding) {
+        return page.props.app_branding?.logo_url || page.props.tenant_site_settings?.logo_url || '/logo/logo.png';
+    }
+
+    return page.props.tenant_site_settings?.logo_url || page.props.app_branding?.logo_url || '/logo/logo.png';
+});
+const logoAlt = computed(() => {
+    if (props.preferAppBranding) {
+        return page.props.name || page.props.app_branding?.app_name || 'Website logo';
+    }
+
+    return page.props.tenant_site_settings?.site_name || page.props.current_tenant?.name || page.props.name || 'Website logo';
+});
 const logoClass = computed(() => cn('h-12 w-auto object-contain', props.className, attrs.class as HTMLAttributes['class']));
 </script>
 

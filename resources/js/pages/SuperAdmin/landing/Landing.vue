@@ -20,7 +20,6 @@ import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Apple,
     BriefcaseBusiness,
-    Building2,
     Calendar,
     Check,
     ChevronDown,
@@ -35,7 +34,6 @@ import {
     MessageCircle,
     Play,
     Search,
-    Smartphone,
     Users,
     X,
 } from 'lucide-vue-next';
@@ -559,8 +557,6 @@ const translatedLabel = (key: string, fallback: string) => {
     return value === key ? fallback : value;
 };
 const activeLocaleBase = computed(() => locale.value.toLowerCase().split('-')[0]);
-const localizedFallback = (fallback: string, localized: Partial<Record<string, string>> = {}) =>
-    localized[activeLocaleBase.value] || fallback;
 const translatedLandingLabel = (key: string, fallback: string, localized: Partial<Record<string, string>> = {}) => {
     const localizedValue = localized[activeLocaleBase.value];
     if (localizedValue) {
@@ -600,36 +596,6 @@ const footerLabels = {
     securityPolicy: () => footerNavLabel('nav_security_policy', 'Security Policy', { ar: '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u0623\u0645\u0627\u0646' }),
 };
 
-const staticPageLinks = computed(() => [
-    {
-        label: footerLabels.privacy(),
-        href: localizedPath('/privacy-policy'),
-    },
-    {
-        label: footerLabels.terms(),
-        href: localizedPath('/terms-of-use'),
-    },
-    {
-        label: footerLabels.securityPolicy(),
-        href: localizedPath('/security-policy'),
-    },
-]);
-
-const footerLinks = computed(() => {
-    const links: QuickLinkItem[] = [];
-
-    if (props.landingSettings.mobile_apps_section?.enabled !== false) {
-        links.push({ label: footerLabels.application(), href: '#application' });
-    }
-
-    if (props.landingSettings.plans_comparison_page?.enabled !== false) {
-        links.push({ label: footerLabels.plans(), href: '#pricing' });
-    }
-
-    links.push(...staticPageLinks.value);
-
-    return links;
-});
 const footerLinkColumns = computed(() => [
     [{ label: footerLabels.privacy(), href: localizedPath('/privacy-policy') }],
     [{ label: footerLabels.terms(), href: localizedPath('/terms-of-use') }],
@@ -1207,7 +1173,7 @@ onUnmounted(() => {
                     :href="localizedPath('/')"
                     class="absolute left-4 inline-flex items-center gap-2 text-xl font-bold tracking-tight text-foreground sm:left-6 lg:left-8"
                 >
-                    <AppLogoIcon class="h-6 w-6" />
+                    <AppLogoIcon class="h-8 w-auto max-w-32" prefer-app-branding />
                     <span v-if="!hasAppLogo">{{ appName }}</span>
                 </Link>
 
@@ -2890,7 +2856,7 @@ onUnmounted(() => {
                         class="inline-flex items-center justify-center justify-self-center transition md:justify-self-start"
                         :aria-label="appName"
                     >
-                        <AppLogoIcon class="h-14 w-auto md:h-16" />
+                        <AppLogoIcon class="h-14 w-auto md:h-16" prefer-app-branding />
                     </Link>
 
                     <nav

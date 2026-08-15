@@ -57,9 +57,8 @@ class EmployeesController extends Controller
 
         $employees = User::query()
             ->where('role', UserRole::ADMIN)
-            ->when($canAccessAllBranches && $branchId, fn ($q) => $q->where('branch_id', $branchId))
-            ->when(!$canAccessAllBranches && !empty($user?->branch_id), fn ($q) => $q->where('branch_id', (int) $user->branch_id))
-            ->when(!$canAccessAllBranches && empty($user?->branch_id), fn ($q) => $q->whereRaw('1 = 0'))
+            ->when($canAccessAllBranches && $branchId, fn ($q) => $this->whereEmployeeHasBranch($q, $branchId))
+            ->when(!$canAccessAllBranches, fn ($q) => $this->whereEmployeeInBranches($q, $this->branchAccess->accessibleBranchIds($user)))
             ->when($search, function ($q) use ($search) {
                 $q->where(function ($w) use ($search) {
                     $w->where('name', 'like', "%{$search}%")
@@ -67,7 +66,7 @@ class EmployeesController extends Controller
                         ->orWhere('civil_number', 'like', "%{$search}%");
                 });
             })
-            ->with(['branch', 'roles'])
+            ->with(['branch', 'branches:id,name', 'roles'])
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -76,6 +75,10 @@ class EmployeesController extends Controller
             $employee->setRelation(
                 'direct_permissions',
                 $employee->permissions()->withoutGlobalScope('tenant')->get(['id', 'name', 'display_name'])
+            );
+            $employee->setAttribute(
+                'branch_names',
+                $employee->branches->pluck('name')->whenEmpty(fn ($names) => $employee->branch ? collect([$employee->branch->name]) : $names)->values()->all()
             );
             return $employee;
         });
@@ -137,8 +140,10 @@ class EmployeesController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')],
             'civil_number' => ['required', 'string', 'max:255', new DigitsOnly(), Rule::unique('users')],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'branch_id' => [
-                $canAccessAllBranches ? 'nullable' : 'nullable',
+            'branch_id' => ['nullable'],
+            'branch_ids' => ['nullable', 'array'],
+            'branch_ids.*' => [
+                'integer',
                 Rule::exists('branches', 'id')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
             ],
             'is_active' => ['required', 'boolean'],
@@ -150,10 +155,8 @@ class EmployeesController extends Controller
             'permission_ids.*' => [Rule::in($allowedPermissionIds)],
         ]);
 
-        $validated['branch_id'] = $this->branchAccess->resolveWritableBranchId(
-            $request->user(),
-            $this->branchAccess->normalizeRequestedBranchId($validated['branch_id'] ?? null)
-        );
+        $branchIds = $this->resolveWritableBranchIds($request->user(), $validated['branch_ids'] ?? [], $validated['branch_id'] ?? null);
+        $validated['branch_id'] = $branchIds[0] ?? null;
         $roleIds = $canManageRolesAndPermissions ? $this->normalizeAssignableRoleIds(
             $validated['role_ids'] ?? [],
             (string) $validated['email']
@@ -178,6 +181,7 @@ class EmployeesController extends Controller
         ]);
 
         $employee->syncRoles($roleIds);
+        $this->syncEmployeeBranches($employee, $branchIds);
 
         if ($canManageRolesAndPermissions && !empty($validated['permission_ids'])) {
             $employee->permissions()->sync(
@@ -195,9 +199,10 @@ class EmployeesController extends Controller
     public function edit(User $employee): Response
     {
         abort_unless($this->isAdminEmployee($employee), 403);
-        abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $employee->branch_id ? (int) $employee->branch_id : null), 403);
+        abort_unless($this->canAccessEmployeeBranches(request()->user(), $employee), 403);
 
         $branches = $this->branchAccess->availableBranchesForUser(request()->user());
+        $employee->loadMissing('branches:id,name');
         $canManageRolesAndPermissions = $this->canManageRolesAndPermissions();
         $roles = $canManageRolesAndPermissions ? $this->assignableRoles($employee) : collect();
         $permissions = $canManageRolesAndPermissions ? $this->planPermissionAccess->tenantPermissions() : collect();
@@ -210,6 +215,7 @@ class EmployeesController extends Controller
                 'email' => $employee->email,
                 'civil_number' => $employee->civil_number,
                 'branch_id' => $employee->branch_id,
+                'branch_ids' => $this->employeeBranchIds($employee),
                 'is_active' => (bool) $employee->is_active,
                 'role_ids' => $employee->roles->pluck('id')->toArray(),
                 'permission_ids' => $employee->permissions()
@@ -228,7 +234,7 @@ class EmployeesController extends Controller
     public function update(Request $request, User $employee)
     {
         abort_unless($this->isAdminEmployee($employee), 403);
-        abort_unless($this->branchAccess->canAccessBranchId($request->user(), $employee->branch_id ? (int) $employee->branch_id : null), 403);
+        abort_unless($this->canAccessEmployeeBranches($request->user(), $employee), 403);
 
         // Demo mode restriction
         if (config('app.demo_mode')) {
@@ -243,8 +249,10 @@ class EmployeesController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($employee->id)],
             'civil_number' => ['required', 'string', 'max:255', new DigitsOnly(), Rule::unique('users')->ignore($employee->id)],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
-            'branch_id' => [
-                $canAccessAllBranches ? 'nullable' : 'nullable',
+            'branch_id' => ['nullable'],
+            'branch_ids' => ['nullable', 'array'],
+            'branch_ids.*' => [
+                'integer',
                 Rule::exists('branches', 'id')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
             ],
             'is_active' => ['required', 'boolean'],
@@ -256,10 +264,8 @@ class EmployeesController extends Controller
             'permission_ids.*' => [Rule::in($allowedPermissionIds)],
         ]);
 
-        $validated['branch_id'] = $this->branchAccess->resolveWritableBranchId(
-            $request->user(),
-            $this->branchAccess->normalizeRequestedBranchId($validated['branch_id'] ?? null)
-        );
+        $branchIds = $this->resolveWritableBranchIds($request->user(), $validated['branch_ids'] ?? [], $validated['branch_id'] ?? null);
+        $validated['branch_id'] = $branchIds[0] ?? null;
         $roleIds = $canManageRolesAndPermissions ? $this->normalizeAssignableRoleIds(
             $validated['role_ids'] ?? [],
             (string) $validated['email'],
@@ -290,6 +296,7 @@ class EmployeesController extends Controller
                 $this->planPermissionAccess->allowedIdsFromInput($validated['permission_ids'] ?? [])
             );
         }
+        $this->syncEmployeeBranches($employee, $branchIds);
 
         return redirect()
             ->route('admin.employees.index', ['subdomain' => request('subdomain')])
@@ -299,7 +306,7 @@ class EmployeesController extends Controller
     public function destroy(User $employee)
     {
         abort_unless($this->isAdminEmployee($employee), 403);
-        abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $employee->branch_id ? (int) $employee->branch_id : null), 403);
+        abort_unless($this->canAccessEmployeeBranches(request()->user(), $employee), 403);
 
         // Demo mode restriction
         if (config('app.demo_mode')) {
@@ -316,6 +323,115 @@ class EmployeesController extends Controller
         return redirect()
             ->route('admin.employees.index', ['subdomain' => request('subdomain')])
             ->with('success', 'Employee deleted successfully.');
+    }
+
+    private function whereEmployeeHasBranch($query, int $branchId)
+    {
+        return $query->where(function ($branchQuery) use ($branchId) {
+            $branchQuery
+                ->where('branch_id', $branchId)
+                ->orWhereHas('branches', fn ($assignedQuery) => $assignedQuery->where('branches.id', $branchId));
+        });
+    }
+
+    /**
+     * @param array<int, int> $branchIds
+     */
+    private function whereEmployeeInBranches($query, array $branchIds)
+    {
+        $branchIds = array_values(array_unique(array_filter(array_map('intval', $branchIds))));
+
+        if ($branchIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function ($branchQuery) use ($branchIds) {
+            $branchQuery
+                ->whereIn('branch_id', $branchIds)
+                ->orWhereHas('branches', fn ($assignedQuery) => $assignedQuery->whereIn('branches.id', $branchIds));
+        });
+    }
+
+    /**
+     * @param array<int, mixed> $branchIds
+     * @return array<int, int>
+     */
+    private function resolveWritableBranchIds(?User $actor, array $branchIds, mixed $legacyBranchId = null): array
+    {
+        $normalized = collect($branchIds)
+            ->map(fn ($id) => $this->branchAccess->normalizeRequestedBranchId($id))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $legacyId = $this->branchAccess->normalizeRequestedBranchId($legacyBranchId);
+        if ($legacyId && !in_array($legacyId, $normalized, true)) {
+            $normalized[] = $legacyId;
+        }
+
+        if ($normalized === []) {
+            return [];
+        }
+
+        if ($this->branchAccess->canAccessAllBranches($actor)) {
+            return Branch::query()
+                ->where('tenant_id', $this->tenantId())
+                ->whereIn('id', $normalized)
+                ->pluck('id')
+                ->map(fn ($id): int => (int) $id)
+                ->all();
+        }
+
+        $allowed = $this->branchAccess->accessibleBranchIds($actor);
+
+        return array_values(array_intersect($normalized, $allowed));
+    }
+
+    /**
+     * @param array<int, int> $branchIds
+     */
+    private function syncEmployeeBranches(User $employee, array $branchIds): void
+    {
+        $payload = [];
+        foreach (array_values(array_unique($branchIds)) as $branchId) {
+            $payload[(int) $branchId] = ['tenant_id' => $this->tenantId()];
+        }
+
+        $employee->branches()->sync($payload);
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function employeeBranchIds(User $employee): array
+    {
+        $employee->loadMissing('branches:id');
+        $ids = $employee->branches->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+        if ($employee->branch_id) {
+            $ids[] = (int) $employee->branch_id;
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    private function canAccessEmployeeBranches(?User $actor, User $employee): bool
+    {
+        if ($this->branchAccess->canAccessAllBranches($actor)) {
+            return true;
+        }
+
+        $allowed = $this->branchAccess->accessibleBranchIds($actor);
+
+        if ($allowed === []) {
+            return false;
+        }
+
+        $employeeBranchIds = $this->employeeBranchIds($employee);
+
+        return $employeeBranchIds !== [] && array_intersect($employeeBranchIds, $allowed) !== [];
     }
 
     private function tenantId(): int

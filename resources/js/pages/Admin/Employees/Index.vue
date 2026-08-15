@@ -42,6 +42,8 @@ const props = defineProps<{
           id: number
           name: string
       }
+      branches?: Array<{ id: number; name: string }>
+      branch_names?: string[]
       roles?: Array<{ id: number; name: string; display_name: string }>
       direct_permissions?: Array<{ id: number; name: string; display_name: string }>
     }>
@@ -202,7 +204,7 @@ const destroyEmployee = () => {
                             <td class="px-4 py-3 text-sm text-gray-600">
                                 <div class="flex items-center gap-1">
                                     <MapPin class="h-3.5 w-3.5 text-gray-400" />
-                                    {{ employee.branch ? employee.branch.name : t('dashboard.admin.employees.table.no_branch') }}
+                                    {{ employee.branch_names?.length ? employee.branch_names.join(', ') : (employee.branch ? employee.branch.name : t('dashboard.admin.employees.table.no_branch')) }}
                                 </div>
                             </td>
                             <td class="px-4 py-3">

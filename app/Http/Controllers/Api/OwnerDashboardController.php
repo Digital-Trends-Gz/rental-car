@@ -41,11 +41,14 @@ class OwnerDashboardController extends Controller
 
         $this->planEntityLocks->sync($tenant);
         $allowedBranchIds = $this->allowedPlanBranchIds($tenant);
-        $scopedBranchId = $this->branchAccess->ownerScopedBranchId($user);
+        $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
+        $scopedBranchIds = $canAccessAllBranches
+            ? null
+            : $this->branchAccess->accessibleBranchIds($user);
 
         $branches = Branch::withoutTenantScope()
             ->where('tenant_id', (int) $user->tenant_id)
-            ->when($scopedBranchId, fn ($query) => $query->whereKey($scopedBranchId))
+            ->when($scopedBranchIds !== null, fn ($query) => $query->whereIn('id', $scopedBranchIds ?: [0]))
             ->when($allowedBranchIds !== null, fn ($query) => $query->whereIn('id', $allowedBranchIds ?: [0]))
             ->orderBy('name')
             ->get(['id', 'name', 'country', 'city', 'address', 'phone', 'email'])
@@ -57,9 +60,9 @@ class OwnerDashboardController extends Controller
             'status' => 'success',
             'locale' => $locale,
             'tenant_id' => (int) $user->tenant_id,
-            'can_access_all_branches' => $this->branchAccess->canAccessAllBranches($user),
+            'can_access_all_branches' => $canAccessAllBranches,
             'data' => array_values(array_filter([
-                $this->branchAccess->canAccessAllBranches($user)
+                $canAccessAllBranches
                     ? [
                         'id' => null,
                         'name' => $this->ownerText('branches.all', $locale, 'All branches'),
@@ -223,17 +226,19 @@ class OwnerDashboardController extends Controller
     {
         $branchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
 
+        $resolvedBranchId = $this->branchAccess->resolveAccessibleBranchId($user, $branchId);
+
         if (!$this->branchAccess->canAccessAllBranches($user)) {
-            return $this->branchAccess->ownerScopedBranchId($user);
+            return $resolvedBranchId;
         }
 
-        if (!$branchId) {
+        if (!$resolvedBranchId) {
             return null;
         }
 
         $exists = Branch::withoutTenantScope()
             ->where('tenant_id', (int) $user->tenant_id)
-            ->whereKey($branchId)
+            ->whereKey($resolvedBranchId)
             ->first();
 
         if (!$exists || $this->planEntityLocks->branchIsLockedByPlan($exists)) {
@@ -242,7 +247,7 @@ class OwnerDashboardController extends Controller
             ]);
         }
 
-        return $branchId;
+        return $resolvedBranchId;
     }
 
     /**

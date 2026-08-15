@@ -241,8 +241,7 @@ class AuthController extends Controller
         if ($activeMode === ApiAccessMode::MODE_EMPLOYEE) {
             $requestedBranchId = (int) $validated['branch_id'];
             $branchAccess = app(BranchAccess::class);
-            $scopedBranchId = $branchAccess->ownerScopedBranchId($user);
-            $activeBranchId = $scopedBranchId ?: $requestedBranchId;
+            $activeBranchId = $branchAccess->resolveAccessibleBranchId($user, $requestedBranchId) ?: $requestedBranchId;
 
             $branch = Branch::query()
                 ->withoutGlobalScope('tenant')
@@ -250,7 +249,7 @@ class AuthController extends Controller
                 ->where('tenant_id', (int) $user->tenant_id)
                 ->first();
 
-            if (!$branch || ($scopedBranchId && $requestedBranchId !== $scopedBranchId) || app(PlanEntityLocks::class)->branchIsLockedByPlan($branch)) {
+            if (!$branch || ($activeBranchId !== $requestedBranchId) || app(PlanEntityLocks::class)->branchIsLockedByPlan($branch)) {
                 throw ValidationException::withMessages([
                     'branch_id' => [$this->authMessage('switch_mode_branch_invalid')],
                 ]);
