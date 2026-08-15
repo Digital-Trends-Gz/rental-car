@@ -37,6 +37,8 @@ class User extends Authenticatable implements LaratrustUser, MustVerifyEmail
         'role',
         'tenant_id',
         'is_active',
+        'plan_locked_at',
+        'plan_lock_reason',
         'trial_ends_at',
         'branch_id',
         'provider',
@@ -96,6 +98,7 @@ class User extends Authenticatable implements LaratrustUser, MustVerifyEmail
             'password' => 'hashed',
             'role' => UserRole::class,
             'is_active' => 'boolean',
+            'plan_locked_at' => 'datetime',
             'trial_ends_at' => 'datetime',
         ];
     }

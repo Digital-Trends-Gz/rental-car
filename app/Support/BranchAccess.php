@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Collection;
 
 class BranchAccess
@@ -56,8 +57,12 @@ class BranchAccess
         }
 
         if ($this->canAccessAllBranches($user)) {
-            return Branch::query()
-                ->orderBy('name')
+            $query = Branch::query()
+                ->orderBy('name');
+
+            $this->onlyUnlockedBranches($query);
+
+            return $query
                 ->get(['id', 'name']);
         }
 
@@ -67,9 +72,13 @@ class BranchAccess
             return collect();
         }
 
-        return Branch::query()
+        $query = Branch::query()
             ->whereKey((int) $branchId)
-            ->orderBy('name')
+            ->orderBy('name');
+
+        $this->onlyUnlockedBranches($query);
+
+        return $query
             ->get(['id', 'name']);
     }
 
@@ -133,10 +142,39 @@ class BranchAccess
         }
 
         if ($this->canAccessAllBranches($user)) {
-            return $requestedBranchId;
+            if (!$requestedBranchId) {
+                return null;
+            }
+
+            $query = Branch::query()
+                ->whereKey($requestedBranchId)
+                ->limit(1);
+
+            $this->onlyUnlockedBranches($query);
+
+            return $query->exists() ? $requestedBranchId : null;
         }
 
-        return ApiAccessMode::effectiveBranchId($user);
+        $branchId = ApiAccessMode::effectiveBranchId($user);
+
+        if (!$branchId) {
+            return null;
+        }
+
+        $query = Branch::query()
+            ->whereKey((int) $branchId)
+            ->limit(1);
+
+        $this->onlyUnlockedBranches($query);
+
+        return $query->exists() ? (int) $branchId : null;
+    }
+
+    private function onlyUnlockedBranches(Builder $query): void
+    {
+        if (Schema::hasColumn('branches', 'plan_locked_at')) {
+            $query->whereNull('plan_locked_at');
+        }
     }
 
     private function tenantHasNoBranches(User $user): bool

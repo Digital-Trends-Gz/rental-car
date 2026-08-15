@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Plans\PlanPermissionAccess;
+use App\Services\Plans\PlanEntityLocks;
 use App\Services\Plans\PlanUsageLimits;
 use App\Services\Plans\PlanUsageNotifier;
 use App\Rules\DigitsOnly;
@@ -30,6 +31,7 @@ class EmployeesController extends Controller
 
     public function __construct(
         private BranchAccess $branchAccess,
+        private PlanEntityLocks $planEntityLocks,
         private PlanUsageLimits $planUsageLimits,
         private PlanUsageNotifier $planUsageNotifier,
         private PlanPermissionAccess $planPermissionAccess
@@ -41,6 +43,8 @@ class EmployeesController extends Controller
     {
         $search = $request->string('search')->toString();
         $user = $request->user();
+        $tenant = $this->currentTenant();
+        $this->planEntityLocks->sync($tenant);
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
         $branchOptions = $this->branchAccess->availableBranchesForUser($user)
@@ -84,13 +88,16 @@ class EmployeesController extends Controller
             ],
             'branches' => $branchOptions,
             'canAccessAllBranches' => $canAccessAllBranches,
-            'employeeUsage' => $this->planUsageLimits->employeeUsage($this->currentTenant()),
+            'employeeUsage' => $this->planUsageLimits->employeeUsage($tenant?->refresh()),
         ]);
     }
 
     public function create(): Response
     {
-        if ($message = $this->planUsageLimits->employeeLimitMessage($this->currentTenant())) {
+        $tenant = $this->currentTenant();
+        $this->planEntityLocks->sync($tenant);
+
+        if ($message = $this->planUsageLimits->employeeLimitMessage($tenant?->refresh())) {
             abort(403, $message);
         }
 
@@ -115,7 +122,10 @@ class EmployeesController extends Controller
             return redirect()->back()->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
         }
 
-        if ($message = $this->planUsageLimits->employeeLimitMessage($this->currentTenant())) {
+        $tenant = $this->currentTenant();
+        $this->planEntityLocks->sync($tenant);
+
+        if ($message = $this->planUsageLimits->employeeLimitMessage($tenant?->refresh())) {
             return redirect()->back()->with('error', $message);
         }
 

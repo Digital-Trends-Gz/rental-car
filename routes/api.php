@@ -31,6 +31,9 @@ Route::prefix('auth')->group(function () {
 
      Route::middleware('auth:sanctum')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
+    });
+
+     Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::post('switch-mode', [AuthController::class, 'switchMode']);
     });
@@ -42,11 +45,11 @@ Route::prefix('auth')->group(function () {
         ->middleware('throttle:api-password-reset');
 });
 
-Route::middleware('auth:sanctum')->prefix('dashboard')->group(function () {
+Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->prefix('dashboard')->group(function () {
     Route::get('summary', [DashboardController::class, 'summary'])->name('api.dashboard.summary');
 });
 
-Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
+Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->prefix('owner')->group(function () {
     Route::get('branches', [OwnerDashboardController::class, 'branches'])->name('api.owner.branches');
     Route::get('dashboard/summary', [OwnerDashboardController::class, 'summary'])->name('api.owner.dashboard.summary');
     Route::get('finance/summary', [OwnerFinanceController::class, 'summary'])->name('api.owner.finance.summary');
@@ -79,7 +82,7 @@ Route::middleware('auth:sanctum')->prefix('owner')->group(function () {
     Route::delete('car-discounts/{carDiscount}', [OwnerCarDiscountsController::class, 'destroy'])->name('api.owner.car-discounts.destroy');
 });
 
-Route::middleware('auth:sanctum')->prefix('tasks')->group(function () {
+Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->prefix('tasks')->group(function () {
     Route::get('today', [DailyTasksController::class, 'today'])->name('api.tasks.today');
     Route::get('status', [DailyTasksController::class, 'status'])->name('api.tasks.status');
     Route::post('start', [DailyTasksController::class, 'start'])->name('api.tasks.start');
@@ -87,17 +90,17 @@ Route::middleware('auth:sanctum')->prefix('tasks')->group(function () {
     Route::post('schedule', [DailyTasksController::class, 'schedule'])->name('api.tasks.schedule');
 });
 
-Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
+Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->prefix('notifications')->group(function () {
     Route::get('/', [NotificationsController::class, 'index'])->name('api.notifications.index');
     Route::get('count', [NotificationsController::class, 'count'])->name('api.notifications.count');
     Route::post('read-all', [NotificationsController::class, 'readAll'])->name('api.notifications.read-all');
 });
 
-Route::middleware('auth:sanctum')->prefix('clients')->group(function () {
+Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->prefix('clients')->group(function () {
     Route::get('{client}/status', [ClientsController::class, 'status'])->name('api.clients.status');
 });
 
-Route::middleware('auth:sanctum')->prefix('cars')->group(function () {
+Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->prefix('cars')->group(function () {
     Route::get('/', [CarsController::class, 'index'])->name('api.cars.index');
     Route::get('status', [CarsController::class, 'status'])->name('api.cars.status');
     Route::get('photo-history/status', [CarPhotoHistoryController::class, 'status'])->name('api.cars.photo-history.status');
@@ -106,7 +109,7 @@ Route::middleware('auth:sanctum')->prefix('cars')->group(function () {
     Route::delete('{car}/photo-histories/{photoHistory}', [CarPhotoHistoryController::class, 'destroy'])->name('api.cars.photo-histories.destroy');
 });
 
-Route::middleware('auth:sanctum')->prefix('reservations')->group(function () {
+Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->prefix('reservations')->group(function () {
     Route::get('task-types', [ReservationsController::class, 'taskTypes'])->name('api.reservations.task-types');
     Route::get('status', [ReservationsController::class, 'status'])->name('api.reservations.status');
     Route::get('tasks', [ReservationsController::class, 'tasks'])->name('api.reservations.tasks');
@@ -118,11 +121,11 @@ Route::middleware('auth:sanctum')->prefix('reservations')->group(function () {
     Route::get('{reservation}', [ReservationsController::class, 'show'])->name('api.reservations.show');
 });
 
-Route::middleware('auth:sanctum')->prefix('contract-return-reports')->group(function () {
+Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->prefix('contract-return-reports')->group(function () {
     Route::post('{contractReturnReport}/cash-payments', [CashPaymentsController::class, 'storeReturnReportPayment'])->name('api.contract-return-reports.cash-payments.store');
 });
 
-Route::middleware('auth:sanctum')->prefix('contracts')->group(function () {
+Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->prefix('contracts')->group(function () {
     Route::get('active-today', [ContractsController::class, 'activeToday'])->name('api.contracts.active-today');
     Route::get('damage-options', [ContractsController::class, 'damageOptions'])->name('api.contracts.damage-options');
     Route::get('damage-options/{group}', [ContractsController::class, 'damageOptionGroup'])->name('api.contracts.damage-options.group');
@@ -145,7 +148,7 @@ Route::get('accident-reports/{accidentReport}/mrta-form-file', [AccidentReportsC
     ->middleware('signed:relative')
     ->name('api.accident-reports.mrta-form.public');
 
-Route::middleware('auth:sanctum')->prefix('accident-reports')->group(function () {
+Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->prefix('accident-reports')->group(function () {
     Route::get('options', [AccidentReportsController::class, 'options'])->name('api.accident-reports.options');
     Route::get('context-options', [AccidentReportsController::class, 'contextOptions'])->name('api.accident-reports.context-options');
     Route::get('responsibility-options', [AccidentReportsController::class, 'responsibilityOptionList'])->name('api.accident-reports.responsibility-options');
@@ -165,7 +168,7 @@ Route::middleware('auth:sanctum')->prefix('accident-reports')->group(function ()
 Route::prefix('settings')->group(function () {
     Route::get('general', [SettingsController::class, 'general'])->name('api.settings.general');
     Route::get('currencies', [SettingsController::class, 'currencies'])->name('api.settings.currencies');
-    Route::middleware('auth:sanctum')->get('tenant', [SettingsController::class, 'tenant'])->name('api.settings.tenant');
+    Route::middleware(['auth:sanctum', 'api.plan.unlocked'])->get('tenant', [SettingsController::class, 'tenant'])->name('api.settings.tenant');
 });
 
 Route::prefix('static-pages')->group(function () {

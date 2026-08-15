@@ -6,6 +6,7 @@ use App\Core\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Tenant;
+use App\Services\Plans\PlanEntityLocks;
 use App\Services\Plans\PlanUsageLimits;
 use App\Services\Plans\PlanUsageNotifier;
 use App\Rules\DigitsOnly;
@@ -24,6 +25,7 @@ class BranchesController extends Controller
 {
     public function __construct(
         private readonly FilePondService $filePondService,
+        private readonly PlanEntityLocks $planEntityLocks,
         private readonly PlanUsageLimits $planUsageLimits,
         private readonly PlanUsageNotifier $planUsageNotifier,
     ) {}
@@ -33,6 +35,9 @@ class BranchesController extends Controller
      */
     public function index(Request $request): Response
     {
+        $tenant = $this->currentTenant($request);
+        $this->planEntityLocks->sync($tenant);
+
         $branches = Branch::query()
             ->when($request->string('search')->toString(), function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
@@ -53,7 +58,16 @@ class BranchesController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $branchUsage = $this->planUsageLimits->branchUsage($this->currentTenant($request));
+        $branches->getCollection()->transform(function (Branch $branch) {
+            if ($this->planEntityLocks->branchIsLockedByPlan($branch)) {
+                $branch->setAttribute('plan_locked_at', $branch->plan_locked_at ?: now()->toDateTimeString());
+                $branch->setAttribute('plan_lock_reason', $branch->plan_lock_reason ?: 'plan_branch_limit');
+            }
+
+            return $branch;
+        });
+
+        $branchUsage = $this->planUsageLimits->branchUsage($tenant?->refresh());
 
         return Inertia::render('Admin/Branches/Index', [
             'branches' => $branches,
@@ -71,12 +85,13 @@ class BranchesController extends Controller
     public function create(Request $request): Response
     {
         $tenant = $this->currentTenant($request);
+        $this->planEntityLocks->sync($tenant);
 
         if (!$tenant) {
             abort(403, 'Tenant context is required to check plan limits.');
         }
 
-        if ($message = $this->planUsageLimits->branchLimitMessage($tenant)) {
+        if ($message = $this->planUsageLimits->branchLimitMessage($tenant->refresh())) {
             abort(403, $message);
         }
 
@@ -126,12 +141,13 @@ class BranchesController extends Controller
         }
 
         $tenant = $this->currentTenant($request);
+        $this->planEntityLocks->sync($tenant);
 
         if (!$tenant) {
             abort(403, 'Tenant context is required to check plan limits.');
         }
 
-        if ($message = $this->planUsageLimits->branchLimitMessage($tenant)) {
+        if ($message = $this->planUsageLimits->branchLimitMessage($tenant->refresh())) {
             if ($request->expectsJson() || $request->wantsJson()) {
                 return response()->json(['message' => $message], 422);
             }
@@ -164,6 +180,13 @@ class BranchesController extends Controller
      */
     public function edit(Branch $branch): Response
     {
+        $this->planEntityLocks->sync($this->currentTenant(request()));
+        $branch->refresh();
+
+        if ($this->planEntityLocks->branchIsLockedByPlan($branch)) {
+            abort(403, trans('site.dashboard.common.locked_by_plan'));
+        }
+
         $branch->loadMissing('files');
 
         return Inertia::render('Admin/Branches/Edit', [
@@ -196,6 +219,12 @@ class BranchesController extends Controller
     {
         $branch = Branch::withoutGlobalScope('tenant')
             ->findOrFail((int) $request->route('branch'));
+        $this->planEntityLocks->sync($this->currentTenant($request));
+        $branch->refresh();
+
+        if ($this->planEntityLocks->branchIsLockedByPlan($branch)) {
+            abort(403, trans('site.dashboard.common.locked_by_plan'));
+        }
 
         $countryCodes = collect(BranchLocationOptions::countrySelectOptions('en'))
             ->pluck('value')

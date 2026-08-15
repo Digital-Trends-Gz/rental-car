@@ -12,6 +12,7 @@ use App\Models\TenantSiteSetting;
 use App\Models\User;
 use App\Services\Dashboard\OwnerDashboardMetricsService;
 use App\Services\Notifications\OwnerNotificationsService;
+use App\Services\Plans\PlanEntityLocks;
 use App\Support\BranchAccess;
 use App\Support\CurrencyCatalog;
 use App\Support\TenantTranslations;
@@ -26,6 +27,7 @@ class OwnerDashboardController extends Controller
         private readonly BranchAccess $branchAccess,
         private readonly OwnerNotificationsService $notifications,
         private readonly OwnerDashboardMetricsService $dashboardMetrics,
+        private readonly PlanEntityLocks $planEntityLocks,
     ) {
     }
 
@@ -33,9 +35,16 @@ class OwnerDashboardController extends Controller
     {
         $user = $this->authorizedOwner($request);
         $locale = $this->resolveLocale($request);
+        $tenant = Tenant::query()
+            ->with('subscriptionPlan')
+            ->find((int) $user->tenant_id);
 
-        $branches = Branch::query()
+        $this->planEntityLocks->sync($tenant);
+        $allowedBranchIds = $this->allowedPlanBranchIds($tenant);
+
+        $branches = Branch::withoutTenantScope()
             ->where('tenant_id', (int) $user->tenant_id)
+            ->when($allowedBranchIds !== null, fn ($query) => $query->whereIn('id', $allowedBranchIds ?: [0]))
             ->orderBy('name')
             ->get(['id', 'name', 'country', 'city', 'address', 'phone', 'email'])
             ->map(fn (Branch $branch): array => $this->branchPayload($branch))
@@ -216,18 +225,50 @@ class OwnerDashboardController extends Controller
             return null;
         }
 
-        $exists = Branch::query()
+        $exists = Branch::withoutTenantScope()
             ->where('tenant_id', (int) $user->tenant_id)
             ->whereKey($branchId)
-            ->exists();
+            ->first();
 
-        if (!$exists) {
+        if (!$exists || $this->planEntityLocks->branchIsLockedByPlan($exists)) {
             throw ValidationException::withMessages([
                 'branch_id' => [$this->ownerText('errors.branch_invalid', $this->resolveLocale($request), 'Selected branch is invalid or not accessible.')],
             ]);
         }
 
         return $branchId;
+    }
+
+    /**
+     * @return array<int, int>|null Null means unlimited.
+     */
+    private function allowedPlanBranchIds(?Tenant $tenant): ?array
+    {
+        $limit = $this->normalizePlanLimit($tenant?->subscriptionPlan?->max_branches);
+
+        if (!$tenant?->id || $limit === null) {
+            return null;
+        }
+
+        return Branch::withoutTenantScope()
+            ->where('tenant_id', $tenant->id)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    private function normalizePlanLimit(mixed $value): ?int
+    {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return null;
+        }
+
+        $limit = (int) $value;
+
+        return $limit >= 1 ? $limit : null;
     }
 
     private function branchPayload(Branch $branch): array

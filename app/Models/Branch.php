@@ -33,10 +33,16 @@ class Branch extends Model
         'cr_number',
         'manager_name',
         'manager_civil_number',
+        'plan_locked_at',
+        'plan_lock_reason',
     ];
 
     protected $appends = [
         'showroom_image_url',
+    ];
+
+    protected $casts = [
+        'plan_locked_at' => 'datetime',
     ];
 
     /**

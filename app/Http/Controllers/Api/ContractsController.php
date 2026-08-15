@@ -27,8 +27,11 @@ use App\Models\ClientNote;
 use App\Models\DailyTaskStatus;
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
+use App\Services\Plans\PlanUsageLimits;
+use App\Services\Plans\PlanUsageNotifier;
 use App\Support\BranchAccess;
 use App\Support\CarDamageCatalog;
 use App\Support\CurrencyCatalog;
@@ -57,7 +60,9 @@ class ContractsController extends Controller
         private readonly ContractDriverDocumentExtractor $contractDriverDocumentExtractor,
         private readonly ContractDamagePhotoExtractor $contractDamagePhotoExtractor,
         private readonly FilePondService $filePondService,
-        private readonly ClientStatusService $clientStatusService
+        private readonly ClientStatusService $clientStatusService,
+        private readonly PlanUsageLimits $planUsageLimits,
+        private readonly PlanUsageNotifier $planUsageNotifier
     ) {
     }
 
@@ -380,7 +385,20 @@ class ContractsController extends Controller
             $contract = $reservation->contract;
             abort_unless($contract, 404, 'Contract not found for this reservation.');
         } else {
-            $contract = $reservation->contract ?: $this->createDraftContractForReservation($reservation);
+            $contract = $reservation->contract;
+
+            if (!$contract) {
+                $tenant = $this->tenantForReservation($reservation);
+
+                if ($message = $this->planUsageLimits->contractLimitMessage($tenant)) {
+                    return response()->json([
+                        'message' => $message,
+                    ], 403);
+                }
+
+                $contract = $this->createDraftContractForReservation($reservation);
+                $this->planUsageNotifier->checkContracts($tenant?->refresh());
+            }
         }
 
         $reservation->setRelation('contract', $contract);
@@ -3489,6 +3507,17 @@ class ContractsController extends Controller
         ]);
 
         return $contract->fresh();
+    }
+
+    private function tenantForReservation(Reservation $reservation): ?Tenant
+    {
+        if (!$reservation->tenant_id) {
+            return null;
+        }
+
+        return Tenant::query()
+            ->with('subscriptionPlan')
+            ->find((int) $reservation->tenant_id);
     }
 
     private function applyExtractedContractFields(Contract $contract, array $fields): array

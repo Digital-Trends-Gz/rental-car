@@ -29,6 +29,8 @@ const props = defineProps<{
       cr_number?: string | null
       manager_name?: string | null
       manager_civil_number?: string | null
+      plan_locked_at?: string | null
+      plan_lock_reason?: string | null
     }>
     links: Array<{ url: string | null; label: string; active: boolean }>
     total?: number
@@ -193,7 +195,15 @@ const destroyBranch = () => {
                     <tbody class="bg-white divide-y divide-gray-200">
                         <tr v-for="branch in props.branches.data" :key="branch.id">
                             <td class="px-4 py-3">
-                                <div class="font-medium">{{ branch.name }}</div>
+                                <div class="space-y-1">
+                                    <div class="font-medium">{{ branch.name }}</div>
+                                    <span
+                                        v-if="branch.plan_locked_at"
+                                        class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
+                                    >
+                                        {{ t('dashboard.common.locked_by_plan') }}
+                                    </span>
+                                </div>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-600">
                                 {{ branch.cr_number || '-' }}
@@ -223,9 +233,10 @@ const destroyBranch = () => {
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-right space-x-2">
-                                <Link v-if="subdomain" :href="`/admin/branches/${branch.id}/edit`">
+                                <Link v-if="subdomain && !branch.plan_locked_at" :href="`/admin/branches/${branch.id}/edit`">
                                     <Button variant="outline" size="sm">{{ t('dashboard.admin.common.edit') }}</Button>
                                 </Link>
+                                <Button v-else-if="subdomain" variant="outline" size="sm" disabled>{{ t('dashboard.admin.common.edit') }}</Button>
                                 <Button variant="destructive" size="sm" @click="openDeleteDialog(branch.id)">{{ t('dashboard.admin.common.delete') }}</Button>
                             </td>
                         </tr>

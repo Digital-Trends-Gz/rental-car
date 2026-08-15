@@ -4,9 +4,11 @@ namespace App\Http\Middleware;
 
 use App\Enums\UserRole;
 use App\Models\Tenant;
+use App\Services\Plans\PlanEntityLocks;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -38,7 +40,7 @@ class CheckUserActive
         // Fallback safety gate: if login flow bypasses plan checks, block dashboard access here.
         if (in_array($user->role, [UserRole::ADMIN, UserRole::CLIENT], true) && $user->tenant_id) {
             $tenant = Tenant::query()
-                ->with('subscriptionPlan:id,is_active')
+                ->with('subscriptionPlan:id,is_active,max_employees,max_branches')
                 ->find($user->tenant_id);
 
             if (!$tenant) {
@@ -48,6 +50,52 @@ class CheckUserActive
 
                 return redirect()->route('login')
                     ->with('error', 'No tenant is assigned to this account.');
+            }
+
+            app(PlanEntityLocks::class)->sync($tenant);
+            $user->refresh();
+
+            if ($user->role === UserRole::ADMIN && $user->plan_locked_at) {
+                Auth::logout();
+
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                $message = trans('site.dashboard.common.employee_locked_by_plan');
+                $routeName = \App\Core\TenantContext::id() ? 'tenant.login' : 'login';
+                $url = route($routeName);
+
+                if ($request->header('X-Inertia')) {
+                    $request->session()->flash('error', $message);
+                    return Inertia::location($url);
+                }
+
+                return redirect()->to($url)->with('error', $message);
+            }
+
+            if ($user->role === UserRole::ADMIN && $user->branch_id && Schema::hasColumn('branches', 'plan_locked_at')) {
+                $branchLocked = \App\Models\Branch::withoutTenantScope()
+                    ->whereKey((int) $user->branch_id)
+                    ->whereNotNull('plan_locked_at')
+                    ->exists();
+
+                if ($branchLocked && !$this->canBypassBranchPlanLock($user)) {
+                    Auth::logout();
+
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+
+                    $message = trans('site.dashboard.common.branch_locked_by_plan');
+                    $routeName = \App\Core\TenantContext::id() ? 'tenant.login' : 'login';
+                    $url = route($routeName);
+
+                    if ($request->header('X-Inertia')) {
+                        $request->session()->flash('error', $message);
+                        return Inertia::location($url);
+                    }
+
+                    return redirect()->to($url)->with('error', $message);
+                }
             }
 
             $userTrialExpired = $user->trial_ends_at && $user->trial_ends_at->isPast();
@@ -97,5 +145,15 @@ class CheckUserActive
         }
 
         return $next($request);
+    }
+
+    private function canBypassBranchPlanLock($user): bool
+    {
+        if ($user->role !== UserRole::ADMIN) {
+            return false;
+        }
+
+        return method_exists($user, 'hasRole')
+            && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner'));
     }
 }

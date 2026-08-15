@@ -36,6 +36,8 @@ const props = defineProps<{
         email: string
         civil_number?: string | null
         is_active: boolean
+        plan_locked_at?: string | null
+        plan_lock_reason?: string | null
         branch?: {
           id: number
           name: string
@@ -231,11 +233,12 @@ const destroyEmployee = () => {
                             <td class="px-4 py-3">
                                 <span 
                                     class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
-                                    :class="employee.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'"
+                                    :class="employee.plan_locked_at ? 'bg-amber-100 text-amber-700' : (employee.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700')"
                                 >
-                                    <ShieldCheck v-if="employee.is_active" class="h-3 w-3" />
+                                    <ShieldAlert v-if="employee.plan_locked_at" class="h-3 w-3" />
+                                    <ShieldCheck v-else-if="employee.is_active" class="h-3 w-3" />
                                     <ShieldAlert v-else class="h-3 w-3" />
-                                    {{ employee.is_active ? t('dashboard.common.active') : t('dashboard.common.suspended') }}
+                                    {{ employee.plan_locked_at ? t('dashboard.common.locked_by_plan') : (employee.is_active ? t('dashboard.common.active') : t('dashboard.common.suspended')) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right space-x-2">

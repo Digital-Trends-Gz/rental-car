@@ -9,6 +9,7 @@ use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\ApiPasswordResetNotification;
+use App\Services\Plans\PlanEntityLocks;
 use App\Support\ApiAccessMode;
 use App\Support\TenantAdminAccessSync;
 use App\Support\TenantTranslations;
@@ -512,6 +513,31 @@ class AuthController extends Controller
             ];
         }
 
+        if ($user->role === UserRole::ADMIN && $tenant) {
+            app(PlanEntityLocks::class)->sync($tenant);
+            $user->refresh();
+
+            if ($user->plan_locked_at) {
+                return [
+                    'status' => 403,
+                    'body' => ['message' => $this->tenantDashboardMessage(
+                        'employee_locked_by_plan',
+                        $tenant
+                    )],
+                ];
+            }
+
+            if ($this->userBranchIsLockedByPlan($user)) {
+                return [
+                    'status' => 403,
+                    'body' => ['message' => $this->tenantDashboardMessage(
+                        'branch_locked_by_plan',
+                        $tenant
+                    )],
+                ];
+            }
+        }
+
         if ($tenant && $this->tenantRequiresRenewal($tenant) && $user->role === UserRole::CLIENT) {
             return [
                 'status' => 403,
@@ -529,6 +555,36 @@ class AuthController extends Controller
         return null;
     }
 
+    private function userBranchIsLockedByPlan(User $user): bool
+    {
+        if (!$user->branch_id || $this->canBypassBranchPlanLock($user)) {
+            return false;
+        }
+
+        $branch = Branch::query()
+            ->withoutGlobalScope('tenant')
+            ->whereKey($user->branch_id)
+            ->first();
+
+        return $branch ? app(PlanEntityLocks::class)->branchIsLockedByPlan($branch) : false;
+    }
+
+    private function canBypassBranchPlanLock(User $user): bool
+    {
+        return method_exists($user, 'hasRole')
+            && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner'));
+    }
+
+    private function tenantDashboardMessage(string $key, Tenant $tenant): string
+    {
+        return TenantTranslations::get(
+            "dashboard.common.{$key}",
+            app()->getLocale(),
+            trans("site.dashboard.common.{$key}"),
+            $tenant,
+        );
+    }
+
     private function resolveTenant(User $user): ?Tenant
     {
         if (empty($user->tenant_id)) {
@@ -537,7 +593,7 @@ class AuthController extends Controller
 
         return Tenant::query()
             ->select('id', 'name', 'email', 'slug', 'domain', 'phone', 'plan_id', 'trial_ends_at', 'is_active')
-            ->with('subscriptionPlan:id,name,is_active')
+            ->with('subscriptionPlan:id,name,is_active,max_employees,max_branches')
             ->whereKey($user->tenant_id)
             ->first();
     }

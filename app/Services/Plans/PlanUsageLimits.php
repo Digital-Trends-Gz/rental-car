@@ -189,6 +189,13 @@ class PlanUsageLimits
         return User::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenant->id)
             ->where('role', UserRole::ADMIN->value)
+            ->where(function ($query) use ($tenant) {
+                if ($tenant->email) {
+                    $query->whereRaw('LOWER(email) <> ?', [strtolower((string) $tenant->email)]);
+                }
+
+                $query->whereDoesntHave('roles', fn ($roleQuery) => $roleQuery->where('name', 'tenant-owner'));
+            })
             ->count();
     }
 
