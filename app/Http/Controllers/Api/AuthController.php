@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\ApiPasswordResetNotification;
 use App\Services\Plans\PlanEntityLocks;
 use App\Support\ApiAccessMode;
+use App\Support\BranchAccess;
 use App\Support\TenantAdminAccessSync;
 use App\Support\TenantTranslations;
 use Illuminate\Auth\Events\PasswordReset;
@@ -238,15 +239,18 @@ class AuthController extends Controller
         $activeBranchId = null;
 
         if ($activeMode === ApiAccessMode::MODE_EMPLOYEE) {
-            $activeBranchId = (int) $validated['branch_id'];
+            $requestedBranchId = (int) $validated['branch_id'];
+            $branchAccess = app(BranchAccess::class);
+            $scopedBranchId = $branchAccess->ownerScopedBranchId($user);
+            $activeBranchId = $scopedBranchId ?: $requestedBranchId;
 
-            $branchExists = Branch::query()
+            $branch = Branch::query()
                 ->withoutGlobalScope('tenant')
                 ->whereKey($activeBranchId)
                 ->where('tenant_id', (int) $user->tenant_id)
-                ->exists();
+                ->first();
 
-            if (!$branchExists) {
+            if (!$branch || ($scopedBranchId && $requestedBranchId !== $scopedBranchId) || app(PlanEntityLocks::class)->branchIsLockedByPlan($branch)) {
                 throw ValidationException::withMessages([
                     'branch_id' => [$this->authMessage('switch_mode_branch_invalid')],
                 ]);

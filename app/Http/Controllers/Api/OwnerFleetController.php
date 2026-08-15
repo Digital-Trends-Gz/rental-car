@@ -369,6 +369,7 @@ class OwnerFleetController extends Controller
         ]);
 
         $newBranchId = (int) $validated['branch_id'];
+        abort_unless($this->branchAccess->canAccessBranchId($user, $newBranchId), 403);
 
         if ($car->branch_id && (int) $car->branch_id === $newBranchId) {
             throw \Illuminate\Validation\ValidationException::withMessages([
@@ -416,6 +417,7 @@ class OwnerFleetController extends Controller
         ]);
 
         $newBranchId = (int) $validated['branch_id'];
+        abort_unless($this->branchAccess->canAccessBranchId($user, $newBranchId), 403);
         $newBranch = Branch::query()->where('tenant_id', $tenantId)->findOrFail($newBranchId);
 
         $cars = Car::query()
@@ -462,7 +464,7 @@ class OwnerFleetController extends Controller
         $user = $request->user();
         abort_unless($user, 401);
         abort_unless(!empty($user->tenant_id), 403);
-        abort_unless($this->branchAccess->canAccessAllBranches($user), 403);
+        abort_unless($this->branchAccess->canUseOwnerApis($user), 403);
 
         return $user;
     }
@@ -470,6 +472,10 @@ class OwnerFleetController extends Controller
     private function resolveOwnerBranchId(Request $request, User $user): ?int
     {
         $branchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
+
+        if (!$this->branchAccess->canAccessAllBranches($user)) {
+            return $this->branchAccess->ownerScopedBranchId($user);
+        }
 
         if (!$branchId) {
             return null;

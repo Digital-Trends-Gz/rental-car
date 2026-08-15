@@ -171,7 +171,7 @@ class OwnerReservationsController extends Controller
         $user = $request->user();
         abort_unless($user, 401);
         abort_unless(!empty($user->tenant_id), 403);
-        abort_unless($this->branchAccess->canAccessAllBranches($user), 403);
+        abort_unless($this->branchAccess->canUseOwnerApis($user), 403);
 
         return $user;
     }
@@ -208,6 +208,10 @@ class OwnerReservationsController extends Controller
     private function resolveOwnerBranchId(Request $request, User $user): ?int
     {
         $branchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
+
+        if (!$this->branchAccess->canAccessAllBranches($user)) {
+            return $this->branchAccess->ownerScopedBranchId($user);
+        }
 
         if (!$branchId) {
             return null;

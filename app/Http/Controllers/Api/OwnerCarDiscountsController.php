@@ -207,7 +207,7 @@ class OwnerCarDiscountsController extends Controller
         $user = $request->user();
         abort_unless($user, 401);
         abort_unless(!empty($user->tenant_id), 403);
-        abort_unless($this->branchAccess->canAccessAllBranches($user), 403);
+        abort_unless($this->branchAccess->canUseOwnerApis($user), 403);
 
         return $user;
     }

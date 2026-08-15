@@ -34,8 +34,12 @@ class BranchAccess
             return false;
         }
 
-        if (method_exists($user, 'hasRole') && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner'))) {
+        if (method_exists($user, 'hasRole') && $user->hasRole('tenant-owner')) {
             return true;
+        }
+
+        if (method_exists($user, 'hasRole') && $user->hasRole('tenant-partner')) {
+            return empty(ApiAccessMode::effectiveBranchId($user));
         }
 
         if (ApiAccessMode::isOwnerCapable($user)) {
@@ -48,6 +52,25 @@ class BranchAccess
         }
 
         return false;
+    }
+
+    public function canUseOwnerApis(?User $user): bool
+    {
+        return $user instanceof User
+            && $user->role === UserRole::ADMIN
+            && !empty($user->tenant_id)
+            && ApiAccessMode::isOwnerCapable($user);
+    }
+
+    public function ownerScopedBranchId(?User $user): ?int
+    {
+        if (!$user || $this->canAccessAllBranches($user)) {
+            return null;
+        }
+
+        $branchId = ApiAccessMode::effectiveBranchId($user);
+
+        return $branchId ? (int) $branchId : null;
     }
 
     public function availableBranchesForUser(?User $user): Collection
