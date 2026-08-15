@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\ApiAccessMode;
 use Illuminate\Support\Facades\Schema;
 
 class PlanEntityLocks
@@ -186,8 +187,7 @@ class PlanEntityLocks
             return true;
         }
 
-        return $user->relationLoaded('roles')
-            && $user->roles->contains(fn ($role) => $role->name === 'tenant-owner');
+        return ApiAccessMode::hasTenantRole($user, 'tenant-owner');
     }
 
     private function normalizeLimit(mixed $value): ?int

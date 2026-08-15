@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Enums\UserRole;
 use App\Models\Tenant;
 use App\Services\Plans\PlanEntityLocks;
+use App\Support\ApiAccessMode;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -153,7 +154,6 @@ class CheckUserActive
             return false;
         }
 
-        return method_exists($user, 'hasRole')
-            && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner'));
+        return ApiAccessMode::hasTenantRole($user, ['tenant-owner', 'tenant-partner']);
     }
 }

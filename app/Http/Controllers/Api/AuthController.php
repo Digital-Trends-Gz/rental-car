@@ -575,8 +575,7 @@ class AuthController extends Controller
 
     private function canBypassBranchPlanLock(User $user): bool
     {
-        return method_exists($user, 'hasRole')
-            && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner'));
+        return ApiAccessMode::hasTenantRole($user, ['tenant-owner', 'tenant-partner']);
     }
 
     private function tenantDashboardMessage(string $key, Tenant $tenant): string

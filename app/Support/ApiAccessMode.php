@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Enums\UserRole;
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 
@@ -72,7 +73,7 @@ class ApiAccessMode
             return false;
         }
 
-        if (method_exists($user, 'hasRole') && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner'))) {
+        if (self::hasTenantRole($user, ['tenant-owner', 'tenant-partner'])) {
             return true;
         }
 
@@ -95,6 +96,29 @@ class ApiAccessMode
             ->value('id');
 
         return $ownerUserId && (int) $user->id === (int) $ownerUserId;
+    }
+
+    public static function hasTenantRole(User $user, string|array $roles): bool
+    {
+        $roleNames = array_values(array_filter((array) $roles));
+
+        if ($roleNames === []) {
+            return false;
+        }
+
+        return Role::withoutGlobalScope('tenant')
+            ->join('role_user', 'roles.id', '=', 'role_user.role_id')
+            ->where('role_user.user_id', $user->id)
+            ->where('role_user.user_type', User::class)
+            ->whereIn('roles.name', $roleNames)
+            ->where(function ($query) use ($user): void {
+                $query->whereNull('roles.tenant_id');
+
+                if ($user->tenant_id) {
+                    $query->orWhere('roles.tenant_id', (int) $user->tenant_id);
+                }
+            })
+            ->exists();
     }
 
     public static function effectiveBranchId(User $user, ?int $explicitBranchId = null): ?int

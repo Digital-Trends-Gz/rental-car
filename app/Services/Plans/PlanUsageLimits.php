@@ -194,7 +194,19 @@ class PlanUsageLimits
                     $query->whereRaw('LOWER(email) <> ?', [strtolower((string) $tenant->email)]);
                 }
 
-                $query->whereDoesntHave('roles', fn ($roleQuery) => $roleQuery->where('name', 'tenant-owner'));
+                $query->whereNotExists(function ($roleQuery) use ($tenant): void {
+                    $roleQuery
+                        ->selectRaw('1')
+                        ->from('role_user')
+                        ->join('roles', 'roles.id', '=', 'role_user.role_id')
+                        ->whereColumn('role_user.user_id', 'users.id')
+                        ->where('role_user.user_type', User::class)
+                        ->where('roles.name', 'tenant-owner')
+                        ->where(function ($tenantQuery) use ($tenant): void {
+                            $tenantQuery->whereNull('roles.tenant_id')
+                                ->orWhere('roles.tenant_id', (int) $tenant->id);
+                        });
+                });
             })
             ->count();
     }

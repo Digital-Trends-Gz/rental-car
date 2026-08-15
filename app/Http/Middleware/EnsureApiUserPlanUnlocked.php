@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Plans\PlanEntityLocks;
+use App\Support\ApiAccessMode;
 use App\Support\TenantTranslations;
 use Closure;
 use Illuminate\Http\Request;
@@ -68,8 +69,7 @@ class EnsureApiUserPlanUnlocked
 
     private function canBypassBranchPlanLock(User $user): bool
     {
-        return method_exists($user, 'hasRole')
-            && ($user->hasRole('tenant-owner') || $user->hasRole('tenant-partner'));
+        return ApiAccessMode::hasTenantRole($user, ['tenant-owner', 'tenant-partner']);
     }
 
     private function tenantDashboardMessage(string $key, Tenant $tenant): string

@@ -34,11 +34,11 @@ class BranchAccess
             return false;
         }
 
-        if (method_exists($user, 'hasRole') && $user->hasRole('tenant-owner')) {
+        if (ApiAccessMode::hasTenantRole($user, 'tenant-owner')) {
             return true;
         }
 
-        if (method_exists($user, 'hasRole') && $user->hasRole('tenant-partner')) {
+        if (ApiAccessMode::hasTenantRole($user, 'tenant-partner')) {
             return empty(ApiAccessMode::effectiveBranchId($user));
         }
 
