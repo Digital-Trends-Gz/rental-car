@@ -33,13 +33,23 @@ class SocialLoginController extends Controller
             $request->session()->put('social_login_tenant', $tenantSubdomain);
         }
 
-        return Socialite::driver($provider)
+        $redirectResponse = Socialite::driver($provider)
             ->redirectUrl($this->callbackUrl($provider))
             ->stateless()
             ->with([
                 'state' => $this->encodeState($provider, $tenantSubdomain),
             ])
             ->redirect();
+
+        Log::info('Social login redirect generated.', [
+            'provider' => $provider,
+            'tenant' => $tenantSubdomain,
+            'callback_url' => $this->callbackUrl($provider),
+            'location_has_code_response_type' => str_contains((string) $redirectResponse->headers->get('Location'), 'response_type=code'),
+            'location_has_state' => str_contains((string) $redirectResponse->headers->get('Location'), 'state='),
+        ]);
+
+        return $redirectResponse;
     }
 
     /**
@@ -72,6 +82,7 @@ class SocialLoginController extends Controller
             Log::warning('Social login callback missing authorization code.', [
                 'provider' => $provider,
                 'tenant' => $tenantSubdomain,
+                'full_url' => $request->fullUrl(),
                 'query_keys' => array_keys($request->query()),
                 'has_state' => $request->filled('state'),
             ]);
