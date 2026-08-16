@@ -61,6 +61,18 @@ class SocialLoginController extends Controller
             abort(404);
         }
 
+        Log::info('Social login callback received.', [
+            'provider' => $provider,
+            'full_url' => $request->fullUrl(),
+            'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
+            'query_string' => $_SERVER['QUERY_STRING'] ?? null,
+            'query_keys' => array_keys($request->query()),
+            'has_code' => $request->filled('code'),
+            'has_state' => $request->filled('state'),
+            'referer' => $request->headers->get('referer'),
+            'user_agent' => $request->userAgent(),
+        ]);
+
         $tenantSubdomain = $this->tenantFromState($request, $provider)
             ?: trim((string) $request->session()->get('social_login_tenant', ''));
 
