@@ -379,6 +379,118 @@ test('owner admin without pre-attached tenant-owner role can access branches API
         ->assertJsonPath('can_access_all_branches', true);
 });
 
+test('owner branches API includes management screen metrics', function () {
+    $tenant = Tenant::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $branch = Branch::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Golden Gate 1',
+        'city' => 'New Miami',
+        'country' => 'US',
+        'manager_name' => 'Branch Manager',
+    ]);
+
+    $owner = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => null,
+        'role' => UserRole::ADMIN,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $customer = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'role' => UserRole::CLIENT,
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $ownerRole = Role::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'tenant-owner',
+        'display_name' => 'Tenant Owner',
+        'description' => 'Tenant owner',
+    ]);
+    $owner->roles()->syncWithoutDetaching([$ownerRole->id]);
+
+    $availableCar = Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Toyota',
+        'model' => 'Camry',
+        'year' => 2024,
+        'license_plate' => 'BR-MGMT-001',
+        'color' => CarColor::WHITE->value,
+        'price_per_day' => 100,
+        'mileage' => 1000,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'status' => CarStatus::AVAILABLE->value,
+    ]);
+
+    Car::create([
+        'tenant_id' => $tenant->id,
+        'branch_id' => $branch->id,
+        'make' => 'Honda',
+        'model' => 'Civic',
+        'year' => 2024,
+        'license_plate' => 'BR-MGMT-002',
+        'color' => CarColor::BLACK->value,
+        'price_per_day' => 100,
+        'mileage' => 1000,
+        'transmission' => 'automatic',
+        'seats' => 5,
+        'fuel_type' => FuelType::GASOLINE->value,
+        'status' => CarStatus::RENTED->value,
+    ]);
+
+    $reservation = Reservation::withoutEvents(fn () => Reservation::create([
+        'tenant_id' => $tenant->id,
+        'reservation_number' => 'RES-BR-MGMT-001',
+        'user_id' => $customer->id,
+        'car_id' => $availableCar->id,
+        'start_date' => today()->toDateString(),
+        'end_date' => today()->addDay()->toDateString(),
+        'total_days' => 2,
+        'daily_rate' => 40,
+        'subtotal' => 80,
+        'total_amount' => 80,
+        'status' => ReservationStatus::CONFIRMED->value,
+    ]));
+
+    Payment::create([
+        'tenant_id' => $tenant->id,
+        'reservation_id' => $reservation->id,
+        'user_id' => $customer->id,
+        'amount' => 80,
+        'base_amount' => 80,
+        'currency' => 'USD',
+        'payment_method' => PaymentMethod::CASH->value,
+        'status' => PaymentStatus::COMPLETED->value,
+        'processed_at' => now(),
+    ]);
+
+    Sanctum::actingAs($owner, ['*']);
+
+    $response = $this->getJson(route('api.owner.branches'));
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('summary.total_branches', 1)
+        ->assertJsonPath('summary.total_fleet', 2)
+        ->assertJsonPath('summary.todays_bookings', 1)
+        ->assertJsonPath('branches.0.name', 'Golden Gate 1')
+        ->assertJsonPath('branches.0.branch_owner.name', 'Branch Manager')
+        ->assertJsonPath('branches.0.number_of_cars', 2)
+        ->assertJsonPath('branches.0.todays_bookings', 1)
+        ->assertJsonPath('branches.0.occupancy_rate', 50)
+        ->assertJsonPath('branch_revenue.items.0.amount', 80);
+});
+
 test('tenant partner admin can access owner branches API', function () {
     $tenant = Tenant::factory()->create([
         'is_active' => true,

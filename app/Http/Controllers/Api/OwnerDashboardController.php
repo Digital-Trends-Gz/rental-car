@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\CarViolationStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\Car;
 use App\Models\CarViolation;
+use App\Models\Payment;
+use App\Models\Reservation;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
 use App\Models\User;
@@ -45,13 +49,34 @@ class OwnerDashboardController extends Controller
         $scopedBranchIds = $canAccessAllBranches
             ? null
             : $this->branchAccess->accessibleBranchIds($user);
+        $visibleBranchIds = $this->visibleBranchIds((int) $user->tenant_id, $scopedBranchIds, $allowedBranchIds);
+        $today = Carbon::today();
+        $lastSevenDaysFrom = $today->copy()->subDays(6);
+        $previousSevenDaysFrom = $lastSevenDaysFrom->copy()->subDays(7);
+        $previousSevenDaysTo = $lastSevenDaysFrom->copy()->subDay();
+        $currency = $tenant
+            ? $this->tenantCurrency($tenant, $request)
+            : CurrencyCatalog::find(config('app.currency_code', 'USD'), $locale);
 
         $branches = Branch::withoutTenantScope()
             ->where('tenant_id', (int) $user->tenant_id)
             ->when($scopedBranchIds !== null, fn ($query) => $query->whereIn('id', $scopedBranchIds ?: [0]))
             ->when($allowedBranchIds !== null, fn ($query) => $query->whereIn('id', $allowedBranchIds ?: [0]))
             ->orderBy('name')
-            ->get(['id', 'name', 'country', 'city', 'address', 'phone', 'email'])
+            ->get(['id', 'name', 'country', 'city', 'address', 'phone', 'email', 'manager_name']);
+
+        $branchCards = $this->branchCards((int) $user->tenant_id, $branches, $today);
+        $branchRevenue = $this->branchRevenue(
+            (int) $user->tenant_id,
+            $branches,
+            $lastSevenDaysFrom,
+            $today,
+            $previousSevenDaysFrom,
+            $previousSevenDaysTo,
+            $currency,
+            $locale
+        );
+        $branchOptions = $branches
             ->map(fn (Branch $branch): array => $this->branchPayload($branch))
             ->values()
             ->all();
@@ -61,6 +86,9 @@ class OwnerDashboardController extends Controller
             'locale' => $locale,
             'tenant_id' => (int) $user->tenant_id,
             'can_access_all_branches' => $canAccessAllBranches,
+            'date' => $today->toDateString(),
+            'currency' => $currency,
+            'summary' => $this->branchesSummary((int) $user->tenant_id, $visibleBranchIds, $today, $locale),
             'data' => array_values(array_filter([
                 $canAccessAllBranches
                     ? [
@@ -69,8 +97,19 @@ class OwnerDashboardController extends Controller
                         'is_all' => true,
                     ]
                     : null,
-                ...$branches,
+                ...$branchOptions,
             ])),
+            'branches' => $branchCards,
+            'branch_revenue' => [
+                'title' => $this->ownerText('branches.revenue_last_7_days', $locale, 'Branch Revenue (Last 7 Days)'),
+                'date_range' => [
+                    'from' => $lastSevenDaysFrom->toDateString(),
+                    'to' => $today->toDateString(),
+                    'comparison_from' => $previousSevenDaysFrom->toDateString(),
+                    'comparison_to' => $previousSevenDaysTo->toDateString(),
+                ],
+                'items' => $branchRevenue,
+            ],
         ]);
     }
 
@@ -305,6 +344,172 @@ class OwnerDashboardController extends Controller
             'email' => $branch->email,
             'is_all' => false,
         ];
+    }
+
+    /**
+     * @param array<int, int>|null $scopedBranchIds
+     * @param array<int, int>|null $allowedBranchIds
+     * @return array<int, int>
+     */
+    private function visibleBranchIds(int $tenantId, ?array $scopedBranchIds, ?array $allowedBranchIds): array
+    {
+        $ids = Branch::withoutTenantScope()
+            ->where('tenant_id', $tenantId)
+            ->when($scopedBranchIds !== null, fn ($query) => $query->whereIn('id', $scopedBranchIds ?: [0]))
+            ->when($allowedBranchIds !== null, fn ($query) => $query->whereIn('id', $allowedBranchIds ?: [0]))
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        return $ids;
+    }
+
+    /**
+     * @param array<int, int> $branchIds
+     */
+    private function branchesSummary(int $tenantId, array $branchIds, Carbon $today, string $locale): array
+    {
+        $totalBranches = count($branchIds);
+        $totalFleet = Car::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->whereIn('branch_id', $branchIds ?: [0])
+            ->count();
+        $todaysBookings = Reservation::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->whereDate('created_at', $today)
+            ->whereHas('car', fn ($query) => $query
+                ->withoutGlobalScope('tenant')
+                ->whereIn('branch_id', $branchIds ?: [0]))
+            ->count();
+
+        return [
+            'cards' => [
+                $this->metricCard('total_branches', $locale, 'Total Branches', $totalBranches, 'count', '#8B5CF6', ['symbol' => '', 'code' => '']),
+                $this->metricCard('total_fleet', $locale, 'Total Fleet', $totalFleet, 'count', '#0EA5E9', ['symbol' => '', 'code' => '']),
+                $this->metricCard('todays_bookings', $locale, "Today's Bookings", $todaysBookings, 'count', '#14B8A6', ['symbol' => '', 'code' => '']),
+            ],
+            'total_branches' => $totalBranches,
+            'total_fleet' => $totalFleet,
+            'todays_bookings' => $todaysBookings,
+        ];
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, Branch> $branches
+     */
+    private function branchCards(int $tenantId, $branches, Carbon $today): array
+    {
+        $branchIds = $branches->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $carCounts = Car::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->whereIn('branch_id', $branchIds ?: [0])
+            ->selectRaw('branch_id, COUNT(*) as total')
+            ->groupBy('branch_id')
+            ->pluck('total', 'branch_id');
+        $rentedCounts = Car::query()
+            ->withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId)
+            ->whereIn('branch_id', $branchIds ?: [0])
+            ->whereIn('status', [
+                \App\Enums\CarStatus::RENTED->value,
+                \App\Enums\CarStatus::RESERVED->value,
+            ])
+            ->selectRaw('branch_id, COUNT(*) as total')
+            ->groupBy('branch_id')
+            ->pluck('total', 'branch_id');
+        $bookingCounts = Reservation::query()
+            ->withoutGlobalScope('tenant')
+            ->join('cars', 'cars.id', '=', 'reservations.car_id')
+            ->where('reservations.tenant_id', $tenantId)
+            ->whereIn('cars.branch_id', $branchIds ?: [0])
+            ->whereDate('reservations.created_at', $today)
+            ->selectRaw('cars.branch_id, COUNT(reservations.id) as total')
+            ->groupBy('cars.branch_id')
+            ->pluck('total', 'cars.branch_id');
+        $branchOwners = User::query()
+            ->where('tenant_id', $tenantId)
+            ->whereIn('branch_id', $branchIds ?: [0])
+            ->where('role', UserRole::ADMIN)
+            ->orderBy('id')
+            ->get(['id', 'name', 'branch_id'])
+            ->groupBy('branch_id');
+
+        return $branches
+            ->map(function (Branch $branch) use ($carCounts, $rentedCounts, $bookingCounts, $branchOwners): array {
+                $numberOfCars = (int) ($carCounts[$branch->id] ?? 0);
+                $occupiedCars = (int) ($rentedCounts[$branch->id] ?? 0);
+                $occupancyRate = $numberOfCars > 0 ? round(($occupiedCars / $numberOfCars) * 100, 2) : 0.0;
+                $owner = $branchOwners->get($branch->id)?->first();
+                $managerName = trim((string) $branch->manager_name);
+
+                return array_merge($this->branchPayload($branch), [
+                    'branch_owner' => $managerName !== ''
+                        ? [
+                            'id' => null,
+                            'name' => $managerName,
+                        ]
+                        : ($owner ? [
+                            'id' => (int) $owner->id,
+                            'name' => $owner->name,
+                        ] : null),
+                    'number_of_cars' => $numberOfCars,
+                    'todays_bookings' => (int) ($bookingCounts[$branch->id] ?? 0),
+                    'occupancy_rate' => $occupancyRate,
+                    'formatted_occupancy_rate' => number_format($occupancyRate, 0).'%',
+                ]);
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, Branch> $branches
+     */
+    private function branchRevenue(int $tenantId, $branches, Carbon $from, Carbon $to, Carbon $comparisonFrom, Carbon $comparisonTo, array $currency, string $locale): array
+    {
+        $branchIds = $branches->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $currentTotals = $this->branchPaymentTotals($tenantId, $branchIds, $from, $to);
+        $previousTotals = $this->branchPaymentTotals($tenantId, $branchIds, $comparisonFrom, $comparisonTo);
+
+        return $branches
+            ->map(function (Branch $branch) use ($currentTotals, $previousTotals, $currency, $locale): array {
+                $current = round((float) ($currentTotals[$branch->id] ?? 0), 2);
+                $previous = round((float) ($previousTotals[$branch->id] ?? 0), 2);
+
+                return [
+                    'branch_id' => (int) $branch->id,
+                    'branch_name' => $branch->name,
+                    'amount' => $current,
+                    'formatted_amount' => $this->formatMoney($current, $currency),
+                    'change' => $this->changePayload($current, $previous, $locale, [
+                        'comparison' => 'previous_period',
+                        'comparison_label' => $this->ownerText('comparisons.previous_period', $locale, 'Previous period'),
+                    ]),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<int, int> $branchIds
+     */
+    private function branchPaymentTotals(int $tenantId, array $branchIds, Carbon $from, Carbon $to): \Illuminate\Support\Collection
+    {
+        return Payment::query()
+            ->withoutGlobalScope('tenant')
+            ->join('reservations', 'reservations.id', '=', 'payments.reservation_id')
+            ->join('cars', 'cars.id', '=', 'reservations.car_id')
+            ->where('payments.tenant_id', $tenantId)
+            ->where('payments.status', PaymentStatus::COMPLETED->value)
+            ->whereIn('cars.branch_id', $branchIds ?: [0])
+            ->whereRaw('DATE(COALESCE(payments.processed_at, payments.created_at)) between ? and ?', [$from->toDateString(), $to->toDateString()])
+            ->selectRaw('cars.branch_id, COALESCE(SUM(COALESCE(payments.base_amount, payments.amount)), 0) as total')
+            ->groupBy('cars.branch_id')
+            ->pluck('total', 'cars.branch_id');
     }
 
     private function tenantCurrency(Tenant $tenant, Request $request): array
