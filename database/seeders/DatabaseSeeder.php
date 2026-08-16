@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             LaratrustSeeder::class,
+            TenantPermissionsSeeder::class,
             SuperAdminSeeder::class,
             DemoUsersSeeder::class,
             CarsSeeder::class,
