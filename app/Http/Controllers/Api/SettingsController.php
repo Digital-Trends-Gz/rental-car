@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class SettingsController extends Controller
@@ -65,6 +66,8 @@ class SettingsController extends Controller
 
         $settings = TenantSiteSetting::forTenant($tenant);
         $siteName = $this->nullableString(data_get($settings, 'site_name')) ?? $tenant->name;
+        $logoUrl = $this->nullableString(data_get($settings, 'logo_url'));
+        $logoDimensions = $this->imageDimensionsForPublicUrl($logoUrl);
         $availableLanguages = $this->availableLanguagesForTenant($settings);
         $currencyLocale = $this->resolveCurrencyLocale($request);
         $currency = CurrencyCatalog::forTenant($tenant, null, $currencyLocale);
@@ -86,7 +89,11 @@ class SettingsController extends Controller
             ],
             'site_name' => $siteName,
             'app_name' => $siteName,
-            'logo_url' => $this->nullableString(data_get($settings, 'logo_url')),
+            'logo_url' => $logoUrl,
+            'logo_dimensions' => $logoDimensions,
+            'dimensions' => [
+                'logo' => $logoDimensions,
+            ],
             'primary_color' => $this->normalizeHexColor(data_get($settings, 'primary_color'), '#f97316'),
             'secondary_color' => $this->normalizeHexColor(data_get($settings, 'secondary_color'), '#ea580c'),
             'currency_code' => $currencyCode,
@@ -292,6 +299,94 @@ class SettingsController extends Controller
         $value = trim((string) ($value ?? ''));
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * @return array{width:int,height:int}|null
+     */
+    private function imageDimensionsForPublicUrl(?string $url): ?array
+    {
+        $url = trim((string) ($url ?? ''));
+
+        if ($url === '') {
+            return null;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH) ?: $url;
+        $path = ltrim($path, '/');
+
+        if (str_starts_with($path, 'storage/')) {
+            $path = substr($path, strlen('storage/'));
+        }
+
+        if ($path === '' || ! Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        $absolutePath = Storage::disk('public')->path($path);
+        $extension = strtolower((string) pathinfo($absolutePath, PATHINFO_EXTENSION));
+
+        if ($extension === 'svg') {
+            return $this->svgDimensions($absolutePath);
+        }
+
+        $size = @getimagesize($absolutePath);
+
+        if (! is_array($size) || empty($size[0]) || empty($size[1])) {
+            return null;
+        }
+
+        return [
+            'width' => (int) $size[0],
+            'height' => (int) $size[1],
+        ];
+    }
+
+    /**
+     * @return array{width:int,height:int}|null
+     */
+    private function svgDimensions(string $absolutePath): ?array
+    {
+        $content = @file_get_contents($absolutePath);
+
+        if (! is_string($content) || trim($content) === '') {
+            return null;
+        }
+
+        $width = $this->svgNumericAttribute($content, 'width');
+        $height = $this->svgNumericAttribute($content, 'height');
+
+        if ($width !== null && $height !== null) {
+            return [
+                'width' => $width,
+                'height' => $height,
+            ];
+        }
+
+        if (preg_match('/viewBox=["\']\s*[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+([\d.]+)\s*["\']/i', $content, $matches) === 1) {
+            $viewBoxWidth = (int) round((float) $matches[1]);
+            $viewBoxHeight = (int) round((float) $matches[2]);
+
+            if ($viewBoxWidth > 0 && $viewBoxHeight > 0) {
+                return [
+                    'width' => $viewBoxWidth,
+                    'height' => $viewBoxHeight,
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    private function svgNumericAttribute(string $content, string $attribute): ?int
+    {
+        if (preg_match('/\s'.preg_quote($attribute, '/').'=["\']\s*([\d.]+)/i', $content, $matches) !== 1) {
+            return null;
+        }
+
+        $value = (int) round((float) $matches[1]);
+
+        return $value > 0 ? $value : null;
     }
 
     private function normalizeHexColor(mixed $value, string $fallback): string

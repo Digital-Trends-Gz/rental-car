@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -68,6 +69,36 @@ class SettingsControllerTest extends TestCase
             ->assertJsonPath('access', true)
             ->assertJsonPath('source', 'tenant')
             ->assertJsonPath('tenant.id', $tenant->id);
+    }
+
+    public function test_tenant_settings_include_logo_dimensions(): void
+    {
+        Storage::fake('public');
+
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'is_active' => true,
+        ]);
+
+        Storage::disk('public')->put(
+            'tenant-logo.png',
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAYAAACddGYaAAAADUlEQVR42mP8z8BQDwAEhQGAZi1FJAAAAABJRU5ErkJggg==')
+        );
+
+        TenantSiteSetting::query()->create([
+            'tenant_id' => $tenant->id,
+            'logo_url' => '/storage/tenant-logo.png',
+        ]);
+
+        Sanctum::actingAs($user, ['*']);
+
+        $this->getJson('/api/settings/tenant')
+            ->assertOk()
+            ->assertJsonPath('logo_dimensions.width', 3)
+            ->assertJsonPath('logo_dimensions.height', 2)
+            ->assertJsonPath('dimensions.logo.width', 3)
+            ->assertJsonPath('dimensions.logo.height', 2);
     }
 
     public function test_currencies_endpoint_returns_tenant_enabled_currencies_for_authenticated_user(): void
