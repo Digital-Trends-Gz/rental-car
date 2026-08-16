@@ -54,6 +54,31 @@ class SocialLoginController extends Controller
         $tenantSubdomain = $this->tenantFromState($request, $provider)
             ?: trim((string) $request->session()->get('social_login_tenant', ''));
 
+        if ($request->filled('error')) {
+            Log::warning('Social login provider returned an error.', [
+                'provider' => $provider,
+                'tenant' => $tenantSubdomain,
+                'error' => $request->query('error'),
+                'error_description' => $request->query('error_description'),
+            ]);
+
+            return $this->redirectToTenantLogin(
+                $tenantSubdomain,
+                (string) ($request->query('error_description') ?: 'Authentication failed. Please try again.')
+            );
+        }
+
+        if (! $request->filled('code')) {
+            Log::warning('Social login callback missing authorization code.', [
+                'provider' => $provider,
+                'tenant' => $tenantSubdomain,
+                'query_keys' => array_keys($request->query()),
+                'has_state' => $request->filled('state'),
+            ]);
+
+            return $this->redirectToTenantLogin($tenantSubdomain, 'Google did not return an authorization code. Please try again.');
+        }
+
         try {
             $socialUser = Socialite::driver($provider)
                 ->redirectUrl($this->callbackUrl($provider))
