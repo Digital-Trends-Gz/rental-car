@@ -182,6 +182,12 @@ class BranchAccess
             return $query->whereRaw('1 = 0');
         }
 
+        if ($requestedBranchId) {
+            return in_array($requestedBranchId, $branchIds, true)
+                ? $query->where($column, $requestedBranchId)
+                : $query->whereRaw('1 = 0');
+        }
+
         return $query->whereIn($column, $branchIds);
     }
 

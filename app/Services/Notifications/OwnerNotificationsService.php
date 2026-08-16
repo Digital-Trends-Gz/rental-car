@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\DB;
 
 class OwnerNotificationsService
 {
-    public function activeAlerts(User $user, ?int $branchId, string $locale): array
+    public function activeAlerts(User $user, int|array|null $branchId, string $locale): array
     {
         $today = Carbon::today();
         $tenantId = (int) $user->tenant_id;
@@ -87,7 +87,7 @@ class OwnerNotificationsService
         ];
     }
 
-    public function latestNotifications(User $user, ?int $branchId, string $locale, int $limit = 100): Collection
+    public function latestNotifications(User $user, int|array|null $branchId, string $locale, int $limit = 100): Collection
     {
         $limit = max(1, min(500, $limit));
         $tenantId = (int) $user->tenant_id;
@@ -110,7 +110,7 @@ class OwnerNotificationsService
             ->values();
     }
 
-    public function paginated(User $user, ?int $branchId, string $locale, int $perPage, int $page): LengthAwarePaginator
+    public function paginated(User $user, int|array|null $branchId, string $locale, int $perPage, int $page): LengthAwarePaginator
     {
         $items = $this->attachReadState(
             $user,
@@ -130,14 +130,14 @@ class OwnerNotificationsService
         );
     }
 
-    public function unreadCount(User $user, ?int $branchId, string $locale): int
+    public function unreadCount(User $user, int|array|null $branchId, string $locale): int
     {
         return $this->attachReadState($user, $this->latestNotifications($user, $branchId, $locale, 500), $locale)
             ->filter(fn (array $item): bool => empty($item['read_at']))
             ->count();
     }
 
-    public function markLatestAsRead(User $user, ?int $branchId, string $locale): int
+    public function markLatestAsRead(User $user, int|array|null $branchId, string $locale): int
     {
         $items = $this->attachReadState($user, $this->latestNotifications($user, $branchId, $locale, 500), $locale)
             ->filter(fn (array $item): bool => empty($item['read_at']));
@@ -171,7 +171,7 @@ class OwnerNotificationsService
         return count($rows);
     }
 
-    private function lateReturnItems(int $tenantId, ?int $branchId, string $locale): Collection
+    private function lateReturnItems(int $tenantId, int|array|null $branchId, string $locale): Collection
     {
         $now = now();
         $query = Contract::query()
@@ -228,7 +228,7 @@ class OwnerNotificationsService
             });
     }
 
-    private function violationItems(int $tenantId, ?int $branchId, string $locale, array $currency): Collection
+    private function violationItems(int $tenantId, int|array|null $branchId, string $locale, array $currency): Collection
     {
         $query = CarViolation::query()
             ->with(['car:id,branch_id,year,make,model,license_plate', 'issuedTo:id,name,email'])
@@ -269,7 +269,7 @@ class OwnerNotificationsService
             });
     }
 
-    private function maintenanceItems(int $tenantId, ?int $branchId, string $locale): Collection
+    private function maintenanceItems(int $tenantId, int|array|null $branchId, string $locale): Collection
     {
         $query = CarMaintenance::query()
             ->with(['car:id,branch_id,year,make,model,license_plate'])
@@ -311,7 +311,7 @@ class OwnerNotificationsService
             });
     }
 
-    private function discountRequestItems(int $tenantId, ?int $branchId, string $locale, array $currency): Collection
+    private function discountRequestItems(int $tenantId, int|array|null $branchId, string $locale, array $currency): Collection
     {
         $query = DiscountRequest::query()
             ->with([
@@ -381,7 +381,7 @@ class OwnerNotificationsService
             });
     }
 
-    private function reservationItems(int $tenantId, ?int $branchId, string $locale): Collection
+    private function reservationItems(int $tenantId, int|array|null $branchId, string $locale): Collection
     {
         $query = Reservation::query()
             ->with(['user:id,name,email', 'car:id,branch_id,year,make,model,license_plate', 'car.branch:id,name'])
@@ -420,7 +420,7 @@ class OwnerNotificationsService
             });
     }
 
-    private function paymentItems(int $tenantId, ?int $branchId, string $locale, array $currency): Collection
+    private function paymentItems(int $tenantId, int|array|null $branchId, string $locale, array $currency): Collection
     {
         $query = Payment::query()
             ->with(['reservation.user:id,name,email', 'reservation.car:id,branch_id,year,make,model,license_plate'])
@@ -541,22 +541,40 @@ class OwnerNotificationsService
         ];
     }
 
-    private function applyDirectBranchScope(Builder $query, ?int $branchId): void
+    private function applyDirectBranchScope(Builder $query, int|array|null $branchId): void
     {
+        if (is_array($branchId)) {
+            $query->whereIn('branch_id', $branchId ?: [0]);
+            return;
+        }
+
         if ($branchId) {
             $query->where('branch_id', $branchId);
         }
     }
 
-    private function applyReservationBranchScope(Builder $query, ?int $branchId): void
+    private function applyReservationBranchScope(Builder $query, int|array|null $branchId): void
     {
+        if (is_array($branchId)) {
+            $query->whereHas('car', fn (Builder $query) => $query->whereIn('branch_id', $branchId ?: [0]));
+            return;
+        }
+
         if ($branchId) {
             $query->whereHas('car', fn (Builder $query) => $query->where('branch_id', $branchId));
         }
     }
 
-    private function applyContractBranchScope(Builder $query, ?int $branchId): void
+    private function applyContractBranchScope(Builder $query, int|array|null $branchId): void
     {
+        if (is_array($branchId)) {
+            $query->where(function (Builder $query) use ($branchId): void {
+                $query->whereIn('branch_id', $branchId ?: [0])
+                    ->orWhereHas('reservation.car', fn (Builder $query) => $query->whereIn('branch_id', $branchId ?: [0]));
+            });
+            return;
+        }
+
         if ($branchId) {
             $query->where(function (Builder $query) use ($branchId): void {
                 $query->where('branch_id', $branchId)
@@ -565,15 +583,25 @@ class OwnerNotificationsService
         }
     }
 
-    private function applyPaymentBranchScope(Builder $query, ?int $branchId): void
+    private function applyPaymentBranchScope(Builder $query, int|array|null $branchId): void
     {
+        if (is_array($branchId)) {
+            $query->whereHas('reservation.car', fn (Builder $query) => $query->whereIn('branch_id', $branchId ?: [0]));
+            return;
+        }
+
         if ($branchId) {
             $query->whereHas('reservation.car', fn (Builder $query) => $query->where('branch_id', $branchId));
         }
     }
 
-    private function applyDiscountRequestBranchScope(Builder $query, ?int $branchId): void
+    private function applyDiscountRequestBranchScope(Builder $query, int|array|null $branchId): void
     {
+        if (is_array($branchId)) {
+            $query->whereHas('reservation.car', fn (Builder $query) => $query->whereIn('branch_id', $branchId ?: [0]));
+            return;
+        }
+
         if ($branchId) {
             $query->whereHas('reservation.car', fn (Builder $query) => $query->where('branch_id', $branchId));
         }

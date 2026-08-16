@@ -92,7 +92,7 @@ class ReservationsController extends Controller
             'date' => $today->toDateString(),
             'type' => $taskType,
             'type_label' => $this->taskTypeLabel($taskType),
-            'branch_id' => $branchId,
+            'branch_id' => is_int($branchId) ? $branchId : null,
             'filters' => $filters,
             'count' => $paginator->total(),
             'pagination' => $this->paginationPayload($paginator),
@@ -112,7 +112,7 @@ class ReservationsController extends Controller
         return $this->taskSummaryResponse($request, $user, $today, $branchId);
     }
 
-    private function taskSummaryResponse(Request $request, User $user, Carbon $today, ?int $branchId): JsonResponse
+    private function taskSummaryResponse(Request $request, User $user, Carbon $today, int|array|null $branchId): JsonResponse
     {
         $pickupStatuses = $this->resolvePickupStatuses($request->input('status'));
 
@@ -132,7 +132,7 @@ class ReservationsController extends Controller
 
         return response()->json([
             'date' => $today->toDateString(),
-            'branch_id' => $branchId,
+            'branch_id' => is_int($branchId) ? $branchId : null,
             'counts' => [
                 'pickup' => $pickupCount,
                 'return' => $returnCount,
@@ -164,7 +164,7 @@ class ReservationsController extends Controller
         ]);
     }
 
-    private function taskOverviewResponse(Request $request, User $user, Carbon $today, ?int $branchId): JsonResponse
+    private function taskOverviewResponse(Request $request, User $user, Carbon $today, int|array|null $branchId): JsonResponse
     {
         $pickupStatuses = $this->resolvePickupStatuses($request->input('status'));
 
@@ -204,7 +204,7 @@ class ReservationsController extends Controller
 
         return response()->json([
                 'date' => $today->toDateString(),
-                'branch_id' => $branchId,
+                'branch_id' => is_int($branchId) ? $branchId : null,
                 'count' => count($allItems),
                 'pagination' => $this->overviewPaginationPayload(
                     count($allItems),
@@ -221,12 +221,12 @@ class ReservationsController extends Controller
         ]);
     }
 
-    private function taskBlockPayload(string $type, ?int $branchId, array $filters, array $items): array
+    private function taskBlockPayload(string $type, int|array|null $branchId, array $filters, array $items): array
     {
         return [
             'type' => $type,
             'type_label' => $this->taskTypeLabel($type),
-            'branch_id' => $branchId,
+            'branch_id' => is_int($branchId) ? $branchId : null,
             'filters' => $filters,
             'count' => count($items),
             'items' => $items,
@@ -259,7 +259,7 @@ class ReservationsController extends Controller
         $branchId = $this->resolveBranchId($request, $user);
         return response()->json([
             'date' => $today->toDateString(),
-            'branch_id' => $branchId,
+            'branch_id' => is_int($branchId) ? $branchId : null,
             'status' => [
                 [
                     'key' => 'pickup',
@@ -339,7 +339,7 @@ class ReservationsController extends Controller
         return response()->json([
             'date' => $today->toDateString(),
             'scope' => $scope,
-            'branch_id' => $branchId,
+            'branch_id' => is_int($branchId) ? $branchId : null,
             'count' => $paginator->total(),
             'pagination' => $this->paginationPayload($paginator),
             'returns' => $this->mapContracts($paginator, $scope === 'overdue'),
@@ -444,7 +444,7 @@ class ReservationsController extends Controller
         return $user;
     }
 
-    private function reservationQuery(User $user, ?int $branchId): Builder
+    private function reservationQuery(User $user, int|array|null $branchId): Builder
     {
         $query = Reservation::query();
         $this->applyReservationBranchScope($query, $user, $branchId);
@@ -458,13 +458,13 @@ class ReservationsController extends Controller
         ]);
     }
 
-    private function pendingPickupReservationQuery(User $user, ?int $branchId, Carbon $today, array $statuses): Builder
+    private function pendingPickupReservationQuery(User $user, int|array|null $branchId, Carbon $today, array $statuses): Builder
     {
         return $this->reservationQuery($user, $branchId)
             ->pendingPickupTask($today, $statuses);
     }
 
-    private function contractQuery(User $user, ?int $branchId): Builder
+    private function contractQuery(User $user, int|array|null $branchId): Builder
     {
         $query = Contract::query();
         $this->applyContractBranchScope($query, $user, $branchId);
@@ -1276,7 +1276,7 @@ class ReservationsController extends Controller
         return array_map(static fn (ReservationStatus $status): string => $status->value, ReservationStatus::cases());
     }
 
-    private function resolveBranchId(Request $request, User $user): ?int
+    private function resolveBranchId(Request $request, User $user): int|array|null
     {
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
 
@@ -1284,46 +1284,56 @@ class ReservationsController extends Controller
             return $requestedBranchId;
         }
 
-        return (int) ($user->branch_id ?? 0) > 0 ? (int) $user->branch_id : null;
+        if ($requestedBranchId) {
+            abort_unless($this->branchAccess->canAccessBranchId($user, $requestedBranchId), 403);
+
+            return $requestedBranchId;
+        }
+
+        return $this->branchAccess->accessibleBranchIds($user);
     }
 
-    private function applyReservationBranchScope(Builder $query, User $user, ?int $branchId): void
+    private function applyReservationBranchScope(Builder $query, User $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->whereHas('car', fn (Builder $q) => $q->where('branch_id', $branchId));
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
             }
 
+            $query->whereHas('car', fn (Builder $q) => $q->whereIn('branch_id', $branchId));
             return;
         }
 
-        $userBranchId = (int) ($user->branch_id ?? 0);
-        if ($userBranchId <= 0) {
+        if ($branchId) {
+            $query->whereHas('car', fn (Builder $q) => $q->where('branch_id', $branchId));
+            return;
+        }
+
+        if (! $this->branchAccess->canAccessAllBranches($user)) {
             $query->whereRaw('1 = 0');
-
-            return;
         }
-
-        $query->whereHas('car', fn (Builder $q) => $q->where('branch_id', $userBranchId));
     }
 
-    private function applyContractBranchScope(Builder $query, User $user, ?int $branchId): void
+    private function applyContractBranchScope(Builder $query, User $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->whereHas('reservation.car', fn (Builder $q) => $q->where('branch_id', $branchId));
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
             }
 
+            $query->whereHas('reservation.car', fn (Builder $q) => $q->whereIn('branch_id', $branchId));
             return;
         }
 
-        $userBranchId = (int) ($user->branch_id ?? 0);
-        if ($userBranchId <= 0) {
+        if ($branchId) {
+            $query->whereHas('reservation.car', fn (Builder $q) => $q->where('branch_id', $branchId));
+            return;
+        }
+
+        if (! $this->branchAccess->canAccessAllBranches($user)) {
             $query->whereRaw('1 = 0');
-
-            return;
         }
-
-        $query->whereHas('reservation.car', fn (Builder $q) => $q->where('branch_id', $userBranchId));
     }
 }

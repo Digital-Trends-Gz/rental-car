@@ -35,15 +35,16 @@ class DashboardController extends Controller
         $locale = $this->resolveLocale($request);
         $today = Carbon::today();
         $branchId = $this->resolveBranchId($request, $user);
+        $branchScope = $branchId ?: ($this->branchAccess->canAccessAllBranches($user) ? null : $this->branchAccess->accessibleBranchIds($user));
 
         $carsQuery = Car::query();
-        $this->applyCarBranchScope($carsQuery, $user, $branchId);
+        $this->applyCarBranchScope($carsQuery, $user, $branchScope);
 
         $reservationsQuery = Reservation::query();
-        $this->applyReservationBranchScope($reservationsQuery, $user, $branchId);
+        $this->applyReservationBranchScope($reservationsQuery, $user, $branchScope);
 
         $contractsQuery = Contract::query();
-        $this->applyContractBranchScope($contractsQuery, $user, $branchId);
+        $this->applyContractBranchScope($contractsQuery, $user, $branchScope);
 
         $todayPickupsQuery = (clone $reservationsQuery)
             ->with(['user:id,name,email', 'car:id,branch_id,year,make,model,license_plate', 'car.branch:id,name'])
@@ -94,15 +95,7 @@ class DashboardController extends Controller
         $totalClientsQuery = User::query()
             ->where('role', UserRole::CLIENT);
 
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $totalClientsQuery->where('branch_id', $branchId);
-            }
-        } elseif (!empty($user?->branch_id)) {
-            $totalClientsQuery->where('branch_id', (int) $user->branch_id);
-        } else {
-            $totalClientsQuery->whereRaw('1 = 0');
-        }
+        $this->applyCarBranchScope($totalClientsQuery, $user, $branchScope);
 
         $totalClients = $totalClientsQuery->count();
 
@@ -166,10 +159,10 @@ class DashboardController extends Controller
 
         $pendingViolationsQuery = CarViolation::query()
             ->where('status', CarViolationStatus::PENDING);
-        $this->branchAccess->applyToQuery($pendingViolationsQuery, $user, $branchId, 'branch_id');
+        $this->applyCarBranchScope($pendingViolationsQuery, $user, $branchScope);
 
         $paymentsQuery = Payment::query()->where('status', PaymentStatus::COMPLETED);
-        $this->applyPaymentBranchScope($paymentsQuery, $user, $branchId);
+        $this->applyPaymentBranchScope($paymentsQuery, $user, $branchScope);
 
         return response()->json([
             'date' => $today->toDateString(),
@@ -355,82 +348,68 @@ class DashboardController extends Controller
             return $requestedBranchId;
         }
 
-        return (int) ($user->branch_id ?? 0) > 0 ? (int) $user->branch_id : null;
+        if ($requestedBranchId && !$this->branchAccess->canAccessBranchId($user, $requestedBranchId)) {
+            abort(403);
+        }
+
+        return $requestedBranchId && $this->branchAccess->canAccessBranchId($user, $requestedBranchId)
+            ? $requestedBranchId
+            : null;
     }
 
-    private function applyCarBranchScope($query, ?User $user, ?int $branchId): void
+    private function applyCarBranchScope($query, ?User $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->where('branch_id', $branchId);
-            }
-
+        if (is_array($branchId)) {
+            $query->whereIn('branch_id', $branchId ?: [0]);
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
-            return;
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
         }
-
-        $query->where('branch_id', $userBranchId);
     }
 
-    private function applyReservationBranchScope($query, ?User $user, ?int $branchId): void
+    private function applyReservationBranchScope($query, ?User $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->whereHas('car', fn ($q) => $q->where('branch_id', $branchId));
-            }
-
+        if (is_array($branchId)) {
+            $query->whereHas('car', fn ($q) => $q->whereIn('branch_id', $branchId ?: [0]));
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
-            return;
+        if ($branchId) {
+            $query->whereHas('car', fn ($q) => $q->where('branch_id', $branchId));
         }
-
-        $query->whereHas('car', fn ($q) => $q->where('branch_id', $userBranchId));
     }
 
-    private function applyContractBranchScope($query, ?User $user, ?int $branchId): void
+    private function applyContractBranchScope($query, ?User $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->whereHas('reservation.car', fn ($q) => $q->where('branch_id', $branchId));
-            }
-
+        if (is_array($branchId)) {
+            $query->where(function ($branchQuery) use ($branchId): void {
+                $branchQuery
+                    ->whereIn('branch_id', $branchId ?: [0])
+                    ->orWhereHas('reservation.car', fn ($q) => $q->whereIn('branch_id', $branchId ?: [0]));
+            });
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
-            return;
+        if ($branchId) {
+            $query->where(function ($branchQuery) use ($branchId): void {
+                $branchQuery
+                    ->where('branch_id', $branchId)
+                    ->orWhereHas('reservation.car', fn ($q) => $q->where('branch_id', $branchId));
+            });
         }
-
-        $query->whereHas('reservation.car', fn ($q) => $q->where('branch_id', $userBranchId));
     }
 
-    private function applyPaymentBranchScope($query, ?User $user, ?int $branchId): void
+    private function applyPaymentBranchScope($query, ?User $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->whereHas('reservation.car', fn ($q) => $q->where('branch_id', $branchId));
-            }
-
+        if (is_array($branchId)) {
+            $query->whereHas('reservation.car', fn ($q) => $q->whereIn('branch_id', $branchId ?: [0]));
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
-            return;
+        if ($branchId) {
+            $query->whereHas('reservation.car', fn ($q) => $q->where('branch_id', $branchId));
         }
-
-        $query->whereHas('reservation.car', fn ($q) => $q->where('branch_id', $userBranchId));
     }
 }

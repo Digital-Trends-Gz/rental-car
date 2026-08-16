@@ -19,6 +19,7 @@ use App\Support\ClientReturnDebt;
 use App\Support\CurrencyCatalog;
 use App\Support\PaidReturnReportLock;
 use App\Support\PdfRuntime;
+use App\Support\TenantPermissionCatalog;
 use App\Support\TenantTranslations;
 use App\Enums\CarStatus;
 use App\Enums\ReservationStatus;
@@ -1050,25 +1051,32 @@ class ReservationsController extends Controller
         return $pdf->download($fileName);
     }
 
-    private function applyReservationBranchScope($query, $user, ?int $branchId): void
+    private function applyReservationBranchScope($query, $user, int|array|null $branchId): void
     {
-        $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
-
-        if ($canAccessAllBranches) {
-            if ($branchId) {
-                $query->whereHas('car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
             }
 
+            $query->whereHas('car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchId));
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
+        if ($branchId) {
+            $query->whereHas('car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
             return;
         }
 
-        $query->whereHas('car', fn ($carQuery) => $carQuery->where('branch_id', $userBranchId));
+        if (! $this->branchAccess->canAccessAllBranches($user)) {
+            $branchIds = $this->branchAccess->accessibleBranchIds($user);
+            if ($branchIds === []) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->whereHas('car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchIds));
+        }
     }
 
     private function canAccessReservation(Reservation $reservation, $user): bool
@@ -1092,7 +1100,9 @@ class ReservationsController extends Controller
             return true;
         }
 
-        return method_exists($user, 'hasPermission') && $user->hasPermission('tenant-collect-debtors');
+        return method_exists($user, 'hasPermission')
+            && collect(['tenant-payments.collect', ...TenantPermissionCatalog::legacyNamesFor('tenant-payments.collect')])
+                ->contains(fn (string $permission): bool => $user->hasPermission($permission));
     }
 
     private function clientForBookingRequest(Tenant $tenant, BookingRequest $bookingRequest): User
@@ -1201,13 +1211,13 @@ class ReservationsController extends Controller
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
+        $branchIds = $this->branchAccess->accessibleBranchIds($user);
+        if ($branchIds === []) {
             $query->whereRaw('1 = 0');
             return;
         }
 
-        $query->where('branch_id', $userBranchId);
+        $query->whereIn('branch_id', $branchIds);
     }
 
     private function ensureNoReservationConflict(int $carId, Carbon $start, Carbon $end, ?int $ignoreReservationId = null): void

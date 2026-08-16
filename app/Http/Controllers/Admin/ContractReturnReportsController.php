@@ -21,6 +21,7 @@ use App\Models\TenantSiteSetting;
 use App\Support\BranchAccess;
 use App\Support\CurrencyCatalog;
 use App\Support\PdfRuntime;
+use App\Support\TenantPermissionCatalog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\RedirectResponse;
@@ -865,7 +866,9 @@ class ContractReturnReportsController extends Controller
             return true;
         }
 
-        return method_exists($user, 'hasPermission') && $user->hasPermission('tenant-edit-return-reports');
+        return method_exists($user, 'hasPermission')
+            && collect(['tenant-contracts.return-reports.update', ...TenantPermissionCatalog::legacyNamesFor('tenant-contracts.return-reports.update')])
+                ->contains(fn (string $permission): bool => $user->hasPermission($permission));
     }
 
     private function canCollectDebtors(?\App\Models\User $user): bool
@@ -882,7 +885,9 @@ class ContractReturnReportsController extends Controller
             return true;
         }
 
-        return method_exists($user, 'hasPermission') && $user->hasPermission('tenant-collect-debtors');
+        return method_exists($user, 'hasPermission')
+            && collect(['tenant-payments.collect', ...TenantPermissionCatalog::legacyNamesFor('tenant-payments.collect')])
+                ->contains(fn (string $permission): bool => $user->hasPermission($permission));
     }
 
     private function reportIsPaid(?ContractReturnReport $report): bool

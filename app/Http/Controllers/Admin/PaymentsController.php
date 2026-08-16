@@ -226,50 +226,68 @@ class PaymentsController extends Controller
         ]);
     }
 
-    private function applyPaymentBranchScope($query, $user, ?int $branchId): void
+    private function applyPaymentBranchScope($query, $user, int|array|null $branchId): void
     {
-        $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
-
-        if ($canAccessAllBranches) {
-            if ($branchId) {
-                $query->whereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
             }
+
+            $query->whereHas('reservation.car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchId));
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
+        if ($branchId) {
+            $query->whereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
             return;
         }
 
-        $query->whereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $userBranchId));
+        if (! $this->branchAccess->canAccessAllBranches($user)) {
+            $branchIds = $this->branchAccess->accessibleBranchIds($user);
+            if ($branchIds === []) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->whereHas('reservation.car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchIds));
+        }
     }
 
-    private function applyReturnReportBranchScope($query, $user, ?int $branchId): void
+    private function applyReturnReportBranchScope($query, $user, int|array|null $branchId): void
     {
-        $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
-
-        if ($canAccessAllBranches) {
-            if ($branchId) {
-                $query->where(function (Builder $branchQuery) use ($branchId): void {
-                    $branchQuery->where('branch_id', $branchId)
-                        ->orWhereHas('reservation.car', fn (Builder $carQuery) => $carQuery->where('branch_id', $branchId));
-                });
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
             }
 
+            $query->where(function (Builder $branchQuery) use ($branchId): void {
+                $branchQuery->whereIn('branch_id', $branchId)
+                    ->orWhereHas('reservation.car', fn (Builder $carQuery) => $carQuery->whereIn('branch_id', $branchId));
+            });
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
+        if ($branchId) {
+            $query->where(function (Builder $branchQuery) use ($branchId): void {
+                $branchQuery->where('branch_id', $branchId)
+                    ->orWhereHas('reservation.car', fn (Builder $carQuery) => $carQuery->where('branch_id', $branchId));
+            });
             return;
         }
 
-        $query->where(function (Builder $branchQuery) use ($userBranchId): void {
-            $branchQuery->where('branch_id', $userBranchId)
-                ->orWhereHas('reservation.car', fn (Builder $carQuery) => $carQuery->where('branch_id', $userBranchId));
-        });
+        if (! $this->branchAccess->canAccessAllBranches($user)) {
+            $branchIds = $this->branchAccess->accessibleBranchIds($user);
+            if ($branchIds === []) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->where(function (Builder $branchQuery) use ($branchIds): void {
+                $branchQuery->whereIn('branch_id', $branchIds)
+                    ->orWhereHas('reservation.car', fn (Builder $carQuery) => $carQuery->whereIn('branch_id', $branchIds));
+            });
+        }
     }
 }

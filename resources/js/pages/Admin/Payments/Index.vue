@@ -45,7 +45,7 @@ const authPermissions = computed<string[]>(() =>
     Array.isArray(page.props?.auth?.permissions) ? page.props.auth.permissions : [],
 );
 const hasFinancialAccess = computed(() => !!props.canViewFinancials);
-const hasDebtorsAccess = computed(() => authPermissions.value.includes('tenant-view-debtors'));
+const hasDebtorsAccess = computed(() => authPermissions.value.includes('tenant-debtors.view'));
 const translateStatus = (status: string, fallback?: string) =>
     raw(`dashboard.admin.payments.index.statuses.${status}`, fallback || status);
 const translatePaymentMethod = (method: string, fallback?: string) =>
@@ -69,15 +69,6 @@ function doSearch() {
         preserveState: true,
         replace: true,
     });
-}
-
-function fmtMoney(n?: number | string) {
-    if (!hasFinancialAccess.value) {
-        return '*******';
-    }
-
-    const v = Number(n ?? 0);
-    return `${props.currency.symbol}${v.toFixed(2)}`;
 }
 
 function fmtCurrencyAmount(n?: number | string, currency?: string) {

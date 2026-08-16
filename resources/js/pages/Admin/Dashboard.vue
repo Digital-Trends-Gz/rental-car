@@ -241,12 +241,12 @@ const authPermissions = computed<string[]>(() =>
 );
 const hasFinancialAccess = computed(() => Boolean(props.canViewFinancials));
 const hasPermission = (permission?: string) => !permission || authPermissions.value.includes(permission);
-const canManageCars = computed(() => hasPermission('tenant-manage-cars'));
-const canManageReservations = computed(() => hasPermission('tenant-manage-reservations'));
-const canManageClients = computed(() => hasPermission('tenant-manage-clients'));
-const canManagePayments = computed(() => hasPermission('tenant-manage-payments'));
-const canViewDebtors = computed(() => hasPermission('tenant-view-debtors'));
-const canManageSupport = computed(() => hasPermission('tenant-manage-support'));
+const canManageCars = computed(() => hasPermission('tenant-cars.view'));
+const canManageReservations = computed(() => hasPermission('tenant-reservations.view') || hasPermission('tenant-contracts.view'));
+const canManageClients = computed(() => hasPermission('tenant-clients.view'));
+const canManagePayments = computed(() => hasPermission('tenant-payments.view'));
+const canViewDebtors = computed(() => hasPermission('tenant-debtors.view'));
+const canManageSupport = computed(() => hasPermission('tenant-support.view'));
 const hasAnyDashboardAccess = computed(() =>
     canManageCars.value
     || canManageReservations.value
@@ -513,7 +513,7 @@ const quickActions = computed(() => {
             icon: Calendar,
             accent: '#F59E0B',
             bg: 'rgba(245,158,11,0.10)',
-            permission: 'tenant-manage-reservations',
+            permission: 'tenant-reservations.create',
         },
         {
             title: localize('New Contract', 'عقد جديد'),
@@ -522,7 +522,7 @@ const quickActions = computed(() => {
             icon: FileText,
             accent: '#8B5CF6',
             bg: 'rgba(139,92,246,0.10)',
-            permission: 'tenant-manage-reservations',
+            permission: 'tenant-contracts.create',
         },
         {
             title: localize('Add Car', 'إضافة سيارة'),
@@ -531,7 +531,7 @@ const quickActions = computed(() => {
             icon: Car,
             accent: '#3B82F6',
             bg: 'rgba(59,130,246,0.10)',
-            permission: 'tenant-manage-cars',
+            permission: 'tenant-cars.create',
         },
         {
             title: localize('Add Client', 'إضافة عميل'),
@@ -540,7 +540,7 @@ const quickActions = computed(() => {
             icon: Users,
             accent: '#EC4899',
             bg: 'rgba(236,72,153,0.10)',
-            permission: 'tenant-manage-clients',
+            permission: 'tenant-clients.create',
         },
         {
             title: localize('Payments', 'المدفوعات'),
@@ -549,7 +549,7 @@ const quickActions = computed(() => {
             icon: DollarSign,
             accent: '#10B981',
             bg: 'rgba(16,185,129,0.10)',
-            permission: 'tenant-manage-payments',
+            permission: 'tenant-payments.view',
         },
         {
             title: localize('Debtors', 'المدينون'),
@@ -558,7 +558,7 @@ const quickActions = computed(() => {
             icon: Clock,
             accent: '#EF4444',
             bg: 'rgba(239,68,68,0.10)',
-            permission: 'tenant-view-debtors',
+            permission: 'tenant-debtors.view',
         },
         {
             title: localize('Accidents', 'الحوادث'),
@@ -567,7 +567,7 @@ const quickActions = computed(() => {
             icon: Siren,
             accent: '#F97316',
             bg: 'rgba(249,115,22,0.10)',
-            permission: 'tenant-manage-reservations',
+            permission: 'tenant-damages.manage',
         },
         {
             title: localize('Violations', 'المخالفات'),
@@ -576,7 +576,7 @@ const quickActions = computed(() => {
             icon: AlertTriangle,
             accent: '#DC2626',
             bg: 'rgba(220,38,38,0.10)',
-            permission: 'tenant-manage-cars',
+            permission: 'tenant-violations.manage',
         },
         {
             title: localize('Support', 'الدعم'),
@@ -585,7 +585,7 @@ const quickActions = computed(() => {
             icon: LifeBuoy,
             accent: '#14B8A6',
             bg: 'rgba(20,184,166,0.10)',
-            permission: 'tenant-manage-support',
+            permission: 'tenant-support.view',
         },
     ].filter((item) => hasPermission(item.permission));
 });
@@ -601,7 +601,7 @@ const operationalHighlights = computed(() => {
             count: props.stats.cars_to_deliver_today,
             href: reservationsIndex(slug, { query: { scope: 'today_delivery' } }).url,
             accent: '#F59E0B',
-            permission: 'tenant-manage-reservations',
+            permission: 'tenant-reservations.view',
         },
         {
             title: localize('Receive today', 'الاستلام اليوم'),
@@ -609,7 +609,7 @@ const operationalHighlights = computed(() => {
             count: props.stats.cars_to_receive_today,
             href: contractsIndex(slug, { query: { scope: 'today_return' } }).url,
             accent: '#06B6D4',
-            permission: 'tenant-manage-reservations',
+            permission: 'tenant-contracts.view',
         },
         {
             title: localize('Overdue cars', 'السيارات المتأخرة'),
@@ -617,7 +617,7 @@ const operationalHighlights = computed(() => {
             count: props.stats.overdue_cars,
             href: contractsIndex(slug, { query: { scope: 'overdue' } }).url,
             accent: '#EF4444',
-            permission: 'tenant-manage-reservations',
+            permission: 'tenant-contracts.view',
         },
         {
             title: localize('Pending violations', 'المخالفات المعلقة'),
@@ -625,7 +625,7 @@ const operationalHighlights = computed(() => {
             count: props.stats.pending_violations,
             href: carViolationsIndex(slug, { query: { status: 'pending' } }).url,
             accent: '#8B5CF6',
-            permission: 'tenant-manage-cars',
+            permission: 'tenant-violations.manage',
         },
         {
             title: localize('Expiring documents', 'وثائق تنتهي قريبًا'),
@@ -633,7 +633,7 @@ const operationalHighlights = computed(() => {
             count: props.expiringCarDocuments.length,
             href: carsIndex(slug, { query: { scope: 'expiring_documents' } }).url,
             accent: '#3B82F6',
-            permission: 'tenant-manage-cars',
+            permission: 'tenant-cars.view',
         },
         {
             title: localize('Ending contracts', 'عقود تنتهي قريبًا'),
@@ -641,7 +641,7 @@ const operationalHighlights = computed(() => {
             count: props.expiringContracts.length,
             href: contractsIndex(slug, { query: { scope: 'ending_soon' } }).url,
             accent: '#10B981',
-            permission: 'tenant-manage-reservations',
+            permission: 'tenant-contracts.view',
         },
     ].filter((item) => hasPermission(item.permission));
 });
@@ -654,7 +654,7 @@ const kpiCards = computed(() => [
         icon: Car,
         accent: '#3B82F6',
         bg: 'rgba(59,130,246,0.1)',
-        permission: 'tenant-manage-cars',
+        permission: 'tenant-cars.view',
     },
     {
         title: localize('Available Cars', 'السيارات المتاحة'),
@@ -663,7 +663,7 @@ const kpiCards = computed(() => [
         icon: TrendingUp,
         accent: '#06B6D4',
         bg: 'rgba(6,182,212,0.1)',
-        permission: 'tenant-manage-cars',
+        permission: 'tenant-cars.view',
     },
     {
         title: localize('Active Reservations', 'الحجوزات النشطة'),
@@ -672,7 +672,7 @@ const kpiCards = computed(() => [
         icon: Calendar,
         accent: '#F59E0B',
         bg: 'rgba(245,158,11,0.1)',
-        permission: 'tenant-manage-reservations',
+        permission: 'tenant-reservations.view',
     },
     {
         title: localize('Total Reservations', 'إجمالي الحجوزات'),
@@ -681,7 +681,7 @@ const kpiCards = computed(() => [
         icon: CheckCircle2,
         accent: '#8B5CF6',
         bg: 'rgba(139,92,246,0.1)',
-        permission: 'tenant-manage-reservations',
+        permission: 'tenant-reservations.view',
     },
     {
         title: localize('Cars to Deliver Today', 'السيارات المراد تسليمها اليوم'),
@@ -690,7 +690,7 @@ const kpiCards = computed(() => [
         icon: Calendar,
         accent: '#F59E0B',
         bg: 'rgba(245,158,11,0.1)',
-        permission: 'tenant-manage-reservations',
+        permission: 'tenant-reservations.view',
     },
     {
         title: localize('Cars to Receive Today', 'السيارات التي سيتم استلامها اليوم'),
@@ -699,7 +699,7 @@ const kpiCards = computed(() => [
         icon: RefreshCcw,
         accent: '#06B6D4',
         bg: 'rgba(6,182,212,0.1)',
-        permission: 'tenant-manage-reservations',
+        permission: 'tenant-contracts.view',
     },
     {
         title: localize('Overdue Cars', 'السيارات المتأخرة'),
@@ -708,7 +708,7 @@ const kpiCards = computed(() => [
         icon: Clock,
         accent: '#EF4444',
         bg: 'rgba(239,68,68,0.1)',
-        permission: 'tenant-manage-reservations',
+        permission: 'tenant-contracts.view',
     },
     {
         title: localize('Pending Violations', 'المخالفات المعلقة'),
@@ -717,7 +717,7 @@ const kpiCards = computed(() => [
         icon: Clock,
         accent: '#EF4444',
         bg: 'rgba(239,68,68,0.1)',
-        permission: 'tenant-manage-cars',
+        permission: 'tenant-violations.manage',
     },
     {
         title: localize('Total Revenue', 'إجمالي الإيرادات'),
@@ -735,7 +735,7 @@ const kpiCards = computed(() => [
         icon: Users,
         accent: '#EC4899',
         bg: 'rgba(236,72,153,0.1)',
-        permission: 'tenant-manage-clients',
+        permission: 'tenant-clients.view',
     },
 ].filter((card) => (card.visible ?? true) && hasPermission(card.permission)));
 

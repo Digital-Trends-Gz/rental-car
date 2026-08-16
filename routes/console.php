@@ -2,9 +2,13 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 use App\Support\TenantAdminAccessSync;
+use App\Support\TenantPermissionCatalog;
+use App\Models\Permission;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Services\Dashboard\OwnerDashboardMetricsService;
 use App\Services\Contracts\ContractExpiryReminderService;
 use App\Services\Cars\CarDocumentReminderService;
@@ -48,6 +52,77 @@ Artisan::command('tenants:sync-owner-access', function () {
     $this->line('Tenant admins checked: '.$result['admins']);
     $this->line('Admins synced: '.$result['synced']);
 })->purpose('Backfill tenant-owner role and tenant-* permissions for existing tenant admins');
+
+Artisan::command('tenants:expand-legacy-permissions', function () {
+    $permissionsByName = Permission::withoutGlobalScope('tenant')
+        ->whereNull('tenant_id')
+        ->whereIn('name', collect(TenantPermissionCatalog::permissions())->pluck('name')->all())
+        ->pluck('id', 'name');
+
+    $roleInserts = [];
+    $userInserts = [];
+
+    foreach (TenantPermissionCatalog::legacyExpansionMap() as $legacyName => $granularNames) {
+        $legacyId = $permissionsByName[$legacyName] ?? null;
+        if (!$legacyId) {
+            continue;
+        }
+
+        $granularIds = collect($granularNames)
+            ->map(fn (string $name) => $permissionsByName[$name] ?? null)
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->values();
+
+        if ($granularIds->isEmpty()) {
+            continue;
+        }
+
+        $roleIds = DB::table('permission_role')
+            ->where('permission_id', (int) $legacyId)
+            ->pluck('role_id')
+            ->map(fn ($id) => (int) $id);
+
+        foreach ($roleIds as $roleId) {
+            foreach ($granularIds as $granularId) {
+                $roleInserts[] = [
+                    'permission_id' => $granularId,
+                    'role_id' => $roleId,
+                ];
+            }
+        }
+
+        $userIds = DB::table('permission_user')
+            ->where('permission_id', (int) $legacyId)
+            ->where('user_type', User::class)
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id);
+
+        foreach ($userIds as $userId) {
+            foreach ($granularIds as $granularId) {
+                $userInserts[] = [
+                    'permission_id' => $granularId,
+                    'user_id' => $userId,
+                    'user_type' => User::class,
+                ];
+            }
+        }
+    }
+
+    collect($roleInserts)
+        ->unique(fn (array $row) => $row['permission_id'].'-'.$row['role_id'])
+        ->chunk(500)
+        ->each(fn ($chunk) => DB::table('permission_role')->insertOrIgnore($chunk->values()->all()));
+
+    collect($userInserts)
+        ->unique(fn (array $row) => $row['permission_id'].'-'.$row['user_id'].'-'.$row['user_type'])
+        ->chunk(500)
+        ->each(fn ($chunk) => DB::table('permission_user')->insertOrIgnore($chunk->values()->all()));
+
+    $this->info('Legacy tenant permissions expanded.');
+    $this->line('Role permission rows prepared: '.count($roleInserts));
+    $this->line('User permission rows prepared: '.count($userInserts));
+})->purpose('Add granular tenant permissions wherever legacy tenant permissions are already assigned');
 
 Artisan::command('cars:notify-expiring-documents', function () {
     $result = app(CarDocumentReminderService::class)->run();

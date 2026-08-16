@@ -1544,14 +1544,12 @@ class ContractsController extends Controller
             ->latest('id')
             ->limit(100);
 
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            // no-op
-        } else {
-            $userBranchId = (int) ($user?->branch_id ?? 0);
-            if ($userBranchId <= 0) {
+        if (! $this->branchAccess->canAccessAllBranches($user)) {
+            $branchIds = $this->branchAccess->accessibleBranchIds($user);
+            if ($branchIds === []) {
                 return [];
             }
-            $query->whereHas('car', fn ($carQuery) => $carQuery->where('branch_id', $userBranchId));
+            $query->whereHas('car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchIds));
         }
 
         return $query->get()
@@ -1622,12 +1620,12 @@ class ContractsController extends Controller
             ->orderBy('model');
 
         if (!$this->branchAccess->canAccessAllBranches($request->user())) {
-            $userBranchId = (int) ($request->user()?->branch_id ?? 0);
-            if ($userBranchId <= 0) {
+            $branchIds = $this->branchAccess->accessibleBranchIds($request->user());
+            if ($branchIds === []) {
                 return [];
             }
 
-            $query->where('branch_id', $userBranchId);
+            $query->whereIn('branch_id', $branchIds);
         }
 
         return $query->get(['id', 'branch_id', 'make', 'model', 'year', 'license_plate', 'price_per_day', 'price_per_week', 'price_per_month', 'allowed_km_per_day', 'allowed_km_per_week', 'allowed_km_per_month'])
@@ -1723,25 +1721,41 @@ class ContractsController extends Controller
         }
     }
 
-    private function applyContractBranchScope($query, $user, ?int $branchId): void
+    private function applyContractBranchScope($query, $user, int|array|null $branchId): void
     {
-        $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
-
-        if ($canAccessAllBranches) {
-            if ($branchId) {
-                $query->where('branch_id', $branchId);
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
             }
 
+            $query->where(function ($branchQuery) use ($branchId): void {
+                $branchQuery->whereIn('branch_id', $branchId)
+                    ->orWhereHas('reservation.car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchId));
+            });
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
+        if ($branchId) {
+            $query->where(function ($branchQuery) use ($branchId): void {
+                $branchQuery->where('branch_id', $branchId)
+                    ->orWhereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
+            });
             return;
         }
 
-        $query->where('branch_id', $userBranchId);
+        if (! $this->branchAccess->canAccessAllBranches($user)) {
+            $branchIds = $this->branchAccess->accessibleBranchIds($user);
+            if ($branchIds === []) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->where(function ($branchQuery) use ($branchIds): void {
+                $branchQuery->whereIn('branch_id', $branchIds)
+                    ->orWhereHas('reservation.car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchIds));
+            });
+        }
     }
 
     private function canAccessContract(Contract $contract, $user): bool

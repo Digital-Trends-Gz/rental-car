@@ -5,19 +5,12 @@ namespace App\Services\Plans;
 use App\Core\TenantContext;
 use App\Models\Permission;
 use App\Models\Tenant;
+use App\Support\TenantPermissionCatalog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class PlanPermissionAccess
 {
-    private const PERMISSION_FEATURES = [
-        'tenant-manage-payments' => 'cash_payments',
-        'tenant-view-debtors' => 'cash_payments',
-        'tenant-collect-debtors' => 'cash_payments',
-        'tenant-view-financials' => 'reports_module',
-        'tenant-view-reports' => 'reports_module',
-    ];
-
     /**
      * @return Builder<Permission>
      */
@@ -36,7 +29,22 @@ class PlanPermissionAccess
     {
         return $this->tenantPermissionQuery($tenant)
             ->orderBy('display_name')
-            ->get(['id', 'name', 'display_name', 'description']);
+            ->get(['id', 'name', 'display_name', 'description'])
+            ->map(function (Permission $permission): Permission {
+                $metadata = TenantPermissionCatalog::metadataFor((string) $permission->name);
+
+                $permission->setAttribute('module', $metadata['module'] ?? 'Other');
+                $permission->setAttribute('action', $metadata['action'] ?? 'Access');
+                $permission->setAttribute('legacy', $metadata['legacy'] ?? null);
+                $permission->setAttribute('feature', $metadata['feature'] ?? null);
+
+                return $permission;
+            })
+            ->sortBy([
+                ['module', 'asc'],
+                ['display_name', 'asc'],
+            ])
+            ->values();
     }
 
     /**
@@ -83,8 +91,13 @@ class PlanPermissionAccess
         $tenant->load('subscriptionPlan');
 
         return collect($allPermissionNames)
+            ->reject(fn (string $permission): bool => in_array(
+                $permission,
+                TenantPermissionCatalog::legacyPermissionNames(),
+                true
+            ))
             ->reject(function (string $permission) use ($tenant): bool {
-                $feature = self::PERMISSION_FEATURES[$permission] ?? null;
+                $feature = TenantPermissionCatalog::metadataFor($permission)['feature'] ?? null;
 
                 return $feature !== null && !$tenant->supportsFeature($feature);
             })

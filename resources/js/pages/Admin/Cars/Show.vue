@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useTrans } from '@/composables/useTrans';
 import { computed } from 'vue';
 
-const props = defineProps<{
+defineProps<{
     car: {
         id: number;
         make: string;
@@ -154,6 +154,13 @@ const props = defineProps<{
 const { locale, t } = useTrans();
 const page = usePage<any>();
 const showTranslationRoot = 'dashboard.admin.cars.show';
+const authPermissions = computed<string[]>(() =>
+    Array.isArray(page.props?.auth?.permissions) ? page.props.auth.permissions : [],
+);
+const hasPermission = (permission: string) => authPermissions.value.includes(permission);
+const canUpdateCars = computed(() => hasPermission('tenant-cars.update'));
+const canManageCarDocuments = computed(() => hasPermission('tenant-cars.documents.manage'));
+const canViewCarCalendar = computed(() => hasPermission('tenant-cars.calendar.view'));
 
 const translationKeyFor = (value: string) =>
     `${showTranslationRoot}.${value
@@ -246,13 +253,13 @@ function statusVariant(key: string) {
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <Link v-if="hasFeature('car_documents')" :href="`/admin/cars/${car.id}/documents`">
+                    <Link v-if="hasFeature('car_documents') && canManageCarDocuments" :href="`/admin/cars/${car.id}/documents`">
                         <Button variant="outline">{{ localize('Documents', 'الوثائق') }}</Button>
                     </Link>
-                    <Link :href="`/admin/cars/${car.id}/calendar`">
+                    <Link v-if="canViewCarCalendar" :href="`/admin/cars/${car.id}/calendar`">
                         <Button variant="outline">{{ localize('Calendar', 'التقويم') }}</Button>
                     </Link>
-                    <Link :href="`/admin/cars/${car.id}/edit`">
+                    <Link v-if="canUpdateCars" :href="`/admin/cars/${car.id}/edit`">
                         <Button>{{ localize('Edit Car', 'تعديل السيارة') }}</Button>
                     </Link>
                 </div>

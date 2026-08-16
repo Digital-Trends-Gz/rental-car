@@ -11,7 +11,7 @@ import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
     role: any | null;
-    permissions: Array<{ id: number; name: string; display_name: string; description: string }>;
+    permissions: Array<{ id: number; name: string; display_name: string; description: string; module?: string; action?: string; legacy?: string | null }>;
 }>();
 
 const { t } = useTrans();
@@ -34,13 +34,23 @@ const rolePresets = [
         display_name: 'Manager',
         slug: 'manager',
         permissionNames: [
-            'tenant-manage-cars',
-            'tenant-manage-reservations',
-            'tenant-manage-clients',
-            'tenant-manage-payments',
-            'tenant-view-debtors',
-            'tenant-view-financials',
-            'tenant-view-reports',
+            'tenant-cars.view',
+            'tenant-cars.create',
+            'tenant-cars.update',
+            'tenant-reservations.view',
+            'tenant-reservations.create',
+            'tenant-reservations.update',
+            'tenant-contracts.view',
+            'tenant-contracts.create',
+            'tenant-contracts.update',
+            'tenant-contracts.handover',
+            'tenant-clients.view',
+            'tenant-clients.create',
+            'tenant-clients.update',
+            'tenant-payments.view',
+            'tenant-debtors.view',
+            'tenant-financials.view',
+            'tenant-reports.view',
         ],
     },
     {
@@ -50,10 +60,12 @@ const rolePresets = [
         display_name: 'Accountant',
         slug: 'accountant',
         permissionNames: [
-            'tenant-manage-payments',
-            'tenant-view-debtors',
-            'tenant-view-financials',
-            'tenant-view-reports',
+            'tenant-payments.view',
+            'tenant-debtors.view',
+            'tenant-payments.collect',
+            'tenant-financials.view',
+            'tenant-reports.view',
+            'tenant-reports.export',
         ],
     },
     {
@@ -63,9 +75,9 @@ const rolePresets = [
         display_name: 'Collector',
         slug: 'collector',
         permissionNames: [
-            'tenant-view-debtors',
-            'tenant-collect-debtors',
-            'tenant-view-financials',
+            'tenant-debtors.view',
+            'tenant-payments.collect',
+            'tenant-financials.view',
         ],
     },
     {
@@ -75,10 +87,28 @@ const rolePresets = [
         display_name: 'Cashier',
         slug: 'cashier',
         permissionNames: [
-            'tenant-manage-payments',
+            'tenant-payments.view',
+            'tenant-payments.collect',
         ],
     },
 ] as const;
+
+const groupedPermissions = computed(() => {
+    const groups = new Map<string, typeof props.permissions>();
+
+    props.permissions.forEach((permission) => {
+        const module = permission.module || 'Other';
+        if (!groups.has(module)) {
+            groups.set(module, []);
+        }
+        groups.get(module)?.push(permission);
+    });
+
+    return Array.from(groups.entries()).map(([module, permissions]) => ({
+        module,
+        permissions,
+    }));
+});
 
 // Initialize form with default values
 const form = useForm({
@@ -177,21 +207,30 @@ function submit() {
                             <p class="text-sm text-gray-500">{{ t('dashboard.admin.roles.form.permissions_help') }}</p>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border-t pt-4">
-                            <div v-for="permission in props.permissions" :key="permission.id"
-                                class="flex items-start space-x-3 p-3 rounded-md hover:bg-indigo-50 transition-colors border border-transparent hover:border-indigo-100">
-                                <input :id="`perm-${permission.id}`" type="checkbox"
-                                    :checked="form.permission_ids.includes(permission.id)"
-                                    @change="togglePermission(permission.id)"
-                                    class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                                <div class="space-y-1">
-                                    <label :for="`perm-${permission.id}`"
-                                        class="text-sm font-semibold leading-none cursor-pointer">
-                                        {{ permission.display_name }}
-                                    </label>
-                                    <p class="text-xs text-gray-500 italic">{{ permission.description }}</p>
+                        <div class="space-y-5 border-t pt-4">
+                            <section v-for="group in groupedPermissions" :key="group.module" class="space-y-3">
+                                <h4 class="text-sm font-semibold text-gray-700">{{ group.module }}</h4>
+                                <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                    <div v-for="permission in group.permissions" :key="permission.id"
+                                        class="flex items-start space-x-3 rounded-md border border-transparent p-3 transition-colors hover:border-indigo-100 hover:bg-indigo-50">
+                                        <input :id="`perm-${permission.id}`" type="checkbox"
+                                            :checked="form.permission_ids.includes(permission.id)"
+                                            @change="togglePermission(permission.id)"
+                                            class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                        <div class="space-y-1">
+                                            <label :for="`perm-${permission.id}`"
+                                                class="cursor-pointer text-sm font-semibold leading-none">
+                                                {{ permission.display_name }}
+                                            </label>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600">{{ permission.action || 'Access' }}</span>
+                                                <span v-if="!permission.legacy" class="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-700">Legacy</span>
+                                            </div>
+                                            <p class="text-xs italic text-gray-500">{{ permission.description }}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            </section>
                         </div>
                         <InputError :message="form.errors.permission_ids" class="mt-1" />
                     </div>

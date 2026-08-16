@@ -27,7 +27,9 @@ class PermissionMiddleware
             ->values();
 
         $hasPermission = Auth::check()
-            && $permissions->contains(fn (string $name): bool => Auth::user()->hasPermission($name));
+            && $permissions->contains(function (string $name): bool {
+                return Auth::user()->hasPermission($name);
+            });
 
         if (!$hasPermission) {
             if ($request->expectsJson()) {

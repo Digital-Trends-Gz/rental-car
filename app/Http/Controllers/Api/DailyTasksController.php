@@ -154,7 +154,7 @@ class DailyTasksController extends Controller
         ];
     }
 
-    private function resolveBranchId(Request $request, $user): ?int
+    private function resolveBranchId(Request $request, $user): int|array|null
     {
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
 
@@ -166,7 +166,7 @@ class DailyTasksController extends Controller
             return $requestedBranchId;
         }
 
-        return !empty($user->branch_id) ? (int) $user->branch_id : null;
+        return $requestedBranchId ?: $this->branchAccess->accessibleBranchIds($user);
     }
 
     private function taskStatusFilters(string $locale): array

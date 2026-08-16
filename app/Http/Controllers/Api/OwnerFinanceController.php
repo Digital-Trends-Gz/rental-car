@@ -57,7 +57,7 @@ class OwnerFinanceController extends Controller
             'status' => 'success',
             'locale' => $locale,
             'tenant_id' => $tenantId,
-            'branch_id' => $branchId,
+            'branch_id' => is_int($branchId) ? $branchId : null,
             'date_range' => [
                 'from' => $dateFrom->toDateString(),
                 'to' => $dateTo->toDateString(),
@@ -168,14 +168,20 @@ class OwnerFinanceController extends Controller
         return $user;
     }
 
-    private function resolveOwnerBranchId(Request $request, User $user): ?int
+    private function resolveOwnerBranchId(Request $request, User $user): int|array|null
     {
         $branchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
 
         $resolvedBranchId = $this->branchAccess->resolveAccessibleBranchId($user, $branchId);
 
         if (!$this->branchAccess->canAccessAllBranches($user)) {
-            return $resolvedBranchId;
+            if ($branchId && !$resolvedBranchId) {
+                throw ValidationException::withMessages([
+                    'branch_id' => [$this->ownerText('errors.branch_invalid', $this->resolveLocale($request), 'Selected branch is invalid or not accessible.')],
+                ]);
+            }
+
+            return $resolvedBranchId ?: $this->branchAccess->accessibleBranchIds($user);
         }
 
         if (!$resolvedBranchId) {
@@ -244,7 +250,7 @@ class OwnerFinanceController extends Controller
         return null;
     }
 
-    private function reservationTotalForRange(int $tenantId, ?int $branchId, Carbon $from, Carbon $to): float
+    private function reservationTotalForRange(int $tenantId, int|array|null $branchId, Carbon $from, Carbon $to): float
     {
         $query = Reservation::query()
             ->withoutGlobalScope('tenant')
@@ -256,7 +262,7 @@ class OwnerFinanceController extends Controller
         return round((float) $query->sum('total_amount'), 2);
     }
 
-    private function uncollectedReservationTotalForRange(int $tenantId, ?int $branchId, Carbon $from, Carbon $to): float
+    private function uncollectedReservationTotalForRange(int $tenantId, int|array|null $branchId, Carbon $from, Carbon $to): float
     {
         $paidTotals = Payment::query()
             ->withoutGlobalScope('tenant')
@@ -280,16 +286,14 @@ class OwnerFinanceController extends Controller
         return round((float) $total, 2);
     }
 
-    private function expensesTotalForRange(int $tenantId, ?int $branchId, Carbon $from, Carbon $to): float
+    private function expensesTotalForRange(int $tenantId, int|array|null $branchId, Carbon $from, Carbon $to): float
     {
         $query = DamageRepair::query()
             ->withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
             ->whereRaw('DATE(COALESCE(completed_at, started_at, opened_at, created_at)) between ? and ?', [$from->toDateString(), $to->toDateString()]);
 
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
-        }
+        $this->applyBranchColumnScope($query, $branchId);
 
         $total = $query
             ->selectRaw('COALESCE(SUM(COALESCE(actual_cost, estimated_cost, 0)), 0) as aggregate')
@@ -298,12 +302,13 @@ class OwnerFinanceController extends Controller
         return round((float) $total, 2);
     }
 
-    private function branchBreakdown(int $tenantId, ?int $branchId, Carbon $from, Carbon $to, array $currency): array
+    private function branchBreakdown(int $tenantId, int|array|null $branchId, Carbon $from, Carbon $to, array $currency): array
     {
         $branches = Branch::query()
             ->withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId)
-            ->when($branchId, fn (Builder $query): Builder => $query->whereKey($branchId))
+            ->when(is_int($branchId), fn (Builder $query): Builder => $query->whereKey($branchId))
+            ->when(is_array($branchId), fn (Builder $query): Builder => $query->whereIn('id', $branchId))
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -314,7 +319,8 @@ class OwnerFinanceController extends Controller
             ->where('payments.tenant_id', $tenantId)
             ->where('payments.status', PaymentStatus::COMPLETED->value)
             ->whereRaw('DATE(COALESCE(payments.processed_at, payments.created_at)) between ? and ?', [$from->toDateString(), $to->toDateString()])
-            ->when($branchId, fn (Builder $query): Builder => $query->where('cars.branch_id', $branchId))
+            ->when(is_int($branchId), fn (Builder $query): Builder => $query->where('cars.branch_id', $branchId))
+            ->when(is_array($branchId), fn (Builder $query): Builder => $query->whereIn('cars.branch_id', $branchId))
             ->selectRaw('cars.branch_id, COALESCE(SUM(COALESCE(payments.base_amount, payments.amount)), 0) as total')
             ->groupBy('cars.branch_id')
             ->pluck('total', 'cars.branch_id');
@@ -338,12 +344,41 @@ class OwnerFinanceController extends Controller
             ->all();
     }
 
-    private function applyReservationBranchScope(Builder $query, ?int $branchId): void
+    private function applyReservationBranchScope(Builder $query, int|array|null $branchId): void
     {
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->whereHas('car', fn (Builder $query): Builder => $query
+                ->withoutGlobalScope('tenant')
+                ->whereIn('branch_id', $branchId));
+            return;
+        }
+
         if ($branchId) {
             $query->whereHas('car', fn (Builder $query): Builder => $query
                 ->withoutGlobalScope('tenant')
                 ->where('branch_id', $branchId));
+        }
+    }
+
+    private function applyBranchColumnScope(Builder $query, int|array|null $branchId, string $column = 'branch_id'): void
+    {
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->whereIn($column, $branchId);
+            return;
+        }
+
+        if ($branchId) {
+            $query->where($column, $branchId);
         }
     }
 
@@ -431,15 +466,13 @@ class OwnerFinanceController extends Controller
         return in_array($fallback, $supportedLocales, true) ? $fallback : ($supportedLocales[0] ?? 'en');
     }
 
-    private function fleetOccupancy(int $tenantId, ?int $branchId, Carbon $from, Carbon $to, array $previousRange, string $locale): array
+    private function fleetOccupancy(int $tenantId, int|array|null $branchId, Carbon $from, Carbon $to, array $previousRange, string $locale): array
     {
         $carsQuery = Car::query()
             ->withoutGlobalScope('tenant')
             ->where('tenant_id', $tenantId);
 
-        if ($branchId) {
-            $carsQuery->where('branch_id', $branchId);
-        }
+        $this->applyBranchColumnScope($carsQuery, $branchId);
 
         $totalFleet = $carsQuery->count();
         $days = $from->diffInDays($to) + 1;
@@ -465,7 +498,7 @@ class OwnerFinanceController extends Controller
         ];
     }
 
-    private function calculateOccupiedCarDays(int $tenantId, ?int $branchId, Carbon $from, Carbon $to): int
+    private function calculateOccupiedCarDays(int $tenantId, int|array|null $branchId, Carbon $from, Carbon $to): int
     {
         $query = Reservation::query()
             ->withoutGlobalScope('tenant')
@@ -503,7 +536,7 @@ class OwnerFinanceController extends Controller
         return (int) array_sum($carOccupiedDays);
     }
 
-    private function topPerformingCars(int $tenantId, ?int $branchId, Carbon $from, Carbon $to, array $currency, int $limit = 3): array
+    private function topPerformingCars(int $tenantId, int|array|null $branchId, Carbon $from, Carbon $to, array $currency, int $limit = 3): array
     {
         $rows = Payment::query()
             ->withoutGlobalScope('tenant')
@@ -512,7 +545,8 @@ class OwnerFinanceController extends Controller
             ->where('payments.tenant_id', $tenantId)
             ->where('payments.status', PaymentStatus::COMPLETED->value)
             ->whereRaw('DATE(COALESCE(payments.processed_at, payments.created_at)) between ? and ?', [$from->toDateString(), $to->toDateString()])
-            ->when($branchId, fn (Builder $query): Builder => $query->where('cars.branch_id', $branchId))
+            ->when(is_int($branchId), fn (Builder $query): Builder => $query->where('cars.branch_id', $branchId))
+            ->when(is_array($branchId), fn (Builder $query): Builder => $query->whereIn('cars.branch_id', $branchId))
             ->selectRaw('cars.id as car_id, COALESCE(SUM(COALESCE(payments.base_amount, payments.amount)), 0) as total_revenue, COUNT(DISTINCT reservations.id) as reservations_count')
             ->groupBy('cars.id')
             ->orderByDesc('total_revenue')
@@ -525,7 +559,8 @@ class OwnerFinanceController extends Controller
                 ->join('cars', 'cars.id', '=', 'reservations.car_id')
                 ->where('reservations.tenant_id', $tenantId)
                 ->whereBetween(DB::raw('DATE(reservations.created_at)'), [$from->toDateString(), $to->toDateString()])
-                ->when($branchId, fn (Builder $query): Builder => $query->where('cars.branch_id', $branchId))
+                ->when(is_int($branchId), fn (Builder $query): Builder => $query->where('cars.branch_id', $branchId))
+                ->when(is_array($branchId), fn (Builder $query): Builder => $query->whereIn('cars.branch_id', $branchId))
                 ->selectRaw('cars.id as car_id, COALESCE(SUM(reservations.total_amount), 0) as total_revenue, COUNT(reservations.id) as reservations_count')
                 ->groupBy('cars.id')
                 ->orderByDesc('total_revenue')

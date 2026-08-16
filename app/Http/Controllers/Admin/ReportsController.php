@@ -3013,7 +3013,7 @@ class ReportsController extends Controller
 
         $tenantId = TenantContext::id() ?: ($user?->tenant_id ?? null);
         $employeesQuery = User::query()
-            ->with('branch:id,name')
+            ->with(['branch:id,name', 'branches:id,name'])
             ->where('role', UserRole::ADMIN->value);
 
         if ($tenantId) {
@@ -3024,14 +3024,20 @@ class ReportsController extends Controller
 
         if ($this->branchAccess->canAccessAllBranches($user)) {
             if ($branchId) {
-                $employeesQuery->where('branch_id', $branchId);
+                $employeesQuery->where(function ($query) use ($branchId): void {
+                    $query->where('branch_id', $branchId)
+                        ->orWhereHas('branches', fn ($branchQuery) => $branchQuery->whereKey($branchId));
+                });
             }
         } else {
-            $userBranchId = (int) ($user?->branch_id ?? 0);
-            if ($userBranchId <= 0) {
+            $branchIds = $this->branchAccess->accessibleBranchIds($user);
+            if ($branchIds === []) {
                 $employeesQuery->whereRaw('1 = 0');
             } else {
-                $employeesQuery->where('branch_id', $userBranchId);
+                $employeesQuery->where(function ($query) use ($branchIds): void {
+                    $query->whereIn('branch_id', $branchIds)
+                        ->orWhereHas('branches', fn ($branchQuery) => $branchQuery->whereIn('branches.id', $branchIds));
+                });
             }
         }
 
@@ -3039,14 +3045,14 @@ class ReportsController extends Controller
             ->orderBy('name')
             ->get(['id', 'tenant_id', 'branch_id', 'name', 'email', 'is_active']);
 
-        $branchScopedContracts = function (?int $employeeBranchId) use ($dateRange, $user, $branchId) {
+        $branchScopedContracts = function (array $employeeBranchIds) use ($dateRange, $user, $branchId) {
             $query = Contract::query()
                 ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
 
             $this->branchAccess->applyToQuery($query, $user, $branchId);
 
-            if ($employeeBranchId) {
-                $query->where('branch_id', $employeeBranchId);
+            if ($employeeBranchIds !== []) {
+                $query->whereIn('branch_id', $employeeBranchIds);
             }
 
             return $query;
@@ -3054,8 +3060,15 @@ class ReportsController extends Controller
 
         $staffRows = $employees
             ->map(function (User $employee) use ($dateRange, $branchScopedContracts, $formatMoney, $canViewFinancialAmounts): array {
-                $employeeBranchId = $employee->branch_id ? (int) $employee->branch_id : null;
-                $contractsQuery = $branchScopedContracts($employeeBranchId);
+                $employeeBranchIds = $employee->branches
+                    ->pluck('id')
+                    ->push($employee->branch_id)
+                    ->filter()
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+                $contractsQuery = $branchScopedContracts($employeeBranchIds);
                 $deliveriesQuery = (clone $contractsQuery)
                     ->whereIn('status', [ContractStatus::ACTIVE->value, ContractStatus::COMPLETED->value]);
 
@@ -3081,7 +3094,7 @@ class ReportsController extends Controller
                     'employee_id' => (int) $employee->id,
                     'employee_name' => $employee->name,
                     'employee_email' => $employee->email,
-                    'branch_name' => $employee->branch?->name ?? '-',
+                    'branch_name' => $employee->branches->pluck('name')->filter()->values()->implode(', ') ?: ($employee->branch?->name ?? '-'),
                     'is_active' => (bool) $employee->is_active,
                     'contracts_count' => (clone $contractsQuery)->count(),
                     'deliveries_count' => $deliveriesQuery->count(),
@@ -3927,58 +3940,88 @@ class ReportsController extends Controller
         ];
     }
 
-    private function applyReservationBranchScope($query, $user, ?int $branchId): void
+    private function applyReservationBranchScope($query, $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->whereHas('car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
             }
+
+            $query->whereHas('car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchId));
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
+        if ($branchId) {
+            $query->whereHas('car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
             return;
         }
 
-        $query->whereHas('car', fn ($carQuery) => $carQuery->where('branch_id', $userBranchId));
+        if (! $this->branchAccess->canAccessAllBranches($user)) {
+            $branchIds = $this->branchAccess->accessibleBranchIds($user);
+            if ($branchIds === []) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->whereHas('car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchIds));
+        }
     }
 
-    private function applyPaymentBranchScope($query, $user, ?int $branchId): void
+    private function applyPaymentBranchScope($query, $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->whereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
             }
+
+            $query->whereHas('reservation.car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchId));
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
+        if ($branchId) {
+            $query->whereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $branchId));
             return;
         }
 
-        $query->whereHas('reservation.car', fn ($carQuery) => $carQuery->where('branch_id', $userBranchId));
+        if (! $this->branchAccess->canAccessAllBranches($user)) {
+            $branchIds = $this->branchAccess->accessibleBranchIds($user);
+            if ($branchIds === []) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->whereHas('reservation.car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchIds));
+        }
     }
 
-    private function applyDamageReportBranchScopeToQueryBuilder($query, $user, ?int $branchId): void
+    private function applyDamageReportBranchScopeToQueryBuilder($query, $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->where('car_damage_reports.branch_id', $branchId);
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+                return;
             }
+
+            $query->whereIn('car_damage_reports.branch_id', $branchId);
             return;
         }
 
-        $userBranchId = (int) ($user?->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
+        if ($branchId) {
+            $query->where('car_damage_reports.branch_id', $branchId);
             return;
         }
 
-        $query->where('car_damage_reports.branch_id', $userBranchId);
+        if (! $this->branchAccess->canAccessAllBranches($user)) {
+            $branchIds = $this->branchAccess->accessibleBranchIds($user);
+            if ($branchIds === []) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->whereIn('car_damage_reports.branch_id', $branchIds);
+        }
     }
 
     private function applyTenantScopeToQueryBuilder($query, $user, string $table): void

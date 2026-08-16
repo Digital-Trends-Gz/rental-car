@@ -44,7 +44,7 @@ const authPermissions = computed<string[]>(() =>
     Array.isArray(page.props?.auth?.permissions) ? page.props.auth.permissions : [],
 );
 const hasFinancialAccess = computed(() => !!props.canViewFinancials);
-const hasPaymentsAccess = computed(() => authPermissions.value.includes('tenant-manage-payments'));
+const hasPaymentsAccess = computed(() => authPermissions.value.includes('tenant-payments.view'));
 const translationRoot = 'dashboard.admin.payments.debtors';
 const translate = (key: string) => t(`${translationRoot}.${key}`);
 

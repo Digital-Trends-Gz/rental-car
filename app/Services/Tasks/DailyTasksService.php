@@ -33,7 +33,7 @@ class DailyTasksService
     ) {
     }
 
-    public function timeline(User $user, ?CarbonInterface $date = null, ?int $branchId = null, ?string $type = null, string $locale = 'en'): array
+    public function timeline(User $user, ?CarbonInterface $date = null, int|array|null $branchId = null, ?string $type = null, string $locale = 'en'): array
     {
         $date = $date ? Carbon::parse($date)->startOfDay() : Carbon::today();
         $tenantId = (int) ($user->tenant_id ?? 0);
@@ -80,7 +80,7 @@ class DailyTasksService
 
         return [
             'date' => $date->toDateString(),
-            'branch_id' => $branchId,
+            'branch_id' => is_int($branchId) ? $branchId : null,
             'type' => $type ?? 'all',
             'progress' => [
                 'total' => $total,
@@ -354,7 +354,7 @@ class DailyTasksService
         ];
     }
 
-    private function pickupTasks(User $user, int $tenantId, CarbonInterface $date, ?int $branchId, string $locale): Collection
+    private function pickupTasks(User $user, int $tenantId, CarbonInterface $date, int|array|null $branchId, string $locale): Collection
     {
         $query = Reservation::query()
             ->with([
@@ -400,7 +400,7 @@ class DailyTasksService
         });
     }
 
-    private function returnTasks(User $user, int $tenantId, CarbonInterface $date, ?int $branchId, string $locale): Collection
+    private function returnTasks(User $user, int $tenantId, CarbonInterface $date, int|array|null $branchId, string $locale): Collection
     {
         $query = Contract::query()
             ->with([
@@ -444,7 +444,7 @@ class DailyTasksService
         });
     }
 
-    private function maintenanceTasks(User $user, int $tenantId, CarbonInterface $date, ?int $branchId, string $locale): Collection
+    private function maintenanceTasks(User $user, int $tenantId, CarbonInterface $date, int|array|null $branchId, string $locale): Collection
     {
         $query = CarMaintenance::query()
             ->with(['car:id,tenant_id,branch_id,year,make,model,license_plate', 'car.branch:id,name', 'branch:id,name', 'maintenanceType:id,name'])
@@ -667,66 +667,48 @@ class DailyTasksService
         return $fallback;
     }
 
-    private function applyReservationBranchScope(Builder $query, User $user, ?int $branchId): void
+    private function applyReservationBranchScope(Builder $query, User $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->whereHas('car', fn (Builder $q) => $q->where('branch_id', $branchId));
-            }
+        if (is_array($branchId)) {
+            $query->whereHas('car', fn (Builder $q) => $q->whereIn('branch_id', $branchId ?: [0]));
             return;
         }
 
-        $userBranchId = (int) ($user->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
-            return;
+        if ($branchId) {
+            $query->whereHas('car', fn (Builder $q) => $q->where('branch_id', $branchId));
         }
-
-        $query->whereHas('car', fn (Builder $q) => $q->where('branch_id', $userBranchId));
     }
 
-    private function applyContractBranchScope(Builder $query, User $user, ?int $branchId): void
+    private function applyContractBranchScope(Builder $query, User $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->where(function (Builder $branchQuery) use ($branchId) {
-                    $branchQuery
-                        ->where('branch_id', $branchId)
-                        ->orWhereHas('reservation.car', fn (Builder $q) => $q->where('branch_id', $branchId));
-                });
-            }
+        if (is_array($branchId)) {
+            $query->where(function (Builder $branchQuery) use ($branchId) {
+                $branchQuery
+                    ->whereIn('branch_id', $branchId ?: [0])
+                    ->orWhereHas('reservation.car', fn (Builder $q) => $q->whereIn('branch_id', $branchId ?: [0]));
+            });
             return;
         }
 
-        $userBranchId = (int) ($user->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
-            return;
+        if ($branchId) {
+            $query->where(function (Builder $branchQuery) use ($branchId) {
+                $branchQuery
+                    ->where('branch_id', $branchId)
+                    ->orWhereHas('reservation.car', fn (Builder $q) => $q->where('branch_id', $branchId));
+            });
         }
-
-        $query->where(function (Builder $branchQuery) use ($userBranchId) {
-            $branchQuery
-                ->where('branch_id', $userBranchId)
-                ->orWhereHas('reservation.car', fn (Builder $q) => $q->where('branch_id', $userBranchId));
-        });
     }
 
-    private function applyDirectBranchScope(Builder $query, User $user, ?int $branchId): void
+    private function applyDirectBranchScope(Builder $query, User $user, int|array|null $branchId): void
     {
-        if ($this->branchAccess->canAccessAllBranches($user)) {
-            if ($branchId) {
-                $query->where('branch_id', $branchId);
-            }
+        if (is_array($branchId)) {
+            $query->whereIn('branch_id', $branchId ?: [0]);
             return;
         }
 
-        $userBranchId = (int) ($user->branch_id ?? 0);
-        if ($userBranchId <= 0) {
-            $query->whereRaw('1 = 0');
-            return;
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
         }
-
-        $query->where('branch_id', $userBranchId);
     }
 
     private function statusLabel(string $status, string $locale): string
@@ -739,7 +721,7 @@ class DailyTasksService
         };
     }
 
-    private function carStatusTasks(User $user, int $tenantId, CarbonInterface $date, ?int $branchId, string $locale): Collection
+    private function carStatusTasks(User $user, int $tenantId, CarbonInterface $date, int|array|null $branchId, string $locale): Collection
     {
         $isToday = $date->isToday();
 
@@ -851,7 +833,7 @@ class DailyTasksService
         return $tasks;
     }
 
-    private function completedWorkflowTasks(User $user, int $tenantId, CarbonInterface $date, ?int $branchId, ?string $type, string $locale): Collection
+    private function completedWorkflowTasks(User $user, int $tenantId, CarbonInterface $date, int|array|null $branchId, ?string $type, string $locale): Collection
     {
         $query = DailyTaskStatus::query()
             ->where('tenant_id', $tenantId)

@@ -83,7 +83,17 @@ class ContractsController extends Controller
             ->orderBy('end_date')
             ->orderBy('id');
 
-        if ($branchId) {
+        if (is_array($branchId)) {
+            if ($branchId === []) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->where(function ($branchQuery) use ($branchId): void {
+                    $branchQuery
+                        ->whereIn('branch_id', $branchId)
+                        ->orWhereHas('reservation.car', fn ($carQuery) => $carQuery->whereIn('branch_id', $branchId));
+                });
+            }
+        } elseif ($branchId) {
             $query->where(function ($branchQuery) use ($branchId): void {
                 $branchQuery
                     ->where('branch_id', $branchId)
@@ -97,7 +107,7 @@ class ContractsController extends Controller
 
         return response()->json([
             'date' => $today->toDateString(),
-            'branch_id' => $branchId,
+            'branch_id' => is_int($branchId) ? $branchId : null,
             'count' => $paginator->total(),
             'pagination' => $this->paginationPayload($paginator),
             'contracts' => $paginator->getCollection()
@@ -1552,7 +1562,7 @@ class ContractsController extends Controller
         return $user;
     }
 
-    private function resolveBranchId(Request $request, User $user): ?int
+    private function resolveBranchId(Request $request, User $user): int|array|null
     {
         $requestedBranchId = $this->branchAccess->normalizeRequestedBranchId($request->query('branch_id'));
 
@@ -1560,7 +1570,13 @@ class ContractsController extends Controller
             return $requestedBranchId;
         }
 
-        return (int) ($user->branch_id ?? 0) > 0 ? (int) $user->branch_id : null;
+        if ($requestedBranchId) {
+            abort_unless($this->branchAccess->canAccessBranchId($user, $requestedBranchId), 403);
+
+            return $requestedBranchId;
+        }
+
+        return $this->branchAccess->accessibleBranchIds($user);
     }
 
     private function resolveApiLocale(Request $request): string

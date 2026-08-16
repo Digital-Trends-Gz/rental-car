@@ -7,6 +7,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\TenantPermissionCatalog;
 
 class TenantAdminAccessSync
 {
@@ -51,6 +52,7 @@ class TenantAdminAccessSync
 
         $permissionIds = Permission::withoutGlobalScope('tenant')
             ->where('name', 'like', 'tenant-%')
+            ->whereNotIn('name', TenantPermissionCatalog::legacyPermissionNames())
             ->where(function ($query) use ($tenantId) {
                 $query->whereNull('tenant_id')
                     ->orWhere('tenant_id', $tenantId);

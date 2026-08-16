@@ -81,7 +81,8 @@ class OwnerDashboardController extends Controller
         $today = Carbon::today();
         $yesterday = $today->copy()->subDay();
         [$dateFrom, $dateTo, $hasCustomDateRange] = $this->resolveDateRange($request, $today, $locale);
-        $branchId = $this->resolveOwnerBranchId($request, $user);
+        $branchScope = $this->resolveOwnerBranchScope($request, $user);
+        $branchId = is_int($branchScope) ? $branchScope : null;
         $tenant = Tenant::query()->with('siteSetting')->findOrFail((int) $user->tenant_id);
         $currency = $this->tenantCurrency($tenant, $request);
         $selectedBranch = $branchId
@@ -89,24 +90,24 @@ class OwnerDashboardController extends Controller
             : null;
 
         $currentMetrics = $hasCustomDateRange
-            ? $this->dashboardMetrics->currentMetricsForDateRange((int) $user->tenant_id, $branchId, $dateFrom, $dateTo)
-            : $this->dashboardMetrics->currentMetrics((int) $user->tenant_id, $branchId, $today);
-        $paymentsQuery = $this->dashboardMetrics->paymentsQuery((int) $user->tenant_id, $branchId);
+            ? $this->dashboardMetrics->currentMetricsForDateRange((int) $user->tenant_id, $branchScope, $dateFrom, $dateTo)
+            : $this->dashboardMetrics->currentMetrics((int) $user->tenant_id, $branchScope, $today);
+        $paymentsQuery = $this->dashboardMetrics->paymentsQuery((int) $user->tenant_id, $branchScope);
 
         $todayRevenue = (float) $currentMetrics[OwnerDashboardMetricsService::TODAY_REVENUE];
         $availableCars = (int) $currentMetrics[OwnerDashboardMetricsService::AVAILABLE_CARS];
         $activeReservations = (int) $currentMetrics[OwnerDashboardMetricsService::ACTIVE_RESERVATIONS];
         $lateReturns = (int) $currentMetrics[OwnerDashboardMetricsService::LATE_RETURNS];
         $rentedCars = (int) $currentMetrics[OwnerDashboardMetricsService::RENTED_CARS];
-        $maintenanceCars = $this->dashboardMetrics->maintenanceCars((int) $user->tenant_id, $branchId);
+        $maintenanceCars = $this->dashboardMetrics->maintenanceCars((int) $user->tenant_id, $branchScope);
 
         $revenueChange = $hasCustomDateRange
-            ? $this->dateRangeRevenueChangePayload((int) $user->tenant_id, $branchId, $todayRevenue, $dateFrom, $dateTo, $locale)
-            : $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::TODAY_REVENUE, $todayRevenue, $yesterday, $locale);
-        $availableCarsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::AVAILABLE_CARS, $availableCars, $yesterday, $locale);
-        $activeReservationsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::ACTIVE_RESERVATIONS, $activeReservations, $yesterday, $locale);
-        $lateReturnsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::LATE_RETURNS, $lateReturns, $yesterday, $locale);
-        $rentedCarsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchId, OwnerDashboardMetricsService::RENTED_CARS, $rentedCars, $yesterday, $locale);
+            ? $this->dateRangeRevenueChangePayload((int) $user->tenant_id, $branchScope, $todayRevenue, $dateFrom, $dateTo, $locale)
+            : $this->snapshotChangePayload((int) $user->tenant_id, $branchScope, OwnerDashboardMetricsService::TODAY_REVENUE, $todayRevenue, $yesterday, $locale);
+        $availableCarsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchScope, OwnerDashboardMetricsService::AVAILABLE_CARS, $availableCars, $yesterday, $locale);
+        $activeReservationsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchScope, OwnerDashboardMetricsService::ACTIVE_RESERVATIONS, $activeReservations, $yesterday, $locale);
+        $lateReturnsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchScope, OwnerDashboardMetricsService::LATE_RETURNS, $lateReturns, $yesterday, $locale);
+        $rentedCarsChange = $this->snapshotChangePayload((int) $user->tenant_id, $branchScope, OwnerDashboardMetricsService::RENTED_CARS, $rentedCars, $yesterday, $locale);
 
         $pendingViolationsQuery = CarViolation::query()
             ->where('tenant_id', (int) $user->tenant_id)
@@ -114,7 +115,7 @@ class OwnerDashboardController extends Controller
         $this->branchAccess->applyToQuery($pendingViolationsQuery, $user, $branchId, 'branch_id');
         $pendingViolations = (clone $pendingViolationsQuery)->count();
 
-        $notificationBadgeCount = $this->notifications->unreadCount($user, $branchId, $locale);
+        $notificationBadgeCount = $this->notifications->unreadCount($user, $branchScope, $locale);
 
         return response()->json([
             'status' => 'success',
@@ -222,14 +223,24 @@ class OwnerDashboardController extends Controller
         return $user;
     }
 
-    private function resolveOwnerBranchId(Request $request, User $user): ?int
+    private function resolveOwnerBranchScope(Request $request, User $user): int|array|null
     {
         $branchId = $this->branchAccess->normalizeRequestedBranchId($request->input('branch_id'));
+
+        if ($branchId && !$this->branchAccess->canAccessBranchId($user, $branchId)) {
+            throw ValidationException::withMessages([
+                'branch_id' => [$this->ownerText('errors.branch_invalid', $this->resolveLocale($request), 'Selected branch is invalid or not accessible.')],
+            ]);
+        }
 
         $resolvedBranchId = $this->branchAccess->resolveAccessibleBranchId($user, $branchId);
 
         if (!$this->branchAccess->canAccessAllBranches($user)) {
-            return $resolvedBranchId;
+            if ($branchId) {
+                return $resolvedBranchId;
+            }
+
+            return $this->branchAccess->accessibleBranchIds($user);
         }
 
         if (!$resolvedBranchId) {
@@ -337,14 +348,14 @@ class OwnerDashboardController extends Controller
         ];
     }
 
-    private function snapshotChangePayload(int $tenantId, ?int $branchId, string $metricKey, float $current, Carbon $comparisonDate, string $locale): ?array
+    private function snapshotChangePayload(int $tenantId, int|array|null $branchId, string $metricKey, float $current, Carbon $comparisonDate, string $locale): ?array
     {
-        $previous = $this->dashboardMetrics->snapshotValue($tenantId, $branchId, $metricKey, $comparisonDate);
+        $previous = $this->snapshotValueForScope($tenantId, $branchId, $metricKey, $comparisonDate);
 
         return $previous === null ? null : $this->changePayload($current, $previous, $locale);
     }
 
-    private function dateRangeRevenueChangePayload(int $tenantId, ?int $branchId, float $current, Carbon $dateFrom, Carbon $dateTo, string $locale): array
+    private function dateRangeRevenueChangePayload(int $tenantId, int|array|null $branchId, float $current, Carbon $dateFrom, Carbon $dateTo, string $locale): array
     {
         $days = $dateFrom->diffInDays($dateTo) + 1;
         $comparisonTo = $dateFrom->copy()->subDay();
@@ -363,6 +374,29 @@ class OwnerDashboardController extends Controller
                 'to' => $comparisonTo->toDateString(),
             ],
         ]);
+    }
+
+    private function snapshotValueForScope(int $tenantId, int|array|null $branchId, string $metricKey, Carbon $comparisonDate): ?float
+    {
+        if (!is_array($branchId)) {
+            return $this->dashboardMetrics->snapshotValue($tenantId, $branchId, $metricKey, $comparisonDate);
+        }
+
+        if ($branchId === []) {
+            return 0.0;
+        }
+
+        $values = [];
+        foreach ($branchId as $id) {
+            $value = $this->dashboardMetrics->snapshotValue($tenantId, (int) $id, $metricKey, $comparisonDate);
+            if ($value === null) {
+                return null;
+            }
+
+            $values[] = $value;
+        }
+
+        return round(array_sum($values), 2);
     }
 
     private function changePayload(float $current, float $previous, string $locale, array $overrides = []): array

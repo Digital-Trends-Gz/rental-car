@@ -13,7 +13,7 @@ const props = defineProps<{
     employee: any | null;
     branches: Array<{ id: number; name: string }>;
     roles: Array<{ id: number; name?: string; display_name: string }>;
-    permissions: Array<{ id: number; display_name: string; description: string }>;
+    permissions: Array<{ id: number; name?: string; display_name: string; description: string; module?: string; action?: string; legacy?: string | null }>;
     canManageRolesAndPermissions: boolean;
 }>();
 
@@ -22,6 +22,22 @@ const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
 
 const isEdit = computed(() => !!props.employee);
+const groupedPermissions = computed(() => {
+    const groups = new Map<string, typeof props.permissions>();
+
+    props.permissions.forEach((permission) => {
+        const module = permission.module || 'Other';
+        if (!groups.has(module)) {
+            groups.set(module, []);
+        }
+        groups.get(module)?.push(permission);
+    });
+
+    return Array.from(groups.entries()).map(([module, permissions]) => ({
+        module,
+        permissions,
+    }));
+});
 
 // Initialize form with default values
 const form = useForm({
@@ -201,24 +217,33 @@ function roleDisplayName(role: { name?: string; display_name: string }) {
                                     {{ t('dashboard.admin.employees.form.direct_permissions_help') }}
                                 </p>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border rounded-md p-4 bg-amber-50/10">
-                                <div v-for="permission in props.permissions" :key="permission.id" class="flex items-start space-x-2">
-                                    <input
-                                        :id="`permission-${permission.id}`"
-                                        type="checkbox"
-                                        :checked="form.permission_ids.includes(permission.id)"
-                                        @change="onPermissionCheckboxChange(permission.id, $event)"
-                                        class="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                    />
-                                    <div class="grid gap-1.5 leading-none">
-                                        <Label :for="`permission-${permission.id}`" class="text-sm font-medium leading-none cursor-pointer">
-                                            {{ permission.display_name }}
-                                        </Label>
-                                        <p class="text-[12px] text-muted-foreground">
-                                            {{ permission.description }}
-                                        </p>
+                            <div class="space-y-5 rounded-md border bg-amber-50/10 p-4">
+                                <section v-for="group in groupedPermissions" :key="group.module" class="space-y-3">
+                                    <h4 class="text-sm font-semibold text-gray-700">{{ group.module }}</h4>
+                                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div v-for="permission in group.permissions" :key="permission.id" class="flex items-start space-x-2">
+                                            <input
+                                                :id="`permission-${permission.id}`"
+                                                type="checkbox"
+                                                :checked="form.permission_ids.includes(permission.id)"
+                                                @change="onPermissionCheckboxChange(permission.id, $event)"
+                                                class="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                            />
+                                            <div class="grid gap-1.5 leading-none">
+                                                <Label :for="`permission-${permission.id}`" class="cursor-pointer text-sm font-medium leading-none">
+                                                    {{ permission.display_name }}
+                                                </Label>
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <span class="rounded bg-white px-1.5 py-0.5 text-[11px] text-muted-foreground">{{ permission.action || 'Access' }}</span>
+                                                    <span v-if="!permission.legacy" class="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">Legacy</span>
+                                                </div>
+                                                <p class="text-[12px] text-muted-foreground">
+                                                    {{ permission.description }}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                </section>
                                 <div v-if="props.permissions.length === 0" class="col-span-2 text-sm text-gray-500 italic">
                                     {{ t('dashboard.admin.roles.empty') }}
                                 </div>
