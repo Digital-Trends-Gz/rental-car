@@ -9,7 +9,9 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -25,14 +27,18 @@ class SocialLoginController extends Controller
             abort(404);
         }
 
-        $tenantSubdomain = $request->query('tenant');
-        
+        $tenantSubdomain = trim((string) $request->query('tenant', ''));
+
         if ($tenantSubdomain) {
             $request->session()->put('social_login_tenant', $tenantSubdomain);
         }
 
         return Socialite::driver($provider)
             ->redirectUrl($this->callbackUrl($provider))
+            ->stateless()
+            ->with([
+                'state' => $this->encodeState($provider, $tenantSubdomain),
+            ])
             ->redirect();
     }
 
@@ -45,13 +51,22 @@ class SocialLoginController extends Controller
             abort(404);
         }
 
-        $tenantSubdomain = trim((string) $request->session()->get('social_login_tenant', ''));
+        $tenantSubdomain = $this->tenantFromState($request, $provider)
+            ?: trim((string) $request->session()->get('social_login_tenant', ''));
 
         try {
             $socialUser = Socialite::driver($provider)
                 ->redirectUrl($this->callbackUrl($provider))
+                ->stateless()
                 ->user();
         } catch (\Exception $e) {
+            Log::warning('Social login callback failed.', [
+                'provider' => $provider,
+                'tenant' => $tenantSubdomain,
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+            ]);
+
             return $this->redirectToTenantLogin($tenantSubdomain, 'Authentication failed. Please try again.');
         }
 
@@ -149,6 +164,48 @@ class SocialLoginController extends Controller
     private function callbackUrl(string $provider): string
     {
         return route('social-login.callback', ['provider' => $provider]);
+    }
+
+    private function encodeState(string $provider, string $tenantSubdomain): string
+    {
+        return Crypt::encryptString(json_encode([
+            'provider' => $provider,
+            'tenant' => $tenantSubdomain,
+            'issued_at' => now()->timestamp,
+        ], JSON_THROW_ON_ERROR));
+    }
+
+    private function tenantFromState(Request $request, string $provider): ?string
+    {
+        $state = trim((string) $request->query('state', ''));
+
+        if ($state === '') {
+            return null;
+        }
+
+        try {
+            $payload = json_decode(Crypt::decryptString($state), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable $e) {
+            Log::warning('Social login state could not be decoded.', [
+                'provider' => $provider,
+                'exception' => $e::class,
+            ]);
+
+            return null;
+        }
+
+        if (!is_array($payload) || ($payload['provider'] ?? null) !== $provider) {
+            return null;
+        }
+
+        $issuedAt = (int) ($payload['issued_at'] ?? 0);
+        if ($issuedAt < now()->subMinutes(10)->timestamp) {
+            return null;
+        }
+
+        $tenant = trim((string) ($payload['tenant'] ?? ''));
+
+        return $tenant !== '' ? $tenant : null;
     }
 
     private function redirectToTenantLogin(string $tenantSubdomain, string $message)
