@@ -45,25 +45,26 @@ class SocialLoginController extends Controller
             abort(404);
         }
 
+        $tenantSubdomain = trim((string) $request->session()->get('social_login_tenant', ''));
+
         try {
             $socialUser = Socialite::driver($provider)
                 ->redirectUrl($this->callbackUrl($provider))
                 ->user();
         } catch (\Exception $e) {
-            return redirect('/login')->with('error', 'Authentication failed. Please try again.');
+            return $this->redirectToTenantLogin($tenantSubdomain, 'Authentication failed. Please try again.');
         }
 
-        $tenantSubdomain = $request->session()->get('social_login_tenant');
         $request->session()->forget('social_login_tenant');
 
         if (!$tenantSubdomain) {
-            return redirect('/login')->with('error', 'Tenant context missing. Please try logging in from the tenant\'s website.');
+            return $this->redirectToTenantLogin('', 'Tenant context missing. Please try logging in from the tenant\'s website.');
         }
 
         $tenant = Tenant::where('slug', $tenantSubdomain)->first();
 
         if (!$tenant || !$tenant->is_active) {
-            return redirect('/login')->with('error', 'Invalid or inactive tenant.');
+            return $this->redirectToTenantLogin($tenantSubdomain, 'Invalid or inactive tenant.');
         }
 
         // Find or create the client user within the tenant
@@ -109,16 +110,31 @@ class SocialLoginController extends Controller
     public function tenantCallback(Request $request)
     {
         $userId = $request->query('user');
-        $user = User::find($userId);
+        $routeSubdomain = (string) $request->route('subdomain');
+        $user = User::with('tenant')->find($userId);
 
-        if (!$user || $user->role !== UserRole::CLIENT) {
-            return redirect()->route('login')->with('error', 'Invalid login attempt.');
+        if (!$user || !$user->tenant) {
+            return $this->redirectToTenantLogin($routeSubdomain, 'Invalid login attempt.');
         }
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('client.home', ['subdomain' => $user->tenant->slug ?? $request->route('subdomain')]);
+        $tenantSubdomain = $user->tenant->slug ?: $routeSubdomain;
+
+        if ($user->role === UserRole::CLIENT) {
+            return redirect()->route('client.home', ['subdomain' => $tenantSubdomain]);
+        }
+
+        if ($user->role === UserRole::ADMIN) {
+            return redirect()->route('admin.home', ['subdomain' => $tenantSubdomain]);
+        }
+
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return $this->redirectToTenantLogin($tenantSubdomain, 'Invalid login attempt.');
     }
 
     private function providerIsEnabled(string $provider): bool
@@ -133,5 +149,18 @@ class SocialLoginController extends Controller
     private function callbackUrl(string $provider): string
     {
         return route('social-login.callback', ['provider' => $provider]);
+    }
+
+    private function redirectToTenantLogin(string $tenantSubdomain, string $message)
+    {
+        if ($tenantSubdomain !== '') {
+            return redirect()
+                ->route('tenant.login', ['subdomain' => $tenantSubdomain])
+                ->with('error', $message);
+        }
+
+        return redirect()
+            ->route('tenant-login')
+            ->with('error', $message);
     }
 }
