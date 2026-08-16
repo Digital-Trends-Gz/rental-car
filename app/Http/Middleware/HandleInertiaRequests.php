@@ -9,7 +9,9 @@ use App\Core\SocialLoginSettings;
 use App\Models\SiteSetting;
 use App\Models\Tenant;
 use App\Models\TenantSiteSetting;
+use App\Support\ApiAccessMode;
 use App\Support\CurrencyCatalog;
+use App\Support\TenantPermissionCatalog;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -130,7 +132,7 @@ class HandleInertiaRequests extends Middleware
             },
             'auth' => [
                 'user' => $request->user()?->load('roles.permissions'),
-                'permissions' => $request->user()?->allPermissions()->pluck('name') ?? [],
+                'permissions' => $this->tenantPermissionNames($request),
                 'notifications_unread_count' => $request->user()?->unreadNotifications()->count() ?? 0,
                 'notifications' => function () use ($request) {
                     $user = $request->user();
@@ -301,6 +303,28 @@ class HandleInertiaRequests extends Middleware
         }
 
         return $expanded;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function tenantPermissionNames(Request $request): array
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return [];
+        }
+
+        if (ApiAccessMode::hasTenantRole($user, ['tenant-owner', 'tenant-partner'])) {
+            return TenantPermissionCatalog::granularPermissionNames();
+        }
+
+        return $user->allPermissions()
+            ->pluck('name')
+            ->map(fn ($name) => (string) $name)
+            ->values()
+            ->all();
     }
 
     private function resolveTenantForRequest(Request $request): ?Tenant

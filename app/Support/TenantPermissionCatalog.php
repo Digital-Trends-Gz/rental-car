@@ -126,6 +126,17 @@ class TenantPermissionCatalog
     }
 
     /**
+     * @return list<string>
+     */
+    public static function granularPermissionNames(): array
+    {
+        return collect(self::granularPermissions())
+            ->pluck('name')
+            ->values()
+            ->all();
+    }
+
+    /**
      * @param  iterable<string>  $permissionNames
      * @return list<string>
      */

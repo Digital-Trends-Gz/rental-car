@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Core\TenantContext;
+use App\Support\ApiAccessMode;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,14 +22,20 @@ class PermissionMiddleware
      */
     public function handle(Request $request, Closure $next, string $permission): Response
     {
+        $user = Auth::user();
+
+        if ($user && ApiAccessMode::hasTenantRole($user, ['tenant-owner', 'tenant-partner'])) {
+            return $next($request);
+        }
+
         $permissions = collect(preg_split('/[|]/', $permission) ?: [])
             ->map(fn (string $value): string => trim($value))
             ->filter()
             ->values();
 
-        $hasPermission = Auth::check()
-            && $permissions->contains(function (string $name): bool {
-                return Auth::user()->hasPermission($name);
+        $hasPermission = $user
+            && $permissions->contains(function (string $name) use ($user): bool {
+                return $user->hasPermission($name);
             });
 
         if (!$hasPermission) {
