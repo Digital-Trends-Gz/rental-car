@@ -61,6 +61,8 @@ class SocialLoginController extends Controller
             abort(404);
         }
 
+        $this->hydrateQueryStringFromRequestUri($request);
+
         Log::info('Social login callback received.', [
             'provider' => $provider,
             'full_url' => $request->fullUrl(),
@@ -254,6 +256,30 @@ class SocialLoginController extends Controller
         $tenant = trim((string) ($payload['tenant'] ?? ''));
 
         return $tenant !== '' ? $tenant : null;
+    }
+
+    private function hydrateQueryStringFromRequestUri(Request $request): void
+    {
+        if ($request->query->count() > 0) {
+            return;
+        }
+
+        $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+        $queryString = parse_url($requestUri, PHP_URL_QUERY);
+
+        if (!is_string($queryString) || $queryString === '') {
+            return;
+        }
+
+        parse_str($queryString, $query);
+
+        if (!is_array($query) || $query === []) {
+            return;
+        }
+
+        $request->query->replace($query);
+        $_GET = $query;
+        $_SERVER['QUERY_STRING'] = $queryString;
     }
 
     private function redirectToTenantLogin(string $tenantSubdomain, string $message)
