@@ -56,10 +56,17 @@ class ClientsController extends Controller
             ? $requestedBranchId
             : null;
 
+        $accessibleBranchIds = $this->branchAccess->accessibleBranchIds($user);
+
         $query = User::query()
             ->where('role', UserRole::CLIENT)
-            ->when(!$canAccessAllBranches && !empty($user?->branch_id), fn ($q) => $q->where('branch_id', (int) $user->branch_id))
-            ->when(!$canAccessAllBranches && empty($user?->branch_id), fn ($q) => $q->whereRaw('1 = 0'))
+            ->when(!$canAccessAllBranches, function ($q) use ($accessibleBranchIds) {
+                if (empty($accessibleBranchIds)) {
+                    $q->whereRaw('1 = 0');
+                } else {
+                    $q->whereIn('branch_id', $accessibleBranchIds);
+                }
+            })
             ->when($canAccessAllBranches && $branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->when($search, function ($q) use ($search) {
                 $q->where(function ($w) use ($search) {
@@ -101,8 +108,8 @@ class ClientsController extends Controller
             if ($branchId) {
                 $statusCountsQuery->where('branch_id', $branchId);
             }
-        } elseif (!empty($user?->branch_id)) {
-            $statusCountsQuery->where('branch_id', (int) $user->branch_id);
+        } elseif (!empty($accessibleBranchIds)) {
+            $statusCountsQuery->whereIn('branch_id', $accessibleBranchIds);
         } else {
             $statusCountsQuery->whereRaw('1 = 0');
         }

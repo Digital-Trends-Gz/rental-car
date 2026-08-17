@@ -11,6 +11,7 @@ use App\Services\Plans\PlanUsageLimits;
 use App\Services\Plans\PlanUsageNotifier;
 use App\Rules\DigitsOnly;
 use App\Rules\LettersOnly;
+use App\Support\BranchAccess;
 use App\Support\BranchLocationOptions;
 use App\Support\FileUrl;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ class BranchesController extends Controller
         private readonly PlanEntityLocks $planEntityLocks,
         private readonly PlanUsageLimits $planUsageLimits,
         private readonly PlanUsageNotifier $planUsageNotifier,
+        private readonly BranchAccess $branchAccess,
     ) {}
 
     /**
@@ -35,10 +37,20 @@ class BranchesController extends Controller
      */
     public function index(Request $request): Response
     {
+        $user = $request->user();
         $tenant = $this->currentTenant($request);
         $this->planEntityLocks->sync($tenant);
+        $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
+        $accessibleBranchIds = $this->branchAccess->accessibleBranchIds($user);
 
         $branches = Branch::query()
+            ->when(!$canAccessAllBranches, function ($query) use ($accessibleBranchIds) {
+                if (empty($accessibleBranchIds)) {
+                    $query->whereRaw('1 = 0');
+                } else {
+                    $query->whereIn('id', $accessibleBranchIds);
+                }
+            })
             ->when($request->string('search')->toString(), function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('address', 'like', "%{$search}%")

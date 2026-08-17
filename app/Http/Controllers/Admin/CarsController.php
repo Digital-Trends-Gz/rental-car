@@ -661,6 +661,8 @@ class CarsController extends Controller
             'year' => [$requiredRule, 'integer', 'min:1900', 'max:2100'],
             'license_plate' => [$requiredRule, 'string', 'max:255', 'unique:cars,license_plate'],
             'license_plate_format' => [$requiredRule, 'string', Rule::in($allowedPlateFormatCodes)],
+            'license_expiry_date' => ['nullable', 'date', 'after_or_equal:today'],
+            'insurance_expiry_date' => ['nullable', 'date', 'after_or_equal:today'],
             'branch_id' => [
                 $isDraftSubmission ? 'nullable' : ($canAccessAllBranches ? 'required' : 'nullable'),
                 'integer',
@@ -995,6 +997,8 @@ class CarsController extends Controller
                 $requiredRule, 'string', 'max:255', Rule::unique('cars', 'license_plate')->ignore($car->id),
             ],
             'license_plate_format' => [$requiredRule, 'string', Rule::in($allowedPlateFormatCodes)],
+            'license_expiry_date' => ['nullable', 'date'],
+            'insurance_expiry_date' => ['nullable', 'date'],
             'color' => [$requiredRule, 'string', Rule::enum(CarColor::class)],
             'price_per_day' => [$requiredRule, 'numeric', 'min:0'],
             'price_per_week' => ['nullable', 'numeric', 'min:0'],
