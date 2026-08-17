@@ -123,8 +123,11 @@ class CarsController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $cars->getCollection()->transform(function (Car $car) {
+        $allowedCarIds = $this->planUsageLimits->allowedCarIds($this->currentTenant($request));
+
+        $cars->getCollection()->transform(function (Car $car) use ($allowedCarIds) {
             $status = $car->status;
+            $isAllowed = $allowedCarIds === null || in_array($car->id, $allowedCarIds);
 
             return [
                 'id' => $car->id,
@@ -144,6 +147,7 @@ class CarsController extends Controller
                 'image_url' => $car->image_url,
                 'branch_id' => $car->branch_id,
                 'branch_name' => $car->branch?->name,
+                'is_allowed' => $isAllowed,
             ];
         });
 
@@ -158,6 +162,7 @@ class CarsController extends Controller
         })->toArray();
 
         $carUsage = $this->planUsageLimits->carUsage($this->currentTenant($request));
+        $isOverLimit = $this->planUsageLimits->hasExceededCarLimit($this->currentTenant($request));
 
         return Inertia::render('Admin/Cars/Index', [
             'cars' => $cars,
@@ -172,6 +177,7 @@ class CarsController extends Controller
             'canAccessAllBranches' => $canAccessAllBranches,
             'carUsage' => $carUsage,
             'canCreateCar' => !($carUsage['at_limit'] ?? false),
+            'isOverLimit' => $isOverLimit,
         ]);
     }
 
@@ -751,6 +757,10 @@ class CarsController extends Controller
      */
     public function edit(Car $car): Response
     {
+        if (!$this->planUsageLimits->isCarAllowed($car)) {
+            abort(403, 'This car is locked under your current plan limit. Please upgrade your plan.');
+        }
+
         abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $car->branch_id), 403);
         $plateFormats = $this->plateFormatOptions(request()->user(), $car->license_plate_format);
 
@@ -957,6 +967,10 @@ class CarsController extends Controller
      */
     public function update(Request $request, Car $car)
     {
+        if (!$this->planUsageLimits->isCarAllowed($car)) {
+            abort(403, 'This car is locked under your current plan limit. Please upgrade your plan.');
+        }
+
         abort_unless($this->branchAccess->canAccessBranchId($request->user(), $car->branch_id), 403);
 
         $user = $request->user();
@@ -1406,6 +1420,10 @@ class CarsController extends Controller
      */
     public function destroy(Car $car)
     {
+        if (!$this->planUsageLimits->isCarAllowed($car)) {
+            abort(403, 'This car is locked under your current plan limit. Please upgrade your plan.');
+        }
+
         abort_unless($this->branchAccess->canAccessBranchId(request()->user(), $car->branch_id), 403);
 
         if (config('app.demo_mode')) {

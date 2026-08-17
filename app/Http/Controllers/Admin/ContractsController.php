@@ -1619,6 +1619,11 @@ class ContractsController extends Controller
             ->orderBy('make')
             ->orderBy('model');
 
+        $allowedCarIds = $this->planUsageLimits->allowedCarIds($this->currentTenant($request));
+        if ($allowedCarIds !== null) {
+            $query->whereIn('id', $allowedCarIds);
+        }
+
         if (!$this->branchAccess->canAccessAllBranches($request->user())) {
             $branchIds = $this->branchAccess->accessibleBranchIds($request->user());
             if ($branchIds === []) {

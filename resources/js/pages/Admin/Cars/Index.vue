@@ -35,6 +35,7 @@ const props = defineProps<{
       image_url?: string
       branch_id?: number | null
       branch_name?: string | null
+      is_allowed?: boolean
     }>
     links: Array<{ url: string | null; label: string; active: boolean }>
     total?: number
@@ -60,6 +61,7 @@ const props = defineProps<{
     message: string | null
   }
   canCreateCar?: boolean
+  isOverLimit?: boolean
 }>()
 const { t } = useTrans();
 const page = usePage<any>();
@@ -76,6 +78,18 @@ const carUsage = computed(() => props.carUsage);
 const tenantCarLimit = computed(() => page.props.current_tenant?.subscription_plan?.max_cars ?? null);
 const statusCarCount = computed(() => Object.values(props.statuses || {}).reduce((total, status) => total + Number(status.count || 0), 0));
 const carCount = computed(() => carUsage.value?.current ?? props.cars.total ?? statusCarCount.value ?? props.cars.data.length);
+const isOverLimit = computed(() => {
+  if (props.isOverLimit !== undefined) {
+    return props.isOverLimit;
+  }
+  const usage = carUsage.value;
+  if (!usage || usage.limit === null) {
+    const limit = tenantCarLimit.value;
+    if (limit === null) return false;
+    return Number(carCount.value) > Number(limit);
+  }
+  return usage.current > usage.limit;
+});
 const canCreateCar = computed(() => {
   if (props.canCreateCar === false || carUsage.value?.at_limit) {
     return false;
@@ -353,20 +367,29 @@ const destroyCar = () => {
                                   {{ carStatusLabel(car) }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-right space-x-2">
+                             <td class="px-4 py-3 text-right space-x-2">
                                 <Link :href="`/admin/cars/${car.id}`">
                                     <Button variant="outline" size="sm">{{ t('dashboard.admin.cars.actions.view') }}</Button>
                                 </Link>
-                                <Link v-if="canManageCarDocuments" :href="`/admin/cars/${car.id}/documents`">
-                                    <Button variant="outline" size="sm">{{ t('dashboard.admin.cars.actions.documents') }}</Button>
-                                </Link>
-                                <Link v-if="subdomain && canViewCarCalendar" :href="`/admin/cars/${car.id}/calendar`">
-                                    <Button variant="outline" size="sm">{{ t('dashboard.admin.cars.actions.calendar') }}</Button>
-                                </Link>
-                                <Link v-if="subdomain && canUpdateCars" :href="edit([subdomain, car.id]).url">
-                                    <Button variant="outline" size="sm">{{ t('dashboard.admin.common.edit') }}</Button>
-                                </Link>
-                                <Button v-if="canDeleteCars" variant="destructive" size="sm" @click="openDeleteDialog(car.id)">{{ t('dashboard.admin.common.delete') }}</Button>
+                                <template v-if="canManageCarDocuments">
+                                    <Link v-if="car.is_allowed !== false" :href="`/admin/cars/${car.id}/documents`">
+                                        <Button variant="outline" size="sm">{{ t('dashboard.admin.cars.actions.documents') }}</Button>
+                                    </Link>
+                                    <Button v-else disabled variant="outline" size="sm">{{ t('dashboard.admin.cars.actions.documents') }}</Button>
+                                </template>
+                                <template v-if="subdomain && canViewCarCalendar">
+                                    <Link v-if="car.is_allowed !== false" :href="`/admin/cars/${car.id}/calendar`">
+                                        <Button variant="outline" size="sm">{{ t('dashboard.admin.cars.actions.calendar') }}</Button>
+                                    </Link>
+                                    <Button v-else disabled variant="outline" size="sm">{{ t('dashboard.admin.cars.actions.calendar') }}</Button>
+                                </template>
+                                <template v-if="subdomain && canUpdateCars">
+                                    <Link v-if="car.is_allowed !== false" :href="edit([subdomain, car.id]).url">
+                                        <Button variant="outline" size="sm">{{ t('dashboard.admin.common.edit') }}</Button>
+                                    </Link>
+                                    <Button v-else disabled variant="outline" size="sm">{{ t('dashboard.admin.common.edit') }}</Button>
+                                </template>
+                                <Button v-if="canDeleteCars" :disabled="car.is_allowed === false" variant="destructive" size="sm" @click="openDeleteDialog(car.id)">{{ t('dashboard.admin.common.delete') }}</Button>
                             </td>
                         </tr>
                         <tr v-if="props.cars.data.length === 0">

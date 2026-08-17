@@ -201,6 +201,15 @@ class EmployeesController extends Controller
         abort_unless($this->isAdminEmployee($employee), 403);
         abort_unless($this->canAccessEmployeeBranches(request()->user(), $employee), 403);
 
+        $tenant = $this->currentTenant();
+        $this->planEntityLocks->sync($tenant);
+
+        // Check if this specific employee is locked by plan
+        $employee->refresh();
+        if ($employee->plan_locked_at) {
+            abort(403, $this->planUsageLimits->employeeLimitMessage($tenant) ?? 'This employee is locked due to plan limits');
+        }
+
         $branches = $this->branchAccess->availableBranchesForUser(request()->user());
         $employee->loadMissing('branches:id,name');
         $canManageRolesAndPermissions = $this->canManageRolesAndPermissions();
@@ -239,6 +248,15 @@ class EmployeesController extends Controller
         // Demo mode restriction
         if (config('app.demo_mode')) {
             return redirect()->back()->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
+        }
+
+        $tenant = $this->currentTenant();
+        $this->planEntityLocks->sync($tenant);
+
+        // Check if this specific employee is locked by plan
+        $employee->refresh();
+        if ($employee->plan_locked_at) {
+            return redirect()->back()->with('error', $this->planUsageLimits->employeeLimitMessage($tenant) ?? 'This employee is locked due to plan limits');
         }
 
         $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($request->user());

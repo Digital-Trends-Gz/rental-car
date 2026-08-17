@@ -58,6 +58,11 @@ class BookingController extends Controller
     {
         $tenantSlug = $this->tenantSlug();
         $tenant = TenantContext::get();
+        
+        if (!$this->planUsageLimits->isCarAllowed($car)) {
+            abort(403, 'This service is currently unavailable.');
+        }
+
         $tenantId = TenantContext::id();
         $today = now()->startOfDay();
 
@@ -150,6 +155,13 @@ class BookingController extends Controller
         ]);
 
         $tenant = TenantContext::get();
+        if (!$this->planUsageLimits->isCarAllowed($car)) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'This service is currently unavailable.',
+            ], 403);
+        }
+
         if (!$tenant) {
             return response()->json([
                 'ok' => false,
@@ -236,6 +248,10 @@ class BookingController extends Controller
     {
         $tenantSlug = $this->tenantSlug();
         $tenant = TenantContext::get();
+
+        if (!$this->planUsageLimits->isCarAllowed($car)) {
+            abort(403, 'This service is currently unavailable.');
+        }
 
         // check car is available for booking
         if (!$this->isWebsiteBookableCarStatus($car->status)) {

@@ -1179,6 +1179,11 @@ class ReservationsController extends Controller
             ->orderBy('make')
             ->orderBy('model');
 
+        $allowedCarIds = $this->planUsageLimits->allowedCarIds($this->currentTenant($request));
+        if ($allowedCarIds !== null) {
+            $query->whereIn('id', $allowedCarIds);
+        }
+
         $this->applyReservationBranchScopeToCars($query, $request->user());
 
         return $query->get(['id', 'branch_id', 'make', 'model', 'year', 'license_plate', 'price_per_day', 'price_per_week', 'price_per_month'])

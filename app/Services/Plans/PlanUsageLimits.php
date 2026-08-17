@@ -76,6 +76,51 @@ class PlanUsageLimits
         return $this->usage('max_cars', 'cars', $this->resolveTenant($tenant), fn (?Tenant $tenant): int => $this->carCount($tenant));
     }
 
+    public function hasExceededCarLimit(?Tenant $tenant = null): bool
+    {
+        $tenant = $this->resolveTenant($tenant);
+        if (!$tenant) {
+            return false;
+        }
+
+        $limit = $this->limitFor($tenant, 'max_cars');
+        if ($limit === null) {
+            return false;
+        }
+
+        return $this->carCount($tenant) > $limit;
+    }
+
+    public function allowedCarIds(?Tenant $tenant = null): ?array
+    {
+        $tenant = $this->resolveTenant($tenant);
+        if (!$tenant) {
+            return null;
+        }
+
+        $limit = $this->limitFor($tenant, 'max_cars');
+        if ($limit === null) {
+            return null;
+        }
+
+        return Car::withoutTenantScope()
+            ->where('tenant_id', $tenant->id)
+            ->orderBy('id', 'asc')
+            ->limit($limit)
+            ->pluck('id')
+            ->toArray();
+    }
+
+    public function isCarAllowed(Car $car): bool
+    {
+        $allowedIds = $this->allowedCarIds($car->tenant);
+        if ($allowedIds === null) {
+            return true;
+        }
+
+        return in_array($car->id, $allowedIds);
+    }
+
     public function contractLimitMessage(?Tenant $tenant = null): ?string
     {
         $tenant = $this->resolveTenant($tenant);

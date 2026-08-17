@@ -176,7 +176,10 @@ class HomePagesController extends Controller
             return inertia('SuperAdmin/landing/Landing', compact('landingSettings', 'plans', 'tenantLogos', 'featuredCars', 'carSearch', 'contactSubmitUrl', 'availableLocales', 'seo'));
         }
 
+        $exceededCarIds = $this->exceededCarIds();
+
         $homeCars = Car::whereIn('status', $this->publicFleetStatuses())
+            ->whereNotIn('id', $exceededCarIds)
             ->with([
                 'tenant.siteSetting',
                 'branch:id,tenant_id,country,city,address',
@@ -273,8 +276,11 @@ class HomePagesController extends Controller
                 array_filter($request->only(['page']), static fn ($value) => filled($value))
             );
 
+        $exceededCarIds = $this->exceededCarIds();
+
         $query = Car::withoutTenantScope()->whereIn('status', $this->publicFleetStatuses())
             ->where('tenant_id', '>', 0)
+            ->whereNotIn('id', $exceededCarIds)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->with([
                 'tenant.siteSetting',
@@ -337,6 +343,7 @@ class HomePagesController extends Controller
         $makes = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
             ->where('tenant_id', '>', 0)
+            ->whereNotIn('id', $exceededCarIds)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('make')
@@ -345,6 +352,7 @@ class HomePagesController extends Controller
         $fuelTypes = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
             ->where('tenant_id', '>', 0)
+            ->whereNotIn('id', $exceededCarIds)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('fuel_type')
@@ -353,6 +361,7 @@ class HomePagesController extends Controller
         $years = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
             ->where('tenant_id', '>', 0)
+            ->whereNotIn('id', $exceededCarIds)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('year')
@@ -361,6 +370,7 @@ class HomePagesController extends Controller
         $publicTenantIds = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
             ->where('tenant_id', '>', 0)
+            ->whereNotIn('id', $exceededCarIds)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->distinct()
             ->pluck('tenant_id');
@@ -380,6 +390,7 @@ class HomePagesController extends Controller
         $publicBranchIds = Car::withoutTenantScope()
             ->whereIn('status', $this->publicFleetStatuses())
             ->where('tenant_id', '>', 0)
+            ->whereNotIn('id', $exceededCarIds)
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->whereNotNull('branch_id')
             ->distinct()
@@ -1143,5 +1154,24 @@ class HomePagesController extends Controller
         ]);
 
         return back()->with('success', 'Message sent successfully!');
+    }
+
+    private function exceededCarIds(): array
+    {
+        $planUsageLimits = app(\App\Services\Plans\PlanUsageLimits::class);
+        $exceededCarIds = [];
+        $tenantsList = Tenant::all();
+        foreach ($tenantsList as $t) {
+            $allowedIds = $planUsageLimits->allowedCarIds($t);
+            if ($allowedIds !== null) {
+                $tenantExceededIds = Car::withoutTenantScope()
+                    ->where('tenant_id', $t->id)
+                    ->whereNotIn('id', $allowedIds)
+                    ->pluck('id')
+                    ->toArray();
+                $exceededCarIds = array_merge($exceededCarIds, $tenantExceededIds);
+            }
+        }
+        return $exceededCarIds;
     }
 }
