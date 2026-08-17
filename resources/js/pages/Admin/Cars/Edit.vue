@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import SearchableSelect from '@/components/SearchableSelect.vue';
 import FileUpload from '@/components/ViltFilePond/FileUpload.vue';
@@ -20,6 +20,10 @@ interface Car {
     year: number | string;
     license_plate: string;
     license_plate_format?: string | null;
+    license_expiry_date?: string | null;
+    insurance_expiry_date?: string | null;
+
+
     branch_id: number | string;
     color: string;
     price_per_day: number | string;
@@ -282,6 +286,14 @@ function safeStr(value: unknown, fallback = ''): string {
     return String(value);
 }
 
+function safeDateStr(value: unknown, fallback = ''): string {
+    if (value === null || value === undefined || value === '') return fallback;
+    const str = String(value);
+    if (str.includes('T')) return str.split('T')[0];
+    if (str.includes(' ')) return str.split(' ')[0];
+    return str;
+}
+
 function safeNum(value: unknown, fallback = ''): string {
     if (value === null || value === undefined) return fallback;
     return String(value);
@@ -326,6 +338,9 @@ const form = useForm({
     year: safeNum(props.car?.year),
     license_plate: safeStr(props.car?.license_plate),
     license_plate_format: safeStr(props.car?.license_plate_format, props.selectedPlateFormat ?? ''),
+    license_expiry_date: safeDateStr(props.car?.license_expiry_date),
+    insurance_expiry_date: safeDateStr(props.car?.insurance_expiry_date),
+
     branch_id: safeStr(props.car?.branch_id),
     color: safeLower(props.car?.color, 'white'),
     price_per_day: safeNum(props.car?.price_per_day),
@@ -1033,6 +1048,19 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                         <Input id="license_plate" v-model="form.license_plate" :placeholder="plateFormatPlaceholder" />
                         <InputError :message="form.errors.license_plate" class="mt-1" />
                     </div>
+                    <div class="space-y-2">
+                        <Label for="license_expiry_date">{{ localize('License Expiry Date', 'تاريخ انتهاء الرخصة') }}</Label>
+                        <Input id="license_expiry_date" v-model="form.license_expiry_date" type="date" />
+                        <InputError :message="form.errors.license_expiry_date" class="mt-1" />
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label for="insurance_expiry_date">{{ localize('Insurance Expiry Date', 'تاريخ انتهاء التأمين') }}</Label>
+                        <Input id="insurance_expiry_date" v-model="form.insurance_expiry_date" type="date" />
+                        <InputError :message="form.errors.insurance_expiry_date" class="mt-1" />
+                    </div>
+
+
 
                     <div>
                         <div class="mb-1 flex items-center justify-between gap-3">

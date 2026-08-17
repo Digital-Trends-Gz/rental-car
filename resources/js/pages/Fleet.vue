@@ -16,7 +16,8 @@ interface BranchFilterOption {
     id: number;
     tenant_id: number;
     name: string;
-    address: string | null;
+    city?: string | null;
+    address?: string | null;
 }
 
 const $page = usePage<PageProps>();
@@ -352,7 +353,7 @@ const paginationLabel = (label: string, index: number): string => {
                                                 :key="branch.id"
                                                 :value="String(branch.id)"
                                             >
-                                                {{ branch.address ? `${branch.name} - ${branch.address}` : branch.name }}
+                                                {{ branch.city ? `${branch.name} - ${branch.city}` : branch.name }}
                                             </option>
                                         </select>
                                     </div>

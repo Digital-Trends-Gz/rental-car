@@ -661,8 +661,8 @@ class CarsController extends Controller
             'year' => [$requiredRule, 'integer', 'min:1900', 'max:2100'],
             'license_plate' => [$requiredRule, 'string', 'max:255', 'unique:cars,license_plate'],
             'license_plate_format' => [$requiredRule, 'string', Rule::in($allowedPlateFormatCodes)],
-            'license_expiry_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'insurance_expiry_date' => ['nullable', 'date', 'after_or_equal:today'],
+            'license_expiry_date' => ['nullable', 'date'],
+            'insurance_expiry_date' => ['nullable', 'date'],
             'branch_id' => [
                 $isDraftSubmission ? 'nullable' : ($canAccessAllBranches ? 'required' : 'nullable'),
                 'integer',
@@ -715,6 +715,14 @@ class CarsController extends Controller
             (array) ($validated['description_translations'] ?? []),
             $validated['description'] ?? null
         );
+
+        // Convert empty date strings to null
+        if (isset($validated['license_expiry_date']) && empty($validated['license_expiry_date'])) {
+            $validated['license_expiry_date'] = null;
+        }
+        if (isset($validated['insurance_expiry_date']) && empty($validated['insurance_expiry_date'])) {
+            $validated['insurance_expiry_date'] = null;
+        }
 
         $car = Car::create(collect($this->normalizeCarPayload($validated, $isDraftSubmission))->except([
             'image',
@@ -1059,6 +1067,14 @@ class CarsController extends Controller
             (array) ($validated['description_translations'] ?? []),
             $validated['description'] ?? null
         );
+
+        // Convert empty date strings to null
+        if (isset($validated['license_expiry_date']) && empty($validated['license_expiry_date'])) {
+            $validated['license_expiry_date'] = null;
+        }
+        if (isset($validated['insurance_expiry_date']) && empty($validated['insurance_expiry_date'])) {
+            $validated['insurance_expiry_date'] = null;
+        }
 
         $car->update(collect($this->normalizeCarPayload($validated, $isDraftSubmission, $car))->except([
             'image_temp_folders',
