@@ -1049,14 +1049,14 @@ const pageTitle = computed(() => (isEdit.value ? localize('Edit Car', 'تعدي�
                         <InputError :message="form.errors.license_plate" class="mt-1" />
                     </div>
                     <div class="space-y-2">
-                        <Label for="license_expiry_date">{{ localize('License Expiry Date', 'تاريخ انتهاء الرخصة') }}</Label>
-                        <Input id="license_expiry_date" v-model="form.license_expiry_date" type="date" />
+                        <Label for="license_expiry_date">{{ localize('License Expiry Date', 'تاريخ انتهاء الرخصة') }} *</Label>
+                        <Input id="license_expiry_date" v-model="form.license_expiry_date" type="date" required />
                         <InputError :message="form.errors.license_expiry_date" class="mt-1" />
                     </div>
 
                     <div class="space-y-2">
-                        <Label for="insurance_expiry_date">{{ localize('Insurance Expiry Date', 'تاريخ انتهاء التأمين') }}</Label>
-                        <Input id="insurance_expiry_date" v-model="form.insurance_expiry_date" type="date" />
+                        <Label for="insurance_expiry_date">{{ localize('Insurance Expiry Date', 'تاريخ انتهاء التأمين') }} *</Label>
+                        <Input id="insurance_expiry_date" v-model="form.insurance_expiry_date" type="date" required />
                         <InputError :message="form.errors.insurance_expiry_date" class="mt-1" />
                     </div>
 
