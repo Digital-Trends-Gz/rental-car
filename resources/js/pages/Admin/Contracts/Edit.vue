@@ -1909,19 +1909,31 @@ function submit() {
               </select>
               <InputError :message="form.errors.currency" class="mt-1" />
             </div>
+            <div class="rounded-md border border-sky-200 bg-sky-50 p-3 text-xs sm:text-sm text-sky-800 flex flex-wrap items-center justify-between gap-3 md:col-span-2 xl:col-span-3">
+              <div class="flex items-center gap-2">
+                <span>{{ localize('Return details (mileage, fuel, actual return time, and vehicle condition) are managed and updated automatically through the Return Status Report.', 'يتم إدارة بيانات الإرجاع (العداد، الوقود، تاريخ ووقت الإرجاع الفعلي، وحالة المركبة) وتحديثها تلقائياً من تقرير حالة الإرجاع.') }}</span>
+              </div>
+              <a
+                v-if="contract?.return_report_url || actions?.return_report"
+                :href="contract?.return_report_url || actions?.return_report"
+                class="inline-flex items-center font-semibold text-sky-900 underline hover:text-sky-700 shrink-0"
+              >
+                {{ localize('Open Return Report', 'فتح تقرير الإرجاع') }} &rarr;
+              </a>
+            </div>
+
             <div>
               <Label for="return-odometer">{{ localize('Return Mileage', 'عداد العودة') }}</Label>
               <div class="mt-1 flex gap-2">
-                <Input id="return-odometer" v-model="form.return_odometer" type="number" min="0" />
+                <Input id="return-odometer" v-model="form.return_odometer" type="number" min="0" disabled class="bg-gray-100 cursor-not-allowed opacity-75" />
                 <Button
                   v-if="returnOdometerPhoto"
                   type="button"
                   variant="outline"
                   size="icon"
-                  class="shrink-0"
-                  :disabled="!photoHasExtractedValue(returnOdometerPhoto) && !returnOdometerPhoto?.url"
-                  :title="readingPhotoTooltip(returnOdometerPhoto, localize('Use return odometer image value', 'استخدام قيمة صورة عداد الرجوع'))"
-                  @click="applyReadingPhotoValue(returnOdometerPhoto, 'return_odometer')"
+                  class="shrink-0 opacity-50 cursor-not-allowed"
+                  disabled
+                  :title="localize('Controlled via Return Status Report', 'يتم التحكم به من خلال تقرير الإرجاع')"
                 >
                   <ImageIcon class="h-4 w-4" />
                 </Button>
@@ -1931,7 +1943,7 @@ function submit() {
             <div>
               <Label for="return-fuel-level">{{ localize('Return Fuel', 'الوقود عند العودة') }}</Label>
               <div class="mt-1 flex gap-2">
-                <select id="return-fuel-level" v-model="form.return_fuel_level" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
+                <select id="return-fuel-level" v-model="form.return_fuel_level" disabled class="block w-full rounded-md border border-gray-300 bg-gray-100 cursor-not-allowed opacity-75 px-3 py-2">
                   <option v-for="option in returnFuelLevelOptions" :key="`return-${option.value || 'fuel-empty'}`" :value="option.value">{{ option.label }}</option>
                 </select>
                 <Button
@@ -1939,17 +1951,16 @@ function submit() {
                   type="button"
                   variant="outline"
                   size="icon"
-                  class="shrink-0"
-                  :disabled="!photoHasExtractedValue(returnFuelPhoto) && !returnFuelPhoto?.url"
-                  :title="readingPhotoTooltip(returnFuelPhoto, localize('Use return fuel image value', 'استخدام قيمة صورة وقود الرجوع'))"
-                  @click="applyReadingPhotoValue(returnFuelPhoto, 'return_fuel')"
+                  class="shrink-0 opacity-50 cursor-not-allowed"
+                  disabled
+                  :title="localize('Controlled via Return Status Report', 'يتم التحكم به من خلال تقرير الإرجاع')"
                 >
                   <ImageIcon class="h-4 w-4" />
                 </Button>
               </div>
               <InputError :message="form.errors.return_fuel_level" class="mt-1" />
             </div>
-            <div><Label for="actual-return-time">{{ localize('Return Date / Actual Return Time', 'تاريخ ووقت العودة الفعلي') }}</Label><Input id="actual-return-time" v-model="form.actual_return_time" type="datetime-local" /><InputError :message="form.errors.actual_return_time" class="mt-1" /></div>
+            <div><Label for="actual-return-time">{{ localize('Return Date / Actual Return Time', 'تاريخ ووقت العودة الفعلي') }}</Label><Input id="actual-return-time" v-model="form.actual_return_time" type="datetime-local" disabled class="bg-gray-100 cursor-not-allowed opacity-75" /><InputError :message="form.errors.actual_return_time" class="mt-1" /></div>
             <div>
               <Label for="vehicle-condition-before">{{ localize('Vehicle Condition Before Delivery', 'حالة المركبة قبل التسليم') }}</Label>
               <select id="vehicle-condition-before" v-model="form.vehicle_condition_before" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
@@ -1959,7 +1970,7 @@ function submit() {
             </div>
             <div>
               <Label for="vehicle-condition-after">{{ localize('Vehicle Condition After Return', 'حالة المركبة بعد العودة') }}</Label>
-              <select id="vehicle-condition-after" v-model="form.vehicle_condition_after" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2">
+              <select id="vehicle-condition-after" v-model="form.vehicle_condition_after" disabled class="mt-1 block w-full rounded-md border border-gray-300 bg-gray-100 cursor-not-allowed opacity-75 px-3 py-2">
                 <option v-for="option in vehicleConditionOptions" :key="`after-${option.value || 'empty'}`" :value="option.value">{{ option.label }}</option>
               </select>
               <InputError :message="form.errors.vehicle_condition_after" class="mt-1" />

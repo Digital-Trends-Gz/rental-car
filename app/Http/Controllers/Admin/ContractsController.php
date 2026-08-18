@@ -710,6 +710,7 @@ class ContractsController extends Controller
             'additionalDrivers.documents',
             'archiveFiles.driver',
             'handoverPhotos',
+            'returnStatusReport',
         ]);
         $reservationOptions = $this->reservationOptions($request);
         $carDamageMap = $this->serializeCarDamageCaseMap(
@@ -745,11 +746,15 @@ class ContractsController extends Controller
                     'allowed_km_per_day' => $contract->allowed_km_per_day,
                     'allowed_km_per_week' => $contract->allowed_km_per_week,
                     'allowed_km_per_month' => $contract->allowed_km_per_month,
-                    'return_odometer' => $contract->return_odometer,
-                    'return_fuel_level' => $contract->return_fuel_level,
+                    'return_odometer' => $contract->returnStatusReport?->return_odometer ?? $contract->return_odometer,
+                    'return_fuel_level' => $contract->returnStatusReport?->return_fuel_level ?? $contract->return_fuel_level,
                     'vehicle_condition_before' => $contract->vehicle_condition_before,
-                    'vehicle_condition_after' => $contract->vehicle_condition_after,
-                    'actual_return_time' => optional($contract->actual_return_time)->format('Y-m-d\TH:i'),
+                    'vehicle_condition_after' => $contract->returnStatusReport?->vehicle_condition_after ?? $contract->vehicle_condition_after,
+                    'actual_return_time' => optional($contract->returnStatusReport?->actual_return_time ?? $contract->actual_return_time)->format('Y-m-d\TH:i'),
+                    'has_return_report' => $contract->returnStatusReport !== null,
+                    'return_report_url' => $this->canOpenReturnReport($contract)
+                        ? url('/admin/contracts/'.$contract->id.'/return-status-report')
+                        : null,
                     'start_date' => optional($contract->start_date)->toDateString(),
                 'end_date' => optional($contract->end_date)->toDateString(),
                 'total_amount' => $contract->total_amount,
@@ -793,6 +798,9 @@ class ContractsController extends Controller
                 'extractDriver' => $isLocked ? null : url('/admin/contracts/drivers/extract'),
                 'extractCustomerPhoto' => $isLocked ? null : url('/admin/contracts/drivers/photo/extract'),
                 'reservationStore' => $isLocked ? null : url('/admin/reservations'),
+                'return_report' => $this->canOpenReturnReport($contract)
+                    ? url('/admin/contracts/'.$contract->id.'/return-status-report')
+                    : null,
             ],
         ]);
     }
@@ -1402,11 +1410,19 @@ class ContractsController extends Controller
         $contract->allowed_km_per_month = $carData['allowed_km_per_month']
             ?? $validated['allowed_km_per_month']
             ?? $reservation?->car?->allowed_km_per_month;
-        $contract->return_odometer = $validated['return_odometer'] ?? null;
-        $contract->return_fuel_level = $this->nullableString($validated['return_fuel_level'] ?? null);
+        $contract->loadMissing('returnStatusReport');
+        if ($contract->returnStatusReport) {
+            $contract->return_odometer = $contract->returnStatusReport->return_odometer ?? $contract->return_odometer;
+            $contract->return_fuel_level = $contract->returnStatusReport->return_fuel_level ?? $contract->return_fuel_level;
+            $contract->vehicle_condition_after = $contract->returnStatusReport->vehicle_condition_after ?? $contract->vehicle_condition_after;
+            $contract->actual_return_time = $contract->returnStatusReport->actual_return_time ?? $contract->actual_return_time;
+        } else {
+            $contract->return_odometer = $validated['return_odometer'] ?? null;
+            $contract->return_fuel_level = $this->nullableString($validated['return_fuel_level'] ?? null);
+            $contract->vehicle_condition_after = $this->nullableString($validated['vehicle_condition_after'] ?? null);
+            $contract->actual_return_time = $validated['actual_return_time'] ?? null;
+        }
         $contract->vehicle_condition_before = $this->nullableString($validated['vehicle_condition_before'] ?? null);
-        $contract->vehicle_condition_after = $this->nullableString($validated['vehicle_condition_after'] ?? null);
-        $contract->actual_return_time = $validated['actual_return_time'] ?? null;
         $contract->start_date = $validated['start_date'] ?? $reservation?->start_date?->toDateString();
         $contract->end_date = $validated['end_date'] ?? $reservation?->end_date?->toDateString();
         $contract->total_amount = $validated['total_amount'] ?? $reservation?->total_amount;
