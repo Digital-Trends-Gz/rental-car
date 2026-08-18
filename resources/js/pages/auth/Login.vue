@@ -254,7 +254,7 @@ const forgotPasswordUrl = computed(() => {
                         <div class="grid gap-4" :class="googleLoginEnabled && appleLoginEnabled ? 'grid-cols-2' : 'grid-cols-1'">
                             <a
                                 v-if="googleLoginEnabled"
-                                :href="buildUrl(page.props.app_url_base, `/auth/google/redirect?tenant=${currentTenant.slug}`)"
+                                :href="buildUrl(page.props.app_url_base, `/auth/google/redirect?tenant=${currentTenant.slug}&locale=${page.props.locale || 'en'}`)"
                                 class="flex h-11 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
                             >
                                 <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24">
@@ -267,7 +267,7 @@ const forgotPasswordUrl = computed(() => {
                             </a>
                             <a
                                 v-if="appleLoginEnabled"
-                                :href="buildUrl(page.props.app_url_base, `/auth/apple/redirect?tenant=${currentTenant.slug}`)"
+                                :href="buildUrl(page.props.app_url_base, `/auth/apple/redirect?tenant=${currentTenant.slug}&locale=${page.props.locale || 'en'}`)"
                                 class="flex h-11 items-center justify-center gap-2 rounded-lg border border-primary bg-primary font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
                             >
                                 <svg class="h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 814 1000" xmlns="http://www.w3.org/2000/svg">

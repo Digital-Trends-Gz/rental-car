@@ -4,6 +4,9 @@ return [
     'failed' => 'These credentials do not match our records.',
     'password' => 'The provided password is incorrect.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
+    'social_email_already_exists' => 'This email is already registered with another account. Please sign in using your credentials or use another email.',
+    'social_email_missing' => 'Unable to retrieve email from social login provider.',
+    'social_login_failed' => 'Social login authentication failed. Please try again.',
     'api' => [
         'account_not_found' => 'We could not find an account with this email.',
         'otp_required' => 'The otp field is required.',

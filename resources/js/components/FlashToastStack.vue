@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-vue-next';
+import { useTrans } from '@/composables/useTrans';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 type ToastTone = 'success' | 'error' | 'warning' | 'info';
@@ -8,6 +9,19 @@ interface ToastItem {
     id: number;
     tone: ToastTone;
     message: string;
+}
+
+const { t } = useTrans();
+
+function formatMessage(msg: string): string {
+    if (!msg) return msg;
+    if (msg.startsWith('auth.') || msg.startsWith('dashboard.') || msg.startsWith('validation.')) {
+        const translated = t(msg);
+        if (translated && translated !== msg) {
+            return translated;
+        }
+    }
+    return msg;
 }
 
 const props = withDefaults(
@@ -46,7 +60,7 @@ function dismiss(id: number) {
 
 function pushToast(tone: ToastTone, message: string) {
     const id = nextId++;
-    toasts.value = [{ id, tone, message }, ...toasts.value].slice(0, 4);
+    toasts.value = [{ id, tone, message: formatMessage(message) }, ...toasts.value].slice(0, 4);
 
     const timer = setTimeout(() => dismiss(id), props.timeoutMs);
     timers.set(id, timer);

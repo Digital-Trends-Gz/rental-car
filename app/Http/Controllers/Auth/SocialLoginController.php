@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Core\LandingPageSettings;
 use App\Core\SocialLoginSettings;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\SiteSetting;
 use App\Models\Tenant;
 use App\Models\User;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
@@ -28,22 +32,27 @@ class SocialLoginController extends Controller
         }
 
         $tenantSubdomain = trim((string) $request->query('tenant', ''));
+        $locale = trim((string) ($request->query('locale') ?: app()->getLocale()));
 
         if ($tenantSubdomain) {
             $request->session()->put('social_login_tenant', $tenantSubdomain);
+        }
+        if ($locale) {
+            $request->session()->put('social_login_locale', $locale);
         }
 
         $redirectResponse = Socialite::driver($provider)
             ->redirectUrl($this->callbackUrl($provider))
             ->stateless()
             ->with([
-                'state' => $this->encodeState($provider, $tenantSubdomain),
+                'state' => $this->encodeState($provider, $tenantSubdomain, $locale),
             ])
             ->redirect();
 
         Log::info('Social login redirect generated.', [
             'provider' => $provider,
             'tenant' => $tenantSubdomain,
+            'locale' => $locale,
             'callback_url' => $this->callbackUrl($provider),
             'location_has_code_response_type' => str_contains((string) $redirectResponse->headers->get('Location'), 'response_type=code'),
             'location_has_state' => str_contains((string) $redirectResponse->headers->get('Location'), 'state='),
@@ -75,8 +84,15 @@ class SocialLoginController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        $tenantSubdomain = $this->tenantFromState($request, $provider)
+        $statePayload = $this->statePayload($request, $provider);
+        $tenantSubdomain = trim((string) ($statePayload['tenant'] ?? ''))
             ?: trim((string) $request->session()->get('social_login_tenant', ''));
+        $locale = trim((string) ($statePayload['locale'] ?? ''))
+            ?: trim((string) $request->session()->get('social_login_locale', ''));
+
+        if ($locale !== '') {
+            app()->setLocale($locale);
+        }
 
         if ($request->filled('error')) {
             Log::warning('Social login provider returned an error.', [
@@ -88,7 +104,7 @@ class SocialLoginController extends Controller
 
             return $this->redirectToTenantLogin(
                 $tenantSubdomain,
-                (string) ($request->query('error_description') ?: 'Authentication failed. Please try again.')
+                'auth.social_login_failed'
             );
         }
 
@@ -101,7 +117,7 @@ class SocialLoginController extends Controller
                 'has_state' => $request->filled('state'),
             ]);
 
-            return $this->redirectToTenantLogin($tenantSubdomain, 'Google did not return an authorization code. Please try again.');
+            return $this->redirectToTenantLogin($tenantSubdomain, 'auth.social_login_failed');
         }
 
         try {
@@ -117,45 +133,86 @@ class SocialLoginController extends Controller
                 'message' => $e->getMessage(),
             ]);
 
-            return $this->redirectToTenantLogin($tenantSubdomain, 'Authentication failed. Please try again.');
+            return $this->redirectToTenantLogin($tenantSubdomain, 'auth.social_login_failed');
         }
 
         $request->session()->forget('social_login_tenant');
+        $request->session()->forget('social_login_locale');
 
         if (!$tenantSubdomain) {
-            return $this->redirectToTenantLogin('', 'Tenant context missing. Please try logging in from the tenant\'s website.');
+            return $this->redirectToTenantLogin('', 'auth.unauthorized_access');
         }
 
         $tenant = Tenant::where('slug', $tenantSubdomain)->first();
 
         if (!$tenant || !$tenant->is_active) {
-            return $this->redirectToTenantLogin($tenantSubdomain, 'Invalid or inactive tenant.');
+            return $this->redirectToTenantLogin($tenantSubdomain, 'auth.tenant_account_inactive');
         }
 
-        // Find or create the client user within the tenant
-        $user = User::where('email', $socialUser->getEmail())
-            ->where('tenant_id', $tenant->id)
-            ->first();
+        $email = strtolower(trim((string) $socialUser->getEmail()));
+        if ($email === '') {
+            return $this->redirectToTenantLogin($tenantSubdomain, 'auth.social_email_missing');
+        }
 
-        if (!$user) {
-            $user = User::create([
-                'name' => $socialUser->getName() ?? 'Social User',
-                'email' => $socialUser->getEmail(),
-                'provider' => $provider,
-                'provider_id' => $socialUser->getId(),
-                'password' => Hash::make(Str::random(24)),
-                'role' => UserRole::CLIENT,
-                'tenant_id' => $tenant->id,
-                'is_active' => true,
-                'email_verified_at' => now(), // Assume social emails are verified
-            ]);
+        // Check if an existing user exists in the database with this email
+        $existingUser = User::where('email', $email)->first();
+
+        if ($existingUser) {
+            // Check if user belongs to this tenant
+            if ((int) $existingUser->tenant_id === (int) $tenant->id) {
+                if (!$existingUser->is_active) {
+                    return $this->redirectToTenantLogin($tenantSubdomain, 'auth.tenant_account_inactive');
+                }
+
+                // Update existing user with provider details if they logged in with password before
+                if (!$existingUser->provider_id) {
+                    $existingUser->update([
+                        'provider' => $provider,
+                        'provider_id' => $socialUser->getId(),
+                    ]);
+                }
+
+                $user = $existingUser;
+            } else {
+                // Email is already used by a user in another tenant or different account
+                Log::warning('Social login duplicate email across tenants/system.', [
+                    'provider' => $provider,
+                    'tenant' => $tenantSubdomain,
+                    'email' => $email,
+                    'existing_tenant_id' => $existingUser->tenant_id,
+                ]);
+
+                return $this->redirectToTenantLogin(
+                    $tenantSubdomain,
+                    'auth.social_email_already_exists'
+                );
+            }
         } else {
-            // Update existing user with provider details if they logged in with password before
-            if (!$user->provider_id) {
-                $user->update([
+            // Create the new client user within this tenant
+            try {
+                $user = User::create([
+                    'name' => $socialUser->getName() ?: ($socialUser->getNickname() ?: 'Social User'),
+                    'email' => $email,
                     'provider' => $provider,
                     'provider_id' => $socialUser->getId(),
+                    'password' => Hash::make(Str::random(24)),
+                    'role' => UserRole::CLIENT,
+                    'tenant_id' => $tenant->id,
+                    'is_active' => true,
+                    'email_verified_at' => now(), // Assume social emails are verified
                 ]);
+            } catch (UniqueConstraintViolationException | QueryException $e) {
+                Log::warning('Social login user creation caught duplicate key exception.', [
+                    'provider' => $provider,
+                    'tenant' => $tenantSubdomain,
+                    'email' => $email,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return $this->redirectToTenantLogin(
+                    $tenantSubdomain,
+                    'auth.social_email_already_exists'
+                );
             }
         }
 
@@ -179,7 +236,7 @@ class SocialLoginController extends Controller
         $user = User::with('tenant')->find($userId);
 
         if (!$user || !$user->tenant) {
-            return $this->redirectToTenantLogin($routeSubdomain, 'Invalid login attempt.');
+            return $this->redirectToTenantLogin($routeSubdomain, 'auth.unauthorized_access');
         }
 
         Auth::login($user);
@@ -199,7 +256,7 @@ class SocialLoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return $this->redirectToTenantLogin($tenantSubdomain, 'Invalid login attempt.');
+        return $this->redirectToTenantLogin($tenantSubdomain, 'auth.unauthorized_access');
     }
 
     private function providerIsEnabled(string $provider): bool
@@ -216,16 +273,17 @@ class SocialLoginController extends Controller
         return route('social-login.callback', ['provider' => $provider]);
     }
 
-    private function encodeState(string $provider, string $tenantSubdomain): string
+    private function encodeState(string $provider, string $tenantSubdomain, string $locale = 'en'): string
     {
         return Crypt::encryptString(json_encode([
             'provider' => $provider,
             'tenant' => $tenantSubdomain,
+            'locale' => $locale,
             'issued_at' => now()->timestamp,
         ], JSON_THROW_ON_ERROR));
     }
 
-    private function tenantFromState(Request $request, string $provider): ?string
+    private function statePayload(Request $request, string $provider): ?array
     {
         $state = trim((string) $request->query('state', ''));
 
@@ -253,9 +311,7 @@ class SocialLoginController extends Controller
             return null;
         }
 
-        $tenant = trim((string) ($payload['tenant'] ?? ''));
-
-        return $tenant !== '' ? $tenant : null;
+        return $payload;
     }
 
     private function hydrateQueryStringFromRequestUri(Request $request): void
@@ -282,8 +338,10 @@ class SocialLoginController extends Controller
         $_SERVER['QUERY_STRING'] = $queryString;
     }
 
-    private function redirectToTenantLogin(string $tenantSubdomain, string $message)
+    private function redirectToTenantLogin(string $tenantSubdomain, string $messageKeyOrDefault)
     {
+        $message = $this->resolveMessage($messageKeyOrDefault);
+
         if ($tenantSubdomain !== '') {
             return redirect()
                 ->route('tenant.login', ['subdomain' => $tenantSubdomain])
@@ -293,5 +351,41 @@ class SocialLoginController extends Controller
         return redirect()
             ->route('tenant-login')
             ->with('error', $message);
+    }
+
+    private function resolveMessage(string $keyOrDefault): string
+    {
+        $locale = app()->getLocale();
+
+        // 1. Check LandingPageSettings override from SiteSetting
+        try {
+            $landingSettings = SiteSetting::query()
+                ->where('key', LandingPageSettings::KEY)
+                ->first()
+                ?->value;
+
+            if (is_array($landingSettings)) {
+                $normalized = LandingPageSettings::normalize($landingSettings);
+                $override = data_get($normalized, "translations.{$locale}.{$keyOrDefault}");
+                if (is_string($override) && trim($override) !== '') {
+                    return $override;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        // 2. Check Laravel lang dictionaries
+        $siteKey = str_starts_with($keyOrDefault, 'site.') ? $keyOrDefault : 'site.'.$keyOrDefault;
+        $translated = __($siteKey);
+        if ($translated !== $siteKey && is_string($translated)) {
+            return $translated;
+        }
+
+        $translatedDirect = __($keyOrDefault);
+        if ($translatedDirect !== $keyOrDefault && is_string($translatedDirect)) {
+            return $translatedDirect;
+        }
+
+        return $keyOrDefault;
     }
 }

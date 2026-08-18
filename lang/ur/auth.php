@@ -4,6 +4,9 @@ return [
     'failed' => 'These credentials do not match our records.',
     'password' => 'The provided password is incorrect.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
+    'social_email_already_exists' => 'یہ ای میل پہلے سے کسی دوسرے اکاؤنٹ میں رجسٹرڈ ہے۔ براہ کرم اپنی معلومات سے لاگ ان کریں یا کوئی دوسری ای میل استعمال کریں۔',
+    'social_email_missing' => 'سوشل لاگ ان فراہم کنندہ سے ای میل حاصل کرنے میں ناکام۔',
+    'social_login_failed' => 'سوشل لاگ ان کی تصدیق ناکام ہوگئی۔ براہ کرم دوبارہ کوشش کریں۔',
     'api' => [
         'account_not_found' => 'We could not find an account with this email.',
         'otp_required' => 'The otp field is required.',
