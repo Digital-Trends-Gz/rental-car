@@ -140,7 +140,7 @@ class CarDocument extends Model
             ? $this->files->firstWhere('collection', 'attachment')
             : $this->files()->where('collection', 'attachment')->first();
 
-        return $file?->path ? \Storage::url($file->path) : null;
+        return $file?->path ? \App\Support\FileUrl::fromStoragePath($file->path) : null;
     }
 
     public function getFrontImageUrlAttribute(): ?string
@@ -149,7 +149,7 @@ class CarDocument extends Model
             ? ($this->files->firstWhere('collection', 'front_image') ?? $this->files->firstWhere('collection', 'attachment'))
             : ($this->files()->where('collection', 'front_image')->first() ?? $this->files()->where('collection', 'attachment')->first());
 
-        return $file?->path ? \Storage::url($file->path) : null;
+        return $file?->path ? \App\Support\FileUrl::fromStoragePath($file->path) : null;
     }
 
     public function getBackImageUrlAttribute(): ?string
@@ -158,6 +158,6 @@ class CarDocument extends Model
             ? $this->files->firstWhere('collection', 'back_image')
             : $this->files()->where('collection', 'back_image')->first();
 
-        return $file?->path ? \Storage::url($file->path) : null;
+        return $file?->path ? \App\Support\FileUrl::fromStoragePath($file->path) : null;
     }
 }

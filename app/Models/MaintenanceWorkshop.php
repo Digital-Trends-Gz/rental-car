@@ -43,6 +43,6 @@ class MaintenanceWorkshop extends Model
             ? $this->files->firstWhere('collection', 'front_image')
             : $this->files()->where('collection', 'front_image')->first();
 
-        return $file?->path ? \Storage::url($file->path) : null;
+        return $file?->path ? \App\Support\FileUrl::fromStoragePath($file->path) : null;
     }
 }

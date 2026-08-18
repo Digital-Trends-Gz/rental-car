@@ -85,6 +85,30 @@ const form = useForm({
     back_image_removed_files: [] as number[],
 });
 
+function onFrontImageUpdate(tempFoldersList: string[]) {
+    form.front_image_temp_folders = tempFoldersList;
+}
+
+function onFrontImageRemoved(payload: { fileId?: number; type: string }) {
+    if (payload.type === 'existing' && payload.fileId) {
+        if (!form.front_image_removed_files.includes(payload.fileId)) {
+            form.front_image_removed_files.push(payload.fileId);
+        }
+    }
+}
+
+function onBackImageUpdate(tempFoldersList: string[]) {
+    form.back_image_temp_folders = tempFoldersList;
+}
+
+function onBackImageRemoved(payload: { fileId?: number; type: string }) {
+    if (payload.type === 'existing' && payload.fileId) {
+        if (!form.back_image_removed_files.includes(payload.fileId)) {
+            form.back_image_removed_files.push(payload.fileId);
+        }
+    }
+}
+
 const isPurchaseContract = computed(() => form.type === 'purchase_contract');
 const expiryDateMin = computed(() => {
     if (isPurchaseContract.value || !form.issue_date) {
@@ -245,8 +269,8 @@ const submit = () => {
                                 :allowed-file-types="photoAllowedFileTypes"
                                 :allow-multiple="false"
                                 :max-files="1"
-                                @processfile="form.front_image_temp_folders = $event"
-                                @removefile="form.front_image_removed_files = $event"
+                                @update:modelValue="onFrontImageUpdate"
+                                @fileRemoved="onFrontImageRemoved"
                             />
                             <InputError :message="form.errors.front_image_temp_folders" class="mt-1" />
                         </div>
@@ -258,8 +282,8 @@ const submit = () => {
                                 :allowed-file-types="photoAllowedFileTypes"
                                 :allow-multiple="false"
                                 :max-files="1"
-                                @processfile="form.back_image_temp_folders = $event"
-                                @removefile="form.back_image_removed_files = $event"
+                                @update:modelValue="onBackImageUpdate"
+                                @fileRemoved="onBackImageRemoved"
                             />
                             <InputError :message="form.errors.back_image_temp_folders" class="mt-1" />
                         </div>

@@ -73,7 +73,7 @@ class Branch extends Model
             : $this->files()->where('collection', 'showroom')->first();
 
         if ($file && $file->path) {
-            return Storage::url($file->path);
+            return \App\Support\FileUrl::fromStoragePath($file->path);
         }
 
         return null;
