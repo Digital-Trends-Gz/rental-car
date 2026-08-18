@@ -341,6 +341,7 @@ class LandingSettingsController extends Controller
             'plans_comparison_page.summary_enabled' => ['nullable', 'boolean'],
             'plans_comparison_page.comparison_enabled' => ['nullable', 'boolean'],
             'plans_comparison_page.addons_enabled' => ['nullable', 'boolean'],
+            'plans_comparison_page.trial_enabled' => ['nullable', 'boolean'],
             'plans_comparison_page.policy_enabled' => ['nullable', 'boolean'],
             'plans_comparison_page.footer_enabled' => ['nullable', 'boolean'],
             'plans_comparison_page.hero_badge' => ['required', 'string', 'max:255'],

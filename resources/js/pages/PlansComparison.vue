@@ -50,6 +50,7 @@ type PlansPage = {
     summary_enabled?: boolean;
     comparison_enabled?: boolean;
     addons_enabled?: boolean;
+    trial_enabled?: boolean;
     policy_enabled?: boolean;
     footer_enabled?: boolean;
     hero_badge: string;
@@ -122,6 +123,7 @@ const showHero = computed(() => props.plansPage.hero_enabled !== false);
 const showSummary = computed(() => props.plansPage.summary_enabled !== false);
 const showComparison = computed(() => props.plansPage.comparison_enabled !== false);
 const showAddons = computed(() => props.plansPage.addons_enabled !== false);
+const showTrial = computed(() => props.plansPage.trial_enabled !== false);
 const showPolicy = computed(() => props.plansPage.policy_enabled !== false);
 const showFooter = computed(() => props.plansPage.footer_enabled !== false);
 const comparisonScrollHint = computed(() => {
@@ -436,8 +438,8 @@ const cellClass = (value: string) => {
                     </div>
                 </section>
 
-                <section v-if="showAddons" class="mt-8 grid gap-5 md:grid-cols-2">
-                    <div class="rounded-[1.375rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5">
+                <section v-if="showAddons || showTrial" class="mt-8 grid gap-5" :class="(showAddons && showTrial) ? 'md:grid-cols-2' : 'md:grid-cols-1 max-w-2xl mx-auto'">
+                    <div v-if="showAddons" class="rounded-[1.375rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5">
                         <h3 class="text-2xl font-black">{{ plansPage.addons_title }}</h3>
                         <ul class="mt-4 space-y-3 text-slate-700">
                             <li v-for="item in plansPage.addons" :key="item" class="flex gap-2">
@@ -446,7 +448,7 @@ const cellClass = (value: string) => {
                             </li>
                         </ul>
                     </div>
-                    <div class="rounded-[1.375rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5">
+                    <div v-if="showTrial" class="rounded-[1.375rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5">
                         <h3 class="text-2xl font-black">{{ plansPage.trial_title }}</h3>
                         <ul class="mt-4 space-y-3 text-slate-700">
                             <li v-for="item in plansPage.trial_items" :key="item" class="flex gap-2">

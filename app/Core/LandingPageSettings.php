@@ -323,6 +323,7 @@ class LandingPageSettings
                 'summary_enabled' => true,
                 'comparison_enabled' => true,
                 'addons_enabled' => true,
+                'trial_enabled' => true,
                 'policy_enabled' => true,
                 'footer_enabled' => true,
                 'hero_badge' => 'SaaS Pricing Plans for Car Rental Offices',
@@ -660,6 +661,7 @@ class LandingPageSettings
         $settings['plans_comparison_page']['summary_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['summary_enabled'] ?? true);
         $settings['plans_comparison_page']['comparison_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['comparison_enabled'] ?? true);
         $settings['plans_comparison_page']['addons_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['addons_enabled'] ?? true);
+        $settings['plans_comparison_page']['trial_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['trial_enabled'] ?? true);
         $settings['plans_comparison_page']['policy_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['policy_enabled'] ?? true);
         $settings['plans_comparison_page']['footer_enabled'] = self::normalizeBoolean($settings['plans_comparison_page']['footer_enabled'] ?? true);
         $settings['clients_section']['enabled'] = (bool) ($settings['clients_section']['enabled'] ?? true);

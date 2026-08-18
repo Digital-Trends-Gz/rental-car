@@ -27,6 +27,7 @@ type PlansPage = {
     summary_enabled?: boolean;
     comparison_enabled?: boolean;
     addons_enabled?: boolean;
+    trial_enabled?: boolean;
     policy_enabled?: boolean;
     footer_enabled?: boolean;
     hero_badge: string;
@@ -74,6 +75,7 @@ const form = useForm<{ plans_comparison_page: PlansPage }>({
         summary_enabled: props.plansPage.summary_enabled !== false,
         comparison_enabled: props.plansPage.comparison_enabled !== false,
         addons_enabled: props.plansPage.addons_enabled !== false,
+        trial_enabled: props.plansPage.trial_enabled !== false,
         policy_enabled: props.plansPage.policy_enabled !== false,
         footer_enabled: props.plansPage.footer_enabled !== false,
         comparison_sections: (props.plansPage.comparison_sections || []).map((section) => ({
@@ -291,9 +293,15 @@ function removeListItem(key: 'addons' | 'trial_items' | 'policy_paragraphs', ind
                 </Card>
 
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Free Trial</CardTitle>
-                        <CardDescription>Free trial box next to add-ons.</CardDescription>
+                    <CardHeader class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <CardTitle>Free Trial</CardTitle>
+                            <CardDescription>Free trial box next to add-ons.</CardDescription>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <Switch v-model:checked="form.plans_comparison_page.trial_enabled" />
+                            <span class="text-sm font-medium">{{ form.plans_comparison_page.trial_enabled ? 'Shown' : 'Hidden' }}</span>
+                        </div>
                     </CardHeader>
                     <CardContent class="space-y-3">
                         <div class="space-y-2"><Label>Title</Label><Input v-model="form.plans_comparison_page.trial_title" /></div>
