@@ -36,6 +36,8 @@ const props = defineProps<{
       branch_id?: number | null
       branch_name?: string | null
       is_allowed?: boolean
+      has_expired_document?: boolean
+      document_expiry_reason?: string | null
     }>
     links: Array<{ url: string | null; label: string; active: boolean }>
     total?: number
@@ -353,19 +355,28 @@ const destroyCar = () => {
                             <td class="px-4 py-3">{{ car.branch_name || t('dashboard.admin.employees.table.no_branch') }}</td>
                             <td class="px-4 py-3">{{ currency.symbol }}{{ Number(car.price_per_day).toFixed(2) }}</td>
                             <td class="px-4 py-3">
-                                <span
-                                  class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium"
-                                  :style="{
-                                    backgroundColor: getStatusColor(car.status).bg,
-                                    color: getStatusColor(car.status).text
-                                  }"
-                                >
-                                  <span 
-                                    class="size-2 rounded-full" 
-                                    :style="{ backgroundColor: getStatusColor(car.status).dot }"
-                                  />
-                                  {{ carStatusLabel(car) }}
-                                </span>
+                                <div class="flex flex-col gap-1 items-start">
+                                    <span
+                                      class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium"
+                                      :style="{
+                                        backgroundColor: getStatusColor(car.status).bg,
+                                        color: getStatusColor(car.status).text
+                                      }"
+                                    >
+                                      <span 
+                                        class="size-2 rounded-full" 
+                                        :style="{ backgroundColor: getStatusColor(car.status).dot }"
+                                      />
+                                      {{ carStatusLabel(car) }}
+                                    </span>
+                                    <span
+                                      v-if="car.has_expired_document"
+                                      class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300"
+                                      :title="car.document_expiry_reason || ''"
+                                    >
+                                      ⚠️ {{ car.document_expiry_reason || 'Renewal Required' }}
+                                    </span>
+                                </div>
                             </td>
                              <td class="px-4 py-3 text-right space-x-2">
                                 <Link :href="`/admin/cars/${car.id}`">

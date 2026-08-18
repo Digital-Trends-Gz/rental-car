@@ -1184,6 +1184,13 @@ class ReservationsController extends Controller
             $query->whereIn('id', $allowedCarIds);
         }
 
+        $today = today()->toDateString();
+        $query->where(function ($q) use ($today) {
+            $q->whereNull('license_expiry_date')->orWhereDate('license_expiry_date', '>=', $today);
+        })->where(function ($q) use ($today) {
+            $q->whereNull('insurance_expiry_date')->orWhereDate('insurance_expiry_date', '>=', $today);
+        });
+
         $this->applyReservationBranchScopeToCars($query, $request->user());
 
         return $query->get(['id', 'branch_id', 'make', 'model', 'year', 'license_plate', 'price_per_day', 'price_per_week', 'price_per_month'])

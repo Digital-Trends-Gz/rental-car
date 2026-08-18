@@ -278,9 +278,16 @@ class HomePagesController extends Controller
 
         $exceededCarIds = $this->exceededCarIds();
 
+        $today = today()->toDateString();
         $query = Car::withoutTenantScope()->whereIn('status', $this->publicFleetStatuses())
             ->where('tenant_id', '>', 0)
             ->whereNotIn('id', $exceededCarIds)
+            ->where(function ($q) use ($today) {
+                $q->whereNull('license_expiry_date')->orWhereDate('license_expiry_date', '>=', $today);
+            })
+            ->where(function ($q) use ($today) {
+                $q->whereNull('insurance_expiry_date')->orWhereDate('insurance_expiry_date', '>=', $today);
+            })
             ->when($tenantId, fn ($query) => $this->applyTenantFleetScope($query, (int) $tenantId))
             ->with([
                 'tenant.siteSetting',

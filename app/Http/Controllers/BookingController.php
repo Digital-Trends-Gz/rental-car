@@ -71,7 +71,7 @@ class BookingController extends Controller
         ]);
 
         // Check if car is available for booking
-        if (!$this->isWebsiteBookableCarStatus($car->status)) {
+        if (!$this->isWebsiteBookableCarStatus($car->status) || $car->hasExpiredDocument()) {
             return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])->with('error', 'This car is not available for booking.');
         }
 
@@ -254,7 +254,7 @@ class BookingController extends Controller
         }
 
         // check car is available for booking
-        if (!$this->isWebsiteBookableCarStatus($car->status)) {
+        if (!$this->isWebsiteBookableCarStatus($car->status) || $car->hasExpiredDocument()) {
             return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])->with('error', 'This car is not available for booking.');
         }
 

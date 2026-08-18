@@ -1624,6 +1624,13 @@ class ContractsController extends Controller
             $query->whereIn('id', $allowedCarIds);
         }
 
+        $today = today()->toDateString();
+        $query->where(function ($q) use ($today) {
+            $q->whereNull('license_expiry_date')->orWhereDate('license_expiry_date', '>=', $today);
+        })->where(function ($q) use ($today) {
+            $q->whereNull('insurance_expiry_date')->orWhereDate('insurance_expiry_date', '>=', $today);
+        });
+
         if (!$this->branchAccess->canAccessAllBranches($request->user())) {
             $branchIds = $this->branchAccess->accessibleBranchIds($request->user());
             if ($branchIds === []) {

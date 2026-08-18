@@ -2,7 +2,9 @@
 
 namespace App\Services\Cars;
 
+use App\Enums\CarStatus;
 use App\Enums\UserRole;
+use App\Models\Car;
 use App\Models\CarDocument;
 use App\Models\User;
 use App\Notifications\CarDocumentExpiryNotification;
@@ -66,8 +68,21 @@ class CarDocumentReminderService
             ])->save();
         }
 
+        // Auto-update car status to UNAVAILABLE for cars with expired license/insurance
+        $expiredCars = Car::withoutTenantScope()
+            ->where('status', CarStatus::AVAILABLE->value)
+            ->where(function ($query) use ($today) {
+                $query->whereDate('license_expiry_date', '<', $today->toDateString())
+                    ->orWhereDate('insurance_expiry_date', '<', $today->toDateString());
+            })
+            ->get();
+
+        foreach ($expiredCars as $expiredCar) {
+            $expiredCar->update(['status' => CarStatus::UNAVAILABLE->value]);
+        }
+
         return [
-            'checked' => $checked,
+            'checked' => $checked + $expiredCars->count(),
             'notified' => $notified,
         ];
     }

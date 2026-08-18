@@ -329,4 +329,34 @@ class Car extends Model
     {
         return $this->hasMany(CarPhotoHistory::class);
     }
+
+    public function isLicenseExpired(): bool
+    {
+        return $this->license_expiry_date && $this->license_expiry_date->startOfDay()->isPast();
+    }
+
+    public function isInsuranceExpired(): bool
+    {
+        return $this->insurance_expiry_date && $this->insurance_expiry_date->startOfDay()->isPast();
+    }
+
+    public function hasExpiredDocument(): bool
+    {
+        return $this->isLicenseExpired() || $this->isInsuranceExpired();
+    }
+
+    public function documentExpiryReason(?string $locale = null): ?string
+    {
+        $isAr = ($locale ?? app()->getLocale()) === 'ar';
+        if ($this->isLicenseExpired() && $this->isInsuranceExpired()) {
+            return $isAr ? 'يجب تجديد الرخصة والتأمين' : 'License & Insurance Renewal Required';
+        }
+        if ($this->isLicenseExpired()) {
+            return $isAr ? 'يجب تجديد الرخصة' : 'License Renewal Required';
+        }
+        if ($this->isInsuranceExpired()) {
+            return $isAr ? 'يجب تجديد التأمين' : 'Insurance Renewal Required';
+        }
+        return null;
+    }
 }

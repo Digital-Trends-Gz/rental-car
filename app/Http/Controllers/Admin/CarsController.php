@@ -148,6 +148,8 @@ class CarsController extends Controller
                 'branch_id' => $car->branch_id,
                 'branch_name' => $car->branch?->name,
                 'is_allowed' => $isAllowed,
+                'has_expired_document' => $car->hasExpiredDocument(),
+                'document_expiry_reason' => $car->documentExpiryReason(),
             ];
         });
 

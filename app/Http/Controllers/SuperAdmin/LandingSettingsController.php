@@ -992,6 +992,14 @@ class LandingSettingsController extends Controller
             'dashboard.admin.cars.photo_history.cancel' => 'Cancel',
             'dashboard.admin.cars.photo_history.save' => 'Save',
 
+            // Car Expiry & Renewal
+            'dashboard.admin.cars.renewal_required' => 'Renewal Required',
+            'dashboard.admin.cars.license_renewal_required' => 'License Renewal Required',
+            'dashboard.admin.cars.insurance_renewal_required' => 'Insurance Renewal Required',
+            'dashboard.admin.cars.license_insurance_renewal_required' => 'License & Insurance Renewal Required',
+            'dashboard.admin.cars.form.license_expiry_date' => 'License Expiry Date',
+            'dashboard.admin.cars.form.insurance_expiry_date' => 'Insurance Expiry Date',
+
             // Car Show Values
             'dashboard.admin.cars.show.values.diesel' => 'Diesel',
             'dashboard.admin.cars.show.values.gasoline' => 'Gasoline',

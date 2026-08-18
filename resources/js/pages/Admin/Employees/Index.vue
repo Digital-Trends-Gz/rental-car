@@ -244,10 +244,13 @@ const destroyEmployee = () => {
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right space-x-2">
-                                <Link v-if="subdomain" :href="edit([subdomain, employee.id]).url">
-                                    <Button variant="outline" size="sm">{{ t('dashboard.admin.common.edit') }}</Button>
-                                </Link>
-                                <Button variant="destructive" size="sm" @click="openDeleteDialog(employee.id)">{{ t('dashboard.admin.common.delete') }}</Button>
+                                <template v-if="subdomain">
+                                    <Link v-if="!employee.plan_locked_at" :href="edit([subdomain, employee.id]).url">
+                                        <Button variant="outline" size="sm">{{ t('dashboard.admin.common.edit') }}</Button>
+                                    </Link>
+                                    <Button v-else variant="outline" size="sm" disabled>{{ t('dashboard.admin.common.edit') }}</Button>
+                                </template>
+                                <Button variant="destructive" size="sm" :disabled="!!employee.plan_locked_at" @click="openDeleteDialog(employee.id)">{{ t('dashboard.admin.common.delete') }}</Button>
                             </td>
                         </tr>
                         <tr v-if="props.employees.data.length === 0">
