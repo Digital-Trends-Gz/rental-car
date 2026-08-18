@@ -164,7 +164,14 @@ class ClientsController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', new LettersOnly()],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
+            ],
             'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'branch_id' => [

@@ -154,38 +154,22 @@ class SocialLoginController extends Controller
             return $this->redirectToTenantLogin($tenantSubdomain, 'auth.social_email_missing');
         }
 
-        // Check if an existing user exists in the database with this email
-        $existingUser = User::where('email', $email)->first();
+        // Find or create the client user within this specific tenant
+        $user = User::where('email', $email)
+            ->where('tenant_id', $tenant->id)
+            ->first();
 
-        if ($existingUser) {
-            // Check if user belongs to this tenant
-            if ((int) $existingUser->tenant_id === (int) $tenant->id) {
-                if (!$existingUser->is_active) {
-                    return $this->redirectToTenantLogin($tenantSubdomain, 'auth.tenant_account_inactive');
-                }
+        if ($user) {
+            if (!$user->is_active) {
+                return $this->redirectToTenantLogin($tenantSubdomain, 'auth.tenant_account_inactive');
+            }
 
-                // Update existing user with provider details if they logged in with password before
-                if (!$existingUser->provider_id) {
-                    $existingUser->update([
-                        'provider' => $provider,
-                        'provider_id' => $socialUser->getId(),
-                    ]);
-                }
-
-                $user = $existingUser;
-            } else {
-                // Email is already used by a user in another tenant or different account
-                Log::warning('Social login duplicate email across tenants/system.', [
+            // Update existing user with provider details if they logged in with password before
+            if (!$user->provider_id) {
+                $user->update([
                     'provider' => $provider,
-                    'tenant' => $tenantSubdomain,
-                    'email' => $email,
-                    'existing_tenant_id' => $existingUser->tenant_id,
+                    'provider_id' => $socialUser->getId(),
                 ]);
-
-                return $this->redirectToTenantLogin(
-                    $tenantSubdomain,
-                    'auth.social_email_already_exists'
-                );
             }
         } else {
             // Create the new client user within this tenant
