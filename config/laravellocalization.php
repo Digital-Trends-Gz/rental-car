@@ -28,7 +28,15 @@ return [
     'hideDefaultLocaleInURL' => true,
     'localesOrder' => array_keys($supportedLocales),
     'localesMapping' => [],
-    'utf8suffix' => env('LARAVELLOCALIZATION_UTF8SUFFIX', '.UTF-8'),
-    'urlsIgnored' => [],
+    'urlsIgnored' => [
+        'verify-email',
+        'verify-email/*',
+        '*/verify-email',
+        '*/verify-email/*',
+        'login/social-callback',
+        '*/login/social-callback',
+        'post-payment-login/*',
+        '*/post-payment-login/*',
+    ],
     'httpMethodsIgnored' => ['POST', 'PUT', 'PATCH', 'DELETE'],
 ];

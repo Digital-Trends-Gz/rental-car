@@ -126,6 +126,16 @@ class AppServiceProvider extends ServiceProvider
             config([
                 'laravellocalization.supportedLocales' => $supportedLocales,
                 'laravellocalization.localesOrder' => $localeCodes,
+                'laravellocalization.urlsIgnored' => config('laravellocalization.urlsIgnored', [
+                    'verify-email',
+                    'verify-email/*',
+                    '*/verify-email',
+                    '*/verify-email/*',
+                    'login/social-callback',
+                    '*/login/social-callback',
+                    'post-payment-login/*',
+                    '*/post-payment-login/*',
+                ]),
                 'app.available_locales' => $localeCodes,
                 'app.locale' => $defaultLocale,
             ]);
