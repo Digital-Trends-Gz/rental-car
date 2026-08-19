@@ -22,7 +22,9 @@ $localizedGroup = [
 Route::domain('{subdomain}.' . $baseDomain)->group(function () use ($localizedGroup) {
     Route::get('/locale/{locale}', [LocalizationController::class, 'switch'])->name('tenant.locale.switch');
     Route::get('/sitemap.xml', [HomePagesController::class, 'sitemap'])->name('tenant.seo.sitemap');
-    Route::get('/robots.txt', [HomePagesController::class, 'robots'])->name('tenant.seo.robots');
+    Route::get('/login/social-callback', [\App\Http\Controllers\Auth\SocialLoginController::class, 'tenantCallback'])
+        ->middleware('signed')
+        ->name('tenant.social-login.callback');
 
     Route::group($localizedGroup, function () {
         Route::middleware('auth')->group(function () {
@@ -51,10 +53,6 @@ Route::domain('{subdomain}.' . $baseDomain)->group(function () use ($localizedGr
             Route::get('/booking/{reservation}/payment/cancel', [BookingController::class, 'paymentCancel'])->name('tenant.booking.payment.cancel');
             Route::get('/booking/{reservation}', [BookingController::class, 'confirmation'])->name('tenant.booking.confirmation');
         });
-
-        Route::get('/login/social-callback', [\App\Http\Controllers\Auth\SocialLoginController::class, 'tenantCallback'])
-            ->middleware('signed')
-            ->name('tenant.social-login.callback');
 
         // Tenant-specific auth (prefixed to avoid collision with main domain auth)
         Route::as('tenant.')->group(function () {

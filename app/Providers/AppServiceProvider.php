@@ -42,7 +42,7 @@ class AppServiceProvider extends ServiceProvider
         Vite::useHotFile(storage_path('framework/vite.hot'));
         Vite::createAssetPathsUsing(static fn (string $path) => '/'.ltrim($path, '/'));
 
-        if ($this->app->environment('production')) {
+        if ($this->app->environment('production', 'staging') || str_starts_with((string) config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
 
