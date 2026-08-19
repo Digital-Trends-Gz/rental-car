@@ -58,6 +58,7 @@ class HandleInertiaRequests extends Middleware
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'locale' => app()->getLocale(),
             'direction' => LaravelLocalization::getCurrentLocaleDirection(),
+            'subdomain' => $request->route('subdomain'),
             'available_locales' => function () use ($request) {
                 $supported = LaravelLocalization::getSupportedLanguagesKeys();
                 $tenant = \App\Core\TenantContext::get();
