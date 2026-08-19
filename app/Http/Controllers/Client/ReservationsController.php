@@ -189,32 +189,47 @@ class ReservationsController extends Controller
             return null;
         }
 
-        if (str_starts_with($url, 'data:') || preg_match('/^https?:\/\//i', $url) === 1) {
+        if (str_starts_with($url, 'data:')) {
             return $url;
         }
 
         $path = null;
+        $pathPart = parse_url($url, PHP_URL_PATH);
+        $localUrl = $pathPart ? $pathPart : $url;
 
-        if (str_starts_with($url, '/storage/')) {
-            $path = public_path(ltrim($url, '/'));
-        } elseif (str_starts_with($url, 'storage/')) {
-            $path = public_path($url);
-        } elseif (str_starts_with($url, '/')) {
-            $path = public_path(ltrim($url, '/'));
+        if (str_starts_with($localUrl, '/storage/')) {
+            $relativeStoragePath = substr(ltrim($localUrl, '/'), strlen('storage/'));
+            $path = public_path(ltrim($localUrl, '/'));
+        } elseif (str_starts_with($localUrl, 'storage/')) {
+            $relativeStoragePath = substr($localUrl, strlen('storage/'));
+            $path = public_path($localUrl);
+        } elseif (str_starts_with($localUrl, '/')) {
+            $relativeStoragePath = null;
+            $path = public_path(ltrim($localUrl, '/'));
+        } else {
+            $relativeStoragePath = $localUrl;
+            $path = public_path('storage/'.ltrim($localUrl, '/'));
         }
 
-        if (!$path || !is_file($path)) {
-            return $url;
+        $paths = array_filter([
+            $path,
+            isset($relativeStoragePath) && $relativeStoragePath ? storage_path('app/public/'.ltrim($relativeStoragePath, '/')) : null,
+        ]);
+
+        foreach ($paths as $candidatePath) {
+            if (is_file($candidatePath)) {
+                $contents = file_get_contents($candidatePath);
+                if (!is_string($contents) || $contents === '') {
+                    return null;
+                }
+
+                $mime = mime_content_type($candidatePath) ?: 'application/octet-stream';
+
+                return 'data:'.$mime.';base64,'.base64_encode($contents);
+            }
         }
 
-        $contents = file_get_contents($path);
-        if (!is_string($contents) || $contents === '') {
-            return null;
-        }
-
-        $mime = mime_content_type($path) ?: 'application/octet-stream';
-
-        return 'data:'.$mime.';base64,'.base64_encode($contents);
+        return $url;
     }
 
     public function approveExtensionRequest(Request $request): RedirectResponse
