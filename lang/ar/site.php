@@ -5102,6 +5102,7 @@ return array (
         'head_title' => 'الحجز :number',
         'back' => 'رجوع',
         'print' => 'طباعة',
+        'download_contract' => 'تحميل العقد',
         'days' => ':count يوم',
         'no_payments' => 'لا توجد دفعات مسجلة بعد.',
         'sections' =>

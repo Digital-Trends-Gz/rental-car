@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { useTrans } from '@/composables/useTrans';
 import ClientLayout from '@/layouts/ClientLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { computed } from 'vue';
 import { index, print } from '@/routes/client/reservations';
+
+const page = usePage();
+const subdomain = computed(() => (page.props as any)?.subdomain || window.location.hostname.split('.')[0]);
 
 const props = defineProps<{
     reservation: any;
     statusMeta: Array<{ value: string; label: string; color: string }>;
     paymentStatusMeta: Array<{ value: string; label: string }>;
-    currency: { symbol: string; code: string };
+    currency: { symbol: string; name: string };
     hasContract?: boolean;
     contractId?: number;
 }>();
@@ -96,11 +99,6 @@ function fmtMoney(n?: number | string) {
     const v = Number(n ?? 0);
     return `${props.currency.symbol}${v.toFixed(2)}`;
 }
-
-function tr(key: string, fallback: string) {
-    const value = t(key);
-    return value === key ? fallback : value;
-}
 </script>
 
 <template>
@@ -110,7 +108,7 @@ function tr(key: string, fallback: string) {
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">{{ pageTitle }}</h1>
                 <div class="flex gap-2">
-                    <Link :href="index().url">
+                    <Link :href="index({ subdomain }).url">
                         <Button variant="outline">{{
                             t('client_pages.reservations.show.back')
                         }}</Button>
@@ -125,11 +123,11 @@ function tr(key: string, fallback: string) {
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            {{ tr('client_pages.reservations.show.download_contract', 'Download Contract') }}
+                            {{ t('client_pages.reservations.show.download_contract') }}
                         </Button>
                     </a>
                     <a
-                        :href="print(reservation.id).url"
+                        :href="print({ subdomain, id: reservation.id }).url"
                         target="_blank"
                         rel="noopener"
                     >
@@ -334,10 +332,7 @@ function tr(key: string, fallback: string) {
                         <div class="flex items-center justify-between">
                             <div class="text-sm">
                                 {{
-                                    tr(
-                                        'client_pages.reservations.show.fields.daily_rate',
-                                        'Daily Rate',
-                                    )
+                                    t('client_pages.reservations.show.fields.daily_rate')
                                 }}
                             </div>
                             <div class="font-medium">

@@ -94,6 +94,7 @@ class ReservationsController extends Controller
             'reservation' => $reservation,
             'statusMeta' => ReservationStatus::getMeta(),
             'paymentStatusMeta' => PaymentStatus::getMeta(),
+            'currency' => CurrencyCatalog::forTenant($reservation->tenant),
             'hasContract' => $reservation->contract !== null,
             'contractId' => $reservation->contract?->id,
         ]);
