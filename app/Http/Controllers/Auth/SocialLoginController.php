@@ -154,10 +154,12 @@ class SocialLoginController extends Controller
             return $this->redirectToTenantLogin($tenantSubdomain, 'auth.social_email_missing');
         }
 
-        // Find or create the client user within this specific tenant
-        $user = User::where('email', $email)
-            ->where('tenant_id', $tenant->id)
-            ->first();
+        $user = $this->findTenantUserForSocialLogin(
+            $tenant->id,
+            $email,
+            $provider,
+            (string) $socialUser->getId()
+        );
 
         if ($user) {
             if (!$user->is_active) {
@@ -193,10 +195,19 @@ class SocialLoginController extends Controller
                     'error' => $e->getMessage(),
                 ]);
 
-                return $this->redirectToTenantLogin(
-                    $tenantSubdomain,
-                    'auth.social_email_already_exists'
+                $user = $this->findTenantUserForSocialLogin(
+                    $tenant->id,
+                    $email,
+                    $provider,
+                    (string) $socialUser->getId()
                 );
+
+                if (!$user || !$user->is_active) {
+                    return $this->redirectToTenantLogin(
+                        $tenantSubdomain,
+                        'auth.social_email_already_exists'
+                    );
+                }
             }
         }
 
@@ -241,6 +252,35 @@ class SocialLoginController extends Controller
         $request->session()->regenerateToken();
 
         return $this->redirectToTenantLogin($tenantSubdomain, 'auth.unauthorized_access');
+    }
+
+    /**
+     * Resolve a tenant user during OAuth callback on the main domain.
+     *
+     * The callback has no tenant context, so BelongsToTenant's global scope would
+     * otherwise make every lookup return nothing (whereRaw('1 = 0')).
+     */
+    private function findTenantUserForSocialLogin(
+        int $tenantId,
+        string $email,
+        string $provider,
+        string $providerId,
+    ): ?User {
+        $query = User::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenantId);
+
+        if ($providerId !== '') {
+            $user = (clone $query)
+                ->where('provider', $provider)
+                ->where('provider_id', $providerId)
+                ->first();
+
+            if ($user) {
+                return $user;
+            }
+        }
+
+        return $query->where('email', $email)->first();
     }
 
     private function providerIsEnabled(string $provider): bool
