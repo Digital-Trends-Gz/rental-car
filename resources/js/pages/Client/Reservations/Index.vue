@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { show } from '@/routes/client/reservations';
 import { computed } from 'vue';
+import { Download } from 'lucide-vue-next';
 
 const props = defineProps<{
     reservations: {
@@ -23,6 +24,11 @@ const props = defineProps<{
             total_days: number;
             total_amount: number | string;
             status: string;
+            contract?: {
+                id: number;
+                contract_number: string;
+            } | null;
+            payments?: Array<any>;
         }>;
         links: Array<{ url: string | null; label: string; active: boolean }>;
     };
@@ -43,6 +49,7 @@ const props = defineProps<{
         reject_url: string;
     }>;
     currency: { symbol: string; code: string };
+    paymentStatusMeta?: Record<string, { label: string; color: string }>;
 }>();
 
 const { t } = useTrans();
@@ -73,8 +80,14 @@ const forceExtensionNotification = computed(() => {
 });
 
 const navigateToReservation = (id: number) => {
-    router.visit(show(id).url);
+    const subdomain = (page.props as any)?.subdomain || window.location.hostname.split('.')[0];
+    router.visit(show({ subdomain, id }).url);
 };
+
+function downloadContract(reservationId: number, event: Event) {
+    event.stopPropagation();
+    window.location.href = `/client/reservations/${reservationId}/contract/download`;
+}
 
 function approveExtensionRequest(url: string) {
     router.post(url, {}, {
@@ -244,6 +257,11 @@ function rejectExtensionRequest(url: string) {
                                     )
                                 }}
                             </th>
+                            <th
+                                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+                            >
+                                Actions
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
@@ -299,6 +317,19 @@ function rejectExtensionRequest(url: string) {
                             </td>
                             <td class="px-4 py-3">
                                 {{ reservationStatusLabels[res.status] || res.status }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <Button
+                                    v-if="res.contract"
+                                    @click="downloadContract(res.id, $event)"
+                                    size="sm"
+                                    variant="outline"
+                                    class="gap-2"
+                                >
+                                    <Download class="h-4 w-4" />
+                                    Contract
+                                </Button>
+                                <span v-else class="text-xs text-gray-400">-</span>
                             </td>
                         </tr>
                         <tr v-if="props.reservations.data.length === 0">

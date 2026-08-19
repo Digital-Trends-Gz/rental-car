@@ -13,6 +13,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'client', 'tenant.subscr
         Route::get('/reservations', [ReservationsController::class, 'index'])->name('reservations.index');
         Route::get('/reservations/{id}', [ReservationsController::class, 'show'])->name('reservations.show');
         Route::get('/reservations/{id}/print', [ReservationsController::class, 'print'])->name('reservations.print');
+        Route::get('/reservations/{id}/contract/download', [ReservationsController::class, 'downloadContract'])
+            ->middleware('tenant.feature:pdf_export')
+            ->name('reservations.contract.download');
         Route::middleware('tenant.feature:extension_request')->group(function () {
             Route::post('/reservations/{reservation}/extension-requests/{extensionRequest}/approve', [ReservationsController::class, 'approveExtensionRequest'])->name('reservations.extension-requests.approve');
             Route::post('/reservations/{reservation}/extension-requests/{extensionRequest}/reject', [ReservationsController::class, 'rejectExtensionRequest'])->name('reservations.extension-requests.reject');
