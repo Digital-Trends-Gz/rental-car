@@ -214,7 +214,7 @@ class SocialLoginController extends Controller
         // Create a signed URL for logging in securely on the tenant's subdomain
         $url = URL::temporarySignedRoute(
             'tenant.social-login.callback',
-            now()->addMinutes(5),
+            now()->addMinutes(15),
             ['user' => $user->id, 'subdomain' => $tenantSubdomain]
         );
 
