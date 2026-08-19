@@ -205,9 +205,9 @@ const forgotPasswordUrl = computed(() => {
                             </Label>
                         </div>
 
-                        <div v-if="loginCaptchaEnabled">
+                        <div v-if="loginCaptchaEnabled" class="flex flex-col items-center justify-center w-full">
                             <TurnstileCaptcha :site-key="captcha.site_key" :reset-key="captchaResetKey" />
-                            <InputError :message="errors.captcha" class="mt-1" />
+                            <InputError :message="errors.captcha" class="mt-1 text-center" />
                         </div>
 
                         <!-- Submit Button -->

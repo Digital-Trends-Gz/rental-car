@@ -335,9 +335,9 @@ watch(
                             <InputError :message="errors.password_confirmation" />
                         </div>
 
-                        <div v-if="registerCaptchaEnabled">
+                        <div v-if="registerCaptchaEnabled" class="flex flex-col items-center justify-center w-full">
                             <TurnstileCaptcha :site-key="captcha.site_key" :reset-key="captchaResetKey" />
-                            <InputError :message="errors.captcha" />
+                            <InputError :message="errors.captcha" class="text-center" />
                         </div>
 
                         <!-- Submit -->

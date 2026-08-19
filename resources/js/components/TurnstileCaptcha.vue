@@ -102,8 +102,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="space-y-2">
-        <div ref="container" class="min-h-[65px]"></div>
+    <div class="flex flex-col items-center justify-center w-full space-y-2">
+        <div ref="container" class="flex justify-center items-center w-full min-h-[65px]"></div>
         <input type="hidden" :name="inputName" :value="token" />
     </div>
 </template>
