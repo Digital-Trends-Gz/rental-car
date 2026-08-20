@@ -58,12 +58,19 @@ const props = defineProps<{
     paymentStatusMeta?: Record<string, { label: string; color: string }>;
 }>();
 
-const { t, locale } = useTrans();
+const { t, direction } = useTrans();
 const page = usePage<any>();
 
 function formatDate(date: string): string {
-    return new Date(date).toLocaleDateString(locale.value);
+    return date.split('T')[0] || date;
 }
+
+const tableAlignClass = computed(() => direction.value === 'rtl' ? 'text-right' : 'text-left');
+const tableHeaderClass = computed(() => [
+    'px-4 py-3 text-xs font-medium tracking-wider text-gray-500 uppercase',
+    tableAlignClass.value,
+]);
+const tableCellClass = computed(() => ['px-4 py-3', tableAlignClass.value]);
 
 const reservationStatusLabels: Record<string, string> = {
     pending: t('client_pages.reservations.statuses.pending'),
@@ -270,59 +277,45 @@ function rejectExtensionRequest(url: string) {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-                            >
+                            <th :class="tableHeaderClass">
                                 #
                             </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-                            >
+                            <th :class="tableHeaderClass">
                                 {{
                                     t(
                                         'client_pages.reservations.index.table.car',
                                     )
                                 }}
                             </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-                            >
+                            <th :class="tableHeaderClass">
                                 {{
                                     t(
                                         'client_pages.reservations.index.table.payment_status',
                                     )
                                 }}
                             </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-                            >
+                            <th :class="tableHeaderClass">
                                 {{
                                     t(
                                         'client_pages.reservations.index.table.dates',
                                     )
                                 }}
                             </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-                            >
+                            <th :class="tableHeaderClass">
                                 {{
                                     t(
                                         'client_pages.reservations.index.table.total',
                                     )
                                 }}
                             </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-                            >
+                            <th :class="tableHeaderClass">
                                 {{
                                     t(
                                         'client_pages.reservations.index.table.status',
                                     )
                                 }}
                             </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-                            >
+                            <th :class="tableHeaderClass">
                                 {{
                                     t(
                                         'client_pages.reservations.index.table.actions',
@@ -338,12 +331,12 @@ function rejectExtensionRequest(url: string) {
                             class="cursor-pointer transition-colors hover:bg-gray-50"
                             @click="navigateToReservation(res.id)"
                         >
-                            <td class="px-4 py-3">
+                            <td :class="tableCellClass">
                                 <div class="font-medium">
                                     {{ res.reservation_number }}
                                 </div>
                             </td>
-                            <td class="px-4 py-3">
+                            <td :class="tableCellClass">
                                 <div class="font-medium">
                                     {{
                                         res.car
@@ -355,7 +348,7 @@ function rejectExtensionRequest(url: string) {
                                     {{ res.car?.license_plate }}
                                 </div>
                             </td>
-                            <td class="px-4 py-3">
+                            <td :class="tableCellClass">
                                 <span
                                     class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
                                     :class="paymentStatusStyles[getReservationPaymentStatus(res)]"
@@ -363,11 +356,13 @@ function rejectExtensionRequest(url: string) {
                                     {{ paymentStatusLabels[getReservationPaymentStatus(res)] }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="font-medium" dir="ltr">
+                            <td :class="tableCellClass">
+                                <div class="font-medium">
+                                    <bdi dir="ltr">
                                     {{ formatDate(res.start_date) }}
                                     -
                                     {{ formatDate(res.end_date) }}
+                                    </bdi>
                                 </div>
                                 <div class="text-xs text-muted-foreground">
                                     {{
@@ -378,14 +373,14 @@ function rejectExtensionRequest(url: string) {
                                     }}
                                 </div>
                             </td>
-                            <td class="px-4 py-3">
+                            <td :class="tableCellClass">
                                 {{ props.currency.symbol }}
                                 {{ Number(res.total_amount).toFixed(2) }}
                             </td>
-                            <td class="px-4 py-3">
+                            <td :class="tableCellClass">
                                 {{ reservationStatusLabels[res.status] || res.status }}
                             </td>
-                            <td class="px-4 py-3">
+                            <td :class="tableCellClass">
                                 <Button
                                     v-if="res.contract"
                                     @click="downloadContract(res.id, $event)"
