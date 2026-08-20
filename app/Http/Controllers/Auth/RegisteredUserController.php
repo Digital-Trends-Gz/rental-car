@@ -74,6 +74,7 @@ class RegisteredUserController extends Controller
                 'phone_country_code' => $registration['phone_country_code'] ?? null,
                 'phone_national' => $registration['phone_national'] ?? null,
                 'phone' => $registration['phone'] ?? null,
+                'whatsapp' => $registration['whatsapp'] ?? null,
                 'company_owners' => $companyOwners,
                 'commercial_registration_number' => $firstOwner['commercial_registration_number'] ?? data_get($registration, 'company_identifiers.commercial_registration_number'),
                 'tax_number' => $firstOwner['tax_number'] ?? data_get($registration, 'company_identifiers.tax_number'),
@@ -96,7 +97,9 @@ class RegisteredUserController extends Controller
             'email' => $request->input('email_company', $request->input('email')),
             'custom_domain' => $this->normalizeDomain($request->input('custom_domain')),
             'country_iso2' => strtoupper(trim((string) $request->input('country_iso2', ''))),
+            'phone' => trim((string) $request->input('phone', '')),
             'phone_national' => trim((string) $request->input('phone_national', $request->input('phone', ''))),
+            'whatsapp' => trim((string) $request->input('whatsapp', '')),
         ]);
 
         $tenantId = TenantContext::id();
@@ -115,6 +118,8 @@ class RegisteredUserController extends Controller
                     Rule::unique('users', 'email')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
                 ],
                 'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+                'phone' => ['required', 'string', 'max:30'],
+                'whatsapp' => ['nullable', 'string', 'max:30'],
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
             ], $this->registrationValidationMessages());
 
@@ -122,6 +127,8 @@ class RegisteredUserController extends Controller
                 'name' => $validated['name'],
                 'civil_number' => trim((string) $validated['civil_number']),
                 'email' => $validated['email'],
+                'phone' => trim((string) $validated['phone']),
+                'whatsapp' => trim((string) ($validated['whatsapp'] ?? '')) ?: null,
                 'password' => Hash::make($validated['password']),
                 'role' => UserRole::CLIENT,
                 'tenant_id' => $tenantId,

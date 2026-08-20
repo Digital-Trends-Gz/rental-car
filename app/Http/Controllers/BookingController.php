@@ -27,6 +27,7 @@ use App\Support\TenantTranslations;
 use App\Support\TenantStripeConnect;
 use App\Services\Plans\PlanUsageLimits;
 use App\Services\Plans\PlanUsageNotifier;
+use App\Services\Bookings\AwaitingPaymentReservationReleaser;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -71,9 +72,15 @@ class BookingController extends Controller
         ]);
 
         // Check if car is available for booking
-        if (!$this->isWebsiteBookableCarStatus($car->status) || $car->hasExpiredDocument()) {
-            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])->with('error', 'This car is not available for booking.');
+        if ($car->hasExpiredDocument()) {
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])->with('error', trans('site.booking.car_documents_expired'));
         }
+
+        if (!$this->isWebsiteBookableCarStatus($car->status)) {
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])->with('error', trans('site.booking.car_not_available_for_booking'));
+        }
+
+        $this->releaseStartedAwaitingPaymentHoldsForCurrentUser($car);
 
         $now = now();
         $hasCoupons = Coupon::query()
@@ -110,11 +117,7 @@ class BookingController extends Controller
 
         $blockedRanges = Reservation::query()
             ->where('car_id', $car->id)
-            ->whereIn('status', [
-                ReservationStatus::PENDING->value,
-                ReservationStatus::CONFIRMED->value,
-                ReservationStatus::ACTIVE->value,
-            ])
+            ->whereIn('status', ReservationStatus::dateBlockingValues())
             ->whereDate('start_date', '<=', $windowEnd->toDateString())
             ->whereDate('end_date', '>=', $windowStart->toDateString())
             ->orderBy('start_date')
@@ -254,8 +257,12 @@ class BookingController extends Controller
         }
 
         // check car is available for booking
-        if (!$this->isWebsiteBookableCarStatus($car->status) || $car->hasExpiredDocument()) {
-            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])->with('error', 'This car is not available for booking.');
+        if ($car->hasExpiredDocument()) {
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])->with('error', trans('site.booking.car_documents_expired'));
+        }
+
+        if (!$this->isWebsiteBookableCarStatus($car->status)) {
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])->with('error', trans('site.booking.car_not_available_for_booking'));
         }
 
         // check if user is authenticated
@@ -288,11 +295,7 @@ class BookingController extends Controller
         // Block booking if the car already has an overlapping reservation in this period.
         $hasDateConflict = Reservation::query()
             ->where('car_id', $car->id)
-            ->whereIn('status', [
-                ReservationStatus::PENDING->value,
-                ReservationStatus::CONFIRMED->value,
-                ReservationStatus::ACTIVE->value,
-            ])
+            ->whereIn('status', ReservationStatus::dateBlockingValues())
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->whereDate('start_date', '<=', $endDate->toDateString())
                     ->whereDate('end_date', '>=', $startDate->toDateString());
@@ -303,8 +306,8 @@ class BookingController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'start_date' => 'This car is not available for the selected dates.',
-                    'end_date' => 'Please choose another date range.',
+                    'start_date' => trans('site.booking.car_not_available_selected_dates'),
+                    'end_date' => trans('site.booking.choose_another_date_range'),
                 ]);
         }
 
@@ -454,7 +457,9 @@ class BookingController extends Controller
                 'auto_discount_id' => $autoDiscount?->id,
                 'auto_discount_amount' => $autoDiscountAmount,
                 'total_amount' => $total,
-                'status' => ReservationStatus::PENDING->value,
+                'status' => $providerCode
+                    ? ReservationStatus::AWAITING_PAYMENT->value
+                    : ReservationStatus::PENDING->value,
             ]);
 
             if ($coupon) {
@@ -517,7 +522,9 @@ class BookingController extends Controller
             }
         });
 
-        $this->planUsageNotifier->checkReservations(TenantContext::get());
+        if (!$providerCode) {
+            $this->planUsageNotifier->checkReservations(TenantContext::get());
+        }
 
         if ($providerCode) {
             return redirect()->route('tenant.booking.checkout', [
@@ -589,6 +596,17 @@ class BookingController extends Controller
             ]);
         }
 
+        if (
+            $reservation->status === ReservationStatus::AWAITING_PAYMENT
+            && $payment->status === PaymentStatus::PENDING
+            && $this->paymentHasStartedGatewayCheckout($payment)
+        ) {
+            $this->releaseAwaitingPaymentReservation($reservation, $payment, 'browser_back_from_payment');
+
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])
+                ->with('warning', 'Payment was not completed, so the temporary booking was cancelled.');
+        }
+
         $availableProviders = $this->availableBookingProviders($tenant, $stripeConnect);
         $requestedProvider = strtolower(trim((string) $request->query('provider', '')));
 
@@ -613,7 +631,7 @@ class BookingController extends Controller
                         'subdomain' => $tenantSlug,
                         'reservation' => $reservation->id,
                     ]),
-                    'confirmation' => route('tenant.booking.confirmation', [
+                    'cancel' => route('tenant.booking.payment.cancel', [
                         'subdomain' => $tenantSlug,
                         'reservation' => $reservation->id,
                     ]),
@@ -626,10 +644,10 @@ class BookingController extends Controller
             ? $requestedProvider
             : $this->resolveBookingProviderForPayment($payment, $tenant, $stripeConnect);
         if (!$providerCode) {
-            return redirect()->route('tenant.booking.confirmation', [
-                'subdomain' => $tenantSlug,
-                'reservation' => $reservation,
-            ])->with('error', 'Tenant payment gateway is not configured for this booking.');
+            $this->releaseAwaitingPaymentReservation($reservation, $payment, 'payment_gateway_not_configured');
+
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])
+                ->with('error', 'Tenant payment gateway is not configured for this booking.');
         }
 
         $payment->forceFill([
@@ -644,10 +662,10 @@ class BookingController extends Controller
         }
 
         if (!$stripeConnect->canAcceptCheckout($tenant)) {
-            return redirect()->route('tenant.booking.confirmation', [
-                'subdomain' => $tenantSlug,
-                'reservation' => $reservation,
-            ])->with('error', 'Tenant Stripe Connect is not ready yet.');
+            $this->releaseAwaitingPaymentReservation($reservation, $payment, 'stripe_not_ready');
+
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])
+                ->with('error', 'Tenant Stripe Connect is not ready yet.');
         }
 
         try {
@@ -720,10 +738,10 @@ class BookingController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect()->route('tenant.booking.confirmation', [
-                'subdomain' => $tenantSlug,
-                'reservation' => $reservation,
-            ])->with('error', 'Could not create Stripe checkout session for this booking.');
+            $this->releaseAwaitingPaymentReservation($reservation, $payment, 'stripe_checkout_creation_failed');
+
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])
+                ->with('error', 'Could not create Stripe checkout session for this booking.');
         }
     }
 
@@ -807,11 +825,13 @@ class BookingController extends Controller
                     'processed_at' => now(),
                 ])->save();
 
-                if ($reservation->status === ReservationStatus::PENDING) {
+                if (in_array($reservation->status, [ReservationStatus::AWAITING_PAYMENT, ReservationStatus::PENDING], true)) {
                     $reservation->update([
                         'status' => ReservationStatus::CONFIRMED,
                     ]);
                 }
+
+                $this->planUsageNotifier->checkReservations($tenant);
 
                 return redirect()->route('tenant.booking.confirmation', [
                     'subdomain' => $tenantSlug,
@@ -824,6 +844,13 @@ class BookingController extends Controller
                 'gateway_response' => $paymentStatus !== '' ? $paymentStatus : 'pending',
                 'gateway_data' => $gatewayData,
             ])->save();
+
+            if ($reservation->status === ReservationStatus::AWAITING_PAYMENT) {
+                return redirect()->route('tenant.booking.checkout', [
+                    'subdomain' => $tenantSlug,
+                    'reservation' => $reservation,
+                ])->with('warning', 'Payment is not completed yet.');
+            }
 
             return redirect()->route('tenant.booking.confirmation', [
                 'subdomain' => $tenantSlug,
@@ -873,14 +900,20 @@ class BookingController extends Controller
                     'cancel_query' => $request->query(),
                 ]),
             ])->save();
+
+            $this->releaseAwaitingPaymentReservation($reservation, $payment, $providerCode.'_cancelled', [
+                'provider_code' => $providerCode,
+                'cancel_query' => $request->query(),
+            ]);
         }
 
         $providerLabel = strtolower((string) $request->query('provider', '')) === 'myfatoorah' ? 'MyFatoorah' : 'Stripe';
 
-        return redirect()->route('tenant.booking.confirmation', [
+        return redirect()->route('tenant.fleet.show', [
             'subdomain' => $tenantSlug,
-            'reservation' => $reservation,
-        ])->with('warning', $providerLabel.' checkout was cancelled.');
+            'car' => $reservation->car_id,
+        ])
+            ->with('warning', $providerLabel.' checkout was cancelled.');
     }
 
     public function confirmation(Reservation $reservation)
@@ -893,10 +926,18 @@ class BookingController extends Controller
             return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug]);
         }
 
+        if ($reservation->status === ReservationStatus::AWAITING_PAYMENT) {
+            return redirect()->route('tenant.booking.checkout', [
+                'subdomain' => $tenantSlug,
+                'reservation' => $reservation,
+            ])->with('warning', 'Please complete payment before confirming this booking.');
+        }
+
         $reservation->load(['car', 'user']);
 
         return inertia('BookingConfirmation', [
             'reservation' => $reservation,
+            'currency' => CurrencyCatalog::forTenant($tenant, $this->bookingCurrency(), app()->getLocale()),
             'seo' => TenantSeoResolver::forReservation($tenant, $reservation, 'booking_confirmation'),
         ]);
     }
@@ -904,6 +945,42 @@ class BookingController extends Controller
     private function tenantSlug(): ?string
     {
         return TenantContext::get()?->slug;
+    }
+
+    private function releaseAwaitingPaymentReservation(
+        Reservation $reservation,
+        ?Payment $payment,
+        string $reason,
+        array $gatewayData = []
+    ): bool {
+        return app(AwaitingPaymentReservationReleaser::class)
+            ->release($reservation, $payment, $reason, $gatewayData);
+    }
+
+    private function releaseStartedAwaitingPaymentHoldsForCurrentUser(Car $car): void
+    {
+        if (!Auth::check()) {
+            return;
+        }
+
+        $releaser = app(AwaitingPaymentReservationReleaser::class);
+
+        Reservation::query()
+            ->where('car_id', $car->id)
+            ->where('user_id', Auth::id())
+            ->where('status', ReservationStatus::AWAITING_PAYMENT->value)
+            ->with(['payments' => fn ($query) => $query->latest('id')])
+            ->get()
+            ->each(function (Reservation $reservation) use ($releaser): void {
+                $payment = $reservation->payments
+                    ->first(fn (Payment $payment) => $payment->status === PaymentStatus::PENDING);
+
+                if (!$payment || !$this->paymentHasStartedGatewayCheckout($payment)) {
+                    return;
+                }
+
+                $releaser->release($reservation, $payment, 'returned_to_booking_page');
+            });
     }
 
     private function tenantHasConnectCheckoutReady(TenantStripeConnect $stripeConnect): bool
@@ -1027,6 +1104,18 @@ class BookingController extends Controller
         };
     }
 
+    private function paymentHasStartedGatewayCheckout(Payment $payment): bool
+    {
+        $gatewayData = (array) $payment->gateway_data;
+
+        return filled($gatewayData['checkout_session_id'] ?? null)
+            || filled($gatewayData['invoice_id'] ?? null)
+            || in_array((string) $payment->gateway_response, [
+                'stripe_checkout_created',
+                'myfatoorah_checkout_created',
+            ], true);
+    }
+
     private function resolveTenantMyFatoorahProvider(Tenant $tenant): ?PaymentProvider
     {
         if (!$this->tenantMyFatoorahEnabledForBookings($tenant)) {
@@ -1090,10 +1179,10 @@ class BookingController extends Controller
     {
         $provider = $this->resolveTenantMyFatoorahProvider($tenant);
         if (!$provider) {
-            return redirect()->route('tenant.booking.confirmation', [
-                'subdomain' => $tenantSlug,
-                'reservation' => $reservation,
-            ])->with('error', 'Tenant MyFatoorah settings are incomplete.');
+            $this->releaseAwaitingPaymentReservation($reservation, $payment, 'myfatoorah_not_ready');
+
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])
+                ->with('error', 'Tenant MyFatoorah settings are incomplete.');
         }
 
         $callbackUrl = trim((string) data_get($provider->config, 'callback_url', ''));
@@ -1151,10 +1240,10 @@ class BookingController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect()->route('tenant.booking.confirmation', [
-                'subdomain' => $tenantSlug,
-                'reservation' => $reservation,
-            ])->with('error', config('app.debug')
+            $this->releaseAwaitingPaymentReservation($reservation, $payment, 'myfatoorah_checkout_creation_failed');
+
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])
+                ->with('error', config('app.debug')
                 ? 'MyFatoorah error: '.$e->getMessage()
                 : 'Could not create MyFatoorah checkout session for this booking.');
         }
@@ -1214,13 +1303,15 @@ class BookingController extends Controller
                 'processed_at' => now(),
             ])->save();
 
-            if ($reservation->status === ReservationStatus::PENDING) {
-                $reservation->update([
-                    'status' => ReservationStatus::CONFIRMED,
-                ]);
-            }
+                if (in_array($reservation->status, [ReservationStatus::AWAITING_PAYMENT, ReservationStatus::PENDING], true)) {
+                    $reservation->update([
+                        'status' => ReservationStatus::CONFIRMED,
+                    ]);
+                }
 
-            return redirect()->route('tenant.booking.confirmation', [
+                $this->planUsageNotifier->checkReservations($tenant);
+
+                return redirect()->route('tenant.booking.confirmation', [
                 'subdomain' => $tenantSlug,
                 'reservation' => $reservation,
             ])->with('success', 'Payment completed successfully.');
@@ -1233,6 +1324,23 @@ class BookingController extends Controller
             'gateway_response' => (string) (($verification['invoice_status'] ?? '') ?: 'pending'),
             'gateway_data' => $gatewayData,
         ])->save();
+
+        if ($failed && $reservation->status === ReservationStatus::AWAITING_PAYMENT) {
+            $this->releaseAwaitingPaymentReservation($reservation, $payment, 'myfatoorah_payment_failed', [
+                'provider_code' => 'myfatoorah',
+                'verify_raw' => $verification['raw'] ?? [],
+            ]);
+
+            return redirect()->route('tenant.fleet', ['subdomain' => $tenantSlug])
+                ->with('error', (string) (($verification['failure_reason'] ?? null) ?: 'Payment failed.'));
+        }
+
+        if ($reservation->status === ReservationStatus::AWAITING_PAYMENT) {
+            return redirect()->route('tenant.booking.checkout', [
+                'subdomain' => $tenantSlug,
+                'reservation' => $reservation,
+            ])->with('warning', (string) (($verification['failure_reason'] ?? null) ?: 'Payment is not completed yet.'));
+        }
 
         return redirect()->route('tenant.booking.confirmation', [
             'subdomain' => $tenantSlug,

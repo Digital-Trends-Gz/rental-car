@@ -210,9 +210,10 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
 
         // Clients
         Route::resource('clients', ClientsController::class)
-            ->only(['index', 'show', 'create', 'store'])
+            ->only(['index', 'show', 'create', 'store', 'edit', 'update'])
             ->middlewareFor(['index', 'show'], 'permission:tenant-clients.view')
-            ->middlewareFor(['create', 'store'], 'permission:tenant-clients.create');
+            ->middlewareFor(['create', 'store'], 'permission:tenant-clients.create')
+            ->middlewareFor(['edit', 'update'], 'permission:tenant-clients.update');
         Route::get('clients/{client}/documents', [ClientsController::class, 'documents'])
             ->middleware('permission:tenant-clients.update')
             ->name('clients.documents');

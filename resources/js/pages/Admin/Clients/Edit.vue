@@ -6,11 +6,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useTrans } from '@/composables/useTrans';
-import { index, store } from '@/routes/admin/clients';
+import { index, show, update } from '@/routes/admin/clients';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps<{
+    client: {
+        id: number;
+        name: string;
+        email: string;
+        civil_number?: string | null;
+        phone?: string | null;
+        whatsapp?: string | null;
+        branch_id?: number | null;
+        is_active: boolean;
+    };
     branches: Array<{ id: number; name: string }>;
     canAccessAllBranches: boolean;
 }>();
@@ -18,15 +28,15 @@ const props = defineProps<{
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
 const { t } = useTrans();
-const tr = (key: string) => t(`dashboard.admin.clients.create.${key}`);
+const tr = (key: string) => t(`dashboard.admin.clients.edit.${key}`);
 
 const form = useForm({
-    name: '',
-    email: '',
-    civil_number: '',
-    phone: '',
-    whatsapp: '',
-    branch_id: props.branches[0]?.id ?? '',
+    name: props.client.name ?? '',
+    email: props.client.email ?? '',
+    civil_number: props.client.civil_number ?? '',
+    phone: props.client.phone ?? '',
+    whatsapp: props.client.whatsapp ?? '',
+    branch_id: props.client.branch_id ?? '',
     password: '',
     password_confirmation: '',
 });
@@ -36,9 +46,9 @@ function submit() {
         return;
     }
 
-    form.post(store(subdomain.value).url, {
+    form.put(update([subdomain.value, props.client.id]).url, {
         preserveScroll: true,
-        onSuccess: () => form.reset('name', 'email', 'civil_number', 'phone', 'whatsapp', 'password', 'password_confirmation'),
+        onSuccess: () => form.reset('password', 'password_confirmation'),
     });
 }
 </script>
@@ -49,9 +59,14 @@ function submit() {
         <main class="flex-1 space-y-6 p-8">
             <div class="flex items-center justify-between gap-4">
                 <h1 class="text-2xl font-semibold">{{ tr('title') }}</h1>
-                <Link v-if="subdomain" :href="index(subdomain).url">
-                    <Button variant="outline">{{ tr('back') }}</Button>
-                </Link>
+                <div class="flex items-center gap-2">
+                    <Link v-if="subdomain" :href="show([subdomain, props.client.id]).url">
+                        <Button variant="outline">{{ tr('back_to_client') }}</Button>
+                    </Link>
+                    <Link v-if="subdomain" :href="index(subdomain).url">
+                        <Button variant="outline">{{ tr('back') }}</Button>
+                    </Link>
+                </div>
             </div>
 
             <form class="max-w-2xl" @submit.prevent="submit">
@@ -114,13 +129,14 @@ function submit() {
 
                         <div class="space-y-2">
                             <Label for="password">{{ tr('password') }}</Label>
-                            <Input id="password" v-model="form.password" type="password" required autocomplete="new-password" />
+                            <Input id="password" v-model="form.password" type="password" autocomplete="new-password" />
+                            <p class="text-xs text-muted-foreground">{{ tr('password_help') }}</p>
                             <InputError :message="form.errors.password" />
                         </div>
 
                         <div class="space-y-2">
                             <Label for="password_confirmation">{{ tr('confirm_password') }}</Label>
-                            <Input id="password_confirmation" v-model="form.password_confirmation" type="password" required autocomplete="new-password" />
+                            <Input id="password_confirmation" v-model="form.password_confirmation" type="password" autocomplete="new-password" />
                             <InputError :message="form.errors.password_confirmation" />
                         </div>
                     </CardContent>
@@ -128,9 +144,9 @@ function submit() {
 
                 <div class="mt-6 flex gap-3">
                     <Button type="submit" :disabled="form.processing">
-                        {{ form.processing ? tr('creating') : tr('create_client') }}
+                        {{ form.processing ? tr('saving') : tr('save_changes') }}
                     </Button>
-                    <Link v-if="subdomain" :href="index(subdomain).url">
+                    <Link v-if="subdomain" :href="show([subdomain, props.client.id]).url">
                         <Button type="button" variant="outline">{{ tr('cancel') }}</Button>
                     </Link>
                 </div>

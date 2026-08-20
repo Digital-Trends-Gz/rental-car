@@ -312,10 +312,7 @@ class Car extends Model
     public function isAvailable(string $startDate, string $endDate, ?int $excludeReservationId = null): bool
     {
         $query = $this->reservations()
-            ->whereIn('status', [
-                ReservationStatus::CONFIRMED->value,
-                ReservationStatus::ACTIVE->value,
-            ])
+            ->whereIn('status', ReservationStatus::dateBlockingValues())
             ->betweenDates($startDate, $endDate);
 
         if ($excludeReservationId) {
@@ -332,12 +329,12 @@ class Car extends Model
 
     public function isLicenseExpired(): bool
     {
-        return $this->license_expiry_date && $this->license_expiry_date->startOfDay()->isPast();
+        return $this->license_expiry_date && $this->license_expiry_date->copy()->endOfDay()->isPast();
     }
 
     public function isInsuranceExpired(): bool
     {
-        return $this->insurance_expiry_date && $this->insurance_expiry_date->startOfDay()->isPast();
+        return $this->insurance_expiry_date && $this->insurance_expiry_date->copy()->endOfDay()->isPast();
     }
 
     public function hasExpiredDocument(): bool

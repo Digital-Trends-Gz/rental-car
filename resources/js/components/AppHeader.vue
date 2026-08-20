@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bell, FileCheck, LifeBuoy, Menu } from 'lucide-vue-next';
+import { Bell, Check, ChevronDown, FileCheck, Languages, LifeBuoy, Menu } from 'lucide-vue-next';
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -44,7 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const page = usePage();
-const { t } = useTrans();
+const { t, locale } = useTrans();
 const auth = computed(() => page.props.auth);
 const notifications = ref<Array<{
     id: string;
@@ -86,6 +87,42 @@ const localePrefix = computed(() => {
     const match = currentPath.match(localeRegex);
     return match ? `/${match[1]}` : '';
 });
+
+const availableLocales = computed<string[]>(() =>
+    Array.isArray(page.props?.available_locales) && page.props.available_locales.length
+        ? page.props.available_locales
+        : ['en'],
+);
+
+const normalizedRedirectPath = computed(() => {
+    const currentPath = String(page.url || '/');
+    const escapedLocales = availableLocales.value.map((item: string) => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const localeRegex = new RegExp(`^\\/(${escapedLocales.join('|')})(?=\\/|$)`);
+    const strippedPath = currentPath.replace(localeRegex, '') || '/';
+
+    return strippedPath.startsWith('/') ? strippedPath : `/${strippedPath}`;
+});
+
+const localeSwitcherUrl = (targetLocale: string) =>
+    `/locale/${targetLocale}?redirect=${encodeURIComponent(normalizedRedirectPath.value)}`;
+
+const fallbackLocaleNames: Record<string, string> = {
+    en: 'English',
+    ar: 'Arabic',
+    ur: 'Urdu',
+};
+
+const localeDisplayName = (localeCode: string) => {
+    const normalizedLocale = String(localeCode || '').toLowerCase().split('-')[0];
+    const key = `locale_switcher.language_names.${normalizedLocale}`;
+    const translatedName = t(key);
+
+    return translatedName === key
+        ? fallbackLocaleNames[normalizedLocale] || normalizedLocale.toUpperCase()
+        : translatedName;
+};
+
+const siteHomeUrl = computed(() => `${localePrefix.value || ''}/`);
 
 const csrfToken = computed(() => page.props?.csrf_token || '');
 const notificationsBaseUrl = computed(() => `${localePrefix.value}/notifications`);
@@ -200,6 +237,12 @@ const mainNavItems = computed<NavItem[]>(() => {
                             >
                                 <nav class="-mx-3 space-y-1">
                                     <Link
+                                        :href="siteHomeUrl"
+                                        class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
+                                    >
+                                        {{ t('client_pages.layout.nav.back_to_site') }}
+                                    </Link>
+                                    <Link
                                         v-for="item in mainNavItems"
                                         :key="item.title"
                                         :href="item.href"
@@ -259,6 +302,33 @@ const mainNavItems = computed<NavItem[]>(() => {
                 </div>
 
                 <div class="ml-auto flex items-center space-x-2">
+                    <Link :href="siteHomeUrl" class="hidden sm:inline-flex">
+                        <Button variant="outline" size="sm">
+                            {{ t('client_pages.layout.nav.back_to_site') }}
+                        </Button>
+                    </Link>
+
+                    <DropdownMenu v-if="availableLocales.length > 1" :modal="false">
+                        <DropdownMenuTrigger :as-child="true">
+                            <Button variant="ghost" size="sm" class="gap-2">
+                                <Languages class="h-4 w-4" />
+                                <span class="hidden sm:inline">{{ localeDisplayName(String(locale || '')) }}</span>
+                                <ChevronDown class="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" class="min-w-40">
+                            <DropdownMenuItem v-for="localeCode in availableLocales" :key="localeCode" as-child>
+                                <a
+                                    :href="localeSwitcherUrl(localeCode)"
+                                    class="flex w-full items-center justify-between gap-2"
+                                >
+                                    <span>{{ localeDisplayName(localeCode) }}</span>
+                                    <Check v-if="locale === localeCode" class="h-4 w-4 text-primary" />
+                                </a>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <DropdownMenu>
                         <DropdownMenuTrigger :as-child="true">
                             <Button variant="ghost" size="icon" class="relative size-10 w-auto rounded-full p-1">

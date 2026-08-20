@@ -78,7 +78,9 @@ class ReservationsController extends Controller
             : null;
 
         // Status counts for filter chips
-        $statusCountsQuery = Reservation::query()->selectRaw('status, count(*) as count');
+        $statusCountsQuery = Reservation::query()
+            ->whereIn('status', ReservationStatus::realBookingValues())
+            ->selectRaw('status, count(*) as count');
         $this->applyReservationBranchScope($statusCountsQuery, $user, $branchId);
         $statusCounts = $statusCountsQuery
             ->groupBy('status')
@@ -86,6 +88,7 @@ class ReservationsController extends Controller
             ->toArray();
 
         $reservationsQuery = Reservation::query()
+            ->whereIn('status', ReservationStatus::realBookingValues())
             ->with([
                 'user:id,name,email',
                 'car:id,branch_id,make,model,year,license_plate',
@@ -152,18 +155,20 @@ class ReservationsController extends Controller
             ];
         });
 
-        $statuses = collect(ReservationStatus::cases())->mapWithKeys(function ($st) use ($statusCounts) {
-            $meta = ReservationStatus::getMeta();
-            $statusMeta = collect($meta)->firstWhere('value', $st->value);
-            
-            return [
-                $st->value => [
-                    'label' => $statusMeta['label'] ?? ucfirst(str_replace('_', ' ', $st->value)),
-                    'count' => $statusCounts[$st->value] ?? 0,
-                    'color' => $statusMeta['color'] ?? '#6B7280',
-                ],
-            ];
-        })->toArray();
+        $statuses = collect(ReservationStatus::cases())
+            ->reject(fn (ReservationStatus $st) => $st === ReservationStatus::AWAITING_PAYMENT)
+            ->mapWithKeys(function ($st) use ($statusCounts) {
+                $meta = ReservationStatus::getMeta();
+                $statusMeta = collect($meta)->firstWhere('value', $st->value);
+                
+                return [
+                    $st->value => [
+                        'label' => $statusMeta['label'] ?? ucfirst(str_replace('_', ' ', $st->value)),
+                        'count' => $statusCounts[$st->value] ?? 0,
+                        'color' => $statusMeta['color'] ?? '#6B7280',
+                    ],
+                ];
+            })->toArray();
 
         $reservationUsage = $this->planUsageLimits->reservationUsage($this->currentTenant($request));
         $canRevealLockedBookingRequests = !($reservationUsage['at_limit'] ?? false);
@@ -1081,6 +1086,10 @@ class ReservationsController extends Controller
 
     private function canAccessReservation(Reservation $reservation, $user): bool
     {
+        if ($reservation->status === ReservationStatus::AWAITING_PAYMENT) {
+            return false;
+        }
+
         $reservation->loadMissing('car:id,branch_id');
 
         return $this->branchAccess->canAccessBranchId($user, $reservation->car?->branch_id ? (int) $reservation->car->branch_id : null);
@@ -1236,11 +1245,7 @@ class ReservationsController extends Controller
     {
         $query = Reservation::query()
             ->where('car_id', $carId)
-            ->whereIn('status', [
-                ReservationStatus::PENDING->value,
-                ReservationStatus::CONFIRMED->value,
-                ReservationStatus::ACTIVE->value,
-            ])
+            ->whereIn('status', ReservationStatus::dateBlockingValues())
             ->whereDate('start_date', '<=', $end->toDateString())
             ->whereDate('end_date', '>=', $start->toDateString());
 

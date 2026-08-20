@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Core\TenantContext;
 use App\Enums\ClientDocumentExtractionStatus;
 use App\Enums\ClientDocumentType;
+use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
 use App\Enums\PaymentStatus;
 use App\Enums\UserRole;
@@ -81,7 +82,10 @@ class ClientsController extends Controller
                     $q->where('is_active', false);
                 }
             })
-            ->withCount(['reservations', 'payments'])
+            ->withCount([
+                'reservations' => fn ($query) => $query->whereIn('status', ReservationStatus::realBookingValues()),
+                'payments',
+            ])
             ->with('branch:id,name')
             ->orderBy('name');
 
@@ -173,6 +177,8 @@ class ClientsController extends Controller
                 Rule::unique('users', 'email')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
             ],
             'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'phone' => ['required', 'string', 'max:30'],
+            'whatsapp' => ['nullable', 'string', 'max:30'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'branch_id' => [
                 'nullable',
@@ -190,6 +196,8 @@ class ClientsController extends Controller
             'name' => $validated['name'],
             'civil_number' => trim((string) $validated['civil_number']),
             'email' => $validated['email'],
+            'phone' => trim((string) $validated['phone']),
+            'whatsapp' => $this->nullableString($validated['whatsapp'] ?? null),
             'password' => Hash::make($validated['password']),
             'role' => UserRole::CLIENT,
             'tenant_id' => $this->tenantId(),
@@ -218,6 +226,95 @@ class ClientsController extends Controller
             ->with('success', 'Client created successfully.');
     }
 
+    public function edit(Request $request, User $client): Response
+    {
+        $this->ensureClientAccessible($client, $request->user());
+
+        $user = $request->user();
+        $canAccessAllBranches = $this->branchAccess->canAccessAllBranches($user);
+
+        $branches = $this->branchAccess
+            ->availableBranchesForUser($user)
+            ->map(fn ($branch) => ['id' => $branch->id, 'name' => $branch->name])
+            ->values();
+
+        return Inertia::render('Admin/Clients/Edit', [
+            'client' => [
+                'id' => $client->id,
+                'name' => $client->name,
+                'email' => $client->email,
+                'civil_number' => $client->civil_number,
+                'phone' => $client->phone,
+                'whatsapp' => $client->whatsapp,
+                'branch_id' => $client->branch_id,
+                'is_active' => (bool) $client->is_active,
+            ],
+            'branches' => $branches,
+            'canAccessAllBranches' => $canAccessAllBranches,
+        ]);
+    }
+
+    public function update(Request $request, User $client): RedirectResponse
+    {
+        if (config('app.demo_mode')) {
+            return redirect()
+                ->back()
+                ->with('restricted_action', 'This is a demo version. For security reasons, create, update, and delete actions are disabled.');
+        }
+
+        $this->ensureClientAccessible($client, $request->user());
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', new LettersOnly()],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')
+                    ->where(fn ($query) => $query->where('tenant_id', $this->tenantId()))
+                    ->ignore($client->id),
+            ],
+            'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'phone' => ['required', 'string', 'max:30'],
+            'whatsapp' => ['nullable', 'string', 'max:30'],
+            'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
+            'branch_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('branches', 'id')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
+            ],
+        ]);
+
+        $branchId = $this->branchAccess->resolveWritableBranchId(
+            $request->user(),
+            $this->branchAccess->normalizeRequestedBranchId($validated['branch_id'] ?? null)
+        );
+
+        $payload = [
+            'name' => $validated['name'],
+            'civil_number' => trim((string) $validated['civil_number']),
+            'email' => $validated['email'],
+            'phone' => trim((string) $validated['phone']),
+            'whatsapp' => $this->nullableString($validated['whatsapp'] ?? null),
+            'branch_id' => $branchId,
+        ];
+
+        if ($this->nullableString($validated['password'] ?? null) !== null) {
+            $payload['password'] = Hash::make($validated['password']);
+        }
+
+        $client->update($payload);
+
+        return redirect()
+            ->route('admin.clients.show', [
+                'subdomain' => $request->route('subdomain'),
+                'client' => $client->id,
+            ])
+            ->with('success', 'Client updated successfully.');
+    }
+
     public function show(Request $request, User $client): Response
     {
         $this->ensureClientAccessible($client, $request->user());
@@ -228,6 +325,7 @@ class ClientsController extends Controller
             ->sum('amount');
 
         $reservations = $client->reservations()
+            ->whereIn('status', ReservationStatus::realBookingValues())
             ->with(['car'])
             ->orderByDesc('created_at')
             ->paginate(10, ['*'], 'reservations_page')
@@ -259,6 +357,9 @@ class ClientsController extends Controller
                 'id' => $client->id,
                 'name' => $client->name,
                 'email' => $client->email,
+                'civil_number' => $client->civil_number,
+                'phone' => $client->phone,
+                'whatsapp' => $client->whatsapp,
                 'is_active' => (bool) $client->is_active,
                 'created_at' => $client->created_at,
                 'status' => $clientStatus['overall_status'],
@@ -266,7 +367,9 @@ class ClientsController extends Controller
             ],
             'clientStatus' => $clientStatus,
             'stats' => [
-                'total_reservations' => $client->reservations()->count(),
+                'total_reservations' => $client->reservations()
+                    ->whereIn('status', ReservationStatus::realBookingValues())
+                    ->count(),
                 'total_payments' => $client->payments()->count(),
                 'total_spent' => (float) $totalSpent,
                 'total_documents' => $client->clientDocuments()->count(),

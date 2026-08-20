@@ -2,6 +2,7 @@
 
 return [
     'reservation_statuses' => [
+        'awaiting_payment' => 'بانتظار الدفع',
         'pending' => 'قيد الانتظار',
         'confirmed' => 'مؤكد',
         'active' => 'نشط',

@@ -3,6 +3,7 @@
 namespace App\Services\Plans;
 
 use App\Core\TenantContext;
+use App\Enums\ReservationStatus;
 use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\Car;
@@ -298,6 +299,7 @@ class PlanUsageLimits
 
         return Reservation::withoutTenantScope()
             ->where('tenant_id', $tenant->id)
+            ->whereIn('status', ReservationStatus::realBookingValues())
             ->whereBetween('created_at', $this->currentMonthRange())
             ->count();
     }

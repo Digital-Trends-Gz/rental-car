@@ -7,8 +7,11 @@ use Illuminate\Support\Facades\Schedule;
 use App\Support\TenantAdminAccessSync;
 use App\Support\TenantPermissionCatalog;
 use App\Models\Permission;
+use App\Models\Reservation;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Enums\ReservationStatus;
+use App\Services\Bookings\AwaitingPaymentReservationReleaser;
 use App\Services\Dashboard\OwnerDashboardMetricsService;
 use App\Services\Contracts\ContractExpiryReminderService;
 use App\Services\Cars\CarDocumentReminderService;
@@ -43,6 +46,35 @@ Artisan::command('rentals:sync-statuses {--dry-run}', function () {
     $this->line('Checked at: '.$result['checked_at']);
     $this->line('Mode: '.($dryRun ? 'dry-run' : 'live'));
 })->purpose('Sync reservation lifecycle by date/time and update related car statuses');
+
+Artisan::command('booking:expire-awaiting-payments {--minutes=30} {--dry-run}', function () {
+    $minutes = max(1, (int) $this->option('minutes'));
+    $dryRun = (bool) $this->option('dry-run');
+    $cutoff = now()->subMinutes($minutes);
+
+    $reservations = Reservation::withoutGlobalScope('tenant')
+        ->where('status', ReservationStatus::AWAITING_PAYMENT->value)
+        ->where('updated_at', '<=', $cutoff)
+        ->with('payments')
+        ->get();
+
+    if (!$dryRun) {
+        $releaser = app(AwaitingPaymentReservationReleaser::class);
+
+        $reservations->each(function (Reservation $reservation) use ($releaser): void {
+            $payment = $reservation->payments
+                ->sortByDesc('id')
+                ->first();
+
+            $releaser->release($reservation, $payment, 'payment_hold_expired');
+        });
+    }
+
+    $this->info('Awaiting payment reservations checked.');
+    $this->line('Expired holds: '.$reservations->count());
+    $this->line('Cutoff: '.$cutoff->toDateTimeString());
+    $this->line('Mode: '.($dryRun ? 'dry-run' : 'live'));
+})->purpose('Release booking date holds that were not paid in time');
 
 Artisan::command('tenants:sync-owner-access', function () {
     $result = app(TenantAdminAccessSync::class)->syncAllTenants();
@@ -161,6 +193,7 @@ Artisan::command('owner-dashboard:snapshot {--date=} {--tenant_id=}', function (
 
 Schedule::command('maintenance:process-schedule')->everyFiveMinutes()->withoutOverlapping(10);
 Schedule::command('rentals:sync-statuses')->everyFiveMinutes()->withoutOverlapping(10);
+Schedule::command('booking:expire-awaiting-payments')->everyFifteenMinutes()->withoutOverlapping(10);
 Schedule::command('cars:notify-expiring-documents')->dailyAt('14:22')->withoutOverlapping(60);
 Schedule::command('contracts:notify-ending-tomorrow')->dailyAt('14:23')->withoutOverlapping(60);
 Schedule::command('ai-insights:generate-monthly --with-openai')->monthlyOn(1, '09:00')->withoutOverlapping(120);

@@ -56,12 +56,17 @@ interface PageProps {
         slug: string;
         name: string;
     };
+    currency?: {
+        code?: string | null;
+        symbol?: string | null;
+    } | null;
 }
 
 const $page = usePage<PageProps>();
 const { t, locale } = useTrans();
 const reservation = $page.props.reservation;
 const currentTenant = $page.props.current_tenant;
+const currency = computed(() => $page.props.currency ?? null);
 const seo = computed(() => $page.props.seo ?? null);
 
 function toAmount(value: unknown): number {
@@ -70,7 +75,24 @@ function toAmount(value: unknown): number {
 }
 
 function formatMoney(value: number): string {
-    return `$${value.toFixed(2)}`;
+    const code = String(currency.value?.code || '').toUpperCase();
+
+    if (/^[A-Z]{3}$/.test(code)) {
+        try {
+            return new Intl.NumberFormat(locale.value || undefined, {
+                style: 'currency',
+                currency: code,
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(value);
+        } catch {
+            // Fall back to the tenant currency symbol below.
+        }
+    }
+
+    const symbol = String(currency.value?.symbol || '$');
+
+    return `${symbol}${value.toFixed(2)}`;
 }
 
 const amounts = computed(() => {

@@ -398,6 +398,8 @@ const clientForm = useForm({
     name: '',
     email: '',
     civil_number: '',
+    phone: '',
+    whatsapp: '',
     password: '',
     password_confirmation: '',
 });
@@ -579,6 +581,8 @@ async function submitCreateClient() {
         payload.append('name', clientForm.name);
         payload.append('email', clientForm.email);
         payload.append('civil_number', clientForm.civil_number);
+        payload.append('phone', clientForm.phone);
+        payload.append('whatsapp', clientForm.whatsapp);
         payload.append('password', clientForm.password);
         payload.append('password_confirmation', clientForm.password_confirmation);
 
@@ -1187,6 +1191,18 @@ function cancelDebtAction() {
                             <Label for="client_civil_number">{{ localize('Civil Number', 'الرقم المدني') }}</Label>
                             <Input id="client_civil_number" v-model="clientForm.civil_number" type="text" required />
                             <InputError :message="clientForm.errors.civil_number" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="client_phone">{{ localize('Phone Number', 'رقم الهاتف') }}</Label>
+                            <Input id="client_phone" v-model="clientForm.phone" type="tel" required dir="ltr" class="text-left" />
+                            <InputError :message="clientForm.errors.phone" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="client_whatsapp">{{ localize('WhatsApp Number (optional)', 'رقم الواتساب (اختياري)') }}</Label>
+                            <Input id="client_whatsapp" v-model="clientForm.whatsapp" type="tel" dir="ltr" class="text-left" />
+                            <InputError :message="clientForm.errors.whatsapp" />
                         </div>
 
                         <div class="space-y-2">

@@ -13,9 +13,14 @@ class ReservationsController extends Controller
     public function index(Request $request)
     {
         $statusMeta = ReservationStatus::getMeta();
+        $statusMeta = array_values(array_filter(
+            $statusMeta,
+            fn (array $meta) => $meta['value'] !== ReservationStatus::AWAITING_PAYMENT->value
+        ));
         $statusValues = array_column($statusMeta, 'value');
 
         $reservations = Reservation::with(['car', 'user', 'tenant'])
+            ->whereIn('status', ReservationStatus::realBookingValues())
             ->when($request->search, function ($query, $search) {
                 $query->where(function($q) use ($search) {
                     $q->where('reservation_number', 'like', "%{$search}%")

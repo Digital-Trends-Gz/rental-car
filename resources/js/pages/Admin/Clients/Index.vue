@@ -4,7 +4,7 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ref, watch, computed } from 'vue';
-import { create, show, index } from '@/routes/admin/clients';
+import { create, edit, show, index } from '@/routes/admin/clients';
 import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
@@ -241,9 +241,14 @@ const navigateToClient = (id: number) => {
                 </div>
               </td>
               <td class="px-4 py-3 text-right">
-                <Link v-if="subdomain" :href="show([subdomain, c.id]).url">
-                                    <Button variant="outline" size="sm">{{ t('dashboard.common.view') }}</Button>
+                <div class="flex justify-end gap-2">
+                  <Link v-if="subdomain" :href="edit([subdomain, c.id]).url" @click.stop>
+                    <Button variant="outline" size="sm">{{ t('dashboard.common.edit') }}</Button>
+                  </Link>
+                  <Link v-if="subdomain" :href="show([subdomain, c.id]).url" @click.stop>
+                    <Button variant="outline" size="sm">{{ t('dashboard.common.view') }}</Button>
                 </Link>
+                </div>
               </td>
             </tr>
             <tr v-if="props.clients.data.length === 0">

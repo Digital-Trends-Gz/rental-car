@@ -377,6 +377,7 @@ class CarsController extends Controller
         $reservations = Reservation::query()
             ->with(['user:id,name,email', 'contract:id,reservation_id,contract_number,status'])
             ->where('car_id', $car->id)
+            ->whereIn('status', ReservationStatus::realBookingValues())
             ->latest('start_date')
             ->get()
             ->map(function (Reservation $reservation) {
@@ -940,11 +941,7 @@ class CarsController extends Controller
 
         $blockedRanges = Reservation::query()
             ->where('car_id', $car->id)
-            ->whereIn('status', [
-                ReservationStatus::PENDING->value,
-                ReservationStatus::CONFIRMED->value,
-                ReservationStatus::ACTIVE->value,
-            ])
+            ->whereIn('status', ReservationStatus::dateBlockingValues())
             ->whereDate('start_date', '<=', $windowEnd->toDateString())
             ->whereDate('end_date', '>=', $windowStart->toDateString())
             ->orderBy('start_date')
@@ -1493,4 +1490,3 @@ class CarsController extends Controller
         return Tenant::query()->with('subscriptionPlan')->find($tenantId);
     }
 }
-

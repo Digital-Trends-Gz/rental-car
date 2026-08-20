@@ -7,6 +7,12 @@ import { show } from '@/routes/client/reservations';
 import { computed } from 'vue';
 import { Download } from 'lucide-vue-next';
 
+type ReservationPayment = {
+    amount?: number | string | null;
+    refunded_amount?: number | string | null;
+    status?: string | null;
+};
+
 const props = defineProps<{
     reservations: {
         data: Array<{
@@ -28,7 +34,7 @@ const props = defineProps<{
                 id: number;
                 contract_number: string;
             } | null;
-            payments?: Array<any>;
+            payments?: Array<ReservationPayment>;
         }>;
         links: Array<{ url: string | null; label: string; active: boolean }>;
     };
@@ -70,6 +76,50 @@ const extensionStatusLabels: Record<string, string> = {
     approved: t('client_pages.reservations.index.extension_requests.statuses.approved'),
     rejected: t('client_pages.reservations.index.extension_requests.statuses.rejected'),
 };
+
+const paymentStatusLabels: Record<string, string> = {
+    paid: t('client_pages.reservations.payment_statuses.paid'),
+    partial: t('client_pages.reservations.payment_statuses.partial'),
+    pending: t('client_pages.reservations.payment_statuses.pending'),
+    unpaid: t('client_pages.reservations.payment_statuses.unpaid'),
+};
+
+const paymentStatusStyles: Record<string, string> = {
+    paid: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    partial: 'border-amber-200 bg-amber-50 text-amber-700',
+    pending: 'border-blue-200 bg-blue-50 text-blue-700',
+    unpaid: 'border-gray-200 bg-gray-50 text-gray-600',
+};
+
+function getReservationPaymentStatus(reservation: {
+    total_amount: number | string;
+    payments?: Array<ReservationPayment>;
+}): 'paid' | 'partial' | 'pending' | 'unpaid' {
+    const payments = Array.isArray(reservation.payments) ? reservation.payments : [];
+    const totalAmount = Number(reservation.total_amount ?? 0);
+    const paidAmount = payments
+        .filter((payment) => payment.status === 'completed')
+        .reduce((sum, payment) => {
+            const amount = Number(payment.amount ?? 0);
+            const refundedAmount = Number(payment.refunded_amount ?? 0);
+
+            return sum + Math.max(0, amount - refundedAmount);
+        }, 0);
+
+    if (totalAmount <= 0 || paidAmount >= totalAmount) {
+        return 'paid';
+    }
+
+    if (paidAmount > 0) {
+        return 'partial';
+    }
+
+    if (payments.some((payment) => payment.status === 'pending')) {
+        return 'pending';
+    }
+
+    return 'unpaid';
+}
 
 const forceExtensionNotification = computed(() => {
     const notifications = Array.isArray(page.props?.auth?.notifications) ? page.props.auth.notifications : [];
@@ -235,6 +285,15 @@ function rejectExtensionRequest(url: string) {
                             >
                                 {{
                                     t(
+                                        'client_pages.reservations.index.table.payment_status',
+                                    )
+                                }}
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+                            >
+                                {{
+                                    t(
                                         'client_pages.reservations.index.table.dates',
                                     )
                                 }}
@@ -314,6 +373,14 @@ function rejectExtensionRequest(url: string) {
                             <td class="px-4 py-3">
                                 {{ props.currency.symbol }}
                                 {{ Number(res.total_amount).toFixed(2) }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <span
+                                    class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
+                                    :class="paymentStatusStyles[getReservationPaymentStatus(res)]"
+                                >
+                                    {{ paymentStatusLabels[getReservationPaymentStatus(res)] }}
+                                </span>
                             </td>
                             <td class="px-4 py-3">
                                 {{ reservationStatusLabels[res.status] || res.status }}

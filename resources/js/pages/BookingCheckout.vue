@@ -29,7 +29,7 @@ const props = defineProps<{
     selectedProvider?: string | null;
     actions: {
         checkout: string;
-        confirmation: string;
+        cancel: string;
     };
     seo?: {
         title?: string | null;
@@ -71,8 +71,8 @@ function continueCheckout() {
         <main class="min-h-screen bg-slate-50 py-10">
             <div class="mx-auto max-w-4xl px-4">
                 <div class="mb-6">
-                    <Link :href="actions.confirmation" class="text-sm font-medium text-slate-700 hover:underline">
-                        Back to booking confirmation
+                    <Link :href="actions.cancel" class="text-sm font-medium text-slate-700 hover:underline">
+                        Cancel payment and return to cars
                     </Link>
                 </div>
 
@@ -132,7 +132,7 @@ function continueCheckout() {
                             >
                                 Continue to {{ selectedProviderMeta?.name || 'payment' }}
                             </Button>
-                            <Link :href="actions.confirmation">
+                            <Link :href="actions.cancel">
                                 <Button type="button" variant="outline">Cancel</Button>
                             </Link>
                         </div>

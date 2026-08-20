@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum ReservationStatus: string
 {
+    case AWAITING_PAYMENT = 'awaiting_payment';
     case PENDING = 'pending';
     case CONFIRMED = 'confirmed';
     case ACTIVE = 'active';
@@ -15,6 +16,7 @@ enum ReservationStatus: string
     public static function statusColors(): array
     {
         return [
+            self::AWAITING_PAYMENT->value => '#64748B',
             self::PENDING->value => '#F59E0B',    // Gray-900
             self::CONFIRMED->value => '#10B981',  // Green-500
             self::ACTIVE->value => '#3B82F6',     // Amber-500
@@ -28,6 +30,7 @@ enum ReservationStatus: string
     public function label(): string
     {
         return match ($this) {
+            self::AWAITING_PAYMENT => 'Awaiting Payment',
             self::PENDING => 'Pending',
             self::CONFIRMED => 'Confirmed',
             self::ACTIVE => 'Active',
@@ -45,10 +48,15 @@ enum ReservationStatus: string
 
     public static function manualCases(?string $currentValue = null): array
     {
-        $cases = array_values(array_filter(self::cases(), fn (self $case) => $case !== self::COMPLETED_WAIT_CONTRACT));
+        $cases = array_values(array_filter(
+            self::cases(),
+            fn (self $case) => !in_array($case, [self::AWAITING_PAYMENT, self::COMPLETED_WAIT_CONTRACT], true)
+        ));
 
-        if ($currentValue === self::COMPLETED_WAIT_CONTRACT->value) {
-            $cases[] = self::COMPLETED_WAIT_CONTRACT;
+        foreach ([self::AWAITING_PAYMENT, self::COMPLETED_WAIT_CONTRACT] as $hiddenCase) {
+            if ($currentValue === $hiddenCase->value) {
+                $cases[] = $hiddenCase;
+            }
         }
 
         return $cases;
@@ -79,5 +87,23 @@ enum ReservationStatus: string
                 'color' => $case->color(),
             ];
         }, self::cases());
+    }
+
+    public static function dateBlockingValues(): array
+    {
+        return [
+            self::AWAITING_PAYMENT->value,
+            self::PENDING->value,
+            self::CONFIRMED->value,
+            self::ACTIVE->value,
+        ];
+    }
+
+    public static function realBookingValues(): array
+    {
+        return array_values(array_filter(
+            array_map(fn (self $case) => $case->value, self::cases()),
+            fn (string $value) => $value !== self::AWAITING_PAYMENT->value
+        ));
     }
 }

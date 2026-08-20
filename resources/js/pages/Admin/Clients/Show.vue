@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,12 +16,24 @@ import {
 import { AlertCircle } from 'lucide-vue-next';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { index } from '@/routes/admin/clients';
+import { edit } from '@/routes/admin/clients';
 import { suspend } from '@/routes/admin/clients';
 import { activate } from '@/routes/admin/clients';
 import { useTrans } from '@/composables/useTrans';
 
 const props = defineProps<{
-  client: { id: number; name: string; email: string; is_active: boolean; created_at?: string; status?: string; status_label?: string };
+  client: {
+    id: number;
+    name: string;
+    email: string;
+    civil_number?: string | null;
+    phone?: string | null;
+    whatsapp?: string | null;
+    is_active: boolean;
+    created_at?: string;
+    status?: string;
+    status_label?: string;
+  };
   clientStatus?: {
     overall_status: 'good' | 'info' | 'warning' | 'danger';
     overall_label: string;
@@ -79,6 +91,8 @@ const props = defineProps<{
 }>();
 
 const { locale, t } = useTrans();
+const page = usePage<any>();
+const subdomain = computed(() => page.props.current_tenant?.slug);
 const translationRoot = 'dashboard.admin.clients.show';
 const translationKeyFor = (value: string) =>
   `${translationRoot}.${value
@@ -174,8 +188,9 @@ function fmtMoney(n?: number | string) {
 }
 
 function suspendClient() {
+  if (!subdomain.value) return;
   processingSuspend.value = true;
-  router.patch(suspend(props.client.id), {}, {
+  router.patch(suspend([subdomain.value, props.client.id]).url, {}, {
     preserveScroll: true,
     onFinish: () => {
       processingSuspend.value = false;
@@ -187,8 +202,9 @@ function suspendClient() {
 }
 
 function activateClient() {
+  if (!subdomain.value) return;
   processingActivate.value = true;
-  router.patch(activate(props.client.id), {}, {
+  router.patch(activate([subdomain.value, props.client.id]).url, {}, {
     preserveScroll: true,
     onFinish: () => {
       processingActivate.value = false;
@@ -264,6 +280,9 @@ const flagStyle = (severity: string) => {
           </span>
         </div>
         <div class="flex items-center gap-2">
+          <Link v-if="subdomain" :href="edit([subdomain, client.id]).url">
+            <Button variant="outline">{{ localize('Edit', 'تعديل') }}</Button>
+          </Link>
           <Button variant="outline" @click="showNoteDialog = true">
             {{ localize('Add Note', 'إضافة ملاحظة') }}
           </Button>
@@ -273,7 +292,7 @@ const flagStyle = (severity: string) => {
           <Button v-else @click="showActivateDialog = true">
             {{ localize('Activate User', 'تفعيل المستخدم') }}
           </Button>
-          <Link :href="index()">
+          <Link v-if="subdomain" :href="index(subdomain).url">
             <Button variant="outline">{{ localize('Back', 'رجوع') }}</Button>
           </Link>
         </div>

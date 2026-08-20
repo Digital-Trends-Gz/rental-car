@@ -30,6 +30,7 @@ class ReservationsController extends Controller
     {
 
         $reservations = Reservation::where('user_id', auth()->user()->id)
+            ->whereIn('status', ReservationStatus::realBookingValues())
             ->with(['car', 'contract', 'payments'])
             ->orderByDesc('created_at')
             ->paginate(10)
@@ -87,7 +88,9 @@ class ReservationsController extends Controller
 
     public function show($id)
     {
-        $reservation = Reservation::where('user_id', auth()->id())->findOrFail($id);
+        $reservation = Reservation::where('user_id', auth()->id())
+            ->whereIn('status', ReservationStatus::realBookingValues())
+            ->findOrFail($id);
         $reservation->load(['user', 'car', 'payments', 'contract']);
 
         return inertia('Client/Reservations/Show', [
@@ -102,7 +105,9 @@ class ReservationsController extends Controller
 
     public function print($id)
     {
-        $reservation = Reservation::where('user_id', auth()->id())->findOrFail($id);
+        $reservation = Reservation::where('user_id', auth()->id())
+            ->whereIn('status', ReservationStatus::realBookingValues())
+            ->findOrFail($id);
         $reservation->load(['user', 'car.branch', 'payments', 'tenant.siteSetting.files']);
         $siteSettings = $reservation->tenant?->siteSetting ? TenantSiteSetting::forTenant($reservation->tenant) : [];
         $branding = $this->pdfBranding($reservation->tenant);
@@ -335,7 +340,9 @@ class ReservationsController extends Controller
 
     public function downloadContract(Request $request, $id)
     {
-        $reservation = Reservation::where('user_id', auth()->id())->findOrFail($id);
+        $reservation = Reservation::where('user_id', auth()->id())
+            ->whereIn('status', ReservationStatus::realBookingValues())
+            ->findOrFail($id);
         $contract = $reservation->contract;
 
         if (!$contract) {

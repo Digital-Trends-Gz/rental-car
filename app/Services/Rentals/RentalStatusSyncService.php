@@ -121,6 +121,7 @@ class RentalStatusSyncService
         $hasPendingOrConfirmedSoon = Reservation::withoutGlobalScope('tenant')
             ->where('car_id', $carId)
             ->whereIn('status', [
+                ReservationStatus::AWAITING_PAYMENT->value,
                 ReservationStatus::PENDING->value,
                 ReservationStatus::CONFIRMED->value,
             ])

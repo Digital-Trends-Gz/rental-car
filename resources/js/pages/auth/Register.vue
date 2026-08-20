@@ -39,6 +39,7 @@ type RegisterPrefill = {
     phone_country_code?: string | null;
     phone_national?: string | null;
     phone?: string | null;
+    whatsapp?: string | null;
     commercial_registration_number?: string | null;
     tax_number?: string | null;
     civil_number?: string | null;
@@ -115,6 +116,7 @@ const initial = computed(() => ({
     phone_country_code: props.prefill?.phone_country_code ?? '',
     phone_national: props.prefill?.phone_national ?? '',
     phone: props.prefill?.phone ?? '',
+    whatsapp: props.prefill?.whatsapp ?? '',
     commercial_registration_number: props.prefill?.commercial_registration_number ?? '',
     tax_number: props.prefill?.tax_number ?? '',
     partner_seats: props.prefill?.partner_seats ?? 0,
@@ -299,6 +301,46 @@ watch(
                                 class="h-11 border-gray-300 focus:border-primary focus:ring-primary"
                             />
                             <InputError :message="errors.civil_number" />
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="space-y-2">
+                            <Label for="phone" class="text-sm font-semibold text-gray-800">
+                                {{ t('auth.phone_number') }}
+                            </Label>
+                            <Input
+                                id="phone"
+                                name="phone"
+                                type="tel"
+                                :placeholder="t('auth.phone_number')"
+                                :default-value="initial.phone"
+                                required
+                                autocomplete="tel"
+                                class="h-11 border-gray-300 text-left focus:border-primary focus:ring-primary"
+                                dir="ltr"
+                            />
+                            <InputError :message="errors.phone" />
+                        </div>
+
+                        <!-- WhatsApp -->
+                        <div class="space-y-2">
+                            <Label for="whatsapp" class="text-sm font-semibold text-gray-800">
+                                {{ t('auth.whatsapp_number') }}
+                                <span class="font-normal text-gray-500">
+                                    ({{ t('auth.optional') }})
+                                </span>
+                            </Label>
+                            <Input
+                                id="whatsapp"
+                                name="whatsapp"
+                                type="tel"
+                                :placeholder="t('auth.whatsapp_number')"
+                                :default-value="initial.whatsapp"
+                                autocomplete="tel"
+                                class="h-11 border-gray-300 text-left focus:border-primary focus:ring-primary"
+                                dir="ltr"
+                            />
+                            <InputError :message="errors.whatsapp" />
                         </div>
 
                         <!-- Password -->

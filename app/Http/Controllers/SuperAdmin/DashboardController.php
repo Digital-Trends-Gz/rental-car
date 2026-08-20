@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Enums\ReservationStatus;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Reservation;
@@ -22,7 +23,11 @@ class DashboardController
         // Get all tenants with their counts (bypass tenant scope)
         $tenants = Tenant::query()
             ->with('subscriptionPlan:id,name')
-            ->withCount(['users', 'cars', 'reservations'])
+            ->withCount([
+                'users',
+                'cars',
+                'reservations' => fn ($query) => $query->whereIn('status', ReservationStatus::realBookingValues()),
+            ])
             ->get();
 
         // System-wide statistics
@@ -30,7 +35,9 @@ class DashboardController
             'total_tenants' => $tenants->count(),
             'active_tenants' => $tenants->where('is_active', true)->count(),
             'total_users' => User::withoutGlobalScope('tenant')->count(),
-            'total_reservations' => Reservation::withoutGlobalScope('tenant')->count(),
+            'total_reservations' => Reservation::withoutGlobalScope('tenant')
+                ->whereIn('status', ReservationStatus::realBookingValues())
+                ->count(),
             'total_revenue' => (float) DB::table('subscriptions')
                 ->whereNotNull('amount_paid')
                 ->sum('amount_paid'),
