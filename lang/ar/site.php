@@ -5154,6 +5154,11 @@ return array (
           'total' => 'الإجمالي',
           'payment_status' => 'حالة الدفع',
           'status' => 'الحالة',
+          'actions' => 'الإجراءات',
+        ),
+        'actions' =>
+        array (
+          'download_contract' => 'العقد',
         ),
       ),
       'show' =>

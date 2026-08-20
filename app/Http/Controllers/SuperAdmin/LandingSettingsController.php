@@ -1260,6 +1260,8 @@ class LandingSettingsController extends Controller
             'client_pages.reservations.show.fields.weekly_rate' => 'Weekly Rate',
             'client_pages.reservations.show.fields.monthly_rate' => 'Monthly Rate',
             'client_pages.reservations.index.table.payment_status' => 'Payment status',
+            'client_pages.reservations.index.table.actions' => 'Actions',
+            'client_pages.reservations.index.actions.download_contract' => 'Contract',
             'client_pages.reservations.payment_statuses.paid' => 'Paid',
             'client_pages.reservations.payment_statuses.partial' => 'Partially paid',
             'client_pages.reservations.payment_statuses.unpaid' => 'Unpaid',

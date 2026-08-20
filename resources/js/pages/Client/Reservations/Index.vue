@@ -58,8 +58,12 @@ const props = defineProps<{
     paymentStatusMeta?: Record<string, { label: string; color: string }>;
 }>();
 
-const { t } = useTrans();
+const { t, locale } = useTrans();
 const page = usePage<any>();
+
+function formatDate(date: string): string {
+    return new Date(date).toLocaleDateString(locale.value);
+}
 
 const reservationStatusLabels: Record<string, string> = {
     pending: t('client_pages.reservations.statuses.pending'),
@@ -319,7 +323,11 @@ function rejectExtensionRequest(url: string) {
                             <th
                                 class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
                             >
-                                Actions
+                                {{
+                                    t(
+                                        'client_pages.reservations.index.table.actions',
+                                    )
+                                }}
                             </th>
                         </tr>
                     </thead>
@@ -348,18 +356,18 @@ function rejectExtensionRequest(url: string) {
                                 </div>
                             </td>
                             <td class="px-4 py-3">
-                                <div class="font-medium">
-                                    {{
-                                        new Date(
-                                            res.start_date,
-                                        ).toLocaleDateString()
-                                    }}
-                                    ->
-                                    {{
-                                        new Date(
-                                            res.end_date,
-                                        ).toLocaleDateString()
-                                    }}
+                                <span
+                                    class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
+                                    :class="paymentStatusStyles[getReservationPaymentStatus(res)]"
+                                >
+                                    {{ paymentStatusLabels[getReservationPaymentStatus(res)] }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="font-medium" dir="ltr">
+                                    {{ formatDate(res.start_date) }}
+                                    -
+                                    {{ formatDate(res.end_date) }}
                                 </div>
                                 <div class="text-xs text-muted-foreground">
                                     {{
@@ -375,14 +383,6 @@ function rejectExtensionRequest(url: string) {
                                 {{ Number(res.total_amount).toFixed(2) }}
                             </td>
                             <td class="px-4 py-3">
-                                <span
-                                    class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
-                                    :class="paymentStatusStyles[getReservationPaymentStatus(res)]"
-                                >
-                                    {{ paymentStatusLabels[getReservationPaymentStatus(res)] }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3">
                                 {{ reservationStatusLabels[res.status] || res.status }}
                             </td>
                             <td class="px-4 py-3">
@@ -394,7 +394,7 @@ function rejectExtensionRequest(url: string) {
                                     class="gap-2"
                                 >
                                     <Download class="h-4 w-4" />
-                                    Contract
+                                    {{ t('client_pages.reservations.index.actions.download_contract') }}
                                 </Button>
                                 <span v-else class="text-xs text-gray-400">-</span>
                             </td>

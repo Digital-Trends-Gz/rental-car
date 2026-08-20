@@ -5166,6 +5166,11 @@ Sunday: 10:00 AM - 4:00 PM',
           'total' => 'Total',
           'payment_status' => 'Payment status',
           'status' => 'Status',
+          'actions' => 'Actions',
+        ),
+        'actions' =>
+        array (
+          'download_contract' => 'Contract',
         ),
       ),
       'show' =>
