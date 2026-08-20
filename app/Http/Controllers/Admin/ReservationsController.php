@@ -325,10 +325,10 @@ class ReservationsController extends Controller
             $validated['return_location'] ?? null,
             $validated['return_location_fee'] ?? null
         );
-        $totalDays = $start->diffInDays($end) + 1;
+        $totalDays = max(1, $start->diffInDays($end));
         $pricing = $this->calculateReservationPricing($car, $totalDays);
         $subtotal = $pricing['subtotal'];
-        $taxAmount = round($subtotal * 0.21, 2);
+        $taxAmount = round($subtotal * ($this->resolveReservationTaxPercentage($tenant) / 100), 2);
         $discountType = $validated['discount_type'] ?? 'fixed';
         $discountValue = $validated['discount_value'] ?? ($validated['discount_amount'] ?? 0);
         $discountAmount = $this->calculateReservationDiscountAmount($discountType, $discountValue, $subtotal);
@@ -529,7 +529,6 @@ class ReservationsController extends Controller
     {
         abort_unless($this->canAccessReservation($reservation, request()->user()), 403);
         $reservation->load(['user', 'car', 'payments', 'contract']);
-        $this->syncReservationAmounts($reservation);
         $reservation->setAttribute('is_locked', PaidReturnReportLock::reservation($reservation));
         $completedPaymentsTotal = (float) $reservation->payments()
             ->completed()
@@ -689,7 +688,7 @@ class ReservationsController extends Controller
         // Recalculate totals when dates or discount change
         $start = Carbon::parse($validated['start_date']);
         $end = Carbon::parse($validated['end_date']);
-        $totalDays = $start->diffInDays($end) + 1;
+        $totalDays = max(1, $start->diffInDays($end));
         $returnLocationFee = $this->resolveReservationReturnLocationFee(
             $request->user()?->tenant_id,
             $validated['return_location'] ?? null,
@@ -705,7 +704,7 @@ class ReservationsController extends Controller
         $reservation->total_days = $totalDays;
         $reservation->daily_rate = $pricing['daily_rate'];
         $reservation->subtotal = $pricing['subtotal'];
-        $reservation->tax_amount = round($reservation->subtotal * 0.21, 2);
+        $reservation->tax_amount = round($reservation->subtotal * ($this->resolveReservationTaxPercentage($this->currentTenant($request)) / 100), 2);
         $reservation->return_location_fee = $returnLocationFee;
         $reservation->discount_type = $validated['discount_type'] ?? $reservation->discount_type ?? 'fixed';
         $reservation->discount_value = $validated['discount_value'] ?? $validated['discount_amount'] ?? $reservation->discount_value ?? 0;
@@ -743,10 +742,10 @@ class ReservationsController extends Controller
 
         $start = Carbon::parse($reservation->start_date);
         $end = Carbon::parse($reservation->end_date);
-        $totalDays = max(1, $start->diffInDays($end) + 1);
+        $totalDays = max(1, $start->diffInDays($end));
         $pricing = $this->calculateReservationPricing($reservation->car, $totalDays);
         $subtotal = $pricing['subtotal'];
-        $taxAmount = round($subtotal * 0.21, 2);
+        $taxAmount = round($subtotal * ($this->resolveReservationTaxPercentage($reservation->tenant) / 100), 2);
         $returnLocationFee = (float) ($reservation->return_location_fee ?? 0);
         $discountType = $reservation->discount_type ?: 'fixed';
         $discountValue = $reservation->discount_value ?? $reservation->discount_amount ?? 0;
@@ -1281,6 +1280,29 @@ class ReservationsController extends Controller
             'return_location_fee' => (float) $reservation->return_location_fee,
             'has_contract' => (bool) $reservation->contract,
         ];
+    }
+
+    private function resolveReservationTaxPercentage(?Tenant $tenant): float
+    {
+        if (!$tenant) {
+            return 7.0;
+        }
+
+        $siteSetting = $tenant->relationLoaded('siteSetting')
+            ? $tenant->siteSetting
+            : $tenant->siteSetting()->first();
+
+        $value = $siteSetting?->tax_percentage;
+        if ($value === null || $value === '') {
+            return 7.0;
+        }
+
+        $number = (float) $value;
+        if (!is_finite($number)) {
+            return 7.0;
+        }
+
+        return max(0, min(100, round($number, 2)));
     }
 
     private function resolveReservationReturnLocationFee(?int $tenantId, ?string $returnLocation, mixed $providedFee): float
