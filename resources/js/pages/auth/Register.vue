@@ -100,6 +100,8 @@ const termsUrl = computed(() => localizedPublicPath('/terms-of-use'));
 
 const isArabic = computed(() => page.props.locale === 'ar');
 const isRtl = computed(() => direction.value === 'rtl');
+const localizedInputDir = computed(() => (isRtl.value ? 'rtl' : 'ltr'));
+const localizedInputClass = computed(() => (isRtl.value ? 'text-right' : 'text-left'));
 const registerHeroImage = computed(() => {
     const images = page.props.app_branding?.register_hero_images || {};
     const locale = String(page.props.locale || 'en');
@@ -316,8 +318,11 @@ watch(
                                 :default-value="initial.phone"
                                 required
                                 autocomplete="tel"
-                                class="h-11 border-gray-300 text-left focus:border-primary focus:ring-primary"
-                                dir="ltr"
+                                :class="[
+                                    'h-11 border-gray-300 focus:border-primary focus:ring-primary',
+                                    localizedInputClass,
+                                ]"
+                                :dir="localizedInputDir"
                             />
                             <InputError :message="errors.phone" />
                         </div>
@@ -337,8 +342,11 @@ watch(
                                 :placeholder="t('auth.whatsapp_number')"
                                 :default-value="initial.whatsapp"
                                 autocomplete="tel"
-                                class="h-11 border-gray-300 text-left focus:border-primary focus:ring-primary"
-                                dir="ltr"
+                                :class="[
+                                    'h-11 border-gray-300 focus:border-primary focus:ring-primary',
+                                    localizedInputClass,
+                                ]"
+                                :dir="localizedInputDir"
                             />
                             <InputError :message="errors.whatsapp" />
                         </div>
