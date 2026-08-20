@@ -138,7 +138,13 @@ class EmployeesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', new LettersOnly()],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')],
-            'civil_number' => ['required', 'string', 'max:255', new DigitsOnly(), Rule::unique('users')],
+            'civil_number' => [
+                'required',
+                'string',
+                'max:255',
+                new DigitsOnly(),
+                Rule::unique('users', 'civil_number')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
+            ],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'branch_id' => ['nullable'],
             'branch_ids' => ['nullable', 'array'],
@@ -265,7 +271,15 @@ class EmployeesController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', new LettersOnly()],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($employee->id)],
-            'civil_number' => ['required', 'string', 'max:255', new DigitsOnly(), Rule::unique('users')->ignore($employee->id)],
+            'civil_number' => [
+                'required',
+                'string',
+                'max:255',
+                new DigitsOnly(),
+                Rule::unique('users', 'civil_number')
+                    ->where(fn ($query) => $query->where('tenant_id', $this->tenantId()))
+                    ->ignore($employee->id),
+            ],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'branch_id' => ['nullable'],
             'branch_ids' => ['nullable', 'array'],

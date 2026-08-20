@@ -176,7 +176,13 @@ class ClientsController extends Controller
                 'max:255',
                 Rule::unique('users', 'email')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
             ],
-            'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'civil_number' => [
+                'required',
+                'string',
+                'max:255',
+                new DigitsOnly(),
+                Rule::unique('users', 'civil_number')->where(fn ($query) => $query->where('tenant_id', $this->tenantId())),
+            ],
             'phone' => ['required', 'string', 'max:30'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
@@ -276,7 +282,15 @@ class ClientsController extends Controller
                     ->where(fn ($query) => $query->where('tenant_id', $this->tenantId()))
                     ->ignore($client->id),
             ],
-            'civil_number' => ['required', 'string', 'max:255', new DigitsOnly()],
+            'civil_number' => [
+                'required',
+                'string',
+                'max:255',
+                new DigitsOnly(),
+                Rule::unique('users', 'civil_number')
+                    ->where(fn ($query) => $query->where('tenant_id', $this->tenantId()))
+                    ->ignore($client->id),
+            ],
             'phone' => ['required', 'string', 'max:30'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],

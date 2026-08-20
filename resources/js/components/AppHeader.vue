@@ -11,7 +11,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bell, Check, ChevronDown, FileCheck, Languages, LifeBuoy, Menu } from 'lucide-vue-next';
+import { Bell, Check, ChevronDown, FileCheck, Languages, LifeBuoy, Menu, UserRound } from 'lucide-vue-next';
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -30,6 +30,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl, urlIsActive } from '@/lib/utils';
 import { index as reservationsIndex } from "@/routes/client/reservations/index";
+import { edit as profileEdit } from '@/routes/client/profile';
 import { index as supportIndex } from '@/routes/client/support/index';
 import { home } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
@@ -202,6 +203,11 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: t('client_pages.layout.nav.support'),
             href: supportIndex(slug).url,
             icon: LifeBuoy,
+        },
+        {
+            title: t('client_pages.layout.nav.profile'),
+            href: profileEdit(slug).url,
+            icon: UserRound,
         },
     ];
 });

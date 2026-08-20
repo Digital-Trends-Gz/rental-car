@@ -5057,6 +5057,7 @@ return array (
       array (
         'reservations' => 'الحجوزات',
         'support' => 'الدعم',
+        'profile' => 'بياناتي',
         'back_to_site' => 'العودة للموقع',
         'navigation_menu' => 'قائمة التنقل',
       ),
@@ -5068,6 +5069,22 @@ return array (
         'mark_read' => 'تحديد كمقروء',
         'empty' => 'لا توجد إشعارات.',
       ),
+      ),
+    'profile' =>
+    array (
+      'head_title' => 'بياناتي',
+      'title' => 'بياناتي',
+      'subtitle' => 'تحديث بيانات التواصل الشخصية.',
+      'card_title' => 'معلومات الملف الشخصي',
+      'card_description' => 'تُستخدم هذه البيانات في حجوزاتك ومستندات التأجير.',
+      'full_name' => 'الاسم الكامل',
+      'email' => 'البريد الإلكتروني',
+      'civil_number' => 'الرقم المدني',
+      'phone' => 'رقم الهاتف',
+      'whatsapp' => 'رقم الواتساب',
+      'optional' => 'اختياري',
+      'saving' => 'جاري الحفظ...',
+      'save_changes' => 'حفظ التغييرات',
     ),
     'reservations' =>
     array (

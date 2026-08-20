@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Client\ProfileController;
 use App\Http\Controllers\Client\ReservationsController;
 use App\Http\Controllers\Client\SupportController;
 
@@ -10,6 +11,8 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'client', 'tenant.subscr
     ->group(function () {
         // Redirect '/client' to '/client/reservations' with a named route we can reference
         Route::redirect('/', '/client/reservations')->name('home');
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::get('/reservations', [ReservationsController::class, 'index'])->name('reservations.index');
         Route::get('/reservations/{id}', [ReservationsController::class, 'show'])->name('reservations.show');
         Route::get('/reservations/{id}/print', [ReservationsController::class, 'print'])->name('reservations.print');
