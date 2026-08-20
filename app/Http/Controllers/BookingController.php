@@ -937,9 +937,59 @@ class BookingController extends Controller
 
         return inertia('BookingConfirmation', [
             'reservation' => $reservation,
+            'paymentResult' => $this->bookingConfirmationPaymentResult($reservation),
             'currency' => CurrencyCatalog::forTenant($tenant, $this->bookingCurrency(), app()->getLocale()),
             'seo' => TenantSeoResolver::forReservation($tenant, $reservation, 'booking_confirmation'),
         ]);
+    }
+
+    private function bookingConfirmationPaymentResult(Reservation $reservation): array
+    {
+        $payment = Payment::query()
+            ->where('reservation_id', $reservation->id)
+            ->latest('id')
+            ->first();
+
+        $paymentStatus = $payment?->status instanceof PaymentStatus
+            ? $payment->status->value
+            : (string) ($payment?->status ?? '');
+        $reservationStatus = $reservation->status instanceof ReservationStatus
+            ? $reservation->status->value
+            : (string) $reservation->status;
+
+        if ($paymentStatus === PaymentStatus::COMPLETED->value || $reservationStatus === ReservationStatus::CONFIRMED->value) {
+            return [
+                'status' => 'paid',
+                'tone' => 'success',
+                'title_key' => 'booking_confirmation.payment_paid_title',
+                'message_key' => 'booking_confirmation.payment_paid_message',
+            ];
+        }
+
+        if ($paymentStatus === PaymentStatus::CANCELLED->value || $reservationStatus === ReservationStatus::CANCELLED->value) {
+            return [
+                'status' => 'cancelled',
+                'tone' => 'warning',
+                'title_key' => 'booking_confirmation.payment_cancelled_title',
+                'message_key' => 'booking_confirmation.payment_cancelled_message',
+            ];
+        }
+
+        if ($paymentStatus === PaymentStatus::FAILED->value) {
+            return [
+                'status' => 'failed',
+                'tone' => 'error',
+                'title_key' => 'booking_confirmation.payment_failed_title',
+                'message_key' => 'booking_confirmation.payment_failed_message',
+            ];
+        }
+
+        return [
+            'status' => 'pending',
+            'tone' => 'warning',
+            'title_key' => 'booking_confirmation.payment_pending_title',
+            'message_key' => 'booking_confirmation.payment_pending_message',
+        ];
     }
 
     private function tenantSlug(): ?string

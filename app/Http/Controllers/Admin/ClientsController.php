@@ -12,6 +12,7 @@ use App\Enums\UserRole;
 use App\Models\ClientDocument;
 use App\Models\Payment;
 use App\Models\User;
+use App\Models\UserDevice;
 use App\Services\ClientDocuments\LocalClientDocumentExtractor;
 use App\Services\Clients\ClientStatusService;
 use App\Rules\DigitsOnly;
@@ -366,6 +367,20 @@ class ClientsController extends Controller
                 ] : null,
             ]);
 
+        $devices = $client->devices()
+            ->whereNull('revoked_at')
+            ->latest('last_used_at')
+            ->get()
+            ->map(fn (UserDevice $device) => [
+                'id' => $device->id,
+                'source' => $device->source,
+                'device_name' => $device->device_name,
+                'platform' => $device->platform,
+                'ip_address' => $device->ip_address,
+                'last_used_at' => $device->last_used_at?->toIso8601String(),
+                'created_at' => $device->created_at?->toIso8601String(),
+            ]);
+
         return Inertia::render('Admin/Clients/Show', [
             'client' => [
                 'id' => $client->id,
@@ -391,6 +406,7 @@ class ClientsController extends Controller
             'reservations' => $reservations,
             'payments' => $payments,
             'notes' => $notes,
+            'devices' => $devices,
             'actions' => [
                 'documents' => route('admin.clients.documents', [
                     'subdomain' => request()->route('subdomain'),
@@ -402,6 +418,21 @@ class ClientsController extends Controller
                 ]),
             ],
         ]);
+    }
+
+    public function revokeDevice(Request $request, User $client, UserDevice $device): RedirectResponse
+    {
+        $this->ensureClientAccessible($client, $request->user());
+
+        if ((int) $device->user_id !== (int) $client->id) {
+            abort(404);
+        }
+
+        $device->revoke();
+
+        return redirect()
+            ->back()
+            ->with('success', 'Client device revoked successfully.');
     }
 
     public function storeNote(Request $request, User $client): RedirectResponse

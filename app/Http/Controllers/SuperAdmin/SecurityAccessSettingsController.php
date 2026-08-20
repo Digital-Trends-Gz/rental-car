@@ -23,6 +23,9 @@ class SecurityAccessSettingsController extends Controller
                 'superadmin_allowed_ips' => implode("\n", $settings['superadmin_allowed_ips']),
                 'superadmin_blocked_ips' => implode("\n", $settings['superadmin_blocked_ips']),
                 'website_blocked_ips' => implode("\n", $settings['website_blocked_ips']),
+                'device_limit_enabled' => (bool) $settings['device_limit_enabled'],
+                'max_devices_per_user' => (int) $settings['max_devices_per_user'],
+                'device_limit_roles' => $settings['device_limit_roles'],
             ],
             'countries' => CountryOptions::all(),
             'currentRequest' => [
@@ -43,6 +46,10 @@ class SecurityAccessSettingsController extends Controller
             'settings.superadmin_allowed_ips' => ['nullable', 'string', 'max:10000'],
             'settings.superadmin_blocked_ips' => ['nullable', 'string', 'max:10000'],
             'settings.website_blocked_ips' => ['nullable', 'string', 'max:10000'],
+            'settings.device_limit_enabled' => ['nullable', 'boolean'],
+            'settings.max_devices_per_user' => ['nullable', 'integer', 'min:1', 'max:25'],
+            'settings.device_limit_roles' => ['nullable', 'array'],
+            'settings.device_limit_roles.*' => ['string', 'in:all,admin,client'],
         ]);
 
         SecurityAccessSettings::persist([
@@ -50,6 +57,9 @@ class SecurityAccessSettingsController extends Controller
             'superadmin_allowed_ips' => SecurityAccessSettings::parseIpInput(data_get($validated, 'settings.superadmin_allowed_ips')),
             'superadmin_blocked_ips' => SecurityAccessSettings::parseIpInput(data_get($validated, 'settings.superadmin_blocked_ips')),
             'website_blocked_ips' => SecurityAccessSettings::parseIpInput(data_get($validated, 'settings.website_blocked_ips')),
+            'device_limit_enabled' => (bool) data_get($validated, 'settings.device_limit_enabled', false),
+            'max_devices_per_user' => (int) data_get($validated, 'settings.max_devices_per_user', 2),
+            'device_limit_roles' => data_get($validated, 'settings.device_limit_roles', ['client', 'admin']),
         ]);
 
         return back()->with('success', 'Security access settings updated successfully.');

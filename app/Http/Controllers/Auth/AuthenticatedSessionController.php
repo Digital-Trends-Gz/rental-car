@@ -8,9 +8,11 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Tenant;
+use App\Services\Auth\DeviceAccessService;
 use App\Support\CaptchaVerifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -24,6 +26,7 @@ class AuthenticatedSessionController extends Controller
     private const REGISTRATION_SESSION_KEY = 'saas.registration';
     private const PLAN_SELECTION_SESSION_KEY = 'saas.registration.plan';
     private const CHECKOUT_SESSION_KEY = 'saas.registration.checkout_session_id';
+    private const PENDING_DEVICE_ID_SESSION_KEY = 'auth.pending_device_id';
 
     /**
      * Show the login page.
@@ -118,10 +121,19 @@ class AuthenticatedSessionController extends Controller
 
         $this->ensureTenantAdminFullAccess($user, $tenant);
 
+        $deviceAccess = app(DeviceAccessService::class);
+        $deviceId = $deviceAccess->resolveWebDeviceId($request);
+        if (!$deviceAccess->wouldAllowDevice($user, $deviceId)) {
+            return back()->withErrors([
+                'email' => $deviceAccess->limitReachedMessage(),
+            ])->onlyInput('email');
+        }
+
         if (Features::enabled(Features::twoFactorAuthentication()) && $user->hasEnabledTwoFactorAuthentication()) {
             $request->session()->put([
                 'login.id' => $user->getKey(),
                 'login.remember' => $request->boolean('remember'),
+                self::PENDING_DEVICE_ID_SESSION_KEY => $deviceId,
             ]);
 
             if ($tenantSlug) {
@@ -144,6 +156,8 @@ class AuthenticatedSessionController extends Controller
                 'email' => 'No tenant is assigned to this account.',
             ])->onlyInput('email');
         }
+
+        $this->registerAuthenticatedWebDevice($request, $user, $deviceId);
 
         return $this->locationOrRedirect(
             $request,
@@ -190,10 +204,19 @@ class AuthenticatedSessionController extends Controller
 
         $this->ensureTenantAdminFullAccess($user, $tenant);
 
+        $deviceAccess = app(DeviceAccessService::class);
+        $deviceId = $deviceAccess->resolveWebDeviceId($request);
+        if (!$deviceAccess->wouldAllowDevice($user, $deviceId)) {
+            return back()->withErrors([
+                'email' => $deviceAccess->limitReachedMessage(),
+            ])->onlyInput('email');
+        }
+
         if (Features::enabled(Features::twoFactorAuthentication()) && $user->hasEnabledTwoFactorAuthentication()) {
             $request->session()->put([
                 'login.id' => $user->getKey(),
                 'login.remember' => $request->boolean('remember'),
+                self::PENDING_DEVICE_ID_SESSION_KEY => $deviceId,
             ]);
 
             if ($tenantSlug) {
@@ -216,6 +239,8 @@ class AuthenticatedSessionController extends Controller
                 'email' => 'No tenant is assigned to this account.',
             ])->onlyInput('email');
         }
+
+        $this->registerAuthenticatedWebDevice($request, $user, $deviceId);
 
         return $this->locationOrRedirect(
             $request,
@@ -295,6 +320,44 @@ class AuthenticatedSessionController extends Controller
         }
 
         return redirect()->to($url);
+    }
+
+    private function registerAuthenticatedWebDevice(Request $request, object $user, string $deviceId): void
+    {
+        if (!$user instanceof \App\Models\User) {
+            return;
+        }
+
+        $device = app(DeviceAccessService::class)->findOrCreateAllowedDevice(
+            $user,
+            $request,
+            'web',
+            $deviceId,
+            $this->webDeviceName($request),
+            null,
+            $request->session()->getId()
+        );
+
+        if ($device) {
+            Cookie::queue(DeviceAccessService::WEB_DEVICE_COOKIE, $deviceId, 60 * 24 * 365);
+        }
+    }
+
+    private function webDeviceName(Request $request): string
+    {
+        $agent = strtolower((string) $request->userAgent());
+
+        $browser = str_contains($agent, 'edg/') ? 'Edge'
+            : (str_contains($agent, 'chrome/') ? 'Chrome'
+            : (str_contains($agent, 'firefox/') ? 'Firefox'
+            : (str_contains($agent, 'safari/') ? 'Safari' : 'Browser')));
+
+        $platform = str_contains($agent, 'windows') ? 'Windows'
+            : (str_contains($agent, 'mac os') ? 'macOS'
+            : (str_contains($agent, 'iphone') ? 'iPhone'
+            : (str_contains($agent, 'android') ? 'Android' : 'Device')));
+
+        return "{$browser} on {$platform}";
     }
 
     private function postAuthenticationUrl(object $user, ?string $tenantSlug = null): string

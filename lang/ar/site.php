@@ -500,6 +500,14 @@ return array (
   'booking_confirmation' => 
   array (
     'title' => 'تم تأكيد الحجز',
+    'payment_paid_title' => 'تمت عملية الدفع',
+    'payment_paid_message' => 'تم استلام الدفعة بنجاح وتم تأكيد حجزك.',
+    'payment_pending_title' => 'الدفع معلق',
+    'payment_pending_message' => 'تم استلام الحجز، لكن الدفعة ما زالت معلقة. سيتم تحديث الحجز عند تأكيد مزود الدفع للعملية.',
+    'payment_cancelled_title' => 'تم إلغاء الدفع',
+    'payment_cancelled_message' => 'تم إلغاء عملية الدفع وهذا الحجز غير مؤكد.',
+    'payment_failed_title' => 'فشلت عملية الدفع',
+    'payment_failed_message' => 'لم نتمكن من تأكيد الدفع. يرجى المحاولة مرة أخرى أو التواصل مع الدعم.',
     'reservation_number' => 'رقم الحجز #:number',
     'vehicle_details' => 'تفاصيل السيارة',
     'rental_information' => 'معلومات الإيجار',

@@ -226,6 +226,9 @@ Route::middleware(['auth', 'tenant_verified', 'active', 'admin', 'tenant.subscri
         Route::post('clients/{client}/notes', [ClientsController::class, 'storeNote'])
             ->middleware('permission:tenant-clients.update')
             ->name('clients.notes.store');
+        Route::delete('clients/{client}/devices/{device}', [ClientsController::class, 'revokeDevice'])
+            ->middleware('permission:tenant-clients.update')
+            ->name('clients.devices.revoke');
         Route::patch('clients/{client}/suspend', [ClientsController::class, 'suspend'])
             ->middleware('permission:tenant-clients.update')
             ->name('clients.suspend');

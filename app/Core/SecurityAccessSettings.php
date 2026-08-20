@@ -17,6 +17,9 @@ class SecurityAccessSettings
             'superadmin_allowed_ips' => [],
             'superadmin_blocked_ips' => [],
             'website_blocked_ips' => [],
+            'device_limit_enabled' => false,
+            'max_devices_per_user' => 2,
+            'device_limit_roles' => ['client', 'admin'],
         ];
     }
 
@@ -52,6 +55,9 @@ class SecurityAccessSettings
             'superadmin_allowed_ips' => self::normalizeIpList($data['superadmin_allowed_ips'] ?? []),
             'superadmin_blocked_ips' => self::normalizeIpList($data['superadmin_blocked_ips'] ?? []),
             'website_blocked_ips' => self::normalizeIpList($data['website_blocked_ips'] ?? []),
+            'device_limit_enabled' => filter_var($data['device_limit_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'max_devices_per_user' => max(1, min(25, (int) ($data['max_devices_per_user'] ?? 2))),
+            'device_limit_roles' => self::normalizeDeviceLimitRoles($data['device_limit_roles'] ?? ['client', 'admin']),
         ];
     }
 
@@ -100,6 +106,21 @@ class SecurityAccessSettings
 
             return $value !== '' ? $value : null;
         }, $items))));
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $items
+     * @return array<int, string>
+     */
+    private static function normalizeDeviceLimitRoles(array $items): array
+    {
+        $allowed = ['all', 'admin', 'client'];
+
+        return array_values(array_unique(array_filter(array_map(function ($item) use ($allowed) {
+            $value = strtolower(trim((string) $item));
+
+            return in_array($value, $allowed, true) ? $value : null;
+        }, $items)))) ?: ['client', 'admin'];
     }
 
     /**

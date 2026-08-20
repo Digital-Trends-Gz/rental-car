@@ -21,6 +21,7 @@ defineProps<{
         <FlashToastStack
             :success="page.props.flash?.success ?? null"
             :error="page.props.flash?.error ?? null"
+            :warning="page.props.flash?.warning ?? null"
             :restricted-action="page.props.flash?.restricted_action ?? null"
             :trigger-key="page.url"
         />

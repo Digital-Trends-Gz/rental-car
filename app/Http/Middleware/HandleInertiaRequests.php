@@ -245,6 +245,7 @@ class HandleInertiaRequests extends Middleware
                 'restricted_action' => $request->session()->get('restricted_action'),
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
+                'warning' => $request->session()->get('warning'),
             ],
         ];
     }

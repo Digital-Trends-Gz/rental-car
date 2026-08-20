@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\ApiPasswordResetNotification;
 use App\Services\Plans\PlanEntityLocks;
+use App\Services\Auth\DeviceAccessService;
 use App\Support\ApiAccessMode;
 use App\Support\BranchAccess;
 use App\Support\TenantAdminAccessSync;
@@ -55,6 +56,24 @@ class AuthController extends Controller
 
         $deviceName = trim((string) $request->input('device_name', 'mobile'));
         $deviceName = $deviceName !== '' ? $deviceName : 'mobile';
+        $platform = trim((string) $request->input('platform', ''));
+        $deviceAccess = app(DeviceAccessService::class);
+        $deviceId = $deviceAccess->resolveApiDeviceId($request);
+        $device = $deviceAccess->findOrCreateAllowedDevice(
+            $user,
+            $request,
+            'api',
+            $deviceId,
+            $deviceName,
+            $platform !== '' ? $platform : null
+        );
+
+        if (!$device) {
+            return response()->json([
+                'message' => $deviceAccess->limitReachedMessage(),
+                'code' => 'device_limit_reached',
+            ], 403);
+        }
 
         $tenant = $this->resolveTenant($user);
         if ($tenant && $user->role === UserRole::ADMIN) {
@@ -70,6 +89,9 @@ class AuthController extends Controller
             ApiAccessMode::abilitiesFor($activeMode, $activeBranchId),
             now()->addDays(self::TOKEN_EXPIRY_DAYS)
         );
+        $sanctumToken->accessToken->forceFill([
+            'user_device_id' => $device->id,
+        ])->save();
 
         return response()->json([
             'message' => 'Login successful.',
@@ -278,6 +300,11 @@ class AuthController extends Controller
                 $abilities,
                 $expiresAt
             );
+            if ($currentToken?->user_device_id) {
+                $sanctumToken->accessToken->forceFill([
+                    'user_device_id' => $currentToken->user_device_id,
+                ])->save();
+            }
 
             $accessToken = $sanctumToken->plainTextToken;
             $tokenExpiresAt = optional($sanctumToken->accessToken->expires_at)->toIso8601String();

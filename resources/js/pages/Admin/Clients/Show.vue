@@ -86,6 +86,15 @@ const props = defineProps<{
     created_at?: string | null;
     creator?: { id: number; name: string } | null;
   }>;
+  devices?: Array<{
+    id: number;
+    source: string;
+    device_name?: string | null;
+    platform?: string | null;
+    ip_address?: string | null;
+    last_used_at?: string | null;
+    created_at?: string | null;
+  }>;
   currency: { symbol: string; code: string };
   actions?: { documents?: string; store_note?: string };
 }>();
@@ -229,6 +238,15 @@ function submitClientNote() {
   });
 }
 
+function revokeDevice(deviceId: number) {
+  if (!subdomain.value) return;
+  if (!confirm(localize('Revoke this device?', 'إلغاء هذا الجهاز؟'))) return;
+
+  router.delete(`/admin/clients/${props.client.id}/devices/${deviceId}`, {
+    preserveScroll: true,
+  });
+}
+
 const statusStyle = computed(() => {
   const status = props.clientStatus?.overall_status || (props.client.is_active ? 'good' : 'danger');
   const palette: Record<string, string> = {
@@ -338,6 +356,53 @@ const flagStyle = (severity: string) => {
         <div class="rounded-md border p-4">
           <div class="text-sm text-muted-foreground">{{ localize('Payments', 'المدفوعات') }}</div>
           <div class="text-xl font-semibold">{{ stats.total_payments }}</div>
+        </div>
+      </div>
+
+      <div class="rounded-md border">
+        <div class="flex items-center justify-between gap-4 border-b px-4 py-3">
+          <div>
+            <div class="font-medium">{{ localize('Registered Devices', 'الأجهزة المسجلة') }}</div>
+            <div class="text-sm text-muted-foreground">
+              {{ localize('Revoking a device removes its API tokens and frees a slot for a new login.', 'إلغاء الجهاز يحذف توكنات API الخاصة به ويفتح مكاناً لتسجيل جهاز جديد.') }}
+            </div>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Device', 'الجهاز') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Source', 'المصدر') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">IP</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ localize('Last Used', 'آخر استخدام') }}</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+              <tr v-for="device in devices || []" :key="device.id">
+                <td class="px-4 py-3">
+                  <div class="font-medium">{{ device.device_name || localize('Unknown device', 'جهاز غير معروف') }}</div>
+                  <div class="text-xs text-muted-foreground">{{ device.platform || '-' }}</div>
+                </td>
+                <td class="px-4 py-3 uppercase">{{ device.source }}</td>
+                <td class="px-4 py-3">{{ device.ip_address || '-' }}</td>
+                <td class="px-4 py-3">
+                  {{ device.last_used_at ? new Date(device.last_used_at).toLocaleString() : '-' }}
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <Button variant="outline" size="sm" @click="revokeDevice(device.id)">
+                    {{ localize('Revoke', 'إلغاء') }}
+                  </Button>
+                </td>
+              </tr>
+              <tr v-if="!devices?.length">
+                <td colspan="5" class="px-4 py-6 text-center text-gray-500">
+                  {{ localize('No registered devices yet.', 'لا توجد أجهزة مسجلة بعد.') }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

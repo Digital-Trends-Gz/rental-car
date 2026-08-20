@@ -5,6 +5,7 @@ import HomeLayout from '@/layouts/HomeLayout.vue';
 import { usePage } from '@inertiajs/vue3';
 import { fleet } from '@/routes/tenant/index.ts';
 import { index as reservationsIndex } from '@/routes/client/reservations';
+import { AlertTriangle, CheckCircle2, Clock3, XCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Reservation {
@@ -41,6 +42,12 @@ interface Reservation {
 
 interface PageProps {
     reservation: Reservation;
+    paymentResult?: {
+        status: 'paid' | 'pending' | 'cancelled' | 'failed';
+        tone: 'success' | 'warning' | 'error';
+        title_key: string;
+        message_key: string;
+    } | null;
     seo?: {
         title?: string | null;
         description?: string | null;
@@ -68,6 +75,28 @@ const reservation = $page.props.reservation;
 const currentTenant = $page.props.current_tenant;
 const currency = computed(() => $page.props.currency ?? null);
 const seo = computed(() => $page.props.seo ?? null);
+const paymentResult = computed(
+    () =>
+        $page.props.paymentResult ?? {
+            status: 'pending',
+            tone: 'warning',
+            title_key: 'booking_confirmation.payment_pending_title',
+            message_key: 'booking_confirmation.payment_pending_message',
+        },
+);
+
+const paymentResultIcon = computed(() => {
+    if (paymentResult.value.status === 'paid') return CheckCircle2;
+    if (paymentResult.value.status === 'failed') return XCircle;
+    if (paymentResult.value.status === 'pending') return Clock3;
+    return AlertTriangle;
+});
+
+const paymentResultIconClass = computed(() => {
+    if (paymentResult.value.tone === 'success') return 'bg-green-100 text-green-600';
+    if (paymentResult.value.tone === 'error') return 'bg-red-100 text-red-600';
+    return 'bg-amber-100 text-amber-600';
+});
 
 function toAmount(value: unknown): number {
     const parsed = Number(value ?? 0);
@@ -123,26 +152,18 @@ const amounts = computed(() => {
                 <!-- Clean success header with minimal styling -->
                 <div class="mb-12 text-center">
                     <div
-                        class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100"
+                        class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+                        :class="paymentResultIconClass"
                     >
-                        <svg
-                            class="h-8 w-8 text-green-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M5 13l4 4L19 7"
-                            ></path>
-                        </svg>
+                        <component :is="paymentResultIcon" class="h-8 w-8" />
                     </div>
                     <h1 class="mb-2 text-3xl font-bold text-gray-900">
-                        {{ t('booking_confirmation.title') }}
+                        {{ t(paymentResult.title_key) }}
                     </h1>
-                    <p class="text-gray-600">
+                    <p class="mx-auto max-w-2xl text-gray-600">
+                        {{ t(paymentResult.message_key) }}
+                    </p>
+                    <p class="mt-2 text-gray-600">
                         {{ t('booking_confirmation.reservation_number', { number: reservation.reservation_number }) }}
                     </p>
                 </div>

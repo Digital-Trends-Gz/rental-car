@@ -28,6 +28,7 @@ const props = withDefaults(
     defineProps<{
         success?: string | null;
         error?: string | null;
+        warning?: string | null;
         restrictedAction?: string | null;
         triggerKey?: string | number;
         timeoutMs?: number;
@@ -36,6 +37,7 @@ const props = withDefaults(
     {
         success: null,
         error: null,
+        warning: null,
         restrictedAction: null,
         triggerKey: '',
         timeoutMs: 4500,
@@ -81,9 +83,9 @@ function panelClass(tone: ToastTone) {
 }
 
 watch(
-    () => [props.triggerKey, props.success, props.error, props.restrictedAction],
-    ([triggerKey, success, error, restrictedAction]) => {
-        const message = (success ?? error ?? restrictedAction ?? '') as string;
+    () => [props.triggerKey, props.success, props.error, props.warning, props.restrictedAction],
+    ([triggerKey, success, error, warning, restrictedAction]) => {
+        const message = (success ?? error ?? warning ?? restrictedAction ?? '') as string;
         if (!message) {
             return;
         }
