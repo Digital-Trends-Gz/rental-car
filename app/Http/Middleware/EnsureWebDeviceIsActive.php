@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Enums\UserRole;
 use App\Models\UserDevice;
 use App\Services\Auth\DeviceAccessService;
+use App\Support\TenantTranslations;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,7 +38,11 @@ class EnsureWebDeviceIsActive
 
             return redirect()
                 ->to($this->loginUrl($request))
-                ->with('error', 'This device has been revoked. Please log in again.');
+                ->with('error', TenantTranslations::get(
+                    'security_access.device_limit.revoked',
+                    app()->getLocale(),
+                    'This device has been revoked. Please log in again.'
+                ));
         }
 
         if ($device) {

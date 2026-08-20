@@ -43,8 +43,13 @@ const props = defineProps<{
         update: string;
     };
 }>();
-const { locale } = useTrans();
+const { locale, t } = useTrans();
 const localize = (en: string, ar: string) => (locale.value === 'ar' ? ar : en);
+const tr = (key: string, en: string, ar: string) => {
+    const translated = t(key);
+
+    return translated === key ? localize(en, ar) : translated;
+};
 
 const form = useForm({
     settings: { ...props.settings },
@@ -141,24 +146,24 @@ const submit = () => {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>{{ localize('Device Login Limit', 'تقييد الدخول حسب الأجهزة') }}</CardTitle>
+                    <CardTitle>{{ tr('security_access.device_limit.title', 'Device Login Limit', 'تقييد الدخول حسب الأجهزة') }}</CardTitle>
                     <CardDescription>
-                        {{ localize('Limit how many active devices each user can use. Existing devices stay active; new devices are blocked when the limit is reached.', 'حدد عدد الأجهزة النشطة المسموحة لكل مستخدم. الأجهزة الحالية تبقى فعالة، ويتم منع الأجهزة الجديدة عند الوصول للحد.') }}
+                        {{ tr('security_access.device_limit.description', 'Limit how many active devices each user can use. Existing devices stay active; new devices are blocked when the limit is reached.', 'حدد عدد الأجهزة النشطة المسموحة لكل مستخدم. الأجهزة الحالية تبقى فعالة، ويتم منع الأجهزة الجديدة عند الوصول للحد.') }}
                     </CardDescription>
                 </CardHeader>
                 <CardContent class="grid gap-6 lg:grid-cols-3">
                     <div class="flex items-start justify-between gap-4 rounded-lg border p-4">
                         <div class="space-y-1">
-                            <Label for="device_limit_enabled">{{ localize('Enable Limit', 'تفعيل التقييد') }}</Label>
+                            <Label for="device_limit_enabled">{{ tr('security_access.device_limit.enable', 'Enable Limit', 'تفعيل التقييد') }}</Label>
                             <p class="text-xs text-muted-foreground">
-                                {{ localize('Super Admin users are always excluded.', 'مستخدمو Super Admin مستثنون دائماً.') }}
+                                {{ tr('security_access.device_limit.super_admin_excluded', 'Super Admin users are always excluded.', 'مستخدمو Super Admin مستثنون دائماً.') }}
                             </p>
                         </div>
                         <Switch id="device_limit_enabled" v-model:checked="form.settings.device_limit_enabled" />
                     </div>
 
                     <div class="space-y-2 rounded-lg border p-4">
-                        <Label for="max_devices_per_user">{{ localize('Max Devices per User', 'عدد الأجهزة لكل مستخدم') }}</Label>
+                        <Label for="max_devices_per_user">{{ tr('security_access.device_limit.max_devices', 'Max Devices per User', 'عدد الأجهزة لكل مستخدم') }}</Label>
                         <Input
                             id="max_devices_per_user"
                             v-model.number="form.settings.max_devices_per_user"
@@ -167,32 +172,32 @@ const submit = () => {
                             max="25"
                         />
                         <p class="text-xs text-muted-foreground">
-                            {{ localize('Recommended starting value: 2.', 'القيمة المقترحة كبداية: 2.') }}
+                            {{ tr('security_access.device_limit.recommended', 'Recommended starting value: 2.', 'القيمة المقترحة كبداية: 2.') }}
                         </p>
                     </div>
 
                     <div class="space-y-3 rounded-lg border p-4">
-                        <Label>{{ localize('Apply To', 'تطبيق على') }}</Label>
+                        <Label>{{ tr('security_access.device_limit.apply_to', 'Apply To', 'تطبيق على') }}</Label>
                         <label class="flex items-center gap-2 text-sm">
                             <Checkbox
                                 :model-value="form.settings.device_limit_roles.includes('all')"
                                 @update:model-value="(checked) => toggleDeviceLimitRole('all', checked)"
                             />
-                            <span>{{ localize('All tenant users', 'كل مستخدمي الشركات') }}</span>
+                            <span>{{ tr('security_access.device_limit.all_tenant_users', 'All tenant users', 'كل مستخدمي الشركات') }}</span>
                         </label>
                         <label class="flex items-center gap-2 text-sm">
                             <Checkbox
                                 :model-value="form.settings.device_limit_roles.includes('admin')"
                                 @update:model-value="(checked) => toggleDeviceLimitRole('admin', checked)"
                             />
-                            <span>{{ localize('Tenant admins', 'مدراء الشركات') }}</span>
+                            <span>{{ tr('security_access.device_limit.tenant_admins', 'Tenant admins', 'مدراء الشركات') }}</span>
                         </label>
                         <label class="flex items-center gap-2 text-sm">
                             <Checkbox
                                 :model-value="form.settings.device_limit_roles.includes('client')"
                                 @update:model-value="(checked) => toggleDeviceLimitRole('client', checked)"
                             />
-                            <span>{{ localize('Clients', 'العملاء') }}</span>
+                            <span>{{ tr('security_access.device_limit.clients', 'Clients', 'العملاء') }}</span>
                         </label>
                     </div>
                 </CardContent>

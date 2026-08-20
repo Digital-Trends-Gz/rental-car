@@ -6,6 +6,7 @@ use App\Core\SecurityAccessSettings;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\UserDevice;
+use App\Support\TenantTranslations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -141,7 +142,11 @@ class DeviceAccessService
 
     public function limitReachedMessage(): string
     {
-        return 'Device limit reached. Please contact the administrator to remove an old device.';
+        return TenantTranslations::get(
+            'security_access.device_limit.reached',
+            app()->getLocale(),
+            'Device limit reached. Please contact the administrator to remove an old device.'
+        );
     }
 
     private function hashDeviceId(string $deviceId): string
