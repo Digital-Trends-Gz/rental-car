@@ -27,8 +27,10 @@ const props = defineProps<{
 
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
-const { t } = useTrans();
+const { t, direction } = useTrans();
 const tr = (key: string) => t(`dashboard.admin.clients.edit.${key}`);
+const localizedInputDir = computed(() => direction.value === 'rtl' ? 'rtl' : 'ltr');
+const localizedInputClass = computed(() => direction.value === 'rtl' ? 'text-right' : 'text-left');
 
 const form = useForm({
     name: props.client.name ?? '',
@@ -102,13 +104,13 @@ function submit() {
 
                         <div class="space-y-2">
                             <Label for="phone">{{ tr('phone') }}</Label>
-                            <Input id="phone" v-model="form.phone" type="tel" required dir="ltr" class="text-left" :placeholder="tr('phone_placeholder')" />
+                            <Input id="phone" v-model="form.phone" type="tel" required :dir="localizedInputDir" :class="localizedInputClass" :placeholder="tr('phone_placeholder')" />
                             <InputError :message="form.errors.phone" />
                         </div>
 
                         <div class="space-y-2">
                             <Label for="whatsapp">{{ tr('whatsapp') }}</Label>
-                            <Input id="whatsapp" v-model="form.whatsapp" type="tel" dir="ltr" class="text-left" :placeholder="tr('whatsapp_placeholder')" />
+                            <Input id="whatsapp" v-model="form.whatsapp" type="tel" :dir="localizedInputDir" :class="localizedInputClass" :placeholder="tr('whatsapp_placeholder')" />
                             <InputError :message="form.errors.whatsapp" />
                         </div>
 

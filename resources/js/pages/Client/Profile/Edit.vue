@@ -22,8 +22,10 @@ const props = defineProps<{
 
 const page = usePage<any>();
 const subdomain = computed(() => page.props.current_tenant?.slug);
-const { t } = useTrans();
+const { t, direction } = useTrans();
 const tr = (key: string) => t(`client_pages.profile.${key}`);
+const localizedInputDir = computed(() => direction.value === 'rtl' ? 'rtl' : 'ltr');
+const localizedInputClass = computed(() => direction.value === 'rtl' ? 'text-right' : 'text-left');
 
 const form = useForm({
     name: props.profile.name ?? '',
@@ -82,7 +84,7 @@ function submit() {
 
                         <div class="space-y-2">
                             <Label for="phone">{{ tr('phone') }}</Label>
-                            <Input id="phone" v-model="form.phone" type="tel" required dir="ltr" class="text-left" autocomplete="tel" />
+                            <Input id="phone" v-model="form.phone" type="tel" required :dir="localizedInputDir" :class="localizedInputClass" autocomplete="tel" :placeholder="tr('phone')" />
                             <InputError :message="form.errors.phone" />
                         </div>
 
@@ -91,7 +93,7 @@ function submit() {
                                 {{ tr('whatsapp') }}
                                 <span class="font-normal text-muted-foreground">({{ tr('optional') }})</span>
                             </Label>
-                            <Input id="whatsapp" v-model="form.whatsapp" type="tel" dir="ltr" class="text-left" autocomplete="tel" />
+                            <Input id="whatsapp" v-model="form.whatsapp" type="tel" :dir="localizedInputDir" :class="localizedInputClass" autocomplete="tel" :placeholder="tr('whatsapp')" />
                             <InputError :message="form.errors.whatsapp" />
                         </div>
 
