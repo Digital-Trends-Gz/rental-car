@@ -114,8 +114,36 @@ class LocalizationController extends Controller
             return null;
         }
 
+        $baseHost = (string) parse_url(config('app.url'), PHP_URL_HOST);
+        if ($baseHost === '') {
+            return null;
+        }
+
+        $refererHost = $this->normalizedRefererHost($request);
+        $currentHost = strtolower($request->getHost());
+        $baseHost = strtolower($baseHost);
+
+        if (
+            $refererHost !== null
+            && $refererHost !== $baseHost
+            && $refererHost !== 'www.'.$baseHost
+            && str_ends_with($refererHost, '.'.$baseHost)
+        ) {
+            $scheme = $request->isSecure() ? 'https' : 'http';
+
+            return $scheme.'://'.$refererHost.$localizedPath;
+        }
+
         $currentTenant = TenantContext::get();
         if ($currentTenant) {
+            return null;
+        }
+
+        if (
+            $currentHost !== $baseHost
+            && $currentHost !== 'www.'.$baseHost
+            && str_ends_with($currentHost, '.'.$baseHost)
+        ) {
             return null;
         }
 
@@ -129,14 +157,24 @@ class LocalizationController extends Controller
             return null;
         }
 
-        $baseHost = (string) parse_url(config('app.url'), PHP_URL_HOST);
-        if ($baseHost === '') {
-            return null;
-        }
-
         $scheme = $request->isSecure() ? 'https' : 'http';
 
         return $scheme.'://'.$tenantSlug.'.'.$baseHost.$localizedPath;
+    }
+
+    private function normalizedRefererHost(Request $request): ?string
+    {
+        $referer = (string) $request->headers->get('referer', '');
+        if ($referer === '') {
+            return null;
+        }
+
+        $host = parse_url($referer, PHP_URL_HOST);
+        if (! is_string($host) || $host === '') {
+            return null;
+        }
+
+        return strtolower(rtrim($host, '.'));
     }
 
     private function enabledLocales(array $supportedLocales): array
