@@ -40,6 +40,14 @@ const csrfToken = computed(() => String(page.props?.csrf_token || ''));
 const logoutUrl = computed(() => {
     const currentPath = stripLocalePrefix(String(page.url || '/'));
 
+    if (typeof window !== 'undefined') {
+        if (currentPath.startsWith('/superadmin')) {
+            return `${window.location.origin}/superadmin/logout`;
+        }
+
+        return `${window.location.origin}/logout`;
+    }
+
     if (currentPath.startsWith('/superadmin')) {
         return superadminLogout.url();
     }
