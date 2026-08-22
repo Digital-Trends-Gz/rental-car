@@ -138,7 +138,18 @@ const localeDisplayName = (localeCode: string) => {
         : translatedName;
 };
 
-const siteHomeUrl = computed(() => `${localePrefix.value || ''}/`);
+const siteHomeUrl = computed(() => {
+    const path = `${localePrefix.value || ''}/`;
+    const tenantSlug = String(page.props.current_tenant?.slug || '').trim();
+    const baseHost = String(page.props?.app_url_base || '').trim();
+    const protocol = typeof window !== 'undefined' ? window.location.protocol : 'https:';
+
+    if (tenantSlug && baseHost) {
+        return `${protocol}//${tenantSlug}.${baseHost}${path}`;
+    }
+
+    return path;
+});
 
 const csrfToken = computed(() => page.props?.csrf_token || '');
 const notificationsBaseUrl = computed(() => `${localePrefix.value}/notifications`);
@@ -283,7 +294,7 @@ const mainNavItems = computed<NavItem[]>(() => {
                     </Sheet>
                 </div>
 
-                <Link :href="home.url()" class="flex items-center gap-x-2">
+                <Link :href="siteHomeUrl" class="flex items-center gap-x-2">
                     <AppLogo />
                 </Link>
 
