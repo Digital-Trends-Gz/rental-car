@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Core\TenantContext;
+use App\Models\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
@@ -32,7 +33,14 @@ class LocalizationController extends Controller
         LaravelLocalization::setLocale($locale);
 
         if ($redirect !== '' && str_starts_with($redirect, '/')) {
-            return redirect()->to($this->localizedRedirectPath($redirect, $locale, $supported));
+            $localizedPath = $this->localizedRedirectPath($redirect, $locale, $supported);
+            $tenantUrl = $this->tenantDashboardRedirectUrl($request, $redirect, $localizedPath, $supported);
+
+            if ($tenantUrl !== null) {
+                return redirect()->away($tenantUrl);
+            }
+
+            return redirect()->to($localizedPath);
         }
 
         return redirect()->back();
@@ -85,6 +93,50 @@ class LocalizationController extends Controller
         }
 
         return in_array($segments[0] ?? null, ['admin', 'superadmin', 'client', 'dashboard'], true);
+    }
+
+    private function tenantDashboardRedirectUrl(Request $request, string $redirect, string $localizedPath, array $supportedLocales): ?string
+    {
+        $parts = parse_url($redirect);
+        $path = trim((string) ($parts['path'] ?? ''), '/');
+
+        if ($path === '') {
+            return null;
+        }
+
+        $segments = explode('/', $path);
+
+        if (isset($segments[0]) && in_array($segments[0], $supportedLocales, true)) {
+            array_shift($segments);
+        }
+
+        if (! in_array($segments[0] ?? null, ['admin', 'client', 'dashboard'], true)) {
+            return null;
+        }
+
+        $currentTenant = TenantContext::get();
+        if ($currentTenant) {
+            return null;
+        }
+
+        $tenantId = (int) ($request->user()?->tenant_id ?? 0);
+        if ($tenantId <= 0) {
+            return null;
+        }
+
+        $tenantSlug = Tenant::query()->whereKey($tenantId)->value('slug');
+        if (! is_string($tenantSlug) || $tenantSlug === '') {
+            return null;
+        }
+
+        $baseHost = (string) parse_url(config('app.url'), PHP_URL_HOST);
+        if ($baseHost === '') {
+            return null;
+        }
+
+        $scheme = $request->isSecure() ? 'https' : 'http';
+
+        return $scheme.'://'.$tenantSlug.'.'.$baseHost.$localizedPath;
     }
 
     private function enabledLocales(array $supportedLocales): array

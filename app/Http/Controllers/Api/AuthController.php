@@ -186,7 +186,12 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $token->delete();
+        $device = $token->userDevice;
+        if ($device) {
+            $device->revoke();
+        } else {
+            $token->delete();
+        }
 
         return response()->json([
             'message' => 'Logged out successfully.',

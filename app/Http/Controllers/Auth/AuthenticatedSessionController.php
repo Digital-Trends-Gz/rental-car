@@ -253,6 +253,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        if ($user instanceof \App\Models\User) {
+            app(DeviceAccessService::class)->revokeWebDevice($user, $request);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

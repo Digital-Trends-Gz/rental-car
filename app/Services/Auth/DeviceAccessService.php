@@ -140,6 +140,21 @@ class DeviceAccessService
         return $user->devices()->whereNull('revoked_at')->count();
     }
 
+    public function revokeWebDevice(User $user, Request $request): void
+    {
+        $deviceId = trim((string) $request->cookie(self::WEB_DEVICE_COOKIE, ''));
+        if ($deviceId === '') {
+            return;
+        }
+
+        $device = $user->devices()
+            ->where('device_id_hash', $this->hashDeviceId($deviceId))
+            ->whereNull('revoked_at')
+            ->first();
+
+        $device?->revoke();
+    }
+
     public function limitReachedMessage(): string
     {
         return TenantTranslations::get(

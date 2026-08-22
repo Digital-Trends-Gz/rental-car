@@ -104,8 +104,12 @@ const normalizedRedirectPath = computed(() => {
     return strippedPath.startsWith('/') ? strippedPath : `/${strippedPath}`;
 });
 
-const localeSwitcherUrl = (targetLocale: string) =>
-    `/locale/${targetLocale}?redirect=${encodeURIComponent(normalizedRedirectPath.value)}`;
+const localeSwitcherUrl = (targetLocale: string) => {
+    const path = `/locale/${targetLocale}?redirect=${encodeURIComponent(normalizedRedirectPath.value)}`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
+    return `${origin}${path}`;
+};
 
 const fallbackLocaleNames: Record<string, string> = {
     en: 'English',
