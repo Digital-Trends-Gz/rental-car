@@ -34,7 +34,7 @@ class LocalizationController extends Controller
 
         if ($redirect !== '' && str_starts_with($redirect, '/')) {
             $localizedPath = $this->localizedRedirectPath($redirect, $locale, $supported);
-            $tenantUrl = $this->tenantDashboardRedirectUrl($request, $redirect, $localizedPath, $supported);
+            $tenantUrl = $this->tenantRedirectUrl($request, $localizedPath);
 
             if ($tenantUrl !== null) {
                 return redirect()->away($tenantUrl);
@@ -95,25 +95,8 @@ class LocalizationController extends Controller
         return in_array($segments[0] ?? null, ['admin', 'superadmin', 'client', 'dashboard'], true);
     }
 
-    private function tenantDashboardRedirectUrl(Request $request, string $redirect, string $localizedPath, array $supportedLocales): ?string
+    private function tenantRedirectUrl(Request $request, string $localizedPath): ?string
     {
-        $parts = parse_url($redirect);
-        $path = trim((string) ($parts['path'] ?? ''), '/');
-
-        if ($path === '') {
-            return null;
-        }
-
-        $segments = explode('/', $path);
-
-        if (isset($segments[0]) && in_array($segments[0], $supportedLocales, true)) {
-            array_shift($segments);
-        }
-
-        if (! in_array($segments[0] ?? null, ['admin', 'client', 'dashboard'], true)) {
-            return null;
-        }
-
         $baseHost = (string) parse_url(config('app.url'), PHP_URL_HOST);
         if ($baseHost === '') {
             return null;
@@ -122,6 +105,15 @@ class LocalizationController extends Controller
         $refererHost = $this->normalizedRefererHost($request);
         $currentHost = strtolower($request->getHost());
         $baseHost = strtolower($baseHost);
+        $scheme = $request->isSecure() ? 'https' : 'http';
+
+        if (
+            $currentHost !== $baseHost
+            && $currentHost !== 'www.'.$baseHost
+            && str_ends_with($currentHost, '.'.$baseHost)
+        ) {
+            return $scheme.'://'.$currentHost.$localizedPath;
+        }
 
         if (
             $refererHost !== null
@@ -129,22 +121,12 @@ class LocalizationController extends Controller
             && $refererHost !== 'www.'.$baseHost
             && str_ends_with($refererHost, '.'.$baseHost)
         ) {
-            $scheme = $request->isSecure() ? 'https' : 'http';
-
             return $scheme.'://'.$refererHost.$localizedPath;
         }
 
-        $currentTenant = TenantContext::get();
-        if ($currentTenant) {
-            return null;
-        }
-
-        if (
-            $currentHost !== $baseHost
-            && $currentHost !== 'www.'.$baseHost
-            && str_ends_with($currentHost, '.'.$baseHost)
-        ) {
-            return null;
+        $tenantSlug = TenantContext::get()?->slug;
+        if (is_string($tenantSlug) && $tenantSlug !== '') {
+            return $scheme.'://'.$tenantSlug.'.'.$baseHost.$localizedPath;
         }
 
         $tenantId = (int) ($request->user()?->tenant_id ?? 0);
@@ -156,8 +138,6 @@ class LocalizationController extends Controller
         if (! is_string($tenantSlug) || $tenantSlug === '') {
             return null;
         }
-
-        $scheme = $request->isSecure() ? 'https' : 'http';
 
         return $scheme.'://'.$tenantSlug.'.'.$baseHost.$localizedPath;
     }
