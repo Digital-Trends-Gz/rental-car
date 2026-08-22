@@ -104,11 +104,22 @@ const normalizedRedirectPath = computed(() => {
     return strippedPath.startsWith('/') ? strippedPath : `/${strippedPath}`;
 });
 
+const localeSwitcherOrigin = computed(() => {
+    const tenantSlug = String(page.props.current_tenant?.slug || '').trim();
+    const baseHost = String(page.props?.app_url_base || '').trim();
+    const protocol = typeof window !== 'undefined' ? window.location.protocol : 'https:';
+
+    if (tenantSlug && baseHost) {
+        return `${protocol}//${tenantSlug}.${baseHost}`;
+    }
+
+    return typeof window !== 'undefined' ? window.location.origin : '';
+});
+
 const localeSwitcherUrl = (targetLocale: string) => {
     const path = `/locale/${targetLocale}?redirect=${encodeURIComponent(normalizedRedirectPath.value)}`;
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-    return `${origin}${path}`;
+    return `${localeSwitcherOrigin.value}${path}`;
 };
 
 const fallbackLocaleNames: Record<string, string> = {
