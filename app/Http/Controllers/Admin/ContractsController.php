@@ -431,7 +431,7 @@ class ContractsController extends Controller
                     : [],
                 'primary_driver' => $contract->primaryDriver ? $this->serializeDriver($contract->primaryDriver) : null,
                 'additional_drivers' => $contract->additionalDrivers->map(fn (ContractDriver $driver) => $this->serializeDriver($driver))->values()->all(),
-                'damage_reports' => $contract->damageReports->map(function (\App\Models\CarDamageReport $report) {
+                'damage_reports' => $contract->damageReports->map(function (\App\Models\CarDamageReport $report) use ($tenantRouteParams) {
                     return [
                         'id' => $report->id,
                         'report_number' => $report->report_number,
