@@ -749,7 +749,11 @@ class WebsiteSettingsController extends Controller
             'settings' => TenantSiteSetting::forTenant($tenant),
             'contractPdfDefaults' => $this->contractPdfDefaults(),
             'contractSignatureFiles' => $this->contractSignatureFiles($tenant->siteSetting),
-            'previewUrl' => $previewContractId ? route('admin.contracts.pdf', ['contract' => $previewContractId, 'lang' => app()->getLocale()]) : null,
+            'previewUrl' => $previewContractId ? route('admin.contracts.pdf', [
+                'subdomain' => $tenant->slug,
+                'contract' => $previewContractId,
+                'lang' => app()->getLocale(),
+            ]) : null,
             'actions' => [
                 'update' => url()->current(),
             ],
@@ -777,7 +781,10 @@ class WebsiteSettingsController extends Controller
             'settings' => TenantSiteSetting::forTenant($tenant),
             'mrtaPdfDefaults' => MrtaPdfSettings::defaults(),
             'mrtaLogoFiles' => $mrtaLogoFiles,
-            'previewUrl' => $previewAccidentReportId ? route('admin.accident-reports.mrta-form', ['accidentReport' => $previewAccidentReportId]) : null,
+            'previewUrl' => $previewAccidentReportId ? route('admin.accident-reports.mrta-form', [
+                'subdomain' => $tenant->slug,
+                'accidentReport' => $previewAccidentReportId,
+            ]) : null,
             'actions' => [
                 'update' => url()->current(),
             ],
