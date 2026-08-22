@@ -367,7 +367,17 @@ class ContractsController extends Controller
             'extensionRequests' => fn ($query) => $query->latest('id'),
         ]);
 
-        $damageCreateUrl = url('/admin/car-damage-reports/create') . '?contract_id=' . $contract->id;
+        $tenant = $this->currentTenant(request());
+        $tenantRouteParams = [
+            'subdomain' => $tenant?->slug ?? request()->route('subdomain'),
+        ];
+        $contractRouteParams = $tenantRouteParams + [
+            'contract' => $contract->id,
+        ];
+
+        $damageCreateUrl = route('admin.car-damage-reports.create', $tenantRouteParams + [
+            'contract_id' => $contract->id,
+        ]);
         $isLocked = PaidReturnReportLock::contract($contract);
 
         return Inertia::render('Admin/Contracts/Show', [
@@ -442,7 +452,9 @@ class ContractsController extends Controller
                                 'notes' => $item->notes,
                             ];
                         })->values()->all(),
-                        'edit_url' => url('/admin/car-damage-reports/'.$report->getKey().'/edit'),
+                        'edit_url' => route('admin.car-damage-reports.edit', $tenantRouteParams + [
+                            'carDamageReport' => $report->getKey(),
+                        ]),
                     ];
                 })->values()->all(),
                 'extension_requests' => $contract->extensionRequests->map(function (RentalExtensionRequest $request) {
@@ -469,23 +481,23 @@ class ContractsController extends Controller
             'startRentalDocument' => $this->firstFileMeta($contract, 'start_contract'),
             'endRentalDocument' => $this->firstFileMeta($contract, 'end_contract'),
             'actions' => [
-                'index' => url('/admin/contracts'),
-                'edit' => $isLocked ? null : url('/admin/contracts/'.$contract->id.'/edit'),
+                'index' => route('admin.contracts.index', $tenantRouteParams),
+                'edit' => $isLocked ? null : route('admin.contracts.edit', $contractRouteParams),
                 'damage_create' => $isLocked ? null : $damageCreateUrl,
-                'pdf' => url('/admin/contracts/'.$contract->id.'/pdf'),
-                'pdf_en' => url('/admin/contracts/'.$contract->id.'/pdf?lang=en'),
-                'pdf_ar' => url('/admin/contracts/'.$contract->id.'/pdf?lang=ar'),
+                'pdf' => route('admin.contracts.pdf', $contractRouteParams),
+                'pdf_en' => route('admin.contracts.pdf', $contractRouteParams + ['lang' => 'en']),
+                'pdf_ar' => route('admin.contracts.pdf', $contractRouteParams + ['lang' => 'ar']),
                 'request_extend' => !$isLocked && $this->isExtendableContract($contract)
-                    ? url('/admin/contracts/'.$contract->id.'/extension-request')
+                    ? route('admin.contracts.request-extension', $contractRouteParams)
                     : null,
                 'extend' => !$isLocked && $this->isExtendableContract($contract)
-                    ? url('/admin/contracts/'.$contract->id.'/extend')
+                    ? route('admin.contracts.extend', $contractRouteParams)
                     : null,
                 'deliver' => !$isLocked && $this->canDeliverContract($contract)
-                    ? url('/admin/contracts/'.$contract->id.'/deliver')
+                    ? route('admin.contracts.deliver', $contractRouteParams)
                     : null,
                 'return_report' => $this->canOpenReturnReport($contract)
-                    ? url('/admin/contracts/'.$contract->id.'/return-status-report')
+                    ? route('admin.contracts.return-report', $contractRouteParams)
                     : null,
             ],
         ]);
