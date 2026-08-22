@@ -251,7 +251,7 @@ class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request): RedirectResponse|BaseResponse
     {
         $user = $request->user();
         if ($user instanceof \App\Models\User) {
@@ -263,7 +263,59 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        $redirectUrl = $this->postLogoutUrl($request);
+
+        if ($request->header('X-Inertia')) {
+            return Inertia::location($redirectUrl);
+        }
+
+        return redirect()->to($redirectUrl);
+    }
+
+    private function postLogoutUrl(Request $request): string
+    {
+        $tenantOrigin = $this->tenantOriginFromHost($request->getScheme(), $request->getHost())
+            ?? $this->tenantOriginFromReferer($request);
+
+        if ($tenantOrigin) {
+            return $tenantOrigin.'/';
+        }
+
+        return url('/');
+    }
+
+    private function tenantOriginFromReferer(Request $request): ?string
+    {
+        $referer = $request->headers->get('referer');
+        if (!$referer) {
+            return null;
+        }
+
+        $host = parse_url($referer, PHP_URL_HOST);
+        if (!is_string($host) || $host === '') {
+            return null;
+        }
+
+        $scheme = parse_url($referer, PHP_URL_SCHEME);
+
+        return $this->tenantOriginFromHost(
+            is_string($scheme) && $scheme !== '' ? $scheme : $request->getScheme(),
+            $host
+        );
+    }
+
+    private function tenantOriginFromHost(string $scheme, string $host): ?string
+    {
+        $baseHost = parse_url(config('app.url'), PHP_URL_HOST);
+        if (!is_string($baseHost) || $baseHost === '') {
+            return null;
+        }
+
+        if ($host === $baseHost || !str_ends_with($host, '.'.$baseHost)) {
+            return null;
+        }
+
+        return $scheme.'://'.$host;
     }
 
     private function resolveTenant($user): ?Tenant
