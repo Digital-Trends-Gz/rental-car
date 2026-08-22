@@ -9,10 +9,9 @@ import {
 import { logout } from '@/routes';
 import { logout as superadminLogout } from '@/routes/superadmin';
 import { logout as tenantLogout } from '@/routes/tenant/index.ts';
-import { edit } from '@/routes/profile';
 import type { User } from '@/types';
-import { Link, router, usePage } from '@inertiajs/vue3';
-import { LogOut, UserIcon } from 'lucide-vue-next';
+import { router, usePage } from '@inertiajs/vue3';
+import { LogOut } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Props {
@@ -37,19 +36,20 @@ const stripLocalePrefix = (path: string) => {
 
     return path.replace(localeRegex, '') || '/';
 };
-const logoutRoute = computed(() => {
+const csrfToken = computed(() => String(page.props?.csrf_token || ''));
+const logoutUrl = computed(() => {
     const currentPath = stripLocalePrefix(String(page.url || '/'));
 
     if (currentPath.startsWith('/superadmin')) {
-        return superadminLogout();
+        return superadminLogout.url();
     }
 
     const slug = page.props?.current_tenant?.slug;
     if (slug) {
-        return tenantLogout(slug);
+        return tenantLogout.url(slug);
     }
 
-    return logout();
+    return logout.url();
 });
 
 defineProps<Props>();
@@ -72,16 +72,12 @@ defineProps<Props>();
     </DropdownMenuGroup>
     <DropdownMenuSeparator />
     <DropdownMenuItem :as-child="true">
-        <Link
-            class="block w-full"
-            :href="logoutRoute"
-            method="post"
-            @click="handleLogout"
-            as="button"
-            data-test="logout-button"
-        >
-            <LogOut class="mr-2 h-4 w-4" />
-            Log out
-        </Link>
+        <form class="w-full" :action="logoutUrl" method="post" @submit="handleLogout">
+            <input type="hidden" name="_token" :value="csrfToken" />
+            <button class="flex w-full items-center" type="submit" data-test="logout-button">
+                <LogOut class="mr-2 h-4 w-4" />
+                Log out
+            </button>
+        </form>
     </DropdownMenuItem>
 </template>

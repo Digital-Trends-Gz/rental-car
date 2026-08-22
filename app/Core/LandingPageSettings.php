@@ -563,6 +563,7 @@ class LandingPageSettings
                     'social_email_already_exists' => 'هذا البريد الإلكتروني مسجل مسبقاً في حساب آخر. يرجى تسجيل الدخول ببيانات حسابك أو استخدام بريد إلكتروني مختلف.',
                     'social_email_missing' => 'تعذر الحصول على البريد الإلكتروني من مزود تسجيل الدخول.',
                     'social_login_failed' => 'فشلت عملية تسجيل الدخول. يرجى المحاولة مرة أخرى.',
+                    'invalid_registration_email' => 'يرجى إدخال بريد إلكتروني صحيح. لم نتمكن من إرسال رسالة التحقق إلى هذا البريد.',
                 ],
                 'auth_verify_email' => [
                     'head_title' => 'تأكيد البريد الإلكتروني',
@@ -592,6 +593,7 @@ class LandingPageSettings
                     'social_email_already_exists' => 'یہ ای میل پہلے سے کسی دوسرے اکاؤنٹ میں رجسٹرڈ ہے۔ براہ کرم اپنی معلومات سے لاگ ان کریں یا کوئی دوسری ای میل استعمال کریں۔',
                     'social_email_missing' => 'سوشل لاگ ان فراہم کنندہ سے ای میل حاصل کرنے میں ناکام۔',
                     'social_login_failed' => 'سوشل لاگ ان کی تصدیق ناکام ہوگئی۔ براہ کرم دوبارہ کوشش کریں۔',
+                    'invalid_registration_email' => 'Please enter a valid email address. We could not deliver the verification email to this address.',
                 ],
                 'auth_verify_email' => [
                     'head_title' => 'ای میل کی تصدیق',

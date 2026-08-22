@@ -871,6 +871,7 @@ class LandingSettingsController extends Controller
             'auth.social_email_already_exists' => 'This email is already registered with another account. Please sign in using your credentials or use another email.',
             'auth.social_email_missing' => 'Unable to retrieve email from social login provider.',
             'auth.social_login_failed' => 'Social login authentication failed. Please try again.',
+            'auth.invalid_registration_email' => 'Please enter a valid email address. We could not deliver the verification email to this address.',
             'pagination.previous' => 'Previous',
             'pagination.next' => 'Next',
             'welcome.why_choose_start' => 'Why Choose',

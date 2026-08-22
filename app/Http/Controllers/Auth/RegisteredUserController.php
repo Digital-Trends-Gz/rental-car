@@ -17,6 +17,7 @@ use App\Support\CaptchaVerifier;
 use App\Support\Payments\MyFatoorahSubscriptionProvider;
 use App\Support\PlanTranslations;
 use App\Support\PlanPricing;
+use App\Support\TenantTranslations;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberFormat;
@@ -113,7 +115,7 @@ class RegisteredUserController extends Controller
                     'required',
                     'string',
                     'lowercase',
-                    'email',
+                    $this->emailValidationRule(),
                     'max:255',
                     Rule::unique('users', 'email')->where(fn ($q) => $q->where('tenant_id', $tenantId)),
                 ],
@@ -140,7 +142,20 @@ class RegisteredUserController extends Controller
                 'tenant_id' => $tenantId,
             ]);
 
-            event(new Registered($user));
+            try {
+                event(new Registered($user));
+            } catch (Throwable $e) {
+                if (! $this->isInvalidRecipientMailException($e)) {
+                    throw $e;
+                }
+
+                report($e);
+                $user->delete();
+
+                throw ValidationException::withMessages([
+                    'email' => $this->invalidRegistrationEmailMessage(),
+                ]);
+            }
 
             Auth::login($user);
             $request->session()->regenerate();
@@ -155,7 +170,7 @@ class RegisteredUserController extends Controller
                 'required',
                 'string',
                 'lowercase',
-                'email',
+                $this->emailValidationRule(),
                 'max:255',
                 'unique:'.User::class,
                 'unique:tenants,email',
@@ -253,6 +268,31 @@ class RegisteredUserController extends Controller
         $line = trans($key, $replace);
 
         return $line === $key ? $fallback : $line;
+    }
+
+    private function emailValidationRule(): string
+    {
+        return app()->environment('testing') ? 'email:rfc' : 'email:rfc,dns';
+    }
+
+    private function isInvalidRecipientMailException(Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'code "550"')
+            || str_contains($message, 'code 550')
+            || str_contains($message, 'could not deliver mail')
+            || str_contains($message, 'domain may not exist')
+            || str_contains($message, 'recipient address rejected');
+    }
+
+    private function invalidRegistrationEmailMessage(): string
+    {
+        return TenantTranslations::get(
+            'auth.invalid_registration_email',
+            app()->getLocale(),
+            'Please enter a valid email address. We could not deliver the verification email to this address.',
+        );
     }
 
     private function registrationCompanyOwners(array $registration): array

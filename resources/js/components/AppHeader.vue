@@ -268,12 +268,12 @@ const mainNavItems = computed<NavItem[]>(() => {
                                 class="flex h-full flex-1 flex-col justify-between space-y-4 py-6"
                             >
                                 <nav class="-mx-3 space-y-1">
-                                    <Link
+                                    <a
                                         :href="siteHomeUrl"
                                         class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent"
                                     >
                                         {{ t('client_pages.layout.nav.back_to_site') }}
-                                    </Link>
+                                    </a>
                                     <Link
                                         v-for="item in mainNavItems"
                                         :key="item.title"
@@ -294,9 +294,9 @@ const mainNavItems = computed<NavItem[]>(() => {
                     </Sheet>
                 </div>
 
-                <Link :href="siteHomeUrl" class="flex items-center gap-x-2">
+                <a :href="siteHomeUrl" class="flex items-center gap-x-2">
                     <AppLogo />
-                </Link>
+                </a>
 
                 <!-- Desktop Menu -->
                 <div class="hidden h-full lg:flex lg:flex-1">
@@ -334,11 +334,11 @@ const mainNavItems = computed<NavItem[]>(() => {
                 </div>
 
                 <div class="ml-auto flex items-center space-x-2">
-                    <Link :href="siteHomeUrl" class="hidden sm:inline-flex">
+                    <a :href="siteHomeUrl" class="hidden sm:inline-flex">
                         <Button variant="outline" size="sm">
                             {{ t('client_pages.layout.nav.back_to_site') }}
                         </Button>
-                    </Link>
+                    </a>
 
                     <DropdownMenu v-if="availableLocales.length > 1" :modal="false">
                         <DropdownMenuTrigger :as-child="true">
